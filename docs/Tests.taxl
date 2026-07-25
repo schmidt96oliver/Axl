@@ -2,26 +2,37 @@
 // Formatter is tested using snapshot testing: Verify.Net
 // Accept will be environment flag with different Run configuration
 
-// --- Directives:
-//#run-pass     // Must compile without errors (_all_ diagnostics must be ignored or expected); must run without errors
-//#run-panic    // Must compile without errors (_all_ diagnostics must be ignored or expected); must run and stop with panic
-//#compile-pass // Must compile without errors (_all_ diagnostics must be ignored or expected);
-//#compile-fail // Must compile with errors (_all_ diagnostics must be ignored or expected);
+// ------- Directives ------
+// All diagnostics must be ignored or expected in all configurations!
 
-//#lexer        // Runs only the lexer; _all_ diagnostics must be expected; input must be matched
-//#parser       // Runs lexer+parser; _all_ diagnostics must be expected; syntax tree must be matched
-// #lexer and #parser trim all //# at the start!
+//#runvm-pass       // Compiles to bytecode, no errors; VM runs without errors
+//#runvm-panic      // Compiles to bytecode, no errors; VM runs and panics
 
-//#addfile "other.axl"     // Note that these are pure *.axl files: no test annotation; test runner doesn't find them
+//#runmir-pass      // Compiles to Mir, no errors; MirInterpreter runs without errors
+//#runmir-panic     // Compiles to Mir, no errors; MirInterpreter runs and panics
+//#optimize         // Runs optimizations on Mir
+//#noprelude        // Disables importing the prelude
+
+//#compile-pass     // Compiles, no errors
+//#compile-fail     // Compiles, with errors
+
+//#lexer            // Runs only the lexer; input must be matched
+//#parser           // Runs lexer+parser; syntax tree must be matched
+
+//#addfile "other.axl"     // Adds pure *.axl files to compilation. They are not *.taxl, so test runner doesn't find them
 
 //#ignore-tokens A B C      // Given tokens are ignored for #lexer and #parser tests
 //#ignore-diagnostics A B   // Given diagnostics are ignored and must not be specified
 
-//#noprelude               // Disables importing the prelude
+//#expect-diagnostic        // Inline, matches line number and DiagnosticCode
 
-//# // continued input for previous directive
+// These are standalone and expected values are given in successive //#
+//#expect-output 
+//#expect-tokens
+//#expect-syntaxtree
+//#                 // input for previous directive
 
-// ****
+// ------- Examples ------
 //#run-pass   // Runtime, everything needs to pass (compiles, no errors. Diagnostics must be ignored or expected)
 //#expect-output 
 //# "Hello"     // each string is _one_ line
