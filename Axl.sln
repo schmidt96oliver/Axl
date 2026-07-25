@@ -1,0 +1,35 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Axl", "src\Axl\Axl.csproj", "{93F0DF31-4DB4-4D70-B4C3-57600614A4A5}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Docs", "Docs", "{93D9460F-DEA7-45AC-98B4-634B6D03C650}"
+	ProjectSection(SolutionItems) = preProject
+		docs\WIP\Arrays.axl = docs\WIP\Arrays.axl
+		docs\WIP\Iterators.axl = docs\WIP\Iterators.axl
+		docs\ExpressionsAndStatements.axl = docs\ExpressionsAndStatements.axl
+		docs\Functions.axl = docs\Functions.axl
+		docs\Never.axl = docs\Never.axl
+		docs\None.axl = docs\None.axl
+		docs\NOTES.md = docs\NOTES.md
+		docs\PrimitiveTypes.axl = docs\PrimitiveTypes.axl
+		docs\PROJECT.md = docs\PROJECT.md
+		docs\Strings.axl = docs\Strings.axl
+		docs\Tests.taxl = docs\Tests.taxl
+	EndProjectSection
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{93F0DF31-4DB4-4D70-B4C3-57600614A4A5}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{93F0DF31-4DB4-4D70-B4C3-57600614A4A5}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{93F0DF31-4DB4-4D70-B4C3-57600614A4A5}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{93F0DF31-4DB4-4D70-B4C3-57600614A4A5}.Release|Any CPU.Build.0 = Release|Any CPU
+		{247195A1-61F7-4744-9584-3DE5D5091272}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{247195A1-61F7-4744-9584-3DE5D5091272}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{247195A1-61F7-4744-9584-3DE5D5091272}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{247195A1-61F7-4744-9584-3DE5D5091272}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+EndGlobal

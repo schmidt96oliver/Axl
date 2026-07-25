@@ -1,0 +1,18 @@
+
+none    // Is a completely valid type without any special rules.
+// It has size 0, so it has no data, exactly one instance (0 bits can represent 1 value) and will be optimized away.
+
+//# --- Instantiation ---
+var a: none = {};       // idiomatic way, if wanted. Since an empty block evaluates to none.
+
+// Also there are many other ways to instantiate it
+var a: none = while true {};        // Note that this will go into an infinite loop :D
+var a: none = while false {};       // Valid, no loop
+
+// Any none returning function will create the none object.
+fn MakeNone() -> none {}
+fn MakeNoneImplicit() {}    // no return type annotation means none
+
+var a: none = MakeNone();
+var a: none = MakeNoneImplicit();
+var a: none = Standard.PrintLine("Hello");

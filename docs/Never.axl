@@ -1,0 +1,241 @@
+never 
+// Means "this will diverge", i.e. anything thereafter will _not_ be executed.
+// It means, there will be _no_ value at all (in contrast to `none` which has _one_ value).
+
+// It is only allowed to write in function return-type annotations.
+// Expressions can have never type (like blocks, if, loop; see below).
+// It must not leak into variable or parameter types. This means, it must not be inferred, since
+// that is the only way to write it apart from return-types.
+
+// Internally, its a fully valid type.
+// Its bottom, so it can assign to anything.
+
+break; continue; return;    // All have never type.
+
+// Lowering will emit "unreachable" terminator (see below)
+  
+//# ------- Never is a contextual keyword ---------
+// Grammar for fn declaration:
+// FunctionDeclaration = ... TypeAnnotation ...
+// TypeAnnotation = "never" | ("->" Type)
+
+// This deletes a hole class of leaks: never is mechanically not nameable
+// except for a functions return type. This means the only leak could be type
+// inference.
+
+// Can only be named as return type annotation:
+fn NeverReturns() -> never => Panic("");    // valid, _never_ = never type
+
+var a: never = 1;   // ERROR UndefinedName "never": never is a _name_ here
+var never = 2;      // ok
+Print(never);       // prints 2
+
+public record never;    // possible
+
+var b: never = never(); // never refers to the record above
+
+fn Convoluted() -> never { }        // never still refers to never type, not the record;
+// To refer to the record, we need to disambiguate through module syntax:
+fn Valid() -> Module.never { }
+// But conventions is capital letters for types anyway :)
+
+//# ------- Never returning functions ---------
+// Panic naturally returns never, since it stops program execution.
+native("Panic") fn Panic(msg: string) -> never;
+    
+fn NeverReturns() -> never      // allowed as return-type annotation
+    => Panic("Ooops");
+    
+fn DoesReturn() -> never
+    => "A";     // ERROR TypeMismatch (maybe specific error message)
+    
+// Return/Arm do not type-match never:
+// Nothing can assign to never, except never itself
+fn A() -> never
+{
+    return;     // ERROR TypeMismatch (expect never, got none)
+    return 1;   // ERROR TypeMismatch (expect never, got i32)
+}
+fn A() -> never
+    => {};     // ERROR TypeMismatch (expect never, got none)
+fn A() -> never
+     => 1       // ERROR TypeMismatch (expect never, go i32)
+    
+fn NeverReturns() -> never
+{ 
+    Panic("");  // diverges here
+} // type-checks because of divergence. See Function.axl for details
+
+//# ------- Blocks ---------
+{
+    Panic("Oops");  // a plain expression statement is not treated specially
+    => "A";
+}   // type is string;
+{
+    return; break; continue;    // all are never
+    => "A";
+}   // type is string;
+{
+    => return;
+}   // type is never
+
+//# ------- Nesting into expressions ---------
+// The benefit of having a never type is, that it can nest into expressions:
+loop
+{
+    if true 
+        => break;
+    else 
+        { }         // if expression has type none (from the else block)
+}
+
+fn Clamp(i: i32, min: i32, max: i32) -> i32
+{
+    if i < min 
+        => return min
+    else if i > max 
+        => return max
+    else 
+        => return i;    
+                
+    // if expression has type _never_ (since all blocks have type never)
+    // so definite return analysis sees that the end of this function is not reachable
+    // and concludes, that all paths return a value.
+}
+
+// In contrast, this is not valid:
+fn Clamp(i: i32, min: i32, max: i32) -> i32
+    =>  if i < min 
+            => return min
+        else if i > max 
+            => return max
+        else 
+            => return i;
+// ERROR TypeMismatch (expect i32, got never)
+// if expr has type never, so
+
+// This is idiomatic of course (not relevant here)
+fn Clamp(i: i32, min: i32, max: i32) -> i32
+    =>  if      i < min => min
+        else if i > max => max
+        else            => i;
+        
+fn EarlyReturn(i: 32)
+{
+    var a = if i < 2 => i * 2
+            else return;
+    
+    // Now it is proved: i < 2, a == i*2
+    DoSthElse(a);
+}
+
+fn Outer()
+{
+    fn A(a: i32) -> i32
+        => a + 1;
+    A(return);      // type-checks (since never assigns to anything)
+    // A will never be called, since the argument is evaluated (and executed) before
+}
+
+fn Outer2() -> string
+{
+    fn A(a: i32) -> i32
+            => a + 1;
+    A(return "hello");   // same story as above
+}
+
+PrintLine(Outer2()); // prints "hello"
+
+fn Test() -> i32
+{
+    var a = if 1 < 2 => -3
+            else return 0;
+    // type-checks; a == -3
+    => a
+}   // returns -3
+fn Test() -> i32
+{
+    var a = if 1 > 2 => -3
+            else return 0;
+    // type-checks; this is never reached
+    => a
+}   // returns 0
+
+//# ------- Loops ---------
+break; continue;    // Expressions with never value. They can be used in nested expressions!
+
+var i = 0;
+loop
+{
+    var a = if i < 10 => "A" 
+            else => break;      // Possible, because if and break are expressions
+    PrintLine(a);
+    i += 1;
+}   // type none (break has no expression)
+
+loop { }    // type never (see ExpressionsAndStatements.axl)
+
+//# ------ Never cannot be inferred ------
+var a = Panic("Hello");     // ERROR Cannot infer never type
+// This is pragmatic, so never cannot leak into anything that is not a function return type.
+// The above line isn't useful anyway, you could just write it without the variable.
+
+// Same goes for any other constructs that have never type:
+var a = break;                  // ERROR
+var a = { => Panic("") };       // ERROR
+var a: none = { Panic("") };          // Valid, since block has none type
+
+var a: i32 = break;             // ERROR TypeMismatch (expect i32, got never)
+
+var a = if true => 1
+        else => Panic("");     // Valid, a is type i32
+
+//# ------- Divergence ---------
+// This is a tool of reachability analysis: A never type is always divergent (everything thereafter is not reachable)
+// and divergence then follows some simple rules.
+// E.g. if with else is divergent, if then+else bodies are divergent or condition is divergent
+// call is divergent, if any argument or the callee is divergent
+// block is divergent, if any statement or its final arm is divergent
+// ...
+
+// Binder already keeps track of divergence and uses it for definite return analysis (error not all code-paths return a value)
+
+//# ------- Lowering of never type ---------
+// Lowering rule:
+// LowerX(expr) at the end:
+//  if (is_divergent(expr) && !is_terminated(current_block))
+//      terminate unreachable
+
+call(return); 
+// bb0: LowerCall into %0 (divergent)
+    // new temp %1 (for arg[0])
+    // bb0: LowerReturn into %1             (divergent)
+        // -> return            (return, break, continue do not needs to emit unreachable, since they already jump)
+    // bb1: (new because no current block)
+        // -> %0 = call "call" (%1)
+        // -> unreachable       (because it was divergent)
+        
+if 1 < 2 => "A"
+else { Panic(""); => "B" }
+
+// bb0: LowerIf (not divergent) into %1
+    // new blocks: bb1 (then), bb2 (else), bb3 (join)
+    // new temp: %0 (condition)
+    
+    // LowerExpr (1 < 2) into %0
+        // -> %0 = Condition
+    // -> branch %0 bb1 bb2
+    
+    // LowerExpression "=> "A"" into %1 (not divergent)
+        // bb1:
+        // %1 = "A"
+        // goto bb3
+        
+    // LowerBlock  { Panic(""); => "B" } (divergent)
+        // bb2: LowerCall (divergent)
+            // -> call.native Panic ""
+            // -> unreachable (because LowerCall was divergent)
+        // bb4: (new because no current block) LowerExpression "B" (not divergent)
+            // -> %1 = "B"      %1 is the target
+        // bb4:
+            // -> unreachable (LowerBlock inserts this, because it was divergent)

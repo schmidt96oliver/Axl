@@ -1,0 +1,116 @@
+// Test runner will only test on *.taxl files
+// Formatter is tested using snapshot testing: Verify.Net
+// Accept will be environment flag with different Run configuration
+
+// --- Directives:
+//#run-pass     // Must compile without errors (_all_ diagnostics must be ignored or expected); must run without errors
+//#run-panic    // Must compile without errors (_all_ diagnostics must be ignored or expected); must run and stop with panic
+//#compile-pass // Must compile without errors (_all_ diagnostics must be ignored or expected);
+//#compile-fail // Must compile with errors (_all_ diagnostics must be ignored or expected);
+
+//#lexer        // Runs only the lexer; _all_ diagnostics must be expected; input must be matched
+//#parser       // Runs lexer+parser; _all_ diagnostics must be expected; syntax tree must be matched
+// #lexer and #parser trim all //# at the start!
+
+//#addfile "other.axl"     // Note that these are pure *.axl files: no test annotation; test runner doesn't find them
+
+//#ignore-tokens A B C      // Given tokens are ignored for #lexer and #parser tests
+//#ignore-diagnostics A B   // Given diagnostics are ignored and must not be specified
+
+//#noprelude               // Disables importing the prelude
+
+//# // continued input for previous directive
+
+// ****
+//#run-pass   // Runtime, everything needs to pass (compiles, no errors. Diagnostics must be ignored or expected)
+//#expect-output 
+//# "Hello"     // each string is _one_ line
+//# "Hello"
+//# "Hello"
+//# "Hello"
+
+fn Test() { Standard.Print("Hello"); }
+
+Test();
+Test();
+Test();
+Test();
+
+var a = 2;      //#expect-diagnostic UnusedVariable
+
+// ****
+//#run-panic  // Runtime, needs to compile, no-error; panics on execution
+//#noprelude
+
+var a = 1 / 0;  
+
+Panic("Ooops");
+
+// ****
+//#lexer
+//#ignore-tokens Comment Whitespace
+//#expect-tokens 
+//# Error Identifier StringStart StringText StringEnd IntegerLiteral Newline
+//# StringStart StringText LeftBrace Identifier RightBrace Newline
+// for #lexer and #parser, file starts at this comment and ignores all preceding //#
+@@ hello "HellO" 4i32
+"This is {new}"
+
+// ****
+//#lexer
+//#expect-tokens
+//# Identifier Whitespace Identifier Whitespace StringStart StringEnd Newline
+A B ""
+
+// ****
+// style: depth n => n * "-" + n * " "
+
+//#parser
+//#ignore-tokens Whitespace Newline
+//#expect-syntaxtree
+//# FunctionDeclaration
+//# - FnKeyword "fn"
+//# - Identifier "A"
+//# - ParameterList
+//# --  ParenOpen "("
+//# --  ParenClose ")"
+//# - BlockExpression
+//# --  BraceOpen "{"
+//# --  VariableDeclaration
+//# ---   VarKeyword "var"
+//# ---   Identifier "a"
+//# ---   Equals "="
+//# ---   IntLiteral "1"
+//# ---   Semicolon ";"
+//# --  BraceClose "}"
+fn A() { var a = 1; }
+
+// ***
+//#compile-fail     // Runs only the compiler; needs to fail compilation with errors
+var a: i32 = 1.1f;      //#expect-diagnostic TypeMismatch
+
+// ***
+//#compile-pass     // Runs only the compiler; needs to compile with no errors
+var a = 1;          //#expect-diagnostic UnusedVariable
+
+// *** Multiple files
+//#run-pass
+//#addfile "A.axl"
+//#addfile "B.axl"
+
+//#expect-output
+//# "A"
+//# "B"
+
+A.Test();
+B.Test();
+
+// A.axl
+module A;
+
+public fn Test() { Standard.Print("A"); }
+
+// B.axl
+module B;
+
+public fn Test() { Standard.Print("B"); }

@@ -1,0 +1,81 @@
+﻿
+var range = Range(1,10);
+
+for i in range.Where<i32>(|i| => i % 2 == 0)
+    => Print(i);
+    
+// .Where found for trait extension of Iterable<i32>
+// monomorphized to TItem = i32; This = Range
+    
+// Prints 0 2 4 6 8
+
+public trait Iterable<TItem>
+{
+    fn Next(this) -> Maybe<TItem>;
+}
+
+public enum Maybe<T>
+{
+    Some(T Payload),
+    None,
+}
+
+public value record Range
+    : Iterable<i32>
+{
+    public First: i32;
+    public End: i32;
+    private _current: i32;
+    
+    public Range(first: i32, end: i32)
+    {
+        First = first;
+        End = end;
+        _current = first;
+    }
+    
+    public fn Next(this) -> Maybe<i32>
+    {
+        if _current >= End 
+            => return None();
+    
+        var returnValue = _current;
+        _current += 1;
+        => Some(returnValue)
+    }
+}
+
+extend<TItem>(Iterable<TItem>)
+{
+    public fn Where(this, predicate: fn(TItem) -> bool) -> WhereIterator<TItem, This>
+        => WhereIterator(this, predicate);
+}
+
+public value record WhereIterator<TItem, TBaseIterator: Iterable<TItem>> 
+    : Iterable<TItem>
+{
+    private _baseIterator: TBaseIterator;
+    private _predicate: fn(TItem) -> bool;
+    
+    public WhereIterator(baseIterator: TBaseIterator, predicate: fn(TItem) -> bool)
+    {
+        _baseIterator = baseIterator;
+        _predicate = predicate;
+    }
+    
+    public fn Next(this) -> Maybe<TItem>
+    {
+        loop
+        {
+            match this._baseIterator.Next()
+            {
+                Some(item: TItem) if this._predicate(item) 
+                    => break Some(item),
+                Some    
+                    => continue,    // predicate was false
+                None 
+                    => break None(),
+            }
+        }
+    }
+}

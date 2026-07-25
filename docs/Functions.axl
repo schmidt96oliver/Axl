@@ -1,0 +1,77 @@
+//# ---- Returns ----
+// At the end of BindFunctionBody, Binder needs to type-check the block against return type
+// Return is type-checked during BindReturnExpression, no special rules
+// With arm => type check against arm, no special rules
+// Without arm => If body diverges, always accept; otherwise: not all code paths return a value
+    
+fn NeverReturns() -> never
+{ 
+    Panic("");  // diverges here
+} // Block has no arm and diverges, so this type-checks   
+fn NeverReturns() -> i32
+{ Panic(""); }      // same
+fn NeverReturns() -> never
+    => Panic("");   // type-checks naturally
+fn NeverReturns() -> i32
+    => Panic("");   // type-checks naturally    (never is assignable to anything)
+
+fn Returns() -> never
+{ 
+    return;     // ERROR TypeMismatch (expect never, got none)
+}         // Block has no arm and diverges, so this type-checks  
+fn Returns() -> none
+{ return; } // Block has no arm and diverges, so this type-checks  
+fn Returns() -> none
+    => return; // type-checks naturally
+
+fn Returns() -> never
+{
+    return;
+    => 1        // ERROR TypeMismatch (expect never, got i32)
+}
+
+fn AllPathsReturn() -> i32
+{
+    if true => return 1;
+    else => return 2;       // type never; this diverges
+}   // Block has no arm and diverges => type-check pass!
+fn AllPathsReturn() -> i32
+{
+    if true { return 1; }
+    else { return 2; }       // type none, but diverges
+}    // Block has no arm and diverges => type-check pass!
+
+fn Invalid() -> i32
+{
+    if true => return 1; // type none
+    // Block has type none
+    
+    
+}   // ERROR not all code-paths return a value: Block has no arm and does not diverges
+fn WithArm() -> i32
+{
+    if true => return 1;
+    => 1    // type-checks normally
+}   
+
+public fn DoSthNone() -> none // -> none can be omitted
+{ DoSth(); }        // block evaluates to none -> type checks
+
+//# ---- Native functions ----
+// They carry a string into Mir/CodeGen, where the string is mapped against a 
+// function ExecuteNative(ReadOnlySpan<Value> arguments) -> Value
+// Bound checks are done by that method.
+// Types here must be correct, wrong types will lead to runtime crashes (during bound checks) or undefined behaviour.
+// Correct native fn names and signatures could be checked by a Compiler map (needs to be synchronized with runtime)
+
+// Each native function name can only have _exactly one overload_. Overloads are introduced
+// through axl code:
+
+public native("Print.Str") fn Print(arg: string) -> none;
+public native("Print.I32") fn Print(arg: i32) -> none;
+public native("Print.F32") fn Print(arg: f32) -> none;
+
+// But this does not work:
+public native("Convoluted") fn Convoluted(arg: string);
+public native("Convoluted") fn Convoluted(arg: i32);
+// It will lead to undefined behaviour or error (string pointer interpreted as string, e.g.).

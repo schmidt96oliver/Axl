@@ -1,0 +1,200 @@
+using Standard;
+
+// Expressions always evaluate to some value and might have side-effects.
+// Statements are meant only to have side-effects and do not produce a value.
+// Some expressions (like if without else, assignment) evaluate to the single instance of none.
+
+Statement   = VariableDeclaration ";"
+            | (FunctionDeclaration | RecordDeclaration) ";"?
+            | Expression ";"?
+// All declaration that end in an expression, must be terminated by ";".
+// Because `var a = { => callable } (1);` would be ambiguous
+// ";"? can only be omitted if syntax before ends in "}" (i.e. if it was an arm instead of block). It is always _allowed_.
+
+// All control flow expressions/statements will refer to ExpressionBody:
+ExpressionBody  = Block | Arm
+Block = "{" Statement* Arm? "}"
+Arm = Block | ("=>" Expression)
+
+// e.g.
+IfExpression = "if" Expression ExpressionBody ("else" (IfExpression | ExpressionBody))?
+Loop = "loop" ExpressionBody
+
+//# ------------ Basic expressions ------------
+// For all numeric types (i32, i64, f32, f64):
+PrintLine(1 + 1);
+PrintLine(1 - 1);
+PrintLine(1 * 1);
+PrintLine(1 / 1);       // i32 division returns floored i32;
+PrintLine(1 / 0);       // this panics (for i32, i64)
+PrintLine(1_f32 / 0_f32);   // this yields NaN
+
+PrintLine(1 < 2);
+PrintLine(1 <= 2);
+PrintLine(1 > 2);
+PrintLine(1 >= 2);
+
+// For int numeric types (i32, i64):
+PrintLine(1 & 1);       // binary and
+PrintLine(1 | 1);       // binary or
+PrintLine(!1);          // binary inversion
+
+// For bool:
+PrintLine(true and false);  // = control flow; first expr false => second not evaluated
+PrintLine(true or false); // = control flow; first expr true => second not evaluated
+PrintLine(not true);
+
+// For _any_ types:
+PrintLine(true == 1);
+PrintLine(true != 1);
+// Short-circuits internally on different types (Mir/ByteCode can only do bitwise comparison)
+// For primitives: _value-equality_ (i32, i64, f32, f64, bool)
+// For strings/records/others: _reference-equality_ (inside Mir/ByteCode this is value equality, since value is a pointer)
+// When trait `Equals` is implemented: operands are checked for that and trait is used (specifics tbd)
+
+
+//# ------------ Blocks ------------
+// Blocks are expressions!
+// ExpressionBody = Block | Arm
+// Block = "{" Statement* Arm? "}"
+// Arm = "=>" Expression
+
+// Everywhere an expression body is expected, there can also be a single-expression arm :).
+
+// Blocks
+{ 
+    DoSth(); 
+}    // evaluates to none
+{ 
+    DoSth(); 
+};      // semicolon allowed
+{ 
+    DoSth(); 
+    => "A" // no semicolon allowed
+} // evaluates to "A"
+{ 
+    DoSth(); 
+    => "A"
+}; // per grammar: ";" allowed but not required
+
+// Arms
+=> 1;       // is a valid, if useless expression
+{ => 1 }    // equivalent to this
+{ => 1 };   // or this
+
+//# ------------ If ------------
+if 1 < 2 { Do(); }
+else { Do(); }  // evaluates to none (every block evaluates to none)
+
+if 1 < 2 { => "A" }
+else { => "B" } // type string; == "B"
+
+if 1 < 2 { => "A" } // type none (always none, if there is no else)
+
+// Arm forms are allowed as well (semicolons per grammar)
+if 1 < 2 => "A" else => "B";                // type string == "A"
+if 1 < 2 { Do(); } else { Do(); }           // type none
+if 1 < 2 { Do(); } else { Do(); };          // type none
+if 1 < 2 => Do() else => Do();              // type none
+
+if 1 < 2 { => "A" } else { => "B" }     // ERROR type string => semicolon required
+
+// Nested if expression with brackets
+var a = if 1 < 2 
+        { 
+           => if a > b { => "A1"}
+              else { => "A2"} 
+        }
+        else if 1 < 3 
+        { => "B" }
+        else 
+        { => "C" };
+            
+var a = if 1 < 2 { => if true { => "A" } else { => "B" } } // a is type none!
+
+// No brackets
+var a = if 1 < 2 
+           => if a > b => "A1"
+              else => "A2"
+        else if 1 < 3 
+            => "B"
+        else 
+            => "C";
+
+// If grabs the closes else
+var a = if 1 < 2 => if true => "A" else => "B" // a is type none!
+
+//# ------------ Loop ------------
+// loop evaluate to type:
+// no break             => never
+// break without value  => none
+// break with value     => value type
+
+// BindLoop will
+// Collect all break expressions in its LoopContext
+// Type-check them after binding the entire loop
+// That way, it can verify that all breaks have the same type.
+// And if they don't, then squiggle all breaks.
+// It will stupidly collect all break that break this loop, without doing dataflow
+// or anything
+loop 
+{
+    if false => break;
+}   // type none, even though the loop never breaks
+loop 
+{
+    if false => "";
+}   // type string, even though the loop never breaks
+
+
+// Type mismatch inside loop
+var str = "";
+var i = 0;
+var result = loop
+    {
+        str = "{str}{i}";
+        
+        if i >= 3 => break str;     // ERROR Cannot find loop type
+        else => break i;            // ERROR Cannot find loop type
+        i += 1;
+    };
+    
+// Expected type weaves through to break
+var result: i64 =   // expected type i64 weaves through block -> loop -> break where it disambiguates the number literal type
+    {
+        var i = 0;
+        => loop
+            {
+                if i >= 1 => break 4;   // Valid
+                // expected type is used to make 4 an i64.
+                
+                i += 1;
+            }
+    };
+
+// None returning loop
+var a = loop { break; };    // a is type none
+
+
+// Never returning loop
+var a = loop {};    // a is type never
+
+fn RunForever() -> never
+    => loop
+    {
+        // Do some special stuff in here
+        continue;   // works, starts the next iteration; has no effect on loop type
+    };
+
+fn RunForever() -> never
+{
+    loop { }
+}   // ERROR TypeMismatch (expect never, got none), because divergence != never type
+fn RunForever() -> never
+{
+    => loop { }
+}   // Is valid though
+
+// Expression arms are valid as well
+loop => Print("a");
+// Just prints a forever
