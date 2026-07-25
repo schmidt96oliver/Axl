@@ -1,26 +1,49 @@
 # ------------------------------------ Axl Project ------------------------------------
                                        ≽(◕ ᴗ ◕)≼
 
-* see Claude chat for refinements
+# Notes
 
-* continue sketching arrays
-* struture spec
-* sketch first features (left to right)
-* sketch rough impl plan
+# First features
+* i32, i64, f32, f64, bool, string
+* literals integral, float, char
+* expressions: numeric, comparison, boolean
+* variables
+* blocks, if, loop (with break expression, continue), return
+* none, never
+* string formatting, escaped
+* native functions: Print, PrintLine, ToString
+* hoisted, overloaded functions
+* multi-file modules
 
-* prime Claude (only boilerplate work; ask if there would be learning opportunities; predecessor LoxNet; review pacing memory from LoxNet)
+# Implementation Requirements
+1. Testing
+   * validate diagnostic code & token kinds
+   * accept mode
+   * multi-file test cases
 
-# Requirements
-1. Lexer
+2. Lexer
    * Number literals: 0x, 0b; suffixes; underscores;
-   * Char literals: ' ', escaped
    * String lilterals: formatted, escaped
-   * Reserved keywords; never as contextual keyword. Parser can replace it by never token
+   * string escapes: \n \r \t \{ \} \\ \"
+   * keywords: fn var module public private native return if else loop break continue and or not true false i32 f32 i64 f64 bool string char none
+   * never: = identifier token with contextual kind. Parser replaces it to never kind
+   * symbols: . , ; : -> =>    <= >= + - * / == !=   ( ) { } < >   "
+   * comments, whitespace, newline, error
+3. Parser
+   * "=>" syntax according to ExpressionsAndStatements.axl
+   * "<>" generics disambiguation
+   * Handle contextual keyword never
+4. Binder
+   * expected type propagation: number literals
+   * loop break type checks
+   * divergence tracking, definite return
+   * never type (see Never.axl)
+   * native fn validation
+5. Lowering
 
 # Implementation Ideas
 
 1. Lexer -> TokenList
-   * Interpolated+escaped strings
    * ?? Strongly typed (rather than TokenKind enum)
    * ?? Token carries Identifier struct/StringData (with escapes)/NumberLiteralData, ...
    * needs contextual keywords (`never`) that Lsp can  highlight correctly
@@ -30,7 +53,7 @@
    * maps Name to DeclarationSyntax
    * ?? how find all extend members
    * ?? how to represent symbols (lazy objects, just a ref?)
-   * -> Type = NeverType | NonNeverType (SoundType) to keep them apart structurally
+   * -> Type = NeverType |  NonNeverType (SoundType) to keep them apart structurally
 4. Binding -> Hir; queried by SemanticModel (answers questions. Always answers the same.)
    * ?? Binding per declaration => ModuleBinder, RecordBinder, FunctionBinder, ... They dont go into declarations themselves. Creates by SemanticModel
    * SemanticModel needs to protect against cyclic refs
@@ -39,7 +62,7 @@
 6. CodeGen -> ByteCode
 7. VirtualMachine
 
-# MIR
+# Mir Claude sketch
 
 ## TLDR
 
