@@ -4,8 +4,6 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Axl", "src\Axl\Axl.csproj",
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Docs", "Docs", "{93D9460F-DEA7-45AC-98B4-634B6D03C650}"
 	ProjectSection(SolutionItems) = preProject
-		docs\WIP\Arrays.axl = docs\WIP\Arrays.axl
-		docs\WIP\Iterators.axl = docs\WIP\Iterators.axl
 		docs\ExpressionsAndStatements.axl = docs\ExpressionsAndStatements.axl
 		docs\Functions.axl = docs\Functions.axl
 		docs\Never.axl = docs\Never.axl
@@ -15,6 +13,12 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Docs", "Docs", "{93D9460F-D
 		docs\PROJECT.md = docs\PROJECT.md
 		docs\Strings.axl = docs\Strings.axl
 		docs\Tests.taxl = docs\Tests.taxl
+	EndProjectSection
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "WIP", "WIP", "{F4E253DC-B458-42A3-BCC9-96CC5578E04F}"
+	ProjectSection(SolutionItems) = preProject
+		docs\WIP\Arrays.axl = docs\WIP\Arrays.axl
+		docs\WIP\Iterators.axl = docs\WIP\Iterators.axl
 	EndProjectSection
 EndProject
 Global
@@ -31,5 +35,8 @@ Global
 		{247195A1-61F7-4744-9584-3DE5D5091272}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{247195A1-61F7-4744-9584-3DE5D5091272}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{247195A1-61F7-4744-9584-3DE5D5091272}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(NestedProjects) = preSolution
+		{F4E253DC-B458-42A3-BCC9-96CC5578E04F} = {93D9460F-DEA7-45AC-98B4-634B6D03C650}
 	EndGlobalSection
 EndGlobal
