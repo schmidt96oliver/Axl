@@ -1,0 +1,12 @@
+﻿public enum Result<T>
+{
+    case Ok<T>(Payload: T);
+    case Error(Message: string);
+    
+    public fn GetOrPanic(this) -> T
+        => match this
+        {
+            Ok(payload: T) => payload,
+            Error(m: string) => Panic(m),
+        };
+}
