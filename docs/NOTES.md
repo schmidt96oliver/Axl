@@ -28,7 +28,7 @@
    * keywords: fn var module public private native return if else loop break continue and or not true false i32 f32 i64 f64 bool string char none
    * never: = identifier token with contextual kind. Parser replaces it to never kind
    * symbols: . , ; : -> =>  = += -=    <= >= + - * / == !=   ( ) { } < >   "
-   * comments, whitespace, newline, error
+   * comments, whitespace (newline is whitespace), error
 3. Parser
    * "=>" syntax according to ExpressionsAndStatements.axl
    * "<>" generics disambiguation

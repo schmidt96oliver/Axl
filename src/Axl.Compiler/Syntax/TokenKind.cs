@@ -5,7 +5,6 @@ public enum TokenKind
     Identifier,
     Comment,
     Whitespace,
-    Newline,
     Error,
     
     // --- Keywords
