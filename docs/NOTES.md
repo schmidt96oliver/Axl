@@ -27,7 +27,7 @@
    * string escapes: \n \r \t \{ \} \\ \"
    * keywords: fn var module public private native return if else loop break continue and or not true false i32 f32 i64 f64 bool string char none
    * never: = identifier token with contextual kind. Parser replaces it to never kind
-   * symbols: . , ; : -> =>    <= >= + - * / == !=   ( ) { } < >   "
+   * symbols: . , ; : -> =>  = += -=    <= >= + - * / == !=   ( ) { } < >   "
    * comments, whitespace, newline, error
 3. Parser
    * "=>" syntax according to ExpressionsAndStatements.axl
@@ -42,6 +42,10 @@
 5. Lowering
 
 # Implementation Ideas
+Doc comments:
+   * "<c>" = Code, single line
+   * "<code>" = Code, multi line
+   * "<example>" "<exception>"
 
 1. Lexer -> TokenList
    * ?? Strongly typed (rather than TokenKind enum)
