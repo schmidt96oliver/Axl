@@ -41,6 +41,15 @@ public readonly record struct SourceSpan
         return new SourceSpan(fileId, first, end - first);
     }
 
+    public static SourceSpan FromTo(SourceSpan first, SourceSpan last)
+    {
+        if (first.FileId != last.FileId)
+            throw new ArgumentException("Spans must have same FileId.", nameof(first));
+        
+        Guard.InRange(first.First, first.First <= last.End);
+        return FromTo(first.FileId, first.First, last.End);
+    }
+
     public static SourceSpan FromLength(FileId fileId, int first, int length)
     {
         Guard.InRange(first, first >= 0);

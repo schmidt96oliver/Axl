@@ -1,10 +1,11 @@
 ﻿namespace Axl.Compiler.Syntax;
 
-public class Token
+public class Token : SyntaxElement
 {
     public TokenKind Kind { get; }
-    public SourceSpan Span { get; }
-    
+    public override SourceSpan Span { get; }
+    public override SourceSpan? SyntaxSpan => Kind.IsTrivia ? null : Span;
+
     /// <summary>
     /// Some tokens carry a value and must be constructed as a derived type
     /// like <see cref="IdentifierToken"/>, <see cref="NumberLiteralToken"/>, <see cref="StringTextToken"/>.
