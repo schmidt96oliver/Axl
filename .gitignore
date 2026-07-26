@@ -1,5 +1,6 @@
 artifacts/
 bin/
 obj/
+benchmarks/
 .idea/
 .claude/
