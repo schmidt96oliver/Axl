@@ -3,8 +3,6 @@
 
 # Notes
 
-* investigate #addfile #endfile inside *.taxl
-
 ## Diagnostics
 
 * feat: Diagnostics
