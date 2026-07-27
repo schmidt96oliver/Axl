@@ -112,7 +112,7 @@ public sealed class SourceFile
 
 
 
-    public ReadOnlySpan<char> GetSpan(SourceSpan span)
+    public ReadOnlySpan<char> GetTextSpan(SourceSpan span)
     {
         Guard.InRange(span.First, span.First >= 0);
         Guard.InRange(span.Length, span.Length <= Text.Length);
@@ -120,7 +120,7 @@ public sealed class SourceFile
     }
     
     public string GetText(SourceSpan span)
-        => GetSpan(span).ToString();
+        => GetTextSpan(span).ToString();
     
 
     private ImmutableArray<LineInfo> GetLines()
