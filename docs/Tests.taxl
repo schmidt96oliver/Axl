@@ -2,19 +2,23 @@
 // Formatter is tested using snapshot testing: Verify.Net
 // Accept will be environment flag with different Run configuration
 
+// Standalone directive: _Only_ whitespace before; everything after is consumed
+// Inline directive: Anything before; everything after is consumed
+// Block directive: Everything inside turned into text
+
 // ------- Directives ------
 // All diagnostics must be ignored or expected in all configurations!
 
-//#runvm-pass       // Compiles to bytecode, no errors; VM runs without errors
-//#runvm-panic     // Compiles to bytecode, no errors; VM runs and panics
+//#runvm pass       // Compiles to bytecode, no errors; VM runs without errors
+//#runvm panic     // Compiles to bytecode, no errors; VM runs and panics
 
-//#runmir-pass      // Compiles to Mir, no errors; MirInterpreter runs without errors
-//#runmir-panic     // Compiles to Mir, no errors; MirInterpreter runs and panics
+//#runmir pass      // Compiles to Mir, no errors; MirInterpreter runs without errors
+//#runmir panic     // Compiles to Mir, no errors; MirInterpreter runs and panics
 //#optimize         // Runs optimizations on Mir
 //#noprelude        // Disables importing the prelude
 
-//#compile-pass     // Compiles, no errors
-//#compile-fail     // Compiles, with errors
+//#compile pass     // Compiles, no errors
+//#compile fail     // Compiles, with errors
 
 //#lexer            // Runs only the lexer; input must be matched
 //#parser           // Runs lexer+parser; syntax tree must be matched
