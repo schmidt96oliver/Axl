@@ -3,6 +3,9 @@
 
 # Notes
 
+* SourceFile.FilePath => exists or null
+* investigate #addfile #endfile inside *.taxl
+
 ## Diagnostics
 
 * feat: Diagnostics
