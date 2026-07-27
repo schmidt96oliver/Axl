@@ -3,12 +3,6 @@
 
 # Notes
 
-## Diagnostics
-
-* feat: Diagnostics
-  * ?? Which payload (symbols, syntax, ...)
-  * ?? DiagnosticBag source gen
-
 ## Taxl Parser
 * Tokens/Diagnostics with payload: esp. test string data (with escapes)
 * feat: DirectiveParser => raw directives
