@@ -16,7 +16,7 @@ public class SourceFileTests
     [InlineData("a\nbc\n\nde", "a\n", "bc\n", "\n", "de")]
     private void Lines_CorrectTextAndSpan(string text, params string[] expectedLineTexts)
     {
-        var sourceFile = SourceFile.FromText(path: "", text);
+        var sourceFile = SourceFile.FromText(text);
         
         Assert.False(sourceFile.Lines.IsDefault);
         
@@ -44,7 +44,7 @@ public class SourceFileTests
     [InlineData("012\n45\n7", 7, 2)]
     private void GetLine_Correct(string text, int index, int expectedLineIndex)
     {
-        var sourceFile = SourceFile.FromText(path: "", text);
+        var sourceFile = SourceFile.FromText(text);
         
         Assert.False(sourceFile.Lines.IsDefault);
 
@@ -68,7 +68,7 @@ public class SourceFileTests
     [InlineData("012\n45\n7", 7, 2, 0)]
     private void GetLinePosition_Correct(string text, int index, int expectedLine, int expectedColumn)
     {
-        var sourceFile = SourceFile.FromText(path: "", text);
+        var sourceFile = SourceFile.FromText(text);
         
         Assert.False(sourceFile.Lines.IsDefault);
 
@@ -81,7 +81,7 @@ public class SourceFileTests
     private void Lines_EvaluatedOnce()
     {
         var text = "012\n45\n7";
-        var sourceFile = SourceFile.FromText(path: "", text);
+        var sourceFile = SourceFile.FromText(text);
 
         var array1 = sourceFile.Lines;
         var array2 = sourceFile.Lines;

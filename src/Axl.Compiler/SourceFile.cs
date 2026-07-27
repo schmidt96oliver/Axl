@@ -10,7 +10,11 @@ public readonly record struct LineInfo(int LineNumber, SourceSpan Span)
 
 public sealed class SourceFile
 {
-    public string Path { get; }
+    /// <summary>
+    /// Path to the existing file in the file system or
+    /// <c>null</c> if this instance was not read from a file.
+    /// </summary>
+    public string? Path { get; }
 
     public string Text { get; }
 
@@ -25,7 +29,7 @@ public sealed class SourceFile
     }
 
 
-    private SourceFile(string path, string text)
+    private SourceFile(string? path, string text)
     {
         Path = path;
         Text = text;
@@ -37,9 +41,9 @@ public sealed class SourceFile
         return new SourceFile(path, text);
     }
 
-    public static SourceFile FromText(string path, string text)
+    public static SourceFile FromText(string text)
     {
-        return new SourceFile(path, text);
+        return new SourceFile(null, text);
     }
     
 
