@@ -76,4 +76,21 @@ public class SourceFileTests
         Assert.Equal(linePos.Line, expectedLine);
         Assert.Equal(linePos.Column, expectedColumn);
     }
+
+    [Fact]
+    private void Lines_EvaluatedOnce()
+    {
+        var text = "012\n45\n7";
+        var sourceFile = SourceFile.FromText(path: "", text);
+
+        var array1 = sourceFile.Lines;
+        var array2 = sourceFile.Lines;
+        
+        Assert.False(array1.IsDefault);
+        Assert.False(array2.IsDefault);
+        
+        // ImmutableArray uses reference equality on its internal array.
+        // So if a new one had been constructed, this will fail.
+        Assert.Equal(array1, array2);
+    }
 }
