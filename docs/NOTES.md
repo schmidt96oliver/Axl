@@ -16,8 +16,6 @@
   * subclasses (e.g. LexerTaxl) have .Run, .RunAccept
 * Lsp .taxl need different diagnostic (lexer, parser, compile=run)
 
-* C#: ?? [Closed] SourceGen
-
 # First features
 * i32, i64, f32, f64, bool, string
 * literals integral, float, char
