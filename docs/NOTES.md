@@ -3,6 +3,21 @@
 
 # Notes
 
+## Diagnostics
+
+* feat: Diagnostics
+  * ?? Which payload (symbols, syntax, ...)
+  * ?? DiagnosticBag source gen
+
+## Taxl Parser
+* Tokens/Diagnostics with payload: esp. test string data (with escapes)
+* feat: DirectiveParser => raw directives
+* feat: TaxlFile.FromFile/FromText parses and validates
+  * subclasses (e.g. LexerTaxl) have .Run, .RunAccept
+* Lsp .taxl need different diagnostic (lexer, parser, compile=run)
+
+* C#: ?? [Closed] SourceGen
+
 # First features
 * i32, i64, f32, f64, bool, string
 * literals integral, float, char
