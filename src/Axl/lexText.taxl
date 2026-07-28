@@ -1,4 +1,6 @@
 // Run a lexer test
+#do+@@@* #someelse
 #begin
-
+bla //#expect-diagnostic Bla "" // comment
+//#expect-diagnostic Bla "" // comment
 #end

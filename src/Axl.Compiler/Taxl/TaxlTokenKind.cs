@@ -3,6 +3,7 @@
 public enum TaxlTokenKind
 {
     Directive,
+    InTextDirective,
     Identifier,
     String,
     AxlText,

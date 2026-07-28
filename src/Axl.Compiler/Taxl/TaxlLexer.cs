@@ -17,6 +17,8 @@ public sealed class TaxlLexer
         AddFileSeen,
         AxlFromBegin,
         AxlFromAddFile,
+        AxlDirectiveInBeginText,
+        AxlDirectiveInAddFileText,
     }
     
     private readonly SourceView _source;
@@ -81,6 +83,8 @@ public sealed class TaxlLexer
         
         var span = _source.GetSpanFromTo(_start, _next);
         _tokens.Add(new TaxlToken(span, kind, _source.GetText(span)));
+
+        _start = _next;
     }
 
     private void AddErrorToken(ErrorGuaranteed _, int insertIndex, int start, int end)
@@ -90,67 +94,83 @@ public sealed class TaxlLexer
     }
 
     
-    private ImmutableArray<TaxlToken> Lex()
+    private void LexOutsideTaxl()
     {
-        // We wrap lexing in a loop to collect erroneous characters
-        // into a single error token.
-        var text = _source.TextSpan;
+        // Try Lex
+        // Switch last token:
+        // #begin => begin seen!
+        // #end and begin seen => create Text without lexing
+        // \n and begin seen => LexText
+    }
+
+    private void LexText()
+    {
+        // Advance characters
+        // on "//#" => TryLex until newline
+        // on #end => Stop (was triggered from LexTaxl)
+    }
+
+    private void LexInTextTaxl()
+    {
         
-        var loopStart = _start;
-        var errorTokenPosition = _tokens.Count;
-        
-        Debug.Assert(_start == _next);
+    }
+
+    private void LexErrorAndSingle(ReadOnlySpan<char> text)
+    {
+        // Lexes single token and possible error before.
+
+        var errorStart = _next;
         while (_next < text.Length)
         {
-            // --- Inside a block?
-            if (_mode is Mode.AxlFromBegin or Mode.AxlFromAddFile)
-            {
-                LexInsideBlock(text);
-                loopStart = _next;
-                errorTokenPosition = _tokens.Count;
-                _start = _next;
-                continue;
-            }
-            
-            // --- Lex
-            if (TryLex(text))
-            {
-                // --- Error token before?
-                if (_start > loopStart)
-                    AddError();
+            var errorEnd = _next;
 
-                loopStart = _next;
-                errorTokenPosition = _tokens.Count;
+            if (!TryLexSingle(text))
+            {
+                // We did not get a token here. Advance one character
+                // and start lexing the next one.
+                Advance(text);
                 _start = _next;
             }
             else
             {
-                // We could not lex a token here, so its an error.
-                Advance(text);
-                _start = _next;
+                // There was an error before the token that has been added,
+                // so insert it before.
+                if (errorEnd > errorStart)
+                {
+                    var span = _source.GetLocationFromTo(errorStart, errorEnd);
+                    var proof = _diagnosticBag.ReportError(new Diagnostic.InvalidCharacters(span));
+                    AddErrorToken(proof, insertIndex: _tokens.Count - 1, errorStart, errorEnd);
+                }
+
+                return;
             }
-            
-            
         }
         
-
-        // --- End of file
-        // Add error if there was one
-        if (_start > loopStart)
-            AddError();
-
-        return _tokens.DrainToImmutable();
-        
-        
-        void AddError()
+        // We hit the end, maybe there was an error still left
+        if (_next > errorStart)
         {
-            var span = _source.GetLocationFromTo(loopStart, _start);
+            var span = _source.GetLocationFromTo(errorStart, _next);
             var proof = _diagnosticBag.ReportError(new Diagnostic.InvalidCharacters(span));
-            AddErrorToken(proof, insertIndex: errorTokenPosition, loopStart, _start);
+            AddErrorToken(proof, insertIndex: _tokens.Count - 1, errorStart, _next);
+            _start = _next;
+        }
+    }
+    
+    
+    private void Lex()
+    {
+        var text = _source.TextSpan;
+        
+        while (_next < text.Length)
+        {
+            if (_mode is Mode.AxlFromAddFile or Mode.AxlFromBegin)
+                LexInsideBlock(text);
+            else
+                LexErrorAndSingle(text);
         }
     }
 
-    private bool TryLex(ReadOnlySpan<char> text)
+    private bool TryLexSingle(ReadOnlySpan<char> text)
     {
         switch (Peek(text))
         {
@@ -255,6 +275,12 @@ public sealed class TaxlLexer
         // Advance as long, as we find end of endblock directive
         while (Peek(text) is char c)
         {
+            // --- In-text directive?
+            if (Match(text, "//#"))
+            {
+                
+            }
+            
             // --- In block directive?
             if (c is '#')
             {
@@ -313,5 +339,9 @@ public sealed class TaxlLexer
     }
 
     public static ImmutableArray<TaxlToken> Lex(SourceView source, DiagnosticBag diagnosticBag)
-        => new TaxlLexer(source, diagnosticBag).Lex();
+    {
+        var lexer = new TaxlLexer(source, diagnosticBag);
+        lexer.Lex();
+        return lexer._tokens.DrainToImmutable();
+    }
 }
