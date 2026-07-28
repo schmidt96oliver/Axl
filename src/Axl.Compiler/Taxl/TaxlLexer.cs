@@ -240,33 +240,60 @@ public sealed class TaxlLexer
 
     private void LexInsideBlock(ReadOnlySpan<char> text)
     {
+        Debug.Assert(_mode is Mode.AxlFromAddFile or Mode.AxlFromBegin);
+        
         // Advance as long, as we find end of endblock directive
         while (Peek(text) is char c)
         {
-            if (text[_next..].StartsWith("#end") || text[_next..].StartsWith("#endfile"))
+            // --- In block directive?
+            if (c is '#')
             {
-                // We have found the end!
-                // Now we have consumed whitespace and the last newline, which we need to back up.
-                // We know, that _next is valid, so we just search going backward.
-                while (_next > _start)
+                // We might have a directive here. Parse it and check
+                var directiveStart = _next;
+                Advance(text);
+                while (Peek(text) is >= 'a' and <= 'z' or >= 'A' and <= 'Z' or '-' or '_')
+                    Advance(text);
+                
+                
+                //    #end asd
+                
+                // --- Ends the block?
+                var endsBlock = _mode is Mode.AxlFromBegin
+                    ? text[directiveStart.._next] is "#end"
+                    : text[directiveStart.._next] is "#endfile";
+                if (endsBlock)
                 {
-                    if (text[_next - 1] is ' ')
-                        _next--;
-                    else if (text[_next - 1] is '\n')
+                    // We have found the end!
+                    // Now we have consumed whitespace and the last newline, which we need to back up.
+                    // We know, that _next is valid, so we just search going backward.
+                    
+                    // Back up before the start, so that the directive goes through normal lexing.
+                    _next = directiveStart;
+                    while (_next > _start)
                     {
-                        // Back up and then stop, because we only want the last newline.
-                        _next--;
-                        break;
+                        if (text[_next - 1] is ' ')
+                            _next--;
+                        else if (text[_next - 1] is '\n')
+                        {
+                            // Back up and then stop, because we only want the last newline.
+                            _next--;
+                            break;
+                        }
+                        else
+                            break;
                     }
-                    else
-                        break;
+                
+                    AddToken(TaxlTokenKind.AxlText);
+                    _mode = Mode.Taxl;
+                    return;
                 }
                 
-                AddToken(TaxlTokenKind.AxlText);
-                _mode = Mode.Taxl;
-                return;
+                // Otherwise, we have advanced everything and discard it.
+                // That will attach it to the AxlBlock token
+                continue;
             }
 
+            
             Advance(text);
         }
         
