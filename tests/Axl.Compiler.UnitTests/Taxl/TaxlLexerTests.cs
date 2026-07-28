@@ -23,4 +23,17 @@ public partial class TaxlLexerTests(ITestOutputHelper output)
                     tokenKind is not (TaxlTokenKind.Whitespace or TaxlTokenKind.Comment or TaxlTokenKind.Newline))
         ]);
     }
+    public static void AssertKinds(string input, params TaxlTokenKind[] expectedKinds)
+    {
+        TestContext.Current.TestOutputHelper?.WriteLine("--- Input ---");
+        TestContext.Current.TestOutputHelper?.WriteLine(input);
+        TestContext.Current.TestOutputHelper?.WriteLine("--- Expected Tokens ---");
+        TestContext.Current.TestOutputHelper?.WriteLine(string.Join(", ", expectedKinds));
+        
+        
+        var diagnostics = new DiagnosticBag();
+        var lex = TaxlLexer.Lex(SourceView.Whole(SourceFile.FromText(input)), diagnostics);
+        
+        Assert.Equal(expectedKinds, lex.Select(token => token.Kind));
+    }
 }

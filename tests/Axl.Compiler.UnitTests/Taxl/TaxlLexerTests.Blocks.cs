@@ -58,22 +58,58 @@ public partial class TaxlLexerTests
             => AssertKindsIgnoreTrivia(input, expectedKinds);
 
         [Theory]
-        [InlineData("#begin#end", TaxlTokenKind.Directive, TaxlTokenKind.AxlText, TaxlTokenKind.Directive)]
-        [InlineData("#begin #end", TaxlTokenKind.Directive, TaxlTokenKind.AxlText, TaxlTokenKind.Directive)]
-        [InlineData("#begin Test #end", TaxlTokenKind.Directive, TaxlTokenKind.Identifier, TaxlTokenKind.AxlText,
+        [InlineData("#begin#end", 
+            TaxlTokenKind.Directive,
+            TaxlTokenKind.AxlText, 
+            TaxlTokenKind.Directive)]
+        [InlineData("#begin #end", 
+            TaxlTokenKind.Directive, 
+            TaxlTokenKind.Whitespace,
+            TaxlTokenKind.AxlText, 
+            TaxlTokenKind.Directive)]
+        [InlineData("#begin \"Name.axl\" #end", 
+            TaxlTokenKind.Directive, 
+            TaxlTokenKind.Whitespace,
+            TaxlTokenKind.String,
+            TaxlTokenKind.Whitespace,
+            TaxlTokenKind.AxlText, 
+            TaxlTokenKind.Directive)]
+        [InlineData("#begin Test #end", 
+            TaxlTokenKind.Directive, 
+            TaxlTokenKind.Whitespace,
+            TaxlTokenKind.Identifier, 
+            TaxlTokenKind.Whitespace,
+            TaxlTokenKind.AxlText,
             TaxlTokenKind.Directive)]
         public void SameLineBeginAndEnd_ProducesAxlText(string input, params TaxlTokenKind[] expectedKinds)
-            => AssertKindsIgnoreTrivia(input, expectedKinds);
+            => AssertKinds(input, expectedKinds);
 
         [Theory]
-        [InlineData("#addfile#endfile", TaxlTokenKind.Directive, TaxlTokenKind.AxlText, TaxlTokenKind.Directive)]
-        [InlineData("#addfile #endfile", TaxlTokenKind.Directive, TaxlTokenKind.AxlText, TaxlTokenKind.Directive)]
-        [InlineData("#addfile \"Name.axl\" #endfile", TaxlTokenKind.Directive, TaxlTokenKind.String,
-            TaxlTokenKind.AxlText, TaxlTokenKind.Directive)]
-        [InlineData("#addfile Test #endfile", TaxlTokenKind.Directive, TaxlTokenKind.Identifier, TaxlTokenKind.AxlText,
+        [InlineData("#addfile#endfile", 
+            TaxlTokenKind.Directive,
+            TaxlTokenKind.AxlText, 
+            TaxlTokenKind.Directive)]
+        [InlineData("#addfile #endfile", 
+            TaxlTokenKind.Directive, 
+            TaxlTokenKind.Whitespace,
+            TaxlTokenKind.AxlText, 
+            TaxlTokenKind.Directive)]
+        [InlineData("#addfile \"Name.axl\" #endfile", 
+            TaxlTokenKind.Directive, 
+            TaxlTokenKind.Whitespace,
+            TaxlTokenKind.String,
+            TaxlTokenKind.Whitespace,
+            TaxlTokenKind.AxlText, 
+            TaxlTokenKind.Directive)]
+        [InlineData("#addfile Test #endfile", 
+            TaxlTokenKind.Directive, 
+            TaxlTokenKind.Whitespace,
+            TaxlTokenKind.Identifier, 
+            TaxlTokenKind.Whitespace,
+            TaxlTokenKind.AxlText,
             TaxlTokenKind.Directive)]
         public void SameLineAddFileAndEndFile_ProducesAxlText(string input, params TaxlTokenKind[] expectedKinds)
-            => AssertKindsIgnoreTrivia(input, expectedKinds);
+            => AssertKinds(input, expectedKinds);
 
         [Fact]
         public void LooksLikeEndDirectiveInScriptBlock_InAxlText()
