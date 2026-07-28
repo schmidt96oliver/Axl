@@ -1,11 +1,4 @@
 // Run a lexer test
-#lexer
-#begin #begin
 #begin
-#begin
-#end
 
-#addfile "Test"
-#end    
-#begin
-#endfile
+#end

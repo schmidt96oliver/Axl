@@ -1,10 +1,15 @@
-﻿using Axl.Compiler.Diagnostics;
+﻿using System.Collections.Immutable;
+using Axl.Compiler.Diagnostics;
 using Axl.Compiler.Taxl;
 
 namespace Axl.Compiler.UnitTests.Taxl;
 
 public partial class TaxlLexerTests(ITestOutputHelper output)
 {
+    public static ImmutableArray<TaxlToken> RunLexer(string input)
+        => TaxlLexer.Lex(SourceView.Whole(SourceFile.FromText(input)), new DiagnosticBag());
+    
+    
     public static void AssertKindsIgnoreTrivia(string input, params TaxlTokenKind[] expectedKinds)
     {
         TestContext.Current.TestOutputHelper?.WriteLine("--- Input ---");
@@ -12,9 +17,7 @@ public partial class TaxlLexerTests(ITestOutputHelper output)
         TestContext.Current.TestOutputHelper?.WriteLine("--- Expected Tokens (without trivia) ---");
         TestContext.Current.TestOutputHelper?.WriteLine(string.Join(", ", expectedKinds));
         
-        
-        var diagnostics = new DiagnosticBag();
-        var lex = TaxlLexer.Lex(SourceView.Whole(SourceFile.FromText(input)), diagnostics);
+        var lex = RunLexer(input);
         
         Assert.Equal(expectedKinds,
         [
@@ -30,9 +33,7 @@ public partial class TaxlLexerTests(ITestOutputHelper output)
         TestContext.Current.TestOutputHelper?.WriteLine("--- Expected Tokens ---");
         TestContext.Current.TestOutputHelper?.WriteLine(string.Join(", ", expectedKinds));
         
-        
-        var diagnostics = new DiagnosticBag();
-        var lex = TaxlLexer.Lex(SourceView.Whole(SourceFile.FromText(input)), diagnostics);
+        var lex = RunLexer(input);
         
         Assert.Equal(expectedKinds, lex.Select(token => token.Kind));
     }

@@ -130,6 +130,64 @@ public partial class TaxlLexerTests
         public void EndFileDirectiveInScriptBlock_InAxlText()
             => AssertKindsIgnoreTrivia("#begin\n#endfile\n#end", 
                 TaxlTokenKind.Directive, TaxlTokenKind.AxlText, TaxlTokenKind.Directive);
+
+
+        [Theory]
+        [InlineData("#begin A\n#end",
+            TaxlTokenKind.Directive,
+            TaxlTokenKind.Identifier,
+            TaxlTokenKind.AxlText,
+            TaxlTokenKind.Directive)]
+        [InlineData("#begin \"A\"\n#end",
+            TaxlTokenKind.Directive,
+            TaxlTokenKind.String,
+            TaxlTokenKind.AxlText,
+            TaxlTokenKind.Directive)]
+        [InlineData("#begin \"A\" A B C  \n#end",
+            TaxlTokenKind.Directive,
+            TaxlTokenKind.String, TaxlTokenKind.Identifier, TaxlTokenKind.Identifier, TaxlTokenKind.Identifier,
+            TaxlTokenKind.AxlText,
+            TaxlTokenKind.Directive)]
+        public void BeginWithSameLineValues_BeforeAxlText(string input, params TaxlTokenKind[] expectedKinds)
+            => AssertKindsIgnoreTrivia(input, expectedKinds);
+        
+
+        [Theory]
+        [InlineData("#addfile A\n#endfile",
+            TaxlTokenKind.Directive,
+            TaxlTokenKind.Identifier,
+            TaxlTokenKind.AxlText,
+            TaxlTokenKind.Directive)]
+        [InlineData("#addfile \"A\"\n#endfile",
+            TaxlTokenKind.Directive,
+            TaxlTokenKind.String,
+            TaxlTokenKind.AxlText,
+            TaxlTokenKind.Directive)]
+        [InlineData("#addfile \"A\" A B C  \n#endfile",
+            TaxlTokenKind.Directive,
+            TaxlTokenKind.String, TaxlTokenKind.Identifier, TaxlTokenKind.Identifier, TaxlTokenKind.Identifier,
+            TaxlTokenKind.AxlText,
+            TaxlTokenKind.Directive)]
+        public void AddFileWithSameLineValues_BeforeAxlText(string input, params TaxlTokenKind[] expectedKinds)
+            => AssertKindsIgnoreTrivia(input, expectedKinds);
+
+
+        [Theory]
+        [InlineData("#begin#end", "")]
+        [InlineData("#begin\n#end", "")]
+        [InlineData("#begin\n\n#end", "")]
+        [InlineData("#begin\n\n\n#end", "\n")]
+        [InlineData("#begin\nabc\n#end", "abc")]
+        [InlineData("#begin\n\nabc\n\n#end", "\nabc\n")]
+        [InlineData("#begin\n abc \n#end", " abc ")]
+        [InlineData("#begin\n abc \n  #end", " abc ")]
+        public void BeginEnd_ConsumesNewlines(string input, string expectedAxlText)
+        {
+            var lex = RunLexer(input);
+            var textToken = Assert.Single(lex.Where(token => token.Kind is TaxlTokenKind.AxlText));
+            Assert.Equal(expectedAxlText, textToken.Text);
+        }
+
     }
 
 
