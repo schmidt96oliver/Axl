@@ -3,27 +3,6 @@ using Axl.Compiler.Diagnostics;
 
 namespace Axl.Compiler.Taxl;
 
-
-
-
-public enum TaxlTokenKind
-{
-    Directive,
-    Identifier,
-    String,
-    AxlText,
-
-    Comment,
-    Whitespace,
-    Error,
-    Newline
-}
-
-public readonly record struct TaxlToken(SourceSpan Span, TaxlTokenKind Kind, string Text);
-
-// Parses all directives and "binds" them, but does not look for
-// context. E.g. it allows multiple #lexer directives in any position and so on.
-
 // Lexes a *.taxl file into a token stream. Tokens are already context dependent,
 // i.e. anything before a directive is an error. Tokens are continuous. Inside
 // an AxlText token, there can be more DirectiveTokens, which can come after the text
