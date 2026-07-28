@@ -13,8 +13,10 @@ public sealed class TaxlLexer
     private enum Mode
     {
         Taxl,
-        NextLineStartsBlock,
-        InsideBlock
+        BeginSeen,
+        AddFileSeen,
+        AxlFromBegin,
+        AxlFromAddFile,
     }
     
     private readonly SourceView _source;
@@ -101,7 +103,7 @@ public sealed class TaxlLexer
         while (_next < text.Length)
         {
             // --- Inside a block?
-            if (_mode is Mode.InsideBlock)
+            if (_mode is Mode.AxlFromBegin or Mode.AxlFromAddFile)
             {
                 LexInsideBlock(text);
                 loopStart = _next;
@@ -157,8 +159,12 @@ public sealed class TaxlLexer
                 Advance(text);
                 AddToken(TaxlTokenKind.Newline);
 
-                if (_mode is Mode.NextLineStartsBlock)
-                    _mode = Mode.InsideBlock;
+                _mode = _mode switch
+                {
+                    Mode.BeginSeen => Mode.AxlFromBegin,
+                    Mode.AddFileSeen => Mode.AxlFromAddFile,
+                    _ => _mode
+                };
                 
                 return true;
             
@@ -186,11 +192,14 @@ public sealed class TaxlLexer
                 // Check if we started or ended a block
                 _mode = _tokens[^1].Text switch
                 {
-                    "#begin" or "#beginfile" => Mode.NextLineStartsBlock,
+                    "#begin" => Mode.BeginSeen,
+                    "#addfile" => Mode.AddFileSeen,
                     
-                    // We need to check for end markers as well, since
-                    // #begin and #end could be on the same line.
-                    "#end" or "#endfile" => Mode.Taxl,
+                    // We need to check for end markers here, since start
+                    // and end directive could be on the same line.
+                    "#end" when _mode is Mode.BeginSeen => Mode.Taxl,
+                    "#endfile" when _mode is Mode.AddFileSeen => Mode.Taxl,
+                    
                     _ => _mode
                 };
                 return true;
