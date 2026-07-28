@@ -1,10 +1,11 @@
 // Run a lexer test
 #lexer
-#ignore-tokens Whitespace
-#expect-tokens
-Identifier StringStart StringText StringEnd
-Newline Blap
-#begin Bla
-Bla
-Blupp
+#begin #begin
+#begin
+#begin
 #end
+
+#addfile "Test"
+#end    
+#begin
+#endfile
