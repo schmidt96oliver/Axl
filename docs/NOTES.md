@@ -3,6 +3,12 @@
 
 # Notes
 
+* support inblock directives `//#`
+* #end/endfile must be its own line (prevents errors with string/comments)
+* review TaxlLexer and play around
+* review git changes
+* test it
+
 ## Taxl Parser
 * Tokens/Diagnostics with payload: esp. test string data (with escapes)
 * feat: DirectiveParser => raw directives
