@@ -190,18 +190,28 @@ public sealed class TaxlLexer
                 AddToken(TaxlTokenKind.Directive);
 
                 // Check if we started or ended a block
-                _mode = _tokens[^1].Text switch
+                switch (_tokens[^1].Text)
                 {
-                    "#begin" => Mode.BeginSeen,
-                    "#addfile" => Mode.AddFileSeen,
+                    case "#begin":
+                        _mode = Mode.BeginSeen;
+                        break;
+                    case "#addfile":
+                        _mode = Mode.AddFileSeen;
+                        break;
                     
                     // We need to check for end markers here, since start
                     // and end directive could be on the same line.
-                    "#end" when _mode is Mode.BeginSeen => Mode.Taxl,
-                    "#endfile" when _mode is Mode.AddFileSeen => Mode.Taxl,
-                    
-                    _ => _mode
-                };
+                    case "#end" when _mode is Mode.BeginSeen:
+                    case "#endfile" when _mode is Mode.AddFileSeen:
+                        // We need to insert an empty AxlText token before the end directive.
+                        var span = SourceSpan.EmptyAt(_tokens[^1].Span.First);
+                        var axlTextToken = new TaxlToken(span, TaxlTokenKind.AxlText, "");
+                        _tokens.Insert(_tokens.Count - 1, axlTextToken);
+                        
+                        _mode = Mode.Taxl;
+                        break;
+                }
+
                 return true;
             
             // --- Identifier
