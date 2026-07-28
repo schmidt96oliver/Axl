@@ -15,7 +15,7 @@ public sealed class DiagnosticBag
         return ErrorGuaranteed.Instance;
     }
 
-    public void Report(Diagnostic.Lint lint)
+    public void ReportLint(Diagnostic.Lint lint)
         => _diagnostics.Add(lint);
 
 
