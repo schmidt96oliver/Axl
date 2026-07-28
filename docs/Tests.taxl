@@ -9,13 +9,13 @@
 // ------- Directives ------
 // All diagnostics must be ignored or expected in all configurations!
 
-//#runvm pass       // Compiles to bytecode, no errors; VM runs without errors
-//#runvm panic     // Compiles to bytecode, no errors; VM runs and panics
+#runvm pass       // Compiles to bytecode, no errors; VM runs without errors
+#runvm panic     // Compiles to bytecode, no errors; VM runs and panics
 
-//#runmir pass      // Compiles to Mir, no errors; MirInterpreter runs without errors
-//#runmir panic     // Compiles to Mir, no errors; MirInterpreter runs and panics
-//#optimize         // Runs optimizations on Mir
-//#noprelude        // Disables importing the prelude
+#runmir pass      // Compiles to Mir, no errors; MirInterpreter runs without errors
+#runmir panic     // Compiles to Mir, no errors; MirInterpreter runs and panics
+#optimize         // Runs optimizations on Mir
+#noprelude        // Disables importing the prelude
 
 //#compile pass     // Compiles, no errors
 //#compile fail     // Compiles, with errors
@@ -36,7 +36,7 @@
 
 // File and script blocks
 // Test script to be executed must be block:
-//#begin
+//#begin sdf dsfg +#+#`
 
 //#end
 
