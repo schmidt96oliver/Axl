@@ -152,4 +152,7 @@ public sealed class SourceFile
         
         return builder.ToImmutable();
     }
+
+    public SourceLocation GetLocation(SourceSpan span)
+        => new SourceLocation(this, span);
 }
