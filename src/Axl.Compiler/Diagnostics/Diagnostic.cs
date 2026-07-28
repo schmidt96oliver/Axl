@@ -1,6 +1,6 @@
 ﻿namespace Axl.Compiler.Diagnostics;
 
-public abstract record Diagnostic
+public abstract partial record Diagnostic
 {
     public virtual string Id => GetType().Name;
     
