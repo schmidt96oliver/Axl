@@ -2,10 +2,9 @@
 #lexer
 #ignore-tokens Whitespace
 #expect-tokens
-# Identifier StringStart StringText StringEnd
-#begin #end
+Identifier StringStart StringText StringEnd
+Newline Blap
+#begin Bla
+Bla
+Blupp
 #end
-#end
-#borp.."".23409 4ß+slödkfh
-
-#addfile

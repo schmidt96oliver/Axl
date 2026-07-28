@@ -239,7 +239,7 @@ public sealed class TaxlLexer
                 // We have found the end!
                 // Now we have consumed whitespace and the last newline, which we need to back up.
                 // We know, that _next is valid, so we just search going backward.
-                while (_next > 0)
+                while (_next > _start)
                 {
                     if (text[_next - 1] is ' ')
                         _next--;
