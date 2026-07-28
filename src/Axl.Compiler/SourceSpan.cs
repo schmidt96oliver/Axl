@@ -37,6 +37,9 @@ public readonly record struct SourceSpan
 
     public bool Contains(int index)
         => index >= First && index < End;
+
+    public bool Contains(SourceSpan span)
+        => span.First >= First && span.End <= End;
     
     public override string ToString()
         => $"[{First}, {End})";
