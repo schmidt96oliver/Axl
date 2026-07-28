@@ -25,9 +25,8 @@ while (true)
     }
 
     Console.WriteLine("-- Tokens --");
-
-    tokens.RemoveAll(token => token.Kind is TaxlTokenKind.Whitespace or TaxlTokenKind.Newline or TaxlTokenKind.Comment);
-    foreach (var token in tokens)
+    foreach (var token in tokens.Where(token =>
+                 token.Kind is not (TaxlTokenKind.Whitespace or TaxlTokenKind.Newline or TaxlTokenKind.Comment)))
     {
         Console.WriteLine(token.Kind is not TaxlTokenKind.Newline
             ? $"- {token.Kind}: \"{token.Text}\""

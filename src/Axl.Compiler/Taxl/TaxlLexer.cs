@@ -1,4 +1,5 @@
-﻿using System.Diagnostics;
+﻿using System.Collections.Immutable;
+using System.Diagnostics;
 using Axl.Compiler.Diagnostics;
 
 namespace Axl.Compiler.Taxl;
@@ -18,7 +19,7 @@ public sealed class TaxlLexer
     
     private readonly SourceView _source;
     private readonly DiagnosticBag _diagnosticBag;
-    private readonly List<TaxlToken> _tokens = [];
+    private readonly ImmutableArray<TaxlToken>.Builder _tokens;
 
     private int _start, _next;
 
@@ -30,6 +31,7 @@ public sealed class TaxlLexer
         _diagnosticBag = diagnosticBag;
 
         _next = 0;
+        _tokens = ImmutableArray.CreateBuilder<TaxlToken>();
     }
 
     
@@ -86,7 +88,7 @@ public sealed class TaxlLexer
     }
 
     
-    private List<TaxlToken> Lex()
+    private ImmutableArray<TaxlToken> Lex()
     {
         // We wrap lexing in a loop to collect erroneous characters
         // into a single error token.
@@ -135,7 +137,7 @@ public sealed class TaxlLexer
         if (_start > loopStart)
             AddError();
 
-        return _tokens;
+        return _tokens.DrainToImmutable();
         
         
         void AddError()
@@ -264,6 +266,6 @@ public sealed class TaxlLexer
         _mode = Mode.Taxl;
     }
 
-    public static List<TaxlToken> Lex(SourceView source, DiagnosticBag diagnosticBag)
+    public static ImmutableArray<TaxlToken> Lex(SourceView source, DiagnosticBag diagnosticBag)
         => new TaxlLexer(source, diagnosticBag).Lex();
 }
