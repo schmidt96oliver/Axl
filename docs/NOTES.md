@@ -3,18 +3,18 @@
 
 # Notes
 
+* clean up
+  * esp. `text[start..(start + length)]` pattern
+  * esp. big LexAxlText
+  * unify advancing
+  
 * test: intext #begin does not start a new block
 * test: commented // //#directive ignored and ///#directive
 * test: string "//#directive" ignored
 * test: in-text directive correct tokens + newline
-
-* docs: update to in-text directive before
-* intext: as sidetable? => TryLex yields Token (rewrite of Advance, Peek, machinery) _or_ deletes tokens from the builder (a little frail)
-  * think about consumer: TestCaseParser
+* test: in-text tokens content
 
 * review TaxlLexer and play around
-* review git changes
-* test it
 
 ## Taxl Parser
 * Tokens/Diagnostics with payload: esp. test string data (with escapes)

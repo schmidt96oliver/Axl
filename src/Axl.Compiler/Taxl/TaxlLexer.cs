@@ -4,90 +4,17 @@ using Axl.Compiler.Diagnostics;
 
 namespace Axl.Compiler.Taxl;
 
-// Lexes a *.taxl file into a token stream. Tokens are already context dependent,
-// i.e. anything before a directive is an error. Tokens are continuous. Inside
-// an AxlText token, there can be more DirectiveTokens, which can come after the text
-// token.
 public sealed class TaxlLexer
 {
     private readonly SourceView _source;
     private readonly DiagnosticBag _diagnosticBag;
-    private readonly ImmutableArray<TaxlToken>.Builder _tokens;
-
-    private int _start, _next;
 
     private TaxlLexer(SourceView source, DiagnosticBag diagnosticBag)
     {
         _source = source;
         _diagnosticBag = diagnosticBag;
-
-        _next = 0;
-        _tokens = ImmutableArray.CreateBuilder<TaxlToken>();
-    }
-
-    
-    private char? Advance(ReadOnlySpan<char> text)
-    {
-        return _next < text.Length
-            ? text[_next++]
-            : null;
     }
     
-    private char? Peek(ReadOnlySpan<char> text)
-    {
-        return _next < text.Length
-            ? text[_next]
-            : null;
-    }
-
-    private bool Match(ReadOnlySpan<char> text, params ReadOnlySpan<char> expected)
-    {
-        if (Peek(text) is char c && expected.Contains(c))
-        {
-            Advance(text);
-            return true;
-        }
-
-        return false;
-    }
-
-    private bool Match(ReadOnlySpan<char> text, string expectedText)
-    {
-        if (_next + expectedText.Length >= text.Length)
-            return false;
-
-        if (text[_next..].StartsWith(expectedText))
-        {
-            _next += expectedText.Length;
-            return true;
-        }
-
-        return false;
-    }
-
-    
-    private void AddToken(TaxlTokenKind kind)
-    {
-        Debug.Assert(kind is not TaxlTokenKind.Error, "Use AddErrorToken instead!");
-        
-        var span = _source.GetSpanFromTo(_start, _next);
-        AddToken(TaxlToken.Simple(span, kind, _source.GetText(span)));
-
-        _start = _next;
-    }
-
-    private void AddToken(TaxlToken token)
-    {
-        _tokens.Add(token);
-        _start = _next;
-    }
-
-    private void AddErrorToken(ErrorGuaranteed proof, int insertIndex, int start, int end)
-    {
-        var span = _source.GetSpanFromTo(start, end);
-        _tokens.Insert(insertIndex, TaxlToken.Error(proof, span, _source.GetText(span)));
-    }
-
 
     private enum TextStartDirective
     {
@@ -112,18 +39,27 @@ public sealed class TaxlLexer
     };
     
     
-    private void LexTaxl()
+    private ImmutableArray<TaxlToken> LexTaxl()
     {
         var text = _source.TextSpan;
         var textStartDirective = TextStartDirective.None;
+        var tokenStart = 0;
+
+        var tokens = ImmutableArray.CreateBuilder<TaxlToken>();
         
-        while (_next < text.Length)
+        while (tokenStart < text.Length)
         {
-            // --- Lex single token
-            LexErrorAndSingle(text);
+            // --- Lex single/error token
+            var errorAndSingle = LexErrorAndSingle(text, tokenStart);
+            tokens.Add(errorAndSingle.Item1);
+            if (errorAndSingle.Item2 is TaxlToken scndToken)
+                tokens.Add(scndToken);
+            
+            // --- Advance
+            tokenStart += errorAndSingle.Item1.Span.Length + (errorAndSingle.Item2?.Span.Length ?? 0);
             
             // --- Check mode switches
-            var token = _tokens[^1];
+            var token = tokens[^1];
             switch (token.Kind)
             {
                 // --- Directive that begin a text block?
@@ -133,7 +69,8 @@ public sealed class TaxlLexer
                 
                 // --- Newline that begins a text block?
                 case TaxlTokenKind.Newline when textStartDirective is not TextStartDirective.None:
-                    LexAxlText(text, GetStopDirective(textStartDirective));
+                    tokens.Add(LexAxlText(text, tokenStart, GetStopDirective(textStartDirective)));
+                    tokenStart += tokens[^1].Span.Length;
                     textStartDirective = TextStartDirective.None;
                     break;
 
@@ -144,239 +81,268 @@ public sealed class TaxlLexer
                     // We need to insert an empty AxlText token.
                     var span = SourceSpan.EmptyAt(token.Span.First);
                     var axlTextToken = TaxlToken.AxlText(span, "", []);
-                    _tokens.Insert(_tokens.Count - 1, axlTextToken);
+                    tokens.Insert(tokens.Count - 1, axlTextToken);
 
                     textStartDirective = TextStartDirective.None;
                     break;
                 }
             }
         }
+
+        return tokens.DrainToImmutable();
     }
-    
-    private void LexAxlText(ReadOnlySpan<char> text, string stopDirective)
+
+    private TaxlToken.AxlTextToken LexAxlText(ReadOnlySpan<char> text, int start, string stopDirective)
     {
-        var textStart = _start;
-        
-        while (Peek(text) is char c)
+        var inTextTokens = ImmutableArray.CreateBuilder<TaxlToken>();
+
+        var length = 0;
+        while (start + length < text.Length)
         {
+            var c = text[start + length];
+
             // --- In-text directive?
-            if (Match(text, "//#"))
+            var tokenStart = start + length;
+            var tokenLength = 0;
+            if (text[tokenStart..] is ['/', '/', '#', ..])
             {
-                _start = _next - 3; // Set start to //#
-                
-                // --- Lex directive
-                while (Peek(text) is >= 'a' and <= 'z' or >= 'A' and <= 'Z' or '-' or '_')
-                    Advance(text);
-                AddToken(TaxlTokenKind.InTextDirective);
-                
+                // Advance //#
+                tokenLength += 3;
+
+                // --- Lex rest of the directive and add
+                while (tokenStart + tokenLength < text.Length &&
+                       text[tokenStart + tokenLength] is >= 'a' and <= 'z' or >= 'A' and <= 'Z' or '-' or '_')
+                {
+                    tokenLength++;
+                }
+
+                inTextTokens.Add(TaxlToken.Simple(_source.GetSpanFromLength(tokenStart, tokenLength),
+                    TaxlTokenKind.Directive, text[tokenStart..(tokenStart + tokenLength)].ToString()));
+                tokenStart += tokenLength;
+                tokenLength = 0;
+
                 // --- Lex taxl tokens.
                 // Stop on newline, then the text continues.
-                while (Peek(text) is not null)
+                while (tokenStart < text.Length)
                 {
-                    LexErrorAndSingle(text);
-                    if (_tokens[^1].Kind is TaxlTokenKind.Newline)
+                    var errorAndSingle = LexErrorAndSingle(text, tokenStart);
+                    inTextTokens.Add(errorAndSingle.Item1);
+                    if (errorAndSingle.Item2 is TaxlToken scndToken)
+                        inTextTokens.Add(scndToken);
+                    tokenStart += errorAndSingle.Item1.Span.Length + (errorAndSingle.Item2?.Span.Length ?? 0);
+
+                    if (inTextTokens[^1].Kind is TaxlTokenKind.Newline)
                         break;
                 }
 
-                // Reset token start to axl text start
-                _start = textStart;
-                
+                // We have advanced quite some text, move the axl text length accordingly
+                length = tokenStart - start;
+
                 // We have matched a token, so we must not advance another character.
                 continue;
             }
 
             // --- Skip comments
-            if (Match(text, "//"))
+            if (text[(start + length)..] is ['/', '/', ..])
             {
-                while (Peek(text) is not (null or '\n'))
-                    Advance(text);
+                while (start + length < text.Length && text[start + length] is not '\n')
+                    length++;
                 continue;
             }
 
             // --- Skip strings
-            if (Match(text, '\"'))
+            if (text[start + length] is '\"')
             {
-                while (Peek(text) is not (null or '\n' or '\"'))
-                    Advance(text);
-                Match(text, '\"');
+                length++;
+                while (start + length < text.Length && text[start + length] is not ('\n' or '\"'))
+                    length++;
+
+                if (start + length < text.Length && text[start + length] is '\"')
+                    length++;
                 continue;
             }
-            
+
             // --- Plain directive? Could be an end.
             if (c is '#')
             {
-                var directiveStart = _next;
-
-                // --- Advance entire directive
-                Advance(text);
-                while (Peek(text) is >= 'a' and <= 'z' or >= 'A' and <= 'Z' or '-' or '_')
-                    Advance(text);
+                var directiveStart = start + length;
+                if (TryLexSingle(text, start + length) is not TaxlToken
+                    {
+                        Kind: TaxlTokenKind.Directive
+                    } directiveToken)
+                {
+                    throw new UnreachableException();
+                }
 
                 // --- Ends the Block?
-                if (!text[directiveStart.._next].SequenceEqual(stopDirective))
+                if (directiveToken.Text != stopDirective)
                 {
-                    // The directive doesn't stop the block, so we add it will
-                    // be added to the AxlText token later.
+                    // The directive doesn't stop the block.
+                    // Ignore and advance past it.
+                    length += directiveToken.Span.Length;
                     continue;
                 }
 
                 // --- End found!
                 // We still need to reject the end directive, if there are non-whitespace characters
                 // on the same line before. We do that, so we ignore directives in strings and comments.
-                
+
                 // --- Find start of the line
                 var lineStart = directiveStart;
-                while (lineStart > _start && text[lineStart - 1] is not '\n')
-                {
+                while (lineStart > start && text[lineStart - 1] is not '\n')
                     lineStart--;
-                }
 
                 // --- Non-whitespace before directive?
                 if (text[lineStart..directiveStart].ContainsAnyExcept(' '))
                 {
-                    // Ignore this directive. It is already advanced, so we can skip
-                    // the advance step and continue with the next iteration.
+                    // Ignore this directive and advance past it.
+                    length += directiveToken.Span.Length;
                     continue;
                 }
 
                 // --- End is valid!
                 // Back the lexer up to the line start.
                 // We also need to back up one newline, if there is one.
-                _next = lineStart;
-                if (_next - 1 >= _start && text[_next - 1] is '\n')
-                    _next--;
-                
+                length = lineStart - start;
+                if (lineStart > start && text[lineStart - 1] is '\n')
+                    length--;
+
                 // Emit AxlText now, then the Taxl loop will emit Newline and
                 // the end directive.
-                var span = _source.GetSpanFromTo(_start, _next);
-                AddToken(TaxlToken.AxlText(span, _source.GetText(span), []));
-                return;
+                return TaxlToken.AxlText(_source.GetSpanFromLength(start, length),
+                    text[start..(start + length)].ToString(),
+                    inTextTokens.DrainToImmutable());
             }
 
             // --- Advance one text character
-            Advance(text);
+            length++;
         }
 
-        if (_next > _start)
-        {
-            var span = _source.GetSpanFromTo(_start, _next);
-            AddToken(TaxlToken.AxlText(span, _source.GetText(span), []));
-        }
+        return TaxlToken.AxlText(_source.GetSpanFromLength(start, length),
+            text[start..(start + length)].ToString(),
+            inTextTokens.DrainToImmutable());
     }
-    
-    
-    private void LexErrorAndSingle(ReadOnlySpan<char> text)
-    {
-        var errorStart = _next;
-        while (_next < text.Length)
-        {
-            var errorEnd = _next;
 
-            if (!TryLexSingle(text))
-            {
-                // We did not get a token here. Advance one character
-                // and start lexing the next one.
-                Advance(text);
-                _start = _next;
-            }
-            else
+
+    private (TaxlToken, TaxlToken?) LexErrorAndSingle(ReadOnlySpan<char> text, int start)
+    {
+        Debug.Assert(start < text.Length);
+        
+        var errorStart = start;
+        var errorLength = 0;
+
+        while (errorStart + errorLength < text.Length)
+        {
+            var tokenStart = errorStart + errorLength;
+            if (TryLexSingle(text, start: tokenStart) is TaxlToken token)
             {
                 // There was an error before the token that has been added,
                 // so insert it before.
-                if (errorEnd > errorStart)
-                {
-                    var span = _source.GetLocationFromTo(errorStart, errorEnd);
-                    var proof = _diagnosticBag.ReportError(new Diagnostic.InvalidCharacters(span));
-                    AddErrorToken(proof, insertIndex: _tokens.Count - 1, errorStart, errorEnd);
-                }
+                if (errorLength > 0)
+                    return (MakeError(text), token);
 
-                return;
+                return (token, null);
             }
+
+            // We did not get a token here. Advance one character
+            // and start lexing the next one.
+            errorLength++;
         }
-        
+
         // We hit the end, maybe there was an error still left
-        if (_next > errorStart)
+        if (errorLength > 0)
+            return (MakeError(text), null);
+
+        throw new UnreachableException($"{nameof(text)} was non empty, so there must at least be an error.");
+
+        TaxlToken MakeError(ReadOnlySpan<char> text)
         {
-            var span = _source.GetLocationFromTo(errorStart, _next);
-            var proof = _diagnosticBag.ReportError(new Diagnostic.InvalidCharacters(span));
-            AddErrorToken(proof, insertIndex: _tokens.Count - 1, errorStart, _next);
-            _start = _next;
+            var span = _source.GetSpanFromLength(errorStart, errorLength);
+            return TaxlToken.Error(
+                _diagnosticBag.ReportError(new Diagnostic.InvalidCharacters(_source.GetLocation(span))),
+                span,
+                text[errorStart..(errorStart + errorLength)].ToString());
         }
     }
     
-    private bool TryLexSingle(ReadOnlySpan<char> text)
+    private TaxlToken? TryLexSingle(ReadOnlySpan<char> text, int start)
     {
-        switch (Peek(text))
+        Debug.Assert(!text.IsEmpty);
+        
+        var length = 0;
+
+        switch (text[start..])
         {
             // --- Newline
-            case '\n':
-                Advance(text);
-                AddToken(TaxlTokenKind.Newline);
+            case ['\n', ..]:
+                length++;
+                return MakeToken(text, TaxlTokenKind.Newline);
 
-                return true;
-            
             // --- Whitespace
-            case ' ' or '\t' or '\r':
-                while (Match(text, ' ', '\t', '\r'))
-                { }
-                AddToken(TaxlTokenKind.Whitespace);
-                return true;
-            
+            case [' ' or '\t' or '\r', ..]:
+                while (start + length < text.Length && text[start + length] is ' ' or '\t' or '\r')
+                    length++;
+                return MakeToken(text, TaxlTokenKind.Whitespace);
+
             // --- Comment
-            case '/' when Match(text, "//"):
-                while (Peek(text) is not (null or '\n'))
-                    Advance(text);
-                AddToken(TaxlTokenKind.Comment);
-                return true;
-            
+            case ['/', '/', ..]:
+                while (start + length < text.Length && text[start + length] is not '\n')
+                    length++;
+                return MakeToken(text, TaxlTokenKind.Comment);
+
             // --- Directive
-            case '#':
-                Advance(text);
-                while (Peek(text) is >= 'a' and <= 'z' or >= 'A' and <= 'Z' or '-' or '_')
-                    Advance(text);
-                AddToken(TaxlTokenKind.Directive);
+            case ['#', ..]:
+                length++;
+                while (start + length < text.Length &&
+                       text[start + length] is >= 'a' and <= 'z' or >= 'A' and <= 'Z' or '-' or '_')
+                    length++;
+                return MakeToken(text, TaxlTokenKind.Directive);
 
-                return true;
-            
             // --- Identifier
-            case >= 'a' and <= 'z' or >= 'A' and <= 'Z' or '_':
-                while (Peek(text) is (>= 'a' and <= 'z') or (>= 'A' and <= 'Z')
-                       or '-' or '_'
-                       or (>= '0' and <= '9'))
+            case [>= 'a' and <= 'z' or >= 'A' and <= 'Z' or '_', ..]:
+                while (start + length < text.Length && text[start + length] is
+                           (>= 'a' and <= 'z') or (>= 'A' and <= 'Z')
+                           or '-' or '_'
+                           or (>= '0' and <= '9'))
                 {
-                    Advance(text);
-                }
-                AddToken(TaxlTokenKind.Identifier);
-                return true;
-            
-            // --- String
-            case '\"':
-                Advance(text);
-                
-                // Consume until terminated, end or newline
-                while (Peek(text) is not (null or '\"' or '\n'))
-                    Advance(text);
-        
-                if (Match(text, '\"'))
-                    AddToken(TaxlTokenKind.String);
-                else
-                {
-                    AddErrorToken(_diagnosticBag.ReportError(new Diagnostic.StringNotClosed(_source.GetLocationFromTo(_start, _next))),
-                        insertIndex: _tokens.Count,
-                        _start, _next);
+                    length++;
                 }
 
-                return true;
+                return MakeToken(text, TaxlTokenKind.Identifier);
+
+            // --- String
+            case ['\"', ..]:
+                length++;
+
+                // Consume until terminated, end or newline
+                while (start + length < text.Length && text[start + length] is not ('\"' or '\n'))
+                    length++;
+
+                if (start + length < text.Length && text[start + length] is '\"')
+                {
+                    length++;
+                    return MakeToken(text, TaxlTokenKind.String);
+                }
+
+                var errorSpan = _source.GetSpanFromLength(start, length);
+                return TaxlToken.Error(
+                    _diagnosticBag.ReportError(
+                        new Diagnostic.StringNotClosed(_source.GetLocation(errorSpan))),
+                    errorSpan,
+                    text[start..(start + length)].ToString());
+
         }
 
-        return false;
+        return null;
+
+        TaxlToken MakeToken(ReadOnlySpan<char> text, TaxlTokenKind kind)
+            => TaxlToken.Simple(_source.GetSpanFromLength(start, length), kind, text[start..(start+length)].ToString());
     }
     
 
     public static ImmutableArray<TaxlToken> Lex(SourceView source, DiagnosticBag diagnosticBag)
     {
         var lexer = new TaxlLexer(source, diagnosticBag);
-        lexer.LexTaxl();
-        return lexer._tokens.DrainToImmutable();
+        return lexer.LexTaxl();
     }
 }

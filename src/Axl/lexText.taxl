@@ -1,4 +1,8 @@
+// Try something on the lexer
+#lexer
+#ignore-tokens Whitespace
+#expect-tokens
+# Identifier Identifier String Error
 
 #begin
-asd ; //#directive
-#end
+A B "Hello" @@
