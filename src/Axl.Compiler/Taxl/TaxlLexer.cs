@@ -56,7 +56,7 @@ public sealed class TaxlLexer
                 tokens.Add(scndToken);
             
             // --- Advance
-            tokenStart += errorAndSingle.Item1.Span.Length + (errorAndSingle.Item2?.Span.Length ?? 0);
+            tokenStart += errorAndSingle.Item1.Length + (errorAndSingle.Item2?.Length ?? 0);
             
             // --- Check mode switches
             var token = tokens[^1];
@@ -70,7 +70,7 @@ public sealed class TaxlLexer
                 // --- Newline that begins a text block?
                 case TaxlTokenKind.Newline when textStartDirective is not TextStartDirective.None:
                     tokens.Add(LexAxlText(text, tokenStart, GetStopDirective(textStartDirective)));
-                    tokenStart += tokens[^1].Span.Length;
+                    tokenStart += tokens[^1].Length;
                     textStartDirective = TextStartDirective.None;
                     break;
 
@@ -129,7 +129,7 @@ public sealed class TaxlLexer
                     inTextTokens.Add(errorAndSingle.Item1);
                     if (errorAndSingle.Item2 is TaxlToken scndToken)
                         inTextTokens.Add(scndToken);
-                    tokenStart += errorAndSingle.Item1.Span.Length + (errorAndSingle.Item2?.Span.Length ?? 0);
+                    tokenStart += errorAndSingle.Item1.Length + (errorAndSingle.Item2?.Length ?? 0);
 
                     if (inTextTokens[^1].Kind is TaxlTokenKind.Newline)
                         break;
@@ -179,7 +179,7 @@ public sealed class TaxlLexer
                 {
                     // The directive doesn't stop the block.
                     // Ignore and advance past it.
-                    length += directiveToken.Span.Length;
+                    length += directiveToken.Length;
                     continue;
                 }
 
@@ -196,7 +196,7 @@ public sealed class TaxlLexer
                 if (text[lineStart..directiveStart].ContainsAnyExcept(' '))
                 {
                     // Ignore this directive and advance past it.
-                    length += directiveToken.Span.Length;
+                    length += directiveToken.Length;
                     continue;
                 }
 

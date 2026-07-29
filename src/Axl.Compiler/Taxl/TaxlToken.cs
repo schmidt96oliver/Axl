@@ -12,6 +12,8 @@ public record TaxlToken
     public SourceSpan Span { get; }
     public TaxlTokenKind Kind { get; }
     public string Text { get; }
+
+    public int Length => Span.Length;
     
     private TaxlToken(SourceSpan span, TaxlTokenKind kind, string text)
     {
