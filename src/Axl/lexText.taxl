@@ -1,8 +1,5 @@
 // Try something on the lexer
 #lexer
-#ignore-tokens Whitespace
-#expect-tokens
-# Identifier Identifier String Error
-
-#begin
-A B "Hello" @@
+...---#try#bla.-###
+#begin...
+#end

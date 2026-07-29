@@ -50,16 +50,13 @@ public sealed class TaxlLexer
         while (tokenStart < text.Length)
         {
             // --- Lex single/error token
-            var errorAndSingle = LexErrorAndSingle(text, tokenStart);
-            tokens.Add(errorAndSingle.Item1);
-            if (errorAndSingle.Item2 is TaxlToken scndToken)
-                tokens.Add(scndToken);
+            var token = LexSingle(text, tokenStart);
+            tokens.Add(token);
             
             // --- Advance
-            tokenStart += errorAndSingle.Item1.Length + (errorAndSingle.Item2?.Length ?? 0);
+            tokenStart += token.Length;
             
             // --- Check mode switches
-            var token = tokens[^1];
             switch (token.Kind)
             {
                 // --- Directive that begin a text block?
@@ -125,11 +122,9 @@ public sealed class TaxlLexer
                 // Stop on newline, then the text continues.
                 while (tokenStart < text.Length)
                 {
-                    var errorAndSingle = LexErrorAndSingle(text, tokenStart);
-                    inTextTokens.Add(errorAndSingle.Item1);
-                    if (errorAndSingle.Item2 is TaxlToken scndToken)
-                        inTextTokens.Add(scndToken);
-                    tokenStart += errorAndSingle.Item1.Length + (errorAndSingle.Item2?.Length ?? 0);
+                    var errorAndSingle = LexSingle(text, tokenStart);
+                    inTextTokens.Add(errorAndSingle);
+                    tokenStart += errorAndSingle.Length;
 
                     if (inTextTokens[^1].Kind is TaxlTokenKind.Newline)
                         break;
@@ -166,13 +161,8 @@ public sealed class TaxlLexer
             if (c is '#')
             {
                 var directiveStart = start + length;
-                if (TryLexSingle(text, start + length) is not TaxlToken
-                    {
-                        Kind: TaxlTokenKind.Directive
-                    } directiveToken)
-                {
-                    throw new UnreachableException();
-                }
+                var directiveToken = LexSingle(text, start + length);
+                Debug.Assert(directiveToken.Kind is TaxlTokenKind.Directive);
 
                 // --- Ends the Block?
                 if (directiveToken.Text != stopDirective)
@@ -222,52 +212,36 @@ public sealed class TaxlLexer
             text[start..(start + length)].ToString(),
             inTextTokens.DrainToImmutable());
     }
-
-
-    private (TaxlToken, TaxlToken?) LexErrorAndSingle(ReadOnlySpan<char> text, int start)
+    
+    private TaxlToken LexSingle(ReadOnlySpan<char> text, int start)
     {
         Debug.Assert(start < text.Length);
+
+        if (TryLexSingle(text, start) is TaxlToken token)
+            return token;
+
+        // At the current point, no token can be lexed.
+        // So we try one character later.
+        var errorLength = 1;
         
-        var errorStart = start;
-        var errorLength = 0;
-
-        while (errorStart + errorLength < text.Length)
-        {
-            var tokenStart = errorStart + errorLength;
-            if (TryLexSingle(text, start: tokenStart) is TaxlToken token)
-            {
-                // There was an error before the token that has been added,
-                // so insert it before.
-                if (errorLength > 0)
-                    return (MakeError(text), token);
-
-                return (token, null);
-            }
-
-            // We did not get a token here. Advance one character
-            // and start lexing the next one.
+        // Note that TryLexSingle just returns null, if start position of too far.
+        while (TryLexSingle(text, start + errorLength) is null)
             errorLength++;
-        }
 
-        // We hit the end, maybe there was an error still left
-        if (errorLength > 0)
-            return (MakeError(text), null);
-
-        throw new UnreachableException($"{nameof(text)} was non empty, so there must at least be an error.");
-
-        TaxlToken MakeError(ReadOnlySpan<char> text)
-        {
-            var span = _source.SpanFromLength(errorStart, errorLength);
-            return TaxlToken.Error(
-                _diagnosticBag.ReportError(new Diagnostic.InvalidCharacters(_source.GetLocation(span))),
-                span,
-                text[errorStart..(errorStart + errorLength)].ToString());
-        }
+        // At this point, the next token can start, or it's end of file.
+        // We discard the last token value.
+        // This is wasteful, granted, but it's the easier to read pipeline :).
+        var span = _source.SpanFromLength(start, errorLength);
+        return TaxlToken.Error(
+            _diagnosticBag.ReportError(new Diagnostic.InvalidCharacters(_source.GetLocation(span))),
+            span,
+            text[start..(start + errorLength)].ToString());
     }
-    
+
     private TaxlToken? TryLexSingle(ReadOnlySpan<char> text, int start)
     {
-        Debug.Assert(!text.IsEmpty);
+        if (start >= text.Length)
+            return null;
         
         var length = 0;
 
@@ -330,7 +304,6 @@ public sealed class TaxlLexer
                         new Diagnostic.StringNotClosed(_source.GetLocation(errorSpan))),
                     errorSpan,
                     text[start..(start + length)].ToString());
-
         }
 
         return null;
