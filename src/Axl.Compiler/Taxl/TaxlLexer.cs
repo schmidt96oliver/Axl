@@ -79,7 +79,7 @@ public sealed class TaxlLexer
                 case TaxlTokenKind.Directive when token.Text == GetStopDirective(textStartDirective):
                 {
                     // We need to insert an empty AxlText token.
-                    var span = SourceSpan.EmptyAt(token.Span.First);
+                    var span = SourceSpan.EmptyBefore(token.Span);
                     var axlTextToken = TaxlToken.AxlText(span, "", []);
                     tokens.Insert(tokens.Count - 1, axlTextToken);
 
@@ -116,7 +116,7 @@ public sealed class TaxlLexer
                     tokenLength++;
                 }
 
-                inTextTokens.Add(TaxlToken.Simple(_source.GetSpanFromLength(tokenStart, tokenLength),
+                inTextTokens.Add(TaxlToken.Simple(_source.SpanFromLength(tokenStart, tokenLength),
                     TaxlTokenKind.Directive, text[tokenStart..(tokenStart + tokenLength)].ToString()));
                 tokenStart += tokenLength;
                 tokenLength = 0;
@@ -209,7 +209,7 @@ public sealed class TaxlLexer
 
                 // Emit AxlText now, then the Taxl loop will emit Newline and
                 // the end directive.
-                return TaxlToken.AxlText(_source.GetSpanFromLength(start, length),
+                return TaxlToken.AxlText(_source.SpanFromLength(start, length),
                     text[start..(start + length)].ToString(),
                     inTextTokens.DrainToImmutable());
             }
@@ -218,7 +218,7 @@ public sealed class TaxlLexer
             length++;
         }
 
-        return TaxlToken.AxlText(_source.GetSpanFromLength(start, length),
+        return TaxlToken.AxlText(_source.SpanFromLength(start, length),
             text[start..(start + length)].ToString(),
             inTextTokens.DrainToImmutable());
     }
@@ -257,7 +257,7 @@ public sealed class TaxlLexer
 
         TaxlToken MakeError(ReadOnlySpan<char> text)
         {
-            var span = _source.GetSpanFromLength(errorStart, errorLength);
+            var span = _source.SpanFromLength(errorStart, errorLength);
             return TaxlToken.Error(
                 _diagnosticBag.ReportError(new Diagnostic.InvalidCharacters(_source.GetLocation(span))),
                 span,
@@ -324,7 +324,7 @@ public sealed class TaxlLexer
                     return MakeToken(text, TaxlTokenKind.String);
                 }
 
-                var errorSpan = _source.GetSpanFromLength(start, length);
+                var errorSpan = _source.SpanFromLength(start, length);
                 return TaxlToken.Error(
                     _diagnosticBag.ReportError(
                         new Diagnostic.StringNotClosed(_source.GetLocation(errorSpan))),
@@ -336,7 +336,7 @@ public sealed class TaxlLexer
         return null;
 
         TaxlToken MakeToken(ReadOnlySpan<char> text, TaxlTokenKind kind)
-            => TaxlToken.Simple(_source.GetSpanFromLength(start, length), kind, text[start..(start+length)].ToString());
+            => TaxlToken.Simple(_source.SpanFromLength(start, length), kind, text[start..(start+length)].ToString());
     }
     
 

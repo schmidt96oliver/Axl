@@ -26,15 +26,16 @@ public readonly record struct SourceSpan
     public bool IsEmpty => Length == 0;
 
 
-    private SourceSpan(int first, int length)
+    internal SourceSpan(int first, int length)
     {
-        Debug.Assert(first >= 0);
-        Debug.Assert(length >= 0);
+        Guard.InRange(first, first >= 0);
+        Guard.InRange(length, length >= 0);
 
         First = first;
         Length = length;
     }
 
+    
     public bool Contains(int index)
         => index >= First && index < End;
 
@@ -45,29 +46,13 @@ public readonly record struct SourceSpan
         => $"[{First}, {End})";
 
 
-    public static SourceSpan FromTo(int first, int end)
-    {
-        Guard.InRange(first, first >= 0);
-        Guard.InRange(end, end >= first);
-        
-        return new SourceSpan(first, end - first);
-    }
-
     public static SourceSpan FromTo(SourceSpan first, SourceSpan last)
     {
         Guard.InRange(first.First, first.First <= last.End);
-        return FromTo(first.First, last.End);
+        return new SourceSpan(first.First, length: last.End - first.First);
     }
 
-    public static SourceSpan FromLength(int first, int length)
-    {
-        Guard.InRange(first, first >= 0);
-        Guard.InRange(length, length >= 0);
-        
-        return new SourceSpan(first, length);
-    }
-
-    public static SourceSpan EmptyAt(int first)
-        => new(first, 0);
+    public static SourceSpan EmptyBefore(SourceSpan span)
+        => new(span.First, length: 0);
 
 }

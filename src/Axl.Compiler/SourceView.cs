@@ -11,7 +11,7 @@ public readonly record struct SourceView(SourceFile File, SourceSpan Span)
     
     
     public static SourceView Whole(SourceFile file)
-        => new(file, SourceSpan.FromLength(0, file.Text.Length));
+        => new(file, new SourceSpan(0, length: file.Text.Length));
     
     public static SourceView FromFile(string path)
         => Whole(SourceFile.FromFile(path));
@@ -20,33 +20,33 @@ public readonly record struct SourceView(SourceFile File, SourceSpan Span)
     /// Converts start/end indices inside this view to <see cref="SourceSpan"/> that
     /// references the containing file.
     /// </summary>
-    public SourceSpan GetSpanFromTo(int start, int end)
+    public SourceSpan SpanFromTo(int start, int end)
     {
         Guard.InRange(start, start >= 0);
         Guard.InRange(end, end <= Span.Length);
-        return SourceSpan.FromTo(start + Span.First, end + Span.First);
+        return new SourceSpan(start + Span.First, length: end - start);
     }
     
     /// <summary>
     /// Converts start index and length inside this view to <see cref="SourceSpan"/> that
     /// references the containing file.
     /// </summary>
-    public SourceSpan GetSpanFromLength(int start, int length)
+    public SourceSpan SpanFromLength(int start, int length)
     {
         Guard.InRange(start, start >= 0);
         Guard.InRange(length, length >= 0);
         Guard.InRange(length, length <= Span.Length);
-        return SourceSpan.FromLength(start + Span.First, length);
+        return new SourceSpan(start + Span.First, length);
     }
 
     public SourceLocation GetLocation(SourceSpan span)
         => File.GetLocation(span);
     
-    public SourceLocation GetLocationFromTo(int start, int end)
-        => GetLocation(GetSpanFromTo(start, end));
+    public SourceLocation LocationFromTo(int start, int end)
+        => GetLocation(SpanFromTo(start, end));
     
-    public SourceLocation GetLocationFromLength(int start, int length)
-        => GetLocation(GetSpanFromTo(start, length));
+    public SourceLocation LocationFromLength(int start, int length)
+        => GetLocation(SpanFromTo(start, length));
 
     public string GetText(SourceSpan span)
     {
