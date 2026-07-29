@@ -4,9 +4,8 @@
 # Notes
 
 * clean up
-  * esp. `text[start..(start + length)]` pattern
-  * esp. big LexAxlText
-  * unify advancing
+  * big LexAxlText => use rest + RunLength pattern
+  * check Claude Code answer
   
 * test: intext #begin does not start a new block
 * test: commented // //#directive ignored and ///#directive

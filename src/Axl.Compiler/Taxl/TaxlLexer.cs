@@ -37,6 +37,15 @@ public sealed class TaxlLexer
         _ => throw new ArgumentException($"Given {nameof(startDirective)} has no corresponding end directive.",
             nameof(startDirective))
     };
+
+
+    private int RunLength(ReadOnlySpan<char> text, Func<char, bool> predicate)
+    {
+        var length = 0;
+        while (length < text.Length && predicate(text[length]))
+            length++;
+        return length;
+    }
     
     
     private ImmutableArray<TaxlToken> LexTaxl()
@@ -66,8 +75,10 @@ public sealed class TaxlLexer
                 
                 // --- Newline that begins a text block?
                 case TaxlTokenKind.Newline when textStartDirective is not TextStartDirective.None:
-                    tokens.Add(LexAxlText(text, tokenStart, GetStopDirective(textStartDirective)));
-                    tokenStart += tokens[^1].Length;
+                    var textToken = LexAxlText(text, tokenStart, GetStopDirective(textStartDirective));
+                    tokens.Add(textToken);
+                    tokenStart += textToken.Length;
+                    
                     textStartDirective = TextStartDirective.None;
                     break;
 
@@ -77,8 +88,8 @@ public sealed class TaxlLexer
                 {
                     // We need to insert an empty AxlText token.
                     var span = SourceSpan.EmptyBefore(token.Span);
-                    var axlTextToken = TaxlToken.AxlText(span, "", []);
-                    tokens.Insert(tokens.Count - 1, axlTextToken);
+                    var emptyTextToken = TaxlToken.AxlText(span, "", []);
+                    tokens.Insert(tokens.Count - 1, emptyTextToken);
 
                     textStartDirective = TextStartDirective.None;
                     break;
@@ -244,58 +255,49 @@ public sealed class TaxlLexer
             return null;
         
         var length = 0;
+        var rest = text[start..];
 
-        switch (text[start..])
+        switch (rest)
         {
             // --- Newline
             case ['\n', ..]:
-                length++;
-                return MakeToken(text, TaxlTokenKind.Newline);
+                length = 1;
+                return MakeToken(rest, TaxlTokenKind.Newline);
 
             // --- Whitespace
             case [' ' or '\t' or '\r', ..]:
-                while (start + length < text.Length && text[start + length] is ' ' or '\t' or '\r')
-                    length++;
-                return MakeToken(text, TaxlTokenKind.Whitespace);
+                length = RunLength(rest, static c => c is ' ' or '\t' or '\r');
+                return MakeToken(rest, TaxlTokenKind.Whitespace);
 
             // --- Comment
             case ['/', '/', ..]:
-                while (start + length < text.Length && text[start + length] is not '\n')
-                    length++;
-                return MakeToken(text, TaxlTokenKind.Comment);
+                length = 3;
+                length += RunLength(rest[3..], static c => c is not '\n');
+                return MakeToken(rest, TaxlTokenKind.Comment);
 
             // --- Directive
             case ['#', ..]:
-                length++;
-                while (start + length < text.Length &&
-                       text[start + length] is >= 'a' and <= 'z' or >= 'A' and <= 'Z' or '-' or '_')
-                    length++;
-                return MakeToken(text, TaxlTokenKind.Directive);
+                length = 1;
+                length += RunLength(rest[1..], static c => c is >= 'a' and <= 'z' or >= 'A' and <= 'Z' or '-' or '_');
+                return MakeToken(rest, TaxlTokenKind.Directive);
 
             // --- Identifier
             case [>= 'a' and <= 'z' or >= 'A' and <= 'Z' or '_', ..]:
-                while (start + length < text.Length && text[start + length] is
-                           (>= 'a' and <= 'z') or (>= 'A' and <= 'Z')
-                           or '-' or '_'
-                           or (>= '0' and <= '9'))
-                {
-                    length++;
-                }
-
-                return MakeToken(text, TaxlTokenKind.Identifier);
+                length = RunLength(rest, static c => c is
+                    (>= 'a' and <= 'z') or (>= 'A' and <= 'Z')
+                    or '-' or '_'
+                    or (>= '0' and <= '9'));
+                return MakeToken(rest, TaxlTokenKind.Identifier);
 
             // --- String
             case ['\"', ..]:
-                length++;
-
-                // Consume until terminated, end or newline
-                while (start + length < text.Length && text[start + length] is not ('\"' or '\n'))
-                    length++;
-
-                if (start + length < text.Length && text[start + length] is '\"')
+                length = 1;
+                length += RunLength(rest[1..], static c => c is not ('\"' or '\n'));
+                
+                if (length < rest.Length && rest[length] is '\"')
                 {
                     length++;
-                    return MakeToken(text, TaxlTokenKind.String);
+                    return MakeToken(rest, TaxlTokenKind.String);
                 }
 
                 var errorSpan = _source.SpanFromLength(start, length);
@@ -303,13 +305,13 @@ public sealed class TaxlLexer
                     _diagnosticBag.ReportError(
                         new Diagnostic.StringNotClosed(_source.GetLocation(errorSpan))),
                     errorSpan,
-                    text[start..(start + length)].ToString());
+                    rest[..length].ToString());
         }
 
         return null;
 
-        TaxlToken MakeToken(ReadOnlySpan<char> text, TaxlTokenKind kind)
-            => TaxlToken.Simple(_source.SpanFromLength(start, length), kind, text[start..(start+length)].ToString());
+        TaxlToken MakeToken(ReadOnlySpan<char> restText, TaxlTokenKind kind)
+            => TaxlToken.Simple(_source.SpanFromLength(start, length), kind, restText[..length].ToString());
     }
     
 
