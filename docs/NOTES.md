@@ -3,8 +3,16 @@
 
 # Notes
 
-* support inblock directives `//#`
-  * ignore strings, comments
+* test: intext #begin does not start a new block
+* test: // //#directive ignored
+* test: "//#directive" ignored
+* test: in-text directive correct tokens + newline
+
+* docs: update to in-text directive before
+* intext: as sidetable?
+
+* inblock: ignore strings, comments
+
 * review TaxlLexer and play around
 * review git changes
 * test it

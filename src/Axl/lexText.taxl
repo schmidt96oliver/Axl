@@ -1,2 +1,4 @@
-#addfile
-#endfile
+
+#begin
+asd ; "{"//#begin"}"
+#end

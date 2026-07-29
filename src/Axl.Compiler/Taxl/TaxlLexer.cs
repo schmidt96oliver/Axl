@@ -149,12 +149,51 @@ public sealed class TaxlLexer
     
     private void LexAxlText(ReadOnlySpan<char> text, string stopDirective)
     {
+        var textStart = _start;
+        
         while (Peek(text) is char c)
         {
             // --- In-text directive?
             if (Match(text, "//#"))
             {
+                _start = _next - 3; // Set start to //#
                 
+                // --- Lex directive
+                while (Peek(text) is >= 'a' and <= 'z' or >= 'A' and <= 'Z' or '-' or '_')
+                    Advance(text);
+                AddToken(TaxlTokenKind.InTextDirective);
+                
+                // --- Lex taxl tokens.
+                // Stop on newline, then the text continues.
+                while (Peek(text) is not null)
+                {
+                    LexErrorAndSingle(text);
+                    if (_tokens[^1].Kind is TaxlTokenKind.Newline)
+                        break;
+                }
+
+                // Reset token start to axl text start
+                _start = textStart;
+                
+                // We have matched a token, so we must not advance another character.
+                continue;
+            }
+
+            // --- Skip comments
+            if (Match(text, "//"))
+            {
+                while (Peek(text) is not (null or '\n'))
+                    Advance(text);
+                continue;
+            }
+
+            // --- Skip strings
+            if (Match(text, '\"'))
+            {
+                while (Peek(text) is not (null or '\n' or '\"'))
+                    Advance(text);
+                Match(text, '\"');
+                continue;
             }
             
             // --- Plain directive? Could be an end.
