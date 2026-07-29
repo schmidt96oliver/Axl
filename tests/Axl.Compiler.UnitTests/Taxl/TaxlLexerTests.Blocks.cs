@@ -6,6 +6,13 @@ public partial class TaxlLexerTests
 {
     public class Blocks
     {
+        [Fact]
+        public void BeginNotClosed_ProducesAxlText()
+            => AssertKindsIgnoreTrivia("#begin\nbla", TaxlTokenKind.Directive, TaxlTokenKind.AxlText);
+        [Fact]
+        public void AddfileNotClosed_ProducesAxlText()
+            => AssertKindsIgnoreTrivia("#addfile\nbla", TaxlTokenKind.Directive, TaxlTokenKind.AxlText);
+        
         [Theory]
         [InlineData("#begin\n#begin\n#end")]
         [InlineData("#begin\n#b\n#end")]
@@ -233,6 +240,33 @@ public partial class TaxlLexerTests
             Assert.Equal(expectedAxlText, textToken.Text);
         }
 
+
+        [Theory]
+        [InlineData("#begin\na#end\n#end")]
+        [InlineData("#begin\n//#end\n#end")]
+        [InlineData("#begin\n\"#end\"\n#end")]
+        [InlineData("#begin\nasd asd asd #end\"\n#end")]
+        [InlineData("#begin\nasd asd asd //#end\"\n#end")]
+        public void EndAfterSameLineCharacters_InAxlText(string input)
+            => AssertKindsIgnoreTrivia(input, TaxlTokenKind.Directive, TaxlTokenKind.AxlText, TaxlTokenKind.Directive);
+
+        [Theory]
+        [InlineData("#addfile\na#endfile\n#endfile")]
+        [InlineData("#addfile\n//#endfile\n#endfile")]
+        [InlineData("#addfile\n\"#endfile\"\n#endfile")]
+        [InlineData("#addfile\nasd asd asd #endfile\"\n#endfile")]
+        [InlineData("#addfile\nasd asd asd //#endfile\"\n#endfile")]
+        public void EndfileAfterSameLineCharacters_InAxlText(string input)
+            => AssertKindsIgnoreTrivia(input, TaxlTokenKind.Directive, TaxlTokenKind.AxlText, TaxlTokenKind.Directive);
+
+        [Fact]
+        public void EndAfterSameLineWhitespace_StopsAxlText()
+            => AssertKindsIgnoreTrivia("#begin\n    #end", TaxlTokenKind.Directive, TaxlTokenKind.AxlText,
+                TaxlTokenKind.Directive);
+        [Fact]
+        public void EndfileAfterSameLineWhitespace_StopsAxlText()
+            => AssertKindsIgnoreTrivia("#addfile\n    #endfile", TaxlTokenKind.Directive, TaxlTokenKind.AxlText,
+                TaxlTokenKind.Directive);
     }
 
 

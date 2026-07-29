@@ -3,7 +3,6 @@
 
 # Notes
 
-* extract mode switches
 * support inblock directives `//#`
   * ignore strings, comments
 * review TaxlLexer and play around

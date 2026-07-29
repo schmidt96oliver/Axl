@@ -161,45 +161,53 @@ public sealed class TaxlLexer
             if (c is '#')
             {
                 var directiveStart = _next;
-                
-                // Advance the entire directive
+
+                // --- Advance entire directive
                 Advance(text);
                 while (Peek(text) is >= 'a' and <= 'z' or >= 'A' and <= 'Z' or '-' or '_')
                     Advance(text);
-                
-                // Check if it ends the block
-                if (text[directiveStart.._next].SequenceEqual(stopDirective))
+
+                // --- Ends the Block?
+                if (!text[directiveStart.._next].SequenceEqual(stopDirective))
                 {
-                    // We have found the end!
-                    // Now we have consumed whitespace and the last newline, which we need to back up.
-                    // We know, that _next is valid, so we just search going backward.
-                    
-                    // Back up before the start, so that the directive goes through normal lexing.
-                    _next = directiveStart;
-                    while (_next > _start)
-                    {
-                        if (text[_next - 1] is ' ')
-                            _next--;
-                        else if (text[_next - 1] is '\n')
-                        {
-                            // Back up and then stop, because we only want the last newline.
-                            _next--;
-                            break;
-                        }
-                        else
-                            break;
-                    }
-                
-                    AddToken(TaxlTokenKind.AxlText);
-                    return;
+                    // The directive doesn't stop the block, so we add it will
+                    // be added to the AxlText token later.
+                    continue;
                 }
+
+                // --- End found!
+                // We still need to reject the end directive, if there are non-whitespace characters
+                // on the same line before. We do that, so we ignore directives in strings and comments.
                 
-                // Otherwise, we have advanced everything and discard it.
-                // That will attach it to the AxlBlock token
-                continue;
+                // --- Find start of the line
+                var lineStart = directiveStart;
+                while (lineStart > _start && text[lineStart - 1] is not '\n')
+                {
+                    lineStart--;
+                }
+
+                // --- Non-whitespace before directive?
+                if (text[lineStart..directiveStart].ContainsAnyExcept(' '))
+                {
+                    // Ignore this directive. It is already advanced, so we can skip
+                    // the advance step and continue with the next iteration.
+                    continue;
+                }
+
+                // --- End is valid!
+                // Back the lexer up to the line start.
+                // We also need to back up one newline, if there is one.
+                _next = lineStart;
+                if (_next - 1 >= _start && text[_next - 1] is '\n')
+                    _next--;
+                
+                // Emit AxlText now, then the Taxl loop will emit Newline and
+                // the end directive.
+                AddToken(TaxlTokenKind.AxlText);
+                return;
             }
 
-            
+            // --- Advance one text character
             Advance(text);
         }
         
@@ -210,8 +218,6 @@ public sealed class TaxlLexer
     
     private void LexErrorAndSingle(ReadOnlySpan<char> text)
     {
-        // Lexes single token and possible error before.
-
         var errorStart = _next;
         while (_next < text.Length)
         {
