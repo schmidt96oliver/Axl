@@ -4,14 +4,13 @@
 # Notes
 
 * test: intext #begin does not start a new block
-* test: // //#directive ignored
-* test: "//#directive" ignored
+* test: commented // //#directive ignored and ///#directive
+* test: string "//#directive" ignored
 * test: in-text directive correct tokens + newline
 
 * docs: update to in-text directive before
-* intext: as sidetable?
-
-* inblock: ignore strings, comments
+* intext: as sidetable? => TryLex yields Token (rewrite of Advance, Peek, machinery) _or_ deletes tokens from the builder (a little frail)
+  * think about consumer: TestCaseParser
 
 * review TaxlLexer and play around
 * review git changes

@@ -71,15 +71,21 @@ public sealed class TaxlLexer
         Debug.Assert(kind is not TaxlTokenKind.Error, "Use AddErrorToken instead!");
         
         var span = _source.GetSpanFromTo(_start, _next);
-        _tokens.Add(new TaxlToken(span, kind, _source.GetText(span)));
+        AddToken(TaxlToken.Simple(span, kind, _source.GetText(span)));
 
         _start = _next;
     }
 
-    private void AddErrorToken(ErrorGuaranteed _, int insertIndex, int start, int end)
+    private void AddToken(TaxlToken token)
+    {
+        _tokens.Add(token);
+        _start = _next;
+    }
+
+    private void AddErrorToken(ErrorGuaranteed proof, int insertIndex, int start, int end)
     {
         var span = _source.GetSpanFromTo(start, end);
-        _tokens.Insert(insertIndex, new TaxlToken(span, TaxlTokenKind.Error, _source.GetText(span)));
+        _tokens.Insert(insertIndex, TaxlToken.Error(proof, span, _source.GetText(span)));
     }
 
 
@@ -137,7 +143,7 @@ public sealed class TaxlLexer
                 {
                     // We need to insert an empty AxlText token.
                     var span = SourceSpan.EmptyAt(token.Span.First);
-                    var axlTextToken = new TaxlToken(span, TaxlTokenKind.AxlText, "");
+                    var axlTextToken = TaxlToken.AxlText(span, "", []);
                     _tokens.Insert(_tokens.Count - 1, axlTextToken);
 
                     textStartDirective = TextStartDirective.None;
@@ -242,16 +248,20 @@ public sealed class TaxlLexer
                 
                 // Emit AxlText now, then the Taxl loop will emit Newline and
                 // the end directive.
-                AddToken(TaxlTokenKind.AxlText);
+                var span = _source.GetSpanFromTo(_start, _next);
+                AddToken(TaxlToken.AxlText(span, _source.GetText(span), []));
                 return;
             }
 
             // --- Advance one text character
             Advance(text);
         }
-        
+
         if (_next > _start)
-            AddToken(TaxlTokenKind.AxlText);
+        {
+            var span = _source.GetSpanFromTo(_start, _next);
+            AddToken(TaxlToken.AxlText(span, _source.GetText(span), []));
+        }
     }
     
     
