@@ -10,25 +10,12 @@ namespace Axl.Compiler.Taxl;
 // token.
 public sealed class TaxlLexer
 {
-    private enum Mode
-    {
-        Taxl,
-        BeginSeen,
-        AddFileSeen,
-        AxlFromBegin,
-        AxlFromAddFile,
-        AxlDirectiveInBeginText,
-        AxlDirectiveInAddFileText,
-    }
-    
     private readonly SourceView _source;
     private readonly DiagnosticBag _diagnosticBag;
     private readonly ImmutableArray<TaxlToken>.Builder _tokens;
 
     private int _start, _next;
 
-    private Mode _mode = Mode.Taxl;
-    
     private TaxlLexer(SourceView source, DiagnosticBag diagnosticBag)
     {
         _source = source;
@@ -45,6 +32,7 @@ public sealed class TaxlLexer
             ? text[_next++]
             : null;
     }
+    
     private char? Peek(ReadOnlySpan<char> text)
     {
         return _next < text.Length
@@ -77,6 +65,7 @@ public sealed class TaxlLexer
         return false;
     }
 
+    
     private void AddToken(TaxlTokenKind kind)
     {
         Debug.Assert(kind is not TaxlTokenKind.Error, "Use AddErrorToken instead!");
@@ -93,28 +82,132 @@ public sealed class TaxlLexer
         _tokens.Insert(insertIndex, new TaxlToken(span, TaxlTokenKind.Error, _source.GetText(span)));
     }
 
+
+    private enum TextStartDirective
+    {
+        None,
+        Begin,
+        Addfile
+    }
+
+    private TextStartDirective GetStartDirective(string directiveText) => directiveText switch
+    {
+        "#begin" => TextStartDirective.Begin,
+        "#addfile" => TextStartDirective.Addfile,
+        _ => TextStartDirective.None
+    };
+
+    private string GetStopDirective(TextStartDirective startDirective) => startDirective switch
+    {
+        TextStartDirective.Begin => "#end",
+        TextStartDirective.Addfile => "#endfile",
+        _ => throw new ArgumentException($"Given {nameof(startDirective)} has no corresponding end directive.",
+            nameof(startDirective))
+    };
     
-    private void LexOutsideTaxl()
+    
+    private void LexTaxl()
     {
-        // Try Lex
-        // Switch last token:
-        // #begin => begin seen!
-        // #end and begin seen => create Text without lexing
-        // \n and begin seen => LexText
-    }
-
-    private void LexText()
-    {
-        // Advance characters
-        // on "//#" => TryLex until newline
-        // on #end => Stop (was triggered from LexTaxl)
-    }
-
-    private void LexInTextTaxl()
-    {
+        var text = _source.TextSpan;
+        var textStartDirective = TextStartDirective.None;
         
-    }
+        while (_next < text.Length)
+        {
+            // --- Lex single token
+            LexErrorAndSingle(text);
+            
+            // --- Check mode switches
+            var token = _tokens[^1];
+            switch (token.Kind)
+            {
+                // --- Directive that begin a text block?
+                case TaxlTokenKind.Directive when textStartDirective is TextStartDirective.None:
+                    textStartDirective = GetStartDirective(token.Text);
+                    break;
+                
+                // --- Newline that begins a text block?
+                case TaxlTokenKind.Newline when textStartDirective is not TextStartDirective.None:
+                    LexAxlText(text, GetStopDirective(textStartDirective));
+                    textStartDirective = TextStartDirective.None;
+                    break;
 
+                // --- Start and end directive on same line?
+                // Note: textStartDirective is not None, because that case is handled above.
+                case TaxlTokenKind.Directive when token.Text == GetStopDirective(textStartDirective):
+                {
+                    // We need to insert an empty AxlText token.
+                    var span = SourceSpan.EmptyAt(token.Span.First);
+                    var axlTextToken = new TaxlToken(span, TaxlTokenKind.AxlText, "");
+                    _tokens.Insert(_tokens.Count - 1, axlTextToken);
+
+                    textStartDirective = TextStartDirective.None;
+                    break;
+                }
+            }
+        }
+    }
+    
+    private void LexAxlText(ReadOnlySpan<char> text, string stopDirective)
+    {
+        while (Peek(text) is char c)
+        {
+            // --- In-text directive?
+            if (Match(text, "//#"))
+            {
+                
+            }
+            
+            // --- Plain directive? Could be an end.
+            if (c is '#')
+            {
+                var directiveStart = _next;
+                
+                // Advance the entire directive
+                Advance(text);
+                while (Peek(text) is >= 'a' and <= 'z' or >= 'A' and <= 'Z' or '-' or '_')
+                    Advance(text);
+                
+                // Check if it ends the block
+                if (text[directiveStart.._next].SequenceEqual(stopDirective))
+                {
+                    // We have found the end!
+                    // Now we have consumed whitespace and the last newline, which we need to back up.
+                    // We know, that _next is valid, so we just search going backward.
+                    
+                    // Back up before the start, so that the directive goes through normal lexing.
+                    _next = directiveStart;
+                    while (_next > _start)
+                    {
+                        if (text[_next - 1] is ' ')
+                            _next--;
+                        else if (text[_next - 1] is '\n')
+                        {
+                            // Back up and then stop, because we only want the last newline.
+                            _next--;
+                            break;
+                        }
+                        else
+                            break;
+                    }
+                
+                    AddToken(TaxlTokenKind.AxlText);
+                    return;
+                }
+                
+                // Otherwise, we have advanced everything and discard it.
+                // That will attach it to the AxlBlock token
+                continue;
+            }
+
+            
+            Advance(text);
+        }
+        
+        if (_next > _start)
+            AddToken(TaxlTokenKind.AxlText);
+    }
+    
+    
     private void LexErrorAndSingle(ReadOnlySpan<char> text)
     {
         // Lexes single token and possible error before.
@@ -156,20 +249,6 @@ public sealed class TaxlLexer
         }
     }
     
-    
-    private void Lex()
-    {
-        var text = _source.TextSpan;
-        
-        while (_next < text.Length)
-        {
-            if (_mode is Mode.AxlFromAddFile or Mode.AxlFromBegin)
-                LexInsideBlock(text);
-            else
-                LexErrorAndSingle(text);
-        }
-    }
-
     private bool TryLexSingle(ReadOnlySpan<char> text)
     {
         switch (Peek(text))
@@ -179,13 +258,6 @@ public sealed class TaxlLexer
                 Advance(text);
                 AddToken(TaxlTokenKind.Newline);
 
-                _mode = _mode switch
-                {
-                    Mode.BeginSeen => Mode.AxlFromBegin,
-                    Mode.AddFileSeen => Mode.AxlFromAddFile,
-                    _ => _mode
-                };
-                
                 return true;
             
             // --- Whitespace
@@ -208,29 +280,6 @@ public sealed class TaxlLexer
                 while (Peek(text) is >= 'a' and <= 'z' or >= 'A' and <= 'Z' or '-' or '_')
                     Advance(text);
                 AddToken(TaxlTokenKind.Directive);
-
-                // Check if we started or ended a block
-                switch (_tokens[^1].Text)
-                {
-                    case "#begin":
-                        _mode = Mode.BeginSeen;
-                        break;
-                    case "#addfile":
-                        _mode = Mode.AddFileSeen;
-                        break;
-                    
-                    // We need to check for end markers here, since start
-                    // and end directive could be on the same line.
-                    case "#end" when _mode is Mode.BeginSeen:
-                    case "#endfile" when _mode is Mode.AddFileSeen:
-                        // We need to insert an empty AxlText token before the end directive.
-                        var span = SourceSpan.EmptyAt(_tokens[^1].Span.First);
-                        var axlTextToken = new TaxlToken(span, TaxlTokenKind.AxlText, "");
-                        _tokens.Insert(_tokens.Count - 1, axlTextToken);
-                        
-                        _mode = Mode.Taxl;
-                        break;
-                }
 
                 return true;
             
@@ -267,81 +316,12 @@ public sealed class TaxlLexer
 
         return false;
     }
-
-    private void LexInsideBlock(ReadOnlySpan<char> text)
-    {
-        Debug.Assert(_mode is Mode.AxlFromAddFile or Mode.AxlFromBegin);
-        
-        // Advance as long, as we find end of endblock directive
-        while (Peek(text) is char c)
-        {
-            // --- In-text directive?
-            if (Match(text, "//#"))
-            {
-                
-            }
-            
-            // --- In block directive?
-            if (c is '#')
-            {
-                // We might have a directive here. Parse it and check
-                var directiveStart = _next;
-                Advance(text);
-                while (Peek(text) is >= 'a' and <= 'z' or >= 'A' and <= 'Z' or '-' or '_')
-                    Advance(text);
-                
-                
-                //    #end asd
-                
-                // --- Ends the block?
-                var endsBlock = _mode is Mode.AxlFromBegin
-                    ? text[directiveStart.._next] is "#end"
-                    : text[directiveStart.._next] is "#endfile";
-                if (endsBlock)
-                {
-                    // We have found the end!
-                    // Now we have consumed whitespace and the last newline, which we need to back up.
-                    // We know, that _next is valid, so we just search going backward.
-                    
-                    // Back up before the start, so that the directive goes through normal lexing.
-                    _next = directiveStart;
-                    while (_next > _start)
-                    {
-                        if (text[_next - 1] is ' ')
-                            _next--;
-                        else if (text[_next - 1] is '\n')
-                        {
-                            // Back up and then stop, because we only want the last newline.
-                            _next--;
-                            break;
-                        }
-                        else
-                            break;
-                    }
-                
-                    AddToken(TaxlTokenKind.AxlText);
-                    _mode = Mode.Taxl;
-                    return;
-                }
-                
-                // Otherwise, we have advanced everything and discard it.
-                // That will attach it to the AxlBlock token
-                continue;
-            }
-
-            
-            Advance(text);
-        }
-        
-        if (_next > _start)
-            AddToken(TaxlTokenKind.AxlText);
-        _mode = Mode.Taxl;
-    }
+    
 
     public static ImmutableArray<TaxlToken> Lex(SourceView source, DiagnosticBag diagnosticBag)
     {
         var lexer = new TaxlLexer(source, diagnosticBag);
-        lexer.Lex();
+        lexer.LexTaxl();
         return lexer._tokens.DrainToImmutable();
     }
 }
