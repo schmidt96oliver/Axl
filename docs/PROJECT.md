@@ -74,14 +74,22 @@ Only change, when there is really no other possibility at all and consider conse
                                      ▼
                                     [VM]
 
-   * *Query style*: Compilation, DeclarationTable, SemanticModel answer questions about code
-     * Same question => always same answer. Query objects lazily retrieves that information from IRs (and caches)
-   * *SyntaxTree*: lossless, spans recreate source text completely, carries all trivia; feeds Binding, Formatting
-   * *HIR*: Follows syntax closely (no desugaring), types and names resolved; feeds Lsp, Lowering
-   * *MIR*: Register-based, three-adress-code, CFG, carries type information and syntax references. 2 Phases:
+   * **Compilation** - immutable and lazy. Forked for edited files. Carries over old symbols/caches if possible.
+     * Answers questions about code; always has the same answer (it arrives at lazily)
+     * Parsing, building of DeclarationTable and signature binding is _eager_
+     * Binding, Lowering, Diagnostics are _lazy_
+   * **SyntaxTree**: lossless, spans recreate source text completely, carries all trivia; feeds Binding, Formatting
+   * **Symbols** = (DeclId, Name, Signature, Visibility); DeclId = (FileId, Ordinal)
+     * Based on reference equality
+     * **carry no syntax** - No nodes, no location, no `Compilation` reference reachable through symbols. Syntax is fetched on demand.
+     * **can be shared across Compilations** - Compilation forking decides whether to carry them over or not. 
+   * **HIR**: Follows syntax closely (no desugaring), types and names resolved; feeds Lsp, Lowering
+   * **MIR**: Register-based, three-adress-code, CFG, carries type information and syntax references. 2 Phases:
      * _Generic_: has type parameters; feeds CFG passes with diagnostics, e.g. definite assignment
      * _Concrete_: no type parameters, result of monomorphization. feeds optimization, MirInterpreter, codegen. No diagnostics.
-   * *ByteCode*: Register-based, optimized for fast runtime. CodeGen and VM(+GC) is an optional coding adventure.
+   * **ByteCode**: Register-based, optimized for fast runtime. CodeGen and VM(+GC) is an optional coding adventure.
+   
+   
 
 
 # How to tackle each feature
