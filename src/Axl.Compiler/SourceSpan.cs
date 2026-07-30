@@ -26,11 +26,8 @@ public readonly record struct SourceSpan
     public bool IsEmpty => Length == 0;
 
 
-    internal SourceSpan(int first, int length)
+    private SourceSpan(int first, int length)
     {
-        Guard.InRange(first, first >= 0);
-        Guard.InRange(length, length >= 0);
-
         First = first;
         Length = length;
     }
@@ -45,6 +42,14 @@ public readonly record struct SourceSpan
     public override string ToString()
         => $"[{First}, {End})";
 
+
+    internal static SourceSpan InsideSourceFile(int first, int length)
+    {
+        Guard.InRange(first, first >= 0);
+        Guard.InRange(length, length >= 0);
+
+        return new SourceSpan(first, length);
+    }
 
     public static SourceSpan FromTo(SourceSpan first, SourceSpan last)
     {

@@ -138,7 +138,7 @@ public sealed class SourceFile
             if (Text[currentChar] is '\n')
             {
                 // This line must include \n, so it spans one further.
-                var span = new SourceSpan(lineStart, length: currentChar + 1 - lineStart);
+                var span = SourceSpan.InsideSourceFile(lineStart, length: currentChar + 1 - lineStart);
                 builder.Add(new LineInfo(lineIndex, span));
                 
                 lineIndex++;
@@ -148,7 +148,7 @@ public sealed class SourceFile
         }
 
         if (lineStart < Text.Length)
-            builder.Add(new LineInfo(lineIndex, new SourceSpan(lineStart, length: Text.Length - lineStart)));
+            builder.Add(new LineInfo(lineIndex, SourceSpan.InsideSourceFile(lineStart, length: Text.Length - lineStart)));
         
         return builder.ToImmutable();
     }

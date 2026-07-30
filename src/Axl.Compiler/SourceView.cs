@@ -11,7 +11,7 @@ public readonly record struct SourceView(SourceFile File, SourceSpan Span)
     
     
     public static SourceView Whole(SourceFile file)
-        => new(file, new SourceSpan(0, length: file.Text.Length));
+        => new(file, SourceSpan.InsideSourceFile(0, length: file.Text.Length));
     
     public static SourceView FromFile(string path)
         => Whole(SourceFile.FromFile(path));
@@ -20,11 +20,12 @@ public readonly record struct SourceView(SourceFile File, SourceSpan Span)
     /// Converts start/end indices inside this view to <see cref="SourceSpan"/> that
     /// references the containing file.
     /// </summary>
+    /// <param name="end">Exclusive end index inside source file.</param>
     public SourceSpan SpanFromTo(int start, int end)
     {
         Guard.InRange(start, start >= 0);
         Guard.InRange(end, end <= Span.Length);
-        return new SourceSpan(start + Span.First, length: end - start);
+        return SourceSpan.InsideSourceFile(start + Span.First, length: end - start);
     }
     
     /// <summary>
@@ -36,7 +37,7 @@ public readonly record struct SourceView(SourceFile File, SourceSpan Span)
         Guard.InRange(start, start >= 0);
         Guard.InRange(length, length >= 0);
         Guard.InRange(length, length <= Span.Length);
-        return new SourceSpan(start + Span.First, length);
+        return SourceSpan.InsideSourceFile(start + Span.First, length);
     }
 
     public SourceLocation GetLocation(SourceSpan span)
