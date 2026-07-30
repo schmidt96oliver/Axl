@@ -4,7 +4,7 @@ namespace Axl.Compiler;
 
 /// <summary>
 /// Span of text inside <see cref="SourceFile"/>.
-/// Never refers to <see cref="SourceView"/>.
+/// Never refers to <see cref="SourceFileView"/>.
 /// 
 /// Indices are UTF-16 code point indices as indexed by <see cref="string"/>.
 /// </summary>

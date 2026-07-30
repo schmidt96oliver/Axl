@@ -8,7 +8,7 @@ while (true)
 {
     Thread.Sleep(250);
     
-    var view = SourceView.FromFile("../../../../src/Axl/lexText.taxl");
+    var view = SourceFileView.FromFile("../../../../src/Axl/lexText.taxl");
     if (view.File.Text == prevText)
         continue;
     

@@ -1,22 +1,22 @@
 ﻿namespace Axl.Compiler;
 
 /// <summary>
-/// A view into a <see cref="SourceFile"/>.
+/// A view into one part of a <see cref="SourceFile"/>.
 /// This is all the compiler will ever see, so
 /// that only parts of a file can be passed into the pipeline.
 /// </summary>
-public readonly record struct SourceView(SourceFile File, SourceSpan Span)
+public readonly record struct SourceFileView(SourceFile File, SourceSpan Span)
 {
     public ReadOnlySpan<char> TextSpan => File.GetTextSpan(Span);
     
     
-    public static SourceView Whole(SourceFile file)
+    public static SourceFileView Whole(SourceFile file)
         => new(file, SourceSpan.InsideSourceFile(0, length: file.Text.Length));
     
-    public static SourceView FromFile(string path)
+    public static SourceFileView FromFile(string path)
         => Whole(SourceFile.FromFile(path));
 
-    public static SourceView FromText(string text)
+    public static SourceFileView FromText(string text)
         => Whole(SourceFile.FromText(text));
 
     /// <summary>

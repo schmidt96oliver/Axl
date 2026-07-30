@@ -6,10 +6,10 @@ namespace Axl.Compiler.Taxl;
 
 public sealed class TaxlLexer
 {
-    private readonly SourceView _source;
+    private readonly SourceFileView _source;
     private readonly DiagnosticBag _diagnosticBag;
 
-    private TaxlLexer(SourceView source, DiagnosticBag diagnosticBag)
+    private TaxlLexer(SourceFileView source, DiagnosticBag diagnosticBag)
     {
         _source = source;
         _diagnosticBag = diagnosticBag;
@@ -315,7 +315,7 @@ public sealed class TaxlLexer
     }
     
 
-    public static ImmutableArray<TaxlToken> Lex(SourceView source, DiagnosticBag diagnosticBag)
+    public static ImmutableArray<TaxlToken> Lex(SourceFileView source, DiagnosticBag diagnosticBag)
     {
         var lexer = new TaxlLexer(source, diagnosticBag);
         return lexer.LexTaxl();
