@@ -32,17 +32,6 @@ public readonly record struct SourceSpan
         Length = length;
     }
 
-    
-    public bool Contains(int index)
-        => index >= First && index < End;
-
-    public bool Contains(SourceSpan span)
-        => span.First >= First && span.End <= End;
-    
-    public override string ToString()
-        => $"[{First}, {End})";
-
-
     internal static SourceSpan InsideSourceFile(int first, int length)
     {
         Guard.InRange(first, first >= 0);
@@ -59,5 +48,36 @@ public readonly record struct SourceSpan
 
     public static SourceSpan EmptyBefore(SourceSpan span)
         => new(span.First, length: 0);
+    
+    
+    public bool Contains(int index)
+        => index >= First && index < End;
+
+    public bool Contains(SourceSpan span)
+        => span.First >= First && span.End <= End;
+
+    /// <summary>
+    /// Whether the given spans are sequential without overlaps or gaps and span
+    /// the entire <see cref="SourceSpan"/>.
+    /// If <paramref name="spans"/> is empty, returns true iff this span is empty.
+    /// </summary>
+    public bool IsPartitionedBy(params IEnumerable<SourceSpan> spans)
+    {
+        var position = First;
+        foreach (var span in spans)
+        {
+            if (span.First != position)
+                return false;
+            position = span.End;
+        }
+
+        return position == End;
+    }
+    
+    public override string ToString()
+        => $"[{First}, {End})";
+
+
+    
 
 }

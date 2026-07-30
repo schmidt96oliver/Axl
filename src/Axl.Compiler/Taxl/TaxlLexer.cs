@@ -318,6 +318,8 @@ public sealed class TaxlLexer
     public static ImmutableArray<TaxlToken> Lex(SourceFileView source, DiagnosticBag diagnosticBag)
     {
         var lexer = new TaxlLexer(source, diagnosticBag);
-        return lexer.LexTaxl();
+        var tokens = lexer.LexTaxl();
+        Debug.Assert(source.Span.IsPartitionedBy(tokens.Select(t => t.Span)));
+        return tokens;
     }
 }
