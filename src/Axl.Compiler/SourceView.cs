@@ -16,6 +16,9 @@ public readonly record struct SourceView(SourceFile File, SourceSpan Span)
     public static SourceView FromFile(string path)
         => Whole(SourceFile.FromFile(path));
 
+    public static SourceView FromText(string text)
+        => Whole(SourceFile.FromText(text));
+
     /// <summary>
     /// Converts start/end indices inside this view to <see cref="SourceSpan"/> that
     /// references the containing file.
