@@ -3,19 +3,6 @@
 
 # Notes
 
-* clean up
-  * big LexAxlText => use rest + RunLength pattern
-  * check Claude Code answer
-  
-* test: intext #begin does not start a new block
-* test: commented // //#directive ignored and ///#directive
-* test: string "//#directive" ignored
-* test: in-text directive correct tokens + newline
-* test: in-text tokens content
-* test: #begin without end produces AxlText
-
-* review TaxlLexer and play around
-
 ## Taxl Parser
 * Tokens/Diagnostics with payload: esp. test string data (with escapes)
 * feat: DirectiveParser => raw directives
