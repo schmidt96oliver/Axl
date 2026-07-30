@@ -12,6 +12,7 @@
 * test: string "//#directive" ignored
 * test: in-text directive correct tokens + newline
 * test: in-text tokens content
+* test: #begin without end produces AxlText
 
 * review TaxlLexer and play around
 
@@ -67,12 +68,13 @@ Doc comments:
    * "<example>" "<exception>"
 
 1. Lexer -> TokenList
-   * ?? Strongly typed (rather than TokenKind enum)
-   * ?? Token carries Identifier struct/StringData (with escapes)/NumberLiteralData, ...
-   * needs contextual keywords (`never`) that Lsp can  highlight correctly
+   * ref struct Scanner: .Advance, .AdvanceWhile, .MakeToken carries ReadOnlySpan<char> Text
 2. Parser -> SyntaxTree
    * ?? untyped tree or typed
-3. DeclarationTable and Symbols 
+3. SymbolTable (DeclarationTable?)
+   * builds DeclId (see Project.md)
+   * builds symbols as second step (i.e. binds signatures)
+   * ?? lazy symbols
    * maps Name to DeclarationSyntax
    * ?? how find all extend members
    * ?? how to represent symbols (lazy objects, just a ref?)

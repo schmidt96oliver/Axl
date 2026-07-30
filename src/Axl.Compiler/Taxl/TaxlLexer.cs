@@ -97,6 +97,14 @@ public sealed class TaxlLexer
             }
         }
 
+        // Still in text mode?
+        if (textStartDirective is not TextStartDirective.None)
+        {
+            // That means, there was no newline after #begin and the file ended.
+            // So we produce an empty AxlText token.
+            tokens.Add(TaxlToken.AxlText(SourceSpan.EmptyAfter(tokens[^1].Span), "", []));
+        }
+        
         return tokens.DrainToImmutable();
     }
 

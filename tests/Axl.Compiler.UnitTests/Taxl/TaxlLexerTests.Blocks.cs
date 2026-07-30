@@ -267,6 +267,37 @@ public partial class TaxlLexerTests
         public void EndfileAfterSameLineWhitespace_StopsAxlText()
             => AssertKindsIgnoreTrivia("#addfile\n    #endfile", TaxlTokenKind.Directive, TaxlTokenKind.AxlText,
                 TaxlTokenKind.Directive);
+
+
+        [Theory]
+        [InlineData("#begin", "")]
+        [InlineData("#begin A", "")]
+        [InlineData("#begin \"\"", "")]
+        [InlineData("#begin\n", "")]
+        [InlineData("#begin A\n", "")]
+        [InlineData("#begin A\nBla", "Bla")]
+        [InlineData("#begin A\nBla\nBla", "Bla\nBla")]
+        public void BeginWithoutEnd_ProducesAxlText(string input, string expectedAxlText)
+        {
+            var lex = RunLexer(input);
+            var textToken = Assert.Single(lex.Where(token => token.Kind is TaxlTokenKind.AxlText));
+            Assert.Equal(expectedAxlText, textToken.Text);
+        }
+
+        [Theory]
+        [InlineData("#addfile", "")]
+        [InlineData("#addfile A", "")]
+        [InlineData("#addfile \"\"", "")]
+        [InlineData("#addfile\n", "")]
+        [InlineData("#addfile A\n", "")]
+        [InlineData("#addfile A\nBla", "Bla")]
+        [InlineData("#addfile A\nBla\nBla", "Bla\nBla")]
+        public void AddfileWithoutEndfile_ProducesAxlText(string input, string expectedAxlText)
+        {
+            var lex = RunLexer(input);
+            var textToken = Assert.Single(lex.Where(token => token.Kind is TaxlTokenKind.AxlText));
+            Assert.Equal(expectedAxlText, textToken.Text);
+        }
     }
 
 

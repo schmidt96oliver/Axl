@@ -48,6 +48,9 @@ public readonly record struct SourceSpan
 
     public static SourceSpan EmptyBefore(SourceSpan span)
         => new(span.First, length: 0);
+
+    public static SourceSpan EmptyAfter(SourceSpan span)
+        => new(span.End, length: 0);
     
     
     public bool Contains(int index)
