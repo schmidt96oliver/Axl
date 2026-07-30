@@ -1,3 +1,4 @@
 // Try something on the lexer
-#lexer
-#begin  #end
+#lexer ..@0#bla
+#begin
+bla "//#blupp"

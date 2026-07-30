@@ -133,7 +133,8 @@ public sealed class TaxlLexer
                 // --- Skip strings
                 case ['\"', ..]:
                 {
-                    length += RunLength(text[current..], static c => c is not ('\n' or '\"'));
+                    length++;
+                    length += RunLength(text[(current + 1)..], static c => c is not ('\n' or '\"'));
 
                     if (start + length < text.Length && text[start + length] is '\"')
                         length++;
@@ -213,36 +214,17 @@ public sealed class TaxlLexer
         return tokenStart - start;
     }
 
+    
+    private bool CanStartToken(ReadOnlySpan<char> text, int start)
+        => text[start..] is ['\n', ..] or [' ' or '\t' or '\r', ..] or ['/', '/', ..]
+            or ['#', ..] or [>= 'a' and <= 'z' or >= 'A' and <= 'Z' or '_', ..] or ['\"', ..];
+    
     private TaxlToken LexSingle(ReadOnlySpan<char> text, int start)
     {
         Debug.Assert(start < text.Length);
-
-        if (TryLexSingle(text, start) is TaxlToken token)
-            return token;
-
-        // At the current point, no token can be lexed.
-        // So we try one character later.
-        var errorLength = 1;
-        
-        // Note that TryLexSingle just returns null, if start position of too far.
-        while (TryLexSingle(text, start + errorLength) is null)
-            errorLength++;
-
-        // At this point, the next token can start, or it's end of file.
-        // We discard the last token value.
-        // This is wasteful, granted, but it's the easier to read pipeline :).
-        var span = _source.SpanFromLength(start, errorLength);
-        return TaxlToken.Error(
-            _diagnosticBag.ReportError(new Diagnostic.InvalidCharacters(_source.GetLocation(span))),
-            span,
-            text[start..(start + errorLength)].ToString());
-    }
-
-    private TaxlToken? TryLexSingle(ReadOnlySpan<char> text, int start)
-    {
-        if (start >= text.Length)
-            return null;
-        
+        // if (start >= text.Length)
+        //     return null;
+        //
         var length = 0;
         var rest = text[start..];
 
@@ -260,8 +242,8 @@ public sealed class TaxlLexer
 
             // --- Comment
             case ['/', '/', ..]:
-                length = 3;
-                length += RunLength(rest[3..], static c => c is not '\n');
+                length = 2;
+                length += RunLength(rest[2..], static c => c is not '\n');
                 return MakeToken(rest, TaxlTokenKind.Comment);
 
             // --- Directive
@@ -283,21 +265,33 @@ public sealed class TaxlLexer
                 length = 1;
                 length += RunLength(rest[1..], static c => c is not ('\"' or '\n'));
                 
+                // String terminated?
                 if (length < rest.Length && rest[length] is '\"')
                 {
                     length++;
-                    return MakeToken(rest, TaxlTokenKind.String);
+                }
+                else
+                {
+                    // String has not been terminated. Report error and still add the string token.
+                    _diagnosticBag.ReportError(
+                        new Diagnostic.StringNotClosed(_source.LocationFromLength(start, length)));
                 }
 
-                var errorSpan = _source.SpanFromLength(start, length);
+                return MakeToken(rest, TaxlTokenKind.String);
+            
+            // --- Error!
+            default:
+                Debug.Assert(!CanStartToken(text, start));
+                length = 1;
+                while (length < rest.Length && !CanStartToken(rest, length))
+                    length++;
+                
+                var span = _source.SpanFromLength(start, length);
                 return TaxlToken.Error(
-                    _diagnosticBag.ReportError(
-                        new Diagnostic.StringNotClosed(_source.GetLocation(errorSpan))),
-                    errorSpan,
-                    rest[..length].ToString());
+                    _diagnosticBag.ReportError(new Diagnostic.InvalidCharacters(_source.GetLocation(span))),
+                    span,
+                    text[start..(start + length)].ToString());
         }
-
-        return null;
 
         TaxlToken MakeToken(ReadOnlySpan<char> restText, TaxlTokenKind kind)
             => TaxlToken.Simple(_source.SpanFromLength(start, length), kind, restText[..length].ToString());

@@ -50,7 +50,7 @@ public readonly record struct SourceFileView(SourceFile File, SourceSpan Span)
         => GetLocation(SpanFromTo(start, end));
     
     public SourceLocation LocationFromLength(int start, int length)
-        => GetLocation(SpanFromTo(start, length));
+        => GetLocation(SpanFromLength(start, length));
 
     public string GetText(SourceSpan span)
     {
