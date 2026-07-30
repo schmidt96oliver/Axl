@@ -115,123 +115,104 @@ public sealed class TaxlLexer
         var length = 0;
         while (start + length < text.Length)
         {
-            var c = text[start + length];
-
-            // --- In-text directive?
-            var tokenStart = start + length;
-            var tokenLength = 0;
-            if (text[tokenStart..] is ['/', '/', '#', ..])
+            var current = start + length;
+            switch (text[current..])
             {
-                // Advance //#
-                tokenLength += 3;
-
-                // --- Lex rest of the directive and add
-                while (tokenStart + tokenLength < text.Length &&
-                       text[tokenStart + tokenLength] is >= 'a' and <= 'z' or >= 'A' and <= 'Z' or '-' or '_')
+                // --- In-text directive?
+                case ['/', '/', '#', ..]:
+                    length += LexInTextTokens(text, current, inTextTokens);
+                    continue;
+                
+                // --- Skip comments
+                case ['/', '/', ..]:
                 {
-                    tokenLength++;
+                    length += RunLength(text[current..], static c => c is not '\n');
+                    continue;
                 }
-
-                inTextTokens.Add(TaxlToken.Simple(_source.SpanFromLength(tokenStart, tokenLength),
-                    TaxlTokenKind.Directive, text[tokenStart..(tokenStart + tokenLength)].ToString()));
-                tokenStart += tokenLength;
-                tokenLength = 0;
-
-                // --- Lex taxl tokens.
-                // Stop on newline, then the text continues.
-                while (tokenStart < text.Length)
+                
+                // --- Skip strings
+                case ['\"', ..]:
                 {
-                    var errorAndSingle = LexSingle(text, tokenStart);
-                    inTextTokens.Add(errorAndSingle);
-                    tokenStart += errorAndSingle.Length;
+                    length += RunLength(text[current..], static c => c is not ('\n' or '\"'));
 
-                    if (inTextTokens[^1].Kind is TaxlTokenKind.Newline)
-                        break;
-                }
-
-                // We have advanced quite some text, move the axl text length accordingly
-                length = tokenStart - start;
-
-                // We have matched a token, so we must not advance another character.
-                continue;
-            }
-
-            // --- Skip comments
-            if (text[(start + length)..] is ['/', '/', ..])
-            {
-                while (start + length < text.Length && text[start + length] is not '\n')
-                    length++;
-                continue;
-            }
-
-            // --- Skip strings
-            if (text[start + length] is '\"')
-            {
-                length++;
-                while (start + length < text.Length && text[start + length] is not ('\n' or '\"'))
-                    length++;
-
-                if (start + length < text.Length && text[start + length] is '\"')
-                    length++;
-                continue;
-            }
-
-            // --- Plain directive? Could be an end.
-            if (c is '#')
-            {
-                var directiveStart = start + length;
-                var directiveToken = LexSingle(text, start + length);
-                Debug.Assert(directiveToken.Kind is TaxlTokenKind.Directive);
-
-                // --- Ends the Block?
-                if (directiveToken.Text != stopDirective)
-                {
-                    // The directive doesn't stop the block.
-                    // Ignore and advance past it.
-                    length += directiveToken.Length;
+                    if (start + length < text.Length && text[start + length] is '\"')
+                        length++;
                     continue;
                 }
 
-                // --- End found!
-                // We still need to reject the end directive, if there are non-whitespace characters
-                // on the same line before. We do that, so we ignore directives in strings and comments.
-
-                // --- Find start of the line
-                var lineStart = directiveStart;
-                while (lineStart > start && text[lineStart - 1] is not '\n')
-                    lineStart--;
-
-                // --- Non-whitespace before directive?
-                if (text[lineStart..directiveStart].ContainsAnyExcept(' '))
+                // --- #end or #endfile directive?
+                case ['#', ..] when LexSingle(text, current).Text == stopDirective:
                 {
-                    // Ignore this directive and advance past it.
-                    length += directiveToken.Length;
-                    continue;
+                    // We still need to reject the end directive, if there are non-whitespace characters
+                    // on the same line before. We do that, so we ignore directives in strings and comments.
+                    // If \n is not found, lineStart == start, which is correct.
+                    var lineStart = text[start..current].LastIndexOf('\n') + 1 + start;
+                    if (text[lineStart..current].ContainsAnyExcept(' '))
+                    {
+                        // Skip the # character and continue the loop
+                        length++;
+                        continue;
+                    }
+                    
+                    // End is valid. The text token runs until, but excluding, the last newline.
+                    var textEnd = lineStart;
+                    if (textEnd > start)
+                    {
+                        Debug.Assert(text[textEnd - 1] is '\n');
+                        textEnd--;
+                    }
+
+                    // Emit AxlText now, then the Taxl loop will emit Newline and
+                    // the end directive.
+                    return TaxlToken.AxlText(_source.SpanFromTo(start, textEnd),
+                        text[start..textEnd].ToString(),
+                        inTextTokens.DrainToImmutable());
                 }
-
-                // --- End is valid!
-                // Back the lexer up to the line start.
-                // We also need to back up one newline, if there is one.
-                length = lineStart - start;
-                if (lineStart > start && text[lineStart - 1] is '\n')
-                    length--;
-
-                // Emit AxlText now, then the Taxl loop will emit Newline and
-                // the end directive.
-                return TaxlToken.AxlText(_source.SpanFromLength(start, length),
-                    text[start..(start + length)].ToString(),
-                    inTextTokens.DrainToImmutable());
+                
+                // --- Otherwise just consume one character
+                default:
+                    length++;
+                    break;
             }
-
-            // --- Advance one text character
-            length++;
         }
 
         return TaxlToken.AxlText(_source.SpanFromLength(start, length),
             text[start..(start + length)].ToString(),
             inTextTokens.DrainToImmutable());
     }
-    
+
+    /// <summary>
+    /// Returns the length that has been advanced.
+    /// </summary>
+    private int LexInTextTokens(ReadOnlySpan<char> text, int start, ImmutableArray<TaxlToken>.Builder tokens)
+    {
+        Debug.Assert(text[start..].StartsWith("//#"));
+
+        // --- Lex //# directive
+        // We cannot run that through LexSingle, because this will not consume
+        // the "//" in front of "#". But we want it in the token for correct syntax
+        // highlighting in the LSP.
+        var directiveLength = 3 + RunLength(text[(start + 3)..],
+            static c => c is >= 'a' and <= 'z' or >= 'A' and <= 'Z' or '-' or '_');
+        tokens.Add(TaxlToken.Simple(_source.SpanFromLength(start, directiveLength),
+            TaxlTokenKind.Directive, text[start..(start + directiveLength)].ToString()));
+        
+        // --- Further tokens until newline
+        var tokenStart = start + directiveLength;
+        while (tokenStart < text.Length)
+        {
+            var token = LexSingle(text, tokenStart);
+            tokens.Add(token);
+            tokenStart += token.Length;
+            
+            if (token.Kind is TaxlTokenKind.Newline)
+                break;
+        }
+
+        // Return the length that has been advanced
+        return tokenStart - start;
+    }
+
     private TaxlToken LexSingle(ReadOnlySpan<char> text, int start)
     {
         Debug.Assert(start < text.Length);
