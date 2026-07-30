@@ -114,8 +114,7 @@ public sealed class SourceFile
         return new LinePosition(line.LineNumber, index - line.Span.First);
     }
 
-
-
+    
     public ReadOnlySpan<char> GetTextSpan(SourceSpan span)
     {
         Guard.InRange(span.First, span.First >= 0);
@@ -152,7 +151,4 @@ public sealed class SourceFile
         
         return builder.ToImmutable();
     }
-
-    public SourceLocation GetLocation(SourceSpan span)
-        => new SourceLocation(this, span);
 }

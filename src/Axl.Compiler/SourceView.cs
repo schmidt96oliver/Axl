@@ -41,7 +41,7 @@ public readonly record struct SourceView(SourceFile File, SourceSpan Span)
     }
 
     public SourceLocation GetLocation(SourceSpan span)
-        => File.GetLocation(span);
+        => new(File, span);
     
     public SourceLocation LocationFromTo(int start, int end)
         => GetLocation(SpanFromTo(start, end));
