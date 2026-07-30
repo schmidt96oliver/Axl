@@ -8,7 +8,10 @@ namespace Axl.Compiler.UnitTests.Taxl;
 public partial class TaxlLexerTests(ITestOutputHelper output)
 {
     public static ImmutableArray<TaxlToken> RunLexer(string input)
-        => TaxlLexer.Lex(SourceFileView.FromText(input), new DiagnosticBag());
+        => RunLexer(input, new DiagnosticBag());
+
+    public static ImmutableArray<TaxlToken> RunLexer(string input, DiagnosticBag diagnosticBag)
+        => TaxlLexer.Lex(SourceFileView.FromText(input), diagnosticBag);
     
     
     private static void AssertKindsIgnoreTrivia(string input, params TaxlTokenKind[] expectedKinds)

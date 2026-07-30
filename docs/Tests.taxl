@@ -102,15 +102,15 @@ Panic("Ooops");
 //#end
 
 // ****
-//#lexer
-//#ignore-tokens Comment Whitespace
-//#expect-tokens 
-//# Error Identifier StringStart StringText StringEnd IntegerLiteral Newline
-//# StringStart StringText LeftBrace Identifier RightBrace Newline
-//#begin    // Script starts on the next line
+#lexer
+#ignore-tokens Comment Whitespace
+#expect-tokens 
+# Error Identifier StringStart StringText StringEnd IntegerLiteral Newline
+# StringStart StringText LeftBrace Identifier RightBrace Newline
+#begin
 @@ hello "HellO" 4i32
 "This is {new}"
-//#end      // Script excludes #begin and #end lines
+#end 
 
 // ****
 //#lexer

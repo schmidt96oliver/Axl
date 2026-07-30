@@ -222,9 +222,7 @@ public sealed class TaxlLexer
     private TaxlToken LexSingle(ReadOnlySpan<char> text, int start)
     {
         Debug.Assert(start < text.Length);
-        // if (start >= text.Length)
-        //     return null;
-        //
+        
         var length = 0;
         var rest = text[start..];
 
