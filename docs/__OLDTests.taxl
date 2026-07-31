@@ -1,0 +1,159 @@
+// Test runner will only test on *.taxl files
+// Formatter is tested using snapshot testing: Verify.Net
+// Accept will be environment flag with different Run configuration
+
+// Standalone directive: _Only_ whitespace before; everything after is consumed
+// Inline directive: Anything before; everything after is consumed
+// Block directive: Everything inside turned into text
+
+// ------- Directives ------
+// All diagnostics must be ignored or expected in all configurations!
+
+#runvm pass       // Compiles to bytecode, no errors; VM runs without errors
+#runvm panic     // Compiles to bytecode, no errors; VM runs and panics
+
+#runmir pass      // Compiles to Mir, no errors; MirInterpreter runs without errors
+#runmir panic     // Compiles to Mir, no errors; MirInterpreter runs and panics
+#optimize         // Runs optimizations on Mir
+#noprelude        // Disables importing the prelude
+
+//#compile pass     // Compiles, no errors
+//#compile fail     // Compiles, with errors
+
+//#lexer            // Runs only the lexer; input must be matched
+//#parser           // Runs lexer+parser; syntax tree must be matched
+
+//#ignore-tokens A B C      // Given tokens are ignored for #lexer and #parser tests
+//#ignore-diagnostics A B   // Given diagnostics are ignored and must not be specified
+
+//#expect-diagnostic        // Inline, matches line number and DiagnosticCode
+
+// These are standalone and expected values are given in successive //#
+//#expect-output 
+//#expect-tokens
+//#expect-syntaxtree
+//#                 // input for previous directive
+
+// File and script blocks
+// Test script to be executed must be block:
+//#begin sdf dsfg +#+#`
+
+//#end
+
+// Before or after, several file blocks can be added
+//#begin-file "A.axl"
+
+//#endfile
+
+//#begin-file "B.axl"
+
+//#endfile
+
+// There must be exactly one script block per .taxl file
+// There can be several or no file blocks.
+// Blocks cannot be nested
+
+// Multiple files
+//#runmir-pass
+//#optimize
+//#expect-output
+//# "Hello"
+//#begin
+
+using A;
+PrintHello();
+
+//#end
+
+//#addfile "A.axl"
+    module A;
+    
+    public fn PrintHello()
+        => Standard.PrintLine("Hello");
+//#endfile
+
+// ------- Examples ------
+//#run-pass   // Runtime, everything needs to pass (compiles, no errors. Diagnostics must be ignored or expected)
+//#expect-output 
+//# "Hello"     // each string is _one_ line
+//# "Hello"
+//# "Hello"
+//# "Hello"
+//#begin
+
+fn Test() { Standard.Print("Hello"); }
+
+Test();
+Test();
+Test();
+Test();
+
+var a = 2;      //#expect-diagnostic UnusedVariable
+//#end
+
+
+// ****
+//#run-panic  // Runtime, needs to compile, no-error; panics on execution
+//#noprelude
+//#begin
+var a = 1 / 0;  
+
+Panic("Ooops");
+//#end
+
+// ****
+#lexer
+#ignore-tokens Comment Whitespace
+#expect-tokens 
+# Error Identifier StringStart StringText StringEnd IntegerLiteral Newline
+# StringStart StringText LeftBrace Identifier RightBrace Newline
+#begin
+@@ hello "HellO" 4i32
+"This is {new}"
+#end 
+
+// ****
+//#lexer
+//#expect-tokens
+//# Identifier Whitespace Identifier Whitespace StringStart StringEnd Newline
+//#begin
+A B ""
+//#end
+
+// ****
+// style: depth n => n * "-" + n * " "
+
+//#parser
+//#ignore-tokens Whitespace Newline
+//#expect-syntaxtree
+//# FunctionDeclaration
+//# - FnKeyword "fn"
+//# - Identifier "A"
+//# - ParameterList
+//# --  ParenOpen "("
+//# --  ParenClose ")"
+//# - BlockExpression
+//# --  BraceOpen "{"
+//# --  VariableDeclaration
+//# ---   VarKeyword "var"
+//# ---   Identifier "a"
+//# ---   Equals "="
+//# ---   IntLiteral "1"
+//# ---   Semicolon ";"
+//# --  BraceClose "}"
+
+//#begin
+fn A() { var a = 1; }
+//#end
+
+// ***
+//#compile-fail     // Runs only the compiler; needs to fail compilation with errors
+//#begin
+var a: i32 = 1.1f;      //#expect-diagnostic TypeMismatch
+//#end
+
+// ***
+//#compile-pass     // Runs only the compiler; needs to compile with no errors
+//#begin
+var a = 1;          //#expect-diagnostic UnusedVariable
+//#end

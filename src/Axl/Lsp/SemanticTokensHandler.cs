@@ -9,7 +9,7 @@ public class SemanticTokensHandler : SemanticTokensHandlerBase
 {
     // Alternation order matters: comments swallow the rest of the line, strings swallow keywords inside them.
     private static readonly Regex TokenRegex = new(
-        """(?<decorator>\//#[a-zA-Z0-9_-]*)|(?<comment>//.*)|(?<string>"(?:\\.|[^"\\])*"?)|(?<keyword>\b(?:fn|var|record|module|using|public|private|native|return|if|else|loop|break|continue|and|or|not|true|false|i32|f32|i64|f64|bool|string|none|never|extend|this|ref|value)\b)""",
+        """(?<decorator>//(?:[@~][a-zA-Z_-]*|-{3,}|={3,}))|(?<comment>//.*)|(?<string>"(?:\\.|[^"\\])*"?)|(?<keyword>\b(?:fn|var|record|module|using|public|private|native|return|if|else|loop|break|continue|and|or|not|true|false|i32|f32|i64|f64|bool|string|none|never|extend|this|ref|value)\b)""",
         RegexOptions.Compiled);
 
     protected override SemanticTokensRegistrationOptions CreateRegistrationOptions(SemanticTokensCapability capability,
