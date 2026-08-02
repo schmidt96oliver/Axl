@@ -3,13 +3,13 @@ using Meziantou.Framework.InlineSnapshotTesting;
 
 namespace Axl.Tests;
 
-public static class Bless
+public static class BlessingMode
 {
     public static bool IsEnabled { get; }
     
-    static Bless()
+    static BlessingMode()
     {
-        if (Environment.GetEnvironmentVariable("BLESS") is not null)
+        if (Environment.GetEnvironmentVariable("BLESS") is "1")
         {
             IsEnabled = true;
         }
