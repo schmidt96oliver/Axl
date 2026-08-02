@@ -43,7 +43,7 @@ public sealed class LexerTests
         {
             foreach (var diag in diagnostics.Diagnostics)
                 builder.AppendLine(
-                    $"{diag.DefaultSeverity.ToString().ToUpper()} {diag.Id}@{diag.Location.Span}: {diag.Message}");
+                    $"{diag.DefaultSeverity.ToString().ToUpper()} {diag.Id}@{diag.Location.Span}: {diag.Message.ToLiteralString()}");
         }
         
         // Print tokens
@@ -78,19 +78,19 @@ public sealed class LexerTests
     public void InvalidCharacters_Sequence()
         => InlineSnapshot.Validate(Lex("@@@##"),
             """
-            ERROR InvalidCharacters@[0, 1): Invalid characters.
-            ERROR InvalidCharacters@[1, 2): Invalid characters.
-            ERROR InvalidCharacters@[2, 3): Invalid characters.
-            ERROR InvalidCharacters@[3, 4): Invalid characters.
-            ERROR InvalidCharacters@[4, 5): Invalid characters.
+            ERROR UnknownCharacters@[0, 1): Unknown character '@'.
+            ERROR UnknownCharacters@[1, 2): Unknown character '@'.
+            ERROR UnknownCharacters@[2, 3): Unknown character '@'.
+            ERROR UnknownCharacters@[3, 4): Unknown character '#'.
+            ERROR UnknownCharacters@[4, 5): Unknown character '#'.
             - Error: "@@@##"
             """);
 
     [Fact]
     public void InvalidCharacters_UnicodeSurrogate()
         => InlineSnapshot.Validate(Lex("🂦"), """
-            ERROR InvalidCharacters@[0, 1): Invalid characters.
-            ERROR InvalidCharacters@[1, 2): Invalid characters.
+            ERROR UnknownCharacters@[0, 1): Unknown character '\uD83C'.
+            ERROR UnknownCharacters@[1, 2): Unknown character '\uDCA6'.
             - Error: "\uD83C\uDCA6"
             """);
 

@@ -71,7 +71,7 @@ public sealed class Lexer
             Debug.Assert(_next == _start + 1);
             
             var proof = DiagnosticBag.ReportError(
-                new Diagnostic.InvalidCharacters(Source.LocationFromLength(_start, 1)));
+                new Diagnostic.UnknownCharacters(Source.LocationFromLength(_start, 1)));
             
             // Combine, if previous token was error as well
             var span = Source.SpanFromLength(_start, 1);

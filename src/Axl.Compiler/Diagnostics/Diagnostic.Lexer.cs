@@ -8,10 +8,12 @@ public abstract partial record Diagnostic
         public override string Message => "String must be closed.";
     }
 
-    public sealed record InvalidCharacters(SourceLocation Location) : Error
+    public sealed record UnknownCharacters(SourceLocation Location) : Error
     {
         public override SourceLocation Location { get; } = Location;
-        public override string Message => "Invalid characters.";
+        public override string Message => $"Unknown character{MessageCharacterSuffix} '{Location.GetText()}'.";
+
+        private string MessageCharacterSuffix => Location.Span.Length != 1 ? "s" : "";
     }
 
     public sealed record UnknownNumberSuffix(SourceLocation Location) : Error
