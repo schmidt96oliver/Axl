@@ -290,7 +290,7 @@ public sealed class Lexer
             scanner.Advance();  // x
             bodyBuilder.Append(scanner.CurrentText);  // 0x
             
-            AdvanceDigitsOrUnderscore(ref scanner, char.IsAsciiHexDigit);
+            AdvanceBody(ref scanner, char.IsAsciiHexDigit);
             scanner.AddNumberLiteral(bodyBuilder.ToString(), NumberLiteralSuffix.None);
             return;
         }
@@ -301,21 +301,21 @@ public sealed class Lexer
             scanner.Advance();  // b
             bodyBuilder.Append(scanner.CurrentText); // 0b
             
-            AdvanceDigitsOrUnderscore(ref scanner, c => c is '0' or '1');
+            AdvanceBody(ref scanner, c => c is '0' or '1');
             scanner.AddNumberLiteral(bodyBuilder.ToString(), NumberLiteralSuffix.None);
             return;
         }
 
-        // --- Digits
-        bodyBuilder.Append(scanner.CurrentText);
-        AdvanceDigitsOrUnderscore(ref scanner, char.IsAsciiDigit);
+        // --- Digits including dot
+        bodyBuilder.Append(scanner.CurrentText);    // Digit or .
+        AdvanceBody(ref scanner, char.IsAsciiDigit);
 
         if (scanner.CurrentText[0] is not '.' && scanner.Peek() is '.' && char.IsAsciiDigit(scanner.Peek(1)))
         {
             bodyBuilder.Append(scanner.Advance()); // .
             bodyBuilder.Append(scanner.Advance()); // digit
             
-            AdvanceDigitsOrUnderscore(ref scanner, char.IsAsciiDigit);
+            AdvanceBody(ref scanner, char.IsAsciiDigit);
         }
 
         // --- Suffix
@@ -351,9 +351,9 @@ public sealed class Lexer
         scanner.AddNumberLiteral(bodyBuilder.ToString(), suffix);
         return;
 
-        void AdvanceDigitsOrUnderscore(ref Scanner scanner, Func<char, bool> predicate)
+        void AdvanceBody(ref Scanner scanner, Func<char, bool> isDigit)
         {
-            while (scanner.Peek() is var c && (c is '_' || predicate(c)))
+            while (scanner.Peek() is var c && (c is '_' || isDigit(c)))
             {
                 scanner.Advance();
                 if (c is not '_')
