@@ -291,7 +291,6 @@ public sealed class LexerTests
     public void Strings_Empty()
         => InlineSnapshot.Validate(Lex("\"\""), """"
             - StringStart: """
-            - StringText: "" processed=""
             - StringEnd: """
             """");
     
@@ -329,7 +328,6 @@ public sealed class LexerTests
         => InlineSnapshot.Validate(Lex("\"\nABC"), """"
             ERROR UnclosedString@[0, 1): String must be closed.
             - StringStart: """
-            - StringText: "" processed=""
             - StringEnd: ""
             - Whitespace: "\n"
             - Identifier: "ABC"
@@ -340,7 +338,6 @@ public sealed class LexerTests
         => InlineSnapshot.Validate(Lex("\""), """"
             ERROR UnclosedString@[0, 1): String must be closed.
             - StringStart: """
-            - StringText: "" processed=""
             - StringEnd: ""
             """");
 
@@ -351,6 +348,15 @@ public sealed class LexerTests
             - StringText: " \n \" \{ \} \r \t \\ " processed=" 
              " { } 
              	 \ "
+            - StringEnd: """
+            """");
+
+    [Fact]
+    public void Strings_Escapes_MultiLineString()
+        => InlineSnapshot.Validate(Lex("\"Hello\\\nWorld\""), """"
+            - StringStart: """
+            - StringText: "Hello\\nWorld" processed="Hello
+            World"
             - StringEnd: """
             """");
     
@@ -372,6 +378,16 @@ public sealed class LexerTests
             ERROR UnclosedString@[0, 2): String must be closed.
             - StringStart: """
             - StringText: "\" processed=""
+            - StringEnd: ""
+            """");
+
+    [Fact] 
+    public void Strings_OpenMultiLineEscapeAtEof()
+        => InlineSnapshot.Validate(Lex("\"\\\n"), """"
+            ERROR UnclosedString@[0, 3): String must be closed.
+            - StringStart: """
+            - StringText: "\\n" processed="
+            "
             - StringEnd: ""
             """");
 }
