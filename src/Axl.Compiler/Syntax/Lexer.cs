@@ -235,7 +235,10 @@ public sealed class Lexer
         // Shortest keyword is 2 chars (if)
         // Longest keyword is 8 chars (continue)
         if (text.Length is < 2 or > 8)
+        {
             scanner.AddIdentifier();
+            return;
+        }
         
         // --- Keyword?
         var tokenKind = text switch
