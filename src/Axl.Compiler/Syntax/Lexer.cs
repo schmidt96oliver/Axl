@@ -57,6 +57,8 @@ public sealed class Lexer
             return false;
         }
 
+        public Token LastToken => _tokens[^1];
+
         
         public void AddToken(TokenKind kind, bool allowEmpty = false)
         {
@@ -369,12 +371,47 @@ public sealed class Lexer
     private static void LexString(ref Scanner scanner)
     {
         Debug.Assert(scanner.CurrentText is "\"");
+
+        var stringStartIndex = scanner.StartIndex;
         
         // --- StringStart
         scanner.AddToken(TokenKind.StringStart);
         
-        // --- Text
+        LexStringText(ref scanner);
+        
+        // See what the end was
+        switch (scanner.Peek())
+        {
+            // --- Nominal (")
+            case '\"':
+                scanner.Advance();
+                scanner.AddToken(TokenKind.StringEnd);
+                    
+                return;
+            
+            // --- EOF or Newline
+            case '\n':
+            case '\0':
+                // Add empty StringEnd token
+                scanner.AddToken(TokenKind.StringEnd, allowEmpty: true);
+                    
+                // Report unclosed string error.
+                // It starts on the first ", hence we need to subtract 1.
+                scanner.DiagnosticBag.ReportError(new Diagnostic.UnclosedString(
+                    scanner.Source.LocationFromTo(stringStartIndex, scanner.NextIndex)));
+                    
+                return;
+            
+            default:
+                throw new UnreachableException();
+        }
+    }
+
+    private static void LexStringText(ref Scanner scanner)
+    {
         var textBuilder = new StringBuilder();
+        
+        // Infinite loop here, because Eof is a case inside the switch :).
         while (true)
         {
             switch (scanner.Peek())
@@ -425,39 +462,41 @@ public sealed class Lexer
 
                     break;
                 
-                // --- Newline/Eof => End string with error
+                // --- Stop
                 case '\n':
                 case '\0':
-                case var c when scanner.IsAtEnd:
-                    var stringStartIndex = scanner.StartIndex - 1;
-                    
-                    // Emit text
-                    scanner.AddStringText(textBuilder.ToString());
-                    
-                    // Add empty StringEnd token
-                    scanner.AddToken(TokenKind.StringEnd, allowEmpty: true);
-                    
-                    // Report unclosed string error.
-                    // It starts on the first ", hence we need to subtract 1.
-                    scanner.DiagnosticBag.ReportError(new Diagnostic.UnclosedString(
-                        scanner.Source.LocationFromTo(stringStartIndex, scanner.NextIndex)));
-                    
-                    return;
-                
-                // --- Quotation mark => End string
                 case '\"':
-                    // Nominal ending
+                case '}':
                     scanner.AddStringText(textBuilder.ToString());
-                    
-                    // Emit string end
-                    scanner.Advance();
-                    scanner.AddToken(TokenKind.StringEnd);
-                    
                     return;
                 
                 // --- Any character just proceeds
                 default:
                     textBuilder.Append(scanner.Advance());
+                    break;
+            }
+        }
+    }
+    
+    private static void LexInterpolatedStringExpression(ref Scanner scanner)
+    {
+        Debug.Assert(scanner.CurrentText.IsEmpty);
+
+        var braceCount = 0;
+        while (!scanner.IsAtEnd)
+        {
+            LexSingle(ref scanner);
+            switch (scanner.LastToken)
+            {
+                case {Kind: TokenKind.OpenBrace}:
+                    braceCount++;
+                    break;
+                
+                case {Kind: TokenKind.CloseBrace}:
+                    braceCount--;
+
+                    if (braceCount == 0)
+                        return;
                     break;
             }
         }
