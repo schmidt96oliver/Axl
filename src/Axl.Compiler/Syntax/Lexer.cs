@@ -385,16 +385,9 @@ public sealed class Lexer
             {
                 // --- Interpolation start "{"
                 case '{':
-                    scanner.Advance();  // {
-                    scanner.AddToken(TokenKind.OpenBrace);
-                    
+                    // This function handles { and } itself and emits those tokens.
+                    // When it is finished, the scanner will be at string end or another text.
                     LexInterpolatedStringExpression(ref scanner);
-                    break;
-                
-                // --- Interpolation end "}"
-                case '}':
-                    scanner.Advance();  // }
-                    scanner.AddToken(TokenKind.CloseBrace);
                     break;
                 
                 // --- Nominal string end "
