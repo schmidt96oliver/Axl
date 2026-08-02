@@ -379,6 +379,52 @@ public sealed class Lexer
         {
             switch (scanner.Peek())
             {
+                // --- Escape
+                case '\\':
+                    scanner.Advance(); // "\"
+                    if (scanner.IsAtEnd)
+                    {
+                        // Eof means the string has not been closed.
+                        // '\' will be discarded (it's not inside the ProcessedText)
+                        // and we do not report the unknown escape sequence error,
+                        // since the unclosed string error should be more prominent.
+                        goto case '\0';
+                    }
+                    
+                    switch (scanner.Advance())
+                    {
+                        case 'n':
+                            textBuilder.Append('\n');
+                            break;
+                        case 'r':
+                            textBuilder.Append('\r');
+                            break;
+                        case 't':
+                            textBuilder.Append('\t');
+                            break;
+                        case '{':
+                            textBuilder.Append('{');
+                            break;
+                        case '}':
+                            textBuilder.Append('}');
+                            break;
+                        case '\\':
+                            textBuilder.Append('\\');
+                            break;
+                        case '\"':
+                            textBuilder.Append('\"');
+                            break;
+                        
+                        default:
+                            // Report error. The escaped sequence will not be part of the
+                            // processed text.
+                            scanner.DiagnosticBag.ReportError(new Diagnostic.UnknownEscapeSequence(
+                                scanner.Source.LocationFromLength(scanner.NextIndex - 2, 2)));
+                            break;
+                    }
+
+                    break;
+                
                 // --- Newline/Eof => End string with error
                 case '\n':
                 case '\0':

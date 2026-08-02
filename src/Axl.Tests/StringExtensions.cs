@@ -13,16 +13,10 @@ public static class StringExtensions
             {
                 switch (c)
                 {
-                    case '"':  sb.Append("\\\""); break;
-                    case '\\': sb.Append(@"\\");  break;
                     case '\0': sb.Append(@"\0");  break;
-                    case '\a': sb.Append(@"\a");  break;
-                    case '\b': sb.Append(@"\b");  break;
-                    case '\f': sb.Append(@"\f");  break;
                     case '\n': sb.Append(@"\n");  break;
                     case '\r': sb.Append(@"\r");  break;
                     case '\t': sb.Append(@"\t");  break;
-                    case '\v': sb.Append(@"\v");  break;
                     default:
                         if (c is < ' ' or > '~')
                             sb.Append("\\u").Append(((int)c).ToString("X4"));

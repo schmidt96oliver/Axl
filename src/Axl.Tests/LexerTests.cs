@@ -53,9 +53,9 @@ public sealed class LexerTests
             builder.Append($"- {token.Kind}: \"{text}\"");
             
             if (token is NumberLiteralToken numberLiteral)
-            {
                 builder.Append($" body=\"{numberLiteral.Body}\" suffix={numberLiteral.Suffix}");
-            }
+            else if (token is StringTextToken stringText)
+                builder.Append($" processed=\"{stringText.ProcessedText}\"");
 
             builder.AppendLine();
         }
@@ -289,58 +289,89 @@ public sealed class LexerTests
 
     [Fact]
     public void Strings_Empty()
-        => InlineSnapshot.Validate(Lex("\"\""), """
-            - StringStart: "\""
-            - StringText: ""
-            - StringEnd: "\""
-            """);
+        => InlineSnapshot.Validate(Lex("\"\""), """"
+            - StringStart: """
+            - StringText: "" processed=""
+            - StringEnd: """
+            """");
     
     [Fact]
     public void Strings_Plain()
-        => InlineSnapshot.Validate(Lex("\"Abcdefg //test @.;- f32 fn 🂦🂦 \""), """
-            - StringStart: "\""
-            - StringText: "Abcdefg //test @.;- f32 fn \uD83C\uDCA6\uD83C\uDCA6 "
-            - StringEnd: "\""
-            """);
+        => InlineSnapshot.Validate(Lex("\"Abcdefg //test @.;- f32 fn 🂦🂦 \""), """"
+            - StringStart: """
+            - StringText: "Abcdefg //test @.;- f32 fn \uD83C\uDCA6\uD83C\uDCA6 " processed="Abcdefg //test @.;- f32 fn 🂦🂦 "
+            - StringEnd: """
+            """");
     
     [Fact]
     public void Strings_Unclosed_Newline()
-        => InlineSnapshot.Validate(Lex("\"Abcdefg //test @.;- f32 fn 🂦🂦\nABC;"), """
+        => InlineSnapshot.Validate(Lex("\"Abcdefg //test @.;- f32 fn 🂦🂦\nABC;"), """"
             ERROR UnclosedString@[0, 32): String must be closed.
-            - StringStart: "\""
-            - StringText: "Abcdefg //test @.;- f32 fn \uD83C\uDCA6\uD83C\uDCA6"
+            - StringStart: """
+            - StringText: "Abcdefg //test @.;- f32 fn \uD83C\uDCA6\uD83C\uDCA6" processed="Abcdefg //test @.;- f32 fn 🂦🂦"
             - StringEnd: ""
             - Whitespace: "\n"
             - Identifier: "ABC"
             - Semicolon: ";"
-            """);
+            """");
     
     [Fact]
     public void Strings_Unclosed_Eof()
-        => InlineSnapshot.Validate(Lex("\"Abcdefg //test @.;- f32 fn 🂦🂦"), """
+        => InlineSnapshot.Validate(Lex("\"Abcdefg //test @.;- f32 fn 🂦🂦"), """"
             ERROR UnclosedString@[0, 32): String must be closed.
-            - StringStart: "\""
-            - StringText: "Abcdefg //test @.;- f32 fn \uD83C\uDCA6\uD83C\uDCA6"
+            - StringStart: """
+            - StringText: "Abcdefg //test @.;- f32 fn \uD83C\uDCA6\uD83C\uDCA6" processed="Abcdefg //test @.;- f32 fn 🂦🂦"
             - StringEnd: ""
-            """);
+            """");
     
     [Fact]
     public void Strings_Unclosed_Empty_Newline()
-        => InlineSnapshot.Validate(Lex("\"\nABC"), """
+        => InlineSnapshot.Validate(Lex("\"\nABC"), """"
             ERROR UnclosedString@[0, 1): String must be closed.
-            - StringStart: "\""
-            - StringText: ""
+            - StringStart: """
+            - StringText: "" processed=""
             - StringEnd: ""
             - Whitespace: "\n"
             - Identifier: "ABC"
-            """);
+            """");
     
     [Fact]
     public void Strings_Unclosed_Empty_Eof()
-        => InlineSnapshot.Validate(Lex("\""), """
+        => InlineSnapshot.Validate(Lex("\""), """"
             ERROR UnclosedString@[0, 1): String must be closed.
-            - StringStart: "\""
-            - StringText: ""
+            - StringStart: """
+            - StringText: "" processed=""
             - StringEnd: ""
-            """);
+            """");
+
+    [Fact]
+    public void Strings_Escapes()
+        => InlineSnapshot.Validate(Lex("\" \\n \\\" \\{ \\} \\r \\t \\\\ \""), """"
+            - StringStart: """
+            - StringText: " \n \" \{ \} \r \t \\ " processed=" 
+             " { } 
+             	 \ "
+            - StringEnd: """
+            """");
+    
+    [Fact]
+    public void Strings_UnknownEscapes()
+        => InlineSnapshot.Validate(Lex("\" \\a \\ \\5 \\@ \""), """"
+            ERROR UnknownEscapeSequence@[2, 4): Unknown escape sequence '\a'.
+            ERROR UnknownEscapeSequence@[5, 7): Unknown escape sequence '\ '.
+            ERROR UnknownEscapeSequence@[7, 9): Unknown escape sequence '\5'.
+            ERROR UnknownEscapeSequence@[10, 12): Unknown escape sequence '\@'.
+            - StringStart: """
+            - StringText: " \a \ \5 \@ " processed="    "
+            - StringEnd: """
+            """");
+    
+    [Fact]
+    public void Strings_OpenEscapeAtEof()
+        => InlineSnapshot.Validate(Lex("\"\\"), """"
+            ERROR UnclosedString@[0, 2): String must be closed.
+            - StringStart: """
+            - StringText: "\" processed=""
+            - StringEnd: ""
+            """");
 }
