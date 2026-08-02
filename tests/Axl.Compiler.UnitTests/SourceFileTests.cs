@@ -26,7 +26,7 @@ public class SourceFileTests
         
         // Line contents
         sourceFile.Lines
-            .Select(line => sourceFile.GetText(line.Span))
+            .Select(line => sourceFile.GetText(line.Span).ToString())
             .ShouldBe(expectedLineTexts);
         
         // Line numbers

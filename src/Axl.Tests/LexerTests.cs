@@ -49,7 +49,7 @@ public sealed class LexerTests
         // Print tokens
         foreach (var token in tokens)
         {
-            var text = source.GetTextSpan(token.Span).ToLiteralString();
+            var text = source.GetText(token.Span).ToLiteralString();
             builder.Append($"- {token.Kind}: \"{text}\"");
             
             if (token is NumberLiteralToken numberLiteral)

@@ -35,7 +35,7 @@ while (true)
     // Print tokens
     foreach (var token in lex.Where(t => t.Kind is not (TokenKind.Whitespace or TokenKind.Comment)))
     {
-        var text = source.GetText(token.Span).Replace("\n", "\\n");
+        var text = source.GetText(token.Span).ToString().Replace("\n", "\\n");
         Console.WriteLine($"- {token.Kind}: \"{text}\"");
     }
 

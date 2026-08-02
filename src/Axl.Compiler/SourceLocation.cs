@@ -7,5 +7,5 @@
 public readonly record struct SourceLocation(SourceFile File, SourceSpan Span)
 {
     public ReadOnlySpan<char> GetText()
-        => File.GetTextSpan(Span);
+        => File.GetText(Span);
 }

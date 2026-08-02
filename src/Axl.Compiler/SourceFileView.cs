@@ -7,7 +7,7 @@
 /// </summary>
 public readonly record struct SourceFileView(SourceFile File, SourceSpan Span)
 {
-    public ReadOnlySpan<char> TextSpan => File.GetTextSpan(Span);
+    public ReadOnlySpan<char> TextSpan => File.GetText(Span);
     
     
     public static SourceFileView Whole(SourceFile file)
@@ -52,15 +52,9 @@ public readonly record struct SourceFileView(SourceFile File, SourceSpan Span)
     public SourceLocation LocationFromLength(int start, int length)
         => GetLocation(SpanFromLength(start, length));
 
-    public string GetText(SourceSpan span)
+    public ReadOnlySpan<char> GetText(SourceSpan span)
     {
         Guard.InRange(span, Span.Contains(span));
         return File.GetText(span);
-    }
-
-    public ReadOnlySpan<char> GetTextSpan(SourceSpan span)
-    {
-        Guard.InRange(span, Span.Contains(span));
-        return File.GetTextSpan(span);
     }
 }
