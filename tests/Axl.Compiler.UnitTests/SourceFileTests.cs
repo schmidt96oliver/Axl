@@ -1,4 +1,8 @@
-﻿namespace Axl.Compiler.UnitTests;
+﻿using System.Runtime.CompilerServices;
+
+namespace Axl.Compiler.UnitTests;
+
+using Shouldly;
 
 public class SourceFileTests
 {
@@ -14,18 +18,21 @@ public class SourceFileTests
     [InlineData("a\n\n", "a\n", "\n")]
     [InlineData("\n\n", "\n", "\n")]
     [InlineData("a\nbc\n\nde", "a\n", "bc\n", "\n", "de")]
-    private void Lines_CorrectTextAndSpan(string text, params string[] expectedLineTexts)
+    private void Lines_CorrectLineTextsAndNumbers(string text, params string[] expectedLineTexts)
     {
         var sourceFile = SourceFile.FromText(text);
         
         Assert.False(sourceFile.Lines.IsDefault);
         
-        // Assert line content
-        Assert.Equal(expectedLineTexts, sourceFile.Lines.Select(line => sourceFile.GetText(line.Span)));
+        // Line contents
+        sourceFile.Lines
+            .Select(line => sourceFile.GetText(line.Span))
+            .ShouldBe(expectedLineTexts);
         
-        // Assert line numbers
-        Assert.Equal(Enumerable.Range(0, expectedLineTexts.Length),
-            sourceFile.Lines.Select(line => line.LineNumber));
+        // Line numbers
+        sourceFile.Lines
+            .Select(line => line.LineNumber)
+            .ShouldBe(Enumerable.Range(0, expectedLineTexts.Length));
     }
 
     [Theory]
@@ -42,14 +49,14 @@ public class SourceFileTests
     [InlineData("012\n45\n7", 5, 1)]
     [InlineData("012\n45\n7", 6, 1)]
     [InlineData("012\n45\n7", 7, 2)]
-    private void GetLine_Correct(string text, int index, int expectedLineIndex)
+    private void GetLine_CorrectLineNumber(string text, int index, int expectedLineIndex)
     {
         var sourceFile = SourceFile.FromText(text);
         
-        Assert.False(sourceFile.Lines.IsDefault);
+        sourceFile.Lines.IsDefault.ShouldBeFalse();
 
-        var lineIndex = sourceFile.GetLineAt(index);
-        Assert.Equal(expectedLineIndex, lineIndex.LineNumber);
+        sourceFile.GetLineAt(index).LineNumber
+            .ShouldBe(expectedLineIndex);
     }
 
     [Theory]
@@ -66,15 +73,15 @@ public class SourceFileTests
     [InlineData("012\n45\n7", 5, 1, 1)]
     [InlineData("012\n45\n7", 6, 1, 2)]
     [InlineData("012\n45\n7", 7, 2, 0)]
-    private void GetLinePosition_Correct(string text, int index, int expectedLine, int expectedColumn)
+    private void GetLinePosition_CorrectLineAndColumn(string text, int index, int expectedLine, int expectedColumn)
     {
         var sourceFile = SourceFile.FromText(text);
         
-        Assert.False(sourceFile.Lines.IsDefault);
+        sourceFile.Lines.IsDefault.ShouldBeFalse();
 
         var linePos = sourceFile.GetLinePosition(index);
-        Assert.Equal(linePos.Line, expectedLine);
-        Assert.Equal(linePos.Column, expectedColumn);
+        linePos.Line.ShouldBe(expectedLine);
+        linePos.Column.ShouldBe(expectedColumn);
     }
 
     [Fact]
@@ -86,11 +93,11 @@ public class SourceFileTests
         var array1 = sourceFile.Lines;
         var array2 = sourceFile.Lines;
         
-        Assert.False(array1.IsDefault);
-        Assert.False(array2.IsDefault);
+        array1.IsDefault.ShouldBeFalse();
+        array2.IsDefault.ShouldBeFalse();
         
         // ImmutableArray uses reference equality on its internal array.
         // So if a new one had been constructed, this will fail.
-        Assert.Equal(array1, array2);
+        (array1 == array2).ShouldBeTrue();
     }
 }
