@@ -1,18 +1,25 @@
-﻿using System.Text;
+﻿using System.Collections.Immutable;
+using System.Text;
 using Axl.Compiler;
 using Axl.Compiler.Diagnostics;
 using Axl.Compiler.Syntax;
 using Meziantou.Framework.InlineSnapshotTesting;
+using Shouldly;
 
 namespace Axl.Tests;
 
 public sealed class LexerTests
 {
+    private ImmutableArray<Token> LexTokens(string input, out DiagnosticBag diagnosticBag, out SourceFileView source)
+    {
+        diagnosticBag = new DiagnosticBag();
+        source = SourceFileView.FromText(input);
+        return Lexer.Lex(source, diagnosticBag);
+    }
+    
     private string Lex(string input)
     {
-        var diagnostics = new DiagnosticBag();
-        var source = SourceFileView.FromText(input);
-        var tokens = Lexer.Lex(source, diagnostics);
+        var tokens = LexTokens(input, out var diagnostics, out var source);
 
         return Dump(tokens, source, diagnostics);
     }
@@ -125,9 +132,9 @@ public sealed class LexerTests
 
     [Fact]
     public void Never_IsIdentifier()
-        => InlineSnapshot.Validate(Lex("never"), """
-            - Identifier: "never"
-            """);
+        => LexTokens("never", out _, out _)
+            .ShouldHaveSingleItem()
+            .Kind.ShouldBe(TokenKind.Identifier);
 
     [Fact]
     public void Symbols_Equals()
