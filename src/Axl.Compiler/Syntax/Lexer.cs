@@ -128,7 +128,7 @@ public sealed class Lexer
         {
             // --- Whitespace
             case var c when char.IsWhiteSpace(c):
-                scanner.AdvanceWhile(c => char.IsWhiteSpace(c));
+                scanner.AdvanceWhile(char.IsWhiteSpace);
                 scanner.AddToken(TokenKind.Whitespace);
                 break;
             
@@ -140,7 +140,7 @@ public sealed class Lexer
             
             // --- Identifier or Keyword
             case var c when char.IsAsciiLetter(c) || c is '_':
-                scanner.AdvanceWhile(c => char.IsAsciiLetterOrDigit(c) || c is '_');
+                scanner.AdvanceWhile(cc => char.IsAsciiLetterOrDigit(cc) || cc is '_');
                 AddIdentifierOrKeyword(ref scanner);
                 break;
             
