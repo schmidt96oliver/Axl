@@ -1,1 +1,27 @@
-var a = .43_f64;
+// ----- Numeric types -----
+i32, f32        // Later i8, ..., i64; u8, ..., u64; f32, f64 could be implemented
+i64, f64        // add those to work the bytecode runtime with 4-byte word-length :)
+
+// Literals:
+var i = 1;      // default: i32
+var i = 1_000_000;      // _ can be used anywhere (expect in suffix and prefix)
+var i: i64 = 1_000_000_i64;
+var i: i32 = 1_000_000_i32;
+
+// From hex or binary representation
+var i = 0xFF;   // default: i32
+var i = 0b0001111;  // default: i32
+
+// *** Floating point literals
+var f = 1.1;     // f32 is default
+var f = 1_f32;     
+var f = 1_f64;    
+
+// *** Expected type is used to infer literal types
+var a = 1;          // type is inferred (default i32)
+var a: i64 = 1;     // expected type used => i64
+var a: f32 = 1;     // expected type used => f32
+var a: i64 = if true => 1 else => 2;    // expected type used => i64
+
+// ----- Others -----
+bool, string

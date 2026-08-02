@@ -344,8 +344,7 @@ public sealed class Lexer
                 // this will never be read. The body is still valid.
                 
                 scanner.DiagnosticBag.ReportError(new Diagnostic.UnknownNumberSuffix(
-                    scanner.Source.LocationFromTo(scanner.StartIndex + suffixStart, scanner.NextIndex),
-                    Actual: scanner.CurrentText[suffixStart..].ToString()));
+                    scanner.Source.LocationFromTo(scanner.StartIndex + suffixStart, scanner.NextIndex)));
             }
         }
         
