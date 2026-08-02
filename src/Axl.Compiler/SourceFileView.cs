@@ -57,4 +57,10 @@ public readonly record struct SourceFileView(SourceFile File, SourceSpan Span)
         Guard.InRange(span, Span.Contains(span));
         return File.GetText(span);
     }
+
+    public ReadOnlySpan<char> GetTextSpan(SourceSpan span)
+    {
+        Guard.InRange(span, Span.Contains(span));
+        return File.GetTextSpan(span);
+    }
 }
