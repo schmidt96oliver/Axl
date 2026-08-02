@@ -14,6 +14,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Axl.Compiler.UnitTests", "t
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Docs", "docs\Docs.csproj", "{9E57D2DE-118C-4E4B-B337-1BB79960FB42}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Axl.Tests", "src\Axl.Tests\Axl.Tests.csproj", "{CE82BE1A-FFA8-4824-9165-6BD1D8C93312}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -44,6 +46,10 @@ Global
 		{9E57D2DE-118C-4E4B-B337-1BB79960FB42}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{9E57D2DE-118C-4E4B-B337-1BB79960FB42}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{9E57D2DE-118C-4E4B-B337-1BB79960FB42}.Release|Any CPU.Build.0 = Release|Any CPU
+		{CE82BE1A-FFA8-4824-9165-6BD1D8C93312}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{CE82BE1A-FFA8-4824-9165-6BD1D8C93312}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{CE82BE1A-FFA8-4824-9165-6BD1D8C93312}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{CE82BE1A-FFA8-4824-9165-6BD1D8C93312}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(NestedProjects) = preSolution
 		{C2A5E6B4-D8A4-4E91-92B6-4165D584DF62} = {7497C523-8AFC-4100-981F-F755FB2244B1}
