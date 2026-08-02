@@ -1,5 +1,4 @@
-﻿using System.Collections.Immutable;
-using System.Text;
+﻿using System.Text;
 using Axl.Compiler;
 using Axl.Compiler.Diagnostics;
 using Axl.Compiler.Syntax;
@@ -83,9 +82,50 @@ public sealed class LexerTests
 
     [Fact]
     public void Keywords()
-        => InlineSnapshot.Validate(LexIgnoreWhitespace("fn var module public private native return if else loop break continue and or not true false i32 f32 i64 f64 bool string char none"));
+        => InlineSnapshot.Validate(LexIgnoreWhitespace("fn var module public private native return if else loop break continue and or not true false i32 f32 i64 f64 bool string char none"), """
+            - FnKw: "fn"
+            - VarKw: "var"
+            - ModuleKw: "module"
+            - PublicKw: "public"
+            - PrivateKw: "private"
+            - NativeKw: "native"
+            - ReturnKw: "return"
+            - IfKw: "if"
+            - ElseKw: "else"
+            - LoopKw: "loop"
+            - BreakKw: "break"
+            - ContinueKw: "continue"
+            - AndKw: "and"
+            - OrKw: "or"
+            - NotKw: "not"
+            - TrueKw: "true"
+            - FalseKw: "false"
+            - I32Kw: "i32"
+            - F32Kw: "f32"
+            - I64Kw: "i64"
+            - F64Kw: "f64"
+            - BoolKw: "bool"
+            - StringKw: "string"
+            - Identifier: "char"
+            - NoneKw: "none"
+            """);
 
     [Fact]
     public void IdentifierVsKeyword()
-        => InlineSnapshot.Validate(LexIgnoreWhitespace("fn vara aif _private else_ false0 False I32"));
+        => InlineSnapshot.Validate(LexIgnoreWhitespace("fn vara aif _private else_ false0 False I32"), """
+            - FnKw: "fn"
+            - Identifier: "vara"
+            - Identifier: "aif"
+            - Identifier: "_private"
+            - Identifier: "else_"
+            - Identifier: "false0"
+            - Identifier: "False"
+            - Identifier: "I32"
+            """);
+
+    [Fact]
+    public void Never_IsIdentifier()
+        => InlineSnapshot.Validate(Lex("never"), """
+            - Identifier: "never"
+            """);
 }

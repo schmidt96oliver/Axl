@@ -1,50 +1,9 @@
 # ------------------------------------ Axl Project ------------------------------------
                                        ≽(◕ ᴗ ◕)≼
 
-# Notes
-and
-
-break
-bool
-
-continue
-
-else
-
-f32
-f64
-fn
-false
-
-i32
-i64
-if
-
-loop
-
-module
-
-not
-native
-none
-
-or
-
-public
-private
-
-return
-
-string
-
-true
-
-var
-
-
 # Lexer
 [x] Comments, Whitespace
-[ ] Identifier and keywords
+[x] Identifier and keywords
    * fn var module public private native return if else loop break continue and or not true false i32 f32 i64 f64 bool string char none
    * never: = identifier token with contextual kind. Parser replaces it to never kind
 [ ] Symbols
