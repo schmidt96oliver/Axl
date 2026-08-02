@@ -376,34 +376,53 @@ public sealed class Lexer
         
         // --- StringStart
         scanner.AddToken(TokenKind.StringStart);
-        
-        LexStringText(ref scanner);
-        
-        // See what the end was
-        switch (scanner.Peek())
+
+        // --- Body with text and expressions
+        while (true)
         {
-            // --- Nominal (")
-            case '\"':
-                scanner.Advance();
-                scanner.AddToken(TokenKind.StringEnd);
+            // See what the end of text was
+            switch (scanner.Peek())
+            {
+                // --- Interpolation start "{"
+                case '{':
+                    scanner.Advance();  // {
+                    scanner.AddToken(TokenKind.OpenBrace);
                     
-                return;
-            
-            // --- EOF or Newline
-            case '\n':
-            case '\0':
-                // Add empty StringEnd token
-                scanner.AddToken(TokenKind.StringEnd, allowEmpty: true);
-                    
-                // Report unclosed string error.
-                // It starts on the first ", hence we need to subtract 1.
-                scanner.DiagnosticBag.ReportError(new Diagnostic.UnclosedString(
-                    scanner.Source.LocationFromTo(stringStartIndex, scanner.NextIndex)));
-                    
-                return;
-            
-            default:
-                throw new UnreachableException();
+                    LexInterpolatedStringExpression(ref scanner);
+                    break;
+                
+                // --- Interpolation end "}"
+                case '}':
+                    scanner.Advance();  // }
+                    scanner.AddToken(TokenKind.CloseBrace);
+                    break;
+                
+                // --- Nominal string end "
+                case '\"':
+                    scanner.Advance();
+                    scanner.AddToken(TokenKind.StringEnd);
+
+                    return;
+
+                // --- EOF or Newline
+                case '\n':
+                case '\0':
+                    // Add empty StringEnd token
+                    scanner.AddToken(TokenKind.StringEnd, allowEmpty: true);
+
+                    // Report unclosed string error.
+                    // It starts on the first ", hence we need to subtract 1.
+                    scanner.DiagnosticBag.ReportError(new Diagnostic.UnclosedString(
+                        scanner.Source.LocationFromTo(stringStartIndex, scanner.NextIndex)));
+
+                    return;
+
+                default:
+                    // This only consumes the inner text and stops
+                    // at ", eof/newline, {
+                    LexStringText(ref scanner);
+                    break;
+            }
         }
     }
 
@@ -466,7 +485,7 @@ public sealed class Lexer
                 case '\n':
                 case '\0':
                 case '\"':
-                case '}':
+                case '{':
                     scanner.AddStringText(textBuilder.ToString());
                     return;
                 
