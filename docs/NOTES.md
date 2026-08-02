@@ -3,8 +3,21 @@
 
 # Notes
 
-* rm: TaxlLexer
-* test: InlineSnapshotTests
+# Lexer
+[ ] Comments, Whitespace
+[ ] Identifier and keywords
+   * fn var module public private native return if else loop break continue and or not true false i32 f32 i64 f64 bool string char none
+   * never: = identifier token with contextual kind. Parser replaces it to never kind
+[ ] Symbols
+   * . , ; : -> =>  = += -=    <= >= + - * / == !=   ( ) { } < >   "
+[ ] Errors
+   * AddToken concats => one Token per error _run_
+   * One diagnostic per character
+[ ] Number Literals
+   * 0x, 0b; suffixes; underscores;
+[ ] Plain string literals
+[ ] String escapes
+[ ] Interpolated strings
 
 # First features
 * i32, i64, f32, f64, bool, string
@@ -24,14 +37,6 @@
    * accept mode
    * multi-file test cases
 
-2. Lexer
-   * Number literals: 0x, 0b; suffixes; underscores;
-   * String lilterals: formatted, escaped
-   * string escapes: \n \r \t \{ \} \\ \"
-   * keywords: fn var module public private native return if else loop break continue and or not true false i32 f32 i64 f64 bool string char none
-   * never: = identifier token with contextual kind. Parser replaces it to never kind
-   * symbols: . , ; : -> =>  = += -=    <= >= + - * / == !=   ( ) { } < >   "
-   * comments, whitespace (newline is whitespace), error
 3. Parser
    * "=>" syntax according to ExpressionsAndStatements.axl
    * "<>" generics disambiguation
