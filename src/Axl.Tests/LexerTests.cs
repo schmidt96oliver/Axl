@@ -390,4 +390,77 @@ public sealed class LexerTests
             "
             - StringEnd: ""
             """");
+
+    [Fact]
+    public void Strings_Interpolated_Basic()
+        => InlineSnapshot.Validate(LexIgnoreWhitespace("""
+                                       "a{b}c" "{abc}c" "{1.1 a b}"
+                                       """), """"
+            - StringStart: """
+            - StringText: "a" processed="a"
+            - OpenBrace: "{"
+            - Identifier: "b"
+            - CloseBrace: "}"
+            - StringText: "c" processed="c"
+            - StringEnd: """
+            - StringStart: """
+            - OpenBrace: "{"
+            - Identifier: "abc"
+            - CloseBrace: "}"
+            - StringText: "c" processed="c"
+            - StringEnd: """
+            - StringStart: """
+            - OpenBrace: "{"
+            - NumberLiteral: "1.1" body="1.1" suffix=None
+            - Identifier: "a"
+            - Identifier: "b"
+            - CloseBrace: "}"
+            - StringEnd: """
+            """");
+    
+    [Fact]
+    public void Strings_Interpolated_NestedBraces()
+        => InlineSnapshot.Validate(LexIgnoreWhitespace("""
+                                       "{ if { } else { { a } a } }"
+                                       """), """"
+            - StringStart: """
+            - OpenBrace: "{"
+            - IfKw: "if"
+            - OpenBrace: "{"
+            - CloseBrace: "}"
+            - ElseKw: "else"
+            - OpenBrace: "{"
+            - OpenBrace: "{"
+            - Identifier: "a"
+            - CloseBrace: "}"
+            - Identifier: "a"
+            - CloseBrace: "}"
+            - CloseBrace: "}"
+            - StringEnd: """
+            """");
+    
+    [Fact]
+    public void Strings_Interpolated_NestedInterpolation()
+        => InlineSnapshot.Validate(LexIgnoreWhitespace("""
+                                       " { "a" "a { a " b "}" } "
+                                       """), """"
+            - StringStart: """
+            - StringText: " " processed=" "
+            - OpenBrace: "{"
+            - StringStart: """
+            - StringText: "a" processed="a"
+            - StringEnd: """
+            - StringStart: """
+            - StringText: "a " processed="a "
+            - OpenBrace: "{"
+            - Identifier: "a"
+            - StringStart: """
+            - StringText: " b " processed=" b "
+            - StringEnd: """
+            - CloseBrace: "}"
+            - StringEnd: """
+            - CloseBrace: "}"
+            - StringText: " " processed=" "
+            - StringEnd: """
+            """");
 }
