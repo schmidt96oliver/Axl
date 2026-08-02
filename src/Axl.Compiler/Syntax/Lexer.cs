@@ -67,7 +67,16 @@ public sealed class Lexer
             
             var proof = diagnosticBag.ReportError(
                 new Diagnostic.InvalidCharacters(source.LocationFromLength(_start, 1)));
-            _tokens.Add(Token.Error(proof, source.SpanFromLength(_start, 1)));
+            
+            // Combine, if previous token was error as well
+            var span = source.SpanFromLength(_start, 1);
+            if (_tokens.Count > 0 && _tokens[^1].Kind is TokenKind.Error)
+            {
+                _tokens[^1] = Token.Error(proof,
+                    SourceSpan.FromTo(_tokens[^1].Span, span));
+            }
+            else
+                _tokens.Add(Token.Error(proof, span));
 
             _start = _next;
         }
@@ -113,7 +122,7 @@ public sealed class Lexer
         Debug.Assert(!scanner.IsAtEnd);
         switch (scanner.Advance())
         {
-            case char c when char.IsWhiteSpace(c):
+            case var c when char.IsWhiteSpace(c):
                 scanner.AdvanceWhile(c => char.IsWhiteSpace(c));
                 scanner.AddToken(TokenKind.Whitespace);
                 break;
