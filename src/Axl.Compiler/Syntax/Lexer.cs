@@ -28,15 +28,6 @@ public sealed class Lexer
         public int NextIndex => _next;
 
         
-        public char Previous
-        {
-            get
-            {
-                Debug.Assert(_next > _start);
-                return _text[_next - 1];
-            }
-        }
-        
         public char Peek(int skip = 0)
         {
             Debug.Assert(skip >= 0);
@@ -66,18 +57,7 @@ public sealed class Lexer
             return false;
         }
 
-        public bool Match(ReadOnlySpan<char> expected)
-        {
-            if (_text.StartsWith(expected))
-            {
-                _next += expected.Length;
-                return true;
-            }
-
-            return false;
-        }
-
-
+        
         public void AddToken(TokenKind kind)
         {
             Debug.Assert(_next > _start);
@@ -297,7 +277,7 @@ public sealed class Lexer
     private static void LexNumber(ref Scanner scanner)
     {
         Debug.Assert(scanner.CurrentText.Length == 1);
-        Debug.Assert(char.IsAsciiDigit(scanner.Previous) || scanner.Previous is '.');
+        Debug.Assert(char.IsAsciiDigit(scanner.CurrentText[0]) || scanner.CurrentText is ".");
 
         var bodyBuilder = new StringBuilder();
         
@@ -324,11 +304,10 @@ public sealed class Lexer
         }
 
         // --- Digits
-        var hadDot = scanner.Previous is '.';
-        bodyBuilder.Append(scanner.Previous);
+        bodyBuilder.Append(scanner.CurrentText);
         AdvanceDigitsOrUnderscore(ref scanner, char.IsAsciiDigit);
 
-        if (!hadDot && scanner.Peek() is '.' && char.IsAsciiDigit(scanner.Peek(1)))
+        if (scanner.CurrentText[0] is not '.' && scanner.Peek() is '.' && char.IsAsciiDigit(scanner.Peek(1)))
         {
             bodyBuilder.Append(scanner.Advance()); // .
             bodyBuilder.Append(scanner.Advance()); // digit
