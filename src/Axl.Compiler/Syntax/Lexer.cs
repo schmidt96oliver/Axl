@@ -58,11 +58,11 @@ public sealed class Lexer
         }
 
         
-        public void AddToken(TokenKind kind)
+        public void AddToken(TokenKind kind, bool allowEmpty = false)
         {
-            Debug.Assert(_next > _start);
-            _tokens.Add(Token.Simple(Source.SpanFromTo(_start, _next), kind));
+            Debug.Assert(allowEmpty || _next > _start);
             
+            _tokens.Add(Token.Simple(Source.SpanFromTo(_start, _next), kind));
             _start = _next;
         }
 
@@ -88,7 +88,6 @@ public sealed class Lexer
 
         public void AddStringText(string processedText)
         {
-            Debug.Assert(_next > _start);
             _tokens.Add(Token.StringText(Source.SpanFromTo(_start, _next), processedText));
             _start = _next;
         }
@@ -149,6 +148,11 @@ public sealed class Lexer
             case var c when char.IsAsciiDigit(c):
             case '.' when char.IsAsciiDigit(scanner.Peek()):
                 LexNumber(ref scanner);
+                break;
+            
+            // --- String
+            case '\"':
+                LexString(ref scanner);
                 break;
 
             // --- Symbols
@@ -358,6 +362,57 @@ public sealed class Lexer
                 scanner.Advance();
                 if (c is not '_')
                     bodyBuilder.Append(c);
+            }
+        }
+    }
+
+    private static void LexString(ref Scanner scanner)
+    {
+        Debug.Assert(scanner.CurrentText is "\"");
+        
+        // --- StringStart
+        scanner.AddToken(TokenKind.StringStart);
+        
+        // --- Text
+        var textBuilder = new StringBuilder();
+        while (true)
+        {
+            switch (scanner.Peek())
+            {
+                // --- Newline/Eof => End string with error
+                case '\n':
+                case '\0':
+                case var c when scanner.IsAtEnd:
+                    var stringStartIndex = scanner.StartIndex - 1;
+                    
+                    // Emit text
+                    scanner.AddStringText(textBuilder.ToString());
+                    
+                    // Add empty StringEnd token
+                    scanner.AddToken(TokenKind.StringEnd, allowEmpty: true);
+                    
+                    // Report unclosed string error.
+                    // It starts on the first ", hence we need to subtract 1.
+                    scanner.DiagnosticBag.ReportError(new Diagnostic.UnclosedString(
+                        scanner.Source.LocationFromTo(stringStartIndex, scanner.NextIndex)));
+                    
+                    return;
+                
+                // --- Quotation mark => End string
+                case '\"':
+                    // Nominal ending
+                    scanner.AddStringText(textBuilder.ToString());
+                    
+                    // Emit string end
+                    scanner.Advance();
+                    scanner.AddToken(TokenKind.StringEnd);
+                    
+                    return;
+                
+                // --- Any character just proceeds
+                default:
+                    textBuilder.Append(scanner.Advance());
+                    break;
             }
         }
     }

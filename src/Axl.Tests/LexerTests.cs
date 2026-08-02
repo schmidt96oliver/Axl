@@ -285,4 +285,62 @@ public sealed class LexerTests
             - NumberLiteral: "1f64a" body="1" suffix=None
             - NumberLiteral: "1f644" body="1" suffix=None
             """);
+
+
+    [Fact]
+    public void Strings_Empty()
+        => InlineSnapshot.Validate(Lex("\"\""), """
+            - StringStart: "\""
+            - StringText: ""
+            - StringEnd: "\""
+            """);
+    
+    [Fact]
+    public void Strings_Plain()
+        => InlineSnapshot.Validate(Lex("\"Abcdefg //test @.;- f32 fn 🂦🂦 \""), """
+            - StringStart: "\""
+            - StringText: "Abcdefg //test @.;- f32 fn \uD83C\uDCA6\uD83C\uDCA6 "
+            - StringEnd: "\""
+            """);
+    
+    [Fact]
+    public void Strings_Unclosed_Newline()
+        => InlineSnapshot.Validate(Lex("\"Abcdefg //test @.;- f32 fn 🂦🂦\nABC;"), """
+            ERROR UnclosedString@[0, 32): String must be closed.
+            - StringStart: "\""
+            - StringText: "Abcdefg //test @.;- f32 fn \uD83C\uDCA6\uD83C\uDCA6"
+            - StringEnd: ""
+            - Whitespace: "\n"
+            - Identifier: "ABC"
+            - Semicolon: ";"
+            """);
+    
+    [Fact]
+    public void Strings_Unclosed_Eof()
+        => InlineSnapshot.Validate(Lex("\"Abcdefg //test @.;- f32 fn 🂦🂦"), """
+            ERROR UnclosedString@[0, 32): String must be closed.
+            - StringStart: "\""
+            - StringText: "Abcdefg //test @.;- f32 fn \uD83C\uDCA6\uD83C\uDCA6"
+            - StringEnd: ""
+            """);
+    
+    [Fact]
+    public void Strings_Unclosed_Empty_Newline()
+        => InlineSnapshot.Validate(Lex("\"\nABC"), """
+            ERROR UnclosedString@[0, 1): String must be closed.
+            - StringStart: "\""
+            - StringText: ""
+            - StringEnd: ""
+            - Whitespace: "\n"
+            - Identifier: "ABC"
+            """);
+    
+    [Fact]
+    public void Strings_Unclosed_Empty_Eof()
+        => InlineSnapshot.Validate(Lex("\""), """
+            ERROR UnclosedString@[0, 1): String must be closed.
+            - StringStart: "\""
+            - StringText: ""
+            - StringEnd: ""
+            """);
 }
