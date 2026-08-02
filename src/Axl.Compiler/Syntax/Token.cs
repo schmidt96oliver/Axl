@@ -1,4 +1,6 @@
-﻿namespace Axl.Compiler.Syntax;
+﻿using Axl.Compiler.Diagnostics;
+
+namespace Axl.Compiler.Syntax;
 
 public class Token : SyntaxElement
 {
@@ -25,7 +27,7 @@ public class Token : SyntaxElement
     public static Token Simple(SourceSpan span, TokenKind kind)
     {
         // Assert that non-simple tokens are created through their dedicated constructor methods.
-        if (kind is TokenKind.Identifier or TokenKind.NumberLiteral or TokenKind.StringText)
+        if (kind is TokenKind.Identifier or TokenKind.NumberLiteral or TokenKind.StringText or TokenKind.Error)
             throw new ArgumentException($"{nameof(kind)} carries a value and must be constructed through special constructor.", nameof(kind));
 
         return new Token(span, kind);
@@ -39,4 +41,7 @@ public class Token : SyntaxElement
 
     public static StringTextToken StringText(SourceSpan span, string processedText)
         => new StringTextToken(span, processedText);
+
+    public static Token Error(ErrorGuaranteed proof, SourceSpan span)
+        => new Token(span, TokenKind.Error);
 }
