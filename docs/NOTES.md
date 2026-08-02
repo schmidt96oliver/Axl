@@ -6,8 +6,8 @@
 [x] Identifier and keywords
    * fn var module public private native return if else loop break continue and or not true false i32 f32 i64 f64 bool string char none
    * never: = identifier token with contextual kind. Parser replaces it to never kind
-[ ] Symbols
-   * . , ; : -> =>  = += -=    <= >= + - * / == !=   ( ) { } < >   "
+[x] Symbols
+   * . , ; : -> =>  = += -=    <= >= + - * / == !=   ( ) { } < >
 [x] Errors
    * AddToken concats => one Token per error _run_
    * One diagnostic per character

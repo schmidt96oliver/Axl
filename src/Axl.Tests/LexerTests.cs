@@ -128,4 +128,40 @@ public sealed class LexerTests
         => InlineSnapshot.Validate(Lex("never"), """
             - Identifier: "never"
             """);
+
+    [Fact]
+    public void Symbols_Equals()
+        => InlineSnapshot.Validate(LexIgnoreWhitespace("=== != <<=>>= =>= ++=--="), """
+            - DoubleEqual: "=="
+            - Equal: "="
+            - BangEqual: "!="
+            - LessThan: "<"
+            - LessThanEqual: "<="
+            - GreaterThan: ">"
+            - GreaterThanEqual: ">="
+            - RightDoubleArrow: "=>"
+            - Equal: "="
+            - Plus: "+"
+            - PlusEqual: "+="
+            - Minus: "-"
+            - MinusEqual: "-="
+            """);
+
+    [Fact]
+    public void Symbols_Other()
+        => InlineSnapshot.Validate(LexIgnoreWhitespace("(){}<>-->.,;:"),
+            """
+            - OpenParen: "("
+            - CloseParen: ")"
+            - OpenBrace: "{"
+            - CloseBrace: "}"
+            - LessThan: "<"
+            - GreaterThan: ">"
+            - Minus: "-"
+            - RightArrow: "->"
+            - Dot: "."
+            - Comma: ","
+            - Semicolon: ";"
+            - Colon: ":"
+            """);
 }

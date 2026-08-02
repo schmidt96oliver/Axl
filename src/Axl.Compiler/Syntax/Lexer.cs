@@ -1,5 +1,6 @@
 ﻿using System.Collections.Immutable;
 using System.Diagnostics;
+using System.Text.RegularExpressions;
 using Axl.Compiler.Diagnostics;
 
 namespace Axl.Compiler.Syntax;
@@ -131,19 +132,89 @@ public sealed class Lexer
                 scanner.AdvanceWhile(char.IsWhiteSpace);
                 scanner.AddToken(TokenKind.Whitespace);
                 break;
-            
+
             // --- Comment
             case '/' when scanner.Match('/'):
                 scanner.AdvanceWhile(c => c is not '\n');
                 scanner.AddToken(TokenKind.Comment);
                 break;
-            
+
             // --- Identifier or Keyword
             case var c when char.IsAsciiLetter(c) || c is '_':
                 scanner.AdvanceWhile(cc => char.IsAsciiLetterOrDigit(cc) || cc is '_');
                 AddIdentifierOrKeyword(ref scanner);
                 break;
+
+            // --- Symbols
+            case '.':
+                scanner.AddToken(TokenKind.Dot);
+                break;
+            case ',':
+                scanner.AddToken(TokenKind.Comma);
+                break;
+            case ';':
+                scanner.AddToken(TokenKind.Semicolon);
+                break;
+            case ':':
+                scanner.AddToken(TokenKind.Colon);
+                break;
             
+            case '{':
+                scanner.AddToken(TokenKind.OpenBrace);
+                break;
+            case '}':
+                scanner.AddToken(TokenKind.CloseBrace);
+                break;
+            case '(':
+                scanner.AddToken(TokenKind.OpenParen);
+                break;
+            case ')':
+                scanner.AddToken(TokenKind.CloseParen);
+                break;
+
+            case '=':
+                if (scanner.Match('>'))
+                    scanner.AddToken(TokenKind.RightDoubleArrow);
+                else if (scanner.Match('='))
+                    scanner.AddToken(TokenKind.DoubleEqual);
+                else
+                    scanner.AddToken(TokenKind.Equal);
+                break;
+
+            case '!' when scanner.Match('='):
+                scanner.AddToken(TokenKind.BangEqual);
+                break;
+
+            case '-':
+                if (scanner.Match('>'))
+                    scanner.AddToken(TokenKind.RightArrow);
+                else if (scanner.Match('='))
+                    scanner.AddToken(TokenKind.MinusEqual);
+                else
+                    scanner.AddToken(TokenKind.Minus);
+                break;
+            case '+':
+                scanner.AddToken(scanner.Match('=') ? TokenKind.PlusEqual : TokenKind.Plus);
+                break;
+            case '*':
+                scanner.AddToken(TokenKind.Star);
+                break;
+            case '/':
+                scanner.AddToken(TokenKind.Slash);
+                break;
+
+            case '<':
+                scanner.AddToken(scanner.Match('=')
+                    ? TokenKind.LessThanEqual
+                    : TokenKind.LessThan);
+                break;
+
+            case '>':
+                scanner.AddToken(scanner.Match('=')
+                    ? TokenKind.GreaterThanEqual
+                    : TokenKind.GreaterThan);
+                break;
+
             default:
                 scanner.AddInvalidCharacter();
                 break;
