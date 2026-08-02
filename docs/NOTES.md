@@ -2,6 +2,45 @@
                                        ≽(◕ ᴗ ◕)≼
 
 # Notes
+and
+
+break
+bool
+
+continue
+
+else
+
+f32
+f64
+fn
+false
+
+i32
+i64
+if
+
+loop
+
+module
+
+not
+native
+none
+
+or
+
+public
+private
+
+return
+
+string
+
+true
+
+var
+
 
 # Lexer
 [x] Comments, Whitespace

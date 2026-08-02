@@ -1,21 +1,34 @@
-﻿using System.Text;
+﻿using System.Collections.Immutable;
+using System.Text;
 using Axl.Compiler;
 using Axl.Compiler.Diagnostics;
 using Axl.Compiler.Syntax;
-using Meziantou.Framework.HumanReadable;
 using Meziantou.Framework.InlineSnapshotTesting;
 
 namespace Axl.Tests;
 
 public sealed class LexerTests
 {
-    private string RunLexer(string input)
+    private string Lex(string input)
     {
-        // --- Run Lexer
         var diagnostics = new DiagnosticBag();
         var source = SourceFileView.FromText(input);
         var tokens = Lexer.Lex(source, diagnostics);
 
+        return Dump(tokens, source, diagnostics);
+    }
+
+    private string LexIgnoreWhitespace(string input)
+    {
+        var diagnostics = new DiagnosticBag();
+        var source = SourceFileView.FromText(input);
+        var tokens = Lexer.Lex(source, diagnostics);
+
+        return Dump(tokens.Where(t => t.Kind is not TokenKind.Whitespace), source, diagnostics);
+    }
+
+    private string Dump(IEnumerable<Token> tokens, SourceFileView source, DiagnosticBag diagnostics)
+    {
         // --- Dump
         var builder = new StringBuilder();
 
@@ -36,21 +49,21 @@ public sealed class LexerTests
 
         return builder.ToString().Trim();
     }
-
+    
     
     [Fact]
     public void EmptyInput()
-        => InlineSnapshot.Validate(RunLexer(""), "");
+        => InlineSnapshot.Validate(Lex(""), "");
     
     [Fact]
     public void Whitespace()
-        => InlineSnapshot.Validate(RunLexer("  \n\r\t   "), """
+        => InlineSnapshot.Validate(Lex("  \n\r\t   "), """
             - Whitespace: "  \n\r\t   "
             """);
     
     [Fact]
     public void InvalidCharacters_Sequence()
-        => InlineSnapshot.Validate(RunLexer("@@@##"),
+        => InlineSnapshot.Validate(Lex("@@@##"),
             """
             ERROR InvalidCharacters@[0, 1): Invalid characters.
             ERROR InvalidCharacters@[1, 2): Invalid characters.
@@ -62,9 +75,17 @@ public sealed class LexerTests
 
     [Fact]
     public void InvalidCharacters_UnicodeSurrogate()
-        => InlineSnapshot.Validate(RunLexer("🂦"), """
+        => InlineSnapshot.Validate(Lex("🂦"), """
             ERROR InvalidCharacters@[0, 1): Invalid characters.
             ERROR InvalidCharacters@[1, 2): Invalid characters.
             - Error: "\uD83C\uDCA6"
             """);
+
+    [Fact]
+    public void Keywords()
+        => InlineSnapshot.Validate(LexIgnoreWhitespace("fn var module public private native return if else loop break continue and or not true false i32 f32 i64 f64 bool string char none"));
+
+    [Fact]
+    public void IdentifierVsKeyword()
+        => InlineSnapshot.Validate(LexIgnoreWhitespace("fn vara aif _private else_ false0 False I32"));
 }

@@ -14,6 +14,10 @@ public sealed class Lexer
 
         public bool IsAtEnd
             => _next >= _text.Length;
+
+        public ReadOnlySpan<char> CurrentText
+            => _text[_start.._next];
+        
         
         public char? Peek()
             => _next < _text.Length ? _text[_next] : null;
@@ -122,19 +126,74 @@ public sealed class Lexer
         Debug.Assert(!scanner.IsAtEnd);
         switch (scanner.Advance())
         {
+            // --- Whitespace
             case var c when char.IsWhiteSpace(c):
                 scanner.AdvanceWhile(c => char.IsWhiteSpace(c));
                 scanner.AddToken(TokenKind.Whitespace);
                 break;
             
+            // --- Comment
             case '/' when scanner.Match('/'):
                 scanner.AdvanceWhile(c => c is not '\n');
                 scanner.AddToken(TokenKind.Comment);
+                break;
+            
+            // --- Identifier or Keyword
+            case var c when char.IsAsciiLetter(c) || c is '_':
+                scanner.AdvanceWhile(c => char.IsAsciiLetterOrDigit(c) || c is '_');
+                AddIdentifierOrKeyword(ref scanner);
                 break;
             
             default:
                 scanner.AddInvalidCharacter();
                 break;
         }
+    }
+
+    private static void AddIdentifierOrKeyword(ref Scanner scanner)
+    {
+        var text = scanner.CurrentText;
+        
+        // Short-circuit
+        // Shortest keyword is 2 chars (if)
+        // Longest keyword is 8 chars (continue)
+        if (text.Length is < 2 or > 8)
+            scanner.AddIdentifier();
+        
+        // --- Keyword?
+        var tokenKind = text switch
+        {
+            "and" => TokenKind.AndKw,
+            "bool" => TokenKind.BoolKw,
+            "break" => TokenKind.BreakKw,
+            "continue" => TokenKind.ContinueKw,
+            "else" => TokenKind.ElseKw,
+            "f32" => TokenKind.F32Kw,
+            "f64" => TokenKind.F64Kw,
+            "fn" => TokenKind.FnKw,
+            "false" => TokenKind.FalseKw,
+            "i32" => TokenKind.I32Kw,
+            "i64" => TokenKind.I64Kw,
+            "if" => TokenKind.IfKw,
+            "loop" => TokenKind.LoopKw,
+            "module" => TokenKind.ModuleKw,
+            "not" => TokenKind.NotKw,
+            "native" => TokenKind.NativeKw,
+            "none" => TokenKind.NoneKw,
+            "or" => TokenKind.OrKw,
+            "public" => TokenKind.PublicKw,
+            "private" => TokenKind.PrivateKw,
+            "return" => TokenKind.ReturnKw,
+            "string" => TokenKind.StringKw,
+            "true" => TokenKind.TrueKw,
+            "var" => TokenKind.VarKw,
+
+            _ => TokenKind.Identifier
+        };
+        
+        if (tokenKind is TokenKind.Identifier)
+            scanner.AddIdentifier();
+        else
+            scanner.AddToken(tokenKind);
     }
 }
