@@ -1,6 +1,5 @@
 ﻿using System.Collections.Immutable;
 using System.Diagnostics;
-using System.Text.RegularExpressions;
 using Axl.Compiler.Diagnostics;
 
 namespace Axl.Compiler.Syntax;
@@ -18,10 +17,18 @@ public sealed class Lexer
 
         public ReadOnlySpan<char> CurrentText
             => _text[_start.._next];
+
+        public char Previous
+        {
+            get
+            {
+                Debug.Assert(_next > _start);
+                return _text[_next - 1];
+            }
+        }
         
-        
-        public char? Peek()
-            => _next < _text.Length ? _text[_next] : null;
+        public char Peek()
+            => _next < _text.Length ? _text[_next] : '\0';
 
         public char Advance()
         {
@@ -31,7 +38,7 @@ public sealed class Lexer
 
         public void AdvanceWhile(Func<char, bool> predicate)
         {
-            while (Peek() is char c && predicate(c))
+            while (!IsAtEnd && predicate(Peek()))
                 Advance();
         }
 
