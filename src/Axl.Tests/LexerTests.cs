@@ -50,7 +50,14 @@ public sealed class LexerTests
         foreach (var token in tokens)
         {
             var text = source.GetTextSpan(token.Span).ToLiteralString();
-            builder.AppendLine($"- {token.Kind}: \"{text}\"");
+            builder.Append($"- {token.Kind}: \"{text}\"");
+            
+            if (token is NumberLiteralToken numberLiteral)
+            {
+                builder.Append($" body=\"{numberLiteral.Body}\" suffix={numberLiteral.Suffix}");
+            }
+
+            builder.AppendLine();
         }
 
         return builder.ToString().Trim();
@@ -170,5 +177,33 @@ public sealed class LexerTests
             - Comma: ","
             - Semicolon: ";"
             - Colon: ":"
+            """);
+
+
+    [Fact]
+    public void Numbers_Integral()
+        => InlineSnapshot.Validate(LexIgnoreWhitespace("1234 1_2_3_4 12_ 12_i32 1i64 1_2_f32 1f64"), """
+            - NumberLiteral: "1234" body="1234" suffix=None
+            - NumberLiteral: "1_2_3_4" body="1234" suffix=None
+            - NumberLiteral: "12_" body="12" suffix=None
+            - NumberLiteral: "12_i32" body="12" suffix=I32
+            - NumberLiteral: "1i64" body="1" suffix=I64
+            - NumberLiteral: "1_2_f32" body="12" suffix=F32
+            - NumberLiteral: "1f64" body="1" suffix=F64
+            """);
+    
+    [Fact]
+    public void Numbers_InvalidSuffixes()
+        => InlineSnapshot.Validate(LexIgnoreWhitespace("1f3245 4ghr 1g_445df_12 1f64a 1f644"), """
+            ERROR UnknownNumberSuffix@[1, 6): Only 'i32', 'i64', 'f32' or 'f64' are valid number suffixes. Got 'f3245'.
+            ERROR UnknownNumberSuffix@[8, 11): Only 'i32', 'i64', 'f32' or 'f64' are valid number suffixes. Got 'ghr'.
+            ERROR UnknownNumberSuffix@[13, 23): Only 'i32', 'i64', 'f32' or 'f64' are valid number suffixes. Got 'g_445df_12'.
+            ERROR UnknownNumberSuffix@[25, 29): Only 'i32', 'i64', 'f32' or 'f64' are valid number suffixes. Got 'f64a'.
+            ERROR UnknownNumberSuffix@[31, 35): Only 'i32', 'i64', 'f32' or 'f64' are valid number suffixes. Got 'f644'.
+            - NumberLiteral: "1f3245" body="1" suffix=None
+            - NumberLiteral: "4ghr" body="4" suffix=None
+            - NumberLiteral: "1g_445df_12" body="1" suffix=None
+            - NumberLiteral: "1f64a" body="1" suffix=None
+            - NumberLiteral: "1f644" body="1" suffix=None
             """);
 }

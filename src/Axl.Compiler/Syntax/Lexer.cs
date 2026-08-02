@@ -1,5 +1,6 @@
 ﻿using System.Collections.Immutable;
 using System.Diagnostics;
+using System.Text;
 using Axl.Compiler.Diagnostics;
 
 namespace Axl.Compiler.Syntax;
@@ -8,6 +9,9 @@ public sealed class Lexer
 {
     private ref struct Scanner(SourceFileView source, DiagnosticBag diagnosticBag)
     {
+        public readonly DiagnosticBag DiagnosticBag = diagnosticBag;
+        public readonly SourceFileView Source = source;
+        
         private ReadOnlySpan<char> _text = source.TextSpan;
         private int _start = 0, _next = 0;
         private ImmutableArray<Token>.Builder _tokens = ImmutableArray.CreateBuilder<Token>();
@@ -18,6 +22,11 @@ public sealed class Lexer
         public ReadOnlySpan<char> CurrentText
             => _text[_start.._next];
 
+        public int StartIndex => _start;
+
+        public int NextIndex => _next;
+
+        
         public char Previous
         {
             get
@@ -68,7 +77,7 @@ public sealed class Lexer
         public void AddToken(TokenKind kind)
         {
             Debug.Assert(_next > _start);
-            _tokens.Add(Token.Simple(source.SpanFromTo(_start, _next), kind));
+            _tokens.Add(Token.Simple(Source.SpanFromTo(_start, _next), kind));
             
             _start = _next;
         }
@@ -77,11 +86,11 @@ public sealed class Lexer
         {
             Debug.Assert(_next == _start + 1);
             
-            var proof = diagnosticBag.ReportError(
-                new Diagnostic.InvalidCharacters(source.LocationFromLength(_start, 1)));
+            var proof = DiagnosticBag.ReportError(
+                new Diagnostic.InvalidCharacters(Source.LocationFromLength(_start, 1)));
             
             // Combine, if previous token was error as well
-            var span = source.SpanFromLength(_start, 1);
+            var span = Source.SpanFromLength(_start, 1);
             if (_tokens.Count > 0 && _tokens[^1].Kind is TokenKind.Error)
             {
                 _tokens[^1] = Token.Error(proof,
@@ -96,14 +105,14 @@ public sealed class Lexer
         public void AddStringText(string processedText)
         {
             Debug.Assert(_next > _start);
-            _tokens.Add(Token.StringText(source.SpanFromTo(_start, _next), processedText));
+            _tokens.Add(Token.StringText(Source.SpanFromTo(_start, _next), processedText));
             _start = _next;
         }
 
         public void AddIdentifier()
         {
             Debug.Assert(_next > _start);
-            _tokens.Add(Token.Identifier(source.SpanFromTo(_start, _next),
+            _tokens.Add(Token.Identifier(Source.SpanFromTo(_start, _next),
                 Identifier.FromLexer(_text[_start.._next].ToString())));
             _start = _next;
         }
@@ -111,7 +120,7 @@ public sealed class Lexer
         public void AddNumberLiteral(string body, NumberLiteralSuffix suffix)
         {
             Debug.Assert(_next > _start);
-            _tokens.Add(Token.NumberLiteral(source.SpanFromTo(_start, _next), body, suffix));
+            _tokens.Add(Token.NumberLiteral(Source.SpanFromTo(_start, _next), body, suffix));
             _start = _next;
         }
 
@@ -150,6 +159,12 @@ public sealed class Lexer
             case var c when char.IsAsciiLetter(c) || c is '_':
                 scanner.AdvanceWhile(cc => char.IsAsciiLetterOrDigit(cc) || cc is '_');
                 AddIdentifierOrKeyword(ref scanner);
+                break;
+
+            // --- Numbers
+            case var c when char.IsAsciiDigit(c):
+            case '.' when char.IsAsciiDigit(scanner.Peek()):
+                LexNumber(ref scanner);
                 break;
 
             // --- Symbols
@@ -273,5 +288,58 @@ public sealed class Lexer
             scanner.AddIdentifier();
         else
             scanner.AddToken(tokenKind);
+    }
+
+    private static void LexNumber(ref Scanner scanner)
+    {
+        Debug.Assert(scanner.CurrentText.Length == 1);
+        Debug.Assert(char.IsAsciiDigit(scanner.Previous) || scanner.Previous is '.');
+
+        var bodyBuilder = new StringBuilder();
+        
+        // --- Digits
+        if (char.IsAsciiDigit(scanner.Previous))
+        {   
+            bodyBuilder.Append(scanner.Previous);
+            while (scanner.Peek() is var c && (char.IsAsciiDigit(c) || c is '_'))
+            {
+                scanner.Advance();
+                if (c is not '_')
+                    bodyBuilder.Append(c);
+            }
+        }
+
+        // --- Suffix
+        var suffix = NumberLiteralSuffix.None;
+        if (char.IsAsciiLetter(scanner.Peek()))
+        {
+            // Advance an entire identifier
+            var suffixStart = scanner.CurrentText.Length;
+            scanner.AdvanceWhile(c => char.IsAsciiLetterOrDigit(c) || c is '_');
+            
+            // Parse it as a suffix
+            suffix = scanner.CurrentText[suffixStart..] switch
+            {
+                "i32" => NumberLiteralSuffix.I32,
+                "i64" => NumberLiteralSuffix.I64,
+                "f32" => NumberLiteralSuffix.F32,
+                "f64" => NumberLiteralSuffix.F64,
+                _ => NumberLiteralSuffix.None
+            };
+            
+            // Invalid?
+            if (suffix is NumberLiteralSuffix.None)
+            {
+                // Suffix is invalid. Report an error and let suffix be None.
+                // The invalid suffix text will be part of the token, but practically,
+                // this will never be read. The body is still valid.
+                
+                scanner.DiagnosticBag.ReportError(new Diagnostic.UnknownNumberSuffix(
+                    scanner.Source.LocationFromTo(scanner.StartIndex + suffixStart, scanner.NextIndex),
+                    Actual: scanner.CurrentText[suffixStart..].ToString()));
+            }
+        }
+        
+        scanner.AddNumberLiteral(bodyBuilder.ToString(), suffix);
     }
 }

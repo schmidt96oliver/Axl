@@ -13,6 +13,9 @@
    * One diagnostic per character
 [ ] Number Literals
    * 0x, 0b; suffixes; underscores;
+   * "0x_FF_55_i64"
+   * ".5" ".5_f64" ".5f64"
+   * "1i64" "1_i64"
 [ ] Plain string literals
 [ ] String escapes
 [ ] Interpolated strings
