@@ -1,6 +1,7 @@
 ﻿using System.Collections.Immutable;
 using System.Diagnostics;
 using System.Text;
+using System.Text.RegularExpressions;
 using Axl.Compiler.Diagnostics;
 
 namespace Axl.Compiler.Syntax;
@@ -300,27 +301,39 @@ public sealed class Lexer
 
         var bodyBuilder = new StringBuilder();
         
+        // --- Hex form?
+        if (scanner.CurrentText is "0" && scanner.Peek() is 'x' && char.IsAsciiHexDigit(scanner.Peek(1)))
+        {
+            scanner.Advance();  // x
+            bodyBuilder.Append(scanner.CurrentText);  // 0x
+            
+            AdvanceDigitsOrUnderscore(ref scanner, char.IsAsciiHexDigit);
+            scanner.AddNumberLiteral(bodyBuilder.ToString(), NumberLiteralSuffix.None);
+            return;
+        }
+        
+        // --- Binary form?
+        if (scanner.CurrentText is "0" && scanner.Peek() is 'b' && scanner.Peek(1) is '0' or '1')
+        {
+            scanner.Advance();  // b
+            bodyBuilder.Append(scanner.CurrentText); // 0b
+            
+            AdvanceDigitsOrUnderscore(ref scanner, c => c is '0' or '1');
+            scanner.AddNumberLiteral(bodyBuilder.ToString(), NumberLiteralSuffix.None);
+            return;
+        }
+
         // --- Digits
         var hadDot = scanner.Previous is '.';
         bodyBuilder.Append(scanner.Previous);
-        while (scanner.Peek() is var c && (char.IsAsciiDigit(c) || c is '_'))
-        {
-            scanner.Advance();
-            if (c is not '_')
-                bodyBuilder.Append(c);
-        }
+        AdvanceDigitsOrUnderscore(ref scanner, char.IsAsciiDigit);
 
         if (!hadDot && scanner.Peek() is '.' && char.IsAsciiDigit(scanner.Peek(1)))
         {
             bodyBuilder.Append(scanner.Advance()); // .
             bodyBuilder.Append(scanner.Advance()); // digit
             
-            while (scanner.Peek() is var c && (char.IsAsciiDigit(c) || c is '_'))
-            {
-                scanner.Advance();
-                if (c is not '_')
-                    bodyBuilder.Append(c);
-            }
+            AdvanceDigitsOrUnderscore(ref scanner, char.IsAsciiDigit);
         }
 
         // --- Suffix
@@ -355,5 +368,16 @@ public sealed class Lexer
         }
         
         scanner.AddNumberLiteral(bodyBuilder.ToString(), suffix);
+        return;
+
+        void AdvanceDigitsOrUnderscore(ref Scanner scanner, Func<char, bool> predicate)
+        {
+            while (scanner.Peek() is var c && (c is '_' || predicate(c)))
+            {
+                scanner.Advance();
+                if (c is not '_')
+                    bodyBuilder.Append(c);
+            }
+        }
     }
 }

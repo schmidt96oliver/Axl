@@ -203,6 +203,56 @@ public sealed class LexerTests
             - NumberLiteral: "1.1i32" body="1.1" suffix=I32
             - NumberLiteral: ".1111i64" body=".1111" suffix=I64
             """);
+
+    [Fact]
+    public void Numbers_BinaryForm()
+        => InlineSnapshot.Validate(LexIgnoreWhitespace("0b1100 0b1_0_1 0b01_"), """
+            - NumberLiteral: "0b1100" body="0b1100" suffix=None
+            - NumberLiteral: "0b1_0_1" body="0b101" suffix=None
+            - NumberLiteral: "0b01_" body="0b01" suffix=None
+            """);
+    
+    [Fact]
+    public void Numbers_RejectedBinaryForms()
+        => InlineSnapshot.Validate(LexIgnoreWhitespace("0b1100f32 0b0123 0b 0b_1"), """
+            ERROR UnknownNumberSuffix@[18, 19): Only 'i32', 'i64', 'f32' or 'f64' are valid number suffixes. Got 'b'.
+            ERROR UnknownNumberSuffix@[21, 24): Only 'i32', 'i64', 'f32' or 'f64' are valid number suffixes. Got 'b_1'.
+            - NumberLiteral: "0b1100" body="0b1100" suffix=None
+            - F32Kw: "f32"
+            - NumberLiteral: "0b01" body="0b01" suffix=None
+            - NumberLiteral: "23" body="23" suffix=None
+            - NumberLiteral: "0b" body="0" suffix=None
+            - NumberLiteral: "0b_1" body="0" suffix=None
+            """);
+
+    [Fact]
+    public void Numbers_HexForm()
+        => InlineSnapshot.Validate(LexIgnoreWhitespace("0x0123456789ABCDEFabcdef 0x0_F_F 0x0F_ 0x0Ff32 0x0F_f32"), """
+            - NumberLiteral: "0x0123456789ABCDEFabcdef" body="0x0123456789ABCDEFabcdef" suffix=None
+            - NumberLiteral: "0x0_F_F" body="0x0FF" suffix=None
+            - NumberLiteral: "0x0F_" body="0x0F" suffix=None
+            - NumberLiteral: "0x0Ff32" body="0x0Ff32" suffix=None
+            - NumberLiteral: "0x0F_f32" body="0x0Ff32" suffix=None
+            """);
+    
+    [Fact]
+    public void Numbers_RejectedHexForms()
+        => InlineSnapshot.Validate(LexIgnoreWhitespace("0x0Fi32 0xG 0xh 0xXYZ 0xg 0x 0x_1"), """
+            ERROR UnknownNumberSuffix@[9, 11): Only 'i32', 'i64', 'f32' or 'f64' are valid number suffixes. Got 'xG'.
+            ERROR UnknownNumberSuffix@[13, 15): Only 'i32', 'i64', 'f32' or 'f64' are valid number suffixes. Got 'xh'.
+            ERROR UnknownNumberSuffix@[17, 21): Only 'i32', 'i64', 'f32' or 'f64' are valid number suffixes. Got 'xXYZ'.
+            ERROR UnknownNumberSuffix@[23, 25): Only 'i32', 'i64', 'f32' or 'f64' are valid number suffixes. Got 'xg'.
+            ERROR UnknownNumberSuffix@[27, 28): Only 'i32', 'i64', 'f32' or 'f64' are valid number suffixes. Got 'x'.
+            ERROR UnknownNumberSuffix@[30, 33): Only 'i32', 'i64', 'f32' or 'f64' are valid number suffixes. Got 'x_1'.
+            - NumberLiteral: "0x0F" body="0x0F" suffix=None
+            - I32Kw: "i32"
+            - NumberLiteral: "0xG" body="0" suffix=None
+            - NumberLiteral: "0xh" body="0" suffix=None
+            - NumberLiteral: "0xXYZ" body="0" suffix=None
+            - NumberLiteral: "0xg" body="0" suffix=None
+            - NumberLiteral: "0x" body="0" suffix=None
+            - NumberLiteral: "0x_1" body="0" suffix=None
+            """);
     
     [Fact]
     public void NumberDotIdentifier()

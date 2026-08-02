@@ -11,7 +11,7 @@
 [x] Errors
    * AddToken concats => one Token per error _run_
    * One diagnostic per character
-[ ] Number Literals
+[x] Number Literals
    * 0x, 0b; suffixes; underscores;
    * "0x_FF_55_i64"
    * ".5" ".5_f64" ".5f64"
