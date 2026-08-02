@@ -18,10 +18,10 @@ public sealed class Lexer
         public char? Peek()
             => _next < _text.Length ? _text[_next] : null;
 
-        public void Advance()
+        public char Advance()
         {
-            if (_next < _text.Length)
-                _next++;
+            Debug.Assert(_next < _text.Length);
+            return _text[_next++];
         }
 
         public void AdvanceWhile(Func<char, bool> predicate)
@@ -110,6 +110,22 @@ public sealed class Lexer
 
     private static void LexSingle(ref Scanner scanner)
     {
-        
+        Debug.Assert(!scanner.IsAtEnd);
+        switch (scanner.Advance())
+        {
+            case char c when char.IsWhiteSpace(c):
+                scanner.AdvanceWhile(c => char.IsWhiteSpace(c));
+                scanner.AddToken(TokenKind.Whitespace);
+                break;
+            
+            case '/' when scanner.Match('/'):
+                scanner.AdvanceWhile(c => c is not '\n');
+                scanner.AddToken(TokenKind.Comment);
+                break;
+            
+            default:
+                scanner.AddInvalidCharacter();
+                break;
+        }
     }
 }
