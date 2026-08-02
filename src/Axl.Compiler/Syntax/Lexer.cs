@@ -36,8 +36,11 @@ public sealed class Lexer
             }
         }
         
-        public char Peek()
-            => _next < _text.Length ? _text[_next] : '\0';
+        public char Peek(int skip = 0)
+        {
+            Debug.Assert(skip >= 0);
+            return _next + skip < _text.Length ? _text[_next + skip] : '\0';
+        }
 
         public char Advance()
         {
@@ -298,9 +301,20 @@ public sealed class Lexer
         var bodyBuilder = new StringBuilder();
         
         // --- Digits
-        if (char.IsAsciiDigit(scanner.Previous))
-        {   
-            bodyBuilder.Append(scanner.Previous);
+        var hadDot = scanner.Previous is '.';
+        bodyBuilder.Append(scanner.Previous);
+        while (scanner.Peek() is var c && (char.IsAsciiDigit(c) || c is '_'))
+        {
+            scanner.Advance();
+            if (c is not '_')
+                bodyBuilder.Append(c);
+        }
+
+        if (!hadDot && scanner.Peek() is '.' && char.IsAsciiDigit(scanner.Peek(1)))
+        {
+            bodyBuilder.Append(scanner.Advance()); // .
+            bodyBuilder.Append(scanner.Advance()); // digit
+            
             while (scanner.Peek() is var c && (char.IsAsciiDigit(c) || c is '_'))
             {
                 scanner.Advance();

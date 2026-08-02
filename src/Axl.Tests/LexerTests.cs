@@ -191,6 +191,35 @@ public sealed class LexerTests
             - NumberLiteral: "1_2_f32" body="12" suffix=F32
             - NumberLiteral: "1f64" body="1" suffix=F64
             """);
+
+    [Fact]
+    public void Numbers_WithDot()
+        => InlineSnapshot.Validate(LexIgnoreWhitespace("11.11 .111 1_1_.1_123 1.1_f32 .1_f64 1.1i32 .1111i64"), """
+            - NumberLiteral: "11.11" body="11.11" suffix=None
+            - NumberLiteral: ".111" body=".111" suffix=None
+            - NumberLiteral: "1_1_.1_123" body="11.1123" suffix=None
+            - NumberLiteral: "1.1_f32" body="1.1" suffix=F32
+            - NumberLiteral: ".1_f64" body=".1" suffix=F64
+            - NumberLiteral: "1.1i32" body="1.1" suffix=I32
+            - NumberLiteral: ".1111i64" body=".1111" suffix=I64
+            """);
+    
+    [Fact]
+    public void NumberDotIdentifier()
+        => InlineSnapshot.Validate(LexIgnoreWhitespace("1. 1.f32 1.1. 1.1.f32 ._1_1"), """
+            - NumberLiteral: "1" body="1" suffix=None
+            - Dot: "."
+            - NumberLiteral: "1" body="1" suffix=None
+            - Dot: "."
+            - F32Kw: "f32"
+            - NumberLiteral: "1.1" body="1.1" suffix=None
+            - Dot: "."
+            - NumberLiteral: "1.1" body="1.1" suffix=None
+            - Dot: "."
+            - F32Kw: "f32"
+            - Dot: "."
+            - Identifier: "_1_1"
+            """);
     
     [Fact]
     public void Numbers_InvalidSuffixes()
