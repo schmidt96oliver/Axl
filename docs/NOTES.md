@@ -1,25 +1,39 @@
 # ------------------------------------ Axl Project ------------------------------------
                                        ≽(◕ ᴗ ◕)≼
-* update Parser impl (String Interpolation ends with anything but StringText, bnraceOpen, StringEnd; never)
+* type vs expr: `Type.SubType.Function(arg1, arg2);` is expr but needs type. Unify?
+  * allow only TypeExpr in type positions?
+* disambiguate: module, type, function, field, ...
+* ";" must belong to its stmt/decl node -> add to its own Grammar. Have helper fn `ExpectSemicolonIfNecessary`
+  * ModuleDecl is the only one explicitly asking for it (drop or include everywhere)
 
-# Lexer
-[x] Comments, Whitespace
-[x] Identifier and keywords
-   * fn var module public private native return if else loop break continue and or not true false i32 f32 i64 f64 bool string char none
-   * never: = identifier token with contextual kind. Parser replaces it to never kind
-[x] Symbols
-   * . , ; : -> =>  = += -=    <= >= + - * / == !=   ( ) { } < >
-[x] Errors
-   * AddToken concats => one Token per error _run_
-   * One diagnostic per character
-[x] Number Literals
-   * 0x, 0b; suffixes; underscores;
-   * "0x_FF_55_i64"
-   * ".5" ".5_f64" ".5f64"
-   * "1i64" "1_i64"
-[x] Plain string literals
-[x] String escapes
-[x] Interpolated strings
+# Parser
+[ ] Grammar
+
+[ ] Untyped CST: SyntaxKind (separate from TokenKind), sealed SyntaxNode, accept empty Children
+[ ] Matklad framework: 
+   * Here token = non-trivia token. Trivia is reattached by tree builder.
+
+   * Open()       = emit Open event -> MarkOpen(index)
+   * OpenBefore(MarkClosed) = emit Open event before another open mark -> MarkOpen(index)
+   * Close(kind)  = emit Close event and set kind -> MarkClose(index of open event)
+   * Advance()    = Emit advance event
+
+   * IsAt(TokenKind), Peek(lookahead) -> TokenKind
+   * TryAdvance(TokenKind) = IsAt ? Advance : false
+   * AdvanceOrReport(TokenKind) = TryAdvance(TokenKind) ? true : report "expected {kind}" error, does not advance, false
+   * AdvanceKnown(TokenKind) = TryAdvance, if false => DEBUG ASSERT
+
+   * Fuel/Safety: Assert parser advanced a token! Consume fuel. It must never loop
+[ ] Tree builder: Iterate events, reattach trivia
+[ ] Anchors: TokenSet as BitSet (see Claude); using Scope style; Anchor stack; FirstSets
+   * AtAnchor
+[ ] Code lazily: SyntaxViews (only product syntax, never sum syntax). Provide FindNode/FindToken/NthToken/NthNode...
+
+[ ] Interpolated Strings
+   * Lexer does not emit empty StringText/StringEnd.
+[ ] "=>" Body syntax (see ExpressionsAndStatements.axl)
+[ ] Keyword `never` in return-type position
+[ ] Trailing comma allowed (param/arg list)
 
 # First features
 * i32, i64, f32, f64, bool, string
@@ -34,15 +48,6 @@
 * multi-file modules
 
 # Implementation Requirements
-1. Testing
-   * validate diagnostic code & token kinds
-   * accept mode
-   * multi-file test cases
-
-3. Parser
-   * "=>" syntax according to ExpressionsAndStatements.axl
-   * "<>" generics disambiguation
-   * Handle contextual keyword never
 4. Binder
    * expected type propagation: number literals
    * loop break type checks

@@ -34,11 +34,6 @@ PrintLine(1 <= 2);
 PrintLine(1 > 2);
 PrintLine(1 >= 2);
 
-// For int numeric types (i32, i64):
-PrintLine(1 & 1);       // binary and
-PrintLine(1 | 1);       // binary or
-PrintLine(!1);          // binary inversion
-
 // For bool:
 PrintLine(true and false);  // = control flow; first expr false => second not evaluated
 PrintLine(true or false); // = control flow; first expr true => second not evaluated
