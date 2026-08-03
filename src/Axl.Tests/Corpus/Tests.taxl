@@ -1,0 +1,43 @@
+﻿// Every *.taxl file must:
+//  - Be a valid program even without file splitting. Because of that,
+//      special taxl syntax comes after comments.
+//  - be formatted correctly
+
+// Taxl files must start with either of:
+// - @run-pass  => Program must compile and run normally. Stdout must match. No errors; lints must be expected or ignored.
+// - @run-panic => Program must compile, run and panic. No Stdout, no errors; lints must be expected or ignored.
+// - @check     => Only compiles. Error must be expected; lints expected or ignored
+// Comments at the start of a *.taxl file are ignored.
+
+// Taxl file are split into sections by //--- or //===:
+//  Top section is the script to be executed. It contains all front matter (comments, directives)
+//  `//--- Filename.axl` starts a new file as seen by the compiler.
+//      - New file starts with `//---` comment, the last one ends the line before.
+//  `//=== stdout` starts an expected output section. Everything inside must be preceded by `//` 
+//      - Output sections must come last. No other section allowed thereafter.
+
+// Blessing:
+//  - all //~ are deleted and rewritten (added if there is none)
+//  - //=== stdout is deleted and rewritten (added if there is none)
+
+//@run-pass     // Comment after directive is allowed
+
+// Specified lints can be ignored for the entire file:
+//@ignore-lint UnusedVariable
+
+A.Do();
+
+var a = 1;  //~lint UnusedVariable  //<-- TaxlError (because UnusedVariable was ignored)
+
+a = "Hello";    //~error TypeMismatch   // Expected error
+//~lint BlaBla  //<-- TaxlError: errors/lints are squiggled by LSP
+
+// Script ends here. Next line starts virtual file "A.axl":
+//--- A.axl
+module A;
+
+public fn Do()
+    => Standard.Print("Do");
+    
+//=== stdout
+// Do

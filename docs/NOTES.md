@@ -4,8 +4,8 @@
 
 * update testing strat into PROJECT.md
 * update strings.axl into corpus test file
-* hook up Lexer to LSP
-  * escape sequence = regexp
+
+* feat: using keyword
 
 # Lexer
 [x] Comments, Whitespace
