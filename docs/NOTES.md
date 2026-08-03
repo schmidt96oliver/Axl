@@ -2,11 +2,6 @@
                                        ≽(◕ ᴗ ◕)≼
 * update Parser impl (String Interpolation ends with anything but StringText, bnraceOpen, StringEnd; never)
 
-* update testing strat into PROJECT.md
-* update strings.axl into corpus test file
-
-* feat: using keyword
-
 # Lexer
 [x] Comments, Whitespace
 [x] Identifier and keywords

@@ -20,7 +20,7 @@
 //  - all //~ are deleted and rewritten (added if there is none)
 //  - //=== stdout is deleted and rewritten (added if there is none)
 
-//@run-pass     // Comment after directive is allowed
+//@check     // Comment after directive is allowed
 
 // Specified lints can be ignored for the entire file:
 //@ignore-lint UnusedVariable
