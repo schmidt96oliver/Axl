@@ -40,7 +40,12 @@ public sealed class SourceFile
         var text = File.ReadAllText(path);
         return new SourceFile(path, text);
     }
-
+    
+    public static SourceFile FromText(string path, string text)
+    {
+        return new SourceFile(path, text);
+    }
+    
     public static SourceFile FromText(string text)
     {
         return new SourceFile(null, text);

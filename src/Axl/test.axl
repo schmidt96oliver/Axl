@@ -1,4 +1,9 @@
 "Hello\" as
 "Hello {
-    } bla bla" 
+    } bla bla" /
 bla bla
+//@run-pass
+bla //~error UnclosedString
+
+//--- File.axl
+//=== stdout

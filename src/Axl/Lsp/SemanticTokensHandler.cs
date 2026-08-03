@@ -34,8 +34,8 @@ public class SemanticTokensHandler : SemanticTokensHandlerBase
     protected override Task Tokenize(SemanticTokensBuilder builder, ITextDocumentIdentifierParams identifier,
         CancellationToken cancellationToken)
     {
-        var text = DocumentStore.Get(identifier.TextDocument.Uri);
-        var lines = text.Split('\n');
+        var file = DocumentStore.Get(identifier.TextDocument.Uri);
+        var lines = file.Text.Split('\n');
         for (var lineNo = 0; lineNo < lines.Length; lineNo++)
         {
             var line = lines[lineNo].TrimEnd('\r');

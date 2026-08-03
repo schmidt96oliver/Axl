@@ -1,16 +1,11 @@
 # ------------------------------------ Axl Project ------------------------------------
                                        ≽(◕ ᴗ ◕)≼
-
-* test comments, newline inside string expression
-* test unclosed string expression braces
+* update Parser impl (String Interpolation ends with anything but StringText, bnraceOpen, StringEnd; never)
 
 * update testing strat into PROJECT.md
 * update strings.axl into corpus test file
 * hook up Lexer to LSP
-
-* interpolated string naming:
-  * String Literal = StringStart + Segments (Interpolation or Text) + StringEnd
-  * Interpolation = { expression }
+  * escape sequence = regexp
 
 # Lexer
 [x] Comments, Whitespace
