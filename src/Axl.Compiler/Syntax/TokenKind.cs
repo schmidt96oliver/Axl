@@ -23,6 +23,7 @@ public enum TokenKind
     AndKw,
     OrKw,
     NotKw,
+    UsingKw,
     
     // --- Type keywords
     I32Kw,

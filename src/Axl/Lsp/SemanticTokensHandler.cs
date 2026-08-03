@@ -184,6 +184,7 @@ public class SemanticTokensHandler(ILanguageServerFacade facade) : SemanticToken
                 case TokenKind.ReturnKw:
                 case TokenKind.StringKw:
                 case TokenKind.TrueKw:
+                case TokenKind.UsingKw:
                 case TokenKind.VarKw:
                 case TokenKind.F32Kw:
                 case TokenKind.F64Kw:

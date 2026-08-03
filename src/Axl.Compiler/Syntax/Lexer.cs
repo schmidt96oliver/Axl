@@ -273,6 +273,7 @@ public sealed class Lexer
             "return" => TokenKind.ReturnKw,
             "string" => TokenKind.StringKw,
             "true" => TokenKind.TrueKw,
+            "using" => TokenKind.UsingKw,
             "var" => TokenKind.VarKw,
 
             _ => TokenKind.Identifier

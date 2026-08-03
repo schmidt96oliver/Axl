@@ -96,7 +96,7 @@ public sealed class LexerTests
 
     [Fact]
     public void Keywords()
-        => InlineSnapshot.Validate(LexIgnoreWhitespace("fn var module public private native return if else loop break continue and or not true false i32 f32 i64 f64 bool string char none"), """
+        => InlineSnapshot.Validate(LexIgnoreWhitespace("fn var module public private native return if else loop break continue and or not true false i32 f32 i64 f64 bool string char none using"), """
             - FnKw: "fn"
             - VarKw: "var"
             - ModuleKw: "module"
@@ -122,6 +122,7 @@ public sealed class LexerTests
             - StringKw: "string"
             - Identifier: "char"
             - NoneKw: "none"
+            - UsingKw: "using"
             """);
 
     [Fact]
