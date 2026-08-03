@@ -54,6 +54,7 @@ public class SemanticTokensHandler(ILanguageServerFacade facade) : SemanticToken
         });
         
         // --- Build semantic tokens
+        var isInOutput = false;
         foreach (var token in tokens)
         {
             var startLinePos = file.GetLinePosition(token.Span.First);
@@ -81,11 +82,27 @@ public class SemanticTokensHandler(ILanguageServerFacade facade) : SemanticToken
                         
                         builder.Push(startLinePos.Line, startLinePos.Column, length,
                             (SemanticTokenType?)SemanticTokenType.Decorator);
+
+                        isInOutput = text.StartsWith("//===");
                     }
-                    else
+                    else if (!isInOutput)
                     {
+                        // Entire line is a comment
                         builder.Push(startLinePos.Line, startLinePos.Column, token.Span.Length,
                             (SemanticTokenType?)SemanticTokenType.Comment);
+                    }
+                    else if (isInOutput)
+                    {
+                        // `//` is now a decorator
+                        builder.Push(startLinePos.Line, startLinePos.Column, 2,
+                            (SemanticTokenType?)SemanticTokenType.Decorator);
+                        
+                        // Everything thereafter is string
+                        if (text.Length > 2)
+                        {
+                            builder.Push(startLinePos.Line, startLinePos.Column + 2, text.Length - 2,
+                                (SemanticTokenType?)SemanticTokenType.String);
+                        }
                     }
                     break;
                 }
