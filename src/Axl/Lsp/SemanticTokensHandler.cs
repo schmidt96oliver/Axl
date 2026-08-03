@@ -73,6 +73,14 @@ public class SemanticTokensHandler(ILanguageServerFacade facade) : SemanticToken
                         }
                         builder.Push(startLinePos.Line, startLinePos.Column, length,
                             (SemanticTokenType?)SemanticTokenType.Decorator);
+                        
+                        // See if there is a comment
+                        var commentStart = text[2..].IndexOf("//") + 2;
+                        if (commentStart > 2)
+                        {
+                            builder.Push(startLinePos.Line, startLinePos.Column + commentStart, text.Length - commentStart,
+                                (SemanticTokenType?)SemanticTokenType.Comment);
+                        }
                     }
                     else if (text.StartsWith("//---") || text.StartsWith("//==="))
                     {
