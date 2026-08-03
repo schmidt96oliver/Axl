@@ -484,4 +484,17 @@ public sealed class LexerTests
             - StringText: "a " processed="a "
             - OpenBrace: "{"
             """");
+
+    [Fact]
+    public void Strings_CommentInsideInterpolation()
+        => InlineSnapshot.Validate(Lex("""
+                                       "00{ab // test}"
+                                       """), """"
+            - StringStart: """
+            - StringText: "00" processed="00"
+            - OpenBrace: "{"
+            - Identifier: "ab"
+            - Whitespace: " "
+            - Comment: "// test}""
+            """");
 }
