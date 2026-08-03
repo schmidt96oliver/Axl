@@ -1,16 +1,6 @@
-// bla bla bluo
-"Hello {a + b" blas" }" bla bla
+"\n" "\a" "\"" bl "\a" " \b ab" "a\n c" public "\n"  "a\nb" "\a\" blasldasd"
+"\ blalbla" "\
+blupp"a" "" "ab" "\na" "\nab\r" "\n\r\"\\" "\""; "abc \n{ab@@} asd " asd _void 
 
-public native("PrintStr") Print(arg: string) -> none;
-
-"Hello {a+"Bop {bop} bla" 
-    b} bla bla"
-    
-   "\a" bla "\" asd asd \ " @@@€€
-    
-//@run-pass bla bla
-//@ignore-tokens Whitespace
-
-//--- Axl.axl
-
-//=== stdout
+public fn DoSth() -> i32
+    => 4_i54_rgf;

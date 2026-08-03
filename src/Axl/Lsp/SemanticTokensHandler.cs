@@ -31,7 +31,8 @@ public class SemanticTokensHandler(ILanguageServerFacade facade) : SemanticToken
                     SemanticTokenType.Comment,
                     SemanticTokenType.String,
                     SemanticTokenType.Keyword,
-                    SemanticTokenType.Decorator),
+                    SemanticTokenType.Decorator,
+                    SemanticTokenType.Regexp),
                 TokenModifiers = []
             },
             Full = true
@@ -90,11 +91,53 @@ public class SemanticTokensHandler(ILanguageServerFacade facade) : SemanticToken
                 }
 
                 case TokenKind.StringStart:
-                case TokenKind.StringText:
                 case TokenKind.StringEnd:
                     builder.Push(startLinePos.Line, startLinePos.Column, token.Span.Length,
                         (SemanticTokenType?)SemanticTokenType.String);
                     break;
+                
+                case TokenKind.StringText:
+                {
+                    // Partition the string text into escape and non-escape
+                    var text = file.GetText(token.Span);
+                    
+                    var stringTokenStart = 0;
+                    for (var i = 0; i < text.Length; i++)
+                    {
+                        if (text[i] is not '\\')
+                            continue;
+
+                        // Push string text before
+                        if (i > stringTokenStart)
+                        {
+                            builder.Push(startLinePos.Line,
+                                @char: startLinePos.Column + stringTokenStart,
+                                length: i - stringTokenStart,
+                                (SemanticTokenType?)SemanticTokenType.String);
+                        }
+
+                        // Push escape
+                        builder.Push(startLinePos.Line,
+                            @char: startLinePos.Column + i,
+                            length: i + 1 < text.Length ? 2 : 1,
+                            (SemanticTokenType?)SemanticTokenType.Regexp);
+
+                        if (i + 1 < text.Length)
+                            i++;
+                        stringTokenStart = i + 1;
+                    }
+
+                    // Push rest string
+                    if (text.Length > stringTokenStart)
+                    {
+                        builder.Push(startLinePos.Line, 
+                            @char: startLinePos.Column + stringTokenStart, 
+                            length: text.Length - stringTokenStart,
+                            (SemanticTokenType?)SemanticTokenType.String);
+                    }
+
+                    break;
+                }
 
                 case TokenKind.AndKw:
                 case TokenKind.BoolKw:
@@ -134,8 +177,11 @@ public class SemanticTokensHandler(ILanguageServerFacade facade) : SemanticToken
     {
         foreach (var diag in bag.Diagnostics)
         {
+            if (diag.Location.Span.Length == 0)
+                continue;
+            
             var startLinePos = diag.Location.GetFirstLinePosition();
-            var endLinePos = diag.Location.GetEndLinePosition();
+            var endLinePos = diag.Location.File.GetLinePosition(diag.Location.Span.End - 1);
             yield return new Diagnostic()
             {
                 Severity = diag.DefaultSeverity switch
@@ -146,7 +192,7 @@ public class SemanticTokensHandler(ILanguageServerFacade facade) : SemanticToken
                 },
                 Message = diag.Message,
                 Code = new DiagnosticCode(diag.Id),
-                Range = new Range(startLinePos.Line, startLinePos.Column, endLinePos.Line, endLinePos.Column),
+                Range = new Range(startLinePos.Line, startLinePos.Column, endLinePos.Line, endLinePos.Column + 1),
             };
         }
     }
