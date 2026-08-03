@@ -4,6 +4,14 @@
 * test comments, newline inside string expression
 * test unclosed string expression braces
 
+* update testing strat into PROJECT.md
+* update strings.axl into corpus test file
+* hook up Lexer to LSP
+
+* interpolated string naming:
+  * String Literal = StringStart + Segments (Interpolation or Text) + StringEnd
+  * Interpolation = { expression }
+
 # Lexer
 [x] Comments, Whitespace
 [x] Identifier and keywords

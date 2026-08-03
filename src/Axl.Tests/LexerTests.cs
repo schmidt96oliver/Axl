@@ -303,44 +303,32 @@ public sealed class LexerTests
             """");
     
     [Fact]
-    public void Strings_Unclosed_Newline()
-        => InlineSnapshot.Validate(Lex("\"Abcdefg //test @.;- f32 fn 🂦🂦\nABC;"), """"
-            ERROR UnclosedString@[0, 32): String must be closed.
+    public void Strings_Unclosed()
+        => InlineSnapshot.Validate(Lex("""
+                                        "000
+                                        "000
+                                        """), """"
             - StringStart: """
-            - StringText: "Abcdefg //test @.;- f32 fn \uD83C\uDCA6\uD83C\uDCA6" processed="Abcdefg //test @.;- f32 fn 🂦🂦"
-            - StringEnd: ""
-            - Whitespace: "\n"
+            - StringText: "000" processed="000"
+            - Whitespace: "\r\n"
+            - StringStart: """
+            - StringText: "000" processed="000"
+            """");
+    
+    [Fact]
+    public void Strings_Unclosed_Empty()
+        => InlineSnapshot.Validate(Lex("""
+                                       "
+                                       ABC
+                                       "
+                                       """), """"
+            - StringStart: """
+            - Whitespace: "\r\n"
             - Identifier: "ABC"
-            - Semicolon: ";"
+            - Whitespace: "\r\n"
+            - StringStart: """
             """");
     
-    [Fact]
-    public void Strings_Unclosed_Eof()
-        => InlineSnapshot.Validate(Lex("\"Abcdefg //test @.;- f32 fn 🂦🂦"), """"
-            ERROR UnclosedString@[0, 32): String must be closed.
-            - StringStart: """
-            - StringText: "Abcdefg //test @.;- f32 fn \uD83C\uDCA6\uD83C\uDCA6" processed="Abcdefg //test @.;- f32 fn 🂦🂦"
-            - StringEnd: ""
-            """");
-    
-    [Fact]
-    public void Strings_Unclosed_Empty_Newline()
-        => InlineSnapshot.Validate(Lex("\"\nABC"), """"
-            ERROR UnclosedString@[0, 1): String must be closed.
-            - StringStart: """
-            - StringEnd: ""
-            - Whitespace: "\n"
-            - Identifier: "ABC"
-            """");
-    
-    [Fact]
-    public void Strings_Unclosed_Empty_Eof()
-        => InlineSnapshot.Validate(Lex("\""), """"
-            ERROR UnclosedString@[0, 1): String must be closed.
-            - StringStart: """
-            - StringEnd: ""
-            """");
-
     [Fact]
     public void Strings_Escapes()
         => InlineSnapshot.Validate(Lex("\" \\n \\\" \\{ \\} \\r \\t \\\\ \""), """"
@@ -353,24 +341,37 @@ public sealed class LexerTests
 
     [Fact]
     public void Strings_UnknownEscapes()
-        => InlineSnapshot.Validate(Lex("\" \\a \\ \\5 \\@ \\\n\""), """"
-            ERROR UnknownEscapeSequence@[2, 4): Unknown escape sequence '\a'.
-            ERROR UnknownEscapeSequence@[5, 7): Unknown escape sequence '\ '.
-            ERROR UnknownEscapeSequence@[7, 9): Unknown escape sequence '\5'.
-            ERROR UnknownEscapeSequence@[10, 12): Unknown escape sequence '\@'.
-            ERROR UnknownEscapeSequence@[13, 15): Unknown escape sequence '\\n'.
+        => InlineSnapshot.Validate(Lex("""
+                                       "\a \ \5 \@ \
+                                       "
+                                       """), """"
+            ERROR UnknownEscapeSequence@[1, 3): Unknown escape sequence '\a'.
+            ERROR UnknownEscapeSequence@[4, 6): Unknown escape sequence '\ '.
+            ERROR UnknownEscapeSequence@[6, 8): Unknown escape sequence '\5'.
+            ERROR UnknownEscapeSequence@[9, 11): Unknown escape sequence '\@'.
+            ERROR UnknownEscapeSequence@[12, 13): Unknown escape sequence '\'.
             - StringStart: """
-            - StringText: " \a \ \5 \@ \\n" processed="    "
-            - StringEnd: """
+            - StringText: "\a \ \5 \@ \" processed="   "
+            - Whitespace: "\r\n"
+            - StringStart: """
             """");
-    
+
     [Fact]
-    public void Strings_OpenEscapeAtEof()
-        => InlineSnapshot.Validate(Lex("\"\\"), """"
-            ERROR UnclosedString@[0, 2): String must be closed.
+    public void Strings_OpenEscapeBeforeNewlineAndEof()
+        => InlineSnapshot.Validate(Lex("""
+                                       "A\
+                                       Id
+                                       "A\
+                                       """), """"
+            ERROR UnknownEscapeSequence@[2, 3): Unknown escape sequence '\'.
+            ERROR UnknownEscapeSequence@[11, 12): Unknown escape sequence '\'.
             - StringStart: """
-            - StringText: "\" processed=""
-            - StringEnd: ""
+            - StringText: "A\" processed="A"
+            - Whitespace: "\r\n"
+            - Identifier: "Id"
+            - Whitespace: "\r\n"
+            - StringStart: """
+            - StringText: "A\" processed="A"
             """");
 
     [Fact]
@@ -444,5 +445,41 @@ public sealed class LexerTests
             - CloseBrace: "}"
             - StringText: " " processed=" "
             - StringEnd: """
+            """");
+
+    [Fact]
+    public void Strings_InterpolationWithNewline()
+        => InlineSnapshot.Validate(Lex("""
+                                       "00{
+                                            }00"
+                                       """), """"
+            - StringStart: """
+            - StringText: "00" processed="00"
+            - OpenBrace: "{"
+            - Whitespace: "\r\n     "
+            - CloseBrace: "}"
+            - StringText: "00" processed="00"
+            - StringEnd: """
+            """");
+
+    [Fact]
+    public void Strings_UnclosedInterpolation()
+        => InlineSnapshot.Validate(Lex("""
+                                       "00{ab 
+                                       "00{ab "a {
+                                       """), """"
+            - StringStart: """
+            - StringText: "00" processed="00"
+            - OpenBrace: "{"
+            - Identifier: "ab"
+            - Whitespace: " \r\n"
+            - StringStart: """
+            - StringText: "00" processed="00"
+            - OpenBrace: "{"
+            - Identifier: "ab"
+            - Whitespace: " "
+            - StringStart: """
+            - StringText: "a " processed="a "
+            - OpenBrace: "{"
             """");
 }

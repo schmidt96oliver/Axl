@@ -60,9 +60,9 @@ public sealed class Lexer
         public Token LastToken => _tokens[^1];
 
         
-        public void AddToken(TokenKind kind, bool allowEmpty = false)
+        public void AddToken(TokenKind kind)
         {
-            Debug.Assert(allowEmpty || _next > _start);
+            Debug.Assert(_next > _start);
             
             _tokens.Add(Token.Simple(Source.SpanFromTo(_start, _next), kind));
             _start = _next;
@@ -90,6 +90,7 @@ public sealed class Lexer
 
         public void AddStringText(string processedText)
         {
+            Debug.Assert(_next > _start);
             _tokens.Add(Token.StringText(Source.SpanFromTo(_start, _next), processedText));
             _start = _next;
         }
@@ -372,44 +373,29 @@ public sealed class Lexer
     {
         Debug.Assert(scanner.CurrentText is "\"");
 
-        var stringStartIndex = scanner.StartIndex;
-        
         // --- StringStart
         scanner.AddToken(TokenKind.StringStart);
 
         // --- Body with text and expressions
-        while (true)
+        // Eof or Newline just end the string and the Lexer goes back into
+        // normal mode. No StringEnd/StringText is created empty.
+        while (scanner.Peek() is var c && c is not ('\0' or '\n' or '\r'))
         {
-            // See what the end of text was
-            switch (scanner.Peek())
+            switch (c)
             {
-                // --- Interpolation start "{"
+                // --- Interpolation start `{`
                 case '{':
                     // This function handles { and } itself and emits those tokens.
                     // When it is finished, the scanner will be at string end or another text.
                     LexInterpolatedStringExpression(ref scanner);
                     break;
-                
-                // --- Nominal string end "
+        
+                // --- StringEnd `"`
                 case '\"':
                     scanner.Advance();
                     scanner.AddToken(TokenKind.StringEnd);
-
+        
                     return;
-
-                // --- EOF or Newline
-                case '\n':
-                case '\0':
-                    // Add empty StringEnd token
-                    scanner.AddToken(TokenKind.StringEnd, allowEmpty: true);
-
-                    // Report unclosed string error.
-                    // It starts on the first ", hence we need to subtract 1.
-                    scanner.DiagnosticBag.ReportError(new Diagnostic.UnclosedString(
-                        scanner.Source.LocationFromTo(stringStartIndex, scanner.NextIndex)));
-
-                    return;
-
                 default:
                     // This only consumes the inner text and stops
                     // at ", eof/newline, {
@@ -430,16 +416,18 @@ public sealed class Lexer
             {
                 // --- Escape
                 case '\\':
+                {
                     scanner.Advance(); // "\"
-                    if (scanner.IsAtEnd)
+                    if (scanner.Peek() is '\0' or '\n' or '\r')
                     {
-                        // Eof means the string has not been closed.
-                        // '\' will be discarded (it's not inside the ProcessedText)
-                        // and we do not report the unknown escape sequence error,
-                        // since the unclosed string error should be more prominent.
+                        // Eof and newline will end the entire string, so we need to stop here.
+                        // '\' will be discarded (not included in ProcessedText).
+                        scanner.DiagnosticBag.ReportError(new Diagnostic.UnknownEscapeSequence(
+                            scanner.Source.LocationFromLength(scanner.NextIndex - 1, 1)));
                         goto case '\0';
                     }
-                    
+
+                    // Handle escape character
                     switch (scanner.Advance())
                     {
                         case 'n':
@@ -463,7 +451,7 @@ public sealed class Lexer
                         case '\"':
                             textBuilder.Append('\"');
                             break;
-                        
+
                         default:
                             // Report error. The escaped sequence will not be part of the
                             // processed text.
@@ -473,13 +461,16 @@ public sealed class Lexer
                     }
 
                     break;
+                }
                 
                 // --- Stop
                 case '\n':
+                case '\r':
                 case '\0':
                 case '\"':
                 case '{':
-                    scanner.AddStringText(textBuilder.ToString());
+                    if (scanner.CurrentText.Length > 0)
+                        scanner.AddStringText(textBuilder.ToString());
                     return;
                 
                 // --- Any character just proceeds
