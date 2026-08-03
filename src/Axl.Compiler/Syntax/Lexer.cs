@@ -387,7 +387,7 @@ public sealed class Lexer
                 case '{':
                     // This function handles { and } itself and emits those tokens.
                     // When it is finished, the scanner will be at string end or another text.
-                    LexInterpolatedStringExpression(ref scanner);
+                    LexStringInterpolation(ref scanner);
                     break;
         
                 // --- StringEnd `"`
@@ -481,7 +481,7 @@ public sealed class Lexer
         }
     }
     
-    private static void LexInterpolatedStringExpression(ref Scanner scanner)
+    private static void LexStringInterpolation(ref Scanner scanner)
     {
         Debug.Assert(scanner.CurrentText.IsEmpty);
 

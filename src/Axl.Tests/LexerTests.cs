@@ -331,11 +331,13 @@ public sealed class LexerTests
     
     [Fact]
     public void Strings_Escapes()
-        => InlineSnapshot.Validate(Lex("\" \\n \\\" \\{ \\} \\r \\t \\\\ \""), """"
+        => InlineSnapshot.Validate(Lex("""
+                                       "\n \" \{ \} \r \t \\"
+                                       """), """"
             - StringStart: """
-            - StringText: " \n \" \{ \} \r \t \\ " processed=" 
+            - StringText: "\n \" \{ \} \r \t \\" processed="
              " { } 
-             	 \ "
+             	 \"
             - StringEnd: """
             """");
 
