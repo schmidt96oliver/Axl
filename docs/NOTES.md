@@ -1,6 +1,9 @@
 # ------------------------------------ Axl Project ------------------------------------
                                        ≽(◕ ᴗ ◕)≼
 
+* test comments, newline inside string expression
+* test unclosed string expression braces
+
 # Lexer
 [x] Comments, Whitespace
 [x] Identifier and keywords
@@ -16,9 +19,9 @@
    * "0x_FF_55_i64"
    * ".5" ".5_f64" ".5f64"
    * "1i64" "1_i64"
-[ ] Plain string literals
-[ ] String escapes
-[ ] Interpolated strings
+[x] Plain string literals
+[x] String escapes
+[x] Interpolated strings
 
 # First features
 * i32, i64, f32, f64, bool, string

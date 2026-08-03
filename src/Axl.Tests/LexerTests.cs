@@ -352,23 +352,15 @@ public sealed class LexerTests
             """");
 
     [Fact]
-    public void Strings_Escapes_MultiLineString()
-        => InlineSnapshot.Validate(Lex("\"Hello\\\nWorld\""), """"
-            - StringStart: """
-            - StringText: "Hello\\nWorld" processed="Hello
-            World"
-            - StringEnd: """
-            """");
-    
-    [Fact]
     public void Strings_UnknownEscapes()
-        => InlineSnapshot.Validate(Lex("\" \\a \\ \\5 \\@ \""), """"
+        => InlineSnapshot.Validate(Lex("\" \\a \\ \\5 \\@ \\\n\""), """"
             ERROR UnknownEscapeSequence@[2, 4): Unknown escape sequence '\a'.
             ERROR UnknownEscapeSequence@[5, 7): Unknown escape sequence '\ '.
             ERROR UnknownEscapeSequence@[7, 9): Unknown escape sequence '\5'.
             ERROR UnknownEscapeSequence@[10, 12): Unknown escape sequence '\@'.
+            ERROR UnknownEscapeSequence@[13, 15): Unknown escape sequence '\\n'.
             - StringStart: """
-            - StringText: " \a \ \5 \@ " processed="    "
+            - StringText: " \a \ \5 \@ \\n" processed="    "
             - StringEnd: """
             """");
     
@@ -378,16 +370,6 @@ public sealed class LexerTests
             ERROR UnclosedString@[0, 2): String must be closed.
             - StringStart: """
             - StringText: "\" processed=""
-            - StringEnd: ""
-            """");
-
-    [Fact] 
-    public void Strings_OpenMultiLineEscapeAtEof()
-        => InlineSnapshot.Validate(Lex("\"\\\n"), """"
-            ERROR UnclosedString@[0, 3): String must be closed.
-            - StringStart: """
-            - StringText: "\\n" processed="
-            "
             - StringEnd: ""
             """");
 

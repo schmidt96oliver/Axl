@@ -463,9 +463,6 @@ public sealed class Lexer
                         case '\"':
                             textBuilder.Append('\"');
                             break;
-                        case '\n':
-                            textBuilder.Append('\n');
-                            break;
                         
                         default:
                             // Report error. The escaped sequence will not be part of the
