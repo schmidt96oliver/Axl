@@ -6,6 +6,13 @@
 /// </summary>
 public readonly record struct SourceLocation(SourceFile File, SourceSpan Span)
 {
+    public LinePosition GetFirstLinePosition()
+        => File.GetLinePosition(Span.First);
+    
+    public LinePosition GetEndLinePosition()
+        => File.GetLinePosition(Span.End);
+    
     public ReadOnlySpan<char> GetText()
         => File.GetText(Span);
+
 }

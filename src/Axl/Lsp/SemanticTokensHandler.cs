@@ -1,11 +1,18 @@
 using System.Text.RegularExpressions;
+using Axl.Compiler;
+using Axl.Compiler.Diagnostics;
+using Axl.Compiler.Syntax;
 using OmniSharp.Extensions.LanguageServer.Protocol.Client.Capabilities;
 using OmniSharp.Extensions.LanguageServer.Protocol.Document;
 using OmniSharp.Extensions.LanguageServer.Protocol.Models;
+using OmniSharp.Extensions.LanguageServer.Protocol.Server;
+using Diagnostic = OmniSharp.Extensions.LanguageServer.Protocol.Models.Diagnostic;
+using DiagnosticSeverity = Axl.Compiler.Diagnostics.DiagnosticSeverity;
+using Range = OmniSharp.Extensions.LanguageServer.Protocol.Models.Range;
 
 namespace Axl.Lsp;
 
-public class SemanticTokensHandler : SemanticTokensHandlerBase
+public class SemanticTokensHandler(ILanguageServerFacade facade) : SemanticTokensHandlerBase
 {
     // Alternation order matters: comments swallow the rest of the line, strings swallow keywords inside them.
     private static readonly Regex TokenRegex = new(
@@ -35,21 +42,113 @@ public class SemanticTokensHandler : SemanticTokensHandlerBase
         CancellationToken cancellationToken)
     {
         var file = DocumentStore.Get(identifier.TextDocument.Uri);
-        var lines = file.Text.Split('\n');
-        for (var lineNo = 0; lineNo < lines.Length; lineNo++)
+        var diagnosticBag = new DiagnosticBag();
+        var tokens = Lexer.Lex(SourceFileView.Whole(file), diagnosticBag);
+        
+        // --- Push diagnostics
+        facade.TextDocument.PublishDiagnostics(new PublishDiagnosticsParams()
         {
-            var line = lines[lineNo].TrimEnd('\r');
-            foreach (Match match in TokenRegex.Matches(line))
+            Uri = identifier.TextDocument.Uri,
+            Diagnostics = new Container<Diagnostic>(ConvertDiagnostics(diagnosticBag))
+        });
+        
+        // --- Build semantic tokens
+        foreach (var token in tokens)
+        {
+            var startLinePos = file.GetLinePosition(token.Span.First);
+            switch (token.Kind)
             {
-                var type = match.Groups["comment"].Success ? SemanticTokenType.Comment
-                    : match.Groups["string"].Success ? SemanticTokenType.String
-                    : match.Groups["decorator"].Success ? SemanticTokenType.Decorator
-                    : SemanticTokenType.Keyword;
-                builder.Push(lineNo, match.Index, match.Length, (SemanticTokenType?)type);
+                case TokenKind.Comment:
+                {
+                    var text = file.GetText(token.Span);
+                    if (text.StartsWith("//@") || text.StartsWith("//~"))
+                    {
+                        var length = 3;
+                        while (length < text.Length &&
+                               (char.IsAsciiLetterOrDigit(text[length]) || text[length] is '_' or '-'))
+                        {
+                            length++;
+                        }
+                        builder.Push(startLinePos.Line, startLinePos.Column, length,
+                            (SemanticTokenType?)SemanticTokenType.Decorator);
+                    }
+                    else if (text.StartsWith("//---") || text.StartsWith("//==="))
+                    {
+                        var length = 5;
+                        while (text[length] is '-' or '=')
+                            length++;
+                        
+                        builder.Push(startLinePos.Line, startLinePos.Column, length,
+                            (SemanticTokenType?)SemanticTokenType.Decorator);
+                    }
+                    else
+                    {
+                        builder.Push(startLinePos.Line, startLinePos.Column, token.Span.Length,
+                            (SemanticTokenType?)SemanticTokenType.Comment);
+                    }
+                    break;
+                }
+
+                case TokenKind.StringStart:
+                case TokenKind.StringText:
+                case TokenKind.StringEnd:
+                    builder.Push(startLinePos.Line, startLinePos.Column, token.Span.Length,
+                        (SemanticTokenType?)SemanticTokenType.String);
+                    break;
+
+                case TokenKind.AndKw:
+                case TokenKind.BoolKw:
+                case TokenKind.BreakKw:
+                case TokenKind.ContinueKw:
+                case TokenKind.ElseKw:
+                case TokenKind.FalseKw:
+                case TokenKind.FnKw:
+                case TokenKind.IfKw:
+                case TokenKind.LoopKw:
+                case TokenKind.ModuleKw:
+                case TokenKind.NativeKw:
+                case TokenKind.NeverKw:
+                case TokenKind.NoneKw:
+                case TokenKind.NotKw:
+                case TokenKind.OrKw:
+                case TokenKind.PrivateKw:
+                case TokenKind.PublicKw:
+                case TokenKind.ReturnKw:
+                case TokenKind.StringKw:
+                case TokenKind.TrueKw:
+                case TokenKind.VarKw:
+                case TokenKind.F32Kw:
+                case TokenKind.F64Kw:
+                case TokenKind.I32Kw:
+                case TokenKind.I64Kw:
+                    builder.Push(startLinePos.Line, startLinePos.Column, token.Span.Length,
+                        (SemanticTokenType?)SemanticTokenType.Keyword);
+                    break;
             }
         }
-
+        
         return Task.CompletedTask;
+    }
+
+    private IEnumerable<Diagnostic> ConvertDiagnostics(DiagnosticBag bag)
+    {
+        foreach (var diag in bag.Diagnostics)
+        {
+            var startLinePos = diag.Location.GetFirstLinePosition();
+            var endLinePos = diag.Location.GetEndLinePosition();
+            yield return new Diagnostic()
+            {
+                Severity = diag.DefaultSeverity switch
+                {
+                    DiagnosticSeverity.Error => OmniSharp.Extensions.LanguageServer.Protocol.Models.DiagnosticSeverity.Error,
+                    DiagnosticSeverity.Warning => OmniSharp.Extensions.LanguageServer.Protocol.Models.DiagnosticSeverity.Warning,
+                    _ => OmniSharp.Extensions.LanguageServer.Protocol.Models.DiagnosticSeverity.Information
+                },
+                Message = diag.Message,
+                Code = new DiagnosticCode(diag.Id),
+                Range = new Range(startLinePos.Line, startLinePos.Column, endLinePos.Line, endLinePos.Column),
+            };
+        }
     }
 
     protected override Task<SemanticTokensDocument> GetSemanticTokensDocument(ITextDocumentIdentifierParams @params, CancellationToken cancellationToken)

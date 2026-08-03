@@ -1,9 +1,16 @@
-"Hello\" as
-"Hello {
-    } bla bla" /
-bla bla
-//@run-pass
-bla //~error UnclosedString
+// bla bla bluo
+"Hello {a + b" blas" }" bla bla
 
-//--- File.axl
+public native("PrintStr") Print(arg: string) -> none;
+
+"Hello {a+"Bop {bop} bla" 
+    b} bla bla"
+    
+   "\a" bla "\" asd asd \ " @@@€€
+    
+//@run-pass bla bla
+//@ignore-tokens Whitespace
+
+//--- Axl.axl
+
 //=== stdout
