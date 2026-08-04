@@ -72,18 +72,18 @@ public sealed class Lexer
         {
             Debug.Assert(_next == _start + 1);
             
-            var proof = DiagnosticBag.ReportError(
+            DiagnosticBag.ReportError(
                 new Diagnostic.UnknownCharacters(Source.LocationFromLength(_start, 1)));
-            
+
             // Combine, if previous token was error as well
             var span = Source.SpanFromLength(_start, 1);
             if (_tokens.Count > 0 && _tokens[^1].Kind is TokenKind.Error)
             {
-                _tokens[^1] = Token.Error(proof,
+                _tokens[^1] = Token.Error(
                     SourceSpan.FromTo(_tokens[^1].Span, span));
             }
             else
-                _tokens.Add(Token.Error(proof, span));
+                _tokens.Add(Token.Error(span));
 
             _start = _next;
         }

@@ -19,13 +19,12 @@ public sealed class DiagnosticBag
     }
     
 
-    public ErrorGuaranteed ReportError(Diagnostic.Error error)
+    public void ReportError(Diagnostic.Error error)
     {
         Guard.IsState(!_isDrained);
-        
+
         _diagnostics.Add(error);
         HasError = true;
-        return ErrorGuaranteed.Instance;
     }
 
     public void ReportLint(Diagnostic.Lint lint)

@@ -1,6 +1,4 @@
-﻿using Axl.Compiler.Diagnostics;
-
-namespace Axl.Compiler.Syntax;
+﻿namespace Axl.Compiler.Syntax;
 
 public class Token : SyntaxElement
 {
@@ -42,6 +40,6 @@ public class Token : SyntaxElement
     public static StringTextToken StringText(SourceSpan span, string processedText)
         => new StringTextToken(span, processedText);
 
-    public static Token Error(ErrorGuaranteed proof, SourceSpan span)
+    public static Token Error(SourceSpan span)
         => new Token(span, TokenKind.Error);
 }
