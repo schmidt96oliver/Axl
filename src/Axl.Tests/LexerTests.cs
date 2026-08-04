@@ -76,6 +76,19 @@ public sealed class LexerTests
             - Whitespace: "  \n\r\t   "
             - Eof
             """);
+
+    [Fact]
+    public void Comment()
+        => InlineSnapshot.Validate(Lex("""
+                                         // Hello
+                                         // Second
+                                       """), """
+            - Whitespace: "  "
+            - Comment: "// Hello"
+            - Whitespace: "\r\n  "
+            - Comment: "// Second"
+            - Eof
+            """);
     
     [Fact]
     public void InvalidCharacters_Sequence()

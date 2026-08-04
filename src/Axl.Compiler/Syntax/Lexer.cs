@@ -146,7 +146,7 @@ public sealed class Lexer
 
             // --- Comment
             case '/' when scanner.Match('/'):
-                scanner.AdvanceWhile(c => c is not '\n');
+                scanner.AdvanceWhile(c => c is not ('\n' or '\r'));
                 scanner.AddToken(TokenKind.Comment);
                 break;
 
