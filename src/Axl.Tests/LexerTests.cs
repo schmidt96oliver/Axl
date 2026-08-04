@@ -10,48 +10,44 @@ namespace Axl.Tests;
 
 public sealed class LexerTests
 {
-    private ImmutableArray<Token> LexTokens(string input, out DiagnosticBag diagnosticBag, out SourceFileView source)
+    private ImmutableArray<Token> LexTokens(string input, out ImmutableArray<Diagnostic> diagnostics, out SourceFileView source)
     {
-        diagnosticBag = new DiagnosticBag();
+        var diagnosticBag = new DiagnosticBag();
         source = SourceFileView.FromText(input);
-        return Lexer.Lex(source, diagnosticBag);
+        
+        var tokens = Lexer.Lex(source, diagnosticBag);
+        diagnostics = diagnosticBag.Drain();
+        return tokens;
     }
     
     private string Lex(string input)
     {
         var tokens = LexTokens(input, out var diagnostics, out var source);
-
         return Dump(tokens, source, diagnostics);
     }
 
     private string LexIgnoreWhitespace(string input)
     {
-        var diagnostics = new DiagnosticBag();
-        var source = SourceFileView.FromText(input);
-        var tokens = Lexer.Lex(source, diagnostics);
-
+        var tokens = LexTokens(input, out var diagnostics, out var source);
         return Dump(tokens.Where(t => t.Kind is not TokenKind.Whitespace), source, diagnostics);
     }
 
-    private string Dump(IEnumerable<Token> tokens, SourceFileView source, DiagnosticBag diagnostics)
+    private string Dump(IEnumerable<Token> tokens, SourceFileView source, ImmutableArray<Diagnostic> diagnostics)
     {
         // --- Dump
         var builder = new StringBuilder();
 
         // Print diagnostics
-        if (diagnostics.Diagnostics.Count > 0)
-        {
-            foreach (var diag in diagnostics.Diagnostics)
-                builder.AppendLine(
-                    $"{diag.DefaultSeverity.ToString().ToUpper()} {diag.Id}@{diag.Location.Span}: {diag.Message.ToLiteralString()}");
-        }
-        
+        foreach (var diag in diagnostics)
+            builder.AppendLine(
+                $"{diag.DefaultSeverity.ToString().ToUpper()} {diag.Id}@{diag.Location.Span}: {diag.Message.ToLiteralString()}");
+
         // Print tokens
         foreach (var token in tokens)
         {
             var text = source.GetText(token.Span).ToLiteralString();
             builder.Append($"- {token.Kind}: \"{text}\"");
-            
+
             if (token is NumberLiteralToken numberLiteral)
                 builder.Append($" body=\"{numberLiteral.Body}\" suffix={numberLiteral.Suffix}");
             else if (token is StringTextToken stringText)
@@ -62,8 +58,8 @@ public sealed class LexerTests
 
         return builder.ToString().Trim();
     }
-    
-    
+
+
     [Fact]
     public void EmptyInput()
         => InlineSnapshot.Validate(Lex(""), "");

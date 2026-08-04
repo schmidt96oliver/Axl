@@ -32,15 +32,13 @@ public static class Playground
         var lex = Lexer.Lex(source, bag);
 
         // Print diagnostics
-        if (bag.Diagnostics.Count > 0)
-        {
-            foreach (var diag in bag.Diagnostics)
-                Console.WriteLine(
-                    $"{diag.DefaultSeverity.ToString().ToUpper()} {diag.Id}@{diag.Location.Span}: {diag.Message}");
-        }
+        foreach (var diag in bag.Drain())
+            Console.WriteLine(
+                $"{diag.DefaultSeverity.ToString().ToUpper()} {diag.Id}@{diag.Location.Span}: {diag.Message}");
+
 
         // Print tokens
-        foreach (var token in lex/*.Where(t => t.Kind is not (TokenKind.Whitespace or TokenKind.Comment))*/)
+        foreach (var token in lex /*.Where(t => t.Kind is not (TokenKind.Whitespace or TokenKind.Comment))*/)
         {
             var text = source.GetText(token.Span).ToString().Replace("\n", "\\n");
             Console.WriteLine($"- {token.Kind}: \"{text}\"");

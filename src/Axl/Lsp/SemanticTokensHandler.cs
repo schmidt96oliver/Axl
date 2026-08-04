@@ -1,3 +1,4 @@
+using System.Collections.Immutable;
 using System.Text.RegularExpressions;
 using Axl.Compiler;
 using Axl.Compiler.Diagnostics;
@@ -50,7 +51,7 @@ public class SemanticTokensHandler(ILanguageServerFacade facade) : SemanticToken
         facade.TextDocument.PublishDiagnostics(new PublishDiagnosticsParams()
         {
             Uri = identifier.TextDocument.Uri,
-            Diagnostics = new Container<Diagnostic>(ConvertDiagnostics(diagnosticBag))
+            Diagnostics = new Container<Diagnostic>(ConvertDiagnostics(diagnosticBag.Drain()))
         });
         
         // --- Build semantic tokens
@@ -199,9 +200,9 @@ public class SemanticTokensHandler(ILanguageServerFacade facade) : SemanticToken
         return Task.CompletedTask;
     }
 
-    private IEnumerable<Diagnostic> ConvertDiagnostics(DiagnosticBag bag)
+    private IEnumerable<Diagnostic> ConvertDiagnostics(ImmutableArray<Axl.Compiler.Diagnostics.Diagnostic> diagnostics)
     {
-        foreach (var diag in bag.Diagnostics)
+        foreach (var diag in diagnostics)
         {
             if (diag.Location.Span.Length == 0)
                 continue;
