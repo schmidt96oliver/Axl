@@ -1,8 +1,14 @@
 # ------------------------------------ Axl Project ------------------------------------
                                        ≽(◕ ᴗ ◕)≼
 
-* .IsTrivia drop error
-* Add TokenKind.Eof. Lexer emits it. (Have Claude do it)
+* document and play a little
+* `(` as call needs special casing
+* `.` check its parsing according to grammar
+* ExpectedStmt/Expr/Token diagnostics; unify?
+
+* proper trivia attachment
+* Asserts in BuildTree
+  * Assert SyntaxKind.Error => DiagnosticBag.HasError
 
 # Parser
 [x] Grammar
@@ -15,7 +21,7 @@
 [ ] FnDecl, NativeClause, ModifierList
 [ ] MemberDecl, (Global)ModuleDecl, UsingDecl
 
-[ ] Matklad framework: 
+[x] Matklad framework: 
    * Here token = non-trivia token. Trivia is reattached by tree builder.
 
    * Open()       = emit Open event -> MarkOpen(index)
@@ -29,7 +35,8 @@
    * AdvanceKnown(TokenKind) = TryAdvance, if false => DEBUG ASSERT
 
    * Fuel/Safety: Assert parser advanced a token! Consume fuel. It must never loop
-[ ] Tree builder: Iterate events, reattach trivia
+[x] Tree builder: Iterate events
+[ ] Proper trivia handling
 [ ] Anchors: TokenSet as BitSet (see Claude); using Scope style; Anchor stack; FirstSets
    * AtAnchor
 [ ] Code lazily: SyntaxViews (only product syntax, never sum syntax). Provide FindNode/FindToken/NthToken/NthNode...

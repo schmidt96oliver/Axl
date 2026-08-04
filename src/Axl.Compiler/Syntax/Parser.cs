@@ -261,7 +261,7 @@ public class Parser
         
         if (IsAt(OperandExprFirst))
         {
-            ParseOperandExpr();
+            ParseOperandExpr(null);
             AdvanceOrError(TokenKind.Semicolon);
             Close(markOpen, SyntaxKind.ExprStmt);
             return;
@@ -271,6 +271,11 @@ public class Parser
         var actualToken = Advance();
         _diagnosticBag.ReportError(new Diagnostic.ExpectedStmt(_source, actualToken));
         Close(markOpen, SyntaxKind.Error);
+    }
+
+    private void ParseExpr()
+    {
+        ParseOperandExpr(null);
     }
     
     #endregion
@@ -283,47 +288,96 @@ public class Parser
         TokenKind.I32Kw, TokenKind.I64Kw, TokenKind.F32Kw, TokenKind.F64Kw, TokenKind.StringKw, TokenKind.NoneKw,
         TokenKind.Identifier,
         TokenKind.StringStart,
-        TokenKind.OpenParen
+        TokenKind.OpenParen,
+        TokenKind.Minus, TokenKind.NotKw
     );
     
-    private void ParseOperandExpr()
+    private void ParseOperandExpr(PrecedenceTable.Operator? leftOperator)
     {
         Debug.Assert(IsAt(OperandExprFirst));
 
         var lhs = ParsePrimaryOperandExpr();
-
-        // [[[1] + [2]] - [4]]
         
-        while (Peek(0).Kind is TokenKind.Plus or TokenKind.Minus)
+        //TODO: Special case `(` (that is currently a normal infix operator)
+        
+        while (!IsAtEnd)
         {
+            var opToken = Peek(0);
+            var precedenceOp = PrecedenceTable.TryGetInfixOperator(opToken.Kind);
+
+            if (precedenceOp is null)
+                break;
+
+            var bindingPower = leftOperator is PrecedenceTable.Operator leftOp
+                ? PrecedenceTable.RightBindingPower(leftOp, precedenceOp.Value)
+                : PrecedenceTable.BindingPower.Higher;
+
+            if (bindingPower is PrecedenceTable.BindingPower.Ambiguous)
+            {
+                // Report error and just resume anyway
+                _diagnosticBag.ReportError(new Diagnostic.AmbiguousPrecedence(
+                    _source, opToken));
+            }
+            else if (bindingPower is PrecedenceTable.BindingPower.Lower)
+                break;
+            
             var expr = OpenBefore(lhs);
             Advance();  // Advance the operator
 
-
-            if (!IsAt(OperandExprFirst))
+            if (IsAt(OperandExprFirst))
+            {
+                ParseOperandExpr(precedenceOp);
+                lhs = Close(expr, SyntaxKind.BinaryExpr);
+            }
+            else
             {
                 _diagnosticBag.ReportError(new Diagnostic.ExpectedExpr(
                     _source, Peek(0)));
-                Close(expr, SyntaxKind.Error);
+                Close(expr, SyntaxKind.BinaryExpr);
                 break;
             }
-
-            
-            ParseOperandExpr();
-            lhs = Close(expr, SyntaxKind.BinaryExpr);
         }
     }
 
     private MarkClose ParsePrimaryOperandExpr()
     {
+        Debug.Assert(IsAt(OperandExprFirst));
+        
         var openMark = Open();
-        var syntaxKind = Advance().Kind switch
+        var token = Advance();
+
+        // --- Prefix
+        if (PrecedenceTable.TryGetPrefixOperator(token.Kind) is PrecedenceTable.Operator prefixOp)
         {
-            TokenKind.NumberLiteral => SyntaxKind.NumberLiteral,
-            TokenKind.Identifier => SyntaxKind.Identifier,
-            _ => SyntaxKind.Error
-        };
-        return Close(openMark, syntaxKind);
+            ParseOperandExpr(prefixOp);
+            return Close(openMark, SyntaxKind.UnaryExpr);
+        }
+        
+        switch (token.Kind)
+        {
+            // --- Group
+            case TokenKind.OpenParen:
+                ParseExpr();
+                AdvanceOrError(TokenKind.CloseParen);
+                return Close(openMark, SyntaxKind.GroupExpr);
+            
+            // --- Literals
+            case TokenKind.NumberLiteral:
+                return Close(openMark, SyntaxKind.NumberLiteral);
+            
+            case TokenKind.Identifier:
+                return Close(openMark, SyntaxKind.Identifier);
+            
+            case TokenKind.I32Kw:
+            case TokenKind.I64Kw:
+            case TokenKind.F32Kw:
+            case TokenKind.F64Kw:
+            case TokenKind.NoneKw:
+            case TokenKind.StringKw:
+                return Close(openMark, SyntaxKind.NativeTypeName);
+        }
+
+        throw new UnreachableException();
     }
     
 

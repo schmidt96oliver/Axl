@@ -48,6 +48,7 @@ public static class Playground
             switch (element)
             {
                 case Token { Kind.IsTrivia: false } token:
+                {
                     var text = source.GetText(token.Span).ToString().Replace("\n", "\\n").Replace("\r", "\\r");
                     Console.ForegroundColor = ConsoleColor.DarkGray;
                     Console.Write(prefix);
@@ -56,15 +57,32 @@ public static class Playground
                     Console.ForegroundColor = ConsoleColor.DarkRed;
                     Console.WriteLine($"\"{text}\"");
                     break;
+                }
                 
                 case SyntaxNode node:
+                {
                     Console.ForegroundColor = ConsoleColor.DarkGray;
                     Console.Write(prefix);
                     Console.ForegroundColor = ConsoleColor.DarkGreen;
-                    Console.WriteLine($"{node.Kind}");
-                    foreach (var child in node.Children)
-                        Print(child, prefix + "| ");
+                    Console.Write($"{node.Kind}");
+
+                    var nonTriviaTokens = node.Children
+                        .Where(t => t is Token {Kind.IsTrivia: false} or SyntaxNode)
+                        .ToList();
+                    if (nonTriviaTokens is [Token token])
+                    {
+                        Console.ForegroundColor = ConsoleColor.DarkRed;
+                        var text = source.GetText(token.Span).ToString().Replace("\n", "\\n").Replace("\r", "\\r");
+                        Console.WriteLine($": \"{text}\"");
+                    }
+                    else
+                    {
+                        Console.WriteLine();
+                        foreach (var child in node.Children)
+                            Print(child, prefix + "| ");
+                    }
                     break;
+                }
             }
         }
     }

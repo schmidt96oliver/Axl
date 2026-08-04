@@ -30,4 +30,11 @@ public abstract partial record Diagnostic
 
         public override string Message => $"Expected expression at '{Source.GetText(Actual.Span)}'.";
     }
+
+    public sealed record AmbiguousPrecedence(SourceFileView Source, Token OperatorToken) : Error
+    {
+        public override SourceLocation Location => Source.GetLocation(OperatorToken.Span);
+        public override string Message => $"Precedence is ambiguous at '{Source.GetText(OperatorToken.Span)}'";
+        public override string? Hint => "Use parentheses to disambiguate :).";
+    }
 }
