@@ -1,13 +1,16 @@
 # ------------------------------------ Axl Project ------------------------------------
                                        ≽(◕ ᴗ ◕)≼
-* type vs expr: `Type.SubType.Function(arg1, arg2);` is expr but needs type. Unify?
-  * allow only TypeExpr in type positions?
-* disambiguate: module, type, function, field, ...
-* ";" must belong to its stmt/decl node -> add to its own Grammar. Have helper fn `ExpectSemicolonIfNecessary`
-  * ModuleDecl is the only one explicitly asking for it (drop or include everywhere)
 
 # Parser
-[ ] Grammar
+[x] Grammar
+
+[ ] Operand expressions, Pratt parser
+[ ] BodiedExpr; Semicolon rules
+[ ] TailExpr
+[ ] VarDecl, TypeExpr, TypeAnnotation
+[ ] String Exprs
+[ ] FnDecl, NativeClause, ModifierList
+[ ] MemberDecl, (Global)ModuleDecl, UsingDecl
 
 [ ] Untyped CST: SyntaxKind (separate from TokenKind), sealed SyntaxNode, accept empty Children
 [ ] Matklad framework: 
@@ -37,17 +40,21 @@
 
 # First features
 * i32, i64, f32, f64, bool, string
-* literals integral, float, char
+* literals integral, float
 * expressions: numeric, comparison, boolean
 * variables
 * blocks, if, loop (with break expression, continue), return
 * none, never
-* string formatting, escaped
+* string interpolation, escaped
 * native functions: Print, PrintLine, ToString
 * hoisted, overloaded functions
 * multi-file modules
 
 # Implementation Requirements
+**Declaration Binding**
+   * ModifierList
+     * accept only valid modifiers
+     * error/lint wrong order
 4. Binder
    * expected type propagation: number literals
    * loop break type checks
