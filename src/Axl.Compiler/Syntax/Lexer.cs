@@ -110,6 +110,14 @@ public sealed class Lexer
             _start = _next;
         }
 
+        public void AddEof()
+        {
+            Debug.Assert(IsAtEnd);
+            Debug.Assert(_start == _next, "Every token must have been added before Eof.");
+
+            _tokens.Add(Token.Simple(Source.SpanFromTo(_start, _next), TokenKind.Eof));
+        }
+
 
         public ImmutableArray<Token> DrainTokens()
             => _tokens.DrainToImmutable();
@@ -121,6 +129,7 @@ public sealed class Lexer
         var scanner = new Scanner(source, diagnosticBag);
         while (!scanner.IsAtEnd)
             LexSingle(ref scanner);
+        scanner.AddEof();
         return scanner.DrainTokens();
     }
 

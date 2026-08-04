@@ -1,6 +1,9 @@
 # ------------------------------------ Axl Project ------------------------------------
                                        ≽(◕ ᴗ ◕)≼
 
+* .IsTrivia drop error
+* Add TokenKind.Eof. Lexer emits it. (Have Claude do it)
+
 # Parser
 [x] Grammar
 
@@ -12,7 +15,6 @@
 [ ] FnDecl, NativeClause, ModifierList
 [ ] MemberDecl, (Global)ModuleDecl, UsingDecl
 
-[ ] Untyped CST: SyntaxKind (separate from TokenKind), sealed SyntaxNode, accept empty Children
 [ ] Matklad framework: 
    * Here token = non-trivia token. Trivia is reattached by tree builder.
 

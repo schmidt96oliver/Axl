@@ -6,7 +6,8 @@ public enum TokenKind
     Comment,
     Whitespace,
     Error,
-    
+    Eof,
+
     // --- Keywords
     FnKw,
     VarKw,

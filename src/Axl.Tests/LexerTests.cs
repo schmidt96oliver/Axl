@@ -45,6 +45,12 @@ public sealed class LexerTests
         // Print tokens
         foreach (var token in tokens)
         {
+            if (token.Kind is TokenKind.Eof)
+            {
+                builder.AppendLine("- Eof");
+                continue;
+            }
+            
             var text = source.GetText(token.Span).ToLiteralString();
             builder.Append($"- {token.Kind}: \"{text}\"");
 
@@ -62,12 +68,13 @@ public sealed class LexerTests
 
     [Fact]
     public void EmptyInput()
-        => InlineSnapshot.Validate(Lex(""), "");
+        => InlineSnapshot.Validate(Lex(""), "- Eof");
     
     [Fact]
     public void Whitespace()
         => InlineSnapshot.Validate(Lex("  \n\r\t   "), """
             - Whitespace: "  \n\r\t   "
+            - Eof
             """);
     
     [Fact]
@@ -80,6 +87,7 @@ public sealed class LexerTests
             ERROR UnknownCharacters@[3, 4): Unknown character '#'.
             ERROR UnknownCharacters@[4, 5): Unknown character '#'.
             - Error: "@@@##"
+            - Eof
             """);
 
     [Fact]
@@ -88,6 +96,7 @@ public sealed class LexerTests
             ERROR UnknownCharacters@[0, 1): Unknown character '\uD83C'.
             ERROR UnknownCharacters@[1, 2): Unknown character '\uDCA6'.
             - Error: "\uD83C\uDCA6"
+            - Eof
             """);
 
     [Fact]
@@ -119,6 +128,7 @@ public sealed class LexerTests
             - Identifier: "char"
             - NoneKw: "none"
             - UsingKw: "using"
+            - Eof
             """);
 
     [Fact]
@@ -132,6 +142,7 @@ public sealed class LexerTests
             - Identifier: "false0"
             - Identifier: "False"
             - Identifier: "I32"
+            - Eof
             """);
 
     [Fact]
@@ -156,6 +167,7 @@ public sealed class LexerTests
             - PlusEqual: "+="
             - Minus: "-"
             - MinusEqual: "-="
+            - Eof
             """);
 
     [Fact]
@@ -174,6 +186,7 @@ public sealed class LexerTests
             - Comma: ","
             - Semicolon: ";"
             - Colon: ":"
+            - Eof
             """);
 
 
@@ -187,6 +200,7 @@ public sealed class LexerTests
             - NumberLiteral: "1i64" body="1" suffix=I64
             - NumberLiteral: "1_2_f32" body="12" suffix=F32
             - NumberLiteral: "1f64" body="1" suffix=F64
+            - Eof
             """);
 
     [Fact]
@@ -199,6 +213,7 @@ public sealed class LexerTests
             - NumberLiteral: ".1_f64" body=".1" suffix=F64
             - NumberLiteral: "1.1i32" body="1.1" suffix=I32
             - NumberLiteral: ".1111i64" body=".1111" suffix=I64
+            - Eof
             """);
 
     [Fact]
@@ -207,6 +222,7 @@ public sealed class LexerTests
             - NumberLiteral: "0b1100" body="0b1100" suffix=None
             - NumberLiteral: "0b1_0_1" body="0b101" suffix=None
             - NumberLiteral: "0b01_" body="0b01" suffix=None
+            - Eof
             """);
     
     [Fact]
@@ -220,6 +236,7 @@ public sealed class LexerTests
             - NumberLiteral: "23" body="23" suffix=None
             - NumberLiteral: "0b" body="0" suffix=None
             - NumberLiteral: "0b_1" body="0" suffix=None
+            - Eof
             """);
 
     [Fact]
@@ -230,6 +247,7 @@ public sealed class LexerTests
             - NumberLiteral: "0x0F_" body="0x0F" suffix=None
             - NumberLiteral: "0x0Ff32" body="0x0Ff32" suffix=None
             - NumberLiteral: "0x0F_f32" body="0x0Ff32" suffix=None
+            - Eof
             """);
     
     [Fact]
@@ -249,6 +267,7 @@ public sealed class LexerTests
             - NumberLiteral: "0xg" body="0" suffix=None
             - NumberLiteral: "0x" body="0" suffix=None
             - NumberLiteral: "0x_1" body="0" suffix=None
+            - Eof
             """);
     
     [Fact]
@@ -266,6 +285,7 @@ public sealed class LexerTests
             - F32Kw: "f32"
             - Dot: "."
             - Identifier: "_1_1"
+            - Eof
             """);
     
     [Fact]
@@ -281,6 +301,7 @@ public sealed class LexerTests
             - NumberLiteral: "1g_445df_12" body="1" suffix=None
             - NumberLiteral: "1f64a" body="1" suffix=None
             - NumberLiteral: "1f644" body="1" suffix=None
+            - Eof
             """);
 
 
@@ -289,6 +310,7 @@ public sealed class LexerTests
         => InlineSnapshot.Validate(Lex("\"\""), """"
             - StringStart: """
             - StringEnd: """
+            - Eof
             """");
     
     [Fact]
@@ -297,6 +319,7 @@ public sealed class LexerTests
             - StringStart: """
             - StringText: "Abcdefg //test @.;- f32 fn \uD83C\uDCA6\uD83C\uDCA6 " processed="Abcdefg //test @.;- f32 fn 🂦🂦 "
             - StringEnd: """
+            - Eof
             """");
     
     [Fact]
@@ -310,6 +333,7 @@ public sealed class LexerTests
             - Whitespace: "\r\n"
             - StringStart: """
             - StringText: "000" processed="000"
+            - Eof
             """");
     
     [Fact]
@@ -324,6 +348,7 @@ public sealed class LexerTests
             - Identifier: "ABC"
             - Whitespace: "\r\n"
             - StringStart: """
+            - Eof
             """");
     
     [Fact]
@@ -336,6 +361,7 @@ public sealed class LexerTests
              " { } 
              	 \"
             - StringEnd: """
+            - Eof
             """");
 
     [Fact]
@@ -353,6 +379,7 @@ public sealed class LexerTests
             - StringText: "\a \ \5 \@ \" processed="   "
             - Whitespace: "\r\n"
             - StringStart: """
+            - Eof
             """");
 
     [Fact]
@@ -371,6 +398,7 @@ public sealed class LexerTests
             - Whitespace: "\r\n"
             - StringStart: """
             - StringText: "A\" processed="A"
+            - Eof
             """");
 
     [Fact]
@@ -398,6 +426,7 @@ public sealed class LexerTests
             - Identifier: "b"
             - CloseBrace: "}"
             - StringEnd: """
+            - Eof
             """");
     
     [Fact]
@@ -419,6 +448,7 @@ public sealed class LexerTests
             - CloseBrace: "}"
             - CloseBrace: "}"
             - StringEnd: """
+            - Eof
             """");
     
     [Fact]
@@ -444,6 +474,7 @@ public sealed class LexerTests
             - CloseBrace: "}"
             - StringText: " " processed=" "
             - StringEnd: """
+            - Eof
             """");
 
     [Fact]
@@ -459,6 +490,7 @@ public sealed class LexerTests
             - CloseBrace: "}"
             - StringText: "00" processed="00"
             - StringEnd: """
+            - Eof
             """");
 
     [Fact]
@@ -480,6 +512,7 @@ public sealed class LexerTests
             - StringStart: """
             - StringText: "a " processed="a "
             - OpenBrace: "{"
+            - Eof
             """");
 
     [Fact]
@@ -493,5 +526,6 @@ public sealed class LexerTests
             - Identifier: "ab"
             - Whitespace: " "
             - Comment: "// test}""
+            - Eof
             """");
 }
