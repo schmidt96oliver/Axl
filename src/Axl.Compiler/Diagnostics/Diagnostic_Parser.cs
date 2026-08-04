@@ -14,6 +14,20 @@ public abstract partial record Diagnostic
     {
         public override SourceLocation Location => Source.GetLocation(Actual.Span);
 
-        public override string Message => $"Expected token '{Expected}', got '{Actual}'";
+        public override string Message => $"Expected token '{Expected}', got '{Source.GetText(Actual.Span)}'.";
+    }
+    
+    public sealed record ExpectedStmt(SourceFileView Source, Token Actual) : Error
+    {
+        public override SourceLocation Location => Source.GetLocation(Actual.Span);
+
+        public override string Message => $"Expected statement at '{Source.GetText(Actual.Span)}'.";
+    }
+    
+    public sealed record ExpectedExpr(SourceFileView Source, Token Actual) : Error
+    {
+        public override SourceLocation Location => Source.GetLocation(Actual.Span);
+
+        public override string Message => $"Expected expression at '{Source.GetText(Actual.Span)}'.";
     }
 }

@@ -19,6 +19,7 @@ public static class Playground
             if (source.File.Text == prevText)
                 continue;
 
+            
             prevText = source.File.Text;
             
             Console.Clear();
@@ -28,20 +29,43 @@ public static class Playground
 
     private static void ExecuteTestFile(SourceFileView source)
     {
-        var bag = new DiagnosticBag();
-        var lex = Lexer.Lex(source, bag);
-
+        var tree = Parser.Parse(source);
+        
         // Print diagnostics
-        foreach (var diag in bag.Drain())
+        foreach (var diag in tree.Diagnostics)
+        {
             Console.WriteLine(
                 $"{diag.DefaultSeverity.ToString().ToUpper()} {diag.Id}@{diag.Location.Span}: {diag.Message}");
-
-
-        // Print tokens
-        foreach (var token in lex /*.Where(t => t.Kind is not (TokenKind.Whitespace or TokenKind.Comment))*/)
+        }
+        
+        Console.WriteLine("//=== tree");
+        
+        Print(tree, "");
+        return;
+        
+        void Print(SyntaxElement element, string prefix)
         {
-            var text = source.GetText(token.Span).ToString().Replace("\n", "\\n");
-            Console.WriteLine($"- {token.Kind}: \"{text}\"");
+            switch (element)
+            {
+                case Token { Kind.IsTrivia: false } token:
+                    var text = source.GetText(token.Span).ToString().Replace("\n", "\\n").Replace("\r", "\\r");
+                    Console.ForegroundColor = ConsoleColor.DarkGray;
+                    Console.Write(prefix);
+                    Console.ForegroundColor = ConsoleColor.White;
+                    Console.Write($"{token.Kind}: ");
+                    Console.ForegroundColor = ConsoleColor.DarkRed;
+                    Console.WriteLine($"\"{text}\"");
+                    break;
+                
+                case SyntaxNode node:
+                    Console.ForegroundColor = ConsoleColor.DarkGray;
+                    Console.Write(prefix);
+                    Console.ForegroundColor = ConsoleColor.DarkGreen;
+                    Console.WriteLine($"{node.Kind}");
+                    foreach (var child in node.Children)
+                        Print(child, prefix + "| ");
+                    break;
+            }
         }
     }
 }
