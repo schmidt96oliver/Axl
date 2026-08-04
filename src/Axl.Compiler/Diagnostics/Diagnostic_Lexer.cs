@@ -2,12 +2,6 @@
 
 public abstract partial record Diagnostic
 {
-    public sealed record UnclosedString(SourceLocation Location) : Error
-    {
-        public override SourceLocation Location { get; } = Location;
-        public override string Message => "String must be closed.";
-    }
-
     public sealed record UnknownCharacters(SourceLocation Location) : Error
     {
         public override SourceLocation Location { get; } = Location;
