@@ -1,12 +1,12 @@
 ﻿using System.Collections.Immutable;
+using System.Diagnostics;
 
 namespace Axl.Compiler.Syntax;
 
-public abstract class SyntaxNode : SyntaxElement
+public class SyntaxNode : SyntaxElement
 {
-    /// <summary>
-    /// Non-empty.
-    /// </summary>
+    public SyntaxKind Kind { get; }
+    
     public ImmutableArray<SyntaxElement> Children { get; }
     
     /// <inheritdoc/>
@@ -16,13 +16,20 @@ public abstract class SyntaxNode : SyntaxElement
     public override SourceSpan? SyntaxSpan { get; }
 
 
-    protected SyntaxNode(ImmutableArray<SyntaxElement> children)
+    /// <summary>
+    /// Creates a non-empty node.
+    /// </summary>
+    /// <param name="children">Must be non-empty</param>
+    internal SyntaxNode(SyntaxKind kind, ImmutableArray<SyntaxElement> children)
     {
         Guard.MustBe(!children.IsDefaultOrEmpty);
 
-        Span = SourceSpan.FromTo(children[0].Span, children[^1].Span);
+        Kind = kind;
         Children = children;
-
+        
+        Span = SourceSpan.FromTo(children[0].Span, children[^1].Span);
+        Debug.Assert(Span.IsPartitionedBy(children.Select(c => c.Span)));
+        
         // Calculate SyntaxSpan
         if (children.FirstOrDefault(element => element.SyntaxSpan is not null) is SyntaxElement firstNonTrivia)
         {
