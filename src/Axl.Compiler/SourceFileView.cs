@@ -26,8 +26,8 @@ public readonly record struct SourceFileView(SourceFile File, SourceSpan Span)
     /// <param name="end">Exclusive end index inside source file.</param>
     public SourceSpan SpanFromTo(int start, int end)
     {
-        Guard.InRange(start, start >= 0);
-        Guard.InRange(end, end <= Span.Length);
+        Guard.InRange(start >= 0);
+        Guard.InRange(end <= Span.Length);
         return SourceSpan.InsideSourceFile(start + Span.First, length: end - start);
     }
     
@@ -37,9 +37,9 @@ public readonly record struct SourceFileView(SourceFile File, SourceSpan Span)
     /// </summary>
     public SourceSpan SpanFromLength(int start, int length)
     {
-        Guard.InRange(start, start >= 0);
-        Guard.InRange(length, length >= 0);
-        Guard.InRange(length, length <= Span.Length);
+        Guard.InRange(start >= 0);
+        Guard.InRange(length >= 0);
+        Guard.InRange(length <= Span.Length);
         return SourceSpan.InsideSourceFile(start + Span.First, length);
     }
 
@@ -54,7 +54,7 @@ public readonly record struct SourceFileView(SourceFile File, SourceSpan Span)
 
     public ReadOnlySpan<char> GetText(SourceSpan span)
     {
-        Guard.InRange(span, Span.Contains(span));
+        Guard.InRange(Span.Contains(span));
         return File.GetText(span);
     }
 }

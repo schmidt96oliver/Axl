@@ -54,8 +54,8 @@ public sealed class SourceFile
 
     public LineInfo GetLineAt(int index)
     {
-        Guard.InRange(index, index >= 0);
-        Guard.InRange(index, index < Text.Length);
+        Guard.InRange(index >= 0);
+        Guard.InRange(index < Text.Length);
 
         // Implements a binary search
         // There must be at least one line, since the Guards
@@ -110,8 +110,8 @@ public sealed class SourceFile
 
     public LinePosition GetLinePosition(int index)
     {
-        Guard.InRange(index, index >= 0);
-        Guard.InRange(index, index < Text.Length);
+        Guard.InRange(index >= 0);
+        Guard.InRange(index < Text.Length);
 
         var line = GetLineAt(index);
 
@@ -122,8 +122,8 @@ public sealed class SourceFile
     
     public ReadOnlySpan<char> GetText(SourceSpan span)
     {
-        Guard.InRange(span.First, span.First >= 0);
-        Guard.InRange(span.Length, span.Length <= Text.Length);
+        Guard.InRange(span.First >= 0);
+        Guard.InRange(span.Length <= Text.Length);
         return Text.AsSpan(span.First, span.Length);
     }
     

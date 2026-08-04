@@ -26,10 +26,10 @@ public class Token : SyntaxElement
     /// <exception cref="ArgumentException">If <paramref name="kind"/> carries a value. It must be constructed through special constructors.</exception>
     public static Token Simple(SourceSpan span, TokenKind kind)
     {
-        // Assert that non-simple tokens are created through their dedicated constructor methods.
-        if (kind is TokenKind.Identifier or TokenKind.NumberLiteral or TokenKind.StringText or TokenKind.Error)
-            throw new ArgumentException($"{nameof(kind)} carries a value and must be constructed through special constructor.", nameof(kind));
-
+        Guard.MustBe(kind is not
+                (TokenKind.Identifier or TokenKind.NumberLiteral or TokenKind.StringText or TokenKind.Error),
+            "Construct through specialized static methods.");
+        
         return new Token(span, kind);
     }
 

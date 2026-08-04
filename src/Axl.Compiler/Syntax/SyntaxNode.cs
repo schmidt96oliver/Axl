@@ -18,8 +18,7 @@ public abstract class SyntaxNode : SyntaxElement
 
     protected SyntaxNode(ImmutableArray<SyntaxElement> children)
     {
-        if (children.IsDefaultOrEmpty)
-            throw new ArgumentException($"{nameof(children)} must contain elements.", nameof(children));
+        Guard.MustBe(!children.IsDefaultOrEmpty);
 
         Span = SourceSpan.FromTo(children[0].Span, children[^1].Span);
         Children = children;

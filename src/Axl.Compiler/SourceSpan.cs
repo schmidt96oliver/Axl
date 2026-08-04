@@ -34,15 +34,15 @@ public readonly record struct SourceSpan
 
     internal static SourceSpan InsideSourceFile(int first, int length)
     {
-        Guard.InRange(first, first >= 0);
-        Guard.InRange(length, length >= 0);
+        Guard.InRange(first >= 0);
+        Guard.InRange(length >= 0);
 
         return new SourceSpan(first, length);
     }
 
     public static SourceSpan FromTo(SourceSpan first, SourceSpan last)
     {
-        Guard.InRange(first.First, first.First <= last.End);
+        Guard.InRange(first.First <= last.End);
         return new SourceSpan(first.First, length: last.End - first.First);
     }
 
