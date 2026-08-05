@@ -4,7 +4,6 @@
 
 
 * StringInterpolation:
-  * fix: Fuel burn in `WillCurrentStringBeContinued`
   * trace all cases in `ConvolutedStringInterpolation.axl`
   * trace diagnostic positions use LSP
     1. UnexpectedToken takes Missing|Advanced tags

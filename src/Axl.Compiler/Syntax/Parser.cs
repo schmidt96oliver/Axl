@@ -469,6 +469,10 @@ public partial class Parser
             // Otherwise, we are free to choose what to do. As a heuristic: Same-line errors
             // shall belong to the interpolation/string, everything after a newline stops
             // the string, so the Parser can parse it normally.
+            
+            //TODO: WillCurrentStringBeContinued before the loop?
+            // I think it should be consistent among anything the loop
+            // can encounter.
             if (!WillCurrentStringBeContinued() && HasNewlineBeforeNextToken())
                 break;
             
@@ -481,15 +485,25 @@ public partial class Parser
 
         if (errorExpr is MarkOpen openedErrorExpr)
             _scanner.Close(openedErrorExpr, SyntaxKind.Error);
+        return;
         
         bool WillCurrentStringBeContinued()
         {
-            //TODO: Don't peek, its using up fuel :(
-        
+            // Whether the string the scanner is currently inside has a continuation.
+            // A continuation is a StringEnd or StringText that belongs to that string.
+            // Ownership is determined by simply tracking string depth.
+            
+            // Note that if the scanner is currently sitting on StringStart, we will
+            // regard as being outside (just one before) the string that is opened by 
+            // this StringStart.
+            
             var depth = 0;
             for (var n = 0;; n++)
             {
-                var token = _scanner.Peek(n);
+                // We can and must use UnsafePeek, because our loop is bounded and
+                // does not nest. It is necessary, because we might be scanning an entire file
+                // ahead and normal Peek might/will trigger the infinite loop protection of scanner.
+                var token = _scanner.UnsafePeek(n);
                 switch (token.Kind)
                 {
                     case TokenKind.StringStart:

@@ -162,12 +162,21 @@ public partial class Parser
             return _tokens[_nextToken++];
         }
 
-        public Token Peek(int lookahead = 1)
+        
+        public Token Peek(int lookahead = 0)
         {
-            Debug.Assert(lookahead >= 0);
-
             if (--_fuel < 0)
                 throw new ParserStuckException("Parser peeked too often without advancing and is stuck.");
+            return UnsafePeek(lookahead);
+        }
+
+        /// <summary>
+        /// Peeks while circumventing the infinite loop protection. Use
+        /// with caution and only when the loop is bounded naturally.
+        /// </summary>
+        public Token UnsafePeek(int lookahead = 0)
+        {
+            Debug.Assert(lookahead >= 0);
 
             if (_nextToken + lookahead < _tokens.Count)
                 return _tokens[_nextToken + lookahead];
@@ -176,7 +185,7 @@ public partial class Parser
             return _tokens[^1];
         }
 
-
+        
         public bool IsAt(TokenKind kind)
             => Peek(0).Kind == kind;
 
