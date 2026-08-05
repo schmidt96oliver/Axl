@@ -10,10 +10,10 @@ public class SyntaxNode : SyntaxElement
     public ImmutableArray<SyntaxElement> Children { get; }
     
     /// <inheritdoc/>
-    public override SourceSpan Span { get; }
+    public sealed override SourceSpan Span { get; }
     
     /// <inheritdoc/>
-    public override SourceSpan? SyntaxSpan { get; }
+    public sealed override SourceSpan? SyntaxSpan { get; }
 
 
     /// <summary>
@@ -40,5 +40,19 @@ public class SyntaxNode : SyntaxElement
         }
         else
             SyntaxSpan = null;
+    }
+
+    /// <summary>
+    /// Creates an empty node at a specific position.
+    /// </summary>
+    /// <param name="emptySpan">Must have length 0.</param>
+    internal SyntaxNode(SyntaxKind kind, SourceSpan emptySpan)
+    {
+        Guard.MustBe(emptySpan.IsEmpty);
+
+        Children = [];
+        Kind = kind;
+        Span = emptySpan;
+        SyntaxSpan = null;
     }
 }

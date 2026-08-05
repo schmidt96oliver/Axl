@@ -139,10 +139,6 @@ public partial class Parser
 
         public MarkClose Close(MarkOpen openMark, SyntaxKind kind)
         {
-            Debug.Assert(_events[openMark.OpenIndex..]
-                .FindIndex(p => p.EventKind is ParseEventKind.Advance) >= 0,
-                "Closed an empty node.");
-            
             _events[openMark.OpenIndex] = new ParseEvent(ParseEventKind.Open, kind);
             _events.Add(new ParseEvent(ParseEventKind.Close));
             return new MarkClose(openMark.OpenIndex);

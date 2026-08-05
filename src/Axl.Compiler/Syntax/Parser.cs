@@ -91,7 +91,7 @@ public partial class Parser
                     break;
 
                 case ParseEventKind.Open:
-                    nodes.Push(new BuildingNode(e.SyntaxKind!, ImmutableArray.CreateBuilder<SyntaxElement>()));
+                    nodes.Push(new BuildingNode(e.SyntaxKind, ImmutableArray.CreateBuilder<SyntaxElement>()));
                     break;
 
                 case ParseEventKind.Close:
@@ -107,14 +107,31 @@ public partial class Parser
                             fullTokenIndex++;
                         }
 
-                        return new SyntaxTree(
-                            children: builtNode.Nodes.DrainToImmutable(),
-                            diagnostics: _diagnosticBag.Drain(),
-                            hasError: _diagnosticBag.HasError);
+                        SyntaxTree tree;
+                        if (builtNode.Nodes.Count == 0)
+                        {
+                            Debug.Assert(allTokens.Length == 1 && fullTokenIndex == 0 && allTokens[0].Kind is TokenKind.Eof);
+                            tree = new SyntaxTree(
+                                emptySpan: SourceSpan.EmptyBefore(allTokens[0].Span),
+                                diagnostics: _diagnosticBag.Drain(),
+                                hasError: _diagnosticBag.HasError);
+                        }
+                        else
+                        {
+                            tree = new SyntaxTree(
+                                children: builtNode.Nodes.DrainToImmutable(),
+                                diagnostics: _diagnosticBag.Drain(),
+                                hasError: _diagnosticBag.HasError);
+                        }
+                        
+                        return tree;
                     }
 
-                    nodes.Peek().Nodes.Add(
-                        new SyntaxNode(builtNode.Kind, builtNode.Nodes.DrainToImmutable()));
+                    var node = builtNode.Nodes.Count == 0
+                        ? new SyntaxNode(builtNode.Kind, emptySpan: SourceSpan.EmptyBefore(allTokens[fullTokenIndex].Span))
+                        : new SyntaxNode(builtNode.Kind, builtNode.Nodes.DrainToImmutable());
+                    
+                    nodes.Peek().Nodes.Add(node);
 
                     break;
             }

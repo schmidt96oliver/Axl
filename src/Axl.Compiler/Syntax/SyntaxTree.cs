@@ -8,7 +8,13 @@ public sealed class SyntaxTree : SyntaxNode
     public ImmutableArray<Diagnostic> Diagnostics { get; }
     
     public bool HasError { get; }
-    
+
+    internal SyntaxTree(SourceSpan emptySpan, ImmutableArray<Diagnostic> diagnostics, bool hasError)
+        : base(SyntaxKind.TreeRoot, emptySpan)
+    {
+        Diagnostics = diagnostics;
+        HasError = hasError;
+    }
     
     internal SyntaxTree(ImmutableArray<SyntaxElement> children, ImmutableArray<Diagnostic> diagnostics, bool hasError)
         : base(SyntaxKind.TreeRoot, children)

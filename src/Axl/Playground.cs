@@ -10,7 +10,7 @@ public static class Playground
 
     public static void Run()
     {
-        var prevText = "";
+        string? prevText = null;
         while (true)
         {
             Thread.Sleep(250);
@@ -76,6 +76,13 @@ public static class Playground
                         Console.ForegroundColor = ConsoleColor.DarkRed;
                         var text = source.GetText(token.Span).ToString().Replace("\n", "\\n").Replace("\r", "\\r");
                         Console.WriteLine($": \"{text}\"");
+                    }
+                    else if (nonTriviaTokens is [])
+                    {
+                        Console.ForegroundColor = ConsoleColor.Gray;
+                        Console.WriteLine(node.Children.Length == 0
+                            ? $" [empty]@{node.Span}"
+                            : $" [only trivia]@{node.Span}");
                     }
                     else
                     {

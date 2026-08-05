@@ -1,12 +1,21 @@
 # ------------------------------------ Axl Project ------------------------------------
-                                       ≽(◕ ᴗ ◕)≼
-* fix: crash on empty Parse (Create empty nodes)
-  * Use CloseEmpty
+                
+* docs: Grammar empty hole
+
 
 * StringInterpolation:
   * fix: Fuel burn in `WillCurrentStringBeContinued`
   * trace all cases in `ConvolutedStringInterpolation.axl`
   * trace diagnostic positions use LSP
+    1. UnexpectedToken takes Missing|Advanced tags
+    2. Special MissingToken diagnostic
+  * docs: InterpolatedString
+    * ParseExpr is contained by Expr, no handling needed
+    * Gobbling = Parser confused; eat as much as needed
+        * Rules: String not continued & newline = same string
+        * Everything else is expected to be normal code
+    * Close brace special condition
+  * UnclosedString diagnostic: put at end/last text
 
 * cleanup? Extract FirstSet.OperandExpr, ...
 
