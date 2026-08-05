@@ -22,7 +22,7 @@ public partial class Parser
 
     private readonly record struct MarkClose(int OpenIndex);
 
-    private struct Scanner
+    private sealed class Scanner
     {
         /// <summary>
         /// Only non-trivia tokens. Must not be modified, but is kept as a list

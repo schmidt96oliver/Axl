@@ -1,9 +1,6 @@
 # ------------------------------------ Axl Project ------------------------------------
                                        ≽(◕ ᴗ ◕)≼
 
-* cleanup: extract Scanner
-  * ?? Debug.ToString
-  * ?? perf: create non-trivia array or enumerate
 * cleanup? Extract FirstSet.OperandExpr, ...
 * feat: guard against infinite loop
   * ? Parse* returns MarkClosed?
