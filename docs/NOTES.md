@@ -1,10 +1,29 @@
 # ------------------------------------ Axl Project ------------------------------------
                                        ≽(◕ ᴗ ◕)≼
 
+* cleanup: extract Scanner
+  * ?? Debug.ToString
+  * ?? perf: create non-trivia array or enumerate
+* cleanup: PrecedenceTable to Parser.PrecedenceTable
+  * names: Precedence enum; GetInfix/PrefixPrecedence, Compare, PrecedenceComparison.RightBindsHigher
+* cleanup: TokenSet to Parser.TokenSet
+  * static assert
+* cleanup? Extract FirstSet.OperandExpr, ...
+* feat: guard against infinite loop
+  * ? Parse* returns MarkClosed?
+* feat: AmbiguousPrecedence
+  * take both operator tokens
+  * + RelatedInfoLocation
+
+* fix: crash on `()` and probably `(+1)`, `(var)`, ...
+
 * document and play a little
 * `(` as call needs special casing
 * `.` check its parsing according to grammar
-* ExpectedStmt/Expr/Token diagnostics; unify?
+
+* feat: UnexpectedToken diagnostics
+  * ? unify with ExpectedStmt/Expr?
+  * ? accept TokenSet; compare set == ExprFirst => "expression"
 
 * proper trivia attachment
 * Asserts in BuildTree

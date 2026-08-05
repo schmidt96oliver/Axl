@@ -4,7 +4,7 @@ using Axl.Compiler.Diagnostics;
 
 namespace Axl.Compiler.Syntax;
 
-public class Parser
+public partial class Parser
 {
     private enum ParseEventKind
     {
