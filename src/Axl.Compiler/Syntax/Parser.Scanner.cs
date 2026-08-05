@@ -24,7 +24,11 @@ public partial class Parser
 
     private struct Scanner
     {
-        private readonly ImmutableArray<Token> _tokens;
+        /// <summary>
+        /// Only non-trivia tokens. Must not be modified, but is kept as a list
+        /// to avoid another allocation.
+        /// </summary>
+        private readonly List<Token> _tokens;
         private readonly List<ParseEvent> _events;
         private int _nextToken;
 
@@ -40,7 +44,16 @@ public partial class Parser
         public Scanner(ImmutableArray<Token> tokens)
         {
             AllTokens = tokens;
-            _tokens = [.. tokens.Where(token => !token.Kind.IsTrivia)];
+
+            // This list will be oversized by exactly the amount of trivia tokens.
+            // If that every shows up, we could count non-trivia tokens before.
+            // But I don't think this will ever show up.
+            _tokens = new List<Token>(capacity: tokens.Length);
+            foreach (var token in tokens)
+            {
+                if (!token.Kind.IsTrivia)
+                    _tokens.Add(token);
+            }
 
             _events = [];
             _nextToken = 0;
@@ -84,7 +97,7 @@ public partial class Parser
         public Token Peek(int lookahead = 1)
         {
             Debug.Assert(lookahead >= 0);
-            if (_nextToken + lookahead < _tokens.Length)
+            if (_nextToken + lookahead < _tokens.Count)
                 return _tokens[_nextToken + lookahead];
 
             Debug.Assert(_tokens[^1].Kind is TokenKind.Eof);
