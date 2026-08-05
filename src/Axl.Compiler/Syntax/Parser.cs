@@ -182,29 +182,38 @@ public partial class Parser
                 ? PrecedenceTable.Compare(actualLeftPrec, opPrecedence.Value)
                 : PrecedenceComparison.RightBindsTighter;
 
+            if (precedenceComparison is PrecedenceComparison.LeftBindsTighter)
+                break;
+            
+            var expr = _scanner.OpenBefore(lhs);
+            _scanner.Advance();  // Advance the operator
+            
             if (precedenceComparison is PrecedenceComparison.Ambiguous)
             {
-                // Report error and just resume anyway
+                // Precedence is ambiguous.
+                // Report the error and continue in this loop. This
+                // will parse the ambiguous operator as right-associative
+                // which is just easier to handle. Close later on will
+                // close with SyntaxKind.Error, since this is not a valid
+                // BinaryExpr.
+                
                 _diagnosticBag.ReportError(new Diagnostic.AmbiguousPrecedence(
                     _source, opToken));
             }
-            else if (precedenceComparison is PrecedenceComparison.LeftBindsTighter)
-                break;
 
-            Debug.Assert(precedenceComparison is PrecedenceComparison.RightBindsTighter);
-
-            var expr = _scanner.OpenBefore(lhs);
-            _scanner.Advance();  // Advance the operator
+            var syntaxKind = precedenceComparison is PrecedenceComparison.Ambiguous
+                ? SyntaxKind.Error
+                : SyntaxKind.BinaryExpr;
 
             if (_scanner.IsAt(OperandExprFirst))
             {
                 ParseOperandExpr(opPrecedence);
-                lhs = _scanner.Close(expr, SyntaxKind.BinaryExpr);
+                lhs = _scanner.Close(expr, syntaxKind);
             }
             else
             {
                 ReportUnexpected(expected: SyntaxCategory.Expr);
-                _scanner.Close(expr, SyntaxKind.BinaryExpr);
+                _scanner.Close(expr, syntaxKind);
                 break;
             }
         }

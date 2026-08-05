@@ -5,7 +5,6 @@
 * feat: AmbiguousPrecedence
   * take both operator tokens
   * + RelatedInfoLocation
-  * ? wrap ambig op into SyntaxError node
 
 * fix: crash on `()` and probably `(+1)`, `(var)`, ...
 * fix: crash on `-[ EOF]`
@@ -17,6 +16,8 @@
 * proper trivia attachment
 * Asserts in BuildTree
   * Assert SyntaxKind.Error => DiagnosticBag.HasError
+
+* all literals + strings
 
 # Parser
 [x] Grammar
