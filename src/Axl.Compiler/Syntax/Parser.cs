@@ -162,7 +162,7 @@ public partial class Parser
         TokenKind.Minus, TokenKind.NotKw
     );
 
-    private void ParseOperandExpr(Precedence? leftPrecedence)
+    private void ParseOperandExpr(LeftOperator? left)
     {
         Debug.Assert(_scanner.IsAt(OperandExprFirst));
 
@@ -178,8 +178,8 @@ public partial class Parser
             if (opPrecedence is null)
                 break;
 
-            var precedenceComparison = leftPrecedence is Precedence actualLeftPrec
-                ? PrecedenceTable.Compare(actualLeftPrec, opPrecedence.Value)
+            var precedenceComparison = left is LeftOperator actualLeft
+                ? PrecedenceTable.Compare(actualLeft.Precedence, opPrecedence.Value)
                 : PrecedenceComparison.RightBindsTighter;
 
             if (precedenceComparison is PrecedenceComparison.LeftBindsTighter)
@@ -196,9 +196,13 @@ public partial class Parser
                 // which is just easier to handle. Close later on will
                 // close with SyntaxKind.Error, since this is not a valid
                 // BinaryExpr.
-                
+
+                // Only Compare can return Ambiguous, and it only runs when
+                // there is a left operator.
+                Debug.Assert(left is not null);
+
                 _diagnosticBag.ReportError(new Diagnostic.AmbiguousPrecedence(
-                    _source, opToken));
+                    _source, left.Value.Token, opToken));
             }
 
             var syntaxKind = precedenceComparison is PrecedenceComparison.Ambiguous
@@ -207,7 +211,7 @@ public partial class Parser
 
             if (_scanner.IsAt(OperandExprFirst))
             {
-                ParseOperandExpr(opPrecedence);
+                ParseOperandExpr(new LeftOperator(opPrecedence.Value, opToken));
                 lhs = _scanner.Close(expr, syntaxKind);
             }
             else
@@ -229,7 +233,7 @@ public partial class Parser
         // --- Prefix
         if (PrecedenceTable.TryGetPrefixPrecedence(token.Kind) is Precedence prefixPrecedence)
         {
-            ParseOperandExpr(prefixPrecedence);
+            ParseOperandExpr(new LeftOperator(prefixPrecedence, token));
             return _scanner.Close(openMark, SyntaxKind.UnaryExpr);
         }
 

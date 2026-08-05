@@ -29,7 +29,15 @@ public partial class Parser
         LeftBindsTighter,
         Ambiguous,
     }
-    
+
+    /// <summary>
+    /// The operator the current operand expression is nested under. The token is
+    /// carried along, so diagnostics can point at both sides of a conflict. The
+    /// precedence cannot be derived from the token alone, since prefix and infix
+    /// operators share spellings.
+    /// </summary>
+    private readonly record struct LeftOperator(Precedence Precedence, Token Token);
+
     private static class PrecedenceTable
     {
         public static Precedence? TryGetPrefixPrecedence(TokenKind kind)

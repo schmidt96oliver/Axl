@@ -2,9 +2,6 @@
                                        ≽(◕ ᴗ ◕)≼
 
 * cleanup? Extract FirstSet.OperandExpr, ...
-* feat: AmbiguousPrecedence
-  * take both operator tokens
-  * + RelatedInfoLocation
 
 * fix: crash on `()` and probably `(+1)`, `(var)`, ...
 * fix: crash on `-[ EOF]`
