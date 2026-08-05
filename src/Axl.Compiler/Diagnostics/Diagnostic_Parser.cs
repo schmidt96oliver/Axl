@@ -43,13 +43,13 @@ public abstract partial record Diagnostic
             {
                 var expected = (_expectedKind, _expectedCategory) switch
                 {
-                    (TokenKind kind, null) => $"'{kind}'",
+                    (TokenKind kind, null) => kind.DisplayName,
                     (null, SyntaxCategory.Expr) => "an expression",
                     (null, SyntaxCategory.Stmt) => "a statement",
                     _ => throw new UnreachableException(),
                 };
 
-                return $"Expected {expected}, got '{Source.GetText(Actual.Span)}'.";
+                return $"Expected {expected}, got {Actual.Kind.DisplayName}.";
             }
         }
     }

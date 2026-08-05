@@ -8,13 +8,11 @@
   * ? wrap ambig op into SyntaxError node
 
 * fix: crash on `()` and probably `(+1)`, `(var)`, ...
+* fix: crash on `-[ EOF]`
 
 * document and play a little
 * `(` as call needs special casing
 * `.` check its parsing according to grammar
-
-* feat: UnexpectedToken diagnostics
-  * TokenKind display names; `;` instead of `Semicolon`
 
 * proper trivia attachment
 * Asserts in BuildTree
