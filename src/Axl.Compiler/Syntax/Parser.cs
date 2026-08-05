@@ -450,8 +450,8 @@ public partial class Parser
         var braceCount = 0;
 
         // Calculate once before the gobble-loop and recalculate
-        // only when StartStart is gobbled up. That is the only time
-        // its result will change.
+        // only when the result can change. That is the advancement
+        // of StringStart, StringText or StringEnd.
         var willCurrentStringBeContinued = WillCurrentStringBeContinued();
         
         foreach (var _ in _scanner.MustAdvanceUntilEnd())
@@ -485,7 +485,7 @@ public partial class Parser
             var advancedToken = _scanner.Advance();
             
             // Recalculate if necessary.
-            if (advancedToken.Kind is TokenKind.StringStart)
+            if (advancedToken.Kind is TokenKind.StringStart or TokenKind.StringText or TokenKind.StringEnd)
                 willCurrentStringBeContinued = WillCurrentStringBeContinued();
         }
 
@@ -503,8 +503,7 @@ public partial class Parser
             // regard as being outside (just one before) the string that is opened by 
             // this StringStart.
             
-            // The outcome of this method only changes, when a StringStart token
-            // is advanced.
+            // The outcome only relies on StringStart, StringText and StringEnd.
             
             var depth = 0;
             for (var n = 0;; n++)
