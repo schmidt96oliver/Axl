@@ -5,6 +5,8 @@ namespace Axl.Compiler.Syntax;
 
 public partial class Parser
 {
+    public sealed class ParserStuckException() : Exception("Parser did not advance a token and is stuck.");
+    
     private enum ParseEventKind
     {
         Open,
@@ -22,8 +24,39 @@ public partial class Parser
 
     private readonly record struct MarkClose(int OpenIndex);
 
+    
     private sealed class Scanner
     {
+        /// <summary>
+        /// Custom enumerator that asserts the parser has advanced at least one
+        /// token inside the loop. Otherwise, throws <see cref="ParserStuckException"/>.
+        /// It stops at Eof.
+        /// </summary>
+        public ref struct LoopGuard(Scanner scanner)
+        {
+            private int _lastToken = -1;
+
+            public readonly int Current => _lastToken;
+            
+            [DebuggerHidden]
+            [StackTraceHidden]
+            public bool MoveNext()
+            {
+                if (scanner.IsAtEnd)
+                    return false;
+                
+                Debug.Assert(scanner._nextToken >= _lastToken, "Scanner moved backwards. Weird!");
+                if (scanner._nextToken == _lastToken)
+                    throw new ParserStuckException();
+
+                _lastToken = scanner._nextToken;
+                return true;
+            }
+
+            public readonly LoopGuard GetEnumerator() => this;
+        }
+
+        
         /// <summary>
         /// Only non-trivia tokens. Must not be modified, but is kept as a list
         /// to avoid another allocation.
@@ -63,6 +96,23 @@ public partial class Parser
         public IEnumerable<ParseEvent> GetEvents()
             => _events;
 
+        
+        /// <summary>
+        /// Returns a custom enumerator that asserts the parser has advanced at least one
+        /// token inside the loop. Otherwise, throws <see cref="ParserStuckException"/>.
+        /// Stops at Eof.
+        /// </summary>
+        /// <example>
+        /// <code>
+        /// foreach (var _ in scanner.MustAdvanceUntilEnd())
+        /// {
+        ///     ...
+        /// }
+        /// </code>
+        /// </example>
+        public LoopGuard MustAdvanceUntilEnd()
+            => new(this);
+        
 
         public MarkOpen Open()
         {

@@ -9,7 +9,7 @@ public partial class Parser
     private readonly SourceFileView _source;
     private readonly DiagnosticBag _diagnosticBag;
 
-    private Scanner _scanner;
+    private readonly Scanner _scanner;
 
 
     private Parser(SourceFileView source, Scanner scanner, DiagnosticBag diagnosticBag)
@@ -38,7 +38,7 @@ public partial class Parser
     {
         var file = _scanner.Open();
 
-        while (!_scanner.IsAtEnd)
+        foreach (var _ in _scanner.MustAdvanceUntilEnd())
         {
             ParseStmt();
         }
@@ -165,7 +165,7 @@ public partial class Parser
 
         //TODO: Special case `(` (that is currently a normal infix operator)
 
-        while (!_scanner.IsAtEnd)
+        foreach (var _ in _scanner.MustAdvanceUntilEnd())
         {
             var opToken = _scanner.Peek(0);
             var opPrecedence = PrecedenceTable.TryGetInfixPrecedence(opToken.Kind);
