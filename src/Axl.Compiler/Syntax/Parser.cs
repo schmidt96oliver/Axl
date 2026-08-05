@@ -6,51 +6,6 @@ namespace Axl.Compiler.Syntax;
 
 public partial class Parser
 {
-    internal readonly struct TokenSet
-    {
-        private readonly ulong _lo, _hi;
-
-        public static TokenSet Empty => default;
-
-        private TokenSet(ulong lo, ulong hi)
-        {
-            _lo = lo;
-            _hi = hi;
-        }
-
-        public static TokenSet Of(params ReadOnlySpan<TokenKind> kinds)
-        {
-            ulong lo = 0, hi = 0;
-            foreach (var k in kinds)
-            {
-                var index = (int)k;
-                Debug.Assert(index < 128);
-
-                if (index < 64)
-                    lo |= 1UL << index;
-                else
-                    hi |= 1UL << (index - 64);
-            }
-            return new TokenSet(lo, hi);
-        }
-
-
-        public static TokenSet operator |(TokenSet a, TokenSet b) => new(a._lo | b._lo, a._hi | b._hi);
-
-        public static TokenSet operator |(TokenSet a, TokenKind b) => a | Of(b);
-
-
-        public bool Contains(TokenKind kind)
-        {
-            var index = (int)kind;
-            Debug.Assert(index < 128);
-
-            var word = index < 64 ? _lo : _hi;
-            return (word >> (index & 63) & 1) != 0;
-        }
-    }
-
-
     private readonly SourceFileView _source;
     private readonly DiagnosticBag _diagnosticBag;
 
