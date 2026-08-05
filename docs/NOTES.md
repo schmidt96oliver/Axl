@@ -16,6 +16,8 @@
 
 * all literals + strings
 
+* test: ambiguous chaining
+
 # Parser
 [x] Grammar
 

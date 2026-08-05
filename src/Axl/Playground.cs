@@ -36,6 +36,8 @@ public static class Playground
         {
             Console.WriteLine(
                 $"{diag.DefaultSeverity.ToString().ToUpper()} {diag.Id}@{diag.Location.Span}: {diag.Message}");
+            foreach (var related in diag.Related)
+                Console.WriteLine($"   related@{related.Location.Span}: {related.Label}");
         }
         
         Console.WriteLine("//=== tree");

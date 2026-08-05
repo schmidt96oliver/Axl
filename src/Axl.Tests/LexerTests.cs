@@ -39,8 +39,12 @@ public sealed class LexerTests
 
         // Print diagnostics
         foreach (var diag in diagnostics)
+        {
             builder.AppendLine(
                 $"{diag.DefaultSeverity.ToString().ToUpper()} {diag.Id}@{diag.Location.Span}: {diag.Message.ToLiteralString()}");
+            foreach (var related in diag.Related)
+                builder.AppendLine($"   related@{related.Location.Span}: {related.Label}");
+        }
 
         // Print tokens
         foreach (var token in tokens)
