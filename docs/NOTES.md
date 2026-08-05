@@ -4,8 +4,6 @@
 * cleanup: extract Scanner
   * ?? Debug.ToString
   * ?? perf: create non-trivia array or enumerate
-* cleanup: PrecedenceTable to Parser.PrecedenceTable
-  * names: Precedence enum; GetInfix/PrefixPrecedence, Compare, PrecedenceComparison.RightBindsHigher
 * cleanup: TokenSet to Parser.TokenSet
   * static assert
 * cleanup? Extract FirstSet.OperandExpr, ...

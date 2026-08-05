@@ -292,7 +292,7 @@ public partial class Parser
         TokenKind.Minus, TokenKind.NotKw
     );
     
-    private void ParseOperandExpr(PrecedenceTable.Operator? leftOperator)
+    private void ParseOperandExpr(Precedence? leftPrecedence)
     {
         Debug.Assert(IsAt(OperandExprFirst));
 
@@ -303,30 +303,32 @@ public partial class Parser
         while (!IsAtEnd)
         {
             var opToken = Peek(0);
-            var precedenceOp = PrecedenceTable.TryGetInfixOperator(opToken.Kind);
+            var opPrecedence = PrecedenceTable.TryGetInfixPrecedence(opToken.Kind);
 
-            if (precedenceOp is null)
+            if (opPrecedence is null)
                 break;
 
-            var bindingPower = leftOperator is PrecedenceTable.Operator leftOp
-                ? PrecedenceTable.RightBindingPower(leftOp, precedenceOp.Value)
-                : PrecedenceTable.BindingPower.Higher;
+            var precedenceComparison = leftPrecedence is Precedence actualLeftPrec
+                ? PrecedenceTable.Compare(actualLeftPrec, opPrecedence.Value)
+                : PrecedenceComparison.RightBindsTighter;
 
-            if (bindingPower is PrecedenceTable.BindingPower.Ambiguous)
+            if (precedenceComparison is PrecedenceComparison.Ambiguous)
             {
                 // Report error and just resume anyway
                 _diagnosticBag.ReportError(new Diagnostic.AmbiguousPrecedence(
                     _source, opToken));
             }
-            else if (bindingPower is PrecedenceTable.BindingPower.Lower)
+            else if (precedenceComparison is PrecedenceComparison.LeftBindsTighter)
                 break;
+            
+            Debug.Assert(precedenceComparison is PrecedenceComparison.RightBindsTighter);
             
             var expr = OpenBefore(lhs);
             Advance();  // Advance the operator
 
             if (IsAt(OperandExprFirst))
             {
-                ParseOperandExpr(precedenceOp);
+                ParseOperandExpr(opPrecedence);
                 lhs = Close(expr, SyntaxKind.BinaryExpr);
             }
             else
@@ -347,9 +349,9 @@ public partial class Parser
         var token = Advance();
 
         // --- Prefix
-        if (PrecedenceTable.TryGetPrefixOperator(token.Kind) is PrecedenceTable.Operator prefixOp)
+        if (PrecedenceTable.TryGetPrefixPrecedence(token.Kind) is Precedence prefixPrecedence)
         {
-            ParseOperandExpr(prefixOp);
+            ParseOperandExpr(prefixPrecedence);
             return Close(openMark, SyntaxKind.UnaryExpr);
         }
         

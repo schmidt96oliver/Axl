@@ -2,68 +2,73 @@
 
 public partial class Parser
 {
+    private enum Precedence
+    {
+        // Ordered from lowest to highest, so the int value can be used 
+        // for comparison.
+            
+        LogicOr,
+        LogicAnd,
+        LogicNot,
+
+        Comparison,
+
+        Sum,
+        Factor,
+
+        Negate,
+
+        ArgList,
+
+        Dot,
+    }
+
+    private enum PrecedenceComparison
+    {
+        RightBindsTighter,
+        LeftBindsTighter,
+        Ambiguous,
+    }
+    
     private static class PrecedenceTable
     {
-        public enum Operator
-        {
-            LogicOr,
-            LogicAnd,
-            LogicNot,
-
-            Comparison,
-
-            Sum,
-            Factor,
-
-            Negate,
-
-            ArgList,
-
-            Dot,
-        }
-
-        public enum BindingPower
-        {
-            Higher,
-            Lower,
-            Ambiguous,
-        }
-
-
-        public static Operator? TryGetPrefixOperator(TokenKind kind)
+        public static Precedence? TryGetPrefixPrecedence(TokenKind kind)
             => kind switch
             {
-                TokenKind.Minus => Operator.Negate,
-                TokenKind.NotKw => Operator.LogicNot,
+                TokenKind.Minus => Precedence.Negate,
+                TokenKind.NotKw => Precedence.LogicNot,
                 _ => null
             };
 
-        public static Operator? TryGetInfixOperator(TokenKind kind) => kind switch
+        public static Precedence? TryGetInfixPrecedence(TokenKind kind) => kind switch
         {
-            TokenKind.Dot => Operator.Dot,
-            TokenKind.OpenParen => Operator.ArgList,
+            TokenKind.Dot => Precedence.Dot,
+            TokenKind.OpenParen => Precedence.ArgList,
 
-            TokenKind.Star or TokenKind.Slash => Operator.Factor,
-            TokenKind.Plus or TokenKind.Minus => Operator.Sum,
+            TokenKind.Star or TokenKind.Slash => Precedence.Factor,
+            TokenKind.Plus or TokenKind.Minus => Precedence.Sum,
 
             TokenKind.LessThan or TokenKind.LessThanEqual or TokenKind.GreaterThan or TokenKind.GreaterThanEqual
-                or TokenKind.DoubleEqual or TokenKind.BangEqual => Operator.Comparison,
+                or TokenKind.DoubleEqual or TokenKind.BangEqual => Precedence.Comparison,
 
-            TokenKind.AndKw => Operator.LogicAnd,
-            TokenKind.OrKw => Operator.LogicOr,
+            TokenKind.AndKw => Precedence.LogicAnd,
+            TokenKind.OrKw => Precedence.LogicOr,
 
             _ => null
         };
 
-        public static BindingPower RightBindingPower(Operator left, Operator right)
+        public static PrecedenceComparison Compare(Precedence left, Precedence right)
         {
-            if (left == right && left is Operator.Comparison)
-                return BindingPower.Ambiguous;
+            // --- Special-case ambiguity pairs
+            if (left == right && left is Precedence.Comparison)
+                return PrecedenceComparison.Ambiguous;
 
-            if ((int)left < (int)right)
-                return BindingPower.Higher;
-            else
-                return BindingPower.Lower;
+            // --- Compare
+            // If they are equal, LeftBindsTighter is returned.
+            // That means, they will be left-associative.
+            return (int)left < (int)right
+                ? PrecedenceComparison.RightBindsTighter
+                : PrecedenceComparison.LeftBindsTighter;
         }
     }
 }
