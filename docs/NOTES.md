@@ -14,8 +14,7 @@
 * `.` check its parsing according to grammar
 
 * feat: UnexpectedToken diagnostics
-  * ? unify with ExpectedStmt/Expr?
-  * ? accept TokenSet; compare set == ExprFirst => "expression"
+  * TokenKind display names; `;` instead of `Semicolon`
 
 * proper trivia attachment
 * Asserts in BuildTree

@@ -1,4 +1,5 @@
-﻿using Axl.Compiler.Syntax;
+﻿using System.Diagnostics;
+using Axl.Compiler.Syntax;
 
 namespace Axl.Compiler.Diagnostics;
 
@@ -10,25 +11,47 @@ public abstract partial record Diagnostic
         public override string Message => "String must be closed.";
     }
 
-    public sealed record UnexpectedToken(SourceFileView Source, Token Actual, TokenKind Expected) : Error
+    public sealed record UnexpectedToken : Error
     {
+        private readonly TokenKind? _expectedKind;
+        private readonly SyntaxCategory? _expectedCategory;
+
+        public SourceFileView Source { get; }
+        public Token Actual { get; }
+
+
+        public UnexpectedToken(SourceFileView source, Token actual, TokenKind expectedKind)
+        {
+            Source = source;
+            Actual = actual;
+            _expectedKind = expectedKind;
+        }
+
+        public UnexpectedToken(SourceFileView source, Token actual, SyntaxCategory expectedCategory)
+        {
+            Source = source;
+            Actual = actual;
+            _expectedCategory = expectedCategory;
+        }
+
+
         public override SourceLocation Location => Source.GetLocation(Actual.Span);
 
-        public override string Message => $"Expected token '{Expected}', got '{Source.GetText(Actual.Span)}'.";
-    }
-    
-    public sealed record ExpectedStmt(SourceFileView Source, Token Actual) : Error
-    {
-        public override SourceLocation Location => Source.GetLocation(Actual.Span);
+        public override string Message
+        {
+            get
+            {
+                var expected = (_expectedKind, _expectedCategory) switch
+                {
+                    (TokenKind kind, null) => $"'{kind}'",
+                    (null, SyntaxCategory.Expr) => "an expression",
+                    (null, SyntaxCategory.Stmt) => "a statement",
+                    _ => throw new UnreachableException(),
+                };
 
-        public override string Message => $"Expected statement at '{Source.GetText(Actual.Span)}'.";
-    }
-    
-    public sealed record ExpectedExpr(SourceFileView Source, Token Actual) : Error
-    {
-        public override SourceLocation Location => Source.GetLocation(Actual.Span);
-
-        public override string Message => $"Expected expression at '{Source.GetText(Actual.Span)}'.";
+                return $"Expected {expected}, got '{Source.GetText(Actual.Span)}'.";
+            }
+        }
     }
 
     public sealed record AmbiguousPrecedence(SourceFileView Source, Token OperatorToken) : Error

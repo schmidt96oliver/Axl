@@ -33,6 +33,11 @@ public partial class Parser
     }
 
 
+    private void ReportUnexpected(SyntaxCategory expected)
+        => _diagnosticBag.ReportError(new Diagnostic.UnexpectedToken(
+            _source, _scanner.Peek(0), expected));
+
+
 
     private void Parse()
     {
@@ -133,8 +138,8 @@ public partial class Parser
         }
 
         // Could not find a valid stmt.
-        var actualToken = _scanner.Advance();
-        _diagnosticBag.ReportError(new Diagnostic.ExpectedStmt(_source, actualToken));
+        ReportUnexpected(expected: SyntaxCategory.Stmt);
+        _scanner.Advance();
         _scanner.Close(markOpen, SyntaxKind.Error);
     }
 
@@ -198,8 +203,7 @@ public partial class Parser
             }
             else
             {
-                _diagnosticBag.ReportError(new Diagnostic.ExpectedExpr(
-                    _source, _scanner.Peek(0)));
+                ReportUnexpected(expected: SyntaxCategory.Expr);
                 _scanner.Close(expr, SyntaxKind.BinaryExpr);
                 break;
             }
