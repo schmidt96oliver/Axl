@@ -448,6 +448,12 @@ public partial class Parser
         
         MarkOpen? errorExpr = null;
         var braceCount = 0;
+
+        // Calculate once before the gobble-loop and recalculate
+        // only when StartStart is gobbled up. That is the only time
+        // its result will change.
+        var willCurrentStringBeContinued = WillCurrentStringBeContinued();
+        
         foreach (var _ in _scanner.MustAdvanceUntilEnd())
         {
             // --- Nominal Termination on BraceClose:
@@ -469,18 +475,18 @@ public partial class Parser
             // Otherwise, we are free to choose what to do. As a heuristic: Same-line errors
             // shall belong to the interpolation/string, everything after a newline stops
             // the string, so the Parser can parse it normally.
-            
-            //TODO: WillCurrentStringBeContinued before the loop?
-            // I think it should be consistent among anything the loop
-            // can encounter.
-            if (!WillCurrentStringBeContinued() && HasNewlineBeforeNextToken())
+            if (!willCurrentStringBeContinued && HasNewlineBeforeNextToken())
                 break;
             
             // --- Gobble Gobble Gobble
             // Error has been reported by ParseStringInterpolation already,
             // so we must not report again.
             errorExpr ??= _scanner.Open();
-            _scanner.Advance();
+            var advancedToken = _scanner.Advance();
+            
+            // Recalculate if necessary.
+            if (advancedToken.Kind is TokenKind.StringStart)
+                willCurrentStringBeContinued = WillCurrentStringBeContinued();
         }
 
         if (errorExpr is MarkOpen openedErrorExpr)
@@ -496,6 +502,9 @@ public partial class Parser
             // Note that if the scanner is currently sitting on StringStart, we will
             // regard as being outside (just one before) the string that is opened by 
             // this StringStart.
+            
+            // The outcome of this method only changes, when a StringStart token
+            // is advanced.
             
             var depth = 0;
             for (var n = 0;; n++)
