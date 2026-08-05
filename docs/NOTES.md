@@ -13,6 +13,8 @@
   * take both operator tokens
   * + RelatedInfoLocation
 
+* test: bless Lexer_Never
+
 * fix: crash on `()` and probably `(+1)`, `(var)`, ...
 
 * document and play a little
