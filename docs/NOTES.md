@@ -1,10 +1,12 @@
 # ------------------------------------ Axl Project ------------------------------------
                                        ≽(◕ ᴗ ◕)≼
+* fix: crash on empty Parse (Create empty nodes)
+  * Use CloseEmpty
 
 * StringInterpolation:
   * fix: Fuel burn in `WillCurrentStringBeContinued`
   * trace all cases in `ConvolutedStringInterpolation.axl`
-  * install to LSP -> trace diagnostic positions
+  * trace diagnostic positions use LSP
 
 * cleanup? Extract FirstSet.OperandExpr, ...
 

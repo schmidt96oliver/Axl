@@ -45,19 +45,21 @@ public class SemanticTokensHandler(ILanguageServerFacade facade) : SemanticToken
         CancellationToken cancellationToken)
     {
         var file = DocumentStore.Get(identifier.TextDocument.Uri);
-        var diagnosticBag = new DiagnosticBag();
-        var tokens = Lexer.Lex(SourceFileView.Whole(file), diagnosticBag);
+        // var diagnosticBag = new DiagnosticBag();
+        // var tokens = Lexer.Lex(SourceFileView.Whole(file), diagnosticBag);
+
+        var tree = Parser.Parse(SourceFileView.Whole(file));
         
         // --- Push diagnostics
         facade.TextDocument.PublishDiagnostics(new PublishDiagnosticsParams()
         {
             Uri = identifier.TextDocument.Uri,
-            Diagnostics = new Container<Diagnostic>(ConvertDiagnostics(identifier.TextDocument.Uri, diagnosticBag.Drain()))
+            Diagnostics = new Container<Diagnostic>(ConvertDiagnostics(identifier.TextDocument.Uri, tree.Diagnostics))
         });
         
         // --- Build semantic tokens
         var isInOutput = false;
-        foreach (var token in tokens)
+        foreach (var token in EnumerateTokens(tree))
         {
             if (token.Span.Length == 0)
                 continue;
@@ -204,6 +206,17 @@ public class SemanticTokensHandler(ILanguageServerFacade facade) : SemanticToken
         }
         
         return Task.CompletedTask;
+    }
+
+    private IEnumerable<Token> EnumerateTokens(SyntaxElement element)
+    {
+        if (element is Token token)
+            yield return token;
+        else if (element is SyntaxNode node)
+        {
+            foreach (var t in node.Children.SelectMany(EnumerateTokens))
+                yield return t;
+        }
     }
 
     private IEnumerable<Diagnostic> ConvertDiagnostics(DocumentUri uri, ImmutableArray<Axl.Compiler.Diagnostics.Diagnostic> diagnostics)
