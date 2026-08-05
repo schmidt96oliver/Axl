@@ -161,8 +161,10 @@ public sealed class LexerTests
     [Fact]
     public void Never_IsIdentifier()
         => LexTokens("never", out _, out _)
-            .ShouldHaveSingleItem()
-            .Kind.ShouldBe(TokenKind.Identifier);
+            .ShouldSatisfyAllConditions(
+                tokens => tokens.Length.ShouldBe(2),
+                tokens => tokens[0].Kind.ShouldBe(TokenKind.Identifier),
+                tokens => tokens[1].Kind.ShouldBe(TokenKind.Eof));
 
     [Fact]
     public void Symbols_Equals()
