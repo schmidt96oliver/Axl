@@ -3,6 +3,7 @@ using System.Text.RegularExpressions;
 using Axl.Compiler;
 using Axl.Compiler.Diagnostics;
 using Axl.Compiler.Syntax;
+using OmniSharp.Extensions.LanguageServer.Protocol;
 using OmniSharp.Extensions.LanguageServer.Protocol.Client.Capabilities;
 using OmniSharp.Extensions.LanguageServer.Protocol.Document;
 using OmniSharp.Extensions.LanguageServer.Protocol.Models;
@@ -51,13 +52,18 @@ public class SemanticTokensHandler(ILanguageServerFacade facade) : SemanticToken
         facade.TextDocument.PublishDiagnostics(new PublishDiagnosticsParams()
         {
             Uri = identifier.TextDocument.Uri,
-            Diagnostics = new Container<Diagnostic>(ConvertDiagnostics(diagnosticBag.Drain()))
+            Diagnostics = new Container<Diagnostic>(ConvertDiagnostics(identifier.TextDocument.Uri, diagnosticBag.Drain()))
         });
         
         // --- Build semantic tokens
         var isInOutput = false;
         foreach (var token in tokens)
         {
+            if (token.Span.Length == 0)
+                continue;
+            if (token.Span.First >= file.Text.Length)
+                continue;
+            
             var startLinePos = file.GetLinePosition(token.Span.First);
             switch (token.Kind)
             {
@@ -200,28 +206,45 @@ public class SemanticTokensHandler(ILanguageServerFacade facade) : SemanticToken
         return Task.CompletedTask;
     }
 
-    private IEnumerable<Diagnostic> ConvertDiagnostics(ImmutableArray<Axl.Compiler.Diagnostics.Diagnostic> diagnostics)
+    private IEnumerable<Diagnostic> ConvertDiagnostics(DocumentUri uri, ImmutableArray<Axl.Compiler.Diagnostics.Diagnostic> diagnostics)
     {
         foreach (var diag in diagnostics)
         {
             if (diag.Location.Span.Length == 0)
                 continue;
             
-            var startLinePos = diag.Location.GetFirstLinePosition();
-            var endLinePos = diag.Location.File.GetLinePosition(diag.Location.Span.End - 1);
             yield return new Diagnostic()
             {
                 Severity = diag.DefaultSeverity switch
                 {
-                    DiagnosticSeverity.Error => OmniSharp.Extensions.LanguageServer.Protocol.Models.DiagnosticSeverity.Error,
-                    DiagnosticSeverity.Warning => OmniSharp.Extensions.LanguageServer.Protocol.Models.DiagnosticSeverity.Warning,
+                    DiagnosticSeverity.Error => OmniSharp.Extensions.LanguageServer.Protocol.Models.DiagnosticSeverity
+                        .Error,
+                    DiagnosticSeverity.Warning => OmniSharp.Extensions.LanguageServer.Protocol.Models.DiagnosticSeverity
+                        .Warning,
                     _ => OmniSharp.Extensions.LanguageServer.Protocol.Models.DiagnosticSeverity.Information
                 },
-                Message = diag.Message,
+                Message = diag.Hint is null
+                    ? diag.Message
+                    : $"{diag.Message}\nHint: {diag.Hint}",
                 Code = new DiagnosticCode(diag.Id),
-                Range = new Range(startLinePos.Line, startLinePos.Column, endLinePos.Line, endLinePos.Column + 1),
+                Range = LocationToRange(diag.Location),
+                RelatedInformation = new Container<DiagnosticRelatedInformation>(
+                    diag.Related.Select(related =>
+                        new DiagnosticRelatedInformation()
+                        {
+                            Location = new Location() { Range = LocationToRange(related.Location), Uri = uri }, //TODO: Get actual URI of SourceFile
+                            Message = related.Label
+                        })
+                ),
             };
         }
+    }
+
+    private Range LocationToRange(SourceLocation location)
+    {
+        var startLinePos = location.GetFirstLinePosition();
+        var endLinePos = location.File.GetLinePosition(location.Span.End - 1);
+        return new Range(startLinePos.Line, startLinePos.Column, endLinePos.Line, endLinePos.Column + 1);
     }
 
     protected override Task<SemanticTokensDocument> GetSemanticTokensDocument(ITextDocumentIdentifierParams @params, CancellationToken cancellationToken)
