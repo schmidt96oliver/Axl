@@ -5,7 +5,8 @@ namespace Axl.Compiler.Syntax;
 
 public partial class Parser
 {
-    public sealed class ParserStuckException() : Exception("Parser did not advance a token and is stuck.");
+    public sealed class ParserStuckException(string message)
+        : Exception(message);
     
     private enum ParseEventKind
     {
@@ -47,7 +48,7 @@ public partial class Parser
                 
                 Debug.Assert(scanner._nextToken >= _lastToken, "Scanner moved backwards. Weird!");
                 if (scanner._nextToken == _lastToken)
-                    throw new ParserStuckException();
+                    throw new ParserStuckException("Parser did not advance a token and is stuck.");
 
                 _lastToken = scanner._nextToken;
                 return true;
@@ -58,12 +59,25 @@ public partial class Parser
 
         
         /// <summary>
+        /// Amount of <see cref="Peek"/>s allowed between two <see cref="Advance"/>s.
+        /// Generous - real lookahead never goes beyond a handful.
+        /// </summary>
+        private const int MaxFuel = 256;
+
+        /// <summary>
         /// Only non-trivia tokens. Must not be modified, but is kept as a list
         /// to avoid another allocation.
         /// </summary>
         private readonly List<Token> _tokens;
         private readonly List<ParseEvent> _events;
         private int _nextToken;
+
+        /// <summary>
+        /// Backstop for everything <see cref="MustAdvanceUntilEnd"/> cannot see:
+        /// hand-written loops and recursion that re-enters without consuming a token.
+        /// Refilled by <see cref="Advance"/>, burned by <see cref="Peek"/>.
+        /// </summary>
+        private int _fuel;
 
 
         /// <summary>
@@ -90,6 +104,7 @@ public partial class Parser
 
             _events = [];
             _nextToken = 0;
+            _fuel = MaxFuel;
         }
 
 
@@ -141,12 +156,17 @@ public partial class Parser
             Debug.Assert(!IsAtEnd);
 
             _events.Add(new ParseEvent(ParseEventKind.Advance));
+            _fuel = MaxFuel;
             return _tokens[_nextToken++];
         }
 
         public Token Peek(int lookahead = 1)
         {
             Debug.Assert(lookahead >= 0);
+
+            if (--_fuel < 0)
+                throw new ParserStuckException("Parser peeked too often without advancing and is stuck.");
+
             if (_nextToken + lookahead < _tokens.Count)
                 return _tokens[_nextToken + lookahead];
 

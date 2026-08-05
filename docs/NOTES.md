@@ -2,11 +2,10 @@
                                        ≽(◕ ᴗ ◕)≼
 
 * cleanup? Extract FirstSet.OperandExpr, ...
-* feat: guard against infinite loop
-  * ? Parse* returns MarkClosed?
 * feat: AmbiguousPrecedence
   * take both operator tokens
   * + RelatedInfoLocation
+  * ? wrap ambig op into SyntaxError node
 
 * fix: crash on `()` and probably `(+1)`, `(var)`, ...
 
