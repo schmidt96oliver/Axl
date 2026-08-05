@@ -96,8 +96,9 @@ Arg         = Expr ","?
 // Arg is clearly delimited by `)` or `,`, so may contain body
 
 StringExpr            = StringStart (StringText | StringInterpolation)* StringEnd
-StringInterpolation   = "{" Expr "}"
+StringInterpolation   = "{" Expr? "}"
 // Interpolation is clearly delimited by `}`, so may contain body
+// It can also be empty to allow multi-line breaks.
 
 ## Tail Expressions
 Expressions that don't own a body but might contain one.

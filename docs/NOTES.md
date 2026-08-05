@@ -1,8 +1,5 @@
 # ------------------------------------ Axl Project ------------------------------------
                 
-* docs: Grammar empty hole
-
-
 * StringInterpolation:
   * trace all cases in `ConvolutedStringInterpolation.axl`
   * trace diagnostic positions use LSP
@@ -19,7 +16,8 @@
 * cleanup? Extract FirstSet.OperandExpr, ...
 
 * fix: crash on `()` and probably `(+1)`, `(var)`, ...
-* fix: crash on `-[ EOF]`
+  * fix: crash on `-[ EOF]`
+  * ParseExpr directly reporting? or guard everywhere?
 
 * document and play a little
 * `(` as call needs special casing
@@ -30,11 +28,7 @@
   * Assert SyntaxKind.Error => DiagnosticBag.HasError
 
 * test: ambiguous chaining
-
-* ParseStringExpr:
-  * handle empty interpolation
-  * handle newlines
-
+* 
 # Parser
 [x] Grammar
 
