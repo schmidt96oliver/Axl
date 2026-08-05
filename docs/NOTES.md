@@ -1,6 +1,11 @@
 # ------------------------------------ Axl Project ------------------------------------
                                        ≽(◕ ᴗ ◕)≼
 
+* StringInterpolation:
+  * fix: Fuel burn in `WillCurrentStringBeContinued`
+  * trace all cases in `ConvolutedStringInterpolation.axl`
+  * install to LSP -> trace diagnostic positions
+
 * cleanup? Extract FirstSet.OperandExpr, ...
 
 * fix: crash on `()` and probably `(+1)`, `(var)`, ...
@@ -14,9 +19,11 @@
 * Asserts in BuildTree
   * Assert SyntaxKind.Error => DiagnosticBag.HasError
 
-* all literals + strings
-
 * test: ambiguous chaining
+
+* ParseStringExpr:
+  * handle empty interpolation
+  * handle newlines
 
 # Parser
 [x] Grammar

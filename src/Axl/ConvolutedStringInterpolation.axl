@@ -1,0 +1,122 @@
+﻿// Stuff to trace:
+// POssible employ same rule in Lexer?
+
+// Gobbling MUST take everthing, cannot skip newline
+// Because Lexer lexes it all as string. Lexer needs to
+// follow somehow or disallow entirely. Or be driven by Parser.
+
+// OR: Parser checks: does _anything_ thereafter have StringText
+// without StringStart before it?
+
+"Foo { a {} b
+
+"Hello { 1+
+Print();
+
+
+// Typing at Eof:
+"Hello
+
+"Hello { 1+
+a.b;
+
+"Hello {
+a.b;
+
+"Hello {a "ab {
+    } plain
+    blasd
+
+"Hello {a "ab {
+    } plain
+    blabla
+
+"Hello {a b c{
+fn Test() { }
+}
+
+"Hello {@@ bla
+a.b;
+
+"Hello {a
+    var b = "Blupp {b}";
+
+"Hello {a
+    var b = 2
+    }{a} nlas
+
+// Typing with something thereafter
+"Hello
+"Hello {
+}
+"Hello {
+} bla
+"Hello {a
+}
+"Hello {a b
+}
+"Hello {a}
+}
+"Hello {a}"
+"Hello {a}{
+}
+"Hello {a}{b
+}
+"Hello {a}{b c
+}
+
+"Hello {abc}
+
+fn {
+    "Hello {
+} // Part of the string because there is something here
+fn {
+    "Hello {a
+}
+//^ not part of the string
+fn {
+    "Hello {a+
+}
+fn {
+    "Hello {a+b
+}
+fn {
+    "Hello {a+b c
+}
+
+// Valid strings:
+"Hello {a b
+    }{bla}";
+    
+"{a
+    }{b}"     
+"{a +
+    b }"      
+"{a +
+    } Test"
+    
+"abc {a
+    b}"
+    
+// Nested:
+// Nominal branch
+"Hello {
+   "nested" + a
+   }
+"Hello {
+   "nested" + a
+   }"
+"Hello {
+   "nested" + a
+   } more text"
+   
+// Excercises garbage branch
+"Hello {a
+   "nested" + a
+   }
+"Hello {a
+   "nested" + a
+   }"
+"Hello {a
+   "nested" + a
+   } more text"

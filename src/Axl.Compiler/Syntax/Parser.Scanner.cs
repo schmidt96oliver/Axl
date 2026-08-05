@@ -128,6 +128,8 @@ public partial class Parser
         public LoopGuard MustAdvanceUntilEnd()
             => new(this);
         
+        public Token? PreviousToken
+            => _nextToken > 0 ? _tokens[_nextToken - 1] : null;
 
         public MarkOpen Open()
         {
@@ -137,6 +139,10 @@ public partial class Parser
 
         public MarkClose Close(MarkOpen openMark, SyntaxKind kind)
         {
+            Debug.Assert(_events[openMark.OpenIndex..]
+                .FindIndex(p => p.EventKind is ParseEventKind.Advance) >= 0,
+                "Closed an empty node.");
+            
             _events[openMark.OpenIndex] = new ParseEvent(ParseEventKind.Open, kind);
             _events.Add(new ParseEvent(ParseEventKind.Close));
             return new MarkClose(openMark.OpenIndex);
@@ -192,10 +198,10 @@ public partial class Parser
             return false;
         }
 
-        public void AdvanceKnown(TokenKind knownKind)
+        public Token AdvanceKnown(TokenKind knownKind)
         {
             Debug.Assert(IsAt(knownKind));
-            Advance();
+            return Advance();
         }
     }
 }

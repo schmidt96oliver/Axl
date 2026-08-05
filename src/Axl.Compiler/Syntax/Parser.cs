@@ -32,6 +32,18 @@ public partial class Parser
         return true;
     }
 
+    private void AdvanceWithError(TokenKind expectedKind)
+    {
+        Debug.Assert(!_scanner.IsAt(expectedKind));
+        
+        _diagnosticBag.ReportError(new Diagnostic.UnexpectedToken(
+            _source, _scanner.Peek(0), expectedKind));
+        
+        var expr = _scanner.Open();
+        _scanner.Advance();
+        _scanner.Close(expr, SyntaxKind.Error);
+    }
+    
 
     private void ReportUnexpected(SyntaxCategory expected)
         => _diagnosticBag.ReportError(new Diagnostic.UnexpectedToken(
@@ -143,6 +155,8 @@ public partial class Parser
         _scanner.Close(markOpen, SyntaxKind.Error);
     }
 
+    
+    
     private void ParseExpr()
     {
         ParseOperandExpr(null);
@@ -161,6 +175,7 @@ public partial class Parser
         TokenKind.OpenParen,
         TokenKind.Minus, TokenKind.NotKw
     );
+    private static readonly TokenSet ExprFirst = OperandExprFirst;
 
     private void ParseOperandExpr(LeftOperator? left)
     {
@@ -227,15 +242,22 @@ public partial class Parser
     {
         Debug.Assert(_scanner.IsAt(OperandExprFirst));
 
+        // --- String
+        if (_scanner.IsAt(TokenKind.StringStart))
+        {
+            return ParseStringExpr();
+        }
+        
         var openMark = _scanner.Open();
         var token = _scanner.Advance();
-
+        
         // --- Prefix
         if (PrecedenceTable.TryGetPrefixPrecedence(token.Kind) is Precedence prefixPrecedence)
         {
             ParseOperandExpr(new LeftOperator(prefixPrecedence, token));
             return _scanner.Close(openMark, SyntaxKind.UnaryExpr);
         }
+        
 
         switch (token.Kind)
         {
@@ -259,11 +281,232 @@ public partial class Parser
             case TokenKind.NoneKw:
             case TokenKind.StringKw:
                 return _scanner.Close(openMark, SyntaxKind.NativeTypeName);
+            
+            case TokenKind.TrueKw:
+                return _scanner.Close(openMark, SyntaxKind.TrueLiteral);
+            case TokenKind.FalseKw:
+                return _scanner.Close(openMark, SyntaxKind.FalseLiteral);
         }
 
         throw new UnreachableException();
     }
 
+    private MarkClose ParseStringExpr()
+    {
+        Debug.Assert(_scanner.IsAt(TokenKind.StringStart));
+
+        var expr = _scanner.Open();
+        var stringStartToken = _scanner.AdvanceKnown(TokenKind.StringStart);
+
+        foreach (var _ in _scanner.MustAdvanceUntilEnd())
+        {
+            switch (_scanner.Peek(0).Kind)
+            {
+                // --- StringText: Just add
+                case TokenKind.StringText:
+                    var text = _scanner.Open();
+                    _scanner.AdvanceKnown(TokenKind.StringText);
+                    _scanner.Close(text, SyntaxKind.StringText);
+                    break;
+                
+                // --- StringEnd: Finish
+                case TokenKind.StringEnd:
+                    _scanner.AdvanceKnown(TokenKind.StringEnd);
+                    return _scanner.Close(expr, SyntaxKind.StringExpr);
+                
+                // --- Interpolation
+                case TokenKind.OpenBrace:
+                    ParseStringInterpolation();
+                    break;
+                    
+                // --- Anything else is an unclosed string
+                default:
+                    // We advanced at least the StringStart token, so there must be a 
+                    // previous token.
+                    Debug.Assert(_scanner.PreviousToken is not null);
+                    
+                    _diagnosticBag.ReportError(new Diagnostic.UnclosedString(_source.GetLocation(
+                        SourceSpan.FromTo(stringStartToken.Span, _scanner.PreviousToken.Span))));
+                    return _scanner.Close(expr, SyntaxKind.StringExpr);
+            }
+        }
+
+        // Eof, but string was not closed.
+        // We advanced at least the StringStart token, so there must be a 
+        // previous token.
+        Debug.Assert(_scanner.PreviousToken is not null);
+        
+        _diagnosticBag
+            .ReportError(new Diagnostic.UnclosedString(_source.GetLocation(
+            SourceSpan.FromTo(stringStartToken.Span, _scanner.PreviousToken.Span))));
+        return _scanner.Close(expr, SyntaxKind.StringExpr);
+    }
+
+    private void ParseStringInterpolation()
+    {
+        // The Lexer will emit normal tokens after `{` which means that it is in
+        // "syntax" mode. It is basically our choice to interpret that data. We must
+        // keep what the Lexer is thinking about this string while also breaking out of
+        // the interpolation in normal typing cases:
+        //   "Foo {a
+        //   fn Test() { }
+        // Must abort after `a` and interpret fn as a normal FnDecl. More importantly: The `}`
+        // that belongs visually to the FnDecl must belong there and _not_ close this interpolation.
+        // So we must end this interpolation before. If there is ever a StringText/StringEnd token
+        // without a StringStart before, we must stay inside the hole, however. As in:
+        //   "Foo {a
+        //   fn Test() { }
+        //   } Bar
+        // The Lexer here will emit `Bar` as StringText. Everything inside the interpolation must
+        // be skipped and produce an error node.
+        
+        Debug.Assert(_scanner.IsAt(TokenKind.OpenBrace));
+        
+        var interpolationHole = _scanner.Open();
+        _scanner.AdvanceKnown(TokenKind.OpenBrace);
+
+        // --- Parse Expression, if possible
+        var errorReported = false;
+        if (_scanner.IsAt(ExprFirst))
+        {
+            ParseExpr();
+        }
+        else if (_scanner.IsAt(TokenKind.CloseBrace))
+        {
+            // Interpolation is `{ }` and we accept empty interpolations.
+            // Let the case run through to the end.
+        }
+        else
+        {
+            ReportUnexpected(SyntaxCategory.Expr);
+            errorReported = true;
+        }
+
+        // --- Garbage left that needs to be inside the StringInterpolation node?
+        if (!_scanner.IsAt(TokenKind.CloseBrace))
+        {
+            // Report error and gobble up the garbage
+            if (!errorReported)
+            {
+                _diagnosticBag.ReportError(new Diagnostic.UnexpectedToken(
+                    _source, _scanner.Peek(0), TokenKind.CloseBrace));
+                errorReported = true;
+            }
+            
+            AdvanceStringInterpolationGarbage();
+        }
+
+        // --- Closing brace
+        if (_scanner.IsAt(TokenKind.CloseBrace))
+        {
+            // Closing brace can only be a valid interpolation close,
+            // if it is followed by StringText, StringEnd or another OpenBrace
+            // (starts a new interpolation directly). If that is not the case, the
+            // string is unclosed. The same heuristic is valid: Take it if its
+            // on the same line, otherwise, leave it to the parser.
+            
+            // This catches typing cases like
+            //    fn a() {
+            //       "Hello {
+            //    }
+            // The last `}` will close the FnDecl.
+            if (!HasNewlineBeforeNextToken() ||
+                _scanner.Peek(1).Kind is TokenKind.StringText or TokenKind.StringEnd or TokenKind.OpenBrace)
+            {
+                _scanner.AdvanceKnown(TokenKind.CloseBrace);
+            }
+        }
+        else
+        {
+            if (!errorReported)
+                AdvanceOrError(TokenKind.CloseBrace);
+        }
+
+        _scanner.Close(interpolationHole, SyntaxKind.StringInterpolation);
+    }
+
+    private void AdvanceStringInterpolationGarbage()
+    {
+        Debug.Assert(!_scanner.IsAt(TokenKind.CloseBrace));
+        
+        MarkOpen? errorExpr = null;
+        var braceCount = 0;
+        foreach (var _ in _scanner.MustAdvanceUntilEnd())
+        {
+            // --- Nominal Termination on BraceClose:
+            // We must keep track of inner braces, in cases like `"Foo { a {} b`,
+            // we must gobble b.
+            if (_scanner.IsAt(TokenKind.OpenBrace))
+                braceCount++;
+            else if (_scanner.IsAt(TokenKind.CloseBrace))
+            {
+                if (braceCount == 0)
+                    break;
+                braceCount--;
+            }
+            
+            // If there is a StringText or StringEnd without StringStart before, that
+            // means the Lexer thinks it's inside a string. That means, we need to gobble
+            // everything in this interpolation up, so that it belong to the correct string.
+            
+            // Otherwise, we are free to choose what to do. As a heuristic: Same-line errors
+            // shall belong to the interpolation/string, everything after a newline stops
+            // the string, so the Parser can parse it normally.
+            if (!WillCurrentStringBeContinued() && HasNewlineBeforeNextToken())
+                break;
+            
+            // --- Gobble Gobble Gobble
+            // Error has been reported by ParseStringInterpolation already,
+            // so we must not report again.
+            errorExpr ??= _scanner.Open();
+            _scanner.Advance();
+        }
+
+        if (errorExpr is MarkOpen openedErrorExpr)
+            _scanner.Close(openedErrorExpr, SyntaxKind.Error);
+        
+        bool WillCurrentStringBeContinued()
+        {
+            //TODO: Don't peek, its using up fuel :(
+        
+            var depth = 0;
+            for (var n = 0;; n++)
+            {
+                var token = _scanner.Peek(n);
+                switch (token.Kind)
+                {
+                    case TokenKind.StringStart:
+                        depth++;
+                        break;
+                
+                    case TokenKind.StringEnd:
+                        if (depth == 0)
+                            return true;
+                        depth--;
+                        break;
+                
+                    case TokenKind.StringText:
+                        if (depth == 0)
+                            return true;
+                        break;
+                
+                    case TokenKind.Eof:
+                        return false;
+                }
+            }
+        }
+    }
+
+    
+
+    private bool HasNewlineBeforeNextToken()
+    {
+        if (_scanner.PreviousToken is null)
+            return false;
+        
+        var spanToNextToken = SourceSpan.Between(_scanner.PreviousToken.Span, _scanner.Peek(0).Span);
+        return _source.GetText(spanToNextToken).Contains('\n');
+    }
 
     #endregion
 }

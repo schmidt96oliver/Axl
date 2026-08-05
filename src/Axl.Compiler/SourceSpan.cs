@@ -51,6 +51,12 @@ public readonly record struct SourceSpan
 
     public static SourceSpan EmptyAfter(SourceSpan span)
         => new(span.End, length: 0);
+
+    public static SourceSpan Between(SourceSpan left, SourceSpan right)
+    {
+        Guard.InRange(left.End <= right.First);
+        return new SourceSpan(left.End, length: right.First - left.End);
+    }
     
     
     public bool Contains(int index)

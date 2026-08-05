@@ -24,7 +24,7 @@ public enum SyntaxKind
     NumberLiteral,
     
     Identifier,
-    StringExpr,
+    
     GroupExpr,
     BinaryExpr,
     UnaryExpr,
@@ -42,6 +42,11 @@ public enum SyntaxKind
     IfExpr,
     LoopExpr,
     
+    // Strings
+    StringExpr,
+    StringInterpolation,
+    StringText,
+    
     // Arm
     Arm,
     
@@ -50,10 +55,10 @@ public enum SyntaxKind
     Param,
     ArgList,
     ParamList,
-    StringInterpolation,
     TypeAnnotation,
     InitializerClause,
     ModifierList,
     NativeClause,
     ModuleName,
+    
 }
