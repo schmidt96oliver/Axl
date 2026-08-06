@@ -115,9 +115,7 @@ public partial class Parser
                         }
                     }
 
-                    var node = builtNode.Nodes.Count == 0
-                        ? new SyntaxNode(builtNode.Kind, emptySpan: SourceSpan.EmptyBefore(tokens[nextToken].Span))
-                        : new SyntaxNode(builtNode.Kind, builtNode.Nodes.DrainToImmutable());
+                    var node = new SyntaxNode(builtNode.Kind, builtNode.Nodes.DrainToImmutable());
 
                     if (isRoot)
                     {

@@ -88,13 +88,6 @@ public static class Playground
                         var text = source.GetText(token.Span).ToString().Replace("\n", "\\n").Replace("\r", "\\r");
                         Console.WriteLine($": \"{text}\"");
                     }
-                    else if (nonTriviaTokens is [])
-                    {
-                        Console.ForegroundColor = ConsoleColor.Gray;
-                        Console.WriteLine(node.Children.Length == 0
-                            ? $" [empty]@{node.Span}"
-                            : $" [only trivia]@{node.Span}");
-                    }
                     else
                     {
                         Console.WriteLine();

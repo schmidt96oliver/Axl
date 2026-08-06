@@ -16,13 +16,13 @@ public sealed class SyntaxNode : SyntaxElement
     public override SourceSpan? SyntaxSpan { get; }
 
 
-    /// <summary>
-    /// Creates a non-empty node.
-    /// </summary>
-    /// <param name="children">Must be non-empty</param>
+    /// <param name="children">
+    /// Must be non-empty. Every node covers at least one token, so there
+    /// are no empty nodes.
+    /// </param>
     internal SyntaxNode(SyntaxKind kind, ImmutableArray<SyntaxElement> children)
     {
-        Guard.MustBe(!children.IsDefaultOrEmpty);
+        Guard.MustBe(!children.IsDefaultOrEmpty, "A node must have children.");
 
         Kind = kind;
         Children = children;
@@ -40,19 +40,5 @@ public sealed class SyntaxNode : SyntaxElement
         }
         else
             SyntaxSpan = null;
-    }
-
-    /// <summary>
-    /// Creates an empty node at a specific position.
-    /// </summary>
-    /// <param name="emptySpan">Must have length 0.</param>
-    internal SyntaxNode(SyntaxKind kind, SourceSpan emptySpan)
-    {
-        Guard.MustBe(emptySpan.IsEmpty);
-
-        Children = [];
-        Kind = kind;
-        Span = emptySpan;
-        SyntaxSpan = null;
     }
 }
