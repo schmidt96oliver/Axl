@@ -17,6 +17,9 @@
                 ^^   ^^    InvalidChaining
 => `BinaryExpr[BinaryExpr[a == BinaryExpr[1+4]] and Error[3 "=="c "==" d]]`
 
+* test: and/or ambiguous chaining
+* test: precedence
+
 * StringInterpolation:
   * trace/sort all cases in `ConvolutedStringInterpolation.axl`
   * trace diagnostic positions use LSP

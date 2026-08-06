@@ -145,5 +145,5 @@ Only ParseOperandExpr runs a Pratt Parser. Everything else is recursive descent.
 + -                 (left-assoc)
 < <= > >= == !=     (ambig assoc)
 not                 (prefix)
-and                 (left-assoc)
-or                  (left-assoc)
+and                 (left-assoc, ambig with or)
+or                  (left-assoc, ambig with and)

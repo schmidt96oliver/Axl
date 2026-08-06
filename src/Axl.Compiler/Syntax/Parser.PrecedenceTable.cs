@@ -67,10 +67,15 @@ public partial class Parser
 
         public static PrecedenceComparison Compare(Precedence left, Precedence right)
         {
-            // --- Special-case ambiguity pairs
-            if (left == right && left is Precedence.Comparison)
-                return PrecedenceComparison.Ambiguous;
-
+            // --- Ambiguity pairs
+            switch (left, right)
+            {
+                case (Precedence.Comparison, Precedence.Comparison):
+                case (Precedence.LogicAnd, Precedence.LogicOr):
+                case (Precedence.LogicOr, Precedence.LogicAnd):
+                    return PrecedenceComparison.Ambiguous;
+            }
+            
             // --- Compare
             // If they are equal, LeftBindsTighter is returned.
             // That means, they will be left-associative.
