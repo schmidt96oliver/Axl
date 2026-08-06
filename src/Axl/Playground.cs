@@ -43,6 +43,7 @@ public static class Playground
         var tree = Parser.Parse(source);
         
         // Print diagnostics
+        Console.ForegroundColor = ConsoleColor.White;
         foreach (var diag in tree.Diagnostics)
         {
             Console.WriteLine(
