@@ -3,17 +3,17 @@ using System.Diagnostics;
 
 namespace Axl.Compiler.Syntax;
 
-public class SyntaxNode : SyntaxElement
+public sealed class SyntaxNode : SyntaxElement
 {
     public SyntaxKind Kind { get; }
     
     public ImmutableArray<SyntaxElement> Children { get; }
     
     /// <inheritdoc/>
-    public sealed override SourceSpan Span { get; }
+    public override SourceSpan Span { get; }
     
     /// <inheritdoc/>
-    public sealed override SourceSpan? SyntaxSpan { get; }
+    public override SourceSpan? SyntaxSpan { get; }
 
 
     /// <summary>

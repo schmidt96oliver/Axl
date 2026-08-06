@@ -71,73 +71,63 @@ public partial class Parser
 
     private SyntaxTree BuildTree()
     {
-        Stack<BuildingNode> nodes = [];
-
         //TODO: Add good trivia logic here
 
-        var allTokens = _scanner.AllTokens;
-        var fullTokenIndex = 0;
+        Stack<BuildingNode> nodes = [];
+        var tokens = _scanner.AllTokens;
+        var nextToken = 0;
         foreach (var e in _scanner.GetEvents())
         {
             switch (e.EventKind)
             {
+                case ParseEventKind.Open:
+                    Debug.Assert(e.SyntaxKind is not null, "Unclosed node");
+                    
+                    nodes.Push(new BuildingNode(e.SyntaxKind.Value, ImmutableArray.CreateBuilder<SyntaxElement>()));
+                    break;
+                
                 case ParseEventKind.Advance:
-                    // Just flush all trivia here
-                    while (allTokens[fullTokenIndex].Kind.IsTrivia)
+                    // Flush all trivia here
+                    while (tokens[nextToken].Kind.IsTrivia)
                     {
-                        nodes.Peek().Nodes.Add(allTokens[fullTokenIndex]);
-                        fullTokenIndex++;
+                        nodes.Peek().Nodes.Add(tokens[nextToken]);
+                        nextToken++;
                     }
 
                     // Add the actual node
-                    nodes.Peek().Nodes.Add(allTokens[fullTokenIndex]);
-                    fullTokenIndex++;
-                    break;
-
-                case ParseEventKind.Open:
-                    Debug.Assert(e.SyntaxKind is not null, "Unclosed node");
-                    nodes.Push(new BuildingNode(e.SyntaxKind.Value, ImmutableArray.CreateBuilder<SyntaxElement>()));
+                    nodes.Peek().Nodes.Add(tokens[nextToken]);
+                    nextToken++;
                     break;
 
                 case ParseEventKind.Close:
                     var builtNode = nodes.Pop();
-                    if (builtNode.Kind is SyntaxKind.TreeRoot)
+                    var isRoot = builtNode.Kind is SyntaxKind.TreeRoot;
+                    if (isRoot)
                     {
-                        Debug.Assert(nodes.Count == 0);
+                        Debug.Assert(nodes.Count == 0, "TreeRoot was not the root.");
 
-                        // Flush all trivia here
-                        while (fullTokenIndex < allTokens.Length)
+                        // Flush the remaining trivia and the Eof token here. This also
+                        // guarantees the root has at least one child.
+                        while (nextToken < tokens.Length)
                         {
-                            builtNode.Nodes.Add(allTokens[fullTokenIndex]);
-                            fullTokenIndex++;
+                            builtNode.Nodes.Add(tokens[nextToken]);
+                            nextToken++;
                         }
-
-                        SyntaxTree tree;
-                        if (builtNode.Nodes.Count == 0)
-                        {
-                            Debug.Assert(allTokens.Length == 1 && fullTokenIndex == 0 && allTokens[0].Kind is TokenKind.Eof);
-                            tree = new SyntaxTree(
-                                emptySpan: SourceSpan.EmptyBefore(allTokens[0].Span),
-                                diagnostics: _diagnosticBag.Drain(),
-                                hasError: _diagnosticBag.HasError);
-                        }
-                        else
-                        {
-                            tree = new SyntaxTree(
-                                children: builtNode.Nodes.DrainToImmutable(),
-                                diagnostics: _diagnosticBag.Drain(),
-                                hasError: _diagnosticBag.HasError);
-                        }
-                        
-                        return tree;
                     }
 
                     var node = builtNode.Nodes.Count == 0
-                        ? new SyntaxNode(builtNode.Kind, emptySpan: SourceSpan.EmptyBefore(allTokens[fullTokenIndex].Span))
+                        ? new SyntaxNode(builtNode.Kind, emptySpan: SourceSpan.EmptyBefore(tokens[nextToken].Span))
                         : new SyntaxNode(builtNode.Kind, builtNode.Nodes.DrainToImmutable());
-                    
-                    nodes.Peek().Nodes.Add(node);
 
+                    if (isRoot)
+                    {
+                        return new SyntaxTree(
+                            root: node,
+                            diagnostics: _diagnosticBag.Drain(),
+                            hasError: _diagnosticBag.HasError);
+                    }
+
+                    nodes.Peek().Nodes.Add(node);
                     break;
             }
         }

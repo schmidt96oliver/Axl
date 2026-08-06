@@ -1,24 +1,24 @@
-﻿using System.Collections.Immutable;
+using System.Collections.Immutable;
 using Axl.Compiler.Diagnostics;
 
 namespace Axl.Compiler.Syntax;
 
-public sealed class SyntaxTree : SyntaxNode
+public sealed class SyntaxTree
 {
+    /// <summary>
+    /// The <see cref="SyntaxKind.TreeRoot"/> node spanning the whole file.
+    /// </summary>
+    public SyntaxNode Root { get; }
+
     public ImmutableArray<Diagnostic> Diagnostics { get; }
-    
+
     public bool HasError { get; }
 
-    internal SyntaxTree(SourceSpan emptySpan, ImmutableArray<Diagnostic> diagnostics, bool hasError)
-        : base(SyntaxKind.TreeRoot, emptySpan)
+    internal SyntaxTree(SyntaxNode root, ImmutableArray<Diagnostic> diagnostics, bool hasError)
     {
-        Diagnostics = diagnostics;
-        HasError = hasError;
-    }
-    
-    internal SyntaxTree(ImmutableArray<SyntaxElement> children, ImmutableArray<Diagnostic> diagnostics, bool hasError)
-        : base(SyntaxKind.TreeRoot, children)
-    {
+        Guard.MustBe(root.Kind is SyntaxKind.TreeRoot);
+
+        Root = root;
         Diagnostics = diagnostics;
         HasError = hasError;
     }

@@ -53,7 +53,7 @@ public static class Playground
         
         Console.WriteLine("//=== tree");
         
-        Print(tree, "");
+        Print(tree.Root, "");
         return;
         
         void Print(SyntaxElement element, string prefix)

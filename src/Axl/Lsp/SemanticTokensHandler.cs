@@ -44,7 +44,7 @@ public class SemanticTokensHandler(ILanguageServerFacade facade) : SemanticToken
         
         // --- Build semantic tokens
         var isInOutput = false;
-        foreach (var token in EnumerateTokens(tree))
+        foreach (var token in EnumerateTokens(tree.Root))
         {
             if (token.Span.Length == 0)
                 continue;
