@@ -72,6 +72,7 @@ public sealed class LexerTests
             ERROR UnknownCharacters@[2, 3): Unknown character '@'.
             ERROR UnknownCharacters@[3, 4): Unknown character '#'.
             ERROR UnknownCharacters@[4, 5): Unknown character '#'.
+
             - Error: "@@@##"
             - Eof
             """);
@@ -81,6 +82,7 @@ public sealed class LexerTests
         => InlineSnapshot.Validate(Lex("🂦"), """
             ERROR UnknownCharacters@[0, 1): Unknown character '\uD83C'.
             ERROR UnknownCharacters@[1, 2): Unknown character '\uDCA6'.
+
             - Error: "\uD83C\uDCA6"
             - Eof
             """);
@@ -218,6 +220,7 @@ public sealed class LexerTests
         => InlineSnapshot.Validate(LexIgnoreWhitespace("0b1100f32 0b0123 0b 0b_1"), """
             ERROR UnknownNumberSuffix@[18, 19): Only 'i32', 'i64', 'f32' or 'f64' are valid number suffixes. Got 'b'.
             ERROR UnknownNumberSuffix@[21, 24): Only 'i32', 'i64', 'f32' or 'f64' are valid number suffixes. Got 'b_1'.
+
             - NumberLiteral: "0b1100" body="0b1100" suffix=None
             - F32Kw: "f32"
             - NumberLiteral: "0b01" body="0b01" suffix=None
@@ -247,6 +250,7 @@ public sealed class LexerTests
             ERROR UnknownNumberSuffix@[23, 25): Only 'i32', 'i64', 'f32' or 'f64' are valid number suffixes. Got 'xg'.
             ERROR UnknownNumberSuffix@[27, 28): Only 'i32', 'i64', 'f32' or 'f64' are valid number suffixes. Got 'x'.
             ERROR UnknownNumberSuffix@[30, 33): Only 'i32', 'i64', 'f32' or 'f64' are valid number suffixes. Got 'x_1'.
+
             - NumberLiteral: "0x0F" body="0x0F" suffix=None
             - I32Kw: "i32"
             - NumberLiteral: "0xG" body="0" suffix=None
@@ -284,6 +288,7 @@ public sealed class LexerTests
             ERROR UnknownNumberSuffix@[13, 23): Only 'i32', 'i64', 'f32' or 'f64' are valid number suffixes. Got 'g_445df_12'.
             ERROR UnknownNumberSuffix@[25, 29): Only 'i32', 'i64', 'f32' or 'f64' are valid number suffixes. Got 'f64a'.
             ERROR UnknownNumberSuffix@[31, 35): Only 'i32', 'i64', 'f32' or 'f64' are valid number suffixes. Got 'f644'.
+
             - NumberLiteral: "1f3245" body="1" suffix=None
             - NumberLiteral: "4ghr" body="4" suffix=None
             - NumberLiteral: "1g_445df_12" body="1" suffix=None
@@ -363,6 +368,7 @@ public sealed class LexerTests
             ERROR UnknownEscapeSequence@[6, 8): Unknown escape sequence '\5'.
             ERROR UnknownEscapeSequence@[9, 11): Unknown escape sequence '\@'.
             ERROR UnknownEscapeSequence@[12, 13): Unknown escape sequence '\'.
+
             - StringStart: """
             - StringText: "\a \ \5 \@ \" processed="   "
             - Whitespace: "\r\n"
@@ -379,6 +385,7 @@ public sealed class LexerTests
                                        """), """"
             ERROR UnknownEscapeSequence@[2, 3): Unknown escape sequence '\'.
             ERROR UnknownEscapeSequence@[11, 12): Unknown escape sequence '\'.
+
             - StringStart: """
             - StringText: "A\" processed="A"
             - Whitespace: "\r\n"

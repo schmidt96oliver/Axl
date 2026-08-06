@@ -11,6 +11,9 @@ public class Dump(SourceFileView source)
     
     public Dump Add(IEnumerable<Diagnostic> diagnostics)
     {
+        if (_builder.Length > 0)
+            _builder.AppendLine();
+        
         foreach (var diag in diagnostics)
         {
             _builder.AppendLine(
@@ -24,6 +27,9 @@ public class Dump(SourceFileView source)
 
     public Dump Add(IEnumerable<Token> tokens, bool filterTrivia)
     {
+        if (_builder.Length > 0)
+            _builder.AppendLine();
+        
         if (filterTrivia)
             tokens = tokens.Where(t => !t.Kind.IsTrivia);
         
@@ -55,13 +61,15 @@ public class Dump(SourceFileView source)
         return this;
     }
 
-    private void AddPartOfSyntaxTree(SyntaxElement element, bool filterTrivia, string prefix)
+    private void AddPartOfSyntaxTree(SyntaxElement element, bool filterTrivia, bool filterEof, string prefix, bool raw)
     {
         switch (element)
         {
             case Token token:
             {
                 if (filterTrivia && token.Kind.IsTrivia)
+                    return;
+                if (filterEof && token.Kind is TokenKind.Eof)
                     return;
 
                 _builder.Append(prefix);
@@ -73,36 +81,109 @@ public class Dump(SourceFileView source)
                 
             case SyntaxNode node:
             {
-                _builder.Append(prefix);
-                _builder.Append($"{node.Kind}");
+                if (!raw)
+                {
+                    _builder.Append(prefix);
+                    _builder.Append($"{node.Kind}");
+                }
 
                 var children = filterTrivia
                     ? [.. node.Children.Where(t => t is Token { Kind.IsTrivia: false } or SyntaxNode)]
                     : node.Children;
                 
-                if (children is [Token token])
+                if (children.All(e => e is Token))
                 {
-                    _builder.Append(": \'");
-                    AddLiteralString(source.GetText(token.Span));
-                    _builder.AppendLine("\'");
+                    foreach (var child in children.OfType<Token>())
+                    {
+                        _builder.Append(" \'");
+                        AddLiteralString(source.GetText(child.Span));
+                        _builder.Append("\'");
+                    }
+
+                    _builder.AppendLine();
                 }
                 else
                 {
                     _builder.AppendLine();
                     foreach (var child in children)
-                        AddPartOfSyntaxTree(child, filterTrivia, prefix + "| ");
+                        AddPartOfSyntaxTree(child, filterTrivia, filterEof, raw ? prefix : prefix + "| ", raw: false);
                 }
                 break;
             }
         }
     }
-    
-    public Dump Add(SyntaxNode node, bool filterTrivia)
+
+    public Dump AddChildren(SyntaxNode node, bool filterTrivia, bool filterEof)
     {
-        AddPartOfSyntaxTree(node, filterTrivia, "");
+        if (_builder.Length > 0)
+            _builder.AppendLine();
+        
+        AddPartOfSyntaxTree(node, filterTrivia, filterEof, "", raw: true);
 
         return this;
     }
+    
+    public Dump Add(SyntaxNode node, bool filterTrivia, bool filterEof)
+    {
+        if (_builder.Length > 0)
+            _builder.AppendLine();
+        
+        AddPartOfSyntaxTree(node, filterTrivia, filterEof, "", raw: false);
+
+        return this;
+    }
+
+    
+    public Dump AddSExpr(SyntaxNode node)
+    {
+        if (_builder.Length > 0)
+            _builder.AppendLine();
+
+        AddSExprInner(node);
+        return this;
+    }
+
+    private void AddSExprInner(SyntaxElement element)
+    {
+        switch (element)
+        {
+            case Token { Kind.IsTrivia: true }:
+            case Token { Kind: TokenKind.Eof }:
+                return;
+
+            case Token token:
+                _builder.Append('\'');
+                AddLiteralString(source.GetText(token.Span));
+                _builder.Append("\' ");
+                break;
+
+            case SyntaxNode node:
+                var nonTriviaChildren = node.Children
+                    .Where(t => t is SyntaxNode or Token { Kind.IsTrivia: false })
+                    .ToList();
+                if (nonTriviaChildren is [Token singleToken])
+                {
+                    AddSExprInner(singleToken);
+                    return;
+                }
+
+                _builder.Append('(');
+                if (node.Kind is not (SyntaxKind.UnaryExpr or SyntaxKind.BinaryExpr))
+                    _builder.Append($"[{node.Kind}]: ");
+                    
+                foreach (var child in nonTriviaChildren)
+                    AddSExprInner(child);
+                
+                if (_builder.Length > 0 && _builder[^1] is ' ')
+                    _builder.Remove(_builder.Length - 1, 1);
+                _builder.Append(") ");
+                break;
+
+        }
+    }
+    
+    
+    
     
     private void AddLiteralString(ReadOnlySpan<char> text)
     {
