@@ -10,8 +10,6 @@
   * `1+` BinaryExpr or Error?
   * Fn decls should be FnDecl even if wrong for decltable
 
-* NewlineBeforeToken: Accept prev=null
-
 * diagnostic positions
   1. UnexpectedToken takes Missing|Advanced tags
   2. Special MissingToken diagnostic

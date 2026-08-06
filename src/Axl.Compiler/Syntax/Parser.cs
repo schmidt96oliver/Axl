@@ -19,6 +19,8 @@ public partial class Parser
         _diagnosticBag = diagnosticBag;
     }
 
+    
+    #region Helpers
 
     private bool AdvanceOrError(TokenKind expectedKind)
     {
@@ -49,7 +51,16 @@ public partial class Parser
         => _diagnosticBag.ReportError(new Diagnostic.UnexpectedToken(
             _source, _scanner.Peek(0), expected));
 
-
+    private bool HasNewlineBeforeNextToken()
+    {
+        var spanToNextToken = _scanner.PreviousToken is null
+            ? _source.SpanFromTo(0, _scanner.Peek().Span.End)
+            : SourceSpan.Between(_scanner.PreviousToken.Span, _scanner.Peek().Span);
+        return _source.GetText(spanToNextToken).Contains('\n');
+    }
+    
+    #endregion
+    
 
     private void Parse()
     {
@@ -592,17 +603,6 @@ public partial class Parser
                 }
             }
         }
-    }
-
-    
-
-    private bool HasNewlineBeforeNextToken()
-    {
-        if (_scanner.PreviousToken is null)
-            return false;
-        
-        var spanToNextToken = SourceSpan.Between(_scanner.PreviousToken.Span, _scanner.Peek().Span);
-        return _source.GetText(spanToNextToken).Contains('\n');
     }
 
     #endregion
