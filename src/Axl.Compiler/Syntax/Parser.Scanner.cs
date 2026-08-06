@@ -1,5 +1,6 @@
 using System.Collections.Immutable;
 using System.Diagnostics;
+using System.Text;
 
 namespace Axl.Compiler.Syntax;
 
@@ -19,7 +20,17 @@ public partial class Parser
     /// Only meaningful on <see cref="ParseEventKind.Open"/>.
     /// <c>null</c> if no kind has been assigned yet.
     /// </param>
-    private readonly record struct ParseEvent(ParseEventKind EventKind, SyntaxKind SyntaxKind = SyntaxKind.Error);
+    private readonly record struct ParseEvent(ParseEventKind EventKind, SyntaxKind? SyntaxKind = null)
+    {
+        public override string ToString()
+            => EventKind switch
+            {
+                ParseEventKind.Open => $"Open {SyntaxKind?.ToString() ?? "?"}",
+                ParseEventKind.Close => "Close",
+                ParseEventKind.Advance => "Advance",
+                _ => throw new UnreachableException()
+            };
+    }
 
     private readonly record struct MarkOpen(int OpenIndex);
 
@@ -187,10 +198,10 @@ public partial class Parser
 
         
         public bool IsAt(TokenKind kind)
-            => Peek(0).Kind == kind;
+            => Peek().Kind == kind;
 
         public bool IsAt(TokenSet set)
-            => set.Contains(Peek(0).Kind);
+            => set.Contains(Peek().Kind);
 
         public bool TryAdvance(TokenKind expectedKind)
         {
@@ -207,6 +218,37 @@ public partial class Parser
         {
             Debug.Assert(IsAt(knownKind));
             return Advance();
+        }
+
+
+        /// <summary>
+        /// Meant to be executed from the debugger for a better view
+        /// of the parsers events.
+        /// </summary>
+        /// <returns></returns>
+        internal string ToDebugString(SourceFileView source)
+        {
+            var tokenIndex = 0;
+            var builder = new StringBuilder();
+            foreach (var e in _events)
+            {
+                if (e.EventKind is ParseEventKind.Advance)
+                {
+                    var text = source.GetText(_tokens[tokenIndex].Span);
+                    builder.Append($"\'{text}\' ");
+                    tokenIndex++;
+                }
+                else if (e.EventKind is ParseEventKind.Open)
+                {
+                    builder.Append($"[{e.SyntaxKind?.ToString() ?? "?"} ");
+                }
+                else
+                {
+                    builder.Append("]");
+                }
+            }
+
+            return builder.ToString();
         }
     }
 }

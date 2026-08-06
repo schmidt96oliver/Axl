@@ -106,7 +106,8 @@ public partial class Parser
                     break;
 
                 case ParseEventKind.Open:
-                    nodes.Push(new BuildingNode(e.SyntaxKind, ImmutableArray.CreateBuilder<SyntaxElement>()));
+                    Debug.Assert(e.SyntaxKind is not null, "Unclosed node");
+                    nodes.Push(new BuildingNode(e.SyntaxKind.Value, ImmutableArray.CreateBuilder<SyntaxElement>()));
                     break;
 
                 case ParseEventKind.Close:
