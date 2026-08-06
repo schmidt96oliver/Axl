@@ -65,19 +65,8 @@ public partial class Parser
     
     #endregion
     
-
-    private void Parse()
-    {
-        var file = _scanner.Open();
-
-        foreach (var _ in _scanner.MustAdvanceUntilEnd())
-        {
-            ParseStmt();
-        }
-
-        _scanner.Close(file, SyntaxKind.TreeRoot);
-    }
-
+    #region Tree Building
+    
     private record BuildingNode(SyntaxKind Kind, ImmutableArray<SyntaxElement>.Builder Nodes);
 
     private SyntaxTree BuildTree()
@@ -156,6 +145,9 @@ public partial class Parser
         throw new UnreachableException();
     }
 
+    #endregion
+    
+    
     public static SyntaxTree Parse(SourceFileView source)
     {
         var diagnosticBag = new DiagnosticBag();
@@ -170,6 +162,18 @@ public partial class Parser
 
     #region Parsing
 
+    private void Parse()
+    {
+        var file = _scanner.Open();
+
+        foreach (var _ in _scanner.MustAdvanceUntilEnd())
+        {
+            ParseStmt();
+        }
+
+        _scanner.Close(file, SyntaxKind.TreeRoot);
+    }
+    
     private void ParseStmt()
     {
         var markOpen = _scanner.Open();
@@ -178,7 +182,7 @@ public partial class Parser
         {
             // Checked here, because the diagnostic below is better than
             // the generic "expected an expression".
-            var parsed = TryParseOperandExpr(null);
+            var parsed = TryParseOperandExpr(left: null);
             Debug.Assert(parsed);
 
             AdvanceOrError(TokenKind.Semicolon);
@@ -192,15 +196,13 @@ public partial class Parser
         _scanner.Close(markOpen, SyntaxKind.Error);
     }
 
-    
-    
     /// <summary>
     /// Reports a missing expression and returns <c>false</c>, if the
     /// scanner is not at an expression.
     /// </summary>
     private bool TryParseExpr()
     {
-        return TryParseOperandExpr(null);
+        return TryParseOperandExpr(left: null);
     }
 
     #endregion
@@ -215,16 +217,18 @@ public partial class Parser
     /// </summary>
     private bool TryParseOperandExpr(LeftOperator? left)
     {
+        // Report missing, if not at a valid first OperandExpr
+        // token.
         if (!_scanner.IsAt(FirstSet.OperandExpr))
         {
             ReportMissing(expected: SyntaxCategory.Expr);
             return false;
         }
 
+        // --- Head
         var lhs = ParseOperandExprHead();
 
-        //TODO: Special case `(` (that is currently a normal infix operator)
-
+        // --- Pratt loop
         foreach (var _ in _scanner.MustAdvanceUntilEnd())
         {
             // --- Read operator and check precedence
@@ -238,17 +242,31 @@ public partial class Parser
                 ? PrecedenceTable.Compare(actualLeft.Precedence, opPrecedence.Value)
                 : PrecedenceComparison.RightBindsTighter;
 
-            // Ambiguous operators belong to the enclosing loop. It will
-            // collect all ambiguous operators in ParseOperandExprTail. Note
-            // that for the precedence to be ambiguous, we must be on a tail,
-            // so we never drop an ambiguous operator. However, callers must call
-            // ParseOperandExprTail instead of this method.
-            if (precedenceComparison is PrecedenceComparison.LeftBindsTighter 
-                or PrecedenceComparison.Ambiguous)
+            // --- Ambiguous?
+            if (precedenceComparison is PrecedenceComparison.Ambiguous)
+            {
+                // For the precedence to be ambiguous, we must be on a tail,
+                // so we never drop an ambiguous operator.
+                Debug.Assert(left is not null);
+
+                // Ambiguous operators belong to the enclosing loop, which will
+                // collect all ambiguous operators in ParseOperandExprTail.
                 break;
+                
+            }
+            
+            // --- Correct binding power?
+            if (precedenceComparison is PrecedenceComparison.LeftBindsTighter)
+            {
+                // The left side bind tighter, so we stop here and let the enclosing
+                // loop handle that operator.
+                break;
+            }
 
             // --- Open expression, advance operator
             var expr = _scanner.OpenBefore(lhs);
+            
+            //TODO: Special case `(` and '.' (which parse specially)
             _scanner.Advance();
 
             // --- Parse tail
@@ -264,24 +282,24 @@ public partial class Parser
     private MarkClose ParseOperandExprHead()
     {
         Debug.Assert(_scanner.IsAt(FirstSet.OperandExpr));
-
+        
         // --- String
         if (_scanner.IsAt(TokenKind.StringStart))
-        {
             return ParseStringExpr();
-        }
         
+        // For everything else, we can advance a token
+        // already and then switch on it.
         var openMark = _scanner.Open();
         var token = _scanner.Advance();
         
-        // --- Prefix
+        // --- Prefix Operator
         if (PrecedenceTable.TryGetPrefixPrecedence(token.Kind) is Precedence prefixPrecedence)
         {
             var wasNonAmbiguousTail = ParseOperandExprTail(new LeftOperator(prefixPrecedence, token));
             return _scanner.Close(openMark, wasNonAmbiguousTail ? SyntaxKind.UnaryExpr : SyntaxKind.Error);
         }
         
-
+        // Switch on everything else
         switch (token.Kind)
         {
             // --- Group
@@ -296,7 +314,13 @@ public partial class Parser
 
             case TokenKind.Identifier:
                 return _scanner.Close(openMark, SyntaxKind.Identifier);
-
+            
+            case TokenKind.TrueKw:
+                return _scanner.Close(openMark, SyntaxKind.TrueLiteral);
+            case TokenKind.FalseKw:
+                return _scanner.Close(openMark, SyntaxKind.FalseLiteral);
+            
+            // --- Native Types
             case TokenKind.I32Kw:
             case TokenKind.I64Kw:
             case TokenKind.F32Kw:
@@ -304,11 +328,6 @@ public partial class Parser
             case TokenKind.NoneKw:
             case TokenKind.StringKw:
                 return _scanner.Close(openMark, SyntaxKind.NativeTypeName);
-            
-            case TokenKind.TrueKw:
-                return _scanner.Close(openMark, SyntaxKind.TrueLiteral);
-            case TokenKind.FalseKw:
-                return _scanner.Close(openMark, SyntaxKind.FalseLiteral);
         }
 
         throw new UnreachableException();

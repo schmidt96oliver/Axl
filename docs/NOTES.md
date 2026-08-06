@@ -30,9 +30,6 @@
     * } handling
     * multi-line with empty interpolations
 
-* assert: ParseOpendExpr &Co: Assert IsAt _in branch_ and !IsAt _at end_
-
-* document and play a little
 * `(` as call needs special casing
 * `.` check its parsing according to grammar
 
