@@ -1,4 +1,5 @@
-﻿using System.Diagnostics;
+﻿using System.Collections.Immutable;
+using System.Diagnostics;
 using Axl.Compiler.Syntax;
 
 namespace Axl.Compiler.Diagnostics;
@@ -119,19 +120,27 @@ public abstract partial record Diagnostic
         }
     }
 
-    public sealed record InvalidOperatorChaining(SourceFileView Source, Token LeftOperator, Token OperatorToken) : Error
+    public sealed record InvalidOperatorChaining(SourceFileView Source, ImmutableArray<Token> OffendingOperators) : Error
     {
-        public override SourceLocation Location => Source.GetLocation(OperatorToken.Span);
+        public override SourceLocation Location => Source.GetLocation(OffendingOperators[0].Span);
 
-        public override string Message =>
-            $"Cannot chain {LeftOperator.Kind.DisplayName} and {OperatorToken.Kind.DisplayName}.";
+        public override string Message
+        {
+            get
+            {
+                var commaOps = string.Join(", ", OffendingOperators[..^1].Select(t => t.Kind.DisplayName));
+                return $"Cannot chain {commaOps} and {OffendingOperators[^1].Kind.DisplayName}.";
+            }
+        }
+        
 
         public override string Hint => "Use parentheses to disambiguate :).";
 
         public override IReadOnlyList<LabeledSourceLocation> Related =>
         [
-            new(Source.GetLocation(LeftOperator.Span),
-                "Conflicts with this operator."),
+            .. OffendingOperators[1..].Select(offendingOp => new LabeledSourceLocation(
+                Source.GetLocation(offendingOp.Span),
+                "Conflicts with this operator."))
         ];
     }
 }

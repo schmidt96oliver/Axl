@@ -221,13 +221,14 @@ public partial class Parser
             return false;
         }
 
-        var lhs = ParsePrimaryOperandExpr();
+        var lhs = ParseOperandExprHead();
 
         //TODO: Special case `(` (that is currently a normal infix operator)
 
         foreach (var _ in _scanner.MustAdvanceUntilEnd())
         {
-            var opToken = _scanner.Peek(0);
+            // --- Read operator and check precedence
+            var opToken = _scanner.Peek();
             var opPrecedence = PrecedenceTable.TryGetInfixPrecedence(opToken.Kind);
 
             if (opPrecedence is null)
@@ -237,41 +238,30 @@ public partial class Parser
                 ? PrecedenceTable.Compare(actualLeft.Precedence, opPrecedence.Value)
                 : PrecedenceComparison.RightBindsTighter;
 
-            if (precedenceComparison is PrecedenceComparison.LeftBindsTighter)
+            // Ambiguous operators belong to the enclosing loop. It will
+            // collect all ambiguous operators in ParseOperandExprTail. Note
+            // that for the precedence to be ambiguous, we must be on a tail,
+            // so we never drop an ambiguous operator. However, callers must call
+            // ParseOperandExprTail instead of this method.
+            if (precedenceComparison is PrecedenceComparison.LeftBindsTighter 
+                or PrecedenceComparison.Ambiguous)
                 break;
-            
+
+            // --- Open expression, advance operator
             var expr = _scanner.OpenBefore(lhs);
-            _scanner.Advance();  // Advance the operator
+            _scanner.Advance();
+
+            // --- Parse tail
+            var wasNonAmbiguousTail = ParseOperandExprTail(new LeftOperator(opPrecedence.Value, opToken));
             
-            if (precedenceComparison is PrecedenceComparison.Ambiguous)
-            {
-                // Precedence is ambiguous.
-                // Report the error and continue in this loop. This
-                // will parse the ambiguous operator as right-associative
-                // which is just easier to handle. Close later on will
-                // close with SyntaxKind.Error, since this is not a valid
-                // BinaryExpr.
-
-                // Only Compare can return Ambiguous, and it only runs when
-                // there is a left operator.
-                Debug.Assert(left is not null);
-
-                _diagnosticBag.ReportError(new Diagnostic.InvalidOperatorChaining(
-                    _source, left.Value.Token, opToken));
-            }
-
-            var syntaxKind = precedenceComparison is PrecedenceComparison.Ambiguous
-                ? SyntaxKind.Error
-                : SyntaxKind.BinaryExpr;
-
-            TryParseOperandExpr(new LeftOperator(opPrecedence.Value, opToken));
-            lhs = _scanner.Close(expr, syntaxKind);
+            // --- Close expression
+            lhs = _scanner.Close(expr, wasNonAmbiguousTail ? SyntaxKind.BinaryExpr : SyntaxKind.Error);
         }
 
         return true;
     }
 
-    private MarkClose ParsePrimaryOperandExpr()
+    private MarkClose ParseOperandExprHead()
     {
         Debug.Assert(_scanner.IsAt(FirstSet.OperandExpr));
 
@@ -287,8 +277,8 @@ public partial class Parser
         // --- Prefix
         if (PrecedenceTable.TryGetPrefixPrecedence(token.Kind) is Precedence prefixPrecedence)
         {
-            TryParseOperandExpr(new LeftOperator(prefixPrecedence, token));
-            return _scanner.Close(openMark, SyntaxKind.UnaryExpr);
+            var wasNonAmbiguousTail = ParseOperandExprTail(new LeftOperator(prefixPrecedence, token));
+            return _scanner.Close(openMark, wasNonAmbiguousTail ? SyntaxKind.UnaryExpr : SyntaxKind.Error);
         }
         
 
@@ -323,7 +313,76 @@ public partial class Parser
 
         throw new UnreachableException();
     }
+    
+    /// <summary>
+    /// Parses the right side of any OperandExpr.
+    /// Handles ambiguous operators gracefully:
+    /// It collects all chained ambiguous operators and reports one
+    /// diagnostic for them.
+    /// </summary>
+    /// <returns>
+    /// <c>False</c> iff an ambiguous chain was advanced.
+    /// In contrast to <see cref="TryParseOperandExpr"/> this also returns
+    /// <c>True</c> even if no expression was parsed.
+    /// </returns>
+    private bool ParseOperandExprTail(LeftOperator left)
+    {
+        ImmutableArray<Token>.Builder? ambiguousOperators = null;
 
+        var previousOperatorPrecedence = left.Precedence;
+
+        foreach (var _ in _scanner.MustAdvanceUntilEnd())
+        {
+            // Parse OperandExpr
+            if (!TryParseOperandExpr(left))
+                break;
+
+            // Peek and check if next token is
+            // an operator with ambiguous comparison.
+            var nextOpToken = _scanner.Peek();
+            if (PrecedenceTable.TryGetInfixPrecedence(nextOpToken.Kind) 
+                is not Precedence nextOpPrecedence)
+            {
+                break;
+            }
+
+            if (PrecedenceTable.Compare(previousOperatorPrecedence, nextOpPrecedence) 
+                is not PrecedenceComparison.Ambiguous)
+            {
+                break;
+            }
+
+            previousOperatorPrecedence = nextOpPrecedence;
+
+            // Next operator is ambiguous.
+            // Advance it and parse another expression.
+            _scanner.Advance();
+
+            // If ambiguous operators was empty before, we need to add
+            // the operator that was passed in, because that was already
+            // ambiguous.
+            if (ambiguousOperators is null)
+            {
+                ambiguousOperators = ImmutableArray.CreateBuilder<Token>(); 
+                ambiguousOperators.Add(left.Token);
+            }
+
+            ambiguousOperators.Add(nextOpToken);
+        }
+
+        if (ambiguousOperators is not null)
+        {
+            //Report combined diagnostic.
+            _diagnosticBag.ReportError(new Diagnostic.InvalidOperatorChaining(_source,
+                ambiguousOperators.DrainToImmutable()));
+
+            return false;
+        }
+
+        return true;
+    }
+
+    
     private MarkClose ParseStringExpr()
     {
         Debug.Assert(_scanner.IsAt(TokenKind.StringStart));

@@ -1,6 +1,21 @@
 # ------------------------------------ Axl Project ------------------------------------
                                        ≽(◕ ᴗ ◕)≼
 
+  
+* test: ambiguous chaining
+`a == b == c`
+   ^^   ^^    InvalidChaining
+=> `Error[a "==" b "==" c]`
+
+`a == b == c == d`
+   ^^   ^^   ^^    InvalidChaining
+=> `Error[a "==" b "==" b "==" c]`
+`a == 1+4 == c == d`
+   ^^     ^^   ^^    InvalidChaining
+=> `Error[a "==" BinaryExpr[1+4] "==" b "==" c]`
+`a == 1+4 and 3 == c == d`
+                ^^   ^^    InvalidChaining
+=> `BinaryExpr[BinaryExpr[a == BinaryExpr[1+4]] and Error[3 "=="c "==" d]]`
 
 * StringInterpolation:
   * trace/sort all cases in `ConvolutedStringInterpolation.axl`
@@ -11,10 +26,6 @@
     * typing after expression
     * } handling
     * multi-line with empty interpolations
-  
-* Error nodes?
-  * `1+` BinaryExpr or Error?
-  * Fn decls should be FnDecl even if wrong for decltable
 
 * assert: ParseOpendExpr &Co: Assert IsAt _in branch_ and !IsAt _at end_
 
@@ -26,7 +37,6 @@
 * Asserts in BuildTree
   * Assert SyntaxKind.Error => DiagnosticBag.HasError
 
-* test: ambiguous chaining
 
 # Parser
 [x] Grammar
