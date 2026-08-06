@@ -5,10 +5,10 @@ namespace Axl.Compiler.Diagnostics;
 
 public abstract partial record Diagnostic
 {
-    public sealed record UnclosedString(SourceLocation Location) : Error
+    public sealed record UnclosedString(SourceFileView Source, Token LastToken) : Error
     {
-        public override SourceLocation Location { get; } = Location;
-        public override string Message => "String must be closed.";
+        public override SourceLocation Location => Source.GetLocation(SourceSpan.EmptyAfter(LastToken.Span));
+        public override string Message => "String has not been closed.";
     }
 
     public sealed record UnexpectedToken : Error

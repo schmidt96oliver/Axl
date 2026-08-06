@@ -328,7 +328,7 @@ public partial class Parser
         Debug.Assert(_scanner.IsAt(TokenKind.StringStart));
 
         var expr = _scanner.Open();
-        var stringStartToken = _scanner.AdvanceKnown(TokenKind.StringStart);
+        _scanner.AdvanceKnown(TokenKind.StringStart);
 
         foreach (var _ in _scanner.MustAdvanceUntilEnd())
         {
@@ -353,12 +353,7 @@ public partial class Parser
                     
                 // --- Anything else is an unclosed string
                 default:
-                    // We advanced at least the StringStart token, so there must be a 
-                    // previous token.
-                    Debug.Assert(_scanner.PreviousToken is not null);
-                    
-                    _diagnosticBag.ReportError(new Diagnostic.UnclosedString(_source.GetLocation(
-                        SourceSpan.FromTo(stringStartToken.Span, _scanner.PreviousToken.Span))));
+                    ReportUnclosedString();
                     return _scanner.Close(expr, SyntaxKind.StringExpr);
             }
         }
@@ -368,10 +363,18 @@ public partial class Parser
         // previous token.
         Debug.Assert(_scanner.PreviousToken is not null);
         
-        _diagnosticBag
-            .ReportError(new Diagnostic.UnclosedString(_source.GetLocation(
-            SourceSpan.FromTo(stringStartToken.Span, _scanner.PreviousToken.Span))));
+        ReportUnclosedString();
         return _scanner.Close(expr, SyntaxKind.StringExpr);
+
+        void ReportUnclosedString()
+        {
+            // There must be at least a StringStart token which has been advanced.
+            Debug.Assert(_scanner.PreviousToken is not null);
+            
+            _diagnosticBag.ReportError(new Diagnostic.UnclosedString(
+                _source,
+                LastToken: _scanner.PreviousToken));
+        }
     }
 
     private void ParseStringInterpolation()
