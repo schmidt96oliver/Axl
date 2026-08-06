@@ -10,6 +10,7 @@ public class SourceFileTests
     [InlineData("")]
     [InlineData(" ", " ")]
     [InlineData("\n", "\n")]
+    [InlineData("\n ", "\n", " ")]
     [InlineData(" \n", " \n")]
     [InlineData(" \n ", " \n", " ")]
     [InlineData("a\n", "a\n")]
@@ -84,6 +85,26 @@ public class SourceFileTests
         linePos.Column.ShouldBe(expectedColumn);
     }
 
+    [Theory]
+    [InlineData("", 0, 0)]
+    [InlineData("\n", 1, 0)]
+    [InlineData("a", 0, 1)]
+    [InlineData("ab", 0, 2)]
+    [InlineData("ab\n", 1, 0)]
+    [InlineData("ab\nc", 1, 1)]
+    [InlineData("a\n\n", 2, 0)]
+    private void EofPosition(string text, int expectedLine, int expectedColumn)
+    {
+        var sourceFile = SourceFile.FromText(text);
+        
+        sourceFile.Lines.IsDefault.ShouldBeFalse();
+
+        var eofPos = sourceFile.EofLinePosition;
+        eofPos.Line.ShouldBe(expectedLine);
+        eofPos.Column.ShouldBe(expectedColumn);
+    }
+    
+    
     [Fact]
     private void Lines_EvaluatedOnce()
     {

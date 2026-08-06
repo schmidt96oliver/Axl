@@ -1,8 +1,6 @@
 using System.Collections.Immutable;
-using System.Diagnostics;
 using System.Text.RegularExpressions;
 using Axl.Compiler;
-using Axl.Compiler.Diagnostics;
 using Axl.Compiler.Syntax;
 using OmniSharp.Extensions.LanguageServer.Protocol;
 using OmniSharp.Extensions.LanguageServer.Protocol.Client.Capabilities;
@@ -253,39 +251,8 @@ public class SemanticTokensHandler(ILanguageServerFacade facade) : SemanticToken
 
     private Range LocationToRange(SourceLocation location)
     {
-        // --- Empty at EOF?
-        if (location.Span.First >= location.File.Text.Length)
-        {
-            // Location is at eof
-            if (location.File.Lines.Length == 0)
-                return new Range(0, 0, 0, 0);
-
-            var line = location.File.Lines[^1];
-            var pos = new Position(line: line.LineNumber,
-                character: line.Span.Length);
-            return new Range(start: pos, end: pos);
-
-        }
-        
-        var startLinePos = location.GetFirstLinePosition();
-
-        // --- End at EOF?
-        if (location.Span.End >= location.File.Text.Length)
-        {
-            // First was _not_ on eof, which means that there must be at
-            // least one line.
-            Debug.Assert(location.File.Lines.Length > 0);
-            
-            // It ends on EOF
-            var lastLine = location.File.Lines[^1];
-            var eofPos = new Position(line: lastLine.LineNumber,
-                character: lastLine.Span.Length);
-
-            return new Range(new Position(startLinePos.Line, startLinePos.Column), eofPos);
-        }
-        
-        // --- Everything inside text
-        var endLinePos = location.File.GetLinePosition(location.Span.End);
+        var startLinePos = location.File.GetLinePositionOrEof(location.Span.First);
+        var endLinePos = location.File.GetLinePositionOrEof(location.Span.End);
         return new Range(startLinePos.Line, startLinePos.Column, endLinePos.Line, endLinePos.Column);
     }
 

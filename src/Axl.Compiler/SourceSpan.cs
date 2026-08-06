@@ -1,12 +1,10 @@
-﻿using System.Diagnostics;
-
-namespace Axl.Compiler;
+﻿namespace Axl.Compiler;
 
 /// <summary>
 /// Span of text inside <see cref="SourceFile"/>.
 /// Never refers to <see cref="SourceFileView"/>.
 /// 
-/// Indices are UTF-16 code point indices as indexed by <see cref="string"/>.
+/// Indices are UTF-16 code unit indices as indexed by <see cref="string"/>.
 /// </summary>
 /// <remark>
 /// A <see cref="SourceSpan"/> does not keep a reference to the <see cref="SourceFile"/>

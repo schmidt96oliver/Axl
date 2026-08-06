@@ -28,6 +28,29 @@ public sealed class SourceFile
         }
     }
 
+    /// <summary>
+    /// Gets the EOF line position. If the text ends in a
+    /// newline, the returned line number is _not_ contained
+    /// in <see cref="Lines"/>!
+    /// </summary>
+    public LinePosition EofLinePosition
+    {
+        get
+        {
+            if (Text.Length == 0)
+                return new LinePosition(0, 0);
+            if (Text[^1] is '\n')
+            {
+                // File ends on \n, so EOF must be on the next
+                // line. However, Lines consume \n and the eof
+                // line will not be contained in lines.
+                return new LinePosition(Lines.Length, 0);
+            }
+
+            return new LinePosition(Lines[^1].LineNumber, Lines[^1].Length);
+        }
+    }
+
 
     private SourceFile(string? path, string text)
     {
@@ -119,6 +142,16 @@ public sealed class SourceFile
         return new LinePosition(line.LineNumber, index - line.Span.First);
     }
 
+    public LinePosition GetLinePositionOrEof(int index)
+    {
+        Guard.InRange(index >= 0);
+        Guard.InRange(index <= Text.Length);
+
+        return index < Text.Length
+            ? GetLinePosition(index)
+            : EofLinePosition;
+    }
+    
     
     public ReadOnlySpan<char> GetText(SourceSpan span)
     {
