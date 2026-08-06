@@ -138,9 +138,13 @@ public abstract partial record Diagnostic
 
         public override IReadOnlyList<LabeledSourceLocation> Related =>
         [
+            // Every operator in the chain is equally at fault, so they all get
+            // underlined - underlining only the first one would suggest the
+            // others are fine.
             .. OffendingOperators[1..].Select(offendingOp => new LabeledSourceLocation(
                 Source.GetLocation(offendingOp.Span),
-                "Conflicts with this operator."))
+                "Conflicts with this operator.",
+                IsPrimary: true))
         ];
     }
 }

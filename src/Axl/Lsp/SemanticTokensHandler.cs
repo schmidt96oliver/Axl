@@ -39,7 +39,7 @@ public class SemanticTokensHandler(ILanguageServerFacade facade) : SemanticToken
         facade.TextDocument.PublishDiagnostics(new PublishDiagnosticsParams()
         {
             Uri = identifier.TextDocument.Uri,
-            Diagnostics = tree.Diagnostics.ToLsp()
+            Diagnostics = DiagnosticConverter.Convert(tree.Diagnostics)
         });
         
         // --- Build semantic tokens
