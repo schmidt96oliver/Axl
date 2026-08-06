@@ -248,7 +248,7 @@ public partial class Parser
                 // there is a left operator.
                 Debug.Assert(left is not null);
 
-                _diagnosticBag.ReportError(new Diagnostic.AmbiguousPrecedence(
+                _diagnosticBag.ReportError(new Diagnostic.InvalidOperatorChaining(
                     _source, left.Value.Token, opToken));
             }
 

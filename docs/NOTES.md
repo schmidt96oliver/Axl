@@ -16,7 +16,6 @@
   * Fn decls should be FnDecl even if wrong for decltable
 
 * UnclosedString diagnostic: put at end/last text --or-- using MissingToken
-* rename AmbigousPrecedence -> InvalidOperatorChaining
 
 * cleanup? Extract FirstSet.OperandExpr, ...
   * assert: ParseOpendExpr &Co: Assert IsAt _in branch_ and !IsAt _at end_

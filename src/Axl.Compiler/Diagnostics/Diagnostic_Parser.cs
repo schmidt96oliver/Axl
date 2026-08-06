@@ -119,19 +119,18 @@ public abstract partial record Diagnostic
         }
     }
 
-    public sealed record AmbiguousPrecedence(SourceFileView Source, Token LeftOperator, Token OperatorToken) : Error
+    public sealed record InvalidOperatorChaining(SourceFileView Source, Token LeftOperator, Token OperatorToken) : Error
     {
         public override SourceLocation Location => Source.GetLocation(OperatorToken.Span);
 
         public override string Message =>
             $"Cannot chain {LeftOperator.Kind.DisplayName} and {OperatorToken.Kind.DisplayName}.";
 
-        public override string? Hint => "Use parentheses to disambiguate :).";
+        public override string Hint => "Use parentheses to disambiguate :).";
 
         public override IReadOnlyList<LabeledSourceLocation> Related =>
         [
-            new LabeledSourceLocation(
-                Source.GetLocation(LeftOperator.Span),
+            new(Source.GetLocation(LeftOperator.Span),
                 "Conflicts with this operator."),
         ];
     }
