@@ -20,7 +20,7 @@ public sealed class LexerTests
         return tokens;
     }
     
-    private string Lex(string input)
+    private string All(string input)
     {
         var tokens = LexTokens(input, out var diagnostics, out var source);
         return new Dump(source)
@@ -29,7 +29,7 @@ public sealed class LexerTests
             .ToString();
     }
 
-    private string LexIgnoreWhitespace(string input)
+    private string NoWhitespace(string input)
     {
         var tokens = LexTokens(input, out var diagnostics, out var source);
         return new Dump(source)
@@ -41,18 +41,18 @@ public sealed class LexerTests
 
     [Fact]
     public void EmptyInput()
-        => InlineSnapshot.Validate(Lex(""), "- Eof");
+        => InlineSnapshot.Validate(All(""), "- Eof");
     
     [Fact]
     public void Whitespace()
-        => InlineSnapshot.Validate(Lex("  \n\r\t   "), """
+        => InlineSnapshot.Validate(All("  \n\r\t   "), """
             - Whitespace: "  \n\r\t   "
             - Eof
             """);
 
     [Fact]
     public void Comment()
-        => InlineSnapshot.Validate(Lex("""
+        => InlineSnapshot.Validate(All("""
                                          // Hello
                                          // Second
                                        """), """
@@ -65,7 +65,7 @@ public sealed class LexerTests
     
     [Fact]
     public void InvalidCharacters_Sequence()
-        => InlineSnapshot.Validate(Lex("@@@##"),
+        => InlineSnapshot.Validate(All("@@@##"),
             """
             ERROR UnknownCharacters@[0, 1): Unknown character '@'.
             ERROR UnknownCharacters@[1, 2): Unknown character '@'.
@@ -79,7 +79,7 @@ public sealed class LexerTests
 
     [Fact]
     public void InvalidCharacters_UnicodeSurrogate()
-        => InlineSnapshot.Validate(Lex("🂦"), """
+        => InlineSnapshot.Validate(All("🂦"), """
             ERROR UnknownCharacters@[0, 1): Unknown character '\uD83C'.
             ERROR UnknownCharacters@[1, 2): Unknown character '\uDCA6'.
 
@@ -89,7 +89,7 @@ public sealed class LexerTests
 
     [Fact]
     public void Keywords()
-        => InlineSnapshot.Validate(LexIgnoreWhitespace("fn var module public private native return if else loop break continue and or not true false i32 f32 i64 f64 bool string char none using"), """
+        => InlineSnapshot.Validate(NoWhitespace("fn var module public private native return if else loop break continue and or not true false i32 f32 i64 f64 bool string char none using"), """
             - FnKw: "fn"
             - VarKw: "var"
             - ModuleKw: "module"
@@ -121,7 +121,7 @@ public sealed class LexerTests
 
     [Fact]
     public void IdentifierVsKeyword()
-        => InlineSnapshot.Validate(LexIgnoreWhitespace("fn vara aif _private else_ false0 False I32"), """
+        => InlineSnapshot.Validate(NoWhitespace("fn vara aif _private else_ false0 False I32"), """
             - FnKw: "fn"
             - Identifier: "vara"
             - Identifier: "aif"
@@ -143,7 +143,7 @@ public sealed class LexerTests
 
     [Fact]
     public void Symbols_Equals()
-        => InlineSnapshot.Validate(LexIgnoreWhitespace("=== != <<=>>= =>= ++=--="), """
+        => InlineSnapshot.Validate(NoWhitespace("=== != <<=>>= =>= ++=--="), """
             - DoubleEqual: "=="
             - Equal: "="
             - BangEqual: "!="
@@ -162,7 +162,7 @@ public sealed class LexerTests
 
     [Fact]
     public void Symbols_Other()
-        => InlineSnapshot.Validate(LexIgnoreWhitespace("(){}<>-->.,;:"),
+        => InlineSnapshot.Validate(NoWhitespace("(){}<>-->.,;:"),
             """
             - OpenParen: "("
             - CloseParen: ")"
@@ -182,7 +182,7 @@ public sealed class LexerTests
 
     [Fact]
     public void Numbers_Integral()
-        => InlineSnapshot.Validate(LexIgnoreWhitespace("1234 1_2_3_4 12_ 12_i32 1i64 1_2_f32 1f64"), """
+        => InlineSnapshot.Validate(NoWhitespace("1234 1_2_3_4 12_ 12_i32 1i64 1_2_f32 1f64"), """
             - NumberLiteral: "1234" body="1234" suffix=None
             - NumberLiteral: "1_2_3_4" body="1234" suffix=None
             - NumberLiteral: "12_" body="12" suffix=None
@@ -195,7 +195,7 @@ public sealed class LexerTests
 
     [Fact]
     public void Numbers_WithDot()
-        => InlineSnapshot.Validate(LexIgnoreWhitespace("11.11 .111 1_1_.1_123 1.1_f32 .1_f64 1.1i32 .1111i64"), """
+        => InlineSnapshot.Validate(NoWhitespace("11.11 .111 1_1_.1_123 1.1_f32 .1_f64 1.1i32 .1111i64"), """
             - NumberLiteral: "11.11" body="11.11" suffix=None
             - NumberLiteral: ".111" body=".111" suffix=None
             - NumberLiteral: "1_1_.1_123" body="11.1123" suffix=None
@@ -208,7 +208,7 @@ public sealed class LexerTests
 
     [Fact]
     public void Numbers_BinaryForm()
-        => InlineSnapshot.Validate(LexIgnoreWhitespace("0b1100 0b1_0_1 0b01_"), """
+        => InlineSnapshot.Validate(NoWhitespace("0b1100 0b1_0_1 0b01_"), """
             - NumberLiteral: "0b1100" body="0b1100" suffix=None
             - NumberLiteral: "0b1_0_1" body="0b101" suffix=None
             - NumberLiteral: "0b01_" body="0b01" suffix=None
@@ -217,7 +217,7 @@ public sealed class LexerTests
     
     [Fact]
     public void Numbers_RejectedBinaryForms()
-        => InlineSnapshot.Validate(LexIgnoreWhitespace("0b1100f32 0b0123 0b 0b_1"), """
+        => InlineSnapshot.Validate(NoWhitespace("0b1100f32 0b0123 0b 0b_1"), """
             ERROR UnknownNumberSuffix@[18, 19): Only 'i32', 'i64', 'f32' or 'f64' are valid number suffixes. Got 'b'.
             ERROR UnknownNumberSuffix@[21, 24): Only 'i32', 'i64', 'f32' or 'f64' are valid number suffixes. Got 'b_1'.
 
@@ -232,7 +232,7 @@ public sealed class LexerTests
 
     [Fact]
     public void Numbers_HexForm()
-        => InlineSnapshot.Validate(LexIgnoreWhitespace("0x0123456789ABCDEFabcdef 0x0_F_F 0x0F_ 0x0Ff32 0x0F_f32"), """
+        => InlineSnapshot.Validate(NoWhitespace("0x0123456789ABCDEFabcdef 0x0_F_F 0x0F_ 0x0Ff32 0x0F_f32"), """
             - NumberLiteral: "0x0123456789ABCDEFabcdef" body="0x0123456789ABCDEFabcdef" suffix=None
             - NumberLiteral: "0x0_F_F" body="0x0FF" suffix=None
             - NumberLiteral: "0x0F_" body="0x0F" suffix=None
@@ -243,7 +243,7 @@ public sealed class LexerTests
     
     [Fact]
     public void Numbers_RejectedHexForms()
-        => InlineSnapshot.Validate(LexIgnoreWhitespace("0x0Fi32 0xG 0xh 0xXYZ 0xg 0x 0x_1"), """
+        => InlineSnapshot.Validate(NoWhitespace("0x0Fi32 0xG 0xh 0xXYZ 0xg 0x 0x_1"), """
             ERROR UnknownNumberSuffix@[9, 11): Only 'i32', 'i64', 'f32' or 'f64' are valid number suffixes. Got 'xG'.
             ERROR UnknownNumberSuffix@[13, 15): Only 'i32', 'i64', 'f32' or 'f64' are valid number suffixes. Got 'xh'.
             ERROR UnknownNumberSuffix@[17, 21): Only 'i32', 'i64', 'f32' or 'f64' are valid number suffixes. Got 'xXYZ'.
@@ -264,7 +264,7 @@ public sealed class LexerTests
     
     [Fact]
     public void NumberDotIdentifier()
-        => InlineSnapshot.Validate(LexIgnoreWhitespace("1. 1.f32 1.1. 1.1.f32 ._1_1"), """
+        => InlineSnapshot.Validate(NoWhitespace("1. 1.f32 1.1. 1.1.f32 ._1_1"), """
             - NumberLiteral: "1" body="1" suffix=None
             - Dot: "."
             - NumberLiteral: "1" body="1" suffix=None
@@ -282,7 +282,7 @@ public sealed class LexerTests
     
     [Fact]
     public void Numbers_InvalidSuffixes()
-        => InlineSnapshot.Validate(LexIgnoreWhitespace("1f3245 4ghr 1g_445df_12 1f64a 1f644"), """
+        => InlineSnapshot.Validate(NoWhitespace("1f3245 4ghr 1g_445df_12 1f64a 1f644"), """
             ERROR UnknownNumberSuffix@[1, 6): Only 'i32', 'i64', 'f32' or 'f64' are valid number suffixes. Got 'f3245'.
             ERROR UnknownNumberSuffix@[8, 11): Only 'i32', 'i64', 'f32' or 'f64' are valid number suffixes. Got 'ghr'.
             ERROR UnknownNumberSuffix@[13, 23): Only 'i32', 'i64', 'f32' or 'f64' are valid number suffixes. Got 'g_445df_12'.
@@ -300,7 +300,7 @@ public sealed class LexerTests
 
     [Fact]
     public void Strings_Empty()
-        => InlineSnapshot.Validate(Lex("\"\""), """"
+        => InlineSnapshot.Validate(All("\"\""), """"
             - StringStart: """
             - StringEnd: """
             - Eof
@@ -308,7 +308,7 @@ public sealed class LexerTests
     
     [Fact]
     public void Strings_Plain()
-        => InlineSnapshot.Validate(Lex("\"Abcdefg //test @.;- f32 fn 🂦🂦 \""), """"
+        => InlineSnapshot.Validate(All("\"Abcdefg //test @.;- f32 fn 🂦🂦 \""), """"
             - StringStart: """
             - StringText: "Abcdefg //test @.;- f32 fn \uD83C\uDCA6\uD83C\uDCA6 " processed="Abcdefg //test @.;- f32 fn 🂦🂦 "
             - StringEnd: """
@@ -317,7 +317,7 @@ public sealed class LexerTests
     
     [Fact]
     public void Strings_Unclosed()
-        => InlineSnapshot.Validate(Lex("""
+        => InlineSnapshot.Validate(All("""
                                         "000
                                         "000
                                         """), """"
@@ -331,7 +331,7 @@ public sealed class LexerTests
     
     [Fact]
     public void Strings_Unclosed_Empty()
-        => InlineSnapshot.Validate(Lex("""
+        => InlineSnapshot.Validate(All("""
                                        "
                                        ABC
                                        "
@@ -346,7 +346,7 @@ public sealed class LexerTests
     
     [Fact]
     public void Strings_Escapes()
-        => InlineSnapshot.Validate(Lex("""
+        => InlineSnapshot.Validate(All("""
                                        "\n \" \{ \} \r \t \\"
                                        """), """"
             - StringStart: """
@@ -359,7 +359,7 @@ public sealed class LexerTests
 
     [Fact]
     public void Strings_UnknownEscapes()
-        => InlineSnapshot.Validate(Lex("""
+        => InlineSnapshot.Validate(All("""
                                        "\a \ \5 \@ \
                                        "
                                        """), """"
@@ -378,7 +378,7 @@ public sealed class LexerTests
 
     [Fact]
     public void Strings_OpenEscapeBeforeNewlineAndEof()
-        => InlineSnapshot.Validate(Lex("""
+        => InlineSnapshot.Validate(All("""
                                        "A\
                                        Id
                                        "A\
@@ -398,7 +398,7 @@ public sealed class LexerTests
 
     [Fact]
     public void Strings_Interpolated_Basic()
-        => InlineSnapshot.Validate(LexIgnoreWhitespace("""
+        => InlineSnapshot.Validate(NoWhitespace("""
                                        "a{b}c" "{abc}c" "{1.1 a b}"
                                        """), """"
             - StringStart: """
@@ -426,7 +426,7 @@ public sealed class LexerTests
     
     [Fact]
     public void Strings_Interpolated_NestedBraces()
-        => InlineSnapshot.Validate(LexIgnoreWhitespace("""
+        => InlineSnapshot.Validate(NoWhitespace("""
                                        "{ if { } else { { a } a } }"
                                        """), """"
             - StringStart: """
@@ -448,7 +448,7 @@ public sealed class LexerTests
     
     [Fact]
     public void Strings_Interpolated_NestedInterpolation()
-        => InlineSnapshot.Validate(LexIgnoreWhitespace("""
+        => InlineSnapshot.Validate(NoWhitespace("""
                                        " { "a" "a { a " b "}" } "
                                        """), """"
             - StringStart: """
@@ -474,7 +474,7 @@ public sealed class LexerTests
 
     [Fact]
     public void Strings_InterpolationWithNewline()
-        => InlineSnapshot.Validate(Lex("""
+        => InlineSnapshot.Validate(All("""
                                        "00{
                                             }00"
                                        """), """"
@@ -490,7 +490,7 @@ public sealed class LexerTests
 
     [Fact]
     public void Strings_UnclosedInterpolation()
-        => InlineSnapshot.Validate(Lex("""
+        => InlineSnapshot.Validate(All("""
                                        "00{ab 
                                        "00{ab "a {
                                        """), """"
@@ -512,7 +512,7 @@ public sealed class LexerTests
 
     [Fact]
     public void Strings_CommentInsideInterpolation()
-        => InlineSnapshot.Validate(Lex("""
+        => InlineSnapshot.Validate(All("""
                                        "00{ab // test}"
                                        """), """"
             - StringStart: """
