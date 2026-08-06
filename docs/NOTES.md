@@ -15,8 +15,7 @@
   * `1+` BinaryExpr or Error?
   * Fn decls should be FnDecl even if wrong for decltable
 
-* cleanup? Extract FirstSet.OperandExpr, ...
-  * assert: ParseOpendExpr &Co: Assert IsAt _in branch_ and !IsAt _at end_
+* assert: ParseOpendExpr &Co: Assert IsAt _in branch_ and !IsAt _at end_
 
 * fix: crash on `()` and probably `(+1)`, `(var)`, ...
   * fix: crash on `-[ EOF]`

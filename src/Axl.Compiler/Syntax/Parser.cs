@@ -173,7 +173,7 @@ public partial class Parser
     {
         var markOpen = _scanner.Open();
 
-        if (_scanner.IsAt(OperandExprFirst))
+        if (_scanner.IsAt(FirstSet.OperandExpr))
         {
             ParseOperandExpr(null);
             AdvanceOrError(TokenKind.Semicolon);
@@ -198,20 +198,9 @@ public partial class Parser
 
     #region Operand Expressions
 
-    private static readonly TokenSet OperandExprFirst = TokenSet.Of(
-        TokenKind.TrueKw, TokenKind.FalseKw,
-        TokenKind.NumberLiteral,
-        TokenKind.I32Kw, TokenKind.I64Kw, TokenKind.F32Kw, TokenKind.F64Kw, TokenKind.StringKw, TokenKind.NoneKw,
-        TokenKind.Identifier,
-        TokenKind.StringStart,
-        TokenKind.OpenParen,
-        TokenKind.Minus, TokenKind.NotKw
-    );
-    private static readonly TokenSet ExprFirst = OperandExprFirst;
-
     private void ParseOperandExpr(LeftOperator? left)
     {
-        Debug.Assert(_scanner.IsAt(OperandExprFirst));
+        Debug.Assert(_scanner.IsAt(FirstSet.OperandExpr));
 
         var lhs = ParsePrimaryOperandExpr();
 
@@ -256,7 +245,7 @@ public partial class Parser
                 ? SyntaxKind.Error
                 : SyntaxKind.BinaryExpr;
 
-            if (_scanner.IsAt(OperandExprFirst))
+            if (_scanner.IsAt(FirstSet.OperandExpr))
             {
                 ParseOperandExpr(new LeftOperator(opPrecedence.Value, opToken));
                 lhs = _scanner.Close(expr, syntaxKind);
@@ -272,7 +261,7 @@ public partial class Parser
 
     private MarkClose ParsePrimaryOperandExpr()
     {
-        Debug.Assert(_scanner.IsAt(OperandExprFirst));
+        Debug.Assert(_scanner.IsAt(FirstSet.OperandExpr));
 
         // --- String
         if (_scanner.IsAt(TokenKind.StringStart))
@@ -414,7 +403,7 @@ public partial class Parser
         // --- Parse Expression, empty interpolation or error
         var errorReported = false;
         
-        if (_scanner.IsAt(ExprFirst))
+        if (_scanner.IsAt(FirstSet.Expr))
             ParseExpr();
         else if (_scanner.IsAt(TokenKind.CloseBrace))
         {
