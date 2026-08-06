@@ -34,9 +34,6 @@
 * `.` check its parsing according to grammar
 
 * proper trivia attachment
-* Asserts in BuildTree
-  * Assert SyntaxKind.Error => DiagnosticBag.HasError
-
 
 # Parser
 [x] Grammar
@@ -50,26 +47,13 @@
 [ ] MemberDecl, (Global)ModuleDecl, UsingDecl
 
 [x] Matklad framework: 
-   * Here token = non-trivia token. Trivia is reattached by tree builder.
-
-   * Open()       = emit Open event -> MarkOpen(index)
-   * OpenBefore(MarkClosed) = emit Open event before another open mark -> MarkOpen(index)
-   * Close(kind)  = emit Close event and set kind -> MarkClose(index of open event)
-   * Advance()    = Emit advance event
-
-   * IsAt(TokenKind), Peek(lookahead) -> TokenKind
-   * TryAdvance(TokenKind) = IsAt ? Advance : false
-   * AdvanceOrReport(TokenKind) = TryAdvance(TokenKind) ? true : report "expected {kind}" error, does not advance, false
-   * AdvanceKnown(TokenKind) = TryAdvance, if false => DEBUG ASSERT
-
-   * Fuel/Safety: Assert parser advanced a token! Consume fuel. It must never loop
 [x] Tree builder: Iterate events
 [ ] Proper trivia handling
 [ ] Anchors: TokenSet as BitSet (see Claude); using Scope style; Anchor stack; FirstSets
    * AtAnchor
 [ ] Code lazily: SyntaxViews (only product syntax, never sum syntax). Provide FindNode/FindToken/NthToken/NthNode...
 
-[ ] Interpolated Strings
+[x] Interpolated Strings
    * Lexer does not emit empty StringText/StringEnd.
 [ ] "=>" Body syntax (see ExpressionsAndStatements.axl)
 [ ] Keyword `never` in return-type position
@@ -98,6 +82,7 @@
    * divergence tracking, definite return
    * never type (see Never.axl)
    * native fn validation
+   * SyntaxKind.Error: Bind all children, wrap in HirError
 5. Lowering
 
 # Implementation Ideas
@@ -106,10 +91,6 @@ Doc comments:
    * "<code>" = Code, multi line
    * "<example>" "<exception>"
 
-1. Lexer -> TokenList
-   * ref struct Scanner: .Advance, .AdvanceWhile, .MakeToken carries ReadOnlySpan<char> Text
-2. Parser -> SyntaxTree
-   * ?? untyped tree or typed
 3. SymbolTable (DeclarationTable?)
    * builds DeclId (see Project.md)
    * builds symbols as second step (i.e. binds signatures)
@@ -117,7 +98,7 @@ Doc comments:
    * maps Name to DeclarationSyntax
    * ?? how find all extend members
    * ?? how to represent symbols (lazy objects, just a ref?)
-   * -> Type = NeverType |  NonNeverType (SoundType) to keep them apart structurally
+   * ?? -> Type = NeverType |  NonNeverType (SoundType) to keep them apart structurally
 4. Binding -> Hir; queried by SemanticModel (answers questions. Always answers the same.)
    * ?? Binding per declaration => ModuleBinder, RecordBinder, FunctionBinder, ... They dont go into declarations themselves. Creates by SemanticModel
    * SemanticModel needs to protect against cyclic refs

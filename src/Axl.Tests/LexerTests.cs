@@ -23,50 +23,19 @@ public sealed class LexerTests
     private string Lex(string input)
     {
         var tokens = LexTokens(input, out var diagnostics, out var source);
-        return Dump(tokens, source, diagnostics);
+        return new Dump(source)
+            .Add(diagnostics)
+            .Add(tokens, filterTrivia: false)
+            .ToString();
     }
 
     private string LexIgnoreWhitespace(string input)
     {
         var tokens = LexTokens(input, out var diagnostics, out var source);
-        return Dump(tokens.Where(t => t.Kind is not TokenKind.Whitespace), source, diagnostics);
-    }
-
-    private string Dump(IEnumerable<Token> tokens, SourceFileView source, ImmutableArray<Diagnostic> diagnostics)
-    {
-        // --- Dump
-        var builder = new StringBuilder();
-
-        // Print diagnostics
-        foreach (var diag in diagnostics)
-        {
-            builder.AppendLine(
-                $"{diag.DefaultSeverity.ToString().ToUpper()} {diag.Id}@{diag.Location.Span}: {diag.Message.ToLiteralString()}");
-            foreach (var related in diag.Related)
-                builder.AppendLine($"   related@{related.Location.Span}: {related.Label}");
-        }
-
-        // Print tokens
-        foreach (var token in tokens)
-        {
-            if (token.Kind is TokenKind.Eof)
-            {
-                builder.AppendLine("- Eof");
-                continue;
-            }
-            
-            var text = source.GetText(token.Span).ToLiteralString();
-            builder.Append($"- {token.Kind}: \"{text}\"");
-
-            if (token is NumberLiteralToken numberLiteral)
-                builder.Append($" body=\"{numberLiteral.Body}\" suffix={numberLiteral.Suffix}");
-            else if (token is StringTextToken stringText)
-                builder.Append($" processed=\"{stringText.ProcessedText}\"");
-
-            builder.AppendLine();
-        }
-
-        return builder.ToString().Trim();
+        return new Dump(source)
+            .Add(diagnostics)
+            .Add(tokens.Where(t => t.Kind is not TokenKind.Whitespace), filterTrivia: false)
+            .ToString();
     }
 
 
