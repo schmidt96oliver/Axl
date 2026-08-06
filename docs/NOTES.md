@@ -10,16 +10,13 @@
     * typing expression
     * typing after expression
     * } handling
+    * multi-line with empty interpolations
   
 * Error nodes?
   * `1+` BinaryExpr or Error?
   * Fn decls should be FnDecl even if wrong for decltable
 
 * assert: ParseOpendExpr &Co: Assert IsAt _in branch_ and !IsAt _at end_
-
-* fix: crash on `()` and probably `(+1)`, `(var)`, ...
-  * fix: crash on `-[ EOF]`
-  * ParseExpr directly reporting? or guard everywhere?
 
 * document and play a little
 * `(` as call needs special casing

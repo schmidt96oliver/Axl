@@ -175,7 +175,11 @@ public partial class Parser
 
         if (_scanner.IsAt(FirstSet.OperandExpr))
         {
-            ParseOperandExpr(null);
+            // Checked here, because the diagnostic below is better than
+            // the generic "expected an expression".
+            var parsed = TryParseOperandExpr(null);
+            Debug.Assert(parsed);
+
             AdvanceOrError(TokenKind.Semicolon);
             _scanner.Close(markOpen, SyntaxKind.ExprStmt);
             return;
@@ -189,18 +193,32 @@ public partial class Parser
 
     
     
-    private void ParseExpr()
+    /// <summary>
+    /// Reports a missing expression and returns <c>false</c>, if the
+    /// scanner is not at an expression.
+    /// </summary>
+    private bool TryParseExpr()
     {
-        ParseOperandExpr(null);
+        return TryParseOperandExpr(null);
     }
 
     #endregion
 
     #region Operand Expressions
 
-    private void ParseOperandExpr(LeftOperator? left)
+    /// <summary>
+    /// Reports a missing expression and returns <c>false</c>, if the
+    /// scanner is not at an expression. Nothing is consumed in that case.
+    /// Callers that want to emit a better diagnostic must check
+    /// <see cref="FirstSet.OperandExpr"/> themselves beforehand.
+    /// </summary>
+    private bool TryParseOperandExpr(LeftOperator? left)
     {
-        Debug.Assert(_scanner.IsAt(FirstSet.OperandExpr));
+        if (!_scanner.IsAt(FirstSet.OperandExpr))
+        {
+            ReportMissing(expected: SyntaxCategory.Expr);
+            return false;
+        }
 
         var lhs = ParsePrimaryOperandExpr();
 
@@ -245,18 +263,11 @@ public partial class Parser
                 ? SyntaxKind.Error
                 : SyntaxKind.BinaryExpr;
 
-            if (_scanner.IsAt(FirstSet.OperandExpr))
-            {
-                ParseOperandExpr(new LeftOperator(opPrecedence.Value, opToken));
-                lhs = _scanner.Close(expr, syntaxKind);
-            }
-            else
-            {
-                ReportMissing(expected: SyntaxCategory.Expr);
-                _scanner.Close(expr, syntaxKind);
-                break;
-            }
+            TryParseOperandExpr(new LeftOperator(opPrecedence.Value, opToken));
+            lhs = _scanner.Close(expr, syntaxKind);
         }
+
+        return true;
     }
 
     private MarkClose ParsePrimaryOperandExpr()
@@ -275,7 +286,7 @@ public partial class Parser
         // --- Prefix
         if (PrecedenceTable.TryGetPrefixPrecedence(token.Kind) is Precedence prefixPrecedence)
         {
-            ParseOperandExpr(new LeftOperator(prefixPrecedence, token));
+            TryParseOperandExpr(new LeftOperator(prefixPrecedence, token));
             return _scanner.Close(openMark, SyntaxKind.UnaryExpr);
         }
         
@@ -284,7 +295,7 @@ public partial class Parser
         {
             // --- Group
             case TokenKind.OpenParen:
-                ParseExpr();
+                TryParseExpr();
                 AdvanceOrError(TokenKind.CloseParen);
                 return _scanner.Close(openMark, SyntaxKind.GroupExpr);
 
@@ -400,12 +411,10 @@ public partial class Parser
         var interpolationHole = _scanner.Open();
         _scanner.AdvanceKnown(TokenKind.OpenBrace);
 
-        // --- Parse Expression, empty interpolation or error
+        // --- Parse Expression or empty interpolation
         var errorReported = false;
-        
-        if (_scanner.IsAt(FirstSet.Expr))
-            ParseExpr();
-        else if (_scanner.IsAt(TokenKind.CloseBrace))
+
+        if (_scanner.IsAt(TokenKind.CloseBrace))
         {
             // Interpolation is `{ }`.
             // Just fall through. Method will see `}` and
@@ -413,11 +422,11 @@ public partial class Parser
         }
         else
         {
-            // Ambiguous between missing and unexpected, because
-            // whatever came here may or may not be gobbled later.
-            // Missing is the less offensive option, so we go with that.
-            ReportMissing(SyntaxCategory.Expr);
-            errorReported = true;
+            // If scanner is not at an expression, a
+            // MissingToken diagnostic is reported. Thus
+            // we update errorReported flag.
+            var parsed = TryParseExpr();
+            errorReported = !parsed;
         }
 
         // --- Garbage left after the expression?
