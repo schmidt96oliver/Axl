@@ -26,31 +26,35 @@ public partial class Parser
     {
         if (!_scanner.TryAdvance(expectedKind))
         {
-            _diagnosticBag.ReportError(new Diagnostic.UnexpectedToken(
-                _source, _scanner.Peek(0), expectedKind));
+            ReportMissing(expectedKind);
             return false;
         }
 
         return true;
     }
 
-    private void AdvanceWithError(TokenKind expectedKind)
-    {
-        Debug.Assert(!_scanner.IsAt(expectedKind));
-        
-        _diagnosticBag.ReportError(new Diagnostic.UnexpectedToken(
-            _source, _scanner.Peek(0), expectedKind));
-        
-        var expr = _scanner.Open();
-        _scanner.Advance();
-        _scanner.Close(expr, SyntaxKind.Error);
-    }
-    
 
     private void ReportUnexpected(SyntaxCategory expected)
         => _diagnosticBag.ReportError(new Diagnostic.UnexpectedToken(
-            _source, _scanner.Peek(0), expected));
+            _source, _scanner.Peek(), expected));
+    private void ReportUnexpected(TokenKind expected)
+        => _diagnosticBag.ReportError(new Diagnostic.UnexpectedToken(
+            _source, _scanner.Peek(), expected));
 
+    private void ReportMissing(TokenKind expected)
+        => _diagnosticBag.ReportError(new Diagnostic.MissingToken(
+            _source, 
+            previous: _scanner.PreviousToken, 
+            next: _scanner.Peek(), 
+            expected));
+    private void ReportMissing(SyntaxCategory expected)
+        => _diagnosticBag.ReportError(new Diagnostic.MissingToken(
+            _source, 
+            previous: _scanner.PreviousToken, 
+            next: _scanner.Peek(), 
+            expected));
+
+    
     private bool HasNewlineBeforeNextToken()
     {
         var spanToNextToken = _scanner.PreviousToken is null
@@ -259,7 +263,7 @@ public partial class Parser
             }
             else
             {
-                ReportUnexpected(expected: SyntaxCategory.Expr);
+                ReportMissing(expected: SyntaxCategory.Expr);
                 _scanner.Close(expr, syntaxKind);
                 break;
             }
@@ -417,7 +421,10 @@ public partial class Parser
         }
         else
         {
-            ReportUnexpected(SyntaxCategory.Expr);
+            // Ambiguous between missing and unexpected, because
+            // whatever came here may or may not be gobbled later.
+            // Missing is the less offensive option, so we go with that.
+            ReportMissing(SyntaxCategory.Expr);
             errorReported = true;
         }
 
@@ -426,8 +433,10 @@ public partial class Parser
         {
             if (!errorReported)
             {
-                _diagnosticBag.ReportError(new Diagnostic.UnexpectedToken(
-                    _source, _scanner.Peek(), TokenKind.CloseBrace));
+                // Ambiguous between missing and unexpected, because
+                // whatever came here may or may not be gobbled later.
+                // Missing is the less offensive option, so we go with that.
+                ReportMissing(TokenKind.CloseBrace);
                 errorReported = true;
             }
             
@@ -479,8 +488,7 @@ public partial class Parser
         }
         else if (!errorReported)
         {
-            _diagnosticBag.ReportError(new Diagnostic.UnexpectedToken(
-                _source, _scanner.Peek(), TokenKind.CloseBrace));
+            ReportMissing(TokenKind.CloseBrace);
         }
 
         _scanner.Close(interpolationHole, SyntaxKind.StringInterpolation);

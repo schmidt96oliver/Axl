@@ -53,6 +53,71 @@ public abstract partial record Diagnostic
             }
         }
     }
+    
+    public sealed record MissingToken : Error
+    {
+        private readonly TokenKind? _expectedKind;
+        private readonly SyntaxCategory? _expectedCategory;
+
+        public SourceFileView Source { get; }
+        public Token? Previous { get; }
+        public Token Next { get; }
+
+
+        public MissingToken(SourceFileView source, Token? previous, Token next, TokenKind expectedKind)
+        {
+            Source = source;
+            Previous = previous;
+            Next = next;
+            _expectedKind = expectedKind;
+        }
+
+        public MissingToken(SourceFileView source, Token? previous, Token next, SyntaxCategory expectedCategory)
+        {
+            Source = source;
+            Previous = previous;
+            Next = next;
+            _expectedCategory = expectedCategory;
+        }
+
+
+        public override SourceLocation Location
+        {
+            get
+            {
+                // If it's missing at the start of file, place it
+                // before the next token.
+                if (Previous is null)
+                    return Source.GetLocation(SourceSpan.EmptyBefore(Next.Span));
+
+                // If the next token is on a new line, report after the previous
+                // token. Otherwise, report on the next (offending) token.
+                var newlineBetweenPreviousAndNext = Source
+                    .GetText(SourceSpan.Between(Previous.Span, Next.Span))
+                    .Contains('\n');
+                if (newlineBetweenPreviousAndNext)
+                    return Source.GetLocation(SourceSpan.EmptyAfter(Previous.Span));
+
+                return Source.GetLocation(Next.Span);
+            }
+        }
+
+        public override string Message
+        {
+            get
+            {
+                var expected = (_expectedKind, _expectedCategory) switch
+                {
+                    (TokenKind kind, null) => kind.DisplayName,
+                    (null, SyntaxCategory.Expr) => "an expression",
+                    (null, SyntaxCategory.Stmt) => "a statement",
+                    _ => throw new UnreachableException(),
+                };
+
+                return $"Expected {expected}.";
+            }
+        }
+    }
 
     public sealed record AmbiguousPrecedence(SourceFileView Source, Token LeftOperator, Token OperatorToken) : Error
     {

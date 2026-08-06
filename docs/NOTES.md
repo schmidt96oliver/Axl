@@ -3,19 +3,20 @@
 
 
 * StringInterpolation:
-  * trace all cases in `ConvolutedStringInterpolation.axl`
+  * trace/sort all cases in `ConvolutedStringInterpolation.axl`
   * trace diagnostic positions use LSP
+  * test: common typing cases: 
+    * valid on various continuations/newline
+    * typing expression
+    * typing after expression
+    * } handling
   
 * Error nodes?
   * `1+` BinaryExpr or Error?
   * Fn decls should be FnDecl even if wrong for decltable
 
-* diagnostic positions
-  1. UnexpectedToken takes Missing|Advanced tags
-  2. Special MissingToken diagnostic
-      * take PreviousToken?, put location on last chars + empty space (if on same line)
-  * UnclosedString diagnostic: put at end/last text --or-- using MissingToken
-  * rename AmbigousPrecedence -> InvalidOperatorChaining
+* UnclosedString diagnostic: put at end/last text --or-- using MissingToken
+* rename AmbigousPrecedence -> InvalidOperatorChaining
 
 * cleanup? Extract FirstSet.OperandExpr, ...
   * assert: ParseOpendExpr &Co: Assert IsAt _in branch_ and !IsAt _at end_
@@ -33,7 +34,7 @@
   * Assert SyntaxKind.Error => DiagnosticBag.HasError
 
 * test: ambiguous chaining
-* 
+
 # Parser
 [x] Grammar
 
