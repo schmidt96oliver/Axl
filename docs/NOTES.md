@@ -6,16 +6,11 @@
   * trace all cases in `ConvolutedStringInterpolation.axl`
   * trace diagnostic positions use LSP
   
-  * docs: InterpolatedString
-    * ParseExpr is contained by Expr, no handling needed
-    * Gobbling = Parser confused; eat as much as needed
-        * Rules: String not continued & newline = same string
-        * Everything else is expected to be normal code
-    * Close brace special condition
-  
 * Error nodes?
   * `1+` BinaryExpr or Error?
   * Fn decls should be FnDecl even if wrong for decltable
+
+* NewlineBeforeToken: Accept prev=null
 
 * diagnostic positions
   1. UnexpectedToken takes Missing|Advanced tags

@@ -317,7 +317,7 @@ public partial class Parser
 
         foreach (var _ in _scanner.MustAdvanceUntilEnd())
         {
-            switch (_scanner.Peek(0).Kind)
+            switch (_scanner.Peek().Kind)
             {
                 // --- StringText: Just add
                 case TokenKind.StringText:
@@ -361,37 +361,48 @@ public partial class Parser
 
     private void ParseStringInterpolation()
     {
-        // The Lexer will emit normal tokens after `{` which means that it is in
-        // "syntax" mode. It is basically our choice to interpret that data. We must
-        // keep what the Lexer is thinking about this string while also breaking out of
-        // the interpolation in normal typing cases:
-        //   "Foo {a
+        // Grammar is "{" Expr? "}" and allows for multi-line Expr inside this interpolation.
+        
+        // We need to handle common typing scenarios gracefully and resiliently here. The tokens
+        // that come from the Lexer do not directly distinguish between inside-interpolation tokens
+        // and normal-code tokens. So we need to reconstruct that based on heuristics in case the
+        // interpolation is not valid.
+        
+        // We start by parsing the expression, which is eager:
+        //   "Foo {a.
+        //   1 + 2;
         //   fn Test() { }
-        // Must abort after `a` and interpret fn as a normal FnDecl. More importantly: The `}`
-        // that belongs visually to the FnDecl must belong there and _not_ close this interpolation.
-        // So we must end this interpolation before. If there is ever a StringText/StringEnd token
-        // without a StringStart before, we must stay inside the hole, however. As in:
-        //   "Foo {a
-        //   fn Test() { }
-        //   } Bar
-        // The Lexer here will emit `Bar` as StringText. Everything inside the interpolation must
-        // be skipped and produce an error node.
+        // Will result in `a.1 + 2` being parsed inside the interpolation. The blast radius is
+        // small: Only one expression. The FnDecl thereafter will be outside of this interpolation.
+        
+        // The interesting case is what happens after the expression is parsed and the interpolation
+        // is not (yet) closed. Parser will go into gobble-mode which has special rules to determine
+        // if it gobbles tokens into one error node inside the interpolation or if it leaves the
+        // interpolation.
+        
+        // Finally the closing "}" is special cased as well to catch common typing-cases like
+        //    fn Foo()
+        //    {
+        //        "Bar { 1
+        //    }
+        // Where we want the last "}" to close the function body instead of the interpolation.
         
         Debug.Assert(_scanner.IsAt(TokenKind.OpenBrace));
         
+        // --- Advance `{`
         var interpolationHole = _scanner.Open();
         _scanner.AdvanceKnown(TokenKind.OpenBrace);
 
-        // --- Parse Expression, if possible
+        // --- Parse Expression, empty interpolation or error
         var errorReported = false;
+        
         if (_scanner.IsAt(ExprFirst))
-        {
             ParseExpr();
-        }
         else if (_scanner.IsAt(TokenKind.CloseBrace))
         {
-            // Interpolation is `{ }` and we accept empty interpolations.
-            // Let the case run through to the end.
+            // Interpolation is `{ }`.
+            // Just fall through. Method will see `}` and
+            // apply the resilience logic.
         }
         else
         {
@@ -399,44 +410,66 @@ public partial class Parser
             errorReported = true;
         }
 
-        // --- Garbage left that needs to be inside the StringInterpolation node?
+        // --- Garbage left after the expression?
         if (!_scanner.IsAt(TokenKind.CloseBrace))
         {
-            // Report error and gobble up the garbage
             if (!errorReported)
             {
                 _diagnosticBag.ReportError(new Diagnostic.UnexpectedToken(
-                    _source, _scanner.Peek(0), TokenKind.CloseBrace));
+                    _source, _scanner.Peek(), TokenKind.CloseBrace));
                 errorReported = true;
             }
             
+            // Gobble up any garbage that belongs to this interpolation.
             AdvanceStringInterpolationGarbage();
         }
 
         // --- Closing brace
+        // Garbage gobbling might leave before landing on a closing brace.
+        
         if (_scanner.IsAt(TokenKind.CloseBrace))
         {
+            // We need to catch common typing-cases here like
+            //    fn a()
+            //    {
+            //       "Hello {
+            //    }
+            // We want the last `}` to close the function body instead of this
+            // interpolation.
+            
+            // If the closing brace is followed by either StringText, StringEnd or
+            // `{` (opening another interpolation directly), the closing brace here
+            // must close the interpolation. As in
+            //    fn a()
+            //    {
+            //       "Hello {
+            //    } Bar
+            // Where `Bar` is lexed as StringText. We must not disturb the world-view
+            // of the Lexer, since that will introduce stray StringText/End tokens into
+            // the Parser and produce cascading errors.
+            
+            // If the closing brace is followed by anything else, it doesn't have
+            // to close this interpolation. We can choose. As a heuristic, we choose based
+            // on line: `}` closes the interpolation iff if is on the same line as the token
+            // before.
+            
             // Closing brace can only be a valid interpolation close,
             // if it is followed by StringText, StringEnd or another OpenBrace
             // (starts a new interpolation directly). If that is not the case, the
             // string is unclosed. The same heuristic is valid: Take it if its
-            // on the same line, otherwise, leave it to the parser.
+            // on the same line, otherwise, leave it to the parser. This is easy to
+            // check and catches the common typing scenarios. It's not perfect, but good enough.
             
-            // This catches typing cases like
-            //    fn a() {
-            //       "Hello {
-            //    }
-            // The last `}` will close the FnDecl.
-            if (!HasNewlineBeforeNextToken() ||
-                _scanner.Peek(1).Kind is TokenKind.StringText or TokenKind.StringEnd or TokenKind.OpenBrace)
+            if (_scanner.Peek(1).Kind is TokenKind.StringText or TokenKind.StringEnd or TokenKind.OpenBrace ||
+                !HasNewlineBeforeNextToken())
             {
                 _scanner.AdvanceKnown(TokenKind.CloseBrace);
             }
         }
-        else
+        else if (!errorReported)
         {
-            if (!errorReported)
-                AdvanceOrError(TokenKind.CloseBrace);
+            _diagnosticBag.ReportError(new Diagnostic.UnexpectedToken(
+                _source, _scanner.Peek(), TokenKind.CloseBrace));
         }
 
         _scanner.Close(interpolationHole, SyntaxKind.StringInterpolation);
@@ -444,6 +477,27 @@ public partial class Parser
 
     private void AdvanceStringInterpolationGarbage()
     {
+        // The parser is already confused: It sits after and expression with no
+        // closing brace, which should close the interpolation. Now the goal is
+        // to determine, which garbage belongs to this interpolation.
+        //
+        // If we see that the string will be continued (by StringText/End),
+        // the garbage must belong inside this interpolation.
+        // Otherwise, we are free to choose how to handle the garbage. To catch
+        // common typing scenarios, we only gobble everything until a newline
+        // and then stop.
+        
+        //    "Hello {1+2 
+        //    var a = 3;
+        // This is the common typing case: Valid expression inside interpolation,
+        // there is no `}` and we enter gobbling. VarDecl will not belong inside
+        // this interpolation.
+        
+        //    "Hello {1+2 fn
+        //        var } Bla";
+        // Even if nonsensical, `fn var` must be gobbled into the interpolation hole,
+        // since the string will be continued.
+        
         Debug.Assert(!_scanner.IsAt(TokenKind.CloseBrace));
         
         MarkOpen? errorExpr = null;
@@ -457,8 +511,9 @@ public partial class Parser
         foreach (var _ in _scanner.MustAdvanceUntilEnd())
         {
             // --- Nominal Termination on BraceClose:
-            // We must keep track of inner braces, in cases like `"Foo { a {} b`,
-            // we must gobble b.
+            // We must exit this loop, when we see a `}` that closes
+            // the interpolation. For that, we must keep track of inner braces.
+            // In cases like `"Foo { a {} b`, `b` must be gobbled.
             if (_scanner.IsAt(TokenKind.OpenBrace))
                 braceCount++;
             else if (_scanner.IsAt(TokenKind.CloseBrace))
@@ -468,13 +523,7 @@ public partial class Parser
                 braceCount--;
             }
             
-            // If there is a StringText or StringEnd without StringStart before, that
-            // means the Lexer thinks it's inside a string. That means, we need to gobble
-            // everything in this interpolation up, so that it belong to the correct string.
-            
-            // Otherwise, we are free to choose what to do. As a heuristic: Same-line errors
-            // shall belong to the interpolation/string, everything after a newline stops
-            // the string, so the Parser can parse it normally.
+            // --- Belongs outside this interpolation?
             if (!willCurrentStringBeContinued && HasNewlineBeforeNextToken())
                 break;
             
@@ -552,7 +601,7 @@ public partial class Parser
         if (_scanner.PreviousToken is null)
             return false;
         
-        var spanToNextToken = SourceSpan.Between(_scanner.PreviousToken.Span, _scanner.Peek(0).Span);
+        var spanToNextToken = SourceSpan.Between(_scanner.PreviousToken.Span, _scanner.Peek().Span);
         return _source.GetText(spanToNextToken).Contains('\n');
     }
 
