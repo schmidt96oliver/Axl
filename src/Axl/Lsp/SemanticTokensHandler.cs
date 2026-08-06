@@ -1,25 +1,14 @@
-using System.Collections.Immutable;
-using System.Text.RegularExpressions;
 using Axl.Compiler;
 using Axl.Compiler.Syntax;
-using OmniSharp.Extensions.LanguageServer.Protocol;
 using OmniSharp.Extensions.LanguageServer.Protocol.Client.Capabilities;
 using OmniSharp.Extensions.LanguageServer.Protocol.Document;
 using OmniSharp.Extensions.LanguageServer.Protocol.Models;
 using OmniSharp.Extensions.LanguageServer.Protocol.Server;
-using Diagnostic = OmniSharp.Extensions.LanguageServer.Protocol.Models.Diagnostic;
-using DiagnosticSeverity = Axl.Compiler.Diagnostics.DiagnosticSeverity;
-using Range = OmniSharp.Extensions.LanguageServer.Protocol.Models.Range;
 
 namespace Axl.Lsp;
 
 public class SemanticTokensHandler(ILanguageServerFacade facade) : SemanticTokensHandlerBase
 {
-    // Alternation order matters: comments swallow the rest of the line, strings swallow keywords inside them.
-    private static readonly Regex TokenRegex = new(
-        """(?<decorator>//(?:[@~][a-zA-Z_-]*|-{3,}|={3,}))|(?<comment>//.*)|(?<string>"(?:\\.|[^"\\])*"?)|(?<keyword>\b(?:fn|var|record|module|using|public|private|native|return|if|else|loop|break|continue|and|or|not|true|false|i32|f32|i64|f64|bool|string|none|never|extend|this|ref|value)\b)""",
-        RegexOptions.Compiled);
-
     protected override SemanticTokensRegistrationOptions CreateRegistrationOptions(SemanticTokensCapability capability,
         ClientCapabilities clientCapabilities)
     {
@@ -44,16 +33,13 @@ public class SemanticTokensHandler(ILanguageServerFacade facade) : SemanticToken
         CancellationToken cancellationToken)
     {
         var file = DocumentStore.Get(identifier.TextDocument.Uri);
-        // var diagnosticBag = new DiagnosticBag();
-        // var tokens = Lexer.Lex(SourceFileView.Whole(file), diagnosticBag);
-
         var tree = Parser.Parse(SourceFileView.Whole(file));
         
         // --- Push diagnostics
         facade.TextDocument.PublishDiagnostics(new PublishDiagnosticsParams()
         {
             Uri = identifier.TextDocument.Uri,
-            Diagnostics = new Container<Diagnostic>(ConvertDiagnostics(identifier.TextDocument.Uri, tree.Diagnostics))
+            Diagnostics = tree.Diagnostics.ToLsp()
         });
         
         // --- Build semantic tokens
@@ -216,44 +202,6 @@ public class SemanticTokensHandler(ILanguageServerFacade facade) : SemanticToken
             foreach (var t in node.Children.SelectMany(EnumerateTokens))
                 yield return t;
         }
-    }
-
-    private IEnumerable<Diagnostic> ConvertDiagnostics(DocumentUri uri, ImmutableArray<Axl.Compiler.Diagnostics.Diagnostic> diagnostics)
-    {
-        foreach (var diag in diagnostics)
-        {
-            yield return new Diagnostic()
-            {
-                Severity = diag.DefaultSeverity switch
-                {
-                    DiagnosticSeverity.Error => OmniSharp.Extensions.LanguageServer.Protocol.Models.DiagnosticSeverity
-                        .Error,
-                    DiagnosticSeverity.Warning => OmniSharp.Extensions.LanguageServer.Protocol.Models.DiagnosticSeverity
-                        .Warning,
-                    _ => OmniSharp.Extensions.LanguageServer.Protocol.Models.DiagnosticSeverity.Information
-                },
-                Message = diag.Hint is null
-                    ? diag.Message
-                    : $"{diag.Message}\nHint: {diag.Hint}",
-                Code = new DiagnosticCode(diag.Id),
-                Range = LocationToRange(diag.Location),
-                RelatedInformation = new Container<DiagnosticRelatedInformation>(
-                    diag.Related.Select(related =>
-                        new DiagnosticRelatedInformation()
-                        {
-                            Location = new Location() { Range = LocationToRange(related.Location), Uri = uri }, //TODO: Get actual URI of SourceFile
-                            Message = related.Label
-                        })
-                ),
-            };
-        }
-    }
-
-    private Range LocationToRange(SourceLocation location)
-    {
-        var startLinePos = location.File.GetLinePositionOrEof(location.Span.First);
-        var endLinePos = location.File.GetLinePositionOrEof(location.Span.End);
-        return new Range(startLinePos.Line, startLinePos.Column, endLinePos.Line, endLinePos.Column);
     }
 
     protected override Task<SemanticTokensDocument> GetSemanticTokensDocument(ITextDocumentIdentifierParams @params, CancellationToken cancellationToken)
