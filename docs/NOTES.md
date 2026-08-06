@@ -1,19 +1,31 @@
 # ------------------------------------ Axl Project ------------------------------------
-                
+                                       ≽(◕ ᴗ ◕)≼
+
+
 * StringInterpolation:
   * trace all cases in `ConvolutedStringInterpolation.axl`
   * trace diagnostic positions use LSP
-    1. UnexpectedToken takes Missing|Advanced tags
-    2. Special MissingToken diagnostic
+  
   * docs: InterpolatedString
     * ParseExpr is contained by Expr, no handling needed
     * Gobbling = Parser confused; eat as much as needed
         * Rules: String not continued & newline = same string
         * Everything else is expected to be normal code
     * Close brace special condition
-  * UnclosedString diagnostic: put at end/last text
+  
+* Error nodes?
+  * `1+` BinaryExpr or Error?
+  * Fn decls should be FnDecl even if wrong for decltable
+
+* diagnostic positions
+  1. UnexpectedToken takes Missing|Advanced tags
+  2. Special MissingToken diagnostic
+      * take PreviousToken?, put location on last chars + empty space (if on same line)
+  * UnclosedString diagnostic: put at end/last text --or-- using MissingToken
+  * rename AmbigousPrecedence -> InvalidOperatorChaining
 
 * cleanup? Extract FirstSet.OperandExpr, ...
+  * assert: ParseOpendExpr &Co: Assert IsAt _in branch_ and !IsAt _at end_
 
 * fix: crash on `()` and probably `(+1)`, `(var)`, ...
   * fix: crash on `-[ EOF]`

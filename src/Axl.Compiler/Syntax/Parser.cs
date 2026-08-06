@@ -499,11 +499,20 @@ public partial class Parser
             // A continuation is a StringEnd or StringText that belongs to that string.
             // Ownership is determined by simply tracking string depth.
             
+            // The outcome only relies on StringStart, StringText and StringEnd.
+            
+            // PERF 1: If it ever shows up: Might be possible to calculate total count
+            //         of StringStart/Text/End tokens and then calculate continuously
+            //         in the gobble loop. This method reads cleaner and the cases where
+            //         it matters (nested string interpolation _with_ errors at the end)
+            //         should be quite rare.
+            // PERF 2: Might be smart to bound the amount of lookahead tokens to 100-200,
+            //         if it ever shows up in profiling. Will reject valid strings
+            //         in extremely rare cases.
+            
             // Note that if the scanner is currently sitting on StringStart, we will
             // regard as being outside (just one before) the string that is opened by 
             // this StringStart.
-            
-            // The outcome only relies on StringStart, StringText and StringEnd.
             
             var depth = 0;
             for (var n = 0;; n++)
