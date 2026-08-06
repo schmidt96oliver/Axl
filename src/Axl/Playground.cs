@@ -15,10 +15,21 @@ public static class Playground
         {
             Thread.Sleep(250);
 
-            var source = SourceFileView.FromFile(TestFilePath);
+            SourceFileView source;
+            try
+            {
+                source = SourceFileView.FromFile(TestFilePath);
+                
+            }
+            catch (IOException e)
+            {
+                Console.Clear();
+                Console.WriteLine(e);
+                continue;
+            }
+            
             if (source.File.Text == prevText)
                 continue;
-
             
             prevText = source.File.Text;
             
