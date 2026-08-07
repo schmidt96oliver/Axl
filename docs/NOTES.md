@@ -1,24 +1,5 @@
 # ------------------------------------ Axl Project ------------------------------------
                                        ≽(◕ ᴗ ◕)≼
-* chore: deploy-lsp: build before copy
-  
-* test: ambiguous chaining
-`a == b == c`
-   ^^   ^^    InvalidChaining
-=> `Error[a "==" b "==" c]`
-
-`a == b == c == d`
-   ^^   ^^   ^^    InvalidChaining
-=> `Error[a "==" b "==" b "==" c]`
-`a == 1+4 == c == d`
-   ^^     ^^   ^^    InvalidChaining
-=> `Error[a "==" BinaryExpr[1+4] "==" b "==" c]`
-`a == 1+4 and 3 == c == d`
-                ^^   ^^    InvalidChaining
-=> `BinaryExpr[BinaryExpr[a == BinaryExpr[1+4]] and Error[3 "=="c "==" d]]`
-
-* test: and/or ambiguous chaining
-* test: precedence
 
 * StringInterpolation:
   * trace/sort all cases in `ConvolutedStringInterpolation.axl`
