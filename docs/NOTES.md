@@ -1,6 +1,6 @@
 # ------------------------------------ Axl Project ------------------------------------
                                        ≽(◕ ᴗ ◕)≼
-
+* chore: deploy-lsp: build before copy
   
 * test: ambiguous chaining
 `a == b == c`

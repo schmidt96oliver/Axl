@@ -8,7 +8,9 @@ public abstract partial record Diagnostic
 {
     public sealed record UnclosedString(SourceFileView Source, Token LastToken) : Error
     {
-        public override SourceLocation Location => Source.GetLocation(SourceSpan.EmptyAfter(LastToken.Span));
+        public override ImmutableArray<SourceLocation> Locations =>
+            [Source.GetLocation(SourceSpan.EmptyAfter(LastToken.Span))];
+
         public override string Message => "String has not been closed.";
     }
 
@@ -36,7 +38,7 @@ public abstract partial record Diagnostic
         }
 
 
-        public override SourceLocation Location => Source.GetLocation(Actual.Span);
+        public override ImmutableArray<SourceLocation> Locations => [Source.GetLocation(Actual.Span)];
 
         public override string Message
         {
@@ -82,14 +84,14 @@ public abstract partial record Diagnostic
         }
 
 
-        public override SourceLocation Location
+        public override ImmutableArray<SourceLocation> Locations
         {
             get
             {
                 // If it's missing at the start of file, place it
                 // before the next token.
                 if (Previous is null)
-                    return Source.GetLocation(SourceSpan.EmptyBefore(Next.Span));
+                    return [Source.GetLocation(SourceSpan.EmptyBefore(Next.Span))];
 
                 // If the next token is on a new line, report after the previous
                 // token. Otherwise, report on the next (offending) token.
@@ -97,9 +99,9 @@ public abstract partial record Diagnostic
                     .GetText(SourceSpan.Between(Previous.Span, Next.Span))
                     .Contains('\n');
                 if (newlineBetweenPreviousAndNext)
-                    return Source.GetLocation(SourceSpan.EmptyAfter(Previous.Span));
+                    return [Source.GetLocation(SourceSpan.EmptyAfter(Previous.Span))];
 
-                return Source.GetLocation(Next.Span);
+                return [Source.GetLocation(Next.Span)];
             }
         }
 
@@ -122,7 +124,10 @@ public abstract partial record Diagnostic
 
     public sealed record InvalidOperatorChaining(SourceFileView Source, ImmutableArray<Token> OffendingOperators) : Error
     {
-        public override SourceLocation Location => Source.GetLocation(OffendingOperators[0].Span);
+        public override ImmutableArray<SourceLocation> Locations =>
+            [.. OffendingOperators.Select(offendingOp => Source.GetLocation(offendingOp.Span))];
+
+        public override string LocationLabel => "Conflicts with this operator.";
 
         public override string Message
         {
@@ -135,16 +140,5 @@ public abstract partial record Diagnostic
         
 
         public override string Hint => "Use parentheses to disambiguate :).";
-
-        public override IReadOnlyList<LabeledSourceLocation> Related =>
-        [
-            // Every operator in the chain is equally at fault, so they all get
-            // underlined - underlining only the first one would suggest the
-            // others are fine.
-            .. OffendingOperators[1..].Select(offendingOp => new LabeledSourceLocation(
-                Source.GetLocation(offendingOp.Span),
-                "Conflicts with this operator.",
-                IsPrimary: true))
-        ];
     }
 }

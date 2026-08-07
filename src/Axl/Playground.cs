@@ -46,8 +46,9 @@ public static class Playground
         Console.ForegroundColor = ConsoleColor.White;
         foreach (var diag in tree.Diagnostics)
         {
+            var spans = string.Join(", ", diag.Locations.Select(location => location.Span));
             Console.WriteLine(
-                $"{diag.DefaultSeverity.ToString().ToUpper()} {diag.Id}@{diag.Location.Span}: {diag.Message}");
+                $"{diag.DefaultSeverity.ToString().ToUpper()} {diag.Id}@{spans}: {diag.Message}");
             foreach (var related in diag.Related)
                 Console.WriteLine($"   related@{related.Location.Span}: {related.Label}");
         }

@@ -16,8 +16,9 @@ public class Dump(SourceFileView source)
         
         foreach (var diag in diagnostics)
         {
+            var spans = string.Join(", ", diag.Locations.Select(location => location.Span));
             _builder.AppendLine(
-                $"{diag.DefaultSeverity.ToString().ToUpper()} {diag.Id}@{diag.Location.Span}: {diag.Message.ToLiteralString()}");
+                $"{diag.DefaultSeverity.ToString().ToUpper()} {diag.Id}@{spans}: {diag.Message.ToLiteralString()}");
             foreach (var related in diag.Related)
                 _builder.AppendLine($"   related@{related.Location.Span}: {related.Label}");
         }
