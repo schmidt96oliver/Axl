@@ -1,16 +1,6 @@
 # ------------------------------------ Axl Project ------------------------------------
                                        ≽(◕ ᴗ ◕)≼
 
-* StringInterpolation:
-  * trace/sort all cases in `ConvolutedStringInterpolation.axl`
-  * trace diagnostic positions use LSP
-  * test: common typing cases: 
-    * valid on various continuations/newline
-    * typing expression
-    * typing after expression
-    * } handling
-    * multi-line with empty interpolations
-
 * `(` as call needs special casing
 * `.` check its parsing according to grammar
 
