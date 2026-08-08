@@ -49,7 +49,7 @@ public partial class Parser
             else
             {
                 ReportUnexpected(expected: SyntaxCategory.Stmt);
-                EatGarbageIntoError(globalAnchor);
+                EatGarbageIntoError(FirstSet.Stmt | TokenKind.Eof);
             }
         }
 
