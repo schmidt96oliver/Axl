@@ -15,9 +15,7 @@ public partial class ParserTests
                                             }
                                             """), """
                 ERROR UnexpectedToken@[0, 2): Expected a statement, got 'fn'.
-                ERROR MissingToken@[5, 6): Expected an expression.
-                ERROR MissingToken@[5, 6): Expected ';'.
-                ERROR UnexpectedToken@[5, 6): Expected a statement, got ')'.
+                ERROR MissingToken@[6, 6): Expected ';'.
                 ERROR UnexpectedToken@[8, 9): Expected a statement, got '{'.
                 ERROR UnclosedString@[21, 21): String has not been closed.
                 ERROR MissingToken@[21, 21): Expected ';'.
@@ -26,10 +24,9 @@ public partial class ParserTests
 
                 Error 'fn'
                 ExprStmt
-                · BinaryExpr
+                · CallExpr
                 · · Identifier 'a'
-                · · '('
-                Error ')'
+                · · ArgList '(' ')'
                 Error '{'
                 ExprStmt
                 · StringExpr
@@ -46,9 +43,7 @@ public partial class ParserTests
                                             }
                                             """), """
                 ERROR UnexpectedToken@[0, 2): Expected a statement, got 'fn'.
-                ERROR MissingToken@[5, 6): Expected an expression.
-                ERROR MissingToken@[5, 6): Expected ';'.
-                ERROR UnexpectedToken@[5, 6): Expected a statement, got ')'.
+                ERROR MissingToken@[6, 6): Expected ';'.
                 ERROR UnexpectedToken@[8, 9): Expected a statement, got '{'.
                 ERROR UnclosedString@[23, 23): String has not been closed.
                 ERROR MissingToken@[23, 23): Expected ';'.
@@ -57,10 +52,9 @@ public partial class ParserTests
 
                 Error 'fn'
                 ExprStmt
-                · BinaryExpr
+                · CallExpr
                 · · Identifier 'a'
-                · · '('
-                Error ')'
+                · · ArgList '(' ')'
                 Error '{'
                 ExprStmt
                 · StringExpr
@@ -78,9 +72,7 @@ public partial class ParserTests
                                             }
                                             """), """
                 ERROR UnexpectedToken@[0, 2): Expected a statement, got 'fn'.
-                ERROR MissingToken@[5, 6): Expected an expression.
-                ERROR MissingToken@[5, 6): Expected ';'.
-                ERROR UnexpectedToken@[5, 6): Expected a statement, got ')'.
+                ERROR MissingToken@[6, 6): Expected ';'.
                 ERROR UnexpectedToken@[8, 9): Expected a statement, got '{'.
                 ERROR UnclosedString@[25, 25): String has not been closed.
                 ERROR MissingToken@[25, 25): Expected ';'.
@@ -89,10 +81,9 @@ public partial class ParserTests
 
                 Error 'fn'
                 ExprStmt
-                · BinaryExpr
+                · CallExpr
                 · · Identifier 'a'
-                · · '('
-                Error ')'
+                · · ArgList '(' ')'
                 Error '{'
                 ExprStmt
                 · StringExpr
@@ -112,9 +103,7 @@ public partial class ParserTests
                                             }
                                             """), """
                 ERROR UnexpectedToken@[0, 2): Expected a statement, got 'fn'.
-                ERROR MissingToken@[5, 6): Expected an expression.
-                ERROR MissingToken@[5, 6): Expected ';'.
-                ERROR UnexpectedToken@[5, 6): Expected a statement, got ')'.
+                ERROR MissingToken@[6, 6): Expected ';'.
                 ERROR UnexpectedToken@[8, 9): Expected a statement, got '{'.
                 ERROR MissingToken@[27, 27): Expected an expression.
                 ERROR UnclosedString@[27, 27): String has not been closed.
@@ -124,10 +113,9 @@ public partial class ParserTests
 
                 Error 'fn'
                 ExprStmt
-                · BinaryExpr
+                · CallExpr
                 · · Identifier 'a'
-                · · '('
-                Error ')'
+                · · ArgList '(' ')'
                 Error '{'
                 ExprStmt
                 · StringExpr
@@ -149,9 +137,7 @@ public partial class ParserTests
                                             }
                                             """), """
                 ERROR UnexpectedToken@[0, 2): Expected a statement, got 'fn'.
-                ERROR MissingToken@[5, 6): Expected an expression.
-                ERROR MissingToken@[5, 6): Expected ';'.
-                ERROR UnexpectedToken@[5, 6): Expected a statement, got ')'.
+                ERROR MissingToken@[6, 6): Expected ';'.
                 ERROR UnexpectedToken@[8, 9): Expected a statement, got '{'.
                 ERROR UnclosedString@[29, 29): String has not been closed.
                 ERROR MissingToken@[29, 29): Expected ';'.
@@ -160,10 +146,9 @@ public partial class ParserTests
 
                 Error 'fn'
                 ExprStmt
-                · BinaryExpr
+                · CallExpr
                 · · Identifier 'a'
-                · · '('
-                Error ')'
+                · · ArgList '(' ')'
                 Error '{'
                 ExprStmt
                 · StringExpr
@@ -186,9 +171,7 @@ public partial class ParserTests
                                             }
                                             """), """
                 ERROR UnexpectedToken@[0, 2): Expected a statement, got 'fn'.
-                ERROR MissingToken@[5, 6): Expected an expression.
-                ERROR MissingToken@[5, 6): Expected ';'.
-                ERROR UnexpectedToken@[5, 6): Expected a statement, got ')'.
+                ERROR MissingToken@[6, 6): Expected ';'.
                 ERROR UnexpectedToken@[8, 9): Expected a statement, got '{'.
                 ERROR UnclosedString@[31, 31): String has not been closed.
                 ERROR MissingToken@[31, 31): Expected ';'.
@@ -197,10 +180,9 @@ public partial class ParserTests
 
                 Error 'fn'
                 ExprStmt
-                · BinaryExpr
+                · CallExpr
                 · · Identifier 'a'
-                · · '('
-                Error ')'
+                · · ArgList '(' ')'
                 Error '{'
                 ExprStmt
                 · StringExpr
@@ -224,19 +206,16 @@ public partial class ParserTests
                                             }
                                             """), """
                 ERROR UnexpectedToken@[0, 2): Expected a statement, got 'fn'.
-                ERROR MissingToken@[5, 6): Expected an expression.
-                ERROR MissingToken@[5, 6): Expected ';'.
-                ERROR UnexpectedToken@[5, 6): Expected a statement, got ')'.
+                ERROR MissingToken@[6, 6): Expected ';'.
                 ERROR UnexpectedToken@[8, 9): Expected a statement, got '{'.
                 ERROR UnexpectedToken@[35, 36): Expected a statement, got '}'.
 
 
                 Error 'fn'
                 ExprStmt
-                · BinaryExpr
+                · CallExpr
                 · · Identifier 'a'
-                · · '('
-                Error ')'
+                · · ArgList '(' ')'
                 Error '{'
                 ExprStmt
                 · StringExpr
@@ -264,9 +243,7 @@ public partial class ParserTests
                                             }
                                             """), """
                 ERROR UnexpectedToken@[0, 2): Expected a statement, got 'fn'.
-                ERROR MissingToken@[5, 6): Expected an expression.
-                ERROR MissingToken@[5, 6): Expected ';'.
-                ERROR UnexpectedToken@[5, 6): Expected a statement, got ')'.
+                ERROR MissingToken@[6, 6): Expected ';'.
                 ERROR UnexpectedToken@[8, 9): Expected a statement, got '{'.
                 ERROR UnclosedString@[21, 21): String has not been closed.
                 ERROR MissingToken@[21, 21): Expected ';'.
@@ -275,10 +252,9 @@ public partial class ParserTests
 
                 Error 'fn'
                 ExprStmt
-                · BinaryExpr
+                · CallExpr
                 · · Identifier 'a'
-                · · '('
-                Error ')'
+                · · ArgList '(' ')'
                 Error '{'
                 ExprStmt
                 · StringExpr
@@ -303,9 +279,7 @@ public partial class ParserTests
                                             }
                                             """), """
                 ERROR UnexpectedToken@[0, 2): Expected a statement, got 'fn'.
-                ERROR MissingToken@[5, 6): Expected an expression.
-                ERROR MissingToken@[5, 6): Expected ';'.
-                ERROR UnexpectedToken@[5, 6): Expected a statement, got ')'.
+                ERROR MissingToken@[6, 6): Expected ';'.
                 ERROR UnexpectedToken@[8, 9): Expected a statement, got '{'.
                 ERROR MissingToken@[32, 33): Expected '}'.
                 ERROR UnclosedString@[33, 33): String has not been closed.
@@ -315,10 +289,9 @@ public partial class ParserTests
 
                 Error 'fn'
                 ExprStmt
-                · BinaryExpr
+                · CallExpr
                 · · Identifier 'a'
-                · · '('
-                Error ')'
+                · · ArgList '(' ')'
                 Error '{'
                 ExprStmt
                 · StringExpr
@@ -343,9 +316,7 @@ public partial class ParserTests
                                             }
                                             """), """
                 ERROR UnexpectedToken@[0, 2): Expected a statement, got 'fn'.
-                ERROR MissingToken@[5, 6): Expected an expression.
-                ERROR MissingToken@[5, 6): Expected ';'.
-                ERROR UnexpectedToken@[5, 6): Expected a statement, got ')'.
+                ERROR MissingToken@[6, 6): Expected ';'.
                 ERROR UnexpectedToken@[8, 9): Expected a statement, got '{'.
                 ERROR MissingToken@[25, 25): Expected '}'.
                 ERROR UnclosedString@[25, 25): String has not been closed.
@@ -355,10 +326,9 @@ public partial class ParserTests
 
                 Error 'fn'
                 ExprStmt
-                · BinaryExpr
+                · CallExpr
                 · · Identifier 'a'
-                · · '('
-                Error ')'
+                · · ArgList '(' ')'
                 Error '{'
                 ExprStmt
                 · StringExpr
@@ -385,9 +355,7 @@ public partial class ParserTests
                                             }
                                             """), """
                 ERROR UnexpectedToken@[0, 2): Expected a statement, got 'fn'.
-                ERROR MissingToken@[5, 6): Expected an expression.
-                ERROR MissingToken@[5, 6): Expected ';'.
-                ERROR UnexpectedToken@[5, 6): Expected a statement, got ')'.
+                ERROR MissingToken@[6, 6): Expected ';'.
                 ERROR UnexpectedToken@[8, 9): Expected a statement, got '{'.
                 ERROR MissingToken@[36, 37): Expected '}'.
                 ERROR UnclosedString@[37, 37): String has not been closed.
@@ -397,10 +365,9 @@ public partial class ParserTests
 
                 Error 'fn'
                 ExprStmt
-                · BinaryExpr
+                · CallExpr
                 · · Identifier 'a'
-                · · '('
-                Error ')'
+                · · ArgList '(' ')'
                 Error '{'
                 ExprStmt
                 · StringExpr
@@ -428,9 +395,7 @@ public partial class ParserTests
                                             }
                                             """), """
                 ERROR UnexpectedToken@[0, 2): Expected a statement, got 'fn'.
-                ERROR MissingToken@[5, 6): Expected an expression.
-                ERROR MissingToken@[5, 6): Expected ';'.
-                ERROR UnexpectedToken@[5, 6): Expected a statement, got ')'.
+                ERROR MissingToken@[6, 6): Expected ';'.
                 ERROR UnexpectedToken@[8, 9): Expected a statement, got '{'.
                 ERROR MissingToken@[29, 29): Expected '}'.
                 ERROR UnclosedString@[29, 29): String has not been closed.
@@ -440,10 +405,9 @@ public partial class ParserTests
 
                 Error 'fn'
                 ExprStmt
-                · BinaryExpr
+                · CallExpr
                 · · Identifier 'a'
-                · · '('
-                Error ')'
+                · · ArgList '(' ')'
                 Error '{'
                 ExprStmt
                 · StringExpr
@@ -473,9 +437,7 @@ public partial class ParserTests
                                             }
                                             """), """
                 ERROR UnexpectedToken@[0, 2): Expected a statement, got 'fn'.
-                ERROR MissingToken@[5, 6): Expected an expression.
-                ERROR MissingToken@[5, 6): Expected ';'.
-                ERROR UnexpectedToken@[5, 6): Expected a statement, got ')'.
+                ERROR MissingToken@[6, 6): Expected ';'.
                 ERROR UnexpectedToken@[8, 9): Expected a statement, got '{'.
                 ERROR UnclosedString@[31, 31): String has not been closed.
                 ERROR MissingToken@[31, 31): Expected ';'.
@@ -484,10 +446,9 @@ public partial class ParserTests
 
                 Error 'fn'
                 ExprStmt
-                · BinaryExpr
+                · CallExpr
                 · · Identifier 'a'
-                · · '('
-                Error ')'
+                · · ArgList '(' ')'
                 Error '{'
                 ExprStmt
                 · StringExpr
@@ -518,9 +479,7 @@ public partial class ParserTests
                                             }
                                             """), """
                 ERROR UnexpectedToken@[0, 2): Expected a statement, got 'fn'.
-                ERROR MissingToken@[5, 6): Expected an expression.
-                ERROR MissingToken@[5, 6): Expected ';'.
-                ERROR UnexpectedToken@[5, 6): Expected a statement, got ')'.
+                ERROR MissingToken@[6, 6): Expected ';'.
                 ERROR UnexpectedToken@[8, 9): Expected a statement, got '{'.
                 ERROR UnclosedString@[37, 37): String has not been closed.
                 ERROR MissingToken@[37, 37): Expected ';'.
@@ -529,10 +488,9 @@ public partial class ParserTests
 
                 Error 'fn'
                 ExprStmt
-                · BinaryExpr
+                · CallExpr
                 · · Identifier 'a'
-                · · '('
-                Error ')'
+                · · ArgList '(' ')'
                 Error '{'
                 ExprStmt
                 · StringExpr
@@ -564,19 +522,16 @@ public partial class ParserTests
                                             }
                                             """), """
                 ERROR UnexpectedToken@[0, 2): Expected a statement, got 'fn'.
-                ERROR MissingToken@[5, 6): Expected an expression.
-                ERROR MissingToken@[5, 6): Expected ';'.
-                ERROR UnexpectedToken@[5, 6): Expected a statement, got ')'.
+                ERROR MissingToken@[6, 6): Expected ';'.
                 ERROR UnexpectedToken@[8, 9): Expected a statement, got '{'.
                 ERROR UnexpectedToken@[51, 52): Expected a statement, got '}'.
 
 
                 Error 'fn'
                 ExprStmt
-                · BinaryExpr
+                · CallExpr
                 · · Identifier 'a'
-                · · '('
-                Error ')'
+                · · ArgList '(' ')'
                 Error '{'
                 ExprStmt
                 · StringExpr

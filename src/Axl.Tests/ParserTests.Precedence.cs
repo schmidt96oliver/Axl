@@ -90,10 +90,10 @@ public partial class ParserTests
                 · · · · '*'
                 · · · · NumberLiteral '3'
                 · · '!='
-                · · BinaryExpr
+                · · GetMemberExpr
                 · · · Identifier 'a'
                 · · · '.'
-                · · · Identifier 'b'
+                · · · 'b'
                 · · '<'
                 · · UnaryExpr
                 · · · '-'
