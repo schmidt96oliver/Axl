@@ -349,6 +349,10 @@ public partial class Parser
         if (_scanner.IsAt(TokenKind.StringStart))
             return EatStringExpr();
         
+        // --- Group
+        if (_scanner.IsAt(TokenKind.OpenParen))
+            return EatGroupExpr(anchor);
+        
         // For everything else, we can advance a token
         // already and then switch on it.
         var openMark = _scanner.Open();
@@ -367,12 +371,6 @@ public partial class Parser
         // Switch on everything else
         switch (token.Kind)
         {
-            // --- Group
-            case TokenKind.OpenParen:
-                ExpectExpr(anchor);
-                ExpectToken(TokenKind.CloseParen);
-                return _scanner.Close(openMark, SyntaxKind.GroupExpr);
-
             // --- Literals
             case TokenKind.NumberLiteral:
                 return _scanner.Close(openMark, SyntaxKind.NumberLiteral);
@@ -753,6 +751,43 @@ public partial class Parser
                 }
             }
         }
+    }
+
+
+    private MarkClose EatGroupExpr(TokenSet anchor)
+    {
+        Debug.Assert(_scanner.IsAt(TokenKind.OpenParen));
+
+        var expr = _scanner.Open();
+        _scanner.EatToken(TokenKind.OpenParen);
+
+        // --- Expression
+        var groupAnchor = anchor | TokenKind.CloseParen;
+        ExpectExpr(groupAnchor);
+
+        // --- Confused -> Move to known token.
+        var errorReported = false;
+        if (!_scanner.IsAt(groupAnchor))
+        {
+            ReportMissing(TokenKind.CloseParen);
+            errorReported = true;
+
+            EatGarbageIntoError(groupAnchor);
+            Debug.Assert(_scanner.IsAt(groupAnchor));
+        }
+
+        // --- `)`
+        if (_scanner.IsAt(TokenKind.CloseParen))
+        {
+            _scanner.EatToken(TokenKind.CloseParen);
+            return _scanner.Close(expr, SyntaxKind.GroupExpr);
+        }
+        
+        // --- Anchor
+        if (!errorReported)
+            ReportMissing(TokenKind.CloseParen);
+        Debug.Assert(_scanner.IsAt(anchor));
+        return _scanner.Close(expr, SyntaxKind.GroupExpr);
     }
 
 
