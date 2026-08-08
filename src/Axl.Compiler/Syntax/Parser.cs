@@ -34,7 +34,9 @@ public partial class Parser
     {
         var file = _scanner.Open();
 
-        var globalAnchor = FirstSet.Stmt | TokenKind.Eof;
+        var globalAnchor = TokenSet.Of(TokenKind.FnKw, TokenKind.ModuleKw, 
+            TokenKind.VarKw, TokenKind.UsingKw, TokenKind.PublicKw, TokenKind.PrivateKw, 
+            TokenKind.NativeKw);
         
         foreach (var _ in _scanner.MustEatEachIteration())
         {
@@ -315,7 +317,7 @@ public partial class Parser
                 case TokenKind.OpenParen:
                     
                     // We know how to handle another operator.
-                    EatArgList(anchor | FirstSet.Operator);
+                    EatArgList(anchor);
                     lhs = _scanner.Close(expr, SyntaxKind.CallExpr);
                     break;
                 
@@ -324,7 +326,8 @@ public partial class Parser
                     _scanner.EatToken();
                     
                     // --- Parse RHS
-                    AdvanceOperandExprRhs(new LeftOperator(opPrecedence.Value, opToken), anchor, out var ateAmbiguousOperatorChain);
+                    AdvanceOperandExprRhs(new LeftOperator(opPrecedence.Value, opToken), anchor,
+                        out var ateAmbiguousOperatorChain);
             
                     // --- Close expression
                     lhs = _scanner.Close(expr,
@@ -562,7 +565,8 @@ public partial class Parser
             // If scanner is not at an expression, a
             // MissingToken diagnostic is reported. Thus,
             // we update errorReported flag.
-            var expr = ExpectExpr(anchor: TokenSet.Of(TokenKind.CloseBrace, TokenKind.Eof));
+            var expr = ExpectExpr(anchor: TokenSet.Of(
+                TokenKind.StringStart, TokenKind.StringText, TokenKind.StringEnd, TokenKind.CloseBrace, TokenKind.Eof));
             errorReported = expr is null;
         }
 
@@ -767,12 +771,13 @@ public partial class Parser
         }
         
         // --- Expect arguments
+        var argAnchor = anchor | TokenSet.Of(TokenKind.CloseParen, TokenKind.Comma);
         foreach (var _ in _scanner.MustEatEachIteration())
         {
             // Each iteration expects an argument, i.e. an expression.
             
             // --- Expr
-            var expr = ExpectExpr(anchor: anchor | TokenKind.CloseParen | TokenKind.Comma);
+            var expr = ExpectExpr(argAnchor);
             if (expr is MarkClose argExpr)
             {
                 // Wrap into SyntaxKind.Arg
@@ -781,7 +786,7 @@ public partial class Parser
             }
 
             // --- Confused?
-            if (!_scanner.IsAt(anchor) || !_scanner.IsAt(TokenKind.Comma) || !_scanner.IsAt(TokenKind.CloseParen))
+            if (!_scanner.IsAt(argAnchor))
             {
                 // Parser is confused now, we don't know where we are.
                 // Eat everything until we know.
@@ -790,8 +795,8 @@ public partial class Parser
                 if (expr is not null)
                     ReportMissing(TokenKind.Comma);
                 
-                EatGarbageIntoError(anchor: anchor | TokenKind.CloseParen | TokenKind.Comma);
-                Debug.Assert(_scanner.IsAt(anchor) || _scanner.IsAt(TokenKind.Comma) || _scanner.IsAt(TokenKind.CloseParen));
+                EatGarbageIntoError(argAnchor);
+                Debug.Assert(_scanner.IsAt(argAnchor));
             }
             
             // --- Next token
