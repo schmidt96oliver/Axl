@@ -19,6 +19,8 @@ public partial class Parser
         
         public static readonly TokenSet Expr = OperandExpr;
 
+        public static readonly TokenSet Stmt = Expr;
+
         public static readonly TokenSet Operator = TokenSet.Of(TokenKind.Plus, TokenKind.Minus, TokenKind.Star,
             TokenKind.Slash, TokenKind.Dot, TokenKind.LessThan, TokenKind.LessThanEqual, TokenKind.GreaterThan,
             TokenKind.GreaterThanEqual, TokenKind.AndKw, TokenKind.OrKw, TokenKind.NotKw, TokenKind.DoubleEqual,

@@ -19,51 +19,37 @@ public partial class Parser
         _diagnosticBag = diagnosticBag;
     }
 
-    
-    #region Helpers
-
-    private bool AdvanceOrError(TokenKind expectedKind)
+    public static SyntaxTree Parse(SourceFileView source)
     {
-        if (!_scanner.TryAdvance(expectedKind))
+        var diagnosticBag = new DiagnosticBag();
+        var tokens = Lexer.Lex(source, diagnosticBag);
+
+        var scanner = new Scanner(tokens);
+        var parser = new Parser(source, scanner, diagnosticBag);
+        parser.Parse();
+        return parser.BuildTree();
+    }
+
+    private void Parse()
+    {
+        var file = _scanner.Open();
+
+        var globalAnchor = FirstSet.Stmt | TokenKind.Eof;
+        
+        foreach (var _ in _scanner.MustAdvanceUntilEnd())
         {
-            ReportMissing(expectedKind);
-            return false;
+            if (_scanner.IsAt(FirstSet.Stmt))
+                EatStmt(globalAnchor);
+            else
+            {
+                ReportUnexpected(expected: SyntaxCategory.Stmt);
+                EatGarbageIntoError(globalAnchor);
+            }
         }
 
-        return true;
-    }
-
-
-    private void ReportUnexpected(SyntaxCategory expected)
-        => _diagnosticBag.ReportError(new Diagnostic.UnexpectedToken(
-            _source, _scanner.Peek(), expected));
-    private void ReportUnexpected(TokenKind expected)
-        => _diagnosticBag.ReportError(new Diagnostic.UnexpectedToken(
-            _source, _scanner.Peek(), expected));
-
-    private void ReportMissing(TokenKind expected)
-        => _diagnosticBag.ReportError(new Diagnostic.MissingToken(
-            _source, 
-            previous: _scanner.PreviousToken, 
-            next: _scanner.Peek(), 
-            expected));
-    private void ReportMissing(SyntaxCategory expected)
-        => _diagnosticBag.ReportError(new Diagnostic.MissingToken(
-            _source, 
-            previous: _scanner.PreviousToken, 
-            next: _scanner.Peek(), 
-            expected));
-
-    
-    private bool HasNewlineBeforeNextToken()
-    {
-        var spanToNextToken = _scanner.PreviousToken is null
-            ? _source.SpanFromTo(0, _scanner.Peek().Span.End)
-            : SourceSpan.Between(_scanner.PreviousToken.Span, _scanner.Peek().Span);
-        return _source.GetText(spanToNextToken).Contains('\n');
+        _scanner.Close(file, SyntaxKind.TreeRoot);
     }
     
-    #endregion
     
     #region Tree Building
     
@@ -136,85 +122,145 @@ public partial class Parser
     #endregion
     
     
-    public static SyntaxTree Parse(SourceFileView source)
+    #region Helpers
+
+    /// <summary>
+    /// Eats all tokens, until one token in <paramref name="anchor"/> is seen and wraps
+    /// them inside a <see cref="SyntaxKind.Error"/> node. Always eats at least the next token.
+    /// </summary>
+    private MarkClose EatGarbageIntoError(TokenSet anchor)
     {
-        var diagnosticBag = new DiagnosticBag();
-        var tokens = Lexer.Lex(source, diagnosticBag);
-
-        var scanner = new Scanner(tokens);
-        var parser = new Parser(source, scanner, diagnosticBag);
-        parser.Parse();
-        return parser.BuildTree();
-    }
-
-
-    #region Parsing
-
-    private void Parse()
-    {
-        var file = _scanner.Open();
-
-        foreach (var _ in _scanner.MustAdvanceUntilEnd())
+        var error = _scanner.Open();
+        _scanner.Advance();
+        
+        foreach (var __ in _scanner.MustAdvanceUntilEnd())
         {
-            ParseStmt();
+            if (_scanner.IsAt(anchor))
+                break;
+
+            _scanner.Advance();
         }
 
-        _scanner.Close(file, SyntaxKind.TreeRoot);
+        return _scanner.Close(error, SyntaxKind.Error);
     }
     
-    private void ParseStmt()
+
+    private void ReportUnexpected(SyntaxCategory expected)
+        => _diagnosticBag.ReportError(new Diagnostic.UnexpectedToken(
+            _source, _scanner.Peek(), expected));
+    private void ReportUnexpected(TokenKind expected)
+        => _diagnosticBag.ReportError(new Diagnostic.UnexpectedToken(
+            _source, _scanner.Peek(), expected));
+
+    private void ReportMissing(TokenKind expected)
+        => _diagnosticBag.ReportError(new Diagnostic.MissingToken(
+            _source, 
+            previous: _scanner.PreviousToken, 
+            next: _scanner.Peek(), 
+            expected));
+    private void ReportMissing(SyntaxCategory expected)
+        => _diagnosticBag.ReportError(new Diagnostic.MissingToken(
+            _source, 
+            previous: _scanner.PreviousToken, 
+            next: _scanner.Peek(), 
+            expected));
+
+    
+    private bool HasNewlineBeforeNextToken()
     {
-        var markOpen = _scanner.Open();
+        var spanToNextToken = _scanner.PreviousToken is null
+            ? _source.SpanFromTo(0, _scanner.Peek().Span.End)
+            : SourceSpan.Between(_scanner.PreviousToken.Span, _scanner.Peek().Span);
+        return _source.GetText(spanToNextToken).Contains('\n');
+    }
+    
+    #endregion
+    
+    #region Expects
+
+    /// <summary>
+    /// Eats and returns next token, if it has <paramref name="expectedKind"/>.
+    /// Otherwise, reports <see cref="Diagnostic.MissingToken"/> and returns <c>null</c>.
+    /// </summary>
+    private Token? ExpectToken(TokenKind expectedKind)
+    {
+        if (!_scanner.IsAt(expectedKind))
+        {
+            ReportMissing(expectedKind);
+            return null;
+        }
+
+        return _scanner.AdvanceKnown(expectedKind);
+    }
+    
+    private MarkClose? ExpectOperandExpr(LeftOperator? left, TokenSet anchor)
+    {
+        if (!_scanner.IsAt(FirstSet.OperandExpr))
+        {
+            ReportMissing(expected: SyntaxCategory.Expr);
+            return null;
+        }
+
+        return EatOperandExpr(left, anchor);
+    }
+
+    private MarkClose? ExpectExpr(TokenSet anchor)
+    {
+        if (!_scanner.IsAt(FirstSet.Expr))
+        {
+            ReportMissing(expected: SyntaxCategory.Expr);
+            return null;
+        }
+
+        return EatExpr(anchor);
+    }
+    
+    #endregion
+    
+    
+    #region Statements and Declarations
+
+    private MarkClose EatStmt(TokenSet anchor)
+    {
+        Debug.Assert(_scanner.IsAt(FirstSet.Stmt));
+        
+        var stmt = _scanner.Open();
 
         if (_scanner.IsAt(FirstSet.OperandExpr))
         {
-            // Checked here, because the diagnostic below is better than
-            // the generic "expected an expression".
-            var parsed = TryParseOperandExpr(left: null);
-            Debug.Assert(parsed);
-
-            AdvanceOrError(TokenKind.Semicolon);
-            _scanner.Close(markOpen, SyntaxKind.ExprStmt);
-            return;
+            EatOperandExpr(left: null, anchor);
+            ExpectToken(TokenKind.Semicolon);
+            
+            return _scanner.Close(stmt, SyntaxKind.ExprStmt);;
         }
 
-        // Could not find a valid stmt.
-        ReportUnexpected(expected: SyntaxCategory.Stmt);
-        _scanner.Advance();
-        _scanner.Close(markOpen, SyntaxKind.Error);
+        throw new UnreachableException($"{nameof(FirstSet.Stmt)} too large.");
     }
+    
+    #endregion
 
-    /// <summary>
-    /// Reports a missing expression and returns <c>false</c>, if the
-    /// scanner is not at an expression.
-    /// </summary>
-    private bool TryParseExpr()
+    #region Expr, TailExpr, BodiedExpr
+    
+    private MarkClose EatExpr(TokenSet anchor)
     {
-        return TryParseOperandExpr(left: null);
-    }
+        Debug.Assert(_scanner.IsAt(FirstSet.Expr));
 
+        if (_scanner.IsAt(FirstSet.OperandExpr))
+            return EatOperandExpr(left: null, anchor);
+
+        throw new InvalidOperationException($"{nameof(FirstSet.Expr)} was too large");
+    }
+    
     #endregion
 
     #region Operand Expressions
 
-    /// <summary>
-    /// Reports a missing expression and returns <c>false</c>, if the
-    /// scanner is not at an expression. Nothing is consumed in that case.
-    /// Callers that want to emit a better diagnostic must check
-    /// <see cref="FirstSet.OperandExpr"/> themselves beforehand.
-    /// </summary>
-    private bool TryParseOperandExpr(LeftOperator? left)
+    private MarkClose EatOperandExpr(LeftOperator? left, TokenSet anchor)
     {
-        // Report missing, if not at a valid first OperandExpr
-        // token.
-        if (!_scanner.IsAt(FirstSet.OperandExpr))
-        {
-            ReportMissing(expected: SyntaxCategory.Expr);
-            return false;
-        }
-
+        Debug.Assert(_scanner.IsAt(FirstSet.OperandExpr));
+        
         // --- Head
-        var lhs = ParseOperandExprHead();
+        var lhs = EatOperandExprHead(anchor);
 
         // --- Pratt loop
         foreach (var _ in _scanner.MustAdvanceUntilEnd())
@@ -260,13 +306,13 @@ public partial class Parser
                 // --- GetMember
                 case TokenKind.Dot:
                     _scanner.AdvanceKnown(TokenKind.Dot);
-                    AdvanceOrError(TokenKind.Identifier);
+                    ExpectToken(TokenKind.Identifier);
                     lhs = _scanner.Close(expr, SyntaxKind.GetMemberExpr);
                     break;
                 
                 // --- Call
                 case TokenKind.OpenParen:
-                    ParseArgList();
+                    EatArgList(anchor);
                     lhs = _scanner.Close(expr, SyntaxKind.CallExpr);
                     break;
                 
@@ -274,27 +320,28 @@ public partial class Parser
                 default:
                     _scanner.Advance();
                     
-                    // --- Parse tail
-                    var wasNonAmbiguousTail = ParseOperandExprTail(new LeftOperator(opPrecedence.Value, opToken));
+                    // --- Parse RHS
+                    AdvanceOperandExprRhs(new LeftOperator(opPrecedence.Value, opToken), anchor, out var ateAmbiguousOperatorChain);
             
                     // --- Close expression
-                    lhs = _scanner.Close(expr, wasNonAmbiguousTail ? SyntaxKind.BinaryExpr : SyntaxKind.Error);
+                    lhs = _scanner.Close(expr,
+                        ateAmbiguousOperatorChain
+                            ? SyntaxKind.BinaryExpr
+                            : SyntaxKind.Error);
                     break;
             }
-
-            
         }
 
-        return true;
+        return lhs;
     }
-
-    private MarkClose ParseOperandExprHead()
+    
+    private MarkClose EatOperandExprHead(TokenSet anchor)
     {
         Debug.Assert(_scanner.IsAt(FirstSet.OperandExpr));
         
         // --- String
         if (_scanner.IsAt(TokenKind.StringStart))
-            return ParseStringExpr();
+            return EatStringExpr();
         
         // For everything else, we can advance a token
         // already and then switch on it.
@@ -304,8 +351,11 @@ public partial class Parser
         // --- Prefix Operator
         if (PrecedenceTable.TryGetPrefixPrecedence(token.Kind) is Precedence prefixPrecedence)
         {
-            var wasNonAmbiguousTail = ParseOperandExprTail(new LeftOperator(prefixPrecedence, token));
-            return _scanner.Close(openMark, wasNonAmbiguousTail ? SyntaxKind.UnaryExpr : SyntaxKind.Error);
+            AdvanceOperandExprRhs(new LeftOperator(prefixPrecedence, token), anchor, out var ateAmbiguousOperatorChain);
+            return _scanner.Close(openMark,
+                ateAmbiguousOperatorChain
+                    ? SyntaxKind.UnaryExpr
+                    : SyntaxKind.Error);
         }
         
         // Switch on everything else
@@ -313,8 +363,8 @@ public partial class Parser
         {
             // --- Group
             case TokenKind.OpenParen:
-                TryParseExpr();
-                AdvanceOrError(TokenKind.CloseParen);
+                ExpectExpr(anchor);
+                ExpectToken(TokenKind.CloseParen);
                 return _scanner.Close(openMark, SyntaxKind.GroupExpr);
 
             // --- Literals
@@ -339,7 +389,7 @@ public partial class Parser
                 return _scanner.Close(openMark, SyntaxKind.NativeTypeName);
         }
 
-        throw new UnreachableException();
+        throw new UnreachableException($"{nameof(FirstSet.OperandExpr)} was too large");
     }
     
     /// <summary>
@@ -348,12 +398,10 @@ public partial class Parser
     /// It collects all chained ambiguous operators and reports one
     /// diagnostic for them.
     /// </summary>
-    /// <returns>
+    /// <param name="ateAmbiguousOperatorChain">
     /// <c>False</c> iff an ambiguous chain was advanced.
-    /// In contrast to <see cref="TryParseOperandExpr"/> this also returns
-    /// <c>True</c> even if no expression was parsed.
-    /// </returns>
-    private bool ParseOperandExprTail(LeftOperator left)
+    /// </param>
+    private void AdvanceOperandExprRhs(LeftOperator left, TokenSet anchor, out bool ateAmbiguousOperatorChain)
     {
         ImmutableArray<Token>.Builder? ambiguousOperators = null;
 
@@ -361,8 +409,8 @@ public partial class Parser
 
         foreach (var _ in _scanner.MustAdvanceUntilEnd())
         {
-            // Parse OperandExpr
-            if (!TryParseOperandExpr(left))
+            // Eat OperandExpr
+            if (ExpectOperandExpr(left, anchor) is null)
                 break;
 
             // Peek and check if next token is
@@ -398,20 +446,18 @@ public partial class Parser
             ambiguousOperators.Add(nextOpToken);
         }
 
-        if (ambiguousOperators is not null)
+        ateAmbiguousOperatorChain = ambiguousOperators is not null;
+        
+        if (ateAmbiguousOperatorChain)
         {
             //Report combined diagnostic.
             _diagnosticBag.ReportError(new Diagnostic.InvalidOperatorChaining(_source,
-                ambiguousOperators.DrainToImmutable()));
-
-            return false;
+                ambiguousOperators!.DrainToImmutable()));
         }
-
-        return true;
     }
 
     
-    private MarkClose ParseStringExpr()
+    private MarkClose EatStringExpr()
     {
         Debug.Assert(_scanner.IsAt(TokenKind.StringStart));
 
@@ -436,7 +482,7 @@ public partial class Parser
                 
                 // --- Interpolation
                 case TokenKind.OpenBrace:
-                    ParseStringInterpolation();
+                    EatStringInterpolation();
                     break;
                     
                 // --- Anything else is an unclosed string
@@ -465,7 +511,7 @@ public partial class Parser
         }
     }
 
-    private void ParseStringInterpolation()
+    private MarkClose EatStringInterpolation()
     {
         // Grammar is "{" Expr? "}" and allows for multi-line Expr inside this interpolation.
         
@@ -511,10 +557,10 @@ public partial class Parser
         else
         {
             // If scanner is not at an expression, a
-            // MissingToken diagnostic is reported. Thus
+            // MissingToken diagnostic is reported. Thus,
             // we update errorReported flag.
-            var parsed = TryParseExpr();
-            errorReported = !parsed;
+            var expr = ExpectExpr(anchor: TokenSet.Of(TokenKind.CloseBrace, TokenKind.Eof));
+            errorReported = expr is null;
         }
 
         // --- Garbage left after the expression?
@@ -530,7 +576,7 @@ public partial class Parser
             }
             
             // Gobble up any garbage that belongs to this interpolation.
-            AdvanceStringInterpolationGarbage();
+            MaybeEatStringInterpolationGarbage();
         }
 
         // --- Closing brace
@@ -580,10 +626,10 @@ public partial class Parser
             ReportMissing(TokenKind.CloseBrace);
         }
 
-        _scanner.Close(interpolationHole, SyntaxKind.StringInterpolation);
+        return _scanner.Close(interpolationHole, SyntaxKind.StringInterpolation);
     }
 
-    private void AdvanceStringInterpolationGarbage()
+    private MarkClose? MaybeEatStringInterpolationGarbage()
     {
         // The parser is already confused: It sits after and expression with no
         // closing brace, which should close the interpolation. Now the goal is
@@ -647,8 +693,8 @@ public partial class Parser
         }
 
         if (errorExpr is MarkOpen openedErrorExpr)
-            _scanner.Close(openedErrorExpr, SyntaxKind.Error);
-        return;
+            return _scanner.Close(openedErrorExpr, SyntaxKind.Error);
+        return null;
         
         bool WillCurrentStringBeContinued()
         {
@@ -703,7 +749,7 @@ public partial class Parser
     }
 
 
-    private void ParseArgList()
+    private MarkClose EatArgList(TokenSet anchor)
     {
         Debug.Assert(_scanner.IsAt(TokenKind.OpenParen));
 
@@ -713,8 +759,7 @@ public partial class Parser
         if (_scanner.IsAt(TokenKind.CloseParen))
         {
             _scanner.AdvanceKnown(TokenKind.CloseParen);
-            _scanner.Close(argList, SyntaxKind.ArgList);
-            return;
+            return _scanner.Close(argList, SyntaxKind.ArgList);
         }
         
         // PATTERN:
@@ -732,7 +777,7 @@ public partial class Parser
             if (_scanner.IsAt(FirstSet.Expr))
             {
                 var arg = _scanner.Open();
-                TryParseExpr();
+                EatExpr(ANCHOR);
                 _scanner.Close(arg, SyntaxKind.Arg);
         
                 if (_scanner.IsAt(TokenKind.Comma))
@@ -748,8 +793,7 @@ public partial class Parser
                 else if (_scanner.IsAt(ANCHOR))
                 {
                     ReportMissing(TokenKind.CloseParen);
-                    Close();
-                    return;
+                    return Close();
                     //TODO: Break free
                 }
                 else
@@ -771,8 +815,7 @@ public partial class Parser
             else if (_scanner.IsAt(ANCHOR))
             {
                 ReportMissing(SyntaxCategory.Expr);
-                Close();
-                return;
+                return Close();
             }
             else
             {
@@ -804,20 +847,20 @@ public partial class Parser
                 else if (_scanner.IsAt(ANCHOR))
                 {
                     ReportMissing(TokenKind.CloseParen);
-                    Close();
-                    return;
+                    return Close();
                 }
             }
         }
         
-        AdvanceOrError(TokenKind.CloseParen);
+        ExpectToken(TokenKind.CloseParen);
         // _scanner.AdvanceKnown(TokenKind.CloseParen);
-        Close();
+        return Close();
 
-        void Close()
+        MarkClose Close()
         {
-            _scanner.Close(argList, SyntaxKind.ArgList);
+            return _scanner.Close(argList, SyntaxKind.ArgList);
         }
     }
+    
     #endregion
 }
