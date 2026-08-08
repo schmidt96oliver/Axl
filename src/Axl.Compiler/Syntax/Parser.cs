@@ -225,10 +225,11 @@ public partial class Parser
         Debug.Assert(_scanner.IsAt(FirstSet.Stmt));
         
         var stmt = _scanner.Open();
-
+        
         if (_scanner.IsAt(FirstSet.OperandExpr))
         {
-            EatOperandExpr(left: null, anchor);
+            EatOperandExpr(left: null, 
+                anchor: anchor | TokenKind.Semicolon);
             ExpectToken(TokenKind.Semicolon);
             
             return _scanner.Close(stmt, SyntaxKind.ExprStmt);;
@@ -312,7 +313,9 @@ public partial class Parser
                 
                 // --- Call
                 case TokenKind.OpenParen:
-                    EatArgList(anchor);
+                    
+                    // We know how to handle another operator.
+                    EatArgList(anchor | FirstSet.Operator);
                     lhs = _scanner.Close(expr, SyntaxKind.CallExpr);
                     break;
                 
@@ -756,110 +759,63 @@ public partial class Parser
         var argList = _scanner.Open();
         _scanner.EatToken(TokenKind.OpenParen);
 
+        // --- Special-case `( )`
         if (_scanner.IsAt(TokenKind.CloseParen))
         {
             _scanner.EatToken(TokenKind.CloseParen);
             return _scanner.Close(argList, SyntaxKind.ArgList);
         }
         
-        // PATTERN:
-        // 1. Expected case     -> Handle
-        // 2. Graceful errors   -> Handle
-        // 3. Anchors           -> Close and Break
-        // 4. Error, but stay   -> Gobble and continue
-
-        // Parse args
+        // --- Expect arguments
         foreach (var _ in _scanner.MustEatEachIteration())
         {
-            var ANCHOR = TokenSet.Of(TokenKind.Semicolon,
-                TokenKind.FnKw, TokenKind.ModuleKw, TokenKind.Eof) | FirstSet.Operator;
+            // Each iteration expects an argument, i.e. an expression.
             
-            if (_scanner.IsAt(FirstSet.Expr))
+            // --- Expr
+            var expr = ExpectExpr(anchor: anchor | TokenKind.CloseParen | TokenKind.Comma);
+            if (expr is MarkClose argExpr)
             {
-                var arg = _scanner.Open();
-                EatExpr(ANCHOR);
+                // Wrap into SyntaxKind.Arg
+                var arg = _scanner.OpenBefore(argExpr);
                 _scanner.Close(arg, SyntaxKind.Arg);
-        
-                if (_scanner.IsAt(TokenKind.Comma))
-                {
-                    // Expect another expression
-                    _scanner.EatToken(TokenKind.Comma);
-                }
-                else if (_scanner.IsAt(TokenKind.CloseParen))
-                {
-                    // Expect closing
-                    break;
-                }
-                else if (_scanner.IsAt(ANCHOR))
-                {
-                    ReportMissing(TokenKind.CloseParen);
-                    return Close();
-                    //TODO: Break free
-                }
-                else
-                {
+            }
+
+            // --- Confused?
+            if (!_scanner.IsAt(anchor) || !_scanner.IsAt(TokenKind.Comma) || !_scanner.IsAt(TokenKind.CloseParen))
+            {
+                // Parser is confused now, we don't know where we are.
+                // Eat everything until we know.
+                
+                // If we had an argument before, we expected `,`
+                if (expr is not null)
                     ReportMissing(TokenKind.Comma);
-                }
+                
+                EatGarbageIntoError(anchor: anchor | TokenKind.CloseParen | TokenKind.Comma);
+                Debug.Assert(_scanner.IsAt(anchor) || _scanner.IsAt(TokenKind.Comma) || _scanner.IsAt(TokenKind.CloseParen));
             }
-            else if (_scanner.IsAt(TokenKind.Comma))
+            
+            // --- Next token
+            if (_scanner.IsAt(TokenKind.Comma))
             {
-                ReportMissing(SyntaxCategory.Expr);
                 _scanner.EatToken(TokenKind.Comma);
+                
+                // Expect another expression
+                continue;
             }
-            else if (_scanner.IsAt(TokenKind.CloseParen))
+
+            if (_scanner.IsAt(TokenKind.CloseParen) ||
+                _scanner.IsAt(anchor))
             {
-                // TODO: not reachable?
-                ReportMissing(SyntaxCategory.Expr);
                 break;
             }
-            else if (_scanner.IsAt(ANCHOR))
-            {
-                ReportMissing(SyntaxCategory.Expr);
-                return Close();
-            }
-            else
-            {
-                ReportUnexpected(SyntaxCategory.Expr);
-                var error = _scanner.Open();
-                _scanner.EatToken();
 
-                foreach (var __ in _scanner.MustEatEachIteration())
-                {
-                    var peek = _scanner.Peek();
-                    if (ANCHOR.Contains(peek.Kind) || peek.Kind is TokenKind.Comma or TokenKind.CloseParen)
-                        break;
-
-                    _scanner.EatToken();
-                }
-                
-                _scanner.Close(error, SyntaxKind.Error);
-
-                if (_scanner.IsAt(TokenKind.Comma))
-                {
-                    // Advance the comma and expect another expression
-                    _scanner.EatToken(TokenKind.Comma);
-                }
-                else if (_scanner.IsAt(TokenKind.CloseParen))
-                {
-                    // It's about to be close, exit loop
-                    break;
-                }
-                else if (_scanner.IsAt(ANCHOR))
-                {
-                    ReportMissing(TokenKind.CloseParen);
-                    return Close();
-                }
-            }
+            // Every branch continues or breaks.
+            throw new UnreachableException();
         }
         
+        // --- Expect `)`
         ExpectToken(TokenKind.CloseParen);
-        // _scanner.AdvanceKnown(TokenKind.CloseParen);
-        return Close();
-
-        MarkClose Close()
-        {
-            return _scanner.Close(argList, SyntaxKind.ArgList);
-        }
+        return _scanner.Close(argList, SyntaxKind.ArgList);
     }
     
     #endregion
