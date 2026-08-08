@@ -36,7 +36,7 @@ public partial class Parser
 
         var globalAnchor = FirstSet.Stmt | TokenKind.Eof;
         
-        foreach (var _ in _scanner.MustAdvanceUntilEnd())
+        foreach (var _ in _scanner.MustEatEachIteration())
         {
             if (_scanner.IsAt(FirstSet.Stmt))
                 EatStmt(globalAnchor);
@@ -131,14 +131,14 @@ public partial class Parser
     private MarkClose EatGarbageIntoError(TokenSet anchor)
     {
         var error = _scanner.Open();
-        _scanner.Advance();
+        _scanner.EatToken();
         
-        foreach (var __ in _scanner.MustAdvanceUntilEnd())
+        foreach (var __ in _scanner.MustEatEachIteration())
         {
             if (_scanner.IsAt(anchor))
                 break;
 
-            _scanner.Advance();
+            _scanner.EatToken();
         }
 
         return _scanner.Close(error, SyntaxKind.Error);
@@ -155,22 +155,22 @@ public partial class Parser
     private void ReportMissing(TokenKind expected)
         => _diagnosticBag.ReportError(new Diagnostic.MissingToken(
             _source, 
-            previous: _scanner.PreviousToken, 
+            previous: _scanner.Last, 
             next: _scanner.Peek(), 
             expected));
     private void ReportMissing(SyntaxCategory expected)
         => _diagnosticBag.ReportError(new Diagnostic.MissingToken(
             _source, 
-            previous: _scanner.PreviousToken, 
+            previous: _scanner.Last, 
             next: _scanner.Peek(), 
             expected));
 
     
     private bool HasNewlineBeforeNextToken()
     {
-        var spanToNextToken = _scanner.PreviousToken is null
+        var spanToNextToken = _scanner.Last is null
             ? _source.SpanFromTo(0, _scanner.Peek().Span.End)
-            : SourceSpan.Between(_scanner.PreviousToken.Span, _scanner.Peek().Span);
+            : SourceSpan.Between(_scanner.Last.Span, _scanner.Peek().Span);
         return _source.GetText(spanToNextToken).Contains('\n');
     }
     
@@ -190,7 +190,7 @@ public partial class Parser
             return null;
         }
 
-        return _scanner.AdvanceKnown(expectedKind);
+        return _scanner.EatToken(expectedKind);
     }
     
     private MarkClose? ExpectOperandExpr(LeftOperator? left, TokenSet anchor)
@@ -263,7 +263,7 @@ public partial class Parser
         var lhs = EatOperandExprHead(anchor);
 
         // --- Pratt loop
-        foreach (var _ in _scanner.MustAdvanceUntilEnd())
+        foreach (var _ in _scanner.MustEatEachIteration())
         {
             // --- Read operator and check precedence
             var opToken = _scanner.Peek();
@@ -305,7 +305,7 @@ public partial class Parser
             {
                 // --- GetMember
                 case TokenKind.Dot:
-                    _scanner.AdvanceKnown(TokenKind.Dot);
+                    _scanner.EatToken(TokenKind.Dot);
                     ExpectToken(TokenKind.Identifier);
                     lhs = _scanner.Close(expr, SyntaxKind.GetMemberExpr);
                     break;
@@ -318,7 +318,7 @@ public partial class Parser
                 
                 // --- Binary, everything else
                 default:
-                    _scanner.Advance();
+                    _scanner.EatToken();
                     
                     // --- Parse RHS
                     AdvanceOperandExprRhs(new LeftOperator(opPrecedence.Value, opToken), anchor, out var ateAmbiguousOperatorChain);
@@ -326,8 +326,8 @@ public partial class Parser
                     // --- Close expression
                     lhs = _scanner.Close(expr,
                         ateAmbiguousOperatorChain
-                            ? SyntaxKind.BinaryExpr
-                            : SyntaxKind.Error);
+                            ? SyntaxKind.Error
+                            : SyntaxKind.BinaryExpr);
                     break;
             }
         }
@@ -346,7 +346,7 @@ public partial class Parser
         // For everything else, we can advance a token
         // already and then switch on it.
         var openMark = _scanner.Open();
-        var token = _scanner.Advance();
+        var token = _scanner.EatToken();
         
         // --- Prefix Operator
         if (PrecedenceTable.TryGetPrefixPrecedence(token.Kind) is Precedence prefixPrecedence)
@@ -354,8 +354,8 @@ public partial class Parser
             AdvanceOperandExprRhs(new LeftOperator(prefixPrecedence, token), anchor, out var ateAmbiguousOperatorChain);
             return _scanner.Close(openMark,
                 ateAmbiguousOperatorChain
-                    ? SyntaxKind.UnaryExpr
-                    : SyntaxKind.Error);
+                    ? SyntaxKind.Error
+                    : SyntaxKind.UnaryExpr);
         }
         
         // Switch on everything else
@@ -407,7 +407,7 @@ public partial class Parser
 
         var previousOperatorPrecedence = left.Precedence;
 
-        foreach (var _ in _scanner.MustAdvanceUntilEnd())
+        foreach (var _ in _scanner.MustEatEachIteration())
         {
             // Eat OperandExpr
             if (ExpectOperandExpr(left, anchor) is null)
@@ -432,7 +432,7 @@ public partial class Parser
 
             // Next operator is ambiguous.
             // Advance it and parse another expression.
-            _scanner.Advance();
+            _scanner.EatToken();
 
             // If ambiguous operators was empty before, we need to add
             // the operator that was passed in, because that was already
@@ -462,22 +462,22 @@ public partial class Parser
         Debug.Assert(_scanner.IsAt(TokenKind.StringStart));
 
         var expr = _scanner.Open();
-        _scanner.AdvanceKnown(TokenKind.StringStart);
+        _scanner.EatToken(TokenKind.StringStart);
 
-        foreach (var _ in _scanner.MustAdvanceUntilEnd())
+        foreach (var _ in _scanner.MustEatEachIteration())
         {
             switch (_scanner.Peek().Kind)
             {
                 // --- StringText: Just add
                 case TokenKind.StringText:
                     var text = _scanner.Open();
-                    _scanner.AdvanceKnown(TokenKind.StringText);
+                    _scanner.EatToken(TokenKind.StringText);
                     _scanner.Close(text, SyntaxKind.StringText);
                     break;
                 
                 // --- StringEnd: Finish
                 case TokenKind.StringEnd:
-                    _scanner.AdvanceKnown(TokenKind.StringEnd);
+                    _scanner.EatToken(TokenKind.StringEnd);
                     return _scanner.Close(expr, SyntaxKind.StringExpr);
                 
                 // --- Interpolation
@@ -495,7 +495,7 @@ public partial class Parser
         // Eof, but string was not closed.
         // We advanced at least the StringStart token, so there must be a 
         // previous token.
-        Debug.Assert(_scanner.PreviousToken is not null);
+        Debug.Assert(_scanner.Last is not null);
         
         ReportUnclosedString();
         return _scanner.Close(expr, SyntaxKind.StringExpr);
@@ -503,11 +503,11 @@ public partial class Parser
         void ReportUnclosedString()
         {
             // There must be at least a StringStart token which has been advanced.
-            Debug.Assert(_scanner.PreviousToken is not null);
+            Debug.Assert(_scanner.Last is not null);
             
             _diagnosticBag.ReportError(new Diagnostic.UnclosedString(
                 _source,
-                LastToken: _scanner.PreviousToken));
+                LastToken: _scanner.Last));
         }
     }
 
@@ -543,7 +543,7 @@ public partial class Parser
         
         // --- Advance `{`
         var interpolationHole = _scanner.Open();
-        _scanner.AdvanceKnown(TokenKind.OpenBrace);
+        _scanner.EatToken(TokenKind.OpenBrace);
 
         // --- Parse Expression or empty interpolation
         var errorReported = false;
@@ -618,7 +618,7 @@ public partial class Parser
             if (_scanner.Peek(1).Kind is TokenKind.StringText or TokenKind.StringEnd or TokenKind.OpenBrace ||
                 !HasNewlineBeforeNextToken())
             {
-                _scanner.AdvanceKnown(TokenKind.CloseBrace);
+                _scanner.EatToken(TokenKind.CloseBrace);
             }
         }
         else if (!errorReported)
@@ -662,7 +662,7 @@ public partial class Parser
         // of StringStart, StringText or StringEnd.
         var willCurrentStringBeContinued = WillCurrentStringBeContinued();
         
-        foreach (var _ in _scanner.MustAdvanceUntilEnd())
+        foreach (var _ in _scanner.MustEatEachIteration())
         {
             // --- Nominal Termination on BraceClose:
             // We must exit this loop, when we see a `}` that closes
@@ -685,7 +685,7 @@ public partial class Parser
             // Error has been reported by ParseStringInterpolation already,
             // so we must not report again.
             errorExpr ??= _scanner.Open();
-            var advancedToken = _scanner.Advance();
+            var advancedToken = _scanner.EatToken();
             
             // Recalculate if necessary.
             if (advancedToken.Kind is TokenKind.StringStart or TokenKind.StringText or TokenKind.StringEnd)
@@ -754,11 +754,11 @@ public partial class Parser
         Debug.Assert(_scanner.IsAt(TokenKind.OpenParen));
 
         var argList = _scanner.Open();
-        _scanner.AdvanceKnown(TokenKind.OpenParen);
+        _scanner.EatToken(TokenKind.OpenParen);
 
         if (_scanner.IsAt(TokenKind.CloseParen))
         {
-            _scanner.AdvanceKnown(TokenKind.CloseParen);
+            _scanner.EatToken(TokenKind.CloseParen);
             return _scanner.Close(argList, SyntaxKind.ArgList);
         }
         
@@ -769,7 +769,7 @@ public partial class Parser
         // 4. Error, but stay   -> Gobble and continue
 
         // Parse args
-        foreach (var _ in _scanner.MustAdvanceUntilEnd())
+        foreach (var _ in _scanner.MustEatEachIteration())
         {
             var ANCHOR = TokenSet.Of(TokenKind.Semicolon,
                 TokenKind.FnKw, TokenKind.ModuleKw, TokenKind.Eof) | FirstSet.Operator;
@@ -783,7 +783,7 @@ public partial class Parser
                 if (_scanner.IsAt(TokenKind.Comma))
                 {
                     // Expect another expression
-                    _scanner.AdvanceKnown(TokenKind.Comma);
+                    _scanner.EatToken(TokenKind.Comma);
                 }
                 else if (_scanner.IsAt(TokenKind.CloseParen))
                 {
@@ -804,7 +804,7 @@ public partial class Parser
             else if (_scanner.IsAt(TokenKind.Comma))
             {
                 ReportMissing(SyntaxCategory.Expr);
-                _scanner.AdvanceKnown(TokenKind.Comma);
+                _scanner.EatToken(TokenKind.Comma);
             }
             else if (_scanner.IsAt(TokenKind.CloseParen))
             {
@@ -821,15 +821,15 @@ public partial class Parser
             {
                 ReportUnexpected(SyntaxCategory.Expr);
                 var error = _scanner.Open();
-                _scanner.Advance();
+                _scanner.EatToken();
 
-                foreach (var __ in _scanner.MustAdvanceUntilEnd())
+                foreach (var __ in _scanner.MustEatEachIteration())
                 {
                     var peek = _scanner.Peek();
                     if (ANCHOR.Contains(peek.Kind) || peek.Kind is TokenKind.Comma or TokenKind.CloseParen)
                         break;
 
-                    _scanner.Advance();
+                    _scanner.EatToken();
                 }
                 
                 _scanner.Close(error, SyntaxKind.Error);
@@ -837,7 +837,7 @@ public partial class Parser
                 if (_scanner.IsAt(TokenKind.Comma))
                 {
                     // Advance the comma and expect another expression
-                    _scanner.AdvanceKnown(TokenKind.Comma);
+                    _scanner.EatToken(TokenKind.Comma);
                 }
                 else if (_scanner.IsAt(TokenKind.CloseParen))
                 {

@@ -70,7 +70,7 @@ public partial class Parser
 
         
         /// <summary>
-        /// Amount of <see cref="Peek"/>s allowed between two <see cref="Advance"/>s.
+        /// Amount of <see cref="Peek"/>s allowed between two <see cref="EatToken()"/>s.
         /// Generous - real lookahead never goes beyond a handful.
         /// </summary>
         private const int MaxFuel = 256;
@@ -84,9 +84,9 @@ public partial class Parser
         private int _nextToken;
 
         /// <summary>
-        /// Backstop for everything <see cref="MustAdvanceUntilEnd"/> cannot see:
+        /// Backstop for everything <see cref="MustEatEachIteration"/> cannot see:
         /// hand-written loops and recursion that re-enters without consuming a token.
-        /// Refilled by <see cref="Advance"/>, burned by <see cref="Peek"/>.
+        /// Refilled by <see cref="EatToken()"/>, burned by <see cref="Peek"/>.
         /// </summary>
         private int _fuel;
 
@@ -136,12 +136,13 @@ public partial class Parser
         /// }
         /// </code>
         /// </example>
-        public LoopGuard MustAdvanceUntilEnd()
+        public LoopGuard MustEatEachIteration()
             => new(this);
         
-        public Token? PreviousToken
+        public Token? Last
             => _nextToken > 0 ? _tokens[_nextToken - 1] : null;
 
+        
         public MarkOpen Open()
         {
             _events.Add(new ParseEvent(ParseEventKind.Open));
@@ -172,7 +173,8 @@ public partial class Parser
             return new MarkOpen(before.OpenIndex);
         }
 
-        public Token Advance()
+        
+        public Token EatToken()
         {
             Debug.Assert(!IsAtEnd);
 
@@ -181,6 +183,17 @@ public partial class Parser
             return _tokens[_nextToken++];
         }
 
+        /// <summary>
+        /// Same as <see cref="EatToken"/>, but assert, that <paramref name="knownKind"/>
+        /// was eaten.
+        /// </summary>
+        public Token EatToken(TokenKind knownKind)
+        {
+            var token = EatToken();
+            Debug.Assert(token.Kind == knownKind);
+            return token;
+        }
+        
         
         public Token Peek(int lookahead = 0)
         {
@@ -211,24 +224,7 @@ public partial class Parser
         public bool IsAt(TokenSet set)
             => set.Contains(Peek().Kind);
 
-        public bool TryAdvance(TokenKind expectedKind)
-        {
-            if (IsAt(expectedKind))
-            {
-                Advance();
-                return true;
-            }
-
-            return false;
-        }
-
-        public Token AdvanceKnown(TokenKind knownKind)
-        {
-            Debug.Assert(IsAt(knownKind));
-            return Advance();
-        }
-
-
+        
         /// <summary>
         /// Meant to be executed from the debugger for a better view
         /// of the parsers events.
