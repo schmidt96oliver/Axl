@@ -3,6 +3,8 @@
 
 * ?? How to anchor EatStringInterpolation? It needs ", {, } to count properly.
   * How does this logic integrate well?
+* `RecoverTo` UnexpectedToken -> Squiggle all tokens
+* Split Infix, Postfix Operators
 * proper trivia attachment
 
 # Parser

@@ -49,7 +49,7 @@ public partial class Parser
             else
             {
                 ReportUnexpected(expected: SyntaxCategory.Stmt);
-                EatGarbageIntoError(FirstSet.Stmt | TokenKind.Eof);
+                RecoverTo(FirstSet.Stmt | TokenKind.Eof, null);
             }
         }
 
@@ -125,11 +125,20 @@ public partial class Parser
     #region Helpers
 
     /// <summary>
-    /// Eats all tokens, until one token in <paramref name="anchor"/> is seen and wraps
-    /// them inside a <see cref="SyntaxKind.Error"/> node. Always eats at least the next token.
+    /// If scanner is not at <paramref name="anchor"/>, collects garbage into
+    /// a <see cref="SyntaxKind.Error"/> node and reports <see cref="Diagnostic.UnexpectedToken"/>.
+    /// Always leaves the scanner on <paramref name="anchor"/>.
     /// </summary>
-    private MarkClose EatGarbageIntoError(TokenSet anchor)
+    /// <returns><c>True</c> iff garbage was collected and an error node added.</returns>
+    private bool RecoverTo(TokenSet anchor, TokenKind? expectedToken)
     {
+        if (_scanner.IsAt(anchor))
+            return false;
+        
+        if (expectedToken is TokenKind kind)
+            ReportUnexpected(kind);
+
+        // Eat garbage into an error node
         var error = _scanner.Open();
         _scanner.EatToken();
         
@@ -141,10 +150,13 @@ public partial class Parser
             _scanner.EatToken();
         }
 
-        return _scanner.Close(error, SyntaxKind.Error);
+        _scanner.Close(error, SyntaxKind.Error);
+        
+        Debug.Assert(_scanner.IsAt(anchor));
+        return true;
     }
-    
 
+    
     private void ReportUnexpected(SyntaxCategory expected)
         => _diagnosticBag.ReportError(new Diagnostic.UnexpectedToken(
             _source, _scanner.Peek(), expected));
@@ -763,28 +775,14 @@ public partial class Parser
         var groupAnchor = anchor | TokenKind.CloseParen;
         ExpectExpr(groupAnchor);
 
-        // --- Confused -> Move to known token.
-        var errorReported = false;
-        if (!_scanner.IsAt(groupAnchor))
-        {
-            ReportMissing(TokenKind.CloseParen);
-            errorReported = true;
+        // --- Recover if confused
+        var errorReported = RecoverTo(groupAnchor, expectedToken: TokenKind.CloseParen);
 
-            EatGarbageIntoError(groupAnchor);
-            Debug.Assert(_scanner.IsAt(groupAnchor));
-        }
-
-        // --- `)`
         if (_scanner.IsAt(TokenKind.CloseParen))
-        {
             _scanner.EatToken(TokenKind.CloseParen);
-            return _scanner.Close(expr, SyntaxKind.GroupExpr);
-        }
-        
-        // --- Anchor
-        if (!errorReported)
+        else if (!errorReported)
             ReportMissing(TokenKind.CloseParen);
-        Debug.Assert(_scanner.IsAt(anchor));
+        
         return _scanner.Close(expr, SyntaxKind.GroupExpr);
     }
 
@@ -819,18 +817,7 @@ public partial class Parser
             }
 
             // --- Confused?
-            if (!_scanner.IsAt(argAnchor))
-            {
-                // Parser is confused now, we don't know where we are.
-                // Eat everything until we know.
-                
-                // If we had an argument before, we expected `,`
-                if (expr is not null)
-                    ReportMissing(TokenKind.Comma);
-                
-                EatGarbageIntoError(argAnchor);
-                Debug.Assert(_scanner.IsAt(argAnchor));
-            }
+            RecoverTo(argAnchor, expectedToken: expr is not null ? TokenKind.Comma : null);
             
             // --- Next token
             if (_scanner.IsAt(TokenKind.Comma))
