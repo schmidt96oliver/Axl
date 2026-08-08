@@ -254,14 +254,35 @@ public partial class Parser
             // --- Open expression, advance operator
             var expr = _scanner.OpenBefore(lhs);
             
-            //TODO: Special case `(` and '.' (which parse specially)
-            _scanner.Advance();
-
-            // --- Parse tail
-            var wasNonAmbiguousTail = ParseOperandExprTail(new LeftOperator(opPrecedence.Value, opToken));
+            // --- Advance operator
+            switch (opToken.Kind)
+            {
+                // --- GetMember
+                case TokenKind.Dot:
+                    _scanner.AdvanceKnown(TokenKind.Dot);
+                    AdvanceOrError(TokenKind.Identifier);
+                    lhs = _scanner.Close(expr, SyntaxKind.GetMemberExpr);
+                    break;
+                
+                // --- Call
+                case TokenKind.OpenParen:
+                    ParseArgList();
+                    lhs = _scanner.Close(expr, SyntaxKind.CallExpr);
+                    break;
+                
+                // --- Binary, everything else
+                default:
+                    _scanner.Advance();
+                    
+                    // --- Parse tail
+                    var wasNonAmbiguousTail = ParseOperandExprTail(new LeftOperator(opPrecedence.Value, opToken));
             
-            // --- Close expression
-            lhs = _scanner.Close(expr, wasNonAmbiguousTail ? SyntaxKind.BinaryExpr : SyntaxKind.Error);
+                    // --- Close expression
+                    lhs = _scanner.Close(expr, wasNonAmbiguousTail ? SyntaxKind.BinaryExpr : SyntaxKind.Error);
+                    break;
+            }
+
+            
         }
 
         return true;
@@ -681,5 +702,122 @@ public partial class Parser
         }
     }
 
+
+    private void ParseArgList()
+    {
+        Debug.Assert(_scanner.IsAt(TokenKind.OpenParen));
+
+        var argList = _scanner.Open();
+        _scanner.AdvanceKnown(TokenKind.OpenParen);
+
+        if (_scanner.IsAt(TokenKind.CloseParen))
+        {
+            _scanner.AdvanceKnown(TokenKind.CloseParen);
+            _scanner.Close(argList, SyntaxKind.ArgList);
+            return;
+        }
+        
+        // PATTERN:
+        // 1. Expected case     -> Handle
+        // 2. Graceful errors   -> Handle
+        // 3. Anchors           -> Close and Break
+        // 4. Error, but stay   -> Gobble and continue
+
+        // Parse args
+        foreach (var _ in _scanner.MustAdvanceUntilEnd())
+        {
+            var ANCHOR = TokenSet.Of(TokenKind.Semicolon,
+                TokenKind.FnKw, TokenKind.ModuleKw, TokenKind.Eof) | FirstSet.Operator;
+            
+            if (_scanner.IsAt(FirstSet.Expr))
+            {
+                var arg = _scanner.Open();
+                TryParseExpr();
+                _scanner.Close(arg, SyntaxKind.Arg);
+        
+                if (_scanner.IsAt(TokenKind.Comma))
+                {
+                    // Expect another expression
+                    _scanner.AdvanceKnown(TokenKind.Comma);
+                }
+                else if (_scanner.IsAt(TokenKind.CloseParen))
+                {
+                    // Expect closing
+                    break;
+                }
+                else if (_scanner.IsAt(ANCHOR))
+                {
+                    ReportMissing(TokenKind.CloseParen);
+                    Close();
+                    return;
+                    //TODO: Break free
+                }
+                else
+                {
+                    ReportMissing(TokenKind.Comma);
+                }
+            }
+            else if (_scanner.IsAt(TokenKind.Comma))
+            {
+                ReportMissing(SyntaxCategory.Expr);
+                _scanner.AdvanceKnown(TokenKind.Comma);
+            }
+            else if (_scanner.IsAt(TokenKind.CloseParen))
+            {
+                // TODO: not reachable?
+                ReportMissing(SyntaxCategory.Expr);
+                break;
+            }
+            else if (_scanner.IsAt(ANCHOR))
+            {
+                ReportMissing(SyntaxCategory.Expr);
+                Close();
+                return;
+            }
+            else
+            {
+                ReportUnexpected(SyntaxCategory.Expr);
+                var error = _scanner.Open();
+                _scanner.Advance();
+
+                foreach (var __ in _scanner.MustAdvanceUntilEnd())
+                {
+                    var peek = _scanner.Peek();
+                    if (ANCHOR.Contains(peek.Kind) || peek.Kind is TokenKind.Comma or TokenKind.CloseParen)
+                        break;
+
+                    _scanner.Advance();
+                }
+                
+                _scanner.Close(error, SyntaxKind.Error);
+
+                if (_scanner.IsAt(TokenKind.Comma))
+                {
+                    // Advance the comma and expect another expression
+                    _scanner.AdvanceKnown(TokenKind.Comma);
+                }
+                else if (_scanner.IsAt(TokenKind.CloseParen))
+                {
+                    // It's about to be close, exit loop
+                    break;
+                }
+                else if (_scanner.IsAt(ANCHOR))
+                {
+                    ReportMissing(TokenKind.CloseParen);
+                    Close();
+                    return;
+                }
+            }
+        }
+        
+        AdvanceOrError(TokenKind.CloseParen);
+        // _scanner.AdvanceKnown(TokenKind.CloseParen);
+        Close();
+
+        void Close()
+        {
+            _scanner.Close(argList, SyntaxKind.ArgList);
+        }
+    }
     #endregion
 }
