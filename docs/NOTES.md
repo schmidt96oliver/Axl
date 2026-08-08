@@ -1,9 +1,8 @@
 # ------------------------------------ Axl Project ------------------------------------
                                        ≽(◕ ᴗ ◕)≼
 
-* `(` as call needs special casing
-* `.` check its parsing according to grammar
-
+* ?? How to anchor EatStringInterpolation? It needs ", {, } to count properly.
+  * How does this logic integrate well?
 * proper trivia attachment
 
 # Parser

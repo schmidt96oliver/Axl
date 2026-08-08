@@ -156,7 +156,7 @@ public partial class Parser
             // through a child node. Exception is the tree root, which is only guaranteed
             // to be non-empty when trivia is flushed onto it later. An empty file would
             // trigger this assertion.
-            Debug.Assert(kind is SyntaxKind.TreeRoot || _events.Count > openMark.OpenIndex + 1, 
+            Debug.Assert(_events.Count > openMark.OpenIndex + 1, 
                 "Closed an empty node, which was not the root.");
 
             _events[openMark.OpenIndex] = new ParseEvent(ParseEventKind.Open, kind);
@@ -176,7 +176,7 @@ public partial class Parser
         
         public Token EatToken()
         {
-            Debug.Assert(!IsAtEnd);
+            Debug.Assert(_nextToken < _tokens.Count);
 
             _events.Add(new ParseEvent(ParseEventKind.Advance));
             _fuel = MaxFuel;

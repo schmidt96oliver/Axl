@@ -37,6 +37,10 @@ public partial class Parser
         var globalAnchor = TokenSet.Of(TokenKind.FnKw, TokenKind.ModuleKw, 
             TokenKind.VarKw, TokenKind.UsingKw, TokenKind.PublicKw, TokenKind.PrivateKw, 
             TokenKind.NativeKw);
+
+        // Eof must be anchored, because every loop stops implicitly at Eof
+        // and will assert that it's at a known position.
+        globalAnchor |= TokenKind.Eof;
         
         foreach (var _ in _scanner.MustEatEachIteration())
         {
@@ -49,6 +53,7 @@ public partial class Parser
             }
         }
 
+        _scanner.EatToken(TokenKind.Eof);
         _scanner.Close(file, SyntaxKind.TreeRoot);
     }
     
@@ -93,14 +98,7 @@ public partial class Parser
                     if (isRoot)
                     {
                         Debug.Assert(nodes.Count == 0, "TreeRoot was not the root.");
-
-                        // Flush the remaining trivia and the Eof token here. This also
-                        // guarantees the root has at least one child.
-                        while (nextToken < tokens.Length)
-                        {
-                            builtNode.Nodes.Add(tokens[nextToken]);
-                            nextToken++;
-                        }
+                        Debug.Assert(nextToken == tokens.Length, "TreeRoot did not eat all tokens.");
                     }
 
                     var node = new SyntaxNode(builtNode.Kind, builtNode.Nodes.DrainToImmutable());
