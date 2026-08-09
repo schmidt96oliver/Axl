@@ -7,7 +7,7 @@ switch (args[0])
         break;
     
     case "play":
-        Playground.Run();
+        UiPlayground.Run();
         break;
     
     default:
