@@ -261,7 +261,7 @@ public partial class Parser
         if (_scanner.IsAt(FirstSet.OperandExpr))
             return EatOperandExpr(left: null, anchor);
 
-        throw new InvalidOperationException($"{nameof(FirstSet.Expr)} was too large");
+        throw new UnreachableException($"{nameof(FirstSet.Expr)} was too large");
     }
     
     #endregion
@@ -415,7 +415,7 @@ public partial class Parser
     /// diagnostic for them.
     /// </summary>
     /// <param name="ateAmbiguousOperatorChain">
-    /// <c>False</c> iff an ambiguous chain was advanced.
+    /// <c>True</c> iff an ambiguous chain was advanced.
     /// </param>
     private void AdvanceOperandExprRhs(LeftOperator left, Anchor anchor, out bool ateAmbiguousOperatorChain)
     {

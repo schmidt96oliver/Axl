@@ -153,9 +153,7 @@ public partial class Parser
         {
             // No event between Open and Close means the node has no children at all.
             // Every node must cover at least one token, either advanced directly or
-            // through a child node. Exception is the tree root, which is only guaranteed
-            // to be non-empty when trivia is flushed onto it later. An empty file would
-            // trigger this assertion.
+            // through a child node.
             Debug.Assert(_events.Count > openMark.OpenIndex + 1, 
                 "Closed an empty node, which was not the root.");
 
