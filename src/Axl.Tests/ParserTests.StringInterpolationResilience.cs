@@ -282,8 +282,7 @@ public partial class ParserTests
                 ERROR MissingToken@[6, 6): Expected ';'.
                 ERROR UnexpectedToken@[8, 9): Expected a statement, got '{'.
                 ERROR MissingToken@[32, 33): Expected '}'.
-                ERROR UnclosedString@[33, 33): String has not been closed.
-                ERROR MissingToken@[33, 33): Expected ';'.
+                ERROR UnclosedString@[32, 32): String has not been closed.
                 ERROR UnexpectedToken@[35, 36): Expected a statement, got '}'.
 
 
@@ -303,7 +302,7 @@ public partial class ParserTests
                 · · · · NumberLiteral '1'
                 · · · · '+'
                 · · · · NumberLiteral '2'
-                · · · Error ';'
+                · ';'
                 Error '}'
                 """);
         [Fact]
@@ -358,8 +357,7 @@ public partial class ParserTests
                 ERROR MissingToken@[6, 6): Expected ';'.
                 ERROR UnexpectedToken@[8, 9): Expected a statement, got '{'.
                 ERROR MissingToken@[36, 37): Expected '}'.
-                ERROR UnclosedString@[37, 37): String has not been closed.
-                ERROR MissingToken@[37, 37): Expected ';'.
+                ERROR UnclosedString@[36, 36): String has not been closed.
                 ERROR UnexpectedToken@[39, 40): Expected a statement, got '}'.
 
 
@@ -382,7 +380,7 @@ public partial class ParserTests
                 · · · · · NumberLiteral '1'
                 · · · · '+'
                 · · · · NumberLiteral '2'
-                · · · Error ';'
+                · ';'
                 Error '}'
                 """);
         [Fact]

@@ -357,7 +357,7 @@ public partial class Parser
         
         // --- String
         if (_scanner.IsAt(TokenKind.StringStart))
-            return EatStringExpr();
+            return EatStringExpr(anchor);
         
         // --- Group
         if (_scanner.IsAt(TokenKind.OpenParen))
@@ -471,7 +471,7 @@ public partial class Parser
     }
 
     
-    private MarkClose EatStringExpr()
+    private MarkClose EatStringExpr(Anchor anchor)
     {
         Debug.Assert(_scanner.IsAt(TokenKind.StringStart));
 
@@ -496,7 +496,14 @@ public partial class Parser
                 
                 // --- Interpolation
                 case TokenKind.OpenBrace:
-                    EatStringInterpolation();
+                    // Anchor on StringText, StringEnd and BraceClose. Those are the only valid
+                    // continuations after an interpolation the Lexer will produce if it thinks
+                    // it's inside a string. Everything else is an unclosed string.
+
+                    EatStringInterpolation(anchor | TokenKind.StringText | TokenKind.StringEnd | TokenKind.OpenBrace);
+                    // The next iteration will handle StringText, StringEnd or OpenBrace. If it
+                    // finds anything else (e.g. the enclosing anchor), it breaks off.
+                    
                     break;
                     
                 // --- Anything else is an unclosed string
@@ -510,8 +517,8 @@ public partial class Parser
         // We advanced at least the StringStart token, so there must be a 
         // previous token.
         Debug.Assert(_scanner.Last is not null);
-        
         ReportUnclosedString();
+        
         return _scanner.Close(expr, SyntaxKind.StringExpr);
 
         void ReportUnclosedString()
@@ -525,78 +532,39 @@ public partial class Parser
         }
     }
 
-    private MarkClose EatStringInterpolation()
+    private MarkClose EatStringInterpolation(Anchor anchor)
     {
-        // Grammar is "{" Expr? "}" and allows for multi-line Expr inside this interpolation.
-        
-        // We need to handle common typing scenarios gracefully and resiliently here. The tokens
-        // that come from the Lexer do not directly distinguish between inside-interpolation tokens
-        // and normal-code tokens. So we need to reconstruct that based on heuristics in case the
-        // interpolation is not valid.
-        
-        // We start by parsing the expression, which is eager:
-        //   "Foo {a.
-        //   1 + 2;
-        //   fn Test() { }
-        // Will result in `a.1 + 2` being parsed inside the interpolation. The blast radius is
-        // small: Only one expression. The FnDecl thereafter will be outside of this interpolation.
-        
-        // The interesting case is what happens after the expression is parsed and the interpolation
-        // is not (yet) closed. Parser will go into gobble-mode which has special rules to determine
-        // if it gobbles tokens into one error node inside the interpolation or if it leaves the
-        // interpolation.
-        
-        // Finally the closing "}" is special cased as well to catch common typing-cases like
-        //    fn Foo()
-        //    {
-        //        "Bar { 1
-        //    }
-        // Where we want the last "}" to close the function body instead of the interpolation.
-        
         Debug.Assert(_scanner.IsAt(TokenKind.OpenBrace));
         
+        // Grammar is "{" Expr? "}" and allows for multi-line Expr inside this interpolation.
         // --- Advance `{`
         var interpolationHole = _scanner.Open();
         _scanner.EatToken(TokenKind.OpenBrace);
 
         // --- Parse Expression or empty interpolation
+        // `{ `}` will fall through and consume `}` as closing.
         var errorReported = false;
-
-        if (_scanner.IsAt(TokenKind.CloseBrace))
+        if (!_scanner.IsAt(TokenKind.CloseBrace))
         {
-            // Interpolation is `{ }`.
-            // Just fall through. Method will see `}` and
-            // apply the resilience logic.
-        }
-        else
-        {
-            // If scanner is not at an expression, a
-            // MissingToken diagnostic is reported. Thus,
-            // we update errorReported flag.
-            var expr = ExpectExpr(Anchor.Forced | TokenKind.StringStart | TokenKind.StringText | TokenKind.StringEnd |
-                TokenKind.CloseBrace | TokenKind.Eof);
-            errorReported = expr is null;
+            errorReported = ExpectExpr(anchor | TokenKind.CloseBrace) is null;
         }
 
-        // --- Garbage left after the expression?
+        // --- Recover to anchor or close brace if needed
         if (!_scanner.IsAt(TokenKind.CloseBrace))
         {
             if (!errorReported)
             {
-                // Ambiguous between missing and unexpected, because
-                // whatever came here may or may not be gobbled later.
-                // Missing is the less offensive option, so we go with that.
                 ReportMissing(TokenKind.CloseBrace);
                 errorReported = true;
             }
             
-            // Gobble up any garbage that belongs to this interpolation.
-            MaybeEatStringInterpolationGarbage();
+            // Parser is confused now. Recover and pass anchors that we got
+            // from the enclosing loop. Note that it will handle {, }, StringStart,
+            // StringText and StringEnd itself.
+            RecoverFromStringInterpolationGarbage(anchor);
         }
-
-        // --- Closing brace
-        // Garbage gobbling might leave before landing on a closing brace.
         
+        // --- Close brace, valid closing
         if (_scanner.IsAt(TokenKind.CloseBrace))
         {
             // We need to catch common typing-cases here like
@@ -607,28 +575,11 @@ public partial class Parser
             // We want the last `}` to close the function body instead of this
             // interpolation.
             
-            // If the closing brace is followed by either StringText, StringEnd or
-            // `{` (opening another interpolation directly), the closing brace here
-            // must close the interpolation. As in
-            //    fn a()
-            //    {
-            //       "Hello {
-            //    } Bar
-            // Where `Bar` is lexed as StringText. We must not disturb the world-view
-            // of the Lexer, since that will introduce stray StringText/End tokens into
-            // the Parser and produce cascading errors.
-            
-            // If the closing brace is followed by anything else, it doesn't have
-            // to close this interpolation. We can choose. As a heuristic, we choose based
-            // on line: `}` closes the interpolation iff if is on the same line as the token
-            // before.
-            
             // Closing brace can only be a valid interpolation close,
             // if it is followed by StringText, StringEnd or another OpenBrace
             // (starts a new interpolation directly). If that is not the case, the
-            // string is unclosed. The same heuristic is valid: Take it if its
-            // on the same line, otherwise, leave it to the parser. This is easy to
-            // check and catches the common typing scenarios. It's not perfect, but good enough.
+            // string is unclosed. If } is on the same line, take it as closing the
+            // interpolation, otherwise leave it to enclosing loops.
             
             if (_scanner.Peek(1).Kind is TokenKind.StringText or TokenKind.StringEnd or TokenKind.OpenBrace ||
                 !HasNewlineBeforeNextToken())
@@ -644,28 +595,21 @@ public partial class Parser
         return _scanner.Close(interpolationHole, SyntaxKind.StringInterpolation);
     }
 
-    private MarkClose? MaybeEatStringInterpolationGarbage()
+    /// <summary>
+    /// Recovers from garbage inside a string interpolation. It stops on <paramref name="anchor"/>
+    /// or based on heuristics to make typing scenarios more resilient.
+    /// </summary>
+    private MarkClose? RecoverFromStringInterpolationGarbage(Anchor anchor)
     {
-        // The parser is already confused: It sits after and expression with no
-        // closing brace, which should close the interpolation. Now the goal is
-        // to determine, which garbage belongs to this interpolation.
-        //
-        // If we see that the string will be continued (by StringText/End),
-        // the garbage must belong inside this interpolation.
-        // Otherwise, we are free to choose how to handle the garbage. To catch
-        // common typing scenarios, we only gobble everything until a newline
-        // and then stop.
+        // The parser is confused: It sits after an expression with no
+        // closing brace. The goal is to determine, which garbage belongs to
+        // this interpolation and what tokens an outer loop should take care of.
         
-        //    "Hello {1+2 
-        //    var a = 3;
-        // This is the common typing case: Valid expression inside interpolation,
-        // there is no `}` and we enter gobbling. VarDecl will not belong inside
-        // this interpolation.
-        
-        //    "Hello {1+2 fn
-        //        var } Bla";
-        // Even if nonsensical, `fn var` must be gobbled into the interpolation hole,
-        // since the string will be continued.
+        // (1) Anchors will be handled outside, except for StringStart/Text/End (see below).
+        // (2) If we see that the string will be continued (by StringText/End),
+        //     the garbage must belong inside this interpolation.
+        // (3) Otherwise, we eat every token on the same line and then stop. This heuristic should
+        //     catch most scenarios.
         
         Debug.Assert(!_scanner.IsAt(TokenKind.CloseBrace));
         
@@ -691,14 +635,19 @@ public partial class Parser
                     break;
                 braceCount--;
             }
+            else if (_scanner.IsAt(anchor))
+            {
+                // {, }, StringStart/Text/End will be handled by this loop, so
+                // we ignore the anchor if it has them.
+                if (_scanner.Peek().Kind is not (TokenKind.StringStart or TokenKind.StringText or TokenKind.StringEnd))
+                    break;
+            }
             
             // --- Belongs outside this interpolation?
             if (!willCurrentStringBeContinued && HasNewlineBeforeNextToken())
                 break;
-            
+
             // --- Gobble Gobble Gobble
-            // Error has been reported by ParseStringInterpolation already,
-            // so we must not report again.
             errorExpr ??= _scanner.Open();
             var advancedToken = _scanner.EatToken();
             
