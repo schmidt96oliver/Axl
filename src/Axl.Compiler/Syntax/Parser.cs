@@ -280,11 +280,14 @@ public partial class Parser
         {
             // --- Read operator and check precedence
             var opToken = _scanner.Peek();
-            var opPrecedence = PrecedenceTable.TryGetInfixPrecedence(opToken.Kind)
-                               ?? PrecedenceTable.TryGetPostfixPrecedence(opToken.Kind);
-
-            if (opPrecedence is null)
+            var infixPrecedence = PrecedenceTable.TryGetInfixPrecedence(opToken.Kind);
+            var postfixPrecedence = PrecedenceTable.TryGetPostfixPrecedence(opToken.Kind);
+            if (infixPrecedence is null && postfixPrecedence is null)
                 break;
+            Debug.Assert(infixPrecedence is null || postfixPrecedence is null, "Operator is both infix and postfix. This might trap something here.");
+            
+            var opPrecedence = postfixPrecedence ?? infixPrecedence;
+            Debug.Assert(opPrecedence is not null);
 
             var precedenceComparison = left is LeftOperator actualLeft
                 ? PrecedenceTable.Compare(actualLeft.Precedence, opPrecedence.Value)
@@ -312,7 +315,7 @@ public partial class Parser
             }
 
             // --- Advance operator and parse
-            if (PrecedenceTable.TryGetPostfixPrecedence(opToken.Kind) is not null)
+            if (postfixPrecedence is not null)
                 lhs = EatPostfixOperandExpr(lhs, anchor);
             else // Infix expr
             {
