@@ -50,9 +50,6 @@ public partial class Parser
 
         public static Precedence? TryGetInfixPrecedence(TokenKind kind) => kind switch
         {
-            TokenKind.Dot => Precedence.Dot,
-            TokenKind.OpenParen => Precedence.ArgList,
-
             TokenKind.Star or TokenKind.Slash => Precedence.Factor,
             TokenKind.Plus or TokenKind.Minus => Precedence.Sum,
 
@@ -63,6 +60,13 @@ public partial class Parser
             TokenKind.OrKw => Precedence.LogicOr,
 
             _ => null
+        };
+
+        public static Precedence? TryGetPostfixPrecedence(TokenKind kind) => kind switch
+        {
+            TokenKind.Dot => Precedence.Dot,
+            TokenKind.OpenParen => Precedence.ArgList,
+            _ => null,
         };
 
         public static PrecedenceComparison Compare(Precedence left, Precedence right)

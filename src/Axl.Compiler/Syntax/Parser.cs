@@ -280,7 +280,8 @@ public partial class Parser
         {
             // --- Read operator and check precedence
             var opToken = _scanner.Peek();
-            var opPrecedence = PrecedenceTable.TryGetInfixPrecedence(opToken.Kind);
+            var opPrecedence = PrecedenceTable.TryGetInfixPrecedence(opToken.Kind)
+                               ?? PrecedenceTable.TryGetPostfixPrecedence(opToken.Kind);
 
             if (opPrecedence is null)
                 break;
@@ -310,41 +311,21 @@ public partial class Parser
                 break;
             }
 
-            // --- Open expression, advance operator
-            var expr = _scanner.OpenBefore(lhs);
-            
-            // --- Advance operator
-            switch (opToken.Kind)
+            // --- Advance operator and parse
+            if (PrecedenceTable.TryGetPostfixPrecedence(opToken.Kind) is not null)
+                lhs = EatPostfixOperandExpr(lhs, anchor);
+            else // Infix expr
             {
-                // --- GetMember
-                case TokenKind.Dot:
-                    _scanner.EatToken(TokenKind.Dot);
-                    ExpectToken(TokenKind.Identifier);
-                    lhs = _scanner.Close(expr, SyntaxKind.GetMemberExpr);
-                    break;
-                
-                // --- Call
-                case TokenKind.OpenParen:
+                var expr = _scanner.OpenBefore(lhs);
+                _scanner.EatToken();
                     
-                    // We know how to handle another operator.
-                    EatArgList(anchor);
-                    lhs = _scanner.Close(expr, SyntaxKind.CallExpr);
-                    break;
+                AdvanceOperandExprRhs(new LeftOperator(opPrecedence.Value, opToken), anchor,
+                    out var ateAmbiguousOperatorChain);
                 
-                // --- Binary, everything else
-                default:
-                    _scanner.EatToken();
-                    
-                    // --- Parse RHS
-                    AdvanceOperandExprRhs(new LeftOperator(opPrecedence.Value, opToken), anchor,
-                        out var ateAmbiguousOperatorChain);
-            
-                    // --- Close expression
-                    lhs = _scanner.Close(expr,
-                        ateAmbiguousOperatorChain
-                            ? SyntaxKind.Error
-                            : SyntaxKind.BinaryExpr);
-                    break;
+                lhs = _scanner.Close(expr,
+                    ateAmbiguousOperatorChain
+                        ? SyntaxKind.Error
+                        : SyntaxKind.BinaryExpr);
             }
         }
 
@@ -404,6 +385,27 @@ public partial class Parser
         }
 
         throw new UnreachableException($"{nameof(FirstSet.OperandExpr)} was too large");
+    }
+
+    private MarkClose EatPostfixOperandExpr(MarkClose lhs, Anchor anchor)
+    {
+        var expr = _scanner.OpenBefore(lhs);
+        switch (_scanner.Peek().Kind)
+        {
+            // --- GetMember
+            case TokenKind.Dot:
+                _scanner.EatToken(TokenKind.Dot);
+                ExpectToken(TokenKind.Identifier);
+                return _scanner.Close(expr, SyntaxKind.GetMemberExpr);
+
+            // --- Call
+            case TokenKind.OpenParen:
+                EatArgList(anchor);
+                return _scanner.Close(expr, SyntaxKind.CallExpr);
+            
+            default:
+                throw new UnreachableException("Not a postfix op.");
+        }
     }
     
     /// <summary>

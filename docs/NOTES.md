@@ -1,35 +1,29 @@
 # ------------------------------------ Axl Project ------------------------------------
                                        ≽(◕ ᴗ ◕)≼
 
-* ?? How to anchor EatStringInterpolation? It needs ", {, } to count properly.
-  * How does this logic integrate well?
 * `RecoverTo` UnexpectedToken -> Squiggle all tokens
-* Split Infix, Postfix Operators
-* proper trivia attachment
 
 # Parser
 [x] Grammar
 
-[ ] Operand expressions, Pratt parser
+[x] Operand expressions, Pratt parser
 [ ] BodiedExpr; Semicolon rules
 [ ] TailExpr
 [ ] VarDecl, TypeExpr, TypeAnnotation
-[ ] String Exprs
+[x] String Exprs
 [ ] FnDecl, NativeClause, ModifierList
 [ ] MemberDecl, (Global)ModuleDecl, UsingDecl
 
 [x] Matklad framework: 
 [x] Tree builder: Iterate events
 [ ] Proper trivia handling
-[ ] Anchors: TokenSet as BitSet (see Claude); using Scope style; Anchor stack; FirstSets
-   * AtAnchor
+[x] Anchors: TokenSet as BitSet
 [ ] Code lazily: SyntaxViews (only product syntax, never sum syntax). Provide FindNode/FindToken/NthToken/NthNode...
 
 [x] Interpolated Strings
    * Lexer does not emit empty StringText/StringEnd.
 [ ] "=>" Body syntax (see ExpressionsAndStatements.axl)
 [ ] Keyword `never` in return-type position
-[ ] Trailing comma allowed (param/arg list)
 
 # First features
 * i32, i64, f32, f64, bool, string
