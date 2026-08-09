@@ -51,8 +51,6 @@ public enum SyntaxKind
     Arm,
     
     // Clauses
-    Arg,
-    Param,
     ArgList,
     ParamList,
     TypeAnnotation,

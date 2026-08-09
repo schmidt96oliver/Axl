@@ -759,16 +759,10 @@ public partial class Parser
             // Each iteration expects an argument, i.e. an expression.
             
             // --- Expr
-            var expr = ExpectExpr(argAnchor);
-            if (expr is MarkClose argExpr)
-            {
-                // Wrap into SyntaxKind.Arg
-                var arg = _scanner.OpenBefore(argExpr);
-                _scanner.Close(arg, SyntaxKind.Arg);
-            }
-
+            ExpectExpr(argAnchor);
+            
             // --- Confused?
-            RecoverTo(argAnchor, expectedToken: expr is not null ? TokenKind.Comma : null);
+            RecoverTo(argAnchor, expectedToken: TokenKind.Comma);
             
             // --- Next token
             if (_scanner.IsAt(TokenKind.Comma))
