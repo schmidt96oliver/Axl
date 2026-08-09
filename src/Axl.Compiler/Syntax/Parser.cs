@@ -34,7 +34,7 @@ public partial class Parser
     {
         var file = _scanner.Open();
 
-        var globalAnchor = TokenSet.Of(TokenKind.FnKw, TokenKind.ModuleKw, 
+        var globalAnchor = Anchor.Of(TokenKind.FnKw, TokenKind.ModuleKw, 
             TokenKind.VarKw, TokenKind.UsingKw, TokenKind.PublicKw, TokenKind.PrivateKw, 
             TokenKind.NativeKw);
 
@@ -49,7 +49,7 @@ public partial class Parser
             else
             {
                 ReportUnexpected(expected: SyntaxCategory.Stmt);
-                RecoverTo(FirstSet.Stmt | TokenKind.Eof, null);
+                RecoverTo(Anchor.From(FirstSet.Stmt), null);
             }
         }
 
@@ -130,7 +130,7 @@ public partial class Parser
     /// Always leaves the scanner on <paramref name="anchor"/>.
     /// </summary>
     /// <returns><c>True</c> iff garbage was collected and an error node added.</returns>
-    private bool RecoverTo(TokenSet anchor, TokenKind? expectedToken)
+    private bool RecoverTo(Anchor anchor, TokenKind? expectedToken)
     {
         if (_scanner.IsAt(anchor))
             return false;
@@ -205,7 +205,7 @@ public partial class Parser
         return _scanner.EatToken(expectedKind);
     }
     
-    private MarkClose? ExpectOperandExpr(LeftOperator? left, TokenSet anchor)
+    private MarkClose? ExpectOperandExpr(LeftOperator? left, Anchor anchor)
     {
         if (!_scanner.IsAt(FirstSet.OperandExpr))
         {
@@ -216,7 +216,7 @@ public partial class Parser
         return EatOperandExpr(left, anchor);
     }
 
-    private MarkClose? ExpectExpr(TokenSet anchor)
+    private MarkClose? ExpectExpr(Anchor anchor)
     {
         if (!_scanner.IsAt(FirstSet.Expr))
         {
@@ -232,7 +232,7 @@ public partial class Parser
     
     #region Statements and Declarations
 
-    private MarkClose EatStmt(TokenSet anchor)
+    private MarkClose EatStmt(Anchor anchor)
     {
         Debug.Assert(_scanner.IsAt(FirstSet.Stmt));
         
@@ -254,7 +254,7 @@ public partial class Parser
 
     #region Expr, TailExpr, BodiedExpr
     
-    private MarkClose EatExpr(TokenSet anchor)
+    private MarkClose EatExpr(Anchor anchor)
     {
         Debug.Assert(_scanner.IsAt(FirstSet.Expr));
 
@@ -268,7 +268,7 @@ public partial class Parser
 
     #region Operand Expressions
 
-    private MarkClose EatOperandExpr(LeftOperator? left, TokenSet anchor)
+    private MarkClose EatOperandExpr(LeftOperator? left, Anchor anchor)
     {
         Debug.Assert(_scanner.IsAt(FirstSet.OperandExpr));
         
@@ -351,7 +351,7 @@ public partial class Parser
         return lhs;
     }
     
-    private MarkClose EatOperandExprHead(TokenSet anchor)
+    private MarkClose EatOperandExprHead(Anchor anchor)
     {
         Debug.Assert(_scanner.IsAt(FirstSet.OperandExpr));
         
@@ -415,7 +415,7 @@ public partial class Parser
     /// <param name="ateAmbiguousOperatorChain">
     /// <c>False</c> iff an ambiguous chain was advanced.
     /// </param>
-    private void AdvanceOperandExprRhs(LeftOperator left, TokenSet anchor, out bool ateAmbiguousOperatorChain)
+    private void AdvanceOperandExprRhs(LeftOperator left, Anchor anchor, out bool ateAmbiguousOperatorChain)
     {
         ImmutableArray<Token>.Builder? ambiguousOperators = null;
 
@@ -573,8 +573,8 @@ public partial class Parser
             // If scanner is not at an expression, a
             // MissingToken diagnostic is reported. Thus,
             // we update errorReported flag.
-            var expr = ExpectExpr(anchor: TokenSet.Of(
-                TokenKind.StringStart, TokenKind.StringText, TokenKind.StringEnd, TokenKind.CloseBrace, TokenKind.Eof));
+            var expr = ExpectExpr(Anchor.Forced | TokenKind.StringStart | TokenKind.StringText | TokenKind.StringEnd |
+                TokenKind.CloseBrace | TokenKind.Eof);
             errorReported = expr is null;
         }
 
@@ -764,7 +764,7 @@ public partial class Parser
     }
 
 
-    private MarkClose EatGroupExpr(TokenSet anchor)
+    private MarkClose EatGroupExpr(Anchor anchor)
     {
         Debug.Assert(_scanner.IsAt(TokenKind.OpenParen));
 
@@ -787,7 +787,7 @@ public partial class Parser
     }
 
 
-    private MarkClose EatArgList(TokenSet anchor)
+    private MarkClose EatArgList(Anchor anchor)
     {
         Debug.Assert(_scanner.IsAt(TokenKind.OpenParen));
 

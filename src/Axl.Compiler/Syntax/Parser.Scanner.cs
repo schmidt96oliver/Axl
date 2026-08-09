@@ -221,6 +221,9 @@ public partial class Parser
         public bool IsAt(TokenKind kind)
             => Peek().Kind == kind;
 
+        public bool IsAt(Anchor anchor)
+            => anchor.Contains(Peek().Kind);
+
         public bool IsAt(TokenSet set)
             => set.Contains(Peek().Kind);
 
