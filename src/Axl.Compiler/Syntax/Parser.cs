@@ -483,8 +483,16 @@ public partial class Parser
         var expr = _scanner.Open();
         _scanner.EatToken(TokenKind.StringStart);
 
+        var isClosed = false;
         foreach (var _ in _scanner.MustEatEachIteration())
         {
+            // A String can be terminated by a whitespace token. Since we 
+            // cannot check that here directly, we check if the next token
+            // comes after a newline. This is the same, since Lexer will
+            // terminate the string early only if it hit a newline.
+            if (HasNewlineBeforeNextToken())
+                goto breakLoop;
+            
             switch (_scanner.Peek().Kind)
             {
                 // --- StringText: Just add
@@ -497,11 +505,12 @@ public partial class Parser
                 // --- StringEnd: Finish
                 case TokenKind.StringEnd:
                     _scanner.EatToken(TokenKind.StringEnd);
-                    return _scanner.Close(expr, SyntaxKind.StringExpr);
+                    isClosed = true;
+                    goto breakLoop;
                 
                 // --- Interpolation
                 case TokenKind.OpenBrace:
-                    // Anchor on StringText, StringEnd and BraceClose. Those are the only valid
+                    // Anchor on StringText, StringEnd and OpenBrace. Those are the only valid
                     // continuations after an interpolation the Lexer will produce if it thinks
                     // it's inside a string. Everything else is an unclosed string.
 
@@ -512,29 +521,26 @@ public partial class Parser
                     break;
                     
                 // --- Anything else is an unclosed string
+                // Note: Whitespace token will terminate the string as well. The
+                // check is done above, since the scanner does not see whitespace.
                 default:
-                    ReportUnclosedString();
-                    return _scanner.Close(expr, SyntaxKind.StringExpr);
+                    goto breakLoop;
             }
         }
 
-        // Eof, but string was not closed.
-        // We advanced at least the StringStart token, so there must be a 
-        // previous token.
-        Debug.Assert(_scanner.Last is not null);
-        ReportUnclosedString();
+        breakLoop:
         
-        return _scanner.Close(expr, SyntaxKind.StringExpr);
-
-        void ReportUnclosedString()
+        if (!isClosed)
         {
-            // There must be at least a StringStart token which has been advanced.
+            // We advanced at least the StringStart token, so there must be a 
+            // last token.
             Debug.Assert(_scanner.Last is not null);
-            
             _diagnosticBag.ReportError(new Diagnostic.UnclosedString(
                 _source,
                 LastToken: _scanner.Last));
         }
+        
+        return _scanner.Close(expr, SyntaxKind.StringExpr);
     }
 
     private MarkClose EatStringInterpolation(Anchor anchor)

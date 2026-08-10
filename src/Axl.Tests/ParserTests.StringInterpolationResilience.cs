@@ -553,5 +553,56 @@ public partial class ParserTests
                 · ';'
                 Error '}'
                 """);
+
+        [Fact]
+        public void Typing_OpeningBraceOnNextLine_1()
+            => InlineSnapshot.Validate(Tree("""
+                                            "
+                                            { }
+                                            """), """
+                ERROR UnclosedString@[1, 1): String has not been closed.
+                ERROR MissingToken@[1, 1): Expected ';'.
+                ERROR UnexpectedToken@[3, 4): Expected a statement, got '{'.
+
+
+                ExprStmt
+                · StringExpr '"'
+                Error '{' '}'
+                """);
+        [Fact]
+        public void Typing_OpeningBraceOnNextLine_2()
+            => InlineSnapshot.Validate(Tree("""
+                                            "Text
+                                            { }
+                                            """), """
+                ERROR UnclosedString@[5, 5): String has not been closed.
+                ERROR MissingToken@[5, 5): Expected ';'.
+                ERROR UnexpectedToken@[7, 8): Expected a statement, got '{'.
+
+
+                ExprStmt
+                · StringExpr
+                · · '"'
+                · · StringText 'Text'
+                Error '{' '}'
+                """);
+        [Fact]
+        public void Typing_OpeningBraceOnNextLine_3()
+            => InlineSnapshot.Validate(Tree("""
+                                            "Text {}
+                                            { }
+                                            """), """
+                ERROR UnclosedString@[8, 8): String has not been closed.
+                ERROR MissingToken@[8, 8): Expected ';'.
+                ERROR UnexpectedToken@[10, 11): Expected a statement, got '{'.
+
+
+                ExprStmt
+                · StringExpr
+                · · '"'
+                · · StringText 'Text '
+                · · StringInterpolation '{' '}'
+                Error '{' '}'
+                """);
     }
 }

@@ -2,7 +2,6 @@
                                        ≽(◕ ᴗ ◕)≼
 
 **Next**: 
-* `EatStringExpr`: Check for newline. `"Hello \n { }`
 * TailExpr: in `EatExpr`, eat OperandExpr, check for `=`
 
 **Small points**:
