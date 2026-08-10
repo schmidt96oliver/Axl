@@ -17,7 +17,14 @@ public partial class Parser
             TokenKind.Minus, TokenKind.NotKw
         );
         
-        public static readonly TokenSet Expr = OperandExpr;
+        public static readonly TokenSet TailExpr = OperandExpr | TokenSet.Of(
+            TokenKind.BreakKw, TokenKind.ContinueKw, TokenKind.ReturnKw);
+
+        public static readonly TokenSet BodiedExpr = TokenSet.Of(
+                TokenKind.IfKw, TokenKind.LoopKw, TokenKind.OpenBrace
+        );
+
+        public static readonly TokenSet Expr = TailExpr;
 
         public static readonly TokenSet Stmt = Expr;
     }

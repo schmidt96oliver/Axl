@@ -238,7 +238,7 @@ public partial class Parser
         
         var stmt = _scanner.Open();
         
-        if (_scanner.IsAt(FirstSet.OperandExpr))
+        if (_scanner.IsAt(FirstSet.Expr))
         {
             EatExpr(anchor | TokenKind.Semicolon);
             ExpectToken(TokenKind.Semicolon);
@@ -275,6 +275,28 @@ public partial class Parser
             }
 
             return operandExpr;
+        }
+
+        switch (_scanner.Peek().Kind)
+        {
+            case TokenKind.BreakKw:
+                var breakExpr = _scanner.Open();
+                _scanner.EatToken(TokenKind.BreakKw);
+                if (_scanner.IsAt(FirstSet.Expr))
+                    EatExpr(anchor);
+                return _scanner.Close(breakExpr, SyntaxKind.BreakExpr);
+            
+            case TokenKind.ReturnKw:
+                var returnExpr = _scanner.Open();
+                _scanner.EatToken(TokenKind.ReturnKw);
+                if (_scanner.IsAt(FirstSet.Expr))
+                    EatExpr(anchor);
+                return _scanner.Close(returnExpr, SyntaxKind.ReturnExpr);
+            
+            case TokenKind.ContinueKw:
+                var continueExpr = _scanner.Open();
+                _scanner.EatToken(TokenKind.ContinueKw);
+                return _scanner.Close(continueExpr, SyntaxKind.ContinueExpr);
         }
 
         throw new UnreachableException($"{nameof(FirstSet.Expr)} was too large");
