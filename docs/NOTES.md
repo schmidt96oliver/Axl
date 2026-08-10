@@ -1,7 +1,12 @@
 # ------------------------------------ Axl Project ------------------------------------
                                        ≽(◕ ᴗ ◕)≼
 
-* `RecoverTo` UnexpectedToken -> Squiggle all tokens
+**Next**: 
+* `EatStringExpr`: Check for newline. `"Hello \n { }`
+* TailExpr: in `EatExpr`, eat OperandExpr, check for `=`
+
+**Small points**:
+* ?? `RecoverTo` UnexpectedToken -> Squiggle all tokens
 
 # Parser
 [x] Grammar

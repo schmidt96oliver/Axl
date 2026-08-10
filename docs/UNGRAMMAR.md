@@ -33,9 +33,9 @@ NativeClause    = "native" "(" StringExpr ")"
 // DeclBinder rejects interpolations inside StringExpr
 // Syntactically, we can permit them to get better parses
 
-ParamList       = "(" Param* ")"
-Param           = Identifier TypeAnnotation ","             
-// "," _can_ be omitted, if it is the last param
+ParamList       = "(" ")"
+                | "(" Param ("," Param)* ")"
+Param           = Identifier TypeAnnotation       
 
 GlobalModuleDecl= "module" ModuleName ";"
 ModuleDecl      = "module" ModuleName "{" Stmt* "}" ";"?
@@ -90,9 +90,8 @@ Unary       = ("-" | "not") OperandExpr
 GetMember   = OperandExpr "." Identifier
 Call        = OperandExpr ArgList
 
-ArgList     = "(" Arg* ")"
-Arg         = Expr ","?
-// ","? _can_ be omitted if its the last arg
+ArgList     = "(" ")"
+            | "(" Expr ("," Expr)* ")"
 // Arg is clearly delimited by `)` or `,`, so may contain body
 
 StringExpr            = StringStart (StringText | StringInterpolation)* StringEnd
