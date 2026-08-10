@@ -2,7 +2,6 @@
                                        ≽(◕ ᴗ ◕)≼
 
 **Next**: 
-* EatBlock: Arm handling
 * if, loop
 
 **Small points**:

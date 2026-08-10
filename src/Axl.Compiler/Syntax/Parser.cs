@@ -431,6 +431,15 @@ public partial class Parser
                 // Recover to Expr as well, because they can legitimately start
                 // another Stmt.
                 RecoverTo(blockAnchor | FirstSet.Expr, null);
+
+                //TODO: Delete when var is handled
+                // For now, we cant deal with it, so wrap it in an error
+                if (_scanner.IsAt(TokenKind.VarKw))
+                {
+                    var error = _scanner.Open();
+                    _scanner.EatToken();
+                    _scanner.Close(error, SyntaxKind.Error);
+                }
             }
         }
 
