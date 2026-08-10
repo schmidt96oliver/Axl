@@ -2,7 +2,6 @@
                                        ≽(◕ ᴗ ◕)≼
 
 **Next**: 
-* if, loop
 * type expr, annotation
 * var
 
@@ -14,7 +13,7 @@
 [x] Grammar
 
 [x] Operand expressions, Pratt parser
-[ ] BodiedExpr; Semicolon rules
+[x] BodiedExpr; Semicolon rules
 [x] TailExpr
 [ ] VarDecl, TypeExpr, TypeAnnotation
 [x] String Exprs
@@ -30,7 +29,7 @@
 
 [x] Interpolated Strings
    * Lexer does not emit empty StringText/StringEnd.
-[ ] "=>" Body syntax (see ExpressionsAndStatements.axl)
+[x] "=>" Body syntax (see ExpressionsAndStatements.axl)
 [ ] Keyword `never` in return-type position
 
 # First features

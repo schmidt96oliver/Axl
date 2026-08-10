@@ -356,7 +356,28 @@ public partial class Parser
     {
         Debug.Assert(_scanner.IsAt(TokenKind.IfKw));
 
-        throw new NotImplementedException();
+        var ifExpr = _scanner.Open();
+        _scanner.EatToken(TokenKind.IfKw);
+
+        // --- Condition and body
+        var ifAnchor = anchor | TokenKind.ElseKw;
+        ExpectOperandExpr(left: null, ifAnchor);
+        ExpectBody(ifAnchor);
+
+        // --- Else
+        // Note, that we don't anchor on else anymore here, since
+        // we cannot handle it after we've seen it once.
+        if (_scanner.IsAt(TokenKind.ElseKw))
+        {
+            _scanner.EatToken(TokenKind.ElseKw);
+
+            if (_scanner.IsAt(TokenKind.IfKw))
+                EatIf(anchor);
+            else
+                ExpectBody(anchor);
+        }
+
+        return _scanner.Close(ifExpr, SyntaxKind.IfExpr);
     }
 
     private MarkClose EatLoop(Anchor anchor)
