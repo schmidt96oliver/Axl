@@ -8,6 +8,11 @@ public partial class Parser
             TokenKind.I32Kw, TokenKind.I64Kw, TokenKind.F32Kw, TokenKind.F64Kw, TokenKind.StringKw, TokenKind.NoneKw
         );
         
+        public static readonly TokenSet QualifiedName = TokenSet.Of(TokenKind.Identifier);
+
+        public static readonly TokenSet TypeName = NativeTypeName | QualifiedName;
+        
+        
         public static readonly TokenSet OperandExpr = NativeTypeName | TokenSet.Of(
             TokenKind.TrueKw, TokenKind.FalseKw,
             TokenKind.NumberLiteral,
@@ -23,6 +28,8 @@ public partial class Parser
         public static readonly TokenSet BodiedExpr = TokenSet.Of(
                 TokenKind.IfKw, TokenKind.LoopKw, TokenKind.OpenBrace
         );
+
+        
 
         public static readonly TokenSet Expr = TailExpr | TokenSet.Of(TokenKind.OpenBrace,
             TokenKind.LoopKw, TokenKind.IfKw);

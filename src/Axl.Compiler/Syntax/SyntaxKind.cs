@@ -15,7 +15,7 @@ public enum SyntaxKind
     VarDecl,
     
     // Type Expressions
-    TypeExpr,
+    QualifiedName,
     NativeTypeName,
     
     // Operand Expressions

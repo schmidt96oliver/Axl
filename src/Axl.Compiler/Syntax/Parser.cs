@@ -254,6 +254,17 @@ public partial class Parser
             ? EatBlock(anchor)
             : EatArm(anchor);
     }
+
+    private MarkClose? ExpectTypeName()
+    {
+        if (!_scanner.IsAt(FirstSet.TypeName))
+            return null;
+
+        if (_scanner.IsAt(FirstSet.NativeTypeName))
+            return EatNativeTypeName();
+        else
+            return EatQualifiedName();
+    }
     
     #endregion
     
@@ -500,6 +511,52 @@ public partial class Parser
     }
     
     #endregion
+    
+    #region Type Expression/Annotation
+
+    private MarkClose EatQualifiedName()
+    {
+        Debug.Assert(_scanner.IsAt(FirstSet.QualifiedName));
+
+        var typeExpr = _scanner.Open();
+        ExpectIdentifier();
+
+        foreach (var _ in _scanner.MustEatEachIteration())
+        {
+            if (!_scanner.IsAt(TokenKind.Dot))
+                break;
+
+            _scanner.EatToken(TokenKind.Dot);
+            var idExpr = ExpectIdentifier();
+            if (idExpr is null)
+                break;
+        }
+
+        return _scanner.Close(typeExpr, SyntaxKind.QualifiedName);
+
+        MarkClose? ExpectIdentifier()
+        {
+            if (!_scanner.IsAt(TokenKind.Identifier))
+            {
+                ReportMissing(TokenKind.Identifier);
+                return null;
+            }
+
+            var idExpr = _scanner.Open();
+            _scanner.EatToken(TokenKind.Identifier);
+            return _scanner.Close(idExpr, SyntaxKind.Identifier);
+        }
+    }
+
+    private MarkClose EatNativeTypeName()
+    {
+        Debug.Assert(_scanner.IsAt(FirstSet.NativeTypeName));
+        var expr = _scanner.Open();
+        _scanner.EatToken();
+        return _scanner.Close(expr, SyntaxKind.NativeTypeName);
+    }
+    
+    #endregion
 
     #region Operand Expressions
 
@@ -582,6 +639,10 @@ public partial class Parser
         if (_scanner.IsAt(TokenKind.OpenParen))
             return EatGroupExpr(anchor);
         
+        // --- Native Type Name
+        if (_scanner.IsAt(FirstSet.NativeTypeName))
+            return EatNativeTypeName();
+        
         // For everything else, we can advance a token
         // already and then switch on it.
         var openMark = _scanner.Open();
@@ -611,15 +672,6 @@ public partial class Parser
                 return _scanner.Close(openMark, SyntaxKind.TrueLiteral);
             case TokenKind.FalseKw:
                 return _scanner.Close(openMark, SyntaxKind.FalseLiteral);
-            
-            // --- Native Types
-            case TokenKind.I32Kw:
-            case TokenKind.I64Kw:
-            case TokenKind.F32Kw:
-            case TokenKind.F64Kw:
-            case TokenKind.NoneKw:
-            case TokenKind.StringKw:
-                return _scanner.Close(openMark, SyntaxKind.NativeTypeName);
         }
 
         throw new UnreachableException($"{nameof(FirstSet.OperandExpr)} was too large");

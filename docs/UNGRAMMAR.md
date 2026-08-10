@@ -5,8 +5,8 @@ and Parse* names where they are sum ungrammars.
 ScriptFile      = UsingDecl* (Stmt | MemberDecl)*
 ModuleFile      = UsingDecl* GlobalModuleDecl MemberDecl*
 
-UsingDecl       = "using" ModuleName ";"
-GlobalModuleDecl= "module" ModuleName ";"
+UsingDecl       = "using" QualifiedName ";"
+GlobalModuleDecl= "module" QualifiedName ";"
 
 ## Member Declarations
 MemberDecl      = FnDecl
@@ -15,7 +15,7 @@ MemberDecl      = FnDecl
 ModifierList    = ("public" | "private")*
 // DeclBinder only accepts correct combinations
 
-FnDecl          = ModifierList NativeClause? "fn" Identifier ParamList ("->" (TypeExpr | "never"))? Body? ";"§
+FnDecl          = ModifierList NativeClause? "fn" Identifier ParamList ("->" (TypeName | "never"))? Body? ";"§
 // Identifier "never" is promoted to SyntaxKind.NativeTypeName with TokenKind.NeverKw
 // DeclBinder requires Body on non-native functions
 
@@ -27,13 +27,11 @@ ParamList       = "(" ")"
                 | "(" Param ("," Param)* ")"
 Param           = Identifier TypeAnnotation       
 
-ModuleDecl      = "module" ModuleName "{" Stmt* "}" ";"?
+ModuleDecl      = "module" QualifiedName "{" Stmt* "}" ";"?
 // DeclBinder rejects anything but MemberDecl
 // Note: No modifiers on module
 // Note: Allow semicolon for symmetry with FnDecl. It is not needed at all
 // is omissible anytime and will probably not ever be written.
-
-ModuleName      = Identifier ("." Identifier)*
 
 ## Statements
 Stmt        = ExprStmt
@@ -121,14 +119,17 @@ Continue    = "continue"
 Return      = "return" Expr?
 
 ## Type Expressions/Clauses
-TypeExpr        = (NativeTypeName | Identifier) ("." Identifier)*
-// Note that TypeExpr is deliberately a subset of OperandExpr
+TypeName        = NativeTypeName
+                | QualifiedName
+// Note that TypeName is deliberately a subset of OperandExpr
 
 NativeTypeName  = "i32" | "i64" | "f32" | "f64" | "string" | "none"
 // SyntaxKind.NativeTypeName can also hold TokenKind.NeverKw. NeverKw is promoted
 // from TokenKind.Identifier if FnDecl return type and only there.
 
-TypeAnnotation  = ":" TypeExpr
+QualifiedName   = Identifier ("." Identifier)*
+
+TypeAnnotation  = ":" TypeName
 
 # Implementation
 Only ParseOperandExpr runs a Pratt Parser. Everything else is recursive descent.

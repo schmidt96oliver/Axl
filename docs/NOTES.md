@@ -1,8 +1,12 @@
 # ------------------------------------ Axl Project ------------------------------------
                                        ≽(◕ ᴗ ◕)≼
 
+10.08 10:54: Erschöpft, will weiter kommen, "nur noch das eine Ding"
+      11:02: Noch erschöpfter. Schnell noch fertig!
+
 **Next**: 
-* type expr, annotation
+* rename: SyntaxKind.Identifier to IdName
+* annotation
 * var
 
 **Small points**:
