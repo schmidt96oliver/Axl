@@ -47,8 +47,7 @@ public abstract partial record Diagnostic
                 var expected = (_expectedKind, _expectedCategory) switch
                 {
                     (TokenKind kind, null) => kind.DisplayName,
-                    (null, SyntaxCategory.Expr) => "an expression",
-                    (null, SyntaxCategory.Stmt) => "a statement",
+                    (null, SyntaxCategory category) => category.DisplayName,
                     _ => throw new UnreachableException(),
                 };
 
@@ -112,8 +111,7 @@ public abstract partial record Diagnostic
                 var expected = (_expectedKind, _expectedCategory) switch
                 {
                     (TokenKind kind, null) => kind.DisplayName,
-                    (null, SyntaxCategory.Expr) => "an expression",
-                    (null, SyntaxCategory.Stmt) => "a statement",
+                    (null, SyntaxCategory category) => category.DisplayName,
                     _ => throw new UnreachableException(),
                 };
 

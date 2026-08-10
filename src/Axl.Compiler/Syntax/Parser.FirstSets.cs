@@ -24,7 +24,8 @@ public partial class Parser
                 TokenKind.IfKw, TokenKind.LoopKw, TokenKind.OpenBrace
         );
 
-        public static readonly TokenSet Expr = TailExpr | TokenSet.Of(TokenKind.OpenBrace);
+        public static readonly TokenSet Expr = TailExpr | TokenSet.Of(TokenKind.OpenBrace,
+            TokenKind.LoopKw, TokenKind.IfKw);
 
         public static readonly TokenSet Stmt = Expr;
 

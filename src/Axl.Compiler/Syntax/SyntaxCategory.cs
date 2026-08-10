@@ -1,3 +1,5 @@
+using System.Diagnostics;
+
 namespace Axl.Compiler.Syntax;
 
 /// <summary>
@@ -8,4 +10,22 @@ public enum SyntaxCategory
 {
     Expr,
     Stmt,
+    Body
+}
+
+public static class SyntaxCategoryExtensions
+{
+    extension(SyntaxCategory category)
+    {
+        /// <summary>
+        /// How this category is named in diagnostic messages.
+        /// </summary>
+        public string DisplayName => category switch
+        {
+            SyntaxCategory.Expr => "an expression",
+            SyntaxCategory.Stmt => "a statement",
+            SyntaxCategory.Body => "a body",
+            _ => throw new UnreachableException()
+        };
+    }
 }

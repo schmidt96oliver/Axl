@@ -3,6 +3,8 @@
 
 **Next**: 
 * if, loop
+* type expr, annotation
+* var
 
 **Small points**:
 * ?? `RecoverTo` UnexpectedToken -> Squiggle all tokens

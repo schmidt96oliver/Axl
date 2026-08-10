@@ -241,6 +241,19 @@ public partial class Parser
 
         return EatExpr(anchor);
     }
+
+    private MarkClose? ExpectBody(Anchor anchor)
+    {
+        if (!_scanner.IsAt(TokenKind.OpenBrace) && !_scanner.IsAt(TokenKind.RightDoubleArrow))
+        {
+            ReportMissing(expected: SyntaxCategory.Body);
+            return null;
+        }
+        
+        return _scanner.IsAt(TokenKind.OpenBrace)
+            ? EatBlock(anchor)
+            : EatArm(anchor);
+    }
     
     #endregion
     
@@ -341,23 +354,22 @@ public partial class Parser
 
     private MarkClose EatIf(Anchor anchor)
     {
+        Debug.Assert(_scanner.IsAt(TokenKind.IfKw));
+
         throw new NotImplementedException();
     }
 
     private MarkClose EatLoop(Anchor anchor)
     {
-        throw new NotImplementedException();
+        Debug.Assert(_scanner.IsAt(TokenKind.LoopKw));
+
+        var loopExpr = _scanner.Open();
+        _scanner.EatToken(TokenKind.LoopKw);
+        ExpectBody(anchor);
+        return _scanner.Close(loopExpr, SyntaxKind.LoopExpr);
     }
 
-
-    private MarkClose EatBody(Anchor anchor)
-    {
-        Debug.Assert(_scanner.IsAt(TokenKind.OpenBrace) || _scanner.IsAt(TokenKind.RightDoubleArrow));
- 
-        return _scanner.IsAt(TokenKind.OpenBrace)
-            ? EatBlock(anchor)
-            : EatArm(anchor);
-    }
+    
     
     private MarkClose EatBlock(Anchor anchor)
     {
