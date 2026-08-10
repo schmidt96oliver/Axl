@@ -5,7 +5,6 @@
       11:02: Noch erschöpfter. Schnell noch fertig!
 
 **Next**: 
-* rename: SyntaxKind.Identifier to IdName
 * annotation
 * var
 

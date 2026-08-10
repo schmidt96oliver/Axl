@@ -15,7 +15,7 @@ MemberDecl      = FnDecl
 ModifierList    = ("public" | "private")*
 // DeclBinder only accepts correct combinations
 
-FnDecl          = ModifierList NativeClause? "fn" Identifier ParamList ("->" (TypeName | "never"))? Body? ";"§
+FnDecl          = ModifierList NativeClause? "fn" IdName ParamList ("->" (TypeName | "never"))? Body? ";"§
 // Identifier "never" is promoted to SyntaxKind.NativeTypeName with TokenKind.NeverKw
 // DeclBinder requires Body on non-native functions
 
@@ -25,7 +25,7 @@ NativeClause    = "native" "(" StringExpr ")"
 
 ParamList       = "(" ")"
                 | "(" Param ("," Param)* ")"
-Param           = Identifier TypeAnnotation       
+Param           = IdName TypeAnnotation       
 
 ModuleDecl      = "module" QualifiedName "{" Stmt* "}" ";"?
 // DeclBinder rejects anything but MemberDecl
@@ -40,7 +40,7 @@ Stmt        = ExprStmt
 ExprStmt    = BodiedExpr ";"§               // ";" omissible, iff last token is "}"
             | (OperandExpr | TailExpr) ";"  // ";" always required
 
-VarDecl         = "var" Identifier TypeAnnotation? InitializerClause? ";"
+VarDecl         = "var" IdName TypeAnnotation? InitializerClause? ";"
 // InitializerClause required by Binder. Parser is permissive
 
 InitializerClause   = "=" Expr
@@ -78,7 +78,7 @@ Loop        = "loop" Body
 ## Operand Expressions
 Expressions that contain bodies only in very limited, clearly delimited cases.
 
-OperandExpr = Literal | Identifier | StringExpr
+OperandExpr = Literal | IdName | StringExpr
             | Group
             | Binary
             | Unary
@@ -95,7 +95,7 @@ Literal     = "true" | "false"
 Binary      = OperandExpr ("+"|"-"|"*"|"/"|"<"|"<="|">"|">="  |"=="|"!=" |"and"|"or") OperandExpr
 Unary       = ("-" | "not") OperandExpr
 
-GetMember   = OperandExpr "." Identifier
+GetMember   = OperandExpr "." IdName
 Call        = OperandExpr ArgList
 
 ArgList     = "(" ")"
@@ -127,7 +127,7 @@ NativeTypeName  = "i32" | "i64" | "f32" | "f64" | "string" | "none"
 // SyntaxKind.NativeTypeName can also hold TokenKind.NeverKw. NeverKw is promoted
 // from TokenKind.Identifier if FnDecl return type and only there.
 
-QualifiedName   = Identifier ("." Identifier)*
+QualifiedName   = IdName ("." IdName)*
 
 TypeAnnotation  = ":" TypeName
 

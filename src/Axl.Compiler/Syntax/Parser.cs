@@ -266,6 +266,17 @@ public partial class Parser
             return EatQualifiedName();
     }
     
+    private MarkClose? ExpectIdName()
+    {
+        if (!_scanner.IsAt(TokenKind.Identifier))
+        {
+            ReportMissing(TokenKind.Identifier);
+            return null;
+        }
+
+        return EatIdName();
+    }
+    
     #endregion
     
     
@@ -519,7 +530,7 @@ public partial class Parser
         Debug.Assert(_scanner.IsAt(FirstSet.QualifiedName));
 
         var typeExpr = _scanner.Open();
-        ExpectIdentifier();
+        ExpectIdName();
 
         foreach (var _ in _scanner.MustEatEachIteration())
         {
@@ -527,25 +538,12 @@ public partial class Parser
                 break;
 
             _scanner.EatToken(TokenKind.Dot);
-            var idExpr = ExpectIdentifier();
+            var idExpr = ExpectIdName();
             if (idExpr is null)
                 break;
         }
 
         return _scanner.Close(typeExpr, SyntaxKind.QualifiedName);
-
-        MarkClose? ExpectIdentifier()
-        {
-            if (!_scanner.IsAt(TokenKind.Identifier))
-            {
-                ReportMissing(TokenKind.Identifier);
-                return null;
-            }
-
-            var idExpr = _scanner.Open();
-            _scanner.EatToken(TokenKind.Identifier);
-            return _scanner.Close(idExpr, SyntaxKind.Identifier);
-        }
     }
 
     private MarkClose EatNativeTypeName()
@@ -554,6 +552,15 @@ public partial class Parser
         var expr = _scanner.Open();
         _scanner.EatToken();
         return _scanner.Close(expr, SyntaxKind.NativeTypeName);
+    }
+
+    private MarkClose EatIdName()
+    {
+        Debug.Assert(_scanner.IsAt(TokenKind.Identifier));
+        
+        var idName = _scanner.Open();
+        _scanner.EatToken(TokenKind.Identifier);
+        return _scanner.Close(idName, SyntaxKind.IdName);
     }
     
     #endregion
@@ -643,6 +650,10 @@ public partial class Parser
         if (_scanner.IsAt(FirstSet.NativeTypeName))
             return EatNativeTypeName();
         
+        // --- IdName
+        if (_scanner.IsAt(TokenKind.Identifier))
+            return EatIdName();
+        
         // For everything else, we can advance a token
         // already and then switch on it.
         var openMark = _scanner.Open();
@@ -665,9 +676,6 @@ public partial class Parser
             case TokenKind.NumberLiteral:
                 return _scanner.Close(openMark, SyntaxKind.NumberLiteral);
 
-            case TokenKind.Identifier:
-                return _scanner.Close(openMark, SyntaxKind.Identifier);
-            
             case TokenKind.TrueKw:
                 return _scanner.Close(openMark, SyntaxKind.TrueLiteral);
             case TokenKind.FalseKw:
@@ -685,7 +693,7 @@ public partial class Parser
             // --- GetMember
             case TokenKind.Dot:
                 _scanner.EatToken(TokenKind.Dot);
-                ExpectToken(TokenKind.Identifier);
+                ExpectIdName();
                 return _scanner.Close(expr, SyntaxKind.GetMemberExpr);
 
             // --- Call

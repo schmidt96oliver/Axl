@@ -23,7 +23,7 @@ public enum SyntaxKind
     FalseLiteral,
     NumberLiteral,
     
-    Identifier,
+    IdName,
     
     GroupExpr,
     BinaryExpr,
