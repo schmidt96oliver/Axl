@@ -240,8 +240,7 @@ public partial class Parser
         
         if (_scanner.IsAt(FirstSet.OperandExpr))
         {
-            EatOperandExpr(left: null, 
-                anchor: anchor | TokenKind.Semicolon);
+            EatExpr(anchor | TokenKind.Semicolon);
             ExpectToken(TokenKind.Semicolon);
             
             return _scanner.Close(stmt, SyntaxKind.ExprStmt);;
@@ -259,7 +258,24 @@ public partial class Parser
         Debug.Assert(_scanner.IsAt(FirstSet.Expr));
 
         if (_scanner.IsAt(FirstSet.OperandExpr))
-            return EatOperandExpr(left: null, anchor);
+        {
+            // Ambiguous between plain OperandExpr and
+            // Assign = OperandExpr "=" Expr.
+            // So eat an OperandExpr and handle "=" thereafter
+            // here.
+            var operandExpr = EatOperandExpr(left: null, anchor);
+
+            if (_scanner.IsAt(TokenKind.Equal))
+            {
+                // We have assign.
+                var assignExpr = _scanner.OpenBefore(operandExpr);
+                _scanner.EatToken(TokenKind.Equal);
+                ExpectExpr(anchor);
+                return _scanner.Close(assignExpr, SyntaxKind.AssignExpr);
+            }
+
+            return operandExpr;
+        }
 
         throw new UnreachableException($"{nameof(FirstSet.Expr)} was too large");
     }
