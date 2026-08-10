@@ -373,6 +373,9 @@ public partial class Parser
                           TokenKind.VarKw | 
                           TokenKind.RightDoubleArrow | TokenKind.CloseBrace |
                           TokenKind.Semicolon;
+
+        var hadArm = false;
+        MarkOpen? errorAfterArm = null;
         
         foreach (var _ in _scanner.MustEatEachIteration())
         {
@@ -380,37 +383,67 @@ public partial class Parser
                 break;
             
             if (_scanner.IsAt(FirstSet.Stmt))
+            {
+                if (hadArm) errorAfterArm ??= _scanner.Open();
+                
                 EatStmt(blockAnchor);
+            }
             else if (_scanner.IsAt(TokenKind.RightDoubleArrow))
             {
-                EatArm(blockAnchor);
+                if (hadArm) errorAfterArm ??= _scanner.Open();
                 
-                // No semicolon.
-                // TODO: Permit multiple arms and stmt thereafter, but report an error
+                EatArm(blockAnchor);
+                // No semicolon!
+                
+                if (!hadArm && !_scanner.IsAt(TokenKind.CloseBrace))
+                    ReportMissing(TokenKind.CloseBrace);
+                hadArm = true;
             }
             else if (_scanner.IsAt(TokenKind.Semicolon))
             {
-                ReportUnexpected(expected: SyntaxCategory.Stmt);
-                var error = _scanner.Open();
-                _scanner.EatToken(TokenKind.Semicolon);
-                _scanner.Close(error, SyntaxKind.Error);
+                if (!hadArm)
+                {
+                    ReportUnexpected(expected: SyntaxCategory.Stmt);
+                    var error = _scanner.Open();
+                    _scanner.EatToken(TokenKind.Semicolon);
+                    _scanner.Close(error, SyntaxKind.Error);
+                }
+                else
+                {
+                    // If we had an arm, it will be on an error node anyway.
+                    // Just eat and don't report further errors
+                    errorAfterArm ??= _scanner.Open();
+                    _scanner.EatToken(TokenKind.Semicolon);
+                }
             }
             else if (_scanner.IsAt(anchor))
             {
-                ReportMissing(expected: SyntaxCategory.Stmt);
+                if (!hadArm)
+                    ReportMissing(expected: SyntaxCategory.Stmt);
                 break;
             }
             else
             {
-                ReportUnexpected(expected: SyntaxCategory.Stmt);
+                if (!hadArm)
+                    ReportUnexpected(expected: SyntaxCategory.Stmt);
                 
+                if (hadArm) errorAfterArm ??= _scanner.Open();
                 // Recover to Expr as well, because they can legitimately start
                 // another Stmt.
                 RecoverTo(blockAnchor | FirstSet.Expr, null);
             }
         }
 
-        ExpectToken(TokenKind.CloseBrace);
+        if (hadArm)
+        {
+            if (errorAfterArm is MarkOpen actualErrorAfterArm)
+                _scanner.Close(actualErrorAfterArm, SyntaxKind.Error);
+            if (_scanner.IsAt(TokenKind.CloseBrace))
+                _scanner.EatToken(TokenKind.CloseBrace);
+        }
+        else
+            ExpectToken(TokenKind.CloseBrace);
+        
         return _scanner.Close(block, SyntaxKind.BlockExpr);
     }
 
