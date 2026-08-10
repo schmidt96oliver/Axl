@@ -2,17 +2,20 @@
                                        ≽(◕ ᴗ ◕)≼
 
 **Next**: 
-* TailExpr: in `EatExpr`, eat OperandExpr, check for `=`
+* names/grammar: Stmt = inside blockexpr; module, etc + MemberDecl/Using
+* EatBlock: Arm handling
+* if, loop
 
 **Small points**:
 * ?? `RecoverTo` UnexpectedToken -> Squiggle all tokens
+* ?? `RecoverTo` balanced braces/parens
 
 # Parser
 [x] Grammar
 
 [x] Operand expressions, Pratt parser
 [ ] BodiedExpr; Semicolon rules
-[ ] TailExpr
+[x] TailExpr
 [ ] VarDecl, TypeExpr, TypeAnnotation
 [x] String Exprs
 [ ] FnDecl, NativeClause, ModifierList
@@ -53,6 +56,7 @@
    * never type (see Never.axl)
    * native fn validation
    * SyntaxKind.Error: Bind all children, wrap in HirError
+   * ?? never inferred through `var a = break;` or `return break;`
 5. Lowering
 
 # Implementation Ideas

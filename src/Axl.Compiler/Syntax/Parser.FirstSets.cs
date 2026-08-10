@@ -24,8 +24,18 @@ public partial class Parser
                 TokenKind.IfKw, TokenKind.LoopKw, TokenKind.OpenBrace
         );
 
-        public static readonly TokenSet Expr = TailExpr;
+        public static readonly TokenSet Expr = TailExpr | TokenSet.Of(TokenKind.OpenBrace);
 
         public static readonly TokenSet Stmt = Expr;
+
+        public static readonly TokenSet Modifier = TokenSet.Of(TokenKind.PublicKw, TokenKind.PrivateKw);
+
+        public static readonly TokenSet MemberDecl = Modifier | TokenSet.Of(
+            TokenKind.NativeKw, TokenKind.FnKw
+        );
+
+        public static readonly TokenSet Decl = MemberDecl | TokenSet.Of(
+            TokenKind.VarKw, TokenKind.ModuleKw, TokenKind.UsingKw
+        );
     }
 }

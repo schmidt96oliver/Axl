@@ -34,22 +34,31 @@ public partial class Parser
     {
         var file = _scanner.Open();
 
-        var globalAnchor = Anchor.Of(TokenKind.FnKw, TokenKind.ModuleKw, 
-            TokenKind.VarKw, TokenKind.UsingKw, TokenKind.PublicKw, TokenKind.PrivateKw, 
-            TokenKind.NativeKw);
-
-        // Eof must be anchored, because every loop stops implicitly at Eof
-        // and will assert that it's at a known position.
-        globalAnchor |= TokenKind.Eof;
-        
         foreach (var _ in _scanner.MustEatEachIteration())
         {
             if (_scanner.IsAt(FirstSet.Stmt))
-                EatStmt(globalAnchor);
+            {
+                // Stmt can start from Expr or Decl. Recover only from
+                // Decl, because Expr would be too permissive.
+                EatStmt(Anchor.From(FirstSet.Decl) | TokenKind.Semicolon);
+            }
             else
             {
                 ReportUnexpected(expected: SyntaxCategory.Stmt);
-                RecoverTo(Anchor.From(FirstSet.Stmt), null);
+                
+                // Recover to the next Stmt start, which includes Expr (and Decl).
+                // This is deliberately different from the anchor for EatStmt above.
+                // If the parser is already confused, we recover to any position that
+                // can start a new statement.
+                RecoverTo(Anchor.From(FirstSet.Stmt) | TokenKind.Semicolon, null);
+                
+                if (_scanner.IsAt(TokenKind.Semicolon))
+                {
+                    ReportUnexpected(expected: SyntaxCategory.Stmt);
+                    var error = _scanner.Open();
+                    _scanner.EatToken(TokenKind.Semicolon);
+                    _scanner.Close(error, SyntaxKind.Error);
+                }
             }
         }
 
@@ -240,8 +249,18 @@ public partial class Parser
         
         if (_scanner.IsAt(FirstSet.Expr))
         {
+            var isBodied = _scanner.IsAt(FirstSet.BodiedExpr);
+            
             EatExpr(anchor | TokenKind.Semicolon);
-            ExpectToken(TokenKind.Semicolon);
+
+            var semicolonOmissible = isBodied && _scanner.Last?.Kind is TokenKind.CloseBrace;
+            if (semicolonOmissible)
+            {
+                if (_scanner.IsAt(TokenKind.Semicolon))
+                    _scanner.EatToken(TokenKind.Semicolon);
+            }
+            else
+                ExpectToken(TokenKind.Semicolon);
             
             return _scanner.Close(stmt, SyntaxKind.ExprStmt);;
         }
@@ -257,6 +276,7 @@ public partial class Parser
     {
         Debug.Assert(_scanner.IsAt(FirstSet.Expr));
 
+        // --- OperandExpr or Assign
         if (_scanner.IsAt(FirstSet.OperandExpr))
         {
             // Ambiguous between plain OperandExpr and
@@ -279,6 +299,17 @@ public partial class Parser
 
         switch (_scanner.Peek().Kind)
         {
+            // --- BodiedExprs
+            case TokenKind.IfKw:
+                return EatIf(anchor);
+            
+            case TokenKind.LoopKw:
+                return EatLoop(anchor);
+            
+            case TokenKind.OpenBrace:
+                return EatBlock(anchor);
+            
+            // --- TailExprs
             case TokenKind.BreakKw:
                 var breakExpr = _scanner.Open();
                 _scanner.EatToken(TokenKind.BreakKw);
@@ -300,6 +331,96 @@ public partial class Parser
         }
 
         throw new UnreachableException($"{nameof(FirstSet.Expr)} was too large");
+    }
+
+    private MarkClose EatIf(Anchor anchor)
+    {
+        throw new NotImplementedException();
+    }
+
+    private MarkClose EatLoop(Anchor anchor)
+    {
+        throw new NotImplementedException();
+    }
+
+
+    private MarkClose EatBody(Anchor anchor)
+    {
+        Debug.Assert(_scanner.IsAt(TokenKind.OpenBrace) || _scanner.IsAt(TokenKind.RightDoubleArrow));
+ 
+        return _scanner.IsAt(TokenKind.OpenBrace)
+            ? EatBlock(anchor)
+            : EatArm(anchor);
+    }
+    
+    private MarkClose EatBlock(Anchor anchor)
+    {
+        Debug.Assert(_scanner.IsAt(TokenKind.OpenBrace));
+
+        var block = _scanner.Open();
+        _scanner.EatToken(TokenKind.OpenBrace);
+
+        // Stmt can start from Expr or Decl. Anchor only on
+        // Decl, because Expr would be too permissive.
+        // Also anchor on `=>` and `}`, because we can handle those.
+        var blockAnchor = anchor | 
+                          TokenKind.VarKw | TokenKind.RightDoubleArrow | TokenKind.CloseBrace |
+                          TokenKind.Semicolon;
+        
+        foreach (var _ in _scanner.MustEatEachIteration())
+        {
+            if (_scanner.IsAt(TokenKind.CloseBrace))
+                break;
+            
+            // Do not parse all Decls as statement here, because they should not
+            // be part of a block and should probably belong to the enclosing
+            // loop.
+            if (_scanner.IsAt(FirstSet.Expr | TokenKind.VarKw))
+            {
+                Debug.Assert(_scanner.IsAt(FirstSet.Stmt));
+                EatStmt(blockAnchor);
+            }
+            else if (_scanner.IsAt(TokenKind.RightDoubleArrow))
+            {
+                EatArm(blockAnchor);
+                
+                // No semicolon.
+                // TODO: Permit multiple arms and stmt thereafter, but report an error
+            }
+            else if (_scanner.IsAt(TokenKind.Semicolon))
+            {
+                ReportUnexpected(expected: SyntaxCategory.Stmt);
+                var error = _scanner.Open();
+                _scanner.EatToken(TokenKind.Semicolon);
+                _scanner.Close(error, SyntaxKind.Error);
+            }
+            else if (_scanner.IsAt(anchor))
+            {
+                ReportMissing(expected: SyntaxCategory.Stmt);
+                break;
+            }
+            else
+            {
+                ReportUnexpected(expected: SyntaxCategory.Stmt);
+                
+                // Recover to Expr as well, because they can legitimately start
+                // another Stmt.
+                RecoverTo(blockAnchor | FirstSet.Expr, null);
+            }
+        }
+
+        ExpectToken(TokenKind.CloseBrace);
+        return _scanner.Close(block, SyntaxKind.BlockExpr);
+    }
+
+    private MarkClose EatArm(Anchor anchor)
+    {
+        Debug.Assert(_scanner.IsAt(TokenKind.RightDoubleArrow));
+
+        var arm = _scanner.Open();
+        _scanner.EatToken(TokenKind.RightDoubleArrow);
+        ExpectExpr(anchor);
+        return _scanner.Close(arm, SyntaxKind.Arm);
     }
     
     #endregion
