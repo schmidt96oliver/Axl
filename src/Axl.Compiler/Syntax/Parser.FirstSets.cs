@@ -30,12 +30,10 @@ public partial class Parser
 
         public static readonly TokenSet Modifier = TokenSet.Of(TokenKind.PublicKw, TokenKind.PrivateKw);
 
-        public static readonly TokenSet MemberDecl = Modifier | TokenSet.Of(
-            TokenKind.NativeKw, TokenKind.FnKw
-        );
+        public static readonly TokenSet FnDecl = Modifier | TokenSet.Of(
+            TokenKind.NativeKw, TokenKind.FnKw);
 
-        public static readonly TokenSet Decl = MemberDecl | TokenSet.Of(
-            TokenKind.VarKw, TokenKind.ModuleKw, TokenKind.UsingKw
-        );
+        public static readonly TokenSet MemberDecl = FnDecl | TokenSet.Of(
+            TokenKind.ModuleKw);
     }
 }

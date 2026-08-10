@@ -2,24 +2,14 @@
 and Parse* names where they are sum ungrammars.
 
 # Top-Level
-File        = Stmt*
+ScriptFile      = UsingDecl* (Stmt | MemberDecl)*
+ModuleFile      = UsingDecl* GlobalModuleDecl MemberDecl*
 
-Stmt        = ExprStmt
-            | VarDecl
-            | UsingDecl
-            | MemberDecl
-
-ExprStmt    = BodiedExpr ";"§               // ";" omissible, iff last token is "}"
-            | (OperandExpr | TailExpr) ";"  // always required
-
-## Body/Arm
-Body        = Block
-            | Arm
-Arm         = "=>" Expr
+UsingDecl       = "using" ModuleName ";"
+GlobalModuleDecl= "module" ModuleName ";"
 
 ## Member Declarations
 MemberDecl      = FnDecl
-                | GlobalModuleDecl
                 | ModuleDecl
 
 ModifierList    = ("public" | "private")*
@@ -37,7 +27,6 @@ ParamList       = "(" ")"
                 | "(" Param ("," Param)* ")"
 Param           = Identifier TypeAnnotation       
 
-GlobalModuleDecl= "module" ModuleName ";"
 ModuleDecl      = "module" ModuleName "{" Stmt* "}" ";"?
 // DeclBinder rejects anything but MemberDecl
 // Note: No modifiers on module
@@ -46,13 +35,18 @@ ModuleDecl      = "module" ModuleName "{" Stmt* "}" ";"?
 
 ModuleName      = Identifier ("." Identifier)*
 
-## Declarations
-UsingDecl       = "using" ModuleName ";"
+## Statements
+Stmt        = ExprStmt
+            | VarDecl
+
+ExprStmt    = BodiedExpr ";"§               // ";" omissible, iff last token is "}"
+            | (OperandExpr | TailExpr) ";"  // ";" always required
 
 VarDecl         = "var" Identifier TypeAnnotation? InitializerClause? ";"
 // InitializerClause required by Binder. Parser is permissive
 
 InitializerClause   = "=" Expr
+
 
 # Expressions
 There needs to be a division between 3 different types of expressions:
@@ -66,6 +60,22 @@ This is to avoid certain syntax footgun and ambiguities. Also The semicolon
 rule is stated much more clearly in this framing.
 
 Expr        = BodiedExpr | OperandExpr | TailExpr
+
+## Body, BodiedExpr, Arm
+Body        = Block
+            | Arm
+Arm         = "=>" Expr
+
+BodiedExpr  = Block | If | Loop
+//          = Expressions that own a body.
+
+Block       = "{" (Stmt | FnDecl)* Arm? "}"
+
+If          = "if" OperandExpr Body ElseClause?     
+// Condition is OperandExpr to disallow any unparenthesized body inside it.
+
+ElseClause  = "else" (Body | If)
+Loop        = "loop" Body
 
 ## Operand Expressions
 Expressions that contain bodies only in very limited, clearly delimited cases.
@@ -109,20 +119,6 @@ Assign      = OperandExpr ("="|"+="|"-=") Expr
 Break       = "break" Expr?
 Continue    = "continue"
 Return      = "return" Expr?
-
-## Body Expressions
-Expressions that own a body.
-
-BodiedExpr  = Block | If | Loop
-
-Block       = "{" Stmt* Arm? "}"
-// MemberDecl rejected by Binder
-
-If          = "if" OperandExpr Body ElseClause?     
-// Condition is OperandExpr to disallow any unparenthesized body inside it.
-
-ElseClause  = "else" (Body | If)
-Loop        = "loop" Body
 
 ## Type Expressions/Clauses
 TypeExpr        = (NativeTypeName | Identifier) ("." Identifier)*

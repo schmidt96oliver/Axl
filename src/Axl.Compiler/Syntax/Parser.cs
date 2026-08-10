@@ -32,26 +32,32 @@ public partial class Parser
 
     private void Parse()
     {
+        //TODO: Distinguish script and module file
         var file = _scanner.Open();
 
+        // Stmt can start from Expr or Decl. Recover only from
+        // Decl, because Expr would be too permissive.
+        var fileAnchor = Anchor.From(FirstSet.MemberDecl) 
+            | TokenKind.UsingKw | TokenKind.ModuleKw
+            | TokenKind.Semicolon;
+        
         foreach (var _ in _scanner.MustEatEachIteration())
         {
             if (_scanner.IsAt(FirstSet.Stmt))
-            {
-                // Stmt can start from Expr or Decl. Recover only from
-                // Decl, because Expr would be too permissive.
-                EatStmt(Anchor.From(FirstSet.Decl) | TokenKind.Semicolon);
-            }
+                EatStmt(fileAnchor);
             else
             {
                 ReportUnexpected(expected: SyntaxCategory.Stmt);
                 
-                // Recover to the next Stmt start, which includes Expr (and Decl).
+                // Recover to the next Stmt start, which includes Expr.
                 // This is deliberately different from the anchor for EatStmt above.
                 // If the parser is already confused, we recover to any position that
                 // can start a new statement.
-                RecoverTo(Anchor.From(FirstSet.Stmt) | TokenKind.Semicolon, null);
                 
+                //TODO: Include fileAnchor, when all productions can be parsed
+                // Currently, only Stmts can be parsed.
+                RecoverTo(Anchor.From(FirstSet.Stmt), null);
+
                 if (_scanner.IsAt(TokenKind.Semicolon))
                 {
                     ReportUnexpected(expected: SyntaxCategory.Stmt);
@@ -364,7 +370,8 @@ public partial class Parser
         // Decl, because Expr would be too permissive.
         // Also anchor on `=>` and `}`, because we can handle those.
         var blockAnchor = anchor | 
-                          TokenKind.VarKw | TokenKind.RightDoubleArrow | TokenKind.CloseBrace |
+                          TokenKind.VarKw | 
+                          TokenKind.RightDoubleArrow | TokenKind.CloseBrace |
                           TokenKind.Semicolon;
         
         foreach (var _ in _scanner.MustEatEachIteration())
@@ -372,14 +379,8 @@ public partial class Parser
             if (_scanner.IsAt(TokenKind.CloseBrace))
                 break;
             
-            // Do not parse all Decls as statement here, because they should not
-            // be part of a block and should probably belong to the enclosing
-            // loop.
-            if (_scanner.IsAt(FirstSet.Expr | TokenKind.VarKw))
-            {
-                Debug.Assert(_scanner.IsAt(FirstSet.Stmt));
+            if (_scanner.IsAt(FirstSet.Stmt))
                 EatStmt(blockAnchor);
-            }
             else if (_scanner.IsAt(TokenKind.RightDoubleArrow))
             {
                 EatArm(blockAnchor);

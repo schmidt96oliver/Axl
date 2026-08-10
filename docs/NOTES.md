@@ -2,7 +2,6 @@
                                        ≽(◕ ᴗ ◕)≼
 
 **Next**: 
-* names/grammar: Stmt = inside blockexpr; module, etc + MemberDecl/Using
 * EatBlock: Arm handling
 * if, loop
 
@@ -26,6 +25,7 @@
 [ ] Proper trivia handling
 [x] Anchors: TokenSet as BitSet
 [ ] Code lazily: SyntaxViews (only product syntax, never sum syntax). Provide FindNode/FindToken/NthToken/NthNode...
+[ ] Distinguish Script and Module file
 
 [x] Interpolated Strings
    * Lexer does not emit empty StringText/StringEnd.
