@@ -31,5 +31,8 @@ public partial class Parser
 
         public bool Contains(TokenKind kind)
             => _set.Contains(kind);
+
+        public override string ToString()
+            => $"Anchor {_set}";
     }
 }

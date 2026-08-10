@@ -4,12 +4,14 @@
 10.08 10:54: Erschöpft, will weiter kommen, "nur noch das eine Ding"
       11:02: Noch erschöpfter. Schnell noch fertig!
 10.08 13:45: Quick going, a little restless. Still fun :)
+      14:11: Still quick going, caffeinated. Fun. Can slow down, its not gonna get finished :).
 
 **Next**: 
 
 **Small points**:
 * ?? `RecoverTo` UnexpectedToken -> Squiggle all tokens
 * ?? `RecoverTo` balanced braces/parens
+* ?? pain: FirstSet live elsewhere; possible desync; possible to keep them local to the parsing method?
 
 # Parser
 [x] Grammar
@@ -17,7 +19,7 @@
 [x] Operand expressions, Pratt parser
 [x] BodiedExpr; Semicolon rules
 [x] TailExpr
-[ ] VarDecl, TypeExpr, TypeAnnotation
+[x] VarDecl, TypeExpr, TypeAnnotation
 [x] String Exprs
 [ ] FnDecl, NativeClause, ModifierList
 [ ] MemberDecl, (Global)ModuleDecl, UsingDecl

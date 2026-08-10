@@ -38,13 +38,14 @@ public partial class Parser
         // Stmt can start from Expr or Decl. Recover only from
         // Decl, because Expr would be too permissive.
         var fileAnchor = Anchor.From(FirstSet.MemberDecl) 
-            | TokenKind.UsingKw | TokenKind.ModuleKw
-            | TokenKind.Semicolon;
+            | TokenKind.UsingKw | TokenKind.ModuleKw;
         
         foreach (var _ in _scanner.MustEatEachIteration())
         {
             if (_scanner.IsAt(FirstSet.Stmt))
-                EatStmt(fileAnchor);
+                EatStmt(fileAnchor | TokenKind.Semicolon);
+            else if (_scanner.IsAt(TokenKind.ModuleKw))
+                EatModuleDeclaration(fileAnchor);
             else
             {
                 ReportUnexpected(expected: SyntaxCategory.Stmt);
@@ -56,7 +57,7 @@ public partial class Parser
                 
                 //TODO: Include fileAnchor, when all productions can be parsed
                 // Currently, only Stmts can be parsed.
-                RecoverTo(Anchor.From(FirstSet.Stmt), null);
+                RecoverTo(Anchor.From(FirstSet.Stmt) | TokenKind.ModuleKw | TokenKind.Semicolon, expectedKind: null);
 
                 if (_scanner.IsAt(TokenKind.Semicolon))
                 {
@@ -145,15 +146,32 @@ public partial class Parser
     /// Always leaves the scanner on <paramref name="anchor"/>.
     /// </summary>
     /// <returns><c>True</c> iff garbage was collected and an error node added.</returns>
-    private bool RecoverTo(Anchor anchor, TokenKind? expectedToken)
+    private bool RecoverTo(Anchor anchor, TokenKind? expectedKind)
     {
         if (_scanner.IsAt(anchor))
             return false;
         
-        if (expectedToken is TokenKind kind)
+        if (expectedKind is TokenKind kind)
             ReportUnexpected(kind);
 
-        // Eat garbage into an error node
+        EatGarbageIntoError(anchor);
+        return true;
+    }
+
+    private bool RecoverTo(Anchor anchor, SyntaxCategory? expectedCategory)
+    {
+        if (_scanner.IsAt(anchor))
+            return false;
+        
+        if (expectedCategory is SyntaxCategory category)
+            ReportUnexpected(category);
+
+        EatGarbageIntoError(anchor);
+        return true;
+    }
+
+    private void EatGarbageIntoError(Anchor anchor)
+    {
         var error = _scanner.Open();
         _scanner.EatToken();
         
@@ -168,9 +186,8 @@ public partial class Parser
         _scanner.Close(error, SyntaxKind.Error);
         
         Debug.Assert(_scanner.IsAt(anchor));
-        return true;
     }
-
+    
     
     private void ReportUnexpected(SyntaxCategory expected)
         => _diagnosticBag.ReportError(new Diagnostic.UnexpectedToken(
@@ -279,11 +296,78 @@ public partial class Parser
 
         return EatIdName();
     }
+
+    private MarkClose? ExpectQualifiedName()
+    {
+        if (!_scanner.IsAt(FirstSet.QualifiedName))
+        {
+            ReportMissing(expected: SyntaxCategory.TypeName);
+            return null;
+        }
+
+        return EatQualifiedName();
+    }
     
     #endregion
     
+    #region Declarations
+
+    private MarkClose EatModuleDeclaration(Anchor anchor)
+    {
+        Debug.Assert(_scanner.IsAt(TokenKind.ModuleKw));
+
+        var moduleDecl = _scanner.Open();
+        _scanner.EatToken(TokenKind.ModuleKw);
+
+        ExpectQualifiedName();
+
+        // --- ";" means its a global declaration
+        if (_scanner.IsAt(TokenKind.Semicolon))
+        {
+            _scanner.EatToken(TokenKind.Semicolon);
+            return _scanner.Close(moduleDecl, SyntaxKind.GlobalModuleDecl);
+        }
+        
+        // --- "}" means we parse the entire block
+        if (_scanner.IsAt(TokenKind.OpenBrace))
+        {
+            _scanner.EatToken(TokenKind.OpenBrace);
+
+            var moduleBodyAnchor = anchor | FirstSet.MemberDecl | TokenKind.CloseBrace;
+            foreach (var _ in _scanner.MustEatEachIteration())
+            {
+                RecoverTo(anchor | moduleBodyAnchor, expectedCategory: SyntaxCategory.Member);
+                
+                if (_scanner.IsAt(TokenKind.ModuleKw))
+                    EatModuleDeclaration(moduleBodyAnchor);
+                else if (_scanner.IsAt(FirstSet.FnDecl))
+                {
+                    //TODO: Eat FnDecl
+                    var error = _scanner.Open();
+                    _scanner.EatToken();
+                    _scanner.Close(error, SyntaxKind.Error);
+                }
+                else if (_scanner.IsAt(TokenKind.CloseBrace))
+                    break;
+                else
+                {
+                    Debug.Assert(_scanner.IsAt(anchor));
+                    break;
+                }
+            }
+            
+            ExpectToken(TokenKind.CloseBrace);
+            return _scanner.Close(moduleDecl, SyntaxKind.ModuleDecl);
+        }
+        
+        // --- Anything else is garbage
+        ReportMissing(TokenKind.OpenBrace);
+        return _scanner.Close(moduleDecl, SyntaxKind.ModuleDecl);
+    }
     
-    #region Statements and Declarations
+    #endregion
+    
+    #region Statements
 
     private MarkClose EatStmt(Anchor anchor)
     {
@@ -520,7 +604,7 @@ public partial class Parser
                 if (hadArm) errorAfterArm ??= _scanner.Open();
                 // Recover to Expr as well, because they can legitimately start
                 // another Stmt.
-                RecoverTo(blockAnchor | FirstSet.Expr, null);
+                RecoverTo(blockAnchor | FirstSet.Expr, expectedKind: null);
             }
         }
 
@@ -1057,7 +1141,7 @@ public partial class Parser
         ExpectExpr(groupAnchor);
 
         // --- Recover if confused
-        var errorReported = RecoverTo(groupAnchor, expectedToken: TokenKind.CloseParen);
+        var errorReported = RecoverTo(groupAnchor, expectedKind: TokenKind.CloseParen);
 
         if (_scanner.IsAt(TokenKind.CloseParen))
             _scanner.EatToken(TokenKind.CloseParen);
@@ -1092,7 +1176,7 @@ public partial class Parser
             ExpectExpr(argAnchor);
             
             // --- Confused?
-            RecoverTo(argAnchor, expectedToken: TokenKind.Comma);
+            RecoverTo(argAnchor, expectedKind: TokenKind.Comma);
             
             // --- Next token
             if (_scanner.IsAt(TokenKind.Comma))

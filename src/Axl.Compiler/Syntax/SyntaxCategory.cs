@@ -11,7 +11,8 @@ public enum SyntaxCategory
     Expr,
     Stmt,
     Body,
-    TypeName
+    TypeName,
+    Member
 }
 
 public static class SyntaxCategoryExtensions
@@ -27,6 +28,7 @@ public static class SyntaxCategoryExtensions
             SyntaxCategory.Stmt => "a statement",
             SyntaxCategory.Body => "a body",
             SyntaxCategory.TypeName => "a type name",
+            SyntaxCategory.Member => "a member ('fn' or 'module')",
             _ => throw new UnreachableException()
         };
     }

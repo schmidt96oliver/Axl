@@ -7,10 +7,11 @@ public partial class Parser
     private readonly struct TokenSet
     {
         private readonly ulong _lo, _hi;
+        private static readonly TokenKind[] AllKinds = Enum.GetValues<TokenKind>();
 
         public static TokenSet Empty => default;
 
-        
+
         private TokenSet(ulong lo, ulong hi)
         {
             _lo = lo;
@@ -22,8 +23,8 @@ public partial class Parser
             Debug.Assert(Enum.GetValues<TokenKind>().Length <= 128,
                 "Too many TokenKinds. Expand the TokenSet to accomodate.");
         }
-        
-        
+
+
         public static TokenSet Of(params ReadOnlySpan<TokenKind> kinds)
         {
             ulong lo = 0, hi = 0;
@@ -37,6 +38,7 @@ public partial class Parser
                 else
                     hi |= 1UL << (index - 64);
             }
+
             return new TokenSet(lo, hi);
         }
 
@@ -53,6 +55,17 @@ public partial class Parser
 
             var word = index < 64 ? _lo : _hi;
             return (word >> (index & 63) & 1) != 0;
+        }
+
+        public IEnumerable<TokenKind> GetKinds()
+        {
+            var thisSet = this;
+            return AllKinds.Where(thisSet.Contains);
+        }
+
+        public override string ToString()
+        {
+            return $"[{string.Join(", ", GetKinds())}]";
         }
     }
 }
