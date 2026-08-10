@@ -53,8 +53,6 @@ public enum SyntaxKind
     // Clauses
     ArgList,
     ParamList,
-    TypeAnnotation,
-    InitializerClause,
     ModifierList,
     NativeClause,
     ModuleName,

@@ -3,6 +3,7 @@
 
 10.08 10:54: Erschöpft, will weiter kommen, "nur noch das eine Ding"
       11:02: Noch erschöpfter. Schnell noch fertig!
+10.08 13:45: Quick going, a little restless. Still fun :)
 
 **Next**: 
 * annotation
