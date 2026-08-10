@@ -258,7 +258,10 @@ public partial class Parser
     private MarkClose? ExpectTypeName()
     {
         if (!_scanner.IsAt(FirstSet.TypeName))
+        {
+            ReportMissing(expected: SyntaxCategory.TypeName);
             return null;
+        }
 
         if (_scanner.IsAt(FirstSet.NativeTypeName))
             return EatNativeTypeName();
@@ -286,10 +289,9 @@ public partial class Parser
     {
         Debug.Assert(_scanner.IsAt(FirstSet.Stmt));
         
-        var stmt = _scanner.Open();
-        
         if (_scanner.IsAt(FirstSet.Expr))
         {
+            var exprStmt = _scanner.Open();
             var isBodied = _scanner.IsAt(FirstSet.BodiedExpr);
             
             EatExpr(anchor | TokenKind.Semicolon);
@@ -303,10 +305,43 @@ public partial class Parser
             else
                 ExpectToken(TokenKind.Semicolon);
             
-            return _scanner.Close(stmt, SyntaxKind.ExprStmt);;
+            return _scanner.Close(exprStmt, SyntaxKind.ExprStmt);;
         }
 
+        if (_scanner.IsAt(TokenKind.VarKw))
+            return EatVarDecl(anchor);
+
         throw new UnreachableException($"{nameof(FirstSet.Stmt)} too large.");
+    }
+
+    private MarkClose EatVarDecl(Anchor anchor)
+    {
+        Debug.Assert(_scanner.IsAt(TokenKind.VarKw));
+
+        var varDecl = _scanner.Open();
+        _scanner.EatToken(TokenKind.VarKw);
+
+        // --- Name
+        ExpectIdName();
+
+        // --- Optional type annotation
+        if (_scanner.IsAt(TokenKind.Colon))
+        {
+            _scanner.EatToken(TokenKind.Colon);
+            ExpectTypeName();
+        }
+        
+        // --- Optional initializer
+        if (_scanner.IsAt(TokenKind.Equal))
+        {
+            _scanner.EatToken(TokenKind.Equal);
+            ExpectExpr(anchor);
+        }
+        
+        // --- Semicolon
+        ExpectToken(TokenKind.Semicolon);
+
+        return _scanner.Close(varDecl, SyntaxKind.VarDecl);
     }
     
     #endregion
@@ -486,15 +521,6 @@ public partial class Parser
                 // Recover to Expr as well, because they can legitimately start
                 // another Stmt.
                 RecoverTo(blockAnchor | FirstSet.Expr, null);
-
-                //TODO: Delete when var is handled
-                // For now, we cant deal with it, so wrap it in an error
-                if (_scanner.IsAt(TokenKind.VarKw))
-                {
-                    var error = _scanner.Open();
-                    _scanner.EatToken();
-                    _scanner.Close(error, SyntaxKind.Error);
-                }
             }
         }
 

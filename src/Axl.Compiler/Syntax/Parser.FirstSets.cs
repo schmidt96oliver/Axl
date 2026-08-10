@@ -34,7 +34,7 @@ public partial class Parser
         public static readonly TokenSet Expr = TailExpr | TokenSet.Of(TokenKind.OpenBrace,
             TokenKind.LoopKw, TokenKind.IfKw);
 
-        public static readonly TokenSet Stmt = Expr;
+        public static readonly TokenSet Stmt = Expr | TokenKind.VarKw;
 
         public static readonly TokenSet Modifier = TokenSet.Of(TokenKind.PublicKw, TokenKind.PrivateKw);
 

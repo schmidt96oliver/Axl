@@ -10,7 +10,8 @@ public enum SyntaxCategory
 {
     Expr,
     Stmt,
-    Body
+    Body,
+    TypeName
 }
 
 public static class SyntaxCategoryExtensions
@@ -25,6 +26,7 @@ public static class SyntaxCategoryExtensions
             SyntaxCategory.Expr => "an expression",
             SyntaxCategory.Stmt => "a statement",
             SyntaxCategory.Body => "a body",
+            SyntaxCategory.TypeName => "a type name",
             _ => throw new UnreachableException()
         };
     }

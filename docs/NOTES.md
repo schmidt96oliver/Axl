@@ -6,8 +6,6 @@
 10.08 13:45: Quick going, a little restless. Still fun :)
 
 **Next**: 
-* annotation
-* var
 
 **Small points**:
 * ?? `RecoverTo` UnexpectedToken -> Squiggle all tokens
