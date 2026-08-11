@@ -627,11 +627,13 @@ public partial class Parser
             // here.
             var operandExpr = EatOperandExpr(left: null, anchor);
 
-            if (_scanner.IsAt(TokenKind.Equal))
+            if (_scanner.IsAt(TokenKind.Equal)
+                || _scanner.IsAt(TokenKind.PlusEqual)
+                || _scanner.IsAt(TokenKind.MinusEqual))
             {
                 // We have assign.
                 var assignExpr = _scanner.OpenBefore(operandExpr);
-                _scanner.EatToken(TokenKind.Equal);
+                _scanner.EatToken();
                 ExpectExpr(anchor);
                 return _scanner.Close(assignExpr, SyntaxKind.AssignExpr);
             }
