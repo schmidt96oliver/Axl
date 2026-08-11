@@ -8,6 +8,7 @@
 
 **Next**: 
 
+
 **Small points**:
 * ?? `RecoverTo` UnexpectedToken -> Squiggle all tokens
 * ?? `RecoverTo` balanced braces/parens (good for garbage in modules `module A { var using module B { } }`)
@@ -20,6 +21,9 @@
 * `SyntaxFile` add reference to Source
 
 # Parser
+[ ] Corpus & Corpus-Test-Runner (expect: Parses without diagnostics)
+[ ] Write corpus files. Use Ungrammar
+
 * ?? Better dump format
 
 
