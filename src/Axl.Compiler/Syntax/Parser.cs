@@ -133,6 +133,66 @@ public partial class Parser
     }
 
     /// <summary>
+    /// Eats <c>open (item ("," item)*)? close</c> into a <paramref name="listKind"/> node.
+    /// </summary>
+    /// <param name="eatItem">
+    /// Eats a single item. Gets an anchor that also stops on "," and
+    /// <paramref name="closeToken"/>, so a confused item hands control back here.
+    /// </param>
+    private MarkClose EatDelimitedList(
+        Anchor anchor,
+        TokenKind openToken,
+        TokenKind closeToken,
+        SyntaxKind listKind,
+        Func<Anchor, MarkClose?> eatItem)
+    {
+        Debug.Assert(_scanner.IsAt(openToken));
+
+        var list = _scanner.Open();
+        _scanner.EatToken(openToken);
+
+        // --- Special-case the empty list
+        if (_scanner.IsAt(closeToken))
+        {
+            _scanner.EatToken(closeToken);
+            return _scanner.Close(list, listKind);
+        }
+
+        // --- Expect items
+        var itemAnchor = anchor | closeToken | TokenKind.Comma;
+        foreach (var _ in _scanner.MustEatEachIteration())
+        {
+            // --- Item
+            eatItem(itemAnchor);
+
+            // --- Confused?
+            RecoverTo(itemAnchor, expected: TokenKind.Comma);
+
+            // --- Next token
+            if (_scanner.IsAt(TokenKind.Comma))
+            {
+                _scanner.EatToken(TokenKind.Comma);
+
+                // Expect another item
+                continue;
+            }
+
+            if (_scanner.IsAt(closeToken) ||
+                _scanner.IsAt(anchor))
+            {
+                break;
+            }
+
+            // Every branch continues or breaks.
+            throw new UnreachableException();
+        }
+
+        // --- Expect close
+        ExpectToken(closeToken);
+        return _scanner.Close(list, listKind);
+    }
+
+    /// <summary>
     /// Applies the semicolon rule. Expects ";" if required, otherwise eats it
     /// only if it's there.
     /// <para>

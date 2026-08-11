@@ -139,52 +139,12 @@ public partial class Parser
 
     private MarkClose EatParamList(Anchor anchor)
     {
-        Debug.Assert(_scanner.IsAt(TokenKind.OpenParen));
-
-        var paramList = _scanner.Open();
-        _scanner.EatToken(TokenKind.OpenParen);
-
-        // --- Special-case `( )`
-        if (_scanner.IsAt(TokenKind.CloseParen))
-        {
-            _scanner.EatToken(TokenKind.CloseParen);
-            return _scanner.Close(paramList, SyntaxKind.ParamList);
-        }
-
-        // --- Expect parameters
-        var paramAnchor = anchor | TokenSet.Of(TokenKind.CloseParen, TokenKind.Comma);
-        foreach (var _ in _scanner.MustEatEachIteration())
-        {
-            // --- Expr
-            ExpectParam();
-
-            // --- Confused?
-            RecoverTo(paramAnchor, expected: TokenKind.Comma);
-
-            // --- Next token
-            if (_scanner.IsAt(TokenKind.Comma))
-            {
-                _scanner.EatToken(TokenKind.Comma);
-
-                // Expect another parameter
-                continue;
-            }
-
-            if (_scanner.IsAt(TokenKind.CloseParen) ||
-                _scanner.IsAt(anchor))
-            {
-                break;
-            }
-
-            // Every branch continues or breaks.
-            throw new UnreachableException();
-        }
-
-        // --- Expect `)`
-        ExpectToken(TokenKind.CloseParen);
-        return _scanner.Close(paramList, SyntaxKind.ParamList);
-
-        MarkClose? ExpectParam()
+        return EatDelimitedList(anchor,
+            TokenKind.OpenParen, TokenKind.CloseParen,
+            SyntaxKind.ParamList,
+            eatItem: ExpectParam);
+        
+        MarkClose? ExpectParam(Anchor _)
         {
             if (!_scanner.IsAt(TokenKind.Identifier))
             {

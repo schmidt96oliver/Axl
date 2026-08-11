@@ -235,52 +235,8 @@ public partial class Parser
 
 
     private MarkClose EatArgList(Anchor anchor)
-    {
-        Debug.Assert(_scanner.IsAt(TokenKind.OpenParen));
-
-        var argList = _scanner.Open();
-        _scanner.EatToken(TokenKind.OpenParen);
-
-        // --- Special-case `( )`
-        if (_scanner.IsAt(TokenKind.CloseParen))
-        {
-            _scanner.EatToken(TokenKind.CloseParen);
-            return _scanner.Close(argList, SyntaxKind.ArgList);
-        }
-
-        // --- Expect arguments
-        var argAnchor = anchor | TokenSet.Of(TokenKind.CloseParen, TokenKind.Comma);
-        foreach (var _ in _scanner.MustEatEachIteration())
-        {
-            // Each iteration expects an argument, i.e. an expression.
-
-            // --- Expr
-            ExpectExpr(argAnchor);
-
-            // --- Confused?
-            RecoverTo(argAnchor, expected: TokenKind.Comma);
-
-            // --- Next token
-            if (_scanner.IsAt(TokenKind.Comma))
-            {
-                _scanner.EatToken(TokenKind.Comma);
-
-                // Expect another expression
-                continue;
-            }
-
-            if (_scanner.IsAt(TokenKind.CloseParen) ||
-                _scanner.IsAt(anchor))
-            {
-                break;
-            }
-
-            // Every branch continues or breaks.
-            throw new UnreachableException();
-        }
-
-        // --- Expect `)`
-        ExpectToken(TokenKind.CloseParen);
-        return _scanner.Close(argList, SyntaxKind.ArgList);
-    }
+        => EatDelimitedList(anchor,
+            TokenKind.OpenParen, TokenKind.CloseParen,
+            SyntaxKind.ArgList,
+            eatItem: ExpectExpr);
 }
