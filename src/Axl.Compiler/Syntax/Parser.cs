@@ -728,7 +728,7 @@ public partial class Parser
         // Decl, because Expr would be too permissive.
         // Also anchor on `=>` and `}`, because we can handle those.
         var blockAnchor = anchor | 
-                          TokenKind.VarKw | 
+                          TokenKind.VarKw | FirstSet.FnDecl |
                           TokenKind.RightDoubleArrow | TokenKind.CloseBrace |
                           TokenKind.Semicolon;
 
@@ -757,6 +757,8 @@ public partial class Parser
                     ReportMissing(TokenKind.CloseBrace);
                 hadArm = true;
             }
+            else if (_scanner.IsAt(FirstSet.FnDecl))
+                EatMemberDecl(blockAnchor);
             else if (_scanner.IsAt(TokenKind.Semicolon))
             {
                 if (!hadArm)
