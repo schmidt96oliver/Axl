@@ -24,6 +24,7 @@
 [ ] Corpus & Corpus-Test-Runner (expect: Parses without diagnostics)
 [ ] Write corpus files. Use Ungrammar
 
+* Go over ReportMissing/Unexpected, see which ExpectedSyntax is passed in (and to make more specific)
 * ?? Better dump format
 
 

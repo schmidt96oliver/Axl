@@ -1,4 +1,5 @@
 using System.Diagnostics;
+using Axl.Compiler.Diagnostics;
 // ReSharper disable UnusedMethodReturnValue.Local
 
 namespace Axl.Compiler.Syntax;
@@ -155,7 +156,7 @@ public partial class Parser
             {
                 if (!hadArm)
                 {
-                    ReportUnexpected(expected: SyntaxCategory.Stmt);
+                    ReportUnexpected(ExpectedSyntax.Stmt);
                     var error = _scanner.Open();
                     _scanner.EatToken(TokenKind.Semicolon);
                     _scanner.Close(error, SyntaxKind.Error);
@@ -171,18 +172,18 @@ public partial class Parser
             else if (_scanner.IsAt(anchor))
             {
                 if (!hadArm)
-                    ReportMissing(expected: SyntaxCategory.Stmt);
+                    ReportMissing(ExpectedSyntax.Stmt);
                 break;
             }
             else
             {
                 if (!hadArm)
-                    ReportUnexpected(expected: SyntaxCategory.Stmt);
+                    ReportUnexpected(ExpectedSyntax.Stmt);
 
                 if (hadArm) errorAfterArm ??= _scanner.Open();
                 // Recover to Expr as well, because they can legitimately start
                 // another Stmt.
-                RecoverTo(blockAnchor | FirstSet.Expr, expectedKind: null);
+                RecoverTo(blockAnchor | FirstSet.Expr, expected: null);
             }
         }
 

@@ -1,4 +1,5 @@
 using System.Diagnostics;
+using Axl.Compiler.Diagnostics;
 // ReSharper disable UnusedMethodReturnValue.Local
 
 namespace Axl.Compiler.Syntax;
@@ -29,7 +30,7 @@ public partial class Parser
             var moduleBodyAnchor = Anchor.Forced | FirstSet.MemberDecl | TokenKind.CloseBrace;
             foreach (var _ in _scanner.MustEatEachIteration())
             {
-                RecoverTo(moduleBodyAnchor, expectedCategory: SyntaxCategory.Member);
+                RecoverTo(moduleBodyAnchor, ExpectedSyntax.Member);
 
                 if (_scanner.IsAt(TokenKind.ModuleKw))
                     EatModuleDecl();
@@ -100,7 +101,7 @@ public partial class Parser
             else
             {
                 // TODO: Expected string?
-                ReportMissing(expected: SyntaxCategory.Expr);
+                ReportMissing(expected: ExpectedSyntax.Expr);
             }
             ExpectToken(TokenKind.CloseParen);
 
@@ -167,7 +168,7 @@ public partial class Parser
             ExpectParam();
 
             // --- Confused?
-            RecoverTo(paramAnchor, expectedKind: TokenKind.Comma);
+            RecoverTo(paramAnchor, expected: TokenKind.Comma);
 
             // --- Next token
             if (_scanner.IsAt(TokenKind.Comma))

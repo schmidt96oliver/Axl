@@ -11,7 +11,7 @@ public class TokenKindTests
         => new(Enum.GetValues<TokenKind>());
 
     /// <summary>
-    /// Kinds whose <see cref="TokenKindExtensions.DisplayName"/> cannot be lexed back.
+    /// Kinds whose <see cref="TokenKindDisplayExtensions.DisplayName"/> cannot be lexed back.
     /// Every entry needs a reason. The list should shrink, not grow.
     /// </summary>
     private static bool HasFixedSpelling(TokenKind kind)

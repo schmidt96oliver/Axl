@@ -24,7 +24,7 @@ public partial class Parser
     {
         if (!_scanner.IsAt(FirstSet.OperandExpr))
         {
-            ReportMissing(expected: SyntaxCategory.Expr);
+            ReportMissing(ExpectedSyntax.Expr);
             return null;
         }
 
@@ -35,7 +35,7 @@ public partial class Parser
     {
         if (!_scanner.IsAt(FirstSet.Expr))
         {
-            ReportMissing(expected: SyntaxCategory.Expr);
+            ReportMissing(ExpectedSyntax.Expr);
             return null;
         }
 
@@ -46,7 +46,7 @@ public partial class Parser
     {
         if (!_scanner.IsAt(TokenKind.OpenBrace) && !_scanner.IsAt(TokenKind.RightDoubleArrow))
         {
-            ReportMissing(expected: SyntaxCategory.Body);
+            ReportMissing(ExpectedSyntax.Body);
             return null;
         }
 
@@ -59,7 +59,7 @@ public partial class Parser
     {
         if (!_scanner.IsAt(FirstSet.TypeName))
         {
-            ReportMissing(expected: SyntaxCategory.TypeName);
+            ReportMissing(ExpectedSyntax.TypeName);
             return null;
         }
 
@@ -84,7 +84,7 @@ public partial class Parser
     {
         if (!_scanner.IsAt(FirstSet.QualifiedName))
         {
-            ReportMissing(expected: SyntaxCategory.TypeName);
+            ReportMissing(ExpectedSyntax.TypeName);
             return null;
         }
 
@@ -95,7 +95,7 @@ public partial class Parser
     {
         if (!_scanner.IsAt(TokenKind.OpenParen))
         {
-            ReportMissing(SyntaxCategory.ParamList);
+            ReportMissing(ExpectedSyntax.ParamList);
             return null;
         }
 

@@ -223,7 +223,7 @@ public partial class Parser
         ExpectExpr(groupAnchor);
 
         // --- Recover if confused
-        var errorReported = RecoverTo(groupAnchor, expectedKind: TokenKind.CloseParen);
+        var errorReported = RecoverTo(groupAnchor, expected: TokenKind.CloseParen);
 
         if (_scanner.IsAt(TokenKind.CloseParen))
             _scanner.EatToken(TokenKind.CloseParen);
@@ -258,7 +258,7 @@ public partial class Parser
             ExpectExpr(argAnchor);
 
             // --- Confused?
-            RecoverTo(argAnchor, expectedKind: TokenKind.Comma);
+            RecoverTo(argAnchor, expected: TokenKind.Comma);
 
             // --- Next token
             if (_scanner.IsAt(TokenKind.Comma))

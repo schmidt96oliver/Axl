@@ -1,5 +1,4 @@
 ﻿using System.Collections.Immutable;
-using System.Diagnostics;
 using Axl.Compiler.Syntax;
 
 namespace Axl.Compiler.Diagnostics;
@@ -14,75 +13,16 @@ public abstract partial record Diagnostic
         public override string Message => "String has not been closed.";
     }
 
-    public sealed record UnexpectedToken : Error
+    public sealed record UnexpectedToken(SourceFileView Source, Token Actual, ExpectedSyntax Expected) : Error
     {
-        private readonly TokenKind? _expectedKind;
-        private readonly SyntaxCategory? _expectedCategory;
-
-        public SourceFileView Source { get; }
-        public Token Actual { get; }
-
-
-        public UnexpectedToken(SourceFileView source, Token actual, TokenKind expectedKind)
-        {
-            Source = source;
-            Actual = actual;
-            _expectedKind = expectedKind;
-        }
-
-        public UnexpectedToken(SourceFileView source, Token actual, SyntaxCategory expectedCategory)
-        {
-            Source = source;
-            Actual = actual;
-            _expectedCategory = expectedCategory;
-        }
-
-
         public override ImmutableArray<SourceLocation> Locations => [Source.GetLocation(Actual.Span)];
 
         public override string Message
-        {
-            get
-            {
-                var expected = (_expectedKind, _expectedCategory) switch
-                {
-                    (TokenKind kind, null) => kind.DisplayName,
-                    (null, SyntaxCategory category) => category.DisplayName,
-                    _ => throw new UnreachableException(),
-                };
-
-                return $"Expected {expected}, got {Actual.Kind.DisplayName}.";
-            }
-        }
+            => $"Expected {Expected.DisplayName}, got {Actual.Kind.DisplayName}.";
     }
-    
-    public sealed record MissingToken : Error
+
+    public sealed record MissingToken(SourceFileView Source, Token? Previous, Token Next, ExpectedSyntax Expected) : Error
     {
-        private readonly TokenKind? _expectedKind;
-        private readonly SyntaxCategory? _expectedCategory;
-
-        public SourceFileView Source { get; }
-        public Token? Previous { get; }
-        public Token Next { get; }
-
-
-        public MissingToken(SourceFileView source, Token? previous, Token next, TokenKind expectedKind)
-        {
-            Source = source;
-            Previous = previous;
-            Next = next;
-            _expectedKind = expectedKind;
-        }
-
-        public MissingToken(SourceFileView source, Token? previous, Token next, SyntaxCategory expectedCategory)
-        {
-            Source = source;
-            Previous = previous;
-            Next = next;
-            _expectedCategory = expectedCategory;
-        }
-
-
         public override ImmutableArray<SourceLocation> Locations
         {
             get
@@ -105,19 +45,7 @@ public abstract partial record Diagnostic
         }
 
         public override string Message
-        {
-            get
-            {
-                var expected = (_expectedKind, _expectedCategory) switch
-                {
-                    (TokenKind kind, null) => kind.DisplayName,
-                    (null, SyntaxCategory category) => category.DisplayName,
-                    _ => throw new UnreachableException(),
-                };
-
-                return $"Expected {expected}.";
-            }
-        }
+            => $"Expected {Expected.DisplayName}.";
     }
 
     public sealed record InvalidOperatorChaining(SourceFileView Source, ImmutableArray<Token> OffendingOperators) : Error

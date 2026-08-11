@@ -52,7 +52,7 @@ public partial class Parser
                 EatMemberDecl(fileAnchor);
             else
             {
-                ReportUnexpected(expected: SyntaxCategory.Stmt);
+                ReportUnexpected(ExpectedSyntax.Stmt);
 
                 // Recover to the next Stmt start, which includes Expr.
                 // This is deliberately different from the anchor for EatStmt above.
@@ -60,11 +60,11 @@ public partial class Parser
                 // can start a new statement.
                 RecoverTo(Anchor.From(FirstSet.Stmt)
                           | fileAnchor
-                          | TokenKind.Semicolon, expectedKind: null);
+                          | TokenKind.Semicolon, expected: null);
 
                 if (_scanner.IsAt(TokenKind.Semicolon))
                 {
-                    ReportUnexpected(expected: SyntaxCategory.Stmt);
+                    ReportUnexpected(ExpectedSyntax.Stmt);
                     var error = _scanner.Open();
                     _scanner.EatToken(TokenKind.Semicolon);
                     _scanner.Close(error, SyntaxKind.Error);
@@ -83,25 +83,13 @@ public partial class Parser
     /// Always leaves the scanner on <paramref name="anchor"/>.
     /// </summary>
     /// <returns><c>True</c> iff garbage was collected and an error node added.</returns>
-    private bool RecoverTo(Anchor anchor, TokenKind? expectedKind)
+    private bool RecoverTo(Anchor anchor, ExpectedSyntax? expected)
     {
         if (_scanner.IsAt(anchor))
             return false;
 
-        if (expectedKind is TokenKind kind)
-            ReportUnexpected(kind);
-
-        EatGarbageIntoError(anchor);
-        return true;
-    }
-
-    private bool RecoverTo(Anchor anchor, SyntaxCategory? expectedCategory)
-    {
-        if (_scanner.IsAt(anchor))
-            return false;
-
-        if (expectedCategory is SyntaxCategory category)
-            ReportUnexpected(category);
+        if (expected is ExpectedSyntax actualExpected)
+            ReportUnexpected(actualExpected);
 
         EatGarbageIntoError(anchor);
         return true;
@@ -126,24 +114,15 @@ public partial class Parser
     }
 
 
-    private void ReportUnexpected(SyntaxCategory expected)
-        => _diagnosticBag.ReportError(new Diagnostic.UnexpectedToken(
-            _source, _scanner.Peek(), expected));
-    private void ReportUnexpected(TokenKind expected)
+    private void ReportUnexpected(ExpectedSyntax expected)
         => _diagnosticBag.ReportError(new Diagnostic.UnexpectedToken(
             _source, _scanner.Peek(), expected));
 
-    private void ReportMissing(TokenKind expected)
+    private void ReportMissing(ExpectedSyntax expected)
         => _diagnosticBag.ReportError(new Diagnostic.MissingToken(
             _source,
-            previous: _scanner.Last,
-            next: _scanner.Peek(),
-            expected));
-    private void ReportMissing(SyntaxCategory expected)
-        => _diagnosticBag.ReportError(new Diagnostic.MissingToken(
-            _source,
-            previous: _scanner.Last,
-            next: _scanner.Peek(),
+            Previous: _scanner.Last,
+            Next: _scanner.Peek(),
             expected));
 
 
