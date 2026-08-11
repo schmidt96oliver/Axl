@@ -34,4 +34,23 @@ public partial class ParserTests
             .AddSExpr(inner)
             .ToString();
     }
+
+
+    [Theory, Corpus]
+    public void Corpus_ParsesWithoutDiagnostics(string path)
+    {
+        var source = SourceFileView.FromFile(path);
+        var tree = Parser.Parse(source);
+
+        foreach (var diagnostic in tree.Diagnostics)
+        {
+            TestContext.Current.TestOutputHelper?.WriteLine(
+                $"[{diagnostic.DefaultSeverity}] {diagnostic.Id}: {diagnostic.Message}");
+            TestContext.Current.TestOutputHelper?.WriteLine(
+                $"    at {path}:line {source.File.GetLineAt(diagnostic.Locations[0].Span.First).LineNumber + 1}");
+        }
+        
+        tree.HasError.ShouldBeFalse();
+        tree.Diagnostics.ShouldBeEmpty();
+    }
 }

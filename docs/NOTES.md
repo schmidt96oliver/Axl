@@ -6,6 +6,7 @@
 10.08 13:45: Quick going, a little restless. Still fun :)
       14:11: Still quick going, caffeinated. Fun. Can slow down, its not gonna get finished :).
 11.08 11:40: Hungrig; macht Spaß; "einer geht noch"
+11.08 14:27: Roughly Ende der Zeit; Harndrang; "das geht noch schnell "
 
 **Next**: 
 
@@ -20,7 +21,7 @@
 * `SyntaxFile` add reference to Source
 
 # Parser
-[ ] Corpus & Corpus-Test-Runner (expect: Parses without diagnostics)
+[x] Corpus & Corpus-Test-Runner (expect: Parses without diagnostics)
 [ ] Write corpus files. Use Ungrammar
 
 * Go over ReportMissing/Unexpected, see which ExpectedSyntax is passed in (and to make more specific)
