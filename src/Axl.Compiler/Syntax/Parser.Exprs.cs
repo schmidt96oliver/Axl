@@ -59,9 +59,7 @@ public partial class Parser
                 return _scanner.Close(returnExpr, SyntaxKind.ReturnExpr);
 
             case TokenKind.ContinueKw:
-                var continueExpr = _scanner.Open();
-                _scanner.EatToken(TokenKind.ContinueKw);
-                return _scanner.Close(continueExpr, SyntaxKind.ContinueExpr);
+                return _scanner.EatTokenIntoNode(SyntaxKind.ContinueExpr);
         }
 
         throw new UnreachableException($"{nameof(FirstSet.Expr)} was too large");

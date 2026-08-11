@@ -65,9 +65,7 @@ public partial class Parser
                 if (_scanner.IsAt(TokenKind.Semicolon))
                 {
                     ReportUnexpected(ExpectedSyntax.Stmt);
-                    var error = _scanner.Open();
-                    _scanner.EatToken(TokenKind.Semicolon);
-                    _scanner.Close(error, SyntaxKind.Error);
+                    _scanner.EatTokenIntoNode(SyntaxKind.Error);
                 }
             }
         }

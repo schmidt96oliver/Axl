@@ -27,9 +27,7 @@ public partial class Parser
             {
                 // --- StringText: Just add
                 case TokenKind.StringText:
-                    var text = _scanner.Open();
-                    _scanner.EatToken(TokenKind.StringText);
-                    _scanner.Close(text, SyntaxKind.StringText);
+                    _scanner.EatTokenIntoNode(SyntaxKind.StringText);
                     break;
 
                 // --- StringEnd: Finish

@@ -215,7 +215,7 @@ public partial class Parser
         public MarkClose EatTokenIntoNode(SyntaxKind nodeKind)
         {
             var node = Open();
-            EatToken(TokenKind.Semicolon);
+            EatToken();
             return Close(node, nodeKind);
         }
         

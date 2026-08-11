@@ -29,17 +29,12 @@ public partial class Parser
     private MarkClose EatNativeTypeName()
     {
         Debug.Assert(_scanner.IsAt(FirstSet.NativeTypeName));
-        var expr = _scanner.Open();
-        _scanner.EatToken();
-        return _scanner.Close(expr, SyntaxKind.NativeTypeName);
+        return _scanner.EatTokenIntoNode(SyntaxKind.NativeTypeName);
     }
 
     private MarkClose EatIdName()
     {
         Debug.Assert(_scanner.IsAt(TokenKind.Identifier));
-
-        var idName = _scanner.Open();
-        _scanner.EatToken(TokenKind.Identifier);
-        return _scanner.Close(idName, SyntaxKind.IdName);
+        return _scanner.EatTokenIntoNode(SyntaxKind.IdName);
     }
 }
