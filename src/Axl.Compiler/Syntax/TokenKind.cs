@@ -85,6 +85,9 @@ public static class TokenKindExtensions
         public bool IsTrivia =>
             kind is TokenKind.Comment or TokenKind.Whitespace;
 
+        public bool HasValue =>
+            kind is TokenKind.Identifier or TokenKind.NumberLiteral or TokenKind.StringText;
+        
         /// <summary>
         /// How this kind is named in diagnostic messages. A complete noun phrase,
         /// including quoting: <c>"';'"</c>, <c>"an identifier"</c>. Kinds with a fixed

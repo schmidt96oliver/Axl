@@ -13,6 +13,7 @@ public enum SyntaxKind
     GlobalModuleDecl,
     ModuleDecl,
     VarDecl,
+    FnDecl,
     
     // Type Expressions
     QualifiedName,
@@ -53,8 +54,6 @@ public enum SyntaxKind
     // Clauses
     ArgList,
     ParamList,
-    ModifierList,
+    Param,
     NativeClause,
-    ModuleName,
-    
 }

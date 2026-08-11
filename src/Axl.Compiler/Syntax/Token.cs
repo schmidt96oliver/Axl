@@ -18,14 +18,25 @@ public class Token : SyntaxElement
         Span = span;
     }
 
+
+    /// <summary>
+    /// Returns this <see cref="Token"/> with a different <paramref name="kind"/>.
+    /// <paramref name="kind"/> must not carry a value.
+    /// </summary>
+    public Token WithKind(TokenKind kind)
+    {
+        Guard.MustBe(!kind.HasValue);
+        return new Token(Span, kind);
+    }
+    
+    
     /// <summary>
     /// Creates a token that carries no value.
     /// </summary>
     /// <exception cref="ArgumentException">If <paramref name="kind"/> carries a value. It must be constructed through special constructors.</exception>
     public static Token Simple(SourceSpan span, TokenKind kind)
     {
-        Guard.MustBe(kind is not
-                (TokenKind.Identifier or TokenKind.NumberLiteral or TokenKind.StringText or TokenKind.Error),
+        Guard.MustBe(!kind.HasValue && kind is not TokenKind.Error,
             "Construct through specialized static methods.");
         
         return new Token(span, kind);

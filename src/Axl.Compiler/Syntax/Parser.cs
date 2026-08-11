@@ -49,6 +49,8 @@ public partial class Parser
                 EatModuleDecl();
             else if (_scanner.IsAt(TokenKind.UsingKw))
                 EatUsingDecl();
+            else if (_scanner.IsAt(FirstSet.MemberDecl))
+                EatMemberDecl(fileAnchor);
             else
             {
                 ReportUnexpected(expected: SyntaxCategory.Stmt);
@@ -57,11 +59,8 @@ public partial class Parser
                 // This is deliberately different from the anchor for EatStmt above.
                 // If the parser is already confused, we recover to any position that
                 // can start a new statement.
-                
-                //TODO: Include fileAnchor, when all productions can be parsed
-                // Currently, only Stmts can be parsed.
                 RecoverTo(Anchor.From(FirstSet.Stmt) 
-                          | TokenKind.ModuleKw | TokenKind.UsingKw 
+                          | fileAnchor
                           | TokenKind.Semicolon, expectedKind: null);
 
                 if (_scanner.IsAt(TokenKind.Semicolon))
@@ -101,6 +100,7 @@ public partial class Parser
                     break;
                 
                 case ParseEventKind.Advance:
+                case ParseEventKind.AdvancePatch:
                     // Flush all trivia here
                     while (tokens[nextToken].Kind.IsTrivia)
                     {
@@ -109,7 +109,12 @@ public partial class Parser
                     }
 
                     // Add the actual node
-                    nodes.Peek().Nodes.Add(tokens[nextToken]);
+                    var token = e.EventKind is ParseEventKind.Advance
+                        ? tokens[nextToken]
+                        : tokens[nextToken].WithKind(e.PatchTokenKind 
+                                                     ?? throw new UnreachableException("AdvancePatch without kind."));
+                    
+                    nodes.Peek().Nodes.Add(token);
                     nextToken++;
                     break;
 
@@ -312,6 +317,17 @@ public partial class Parser
 
         return EatQualifiedName();
     }
+
+    private MarkClose? ExpectParamList(Anchor anchor)
+    {
+        if (!_scanner.IsAt(TokenKind.OpenParen))
+        {
+            ReportMissing(SyntaxCategory.ParamList);
+            return null;
+        }
+
+        return EatParamList(anchor);
+    }
     
     #endregion
     
@@ -346,12 +362,7 @@ public partial class Parser
                 if (_scanner.IsAt(TokenKind.ModuleKw))
                     EatModuleDecl();
                 else if (_scanner.IsAt(FirstSet.FnDecl))
-                {
-                    //TODO: Eat FnDecl
-                    var error = _scanner.Open();
-                    _scanner.EatToken();
-                    _scanner.Close(error, SyntaxKind.Error);
-                }
+                    EatMemberDecl(moduleBodyAnchor);
                 else
                 {
                     // Could be `}` or Eof
@@ -377,6 +388,163 @@ public partial class Parser
         ExpectQualifiedName();
         ExpectToken(TokenKind.Semicolon);
         return _scanner.Close(usingDecl, SyntaxKind.UsingDecl);
+    }
+
+    private MarkClose EatMemberDecl(Anchor anchor)
+    {
+        Debug.Assert(_scanner.IsAt(FirstSet.MemberDecl));
+
+        var decl = _scanner.Open();
+
+        // --- Modifier List
+        while (_scanner.Peek().Kind is TokenKind.PublicKw or TokenKind.PrivateKw)
+            _scanner.EatToken();
+
+        // --- Actual declaration
+        if (_scanner.IsAt(TokenKind.NativeKw) || _scanner.IsAt(TokenKind.FnKw))
+            return EatFnDecl(anchor, decl);
+
+        // --- No actual declaration found.
+        // Wrap modifiers into an error.
+        ReportMissing(TokenKind.FnKw);
+        return _scanner.Close(decl, SyntaxKind.Error);
+    }
+
+    private MarkClose EatFnDecl(Anchor anchor, MarkOpen fnDecl)
+    {
+        Debug.Assert(_scanner.IsAt(TokenKind.NativeKw) || _scanner.IsAt(TokenKind.FnKw));
+
+        var fnDeclAnchor = anchor | TokenKind.FnKw;
+        
+        // --- Native Clause
+        var hasNativeClause = false;
+        if (_scanner.IsAt(TokenKind.NativeKw))
+        {
+            var nativeClause = _scanner.Open();
+            _scanner.EatToken(TokenKind.NativeKw);
+            ExpectToken(TokenKind.OpenParen);
+            if (_scanner.IsAt(TokenKind.StringStart))
+                EatStringExpr(fnDeclAnchor | TokenKind.CloseParen);
+            else
+            {
+                // TODO: Expected string?
+                ReportMissing(expected: SyntaxCategory.Expr);
+            }
+            ExpectToken(TokenKind.CloseParen);
+
+            hasNativeClause = true;
+            _scanner.Close(nativeClause, SyntaxKind.NativeClause);
+        }
+        
+        // --- FnDecl
+        if (!_scanner.IsAt(TokenKind.FnKw))
+        {
+            ReportMissing(TokenKind.FnKw);
+            return _scanner.Close(fnDecl, SyntaxKind.Error);
+        }
+
+        _scanner.EatToken(TokenKind.FnKw);
+
+        ExpectIdName();
+        ExpectParamList(anchor);
+        
+        // --- Return type
+        if (_scanner.IsAt(TokenKind.RightArrow))
+        {
+            _scanner.EatToken(TokenKind.RightArrow);
+            
+            // --- Special case "never" keyword
+            if (_scanner.Peek() is IdentifierToken { Id.Text: "never" })
+                _scanner.EatTokenAs(TokenKind.NeverKw);
+            else
+                ExpectTypeName();
+        }
+
+        if (hasNativeClause)
+            ExpectToken(TokenKind.Semicolon);
+        else
+        {
+            ExpectBody(anchor);
+            
+            // Semicolon rule: If last is BraceClose, ";" can be omitted, but is
+            // allowed. Otherwise, it's required.
+            if (_scanner.Last?.Kind is TokenKind.CloseBrace)
+            {
+                if (_scanner.IsAt(TokenKind.Semicolon))
+                    _scanner.EatToken(TokenKind.Semicolon);
+            }
+            else
+                ExpectToken(TokenKind.Semicolon);
+        }
+
+        return _scanner.Close(fnDecl, SyntaxKind.FnDecl);
+    }
+
+    private MarkClose EatParamList(Anchor anchor)
+    {
+        Debug.Assert(_scanner.IsAt(TokenKind.OpenParen));
+
+        var paramList = _scanner.Open();
+        _scanner.EatToken(TokenKind.OpenParen);
+
+        // --- Special-case `( )`
+        if (_scanner.IsAt(TokenKind.CloseParen))
+        {
+            _scanner.EatToken(TokenKind.CloseParen);
+            return _scanner.Close(paramList, SyntaxKind.ParamList);
+        }
+        
+        // --- Expect parameters
+        var paramAnchor = anchor | TokenSet.Of(TokenKind.CloseParen, TokenKind.Comma);
+        foreach (var _ in _scanner.MustEatEachIteration())
+        {
+            // --- Expr
+            ExpectParam();
+            
+            // --- Confused?
+            RecoverTo(paramAnchor, expectedKind: TokenKind.Comma);
+            
+            // --- Next token
+            if (_scanner.IsAt(TokenKind.Comma))
+            {
+                _scanner.EatToken(TokenKind.Comma);
+                
+                // Expect another parameter
+                continue;
+            }
+
+            if (_scanner.IsAt(TokenKind.CloseParen) ||
+                _scanner.IsAt(anchor))
+            {
+                break;
+            }
+
+            // Every branch continues or breaks.
+            throw new UnreachableException();
+        }
+        
+        // --- Expect `)`
+        ExpectToken(TokenKind.CloseParen);
+        return _scanner.Close(paramList, SyntaxKind.ParamList);
+
+        MarkClose? ExpectParam()
+        {
+            if (!_scanner.IsAt(TokenKind.Identifier))
+            {
+                ReportMissing(TokenKind.Identifier);
+                return null;
+            }
+
+            var param = _scanner.Open();
+            EatIdName();
+            if (_scanner.IsAt(TokenKind.Colon))
+            {
+                _scanner.EatToken(TokenKind.Colon);
+                ExpectTypeName();
+            }
+
+            return _scanner.Close(param, SyntaxKind.Param);
+        }
     }
     
     #endregion

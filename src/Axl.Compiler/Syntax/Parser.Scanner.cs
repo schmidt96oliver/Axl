@@ -14,13 +14,18 @@ public partial class Parser
         Open,
         Close,
         Advance,
+        
+        /// <summary>
+        /// Advances one token and patches it into the given kind.
+        /// </summary>
+        AdvancePatch
     }
 
     /// <param name="SyntaxKind">
     /// Only meaningful on <see cref="ParseEventKind.Open"/>.
     /// <c>null</c> if no kind has been assigned yet.
     /// </param>
-    private readonly record struct ParseEvent(ParseEventKind EventKind, SyntaxKind? SyntaxKind = null)
+    private readonly record struct ParseEvent(ParseEventKind EventKind, SyntaxKind? SyntaxKind = null, TokenKind? PatchTokenKind = null)
     {
         public override string ToString()
             => EventKind switch
@@ -28,6 +33,7 @@ public partial class Parser
                 ParseEventKind.Open => $"Open {SyntaxKind?.ToString() ?? "?"}",
                 ParseEventKind.Close => "Close",
                 ParseEventKind.Advance => "Advance",
+                ParseEventKind.AdvancePatch => $"AdvancePatch to {PatchTokenKind}",
                 _ => throw new UnreachableException()
             };
     }
@@ -191,7 +197,20 @@ public partial class Parser
             Debug.Assert(token.Kind == knownKind);
             return token;
         }
-        
+
+        /// <summary>
+        /// Eats the next token and rewrites its <see cref="TokenKind"/>
+        /// to <paramref name="kind"/>. <paramref name="kind"/> must be a
+        /// token that doesn't carry a value.
+        /// </summary>
+        public Token EatTokenAs(TokenKind kind)
+        {
+            Debug.Assert(!kind.HasValue);
+            
+            _events.Add(new ParseEvent(ParseEventKind.AdvancePatch, PatchTokenKind: kind));
+            _fuel = MaxFuel;
+            return _tokens[_nextToken++];
+        }
         
         public Token Peek(int lookahead = 0)
         {
