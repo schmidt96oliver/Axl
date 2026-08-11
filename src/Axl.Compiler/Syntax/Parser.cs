@@ -437,14 +437,7 @@ public partial class Parser
         }
         
         // --- FnDecl
-        if (!_scanner.IsAt(TokenKind.FnKw))
-        {
-            ReportMissing(TokenKind.FnKw);
-            return _scanner.Close(fnDecl, SyntaxKind.Error);
-        }
-
-        _scanner.EatToken(TokenKind.FnKw);
-
+        ExpectToken(TokenKind.FnKw);
         ExpectIdName();
         ExpectParamList(anchor);
         
