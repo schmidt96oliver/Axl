@@ -5,14 +5,13 @@
         <ImplicitUsings>enable</ImplicitUsings>
         <Nullable>enable</Nullable>
         <IsPackable>false</IsPackable>
+        <UseMicrosoftTestingPlatformRunner>true</UseMicrosoftTestingPlatformRunner>
+        <OutputType>Exe</OutputType>
     </PropertyGroup>
 
     <ItemGroup>
-        <PackageReference Include="coverlet.collector" Version="6.0.4"/>
         <PackageReference Include="Meziantou.Framework.InlineSnapshotTesting" Version="6.0.1" />
-        <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.14.1"/>
         <PackageReference Include="Shouldly" Version="4.3.0" />
-        <PackageReference Include="xunit.runner.visualstudio" Version="3.1.4"/>
         <PackageReference Include="xunit.v3" Version="3.2.2" />
     </ItemGroup>
 
@@ -23,5 +22,4 @@
     <ItemGroup>
       <ProjectReference Include="..\Axl.Compiler\Axl.Compiler.csproj" />
     </ItemGroup>
-
 </Project>
