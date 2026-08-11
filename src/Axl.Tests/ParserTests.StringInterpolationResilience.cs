@@ -14,25 +14,21 @@ public partial class ParserTests
                                                 "Hello
                                             }
                                             """), """
-                ERROR UnexpectedToken@[0, 2): Expected a statement, got 'fn'.
-                ERROR MissingToken@[6, 6): Expected ';'.
-                ERROR UnexpectedToken@[8, 9): Expected a statement, got '{'.
                 ERROR UnclosedString@[21, 21): String has not been closed.
                 ERROR MissingToken@[21, 21): Expected ';'.
-                ERROR UnexpectedToken@[23, 24): Expected a statement, got '}'.
 
 
-                Error 'fn'
-                ExprStmt
-                · CallExpr
-                · · Identifier 'a'
-                · · ArgList '(' ')'
-                Error '{'
-                ExprStmt
-                · StringExpr
-                · · '"'
-                · · StringText 'Hello'
-                Error '}'
+                FnDecl
+                · 'fn'
+                · IdName 'a'
+                · ParamList '(' ')'
+                · BlockExpr
+                · · '{'
+                · · ExprStmt
+                · · · StringExpr
+                · · · · '"'
+                · · · · StringText 'Hello'
+                · · '}'
                 """);
         [Fact]
         public void Typing_ClosingBraceOnNextLine_2()
@@ -42,26 +38,22 @@ public partial class ParserTests
                                                 "Hello {
                                             }
                                             """), """
-                ERROR UnexpectedToken@[0, 2): Expected a statement, got 'fn'.
-                ERROR MissingToken@[6, 6): Expected ';'.
-                ERROR UnexpectedToken@[8, 9): Expected a statement, got '{'.
                 ERROR UnclosedString@[23, 23): String has not been closed.
                 ERROR MissingToken@[23, 23): Expected ';'.
-                ERROR UnexpectedToken@[25, 26): Expected a statement, got '}'.
 
 
-                Error 'fn'
-                ExprStmt
-                · CallExpr
-                · · Identifier 'a'
-                · · ArgList '(' ')'
-                Error '{'
-                ExprStmt
-                · StringExpr
-                · · '"'
-                · · StringText 'Hello '
-                · · StringInterpolation '{'
-                Error '}'
+                FnDecl
+                · 'fn'
+                · IdName 'a'
+                · ParamList '(' ')'
+                · BlockExpr
+                · · '{'
+                · · ExprStmt
+                · · · StringExpr
+                · · · · '"'
+                · · · · StringText 'Hello '
+                · · · · StringInterpolation '{'
+                · · '}'
                 """);
         [Fact]
         public void Typing_ClosingBraceOnNextLine_3()
@@ -71,28 +63,24 @@ public partial class ParserTests
                                                 "Hello { 1
                                             }
                                             """), """
-                ERROR UnexpectedToken@[0, 2): Expected a statement, got 'fn'.
-                ERROR MissingToken@[6, 6): Expected ';'.
-                ERROR UnexpectedToken@[8, 9): Expected a statement, got '{'.
                 ERROR UnclosedString@[25, 25): String has not been closed.
                 ERROR MissingToken@[25, 25): Expected ';'.
-                ERROR UnexpectedToken@[27, 28): Expected a statement, got '}'.
 
 
-                Error 'fn'
-                ExprStmt
-                · CallExpr
-                · · Identifier 'a'
-                · · ArgList '(' ')'
-                Error '{'
-                ExprStmt
-                · StringExpr
-                · · '"'
-                · · StringText 'Hello '
-                · · StringInterpolation
-                · · · '{'
-                · · · NumberLiteral '1'
-                Error '}'
+                FnDecl
+                · 'fn'
+                · IdName 'a'
+                · ParamList '(' ')'
+                · BlockExpr
+                · · '{'
+                · · ExprStmt
+                · · · StringExpr
+                · · · · '"'
+                · · · · StringText 'Hello '
+                · · · · StringInterpolation
+                · · · · · '{'
+                · · · · · NumberLiteral '1'
+                · · '}'
                 """);
         [Fact]
         public void Typing_ClosingBraceOnNextLine_4()
@@ -102,31 +90,27 @@ public partial class ParserTests
                                                 "Hello { 1 +
                                             }
                                             """), """
-                ERROR UnexpectedToken@[0, 2): Expected a statement, got 'fn'.
-                ERROR MissingToken@[6, 6): Expected ';'.
-                ERROR UnexpectedToken@[8, 9): Expected a statement, got '{'.
                 ERROR MissingToken@[27, 27): Expected an expression.
                 ERROR UnclosedString@[27, 27): String has not been closed.
                 ERROR MissingToken@[27, 27): Expected ';'.
-                ERROR UnexpectedToken@[29, 30): Expected a statement, got '}'.
 
 
-                Error 'fn'
-                ExprStmt
-                · CallExpr
-                · · Identifier 'a'
-                · · ArgList '(' ')'
-                Error '{'
-                ExprStmt
-                · StringExpr
-                · · '"'
-                · · StringText 'Hello '
-                · · StringInterpolation
-                · · · '{'
-                · · · BinaryExpr
-                · · · · NumberLiteral '1'
-                · · · · '+'
-                Error '}'
+                FnDecl
+                · 'fn'
+                · IdName 'a'
+                · ParamList '(' ')'
+                · BlockExpr
+                · · '{'
+                · · ExprStmt
+                · · · StringExpr
+                · · · · '"'
+                · · · · StringText 'Hello '
+                · · · · StringInterpolation
+                · · · · · '{'
+                · · · · · BinaryExpr
+                · · · · · · NumberLiteral '1'
+                · · · · · · '+'
+                · · '}'
                 """);
         [Fact]
         public void Typing_ClosingBraceOnNextLine_5()
@@ -136,31 +120,27 @@ public partial class ParserTests
                                                 "Hello { 1 + 6
                                             }
                                             """), """
-                ERROR UnexpectedToken@[0, 2): Expected a statement, got 'fn'.
-                ERROR MissingToken@[6, 6): Expected ';'.
-                ERROR UnexpectedToken@[8, 9): Expected a statement, got '{'.
                 ERROR UnclosedString@[29, 29): String has not been closed.
                 ERROR MissingToken@[29, 29): Expected ';'.
-                ERROR UnexpectedToken@[31, 32): Expected a statement, got '}'.
 
 
-                Error 'fn'
-                ExprStmt
-                · CallExpr
-                · · Identifier 'a'
-                · · ArgList '(' ')'
-                Error '{'
-                ExprStmt
-                · StringExpr
-                · · '"'
-                · · StringText 'Hello '
-                · · StringInterpolation
-                · · · '{'
-                · · · BinaryExpr
-                · · · · NumberLiteral '1'
-                · · · · '+'
-                · · · · NumberLiteral '6'
-                Error '}'
+                FnDecl
+                · 'fn'
+                · IdName 'a'
+                · ParamList '(' ')'
+                · BlockExpr
+                · · '{'
+                · · ExprStmt
+                · · · StringExpr
+                · · · · '"'
+                · · · · StringText 'Hello '
+                · · · · StringInterpolation
+                · · · · · '{'
+                · · · · · BinaryExpr
+                · · · · · · NumberLiteral '1'
+                · · · · · · '+'
+                · · · · · · NumberLiteral '6'
+                · · '}'
                 """);
         [Fact]
         public void Typing_ClosingBraceOnNextLine_6()
@@ -170,67 +150,28 @@ public partial class ParserTests
                                                 "Hello { 1 + 6 }
                                             }
                                             """), """
-                ERROR UnexpectedToken@[0, 2): Expected a statement, got 'fn'.
-                ERROR MissingToken@[6, 6): Expected ';'.
-                ERROR UnexpectedToken@[8, 9): Expected a statement, got '{'.
                 ERROR UnclosedString@[31, 31): String has not been closed.
                 ERROR MissingToken@[31, 31): Expected ';'.
-                ERROR UnexpectedToken@[33, 34): Expected a statement, got '}'.
 
 
-                Error 'fn'
-                ExprStmt
-                · CallExpr
-                · · Identifier 'a'
-                · · ArgList '(' ')'
-                Error '{'
-                ExprStmt
-                · StringExpr
-                · · '"'
-                · · StringText 'Hello '
-                · · StringInterpolation
-                · · · '{'
-                · · · BinaryExpr
-                · · · · NumberLiteral '1'
-                · · · · '+'
-                · · · · NumberLiteral '6'
-                · · · '}'
-                Error '}'
-                """);
-        [Fact]
-        public void Typing_ClosingBraceOnNextLine_7()
-            => InlineSnapshot.Validate(Tree("""
-                                            fn a()
-                                            {
-                                                "Hello { 1 + 6 }";
-                                            }
-                                            """), """
-                ERROR UnexpectedToken@[0, 2): Expected a statement, got 'fn'.
-                ERROR MissingToken@[6, 6): Expected ';'.
-                ERROR UnexpectedToken@[8, 9): Expected a statement, got '{'.
-                ERROR UnexpectedToken@[35, 36): Expected a statement, got '}'.
-
-
-                Error 'fn'
-                ExprStmt
-                · CallExpr
-                · · Identifier 'a'
-                · · ArgList '(' ')'
-                Error '{'
-                ExprStmt
-                · StringExpr
-                · · '"'
-                · · StringText 'Hello '
-                · · StringInterpolation
-                · · · '{'
-                · · · BinaryExpr
-                · · · · NumberLiteral '1'
-                · · · · '+'
-                · · · · NumberLiteral '6'
-                · · · '}'
-                · · '"'
-                · ';'
-                Error '}'
+                FnDecl
+                · 'fn'
+                · IdName 'a'
+                · ParamList '(' ')'
+                · BlockExpr
+                · · '{'
+                · · ExprStmt
+                · · · StringExpr
+                · · · · '"'
+                · · · · StringText 'Hello '
+                · · · · StringInterpolation
+                · · · · · '{'
+                · · · · · BinaryExpr
+                · · · · · · NumberLiteral '1'
+                · · · · · · '+'
+                · · · · · · NumberLiteral '6'
+                · · · · · '}'
+                · · '}'
                 """);
         
         [Fact]
@@ -242,71 +183,31 @@ public partial class ParserTests
                                                 1+2;
                                             }
                                             """), """
-                ERROR UnexpectedToken@[0, 2): Expected a statement, got 'fn'.
-                ERROR MissingToken@[6, 6): Expected ';'.
-                ERROR UnexpectedToken@[8, 9): Expected a statement, got '{'.
                 ERROR UnclosedString@[21, 21): String has not been closed.
                 ERROR MissingToken@[21, 21): Expected ';'.
-                ERROR UnexpectedToken@[33, 34): Expected a statement, got '}'.
 
 
-                Error 'fn'
-                ExprStmt
-                · CallExpr
-                · · Identifier 'a'
-                · · ArgList '(' ')'
-                Error '{'
-                ExprStmt
-                · StringExpr
-                · · '"'
-                · · StringText 'Hello'
-                ExprStmt
-                · BinaryExpr
-                · · NumberLiteral '1'
-                · · '+'
-                · · NumberLiteral '2'
-                · ';'
-                Error '}'
-                """);
-        [Fact]
-        public void Typing_ExprOnNextLine_2()
-            // Here, it is expected, that the next expression is eaten.
-            => InlineSnapshot.Validate(Tree("""
-                                            fn a()
-                                            {
-                                                "Hello {
-                                                1+2;
-                                            }
-                                            """), """
-                ERROR UnexpectedToken@[0, 2): Expected a statement, got 'fn'.
-                ERROR MissingToken@[6, 6): Expected ';'.
-                ERROR UnexpectedToken@[8, 9): Expected a statement, got '{'.
-                ERROR MissingToken@[32, 33): Expected '}'.
-                ERROR UnclosedString@[32, 32): String has not been closed.
-                ERROR UnexpectedToken@[35, 36): Expected a statement, got '}'.
-
-
-                Error 'fn'
-                ExprStmt
-                · CallExpr
-                · · Identifier 'a'
-                · · ArgList '(' ')'
-                Error '{'
-                ExprStmt
-                · StringExpr
-                · · '"'
-                · · StringText 'Hello '
-                · · StringInterpolation
-                · · · '{'
+                FnDecl
+                · 'fn'
+                · IdName 'a'
+                · ParamList '(' ')'
+                · BlockExpr
+                · · '{'
+                · · ExprStmt
+                · · · StringExpr
+                · · · · '"'
+                · · · · StringText 'Hello'
+                · · ExprStmt
                 · · · BinaryExpr
                 · · · · NumberLiteral '1'
                 · · · · '+'
                 · · · · NumberLiteral '2'
-                · ';'
-                Error '}'
+                · · · ';'
+                · · '}'
                 """);
+        
         [Fact]
-        public void Typing_ExprOnNextLine_3()
+        public void Typing_ExprOnNextLine_2()
             => InlineSnapshot.Validate(Tree("""
                                             fn a()
                                             {
@@ -314,161 +215,35 @@ public partial class ParserTests
                                                 1+2;
                                             }
                                             """), """
-                ERROR UnexpectedToken@[0, 2): Expected a statement, got 'fn'.
-                ERROR MissingToken@[6, 6): Expected ';'.
-                ERROR UnexpectedToken@[8, 9): Expected a statement, got '{'.
                 ERROR MissingToken@[25, 25): Expected '}'.
                 ERROR UnclosedString@[25, 25): String has not been closed.
                 ERROR MissingToken@[25, 25): Expected ';'.
-                ERROR UnexpectedToken@[37, 38): Expected a statement, got '}'.
 
 
-                Error 'fn'
-                ExprStmt
-                · CallExpr
-                · · Identifier 'a'
-                · · ArgList '(' ')'
-                Error '{'
-                ExprStmt
-                · StringExpr
-                · · '"'
-                · · StringText 'Hello '
-                · · StringInterpolation
-                · · · '{'
-                · · · NumberLiteral '1'
-                ExprStmt
-                · BinaryExpr
-                · · NumberLiteral '1'
-                · · '+'
-                · · NumberLiteral '2'
-                · ';'
-                Error '}'
-                """);
-        [Fact]
-        public void Typing_ExprOnNextLine_4()
-            => InlineSnapshot.Validate(Tree("""
-                                            fn a()
-                                            {
-                                                "Hello { 1 +
-                                                1+2;
-                                            }
-                                            """), """
-                ERROR UnexpectedToken@[0, 2): Expected a statement, got 'fn'.
-                ERROR MissingToken@[6, 6): Expected ';'.
-                ERROR UnexpectedToken@[8, 9): Expected a statement, got '{'.
-                ERROR MissingToken@[36, 37): Expected '}'.
-                ERROR UnclosedString@[36, 36): String has not been closed.
-                ERROR UnexpectedToken@[39, 40): Expected a statement, got '}'.
-
-
-                Error 'fn'
-                ExprStmt
-                · CallExpr
-                · · Identifier 'a'
-                · · ArgList '(' ')'
-                Error '{'
-                ExprStmt
-                · StringExpr
-                · · '"'
-                · · StringText 'Hello '
-                · · StringInterpolation
-                · · · '{'
+                FnDecl
+                · 'fn'
+                · IdName 'a'
+                · ParamList '(' ')'
+                · BlockExpr
+                · · '{'
+                · · ExprStmt
+                · · · StringExpr
+                · · · · '"'
+                · · · · StringText 'Hello '
+                · · · · StringInterpolation
+                · · · · · '{'
+                · · · · · NumberLiteral '1'
+                · · ExprStmt
                 · · · BinaryExpr
-                · · · · BinaryExpr
-                · · · · · NumberLiteral '1'
-                · · · · · '+'
-                · · · · · NumberLiteral '1'
+                · · · · NumberLiteral '1'
                 · · · · '+'
                 · · · · NumberLiteral '2'
-                · ';'
-                Error '}'
+                · · · ';'
+                · · '}'
                 """);
+        
         [Fact]
-        public void Typing_ExprOnNextLine_5()
-            => InlineSnapshot.Validate(Tree("""
-                                            fn a()
-                                            {
-                                                "Hello { 1 + 6
-                                                1+2;
-                                            }
-                                            """), """
-                ERROR UnexpectedToken@[0, 2): Expected a statement, got 'fn'.
-                ERROR MissingToken@[6, 6): Expected ';'.
-                ERROR UnexpectedToken@[8, 9): Expected a statement, got '{'.
-                ERROR MissingToken@[29, 29): Expected '}'.
-                ERROR UnclosedString@[29, 29): String has not been closed.
-                ERROR MissingToken@[29, 29): Expected ';'.
-                ERROR UnexpectedToken@[41, 42): Expected a statement, got '}'.
-
-
-                Error 'fn'
-                ExprStmt
-                · CallExpr
-                · · Identifier 'a'
-                · · ArgList '(' ')'
-                Error '{'
-                ExprStmt
-                · StringExpr
-                · · '"'
-                · · StringText 'Hello '
-                · · StringInterpolation
-                · · · '{'
-                · · · BinaryExpr
-                · · · · NumberLiteral '1'
-                · · · · '+'
-                · · · · NumberLiteral '6'
-                ExprStmt
-                · BinaryExpr
-                · · NumberLiteral '1'
-                · · '+'
-                · · NumberLiteral '2'
-                · ';'
-                Error '}'
-                """);
-        [Fact]
-        public void Typing_ExprOnNextLine_6()
-            => InlineSnapshot.Validate(Tree("""
-                                            fn a()
-                                            {
-                                                "Hello { 1 + 6 }
-                                                1+2;
-                                            }
-                                            """), """
-                ERROR UnexpectedToken@[0, 2): Expected a statement, got 'fn'.
-                ERROR MissingToken@[6, 6): Expected ';'.
-                ERROR UnexpectedToken@[8, 9): Expected a statement, got '{'.
-                ERROR UnclosedString@[31, 31): String has not been closed.
-                ERROR MissingToken@[31, 31): Expected ';'.
-                ERROR UnexpectedToken@[43, 44): Expected a statement, got '}'.
-
-
-                Error 'fn'
-                ExprStmt
-                · CallExpr
-                · · Identifier 'a'
-                · · ArgList '(' ')'
-                Error '{'
-                ExprStmt
-                · StringExpr
-                · · '"'
-                · · StringText 'Hello '
-                · · StringInterpolation
-                · · · '{'
-                · · · BinaryExpr
-                · · · · NumberLiteral '1'
-                · · · · '+'
-                · · · · NumberLiteral '6'
-                · · · '}'
-                ExprStmt
-                · BinaryExpr
-                · · NumberLiteral '1'
-                · · '+'
-                · · NumberLiteral '2'
-                · ';'
-                Error '}'
-                """);
-        [Fact]
-        public void Typing_ExprOnNextLine_7()
+        public void Typing_ExprOnNextLine_3()
             => InlineSnapshot.Validate(Tree("""
                                             fn a()
                                             {
@@ -476,83 +251,37 @@ public partial class ParserTests
                                                 1+2;
                                             }
                                             """), """
-                ERROR UnexpectedToken@[0, 2): Expected a statement, got 'fn'.
-                ERROR MissingToken@[6, 6): Expected ';'.
-                ERROR UnexpectedToken@[8, 9): Expected a statement, got '{'.
                 ERROR UnclosedString@[37, 37): String has not been closed.
                 ERROR MissingToken@[37, 37): Expected ';'.
-                ERROR UnexpectedToken@[49, 50): Expected a statement, got '}'.
 
 
-                Error 'fn'
-                ExprStmt
-                · CallExpr
-                · · Identifier 'a'
-                · · ArgList '(' ')'
-                Error '{'
-                ExprStmt
-                · StringExpr
-                · · '"'
-                · · StringText 'Hello '
-                · · StringInterpolation
-                · · · '{'
+                FnDecl
+                · 'fn'
+                · IdName 'a'
+                · ParamList '(' ')'
+                · BlockExpr
+                · · '{'
+                · · ExprStmt
+                · · · StringExpr
+                · · · · '"'
+                · · · · StringText 'Hello '
+                · · · · StringInterpolation
+                · · · · · '{'
+                · · · · · BinaryExpr
+                · · · · · · NumberLiteral '1'
+                · · · · · · '+'
+                · · · · · · NumberLiteral '6'
+                · · · · · '}'
+                · · · · StringText ' World'
+                · · ExprStmt
                 · · · BinaryExpr
                 · · · · NumberLiteral '1'
                 · · · · '+'
-                · · · · NumberLiteral '6'
-                · · · '}'
-                · · StringText ' World'
-                ExprStmt
-                · BinaryExpr
-                · · NumberLiteral '1'
-                · · '+'
-                · · NumberLiteral '2'
-                · ';'
-                Error '}'
+                · · · · NumberLiteral '2'
+                · · · ';'
+                · · '}'
                 """);
-        [Fact]
-        public void Typing_ExprOnNextLine_8()
-            => InlineSnapshot.Validate(Tree("""
-                                            fn a()
-                                            {
-                                                "Hello { 1 + 6 } World";
-                                                1+2;
-                                            }
-                                            """), """
-                ERROR UnexpectedToken@[0, 2): Expected a statement, got 'fn'.
-                ERROR MissingToken@[6, 6): Expected ';'.
-                ERROR UnexpectedToken@[8, 9): Expected a statement, got '{'.
-                ERROR UnexpectedToken@[51, 52): Expected a statement, got '}'.
-
-
-                Error 'fn'
-                ExprStmt
-                · CallExpr
-                · · Identifier 'a'
-                · · ArgList '(' ')'
-                Error '{'
-                ExprStmt
-                · StringExpr
-                · · '"'
-                · · StringText 'Hello '
-                · · StringInterpolation
-                · · · '{'
-                · · · BinaryExpr
-                · · · · NumberLiteral '1'
-                · · · · '+'
-                · · · · NumberLiteral '6'
-                · · · '}'
-                · · StringText ' World'
-                · · '"'
-                · ';'
-                ExprStmt
-                · BinaryExpr
-                · · NumberLiteral '1'
-                · · '+'
-                · · NumberLiteral '2'
-                · ';'
-                Error '}'
-                """);
+        
 
         [Fact]
         public void Typing_OpeningBraceOnNextLine_1()
@@ -562,12 +291,12 @@ public partial class ParserTests
                                             """), """
                 ERROR UnclosedString@[1, 1): String has not been closed.
                 ERROR MissingToken@[1, 1): Expected ';'.
-                ERROR UnexpectedToken@[3, 4): Expected a statement, got '{'.
 
 
                 ExprStmt
                 · StringExpr '"'
-                Error '{' '}'
+                ExprStmt
+                · BlockExpr '{' '}'
                 """);
         [Fact]
         public void Typing_OpeningBraceOnNextLine_2()
@@ -577,14 +306,14 @@ public partial class ParserTests
                                             """), """
                 ERROR UnclosedString@[5, 5): String has not been closed.
                 ERROR MissingToken@[5, 5): Expected ';'.
-                ERROR UnexpectedToken@[7, 8): Expected a statement, got '{'.
 
 
                 ExprStmt
                 · StringExpr
                 · · '"'
                 · · StringText 'Text'
-                Error '{' '}'
+                ExprStmt
+                · BlockExpr '{' '}'
                 """);
         [Fact]
         public void Typing_OpeningBraceOnNextLine_3()
@@ -594,7 +323,6 @@ public partial class ParserTests
                                             """), """
                 ERROR UnclosedString@[8, 8): String has not been closed.
                 ERROR MissingToken@[8, 8): Expected ';'.
-                ERROR UnexpectedToken@[10, 11): Expected a statement, got '{'.
 
 
                 ExprStmt
@@ -602,7 +330,8 @@ public partial class ParserTests
                 · · '"'
                 · · StringText 'Text '
                 · · StringInterpolation '{' '}'
-                Error '{' '}'
+                ExprStmt
+                · BlockExpr '{' '}'
                 """);
     }
 }

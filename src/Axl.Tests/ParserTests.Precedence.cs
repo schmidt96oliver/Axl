@@ -91,9 +91,9 @@ public partial class ParserTests
                 · · · · NumberLiteral '3'
                 · · '!='
                 · · GetMemberExpr
-                · · · Identifier 'a'
+                · · · IdName 'a'
                 · · · '.'
-                · · · 'b'
+                · · · IdName 'b'
                 · · '<'
                 · · UnaryExpr
                 · · · '-'

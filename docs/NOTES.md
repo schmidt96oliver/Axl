@@ -20,27 +20,12 @@
 * `SyntaxFile` add reference to Source
 
 # Parser
-[x] Grammar
+* ?? Better dump format
 
-[x] Operand expressions, Pratt parser
-[x] BodiedExpr; Semicolon rules
-[x] TailExpr
-[x] VarDecl, TypeExpr, TypeAnnotation
-[x] String Exprs
-[x] FnDecl, NativeClause, ModifierList
-[x] MemberDecl, (Global)ModuleDecl, UsingDecl
 
-[x] Matklad framework: 
-[x] Tree builder: Iterate events
 [ ] Proper trivia handling
-[x] Anchors: TokenSet as BitSet
 [ ] Code lazily: SyntaxViews (only product syntax, never sum syntax). Provide FindNode/FindToken/NthToken/NthNode...
 [ ] Distinguish Script and Module file
-
-[x] Interpolated Strings
-   * Lexer does not emit empty StringText/StringEnd.
-[x] "=>" Body syntax (see ExpressionsAndStatements.axl)
-[x] Keyword `never` in return-type position
 
 # First features
 * i32, i64, f32, f64, bool, string

@@ -44,7 +44,7 @@ public partial class ParserTests
                 · · · '}'
                 · · StringInterpolation
                 · · · '{'
-                · · · Identifier 'a'
+                · · · IdName 'a'
                 · · · '}'
                 · · StringText ' World'
                 · · '"'
@@ -67,7 +67,7 @@ public partial class ParserTests
                 · · · '}'
                 · · StringInterpolation
                 · · · '{'
-                · · · Identifier 'a'
+                · · · IdName 'a'
                 · · · '}'
                 · · '"'
                 · ';'
