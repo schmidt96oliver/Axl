@@ -23,6 +23,42 @@
 # Parser
 [x] Corpus & Corpus-Test-Runner (expect: Parses without diagnostics)
 [ ] Write corpus files. Use Ungrammar
+   * [ ] All native types: "i32" | "i64" | "f32" | "f64" | "string" | "none"
+   * [ ] Break, Continue, Return. Nested cases
+   * [ ] All Binary ("+"|"-"|"*"|"/"|"<"|"<="|">"|">="  |"=="|"!=" |"and"|"or")
+   * [ ] All Unary ("-" | "not")
+   * [ ] call Expr: Empty argList, args
+   * [ ] GetMember
+   * [ ] Assign "="|"+="|"-="
+     * [ ] Trailing Block, Break, Continue, Return
+     * [ ] Nested
+
+   * [ ] Strings
+     * [ ] No interpolation
+     * [ ] 1 level interpolation
+     * [ ] multi-level interpolation
+     * [ ] empty interpolation; multi-line string
+     * [ ] multi-line interpolation
+     * [ ] multi-level, multi-line interpolation
+   * [ ] Bodied Expr in Group
+   * [ ] If + Else If + If
+     * [ ] with, without arms/blocks
+   * [ ] Loop, break expr;
+
+   * [ ] VarDecl with/without type annotation
+     * [ ] with bodied initializer
+
+   * [ ] Fn
+     * [ ] with/without parameters
+     * [ ] never return type
+     * [ ] with/without return type
+     * [ ] with arm, with block
+     * [ ] native
+     * [ ] public, private, no modifier
+
+   * [ ] File-scoped module decl
+   * [ ] Using propagates name
+   * [ ] Nested module declarations
 
 * Go over ReportMissing/Unexpected, see which ExpectedSyntax is passed in (and to make more specific)
 * ?? Better dump format

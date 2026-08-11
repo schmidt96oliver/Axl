@@ -38,7 +38,8 @@ public partial class Parser
         // Stmt can start from Expr or Decl. Recover only from
         // Decl, because Expr would be too permissive.
         var fileAnchor = Anchor.From(FirstSet.MemberDecl)
-            | TokenKind.UsingKw | TokenKind.ModuleKw;
+            | TokenKind.UsingKw | TokenKind.ModuleKw
+            | TokenKind.VarKw;
 
         foreach (var _ in _scanner.MustEatEachIteration())
         {
