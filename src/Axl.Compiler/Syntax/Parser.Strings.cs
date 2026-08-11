@@ -44,7 +44,7 @@ public partial class Parser
                     // continuations after an interpolation the Lexer will produce if it thinks
                     // it's inside a string. Everything else is an unclosed string.
 
-                    EatStringInterpolation(anchor | TokenKind.StringText | TokenKind.StringEnd | TokenKind.OpenBrace);
+                    EatStringInterpolation(anchor | FirstSet.StringContinuation);
                     // The next iteration will handle StringText, StringEnd or OpenBrace. If it
                     // finds anything else (e.g. the enclosing anchor), it breaks off.
 
@@ -122,7 +122,7 @@ public partial class Parser
             // string is unclosed. If } is on the same line, take it as closing the
             // interpolation, otherwise leave it to enclosing loops.
 
-            if (_scanner.Peek(1).Kind is TokenKind.StringText or TokenKind.StringEnd or TokenKind.OpenBrace ||
+            if (FirstSet.StringContinuation.Contains(_scanner.Peek(1).Kind) ||
                 !HasNewlineBeforeNextToken())
             {
                 _scanner.EatToken(TokenKind.CloseBrace);
@@ -180,7 +180,7 @@ public partial class Parser
             {
                 // {, }, StringStart/Text/End will be handled by this loop, so
                 // we ignore the anchor if it has them.
-                if (_scanner.Peek().Kind is not (TokenKind.StringStart or TokenKind.StringText or TokenKind.StringEnd))
+                if (!_scanner.IsAt(FirstSet.StringPart))
                     break;
             }
 
@@ -193,7 +193,7 @@ public partial class Parser
             var advancedToken = _scanner.EatToken();
 
             // Recalculate if necessary.
-            if (advancedToken.Kind is TokenKind.StringStart or TokenKind.StringText or TokenKind.StringEnd)
+            if (FirstSet.StringPart.Contains(advancedToken.Kind))
                 willCurrentStringBeContinued = WillCurrentStringBeContinued();
         }
 

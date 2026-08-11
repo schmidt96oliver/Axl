@@ -70,11 +70,11 @@ public partial class Parser
         var decl = _scanner.Open();
 
         // --- Modifier List
-        while (_scanner.Peek().Kind is TokenKind.PublicKw or TokenKind.PrivateKw)
+        while (_scanner.IsAt(FirstSet.Modifier))
             _scanner.EatToken();
 
         // --- Actual declaration
-        if (_scanner.IsAt(TokenKind.NativeKw) || _scanner.IsAt(TokenKind.FnKw))
+        if (_scanner.IsAt(FirstSet.FnDeclAfterModifiers))
             return EatFnDecl(anchor, decl);
 
         // --- No actual declaration found.
@@ -85,7 +85,7 @@ public partial class Parser
 
     private MarkClose EatFnDecl(Anchor anchor, MarkOpen fnDecl)
     {
-        Debug.Assert(_scanner.IsAt(TokenKind.NativeKw) || _scanner.IsAt(TokenKind.FnKw));
+        Debug.Assert(_scanner.IsAt(FirstSet.FnDeclAfterModifiers));
 
         var fnDeclAnchor = anchor | TokenKind.FnKw;
 

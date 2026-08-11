@@ -19,9 +19,7 @@ public partial class Parser
             // here.
             var operandExpr = EatOperandExpr(left: null, anchor);
 
-            if (_scanner.IsAt(TokenKind.Equal)
-                || _scanner.IsAt(TokenKind.PlusEqual)
-                || _scanner.IsAt(TokenKind.MinusEqual))
+            if (_scanner.IsAt(FirstSet.AssignOperator))
             {
                 // We have assign.
                 var assignExpr = _scanner.OpenBefore(operandExpr);

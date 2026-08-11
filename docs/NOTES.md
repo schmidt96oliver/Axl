@@ -5,6 +5,7 @@
       11:02: Noch erschöpfter. Schnell noch fertig!
 10.08 13:45: Quick going, a little restless. Still fun :)
       14:11: Still quick going, caffeinated. Fun. Can slow down, its not gonna get finished :).
+11.08 11:40: Hungrig; macht Spaß; "einer geht noch"
 
 **Next**: 
 
@@ -14,9 +15,7 @@
 * ?? `RecoverTo` balanced braces/parens (good for garbage in modules `module A { var using module B { } }`)
 * ?? `EatBlock`: Flatten everything after `=>` into flat error node
 * ?? Anchor on newline (flag on method, `Anchor.Newline` that propagates)
-* ?? pain: FirstSet live elsewhere; possible desync; possible to keep them local to the parsing method?
 * ?? Where to anchor on `;`?
-* `_scanner.IsAtAny(multiples)`
 
 * `SyntaxFile` add reference to Source
 

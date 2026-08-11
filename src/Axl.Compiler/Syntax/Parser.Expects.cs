@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using Axl.Compiler.Diagnostics;
 // ReSharper disable UnusedMethodReturnValue.Local
 
@@ -44,29 +45,30 @@ public partial class Parser
 
     private MarkClose? ExpectBody(Anchor anchor)
     {
-        if (!_scanner.IsAt(TokenKind.OpenBrace) && !_scanner.IsAt(TokenKind.RightDoubleArrow))
+        switch (_scanner.Peek().Kind)
         {
-            ReportMissing(ExpectedSyntax.Body);
-            return null;
+            case TokenKind.OpenBrace:
+                return EatBlock(anchor);
+            case TokenKind.RightDoubleArrow:
+                return EatArm(anchor);
+            
+            default:
+                Debug.Assert(!_scanner.IsAt(FirstSet.Body), $"{nameof(FirstSet.Body)} is too large.");
+                ReportMissing(ExpectedSyntax.Body);
+                return null;
         }
-
-        return _scanner.IsAt(TokenKind.OpenBrace)
-            ? EatBlock(anchor)
-            : EatArm(anchor);
     }
 
     private MarkClose? ExpectTypeName()
     {
-        if (!_scanner.IsAt(FirstSet.TypeName))
-        {
-            ReportMissing(ExpectedSyntax.TypeName);
-            return null;
-        }
-
         if (_scanner.IsAt(FirstSet.NativeTypeName))
             return EatNativeTypeName();
-        else
+        if (_scanner.IsAt(TokenKind.Identifier))
             return EatQualifiedName();
+
+        Debug.Assert(!_scanner.IsAt(FirstSet.TypeName), $"{FirstSet.TypeName} is too large.");
+        ReportMissing(ExpectedSyntax.TypeName);
+        return null;
     }
 
     private MarkClose? ExpectIdName()
