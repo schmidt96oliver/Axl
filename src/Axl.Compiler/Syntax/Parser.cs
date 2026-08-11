@@ -1,6 +1,7 @@
 using System.Collections.Immutable;
 using System.Diagnostics;
 using Axl.Compiler.Diagnostics;
+// ReSharper disable UnusedMethodReturnValue.Local
 
 namespace Axl.Compiler.Syntax;
 
@@ -45,7 +46,7 @@ public partial class Parser
             if (_scanner.IsAt(FirstSet.Stmt))
                 EatStmt(fileAnchor | TokenKind.Semicolon);
             else if (_scanner.IsAt(TokenKind.ModuleKw))
-                EatModuleDecl(fileAnchor);
+                EatModuleDecl();
             else if (_scanner.IsAt(TokenKind.UsingKw))
                 EatUsingDecl();
             else
@@ -316,7 +317,7 @@ public partial class Parser
     
     #region Declarations
 
-    private MarkClose EatModuleDecl(Anchor anchor)
+    private MarkClose EatModuleDecl()
     {
         Debug.Assert(_scanner.IsAt(TokenKind.ModuleKw));
 
@@ -337,13 +338,13 @@ public partial class Parser
         {
             _scanner.EatToken(TokenKind.OpenBrace);
 
-            var moduleBodyAnchor = anchor | FirstSet.MemberDecl | TokenKind.CloseBrace;
+            var moduleBodyAnchor = Anchor.Forced | FirstSet.MemberDecl | TokenKind.CloseBrace;
             foreach (var _ in _scanner.MustEatEachIteration())
             {
-                RecoverTo(anchor | moduleBodyAnchor, expectedCategory: SyntaxCategory.Member);
+                RecoverTo(moduleBodyAnchor, expectedCategory: SyntaxCategory.Member);
                 
                 if (_scanner.IsAt(TokenKind.ModuleKw))
-                    EatModuleDecl(moduleBodyAnchor);
+                    EatModuleDecl();
                 else if (_scanner.IsAt(FirstSet.FnDecl))
                 {
                     //TODO: Eat FnDecl
@@ -351,11 +352,9 @@ public partial class Parser
                     _scanner.EatToken();
                     _scanner.Close(error, SyntaxKind.Error);
                 }
-                else if (_scanner.IsAt(TokenKind.CloseBrace))
-                    break;
                 else
                 {
-                    Debug.Assert(_scanner.IsAt(anchor));
+                    // Could be `}` or Eof
                     break;
                 }
             }
@@ -404,7 +403,7 @@ public partial class Parser
             else
                 ExpectToken(TokenKind.Semicolon);
             
-            return _scanner.Close(exprStmt, SyntaxKind.ExprStmt);;
+            return _scanner.Close(exprStmt, SyntaxKind.ExprStmt);
         }
 
         if (_scanner.IsAt(TokenKind.VarKw))
