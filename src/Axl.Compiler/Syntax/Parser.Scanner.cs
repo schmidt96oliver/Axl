@@ -136,7 +136,7 @@ public partial class Parser
         /// </summary>
         /// <example>
         /// <code>
-        /// foreach (var _ in scanner.MustAdvanceUntilEnd())
+        /// foreach (var _ in scanner.MustEatEachIteration())
         /// {
         ///     ...
         /// }

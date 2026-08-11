@@ -17,9 +17,6 @@ public partial class Parser
 
         public static Anchor From(TokenSet tokenSet)
             => Forced | tokenSet;
-
-        public static Anchor Of(params ReadOnlySpan<TokenKind> kinds)
-            => Forced | TokenSet.Of(kinds);
         
         
         public static Anchor operator |(Anchor a, TokenSet b) => new Anchor(a._set | b);

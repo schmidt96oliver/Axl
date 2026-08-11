@@ -9,9 +9,6 @@ public partial class Parser
         private readonly ulong _lo, _hi;
         private static readonly TokenKind[] AllKinds = Enum.GetValues<TokenKind>();
 
-        public static TokenSet Empty => default;
-
-
         private TokenSet(ulong lo, ulong hi)
         {
             _lo = lo;

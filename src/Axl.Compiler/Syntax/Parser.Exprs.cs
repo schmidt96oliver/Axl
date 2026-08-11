@@ -114,7 +114,7 @@ public partial class Parser
         _scanner.EatToken(TokenKind.OpenBrace);
 
         // Stmt can start from Expr or Var. Anchor only on
-        // VBar, because Expr would be too permissive.
+        // VarKw, because Expr would be too permissive.
         // FnDecl, `=>`, `}` is what we handle here. `;` is
         // a natural boundary for statements.
         var blockAnchor = anchor |
