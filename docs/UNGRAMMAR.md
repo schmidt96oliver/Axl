@@ -27,7 +27,7 @@ ParamList       = "(" ")"
                 | "(" Param ("," Param)* ")"
 Param           = IdName TypeAnnotation       
 
-ModuleDecl      = "module" QualifiedName "{" Stmt* "}" ";"?
+ModuleDecl      = "module" QualifiedName "{" Stmt* "}"
 // DeclBinder rejects anything but MemberDecl
 // Note: No modifiers on module
 // Note: Allow semicolon for symmetry with FnDecl. It is not needed at all
