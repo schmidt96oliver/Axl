@@ -115,86 +115,61 @@ public partial class Parser
         var block = _scanner.Open();
         _scanner.EatToken(TokenKind.OpenBrace);
 
-        // Stmt can start from Expr or Decl. Anchor only on
-        // Decl, because Expr would be too permissive.
-        // Also anchor on `=>` and `}`, because we can handle those.
+        // Stmt can start from Expr or Var. Anchor only on
+        // VBar, because Expr would be too permissive.
+        // FnDecl, `=>`, `}` is what we handle here. `;` is
+        // a natural boundary for statements.
         var blockAnchor = anchor |
                           TokenKind.VarKw | FirstSet.FnDecl |
                           TokenKind.RightDoubleArrow | TokenKind.CloseBrace |
                           TokenKind.Semicolon;
 
-        var hadArm = false;
-        MarkOpen? errorAfterArm = null;
-
         foreach (var _ in _scanner.MustEatEachIteration())
         {
-            if (_scanner.IsAt(TokenKind.CloseBrace))
-                break;
-
+            // --- Statement or FnDecl
             if (_scanner.IsAt(FirstSet.Stmt))
-            {
-                if (hadArm) errorAfterArm ??= _scanner.Open();
-
                 EatStmt(blockAnchor);
-            }
-            else if (_scanner.IsAt(TokenKind.RightDoubleArrow))
-            {
-                if (hadArm) errorAfterArm ??= _scanner.Open();
-
-                EatArm(blockAnchor);
-                // No semicolon!
-
-                if (!hadArm && !_scanner.IsAt(TokenKind.CloseBrace))
-                    ReportMissing(TokenKind.CloseBrace);
-                hadArm = true;
-            }
             else if (_scanner.IsAt(FirstSet.FnDecl))
                 EatMemberDecl(blockAnchor);
+            
+            // --- lone ";" special case
             else if (_scanner.IsAt(TokenKind.Semicolon))
             {
-                if (!hadArm)
-                {
-                    ReportUnexpected(ExpectedSyntax.Stmt);
-                    var error = _scanner.Open();
-                    _scanner.EatToken(TokenKind.Semicolon);
-                    _scanner.Close(error, SyntaxKind.Error);
-                }
-                else
-                {
-                    // If we had an arm, it will be on an error node anyway.
-                    // Just eat and don't report further errors
-                    errorAfterArm ??= _scanner.Open();
-                    _scanner.EatToken(TokenKind.Semicolon);
-                }
+                ReportUnexpected(ExpectedSyntax.Stmt);
+                _scanner.EatTokenIntoNode(SyntaxKind.Error);
             }
-            else if (_scanner.IsAt(anchor))
+            
+            // --- Closing tokens
+            else if (_scanner.IsAt(TokenKind.CloseBrace))
+                break;
+            else if (_scanner.IsAt(TokenKind.RightDoubleArrow))
             {
-                if (!hadArm)
-                    ReportMissing(ExpectedSyntax.Stmt);
+                EatArm(blockAnchor);
+
+                // --- Catch common `=> expr; }` error, where arm is closed with semicolon
+                if (_scanner.IsAt(TokenKind.Semicolon) && _scanner.Peek(1).Kind is TokenKind.CloseBrace)
+                {
+                    ReportUnexpected(TokenKind.CloseBrace);
+                    _scanner.EatTokenIntoNode(SyntaxKind.Error);
+                }
+                
+                // Arm ends the block, so break out. After the loop,
+                // `}` will be expected.
                 break;
             }
+            else if (_scanner.IsAt(anchor))
+                break;
+            
+            // --- Garbage
             else
             {
-                if (!hadArm)
-                    ReportUnexpected(ExpectedSyntax.Stmt);
-
-                if (hadArm) errorAfterArm ??= _scanner.Open();
                 // Recover to Expr as well, because they can legitimately start
                 // another Stmt.
-                RecoverTo(blockAnchor | FirstSet.Expr, expected: null);
+                RecoverTo(blockAnchor | FirstSet.Expr, ExpectedSyntax.Stmt);
             }
         }
 
-        if (hadArm)
-        {
-            if (errorAfterArm is MarkOpen actualErrorAfterArm)
-                _scanner.Close(actualErrorAfterArm, SyntaxKind.Error);
-            if (_scanner.IsAt(TokenKind.CloseBrace))
-                _scanner.EatToken(TokenKind.CloseBrace);
-        }
-        else
-            ExpectToken(TokenKind.CloseBrace);
-
+        ExpectToken(TokenKind.CloseBrace);
         return _scanner.Close(block, SyntaxKind.BlockExpr);
     }
 

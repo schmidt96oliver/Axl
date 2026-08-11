@@ -211,6 +211,14 @@ public partial class Parser
             _fuel = MaxFuel;
             return _tokens[_nextToken++];
         }
+
+        public MarkClose EatTokenIntoNode(SyntaxKind nodeKind)
+        {
+            var node = Open();
+            EatToken(TokenKind.Semicolon);
+            return Close(node, nodeKind);
+        }
+        
         
         public Token Peek(int lookahead = 0)
         {
