@@ -45,7 +45,9 @@ public partial class Parser
             if (_scanner.IsAt(FirstSet.Stmt))
                 EatStmt(fileAnchor | TokenKind.Semicolon);
             else if (_scanner.IsAt(TokenKind.ModuleKw))
-                EatModuleDeclaration(fileAnchor);
+                EatModuleDecl(fileAnchor);
+            else if (_scanner.IsAt(TokenKind.UsingKw))
+                EatUsingDecl();
             else
             {
                 ReportUnexpected(expected: SyntaxCategory.Stmt);
@@ -57,7 +59,9 @@ public partial class Parser
                 
                 //TODO: Include fileAnchor, when all productions can be parsed
                 // Currently, only Stmts can be parsed.
-                RecoverTo(Anchor.From(FirstSet.Stmt) | TokenKind.ModuleKw | TokenKind.Semicolon, expectedKind: null);
+                RecoverTo(Anchor.From(FirstSet.Stmt) 
+                          | TokenKind.ModuleKw | TokenKind.UsingKw 
+                          | TokenKind.Semicolon, expectedKind: null);
 
                 if (_scanner.IsAt(TokenKind.Semicolon))
                 {
@@ -312,7 +316,7 @@ public partial class Parser
     
     #region Declarations
 
-    private MarkClose EatModuleDeclaration(Anchor anchor)
+    private MarkClose EatModuleDecl(Anchor anchor)
     {
         Debug.Assert(_scanner.IsAt(TokenKind.ModuleKw));
 
@@ -339,7 +343,7 @@ public partial class Parser
                 RecoverTo(anchor | moduleBodyAnchor, expectedCategory: SyntaxCategory.Member);
                 
                 if (_scanner.IsAt(TokenKind.ModuleKw))
-                    EatModuleDeclaration(moduleBodyAnchor);
+                    EatModuleDecl(moduleBodyAnchor);
                 else if (_scanner.IsAt(FirstSet.FnDecl))
                 {
                     //TODO: Eat FnDecl
@@ -363,6 +367,17 @@ public partial class Parser
         // --- Anything else is garbage
         ReportMissing(TokenKind.OpenBrace);
         return _scanner.Close(moduleDecl, SyntaxKind.ModuleDecl);
+    }
+
+    private MarkClose EatUsingDecl()
+    {
+        Debug.Assert(_scanner.IsAt(TokenKind.UsingKw));
+
+        var usingDecl = _scanner.Open();
+        _scanner.EatToken(TokenKind.UsingKw);
+        ExpectQualifiedName();
+        ExpectToken(TokenKind.Semicolon);
+        return _scanner.Close(usingDecl, SyntaxKind.UsingDecl);
     }
     
     #endregion

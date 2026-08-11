@@ -7,11 +7,18 @@
       14:11: Still quick going, caffeinated. Fun. Can slow down, its not gonna get finished :).
 
 **Next**: 
+* using
+* modifiers, FnDecl, NeverKw
 
 **Small points**:
 * ?? `RecoverTo` UnexpectedToken -> Squiggle all tokens
 * ?? `RecoverTo` balanced braces/parens
+* ?? `EatBlock`: Flatten everything after `=>` into flat error node
+* ?? Anchor on newline (flag on method, `Anchor.Newline` that propagates)
 * ?? pain: FirstSet live elsewhere; possible desync; possible to keep them local to the parsing method?
+* ?? Where to anchor on `;`?
+
+* `SyntaxFile` add reference to Source
 
 # Parser
 [x] Grammar
