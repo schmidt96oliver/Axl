@@ -5,7 +5,9 @@ public partial class Parser
     private static class FirstSet
     {
         public static readonly TokenSet NativeTypeName = TokenSet.Of(
-            TokenKind.I32Kw, TokenKind.I64Kw, TokenKind.F32Kw, TokenKind.F64Kw, TokenKind.StringKw, TokenKind.NoneKw
+            TokenKind.I32Kw, TokenKind.I64Kw, TokenKind.F32Kw, TokenKind.F64Kw, TokenKind.StringKw, 
+            TokenKind.BoolKw,
+            TokenKind.NoneKw
         );
         
         public static readonly TokenSet QualifiedName = TokenSet.Of(TokenKind.Identifier);
