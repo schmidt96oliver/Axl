@@ -131,4 +131,23 @@ public partial class Parser
             : SourceSpan.Between(_scanner.Last.Span, _scanner.Peek().Span);
         return _source.GetText(spanToNextToken).Contains('\n');
     }
+
+    /// <summary>
+    /// Applies the semicolon rule. Expects ";" if required, otherwise eats it
+    /// only if it's there.
+    /// <para>
+    /// Semicolon rule: ";" is omissible iff the statements owns its body and last
+    /// token is "}".
+    /// </para>
+    /// </summary>
+    /// <param name="ownsBody">Whether the consuming nodes owns its body.</param>
+    private void EatSemicolonIfRequired(bool ownsBody)
+    {
+        var omissible = ownsBody && _scanner.Last?.Kind is TokenKind.CloseBrace;
+        
+        if (omissible && _scanner.IsAt(TokenKind.Semicolon))
+            _scanner.EatToken(TokenKind.Semicolon);
+        else if (!omissible)
+            ExpectToken(TokenKind.Semicolon);
+    }
 }

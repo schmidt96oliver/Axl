@@ -131,16 +131,7 @@ public partial class Parser
         else
         {
             ExpectBody(anchor);
-
-            // Semicolon rule: If last is BraceClose, ";" can be omitted, but is
-            // allowed. Otherwise, it's required.
-            if (_scanner.Last?.Kind is TokenKind.CloseBrace)
-            {
-                if (_scanner.IsAt(TokenKind.Semicolon))
-                    _scanner.EatToken(TokenKind.Semicolon);
-            }
-            else
-                ExpectToken(TokenKind.Semicolon);
+            EatSemicolonIfRequired(ownsBody: true);
         }
 
         return _scanner.Close(fnDecl, SyntaxKind.FnDecl);

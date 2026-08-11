@@ -15,16 +15,8 @@ public partial class Parser
             var isBodied = _scanner.IsAt(FirstSet.BodiedExpr);
 
             EatExpr(anchor | TokenKind.Semicolon);
-
-            var semicolonOmissible = isBodied && _scanner.Last?.Kind is TokenKind.CloseBrace;
-            if (semicolonOmissible)
-            {
-                if (_scanner.IsAt(TokenKind.Semicolon))
-                    _scanner.EatToken(TokenKind.Semicolon);
-            }
-            else
-                ExpectToken(TokenKind.Semicolon);
-
+            EatSemicolonIfRequired(ownsBody: isBodied);
+            
             return _scanner.Close(exprStmt, SyntaxKind.ExprStmt);
         }
 
