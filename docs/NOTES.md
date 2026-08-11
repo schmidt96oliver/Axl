@@ -27,8 +27,8 @@
 [x] TailExpr
 [x] VarDecl, TypeExpr, TypeAnnotation
 [x] String Exprs
-[ ] FnDecl, NativeClause, ModifierList
-[ ] MemberDecl, (Global)ModuleDecl, UsingDecl
+[x] FnDecl, NativeClause, ModifierList
+[x] MemberDecl, (Global)ModuleDecl, UsingDecl
 
 [x] Matklad framework: 
 [x] Tree builder: Iterate events
@@ -40,7 +40,7 @@
 [x] Interpolated Strings
    * Lexer does not emit empty StringText/StringEnd.
 [x] "=>" Body syntax (see ExpressionsAndStatements.axl)
-[ ] Keyword `never` in return-type position
+[x] Keyword `never` in return-type position
 
 # First features
 * i32, i64, f32, f64, bool, string

@@ -105,7 +105,7 @@ var a = if 1 < 2
         else 
         { => "C" };
             
-var a = if 1 < 2 { => if true { => "A" } else { => "B" } } // a is type none!
+var a = if 1 < 2 { => if true { => "A" } else { => "B" } }; // a is type none!
 
 // No brackets
 var a = if 1 < 2 
@@ -117,7 +117,7 @@ var a = if 1 < 2
             => "C";
 
 // If grabs the closes else
-var a = if 1 < 2 => if true => "A" else => "B" // a is type none!
+var a = if 1 < 2 => if true => "A" else => "B"; // a is type none!
 
 //# ------------ Loop ------------
 // loop evaluate to type:
@@ -149,7 +149,7 @@ var result = loop
     {
         str = "{str}{i}";
         
-        if i >= 3 => break str;     // ERROR Cannot find loop type
+        if i >= 3 => break str     // ERROR Cannot find loop type
         else => break i;            // ERROR Cannot find loop type
         i += 1;
     };

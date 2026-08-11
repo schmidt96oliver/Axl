@@ -32,7 +32,7 @@ i32[]
 
 i32[1,2,3];                 // type i32[]; i32-array with 3 items
 i32[1,2.1_f32,3];           // ERROR TypeMismatch if 2.1_f32: expected i32, got f32
-i32[];                      // empty i32 array
+i32[];                     // empty i32 array
 
 var a: i32[] = i32[1,2,3];
 var a = i32[1,2,3];

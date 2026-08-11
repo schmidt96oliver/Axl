@@ -1,6 +1,6 @@
 // Prelude looks like this
-native("i32.ToString") I32ToString(arg: i32) -> string;
-native("f32.ToString") F32ToString(arg: f32) -> string;
+native("i32.ToString") fn I32ToString(arg: i32) -> string;
+native("f32.ToString") fn F32ToString(arg: f32) -> string;
 
 // When there are extension blocks:
 extend (i32)
@@ -16,8 +16,8 @@ extend (f32)
 }
 
 // ----- Numeric types -----
-i32, f32        // Later i8, ..., i64; u8, ..., u64; f32, f64 could be implemented
-i64, f64        // add those to work the bytecode runtime with 4-byte word-length :)
+i32; f32;        // Later i8, ..., i64; u8, ..., u64; f32, f64 could be implemented
+i64; f64;        // add those to work the bytecode runtime with 4-byte word-length :)
 
 // Literals:
 var i = 1;      // default: i32
@@ -26,11 +26,9 @@ var i: i64 = 1_000_000_i64;
 var i: i32 = 1_000_000_i32;
 
 // From hex or binary representation
-var i = 0xFF;   // default: i32
-var i = 0xFF_i32;
-var i = 0b0001111;  // default: i32
-var i = 0b0001111_i32;
-var i = 0b0001111_i64;
+var i = 0xFF;   // i32
+var i = 0b0001111;  //i32
+var i : i64 = 0xFFFFF;  // i64, expected type propagates
 
 // *** Floating point literals
 var f = 1.1;     // f32 is default
@@ -44,4 +42,4 @@ var a: f32 = 1;     // expected type used => f32
 var a: i64 = if true => 1 else => 2;    // expected type used => i64
 
 // ----- Others -----
-bool, string, char
+bool; string;

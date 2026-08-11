@@ -1,4 +1,4 @@
-never 
+never;
 // Means "this will diverge", i.e. anything thereafter will _not_ be executed.
 // It means, there will be _no_ value at all (in contrast to `none` which has _one_ value).
 
@@ -59,7 +59,7 @@ fn A() -> never
 fn A() -> never
     => {};     // ERROR TypeMismatch (expect never, got none)
 fn A() -> never
-     => 1       // ERROR TypeMismatch (expect never, go i32)
+     => 1;      // ERROR TypeMismatch (expect never, go i32)
     
 fn NeverReturns() -> never
 { 
@@ -69,14 +69,14 @@ fn NeverReturns() -> never
 //# ------- Blocks ---------
 {
     Panic("Oops");  // a plain expression statement is not treated specially
-    => "A";
+    => "A"
 }   // type is string;
 {
     return; break; continue;    // all are never
-    => "A";
+    => "A"
 }   // type is string;
 {
-    => return;
+    => return
 }   // type is never
 
 //# ------- Nesting into expressions ---------
@@ -84,7 +84,7 @@ fn NeverReturns() -> never
 loop
 {
     if true 
-        => break;
+        => break
     else 
         { }         // if expression has type none (from the else block)
 }
@@ -120,10 +120,10 @@ fn Clamp(i: i32, min: i32, max: i32) -> i32
         else if i > max => max
         else            => i;
         
-fn EarlyReturn(i: 32)
+fn EarlyReturn(i: i32)
 {
     var a = if i < 2 => i * 2
-            else return;
+            else => return;
     
     // Now it is proved: i < 2, a == i*2
     DoSthElse(a);
@@ -149,14 +149,14 @@ PrintLine(Outer2()); // prints "hello"
 fn Test() -> i32
 {
     var a = if 1 < 2 => -3
-            else return 0;
+            else => return 0;
     // type-checks; a == -3
     => a
 }   // returns -3
 fn Test() -> i32
 {
     var a = if 1 > 2 => -3
-            else return 0;
+            else => return 0;
     // type-checks; this is never reached
     => a
 }   // returns 0
@@ -183,7 +183,7 @@ var a = Panic("Hello");     // ERROR Cannot infer never type
 // Same goes for any other constructs that have never type:
 var a = break;                  // ERROR
 var a = { => Panic("") };       // ERROR
-var a: none = { Panic("") };          // Valid, since block has none type
+var a: none = { Panic(""); };          // Valid, since block has none type
 
 var a: i32 = break;             // ERROR TypeMismatch (expect i32, got never)
 
