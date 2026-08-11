@@ -2,7 +2,7 @@
 using Axl.Compiler.Syntax;
 using Shouldly;
 
-namespace Axl.Tests;
+namespace Axl.Tests.Syntax;
 
 public partial class ParserTests
 {

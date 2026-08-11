@@ -1,6 +1,6 @@
 ﻿using Meziantou.Framework.InlineSnapshotTesting;
 
-namespace Axl.Tests;
+namespace Axl.Tests.Syntax;
 
 public partial class ParserTests
 {

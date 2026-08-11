@@ -1,10 +1,10 @@
 ﻿using Meziantou.Framework.InlineSnapshotTesting;
 
-namespace Axl.Tests;
+namespace Axl.Tests.Syntax;
 
 public partial class ParserTests
 {
-    public sealed class StringInterpolation
+    public sealed class Strings
     {
         [Fact]
         public void SingleLine_1()

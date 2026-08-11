@@ -1,12 +1,11 @@
 ﻿using System.Collections.Immutable;
-using System.Text;
 using Axl.Compiler;
 using Axl.Compiler.Diagnostics;
 using Axl.Compiler.Syntax;
 using Meziantou.Framework.InlineSnapshotTesting;
 using Shouldly;
 
-namespace Axl.Tests;
+namespace Axl.Tests.Syntax;
 
 public sealed class LexerTests
 {
