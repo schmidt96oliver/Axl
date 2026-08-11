@@ -28,25 +28,31 @@
    * [ ] All Binary ("+"|"-"|"*"|"/"|"<"|"<="|">"|">="  |"=="|"!=" |"and"|"or")
    * [ ] All Unary ("-" | "not")
    * [ ] call Expr: Empty argList, args
+     * [ ] Empty arglist
+     * [x] with arg     (calling PrintLine literally everywhere)
    * [ ] GetMember
    * [ ] Assign "="|"+="|"-="
      * [ ] Trailing Block, Break, Continue, Return
      * [ ] Nested
 
    * [ ] Strings
-     * [ ] No interpolation
-     * [ ] 1 level interpolation
-     * [ ] multi-level interpolation
-     * [ ] empty interpolation; multi-line string
+     * [x] No interpolation                 (Strings/Concat.taxl)
+     * [x] 1 level interpolation            (Strings/Concat.taxl)
+     * [ ] multi-level interpolation        
+     * [x] empty interpolation              (Strings/Multiline.taxl)
+     * [x] multi-line string                (Strings/Multiline.taxl)
      * [ ] multi-line interpolation
      * [ ] multi-level, multi-line interpolation
+     * [x] escapes                          (Strings/Escapes.taxl)
+     * [x] bodied expression in interpolation   (Strings/IfInInterpolation.taxl)
    * [ ] Bodied Expr in Group
-   * [ ] If + Else If + If
+   * [ ] If/Else If/If
+     * [x] only if block                    (Loops/BuildingMultiLineString.taxl)
      * [ ] with, without arms/blocks
-   * [ ] Loop, break expr;
+   * [x] Loop, break expr;                  (Loops/BuildingMultiLineString.taxl)
 
    * [ ] VarDecl with/without type annotation
-     * [ ] with bodied initializer
+     * [x] with bodied initializer          (Loops/BuildingMultiLineString.taxl)
 
    * [ ] Fn
      * [ ] with/without parameters
@@ -57,7 +63,8 @@
      * [ ] public, private, no modifier
 
    * [ ] File-scoped module decl
-   * [ ] Using propagates name
+   * [x] Using propagates name   (Standard literally everywhere)
+     * [ ] Sub-module using
    * [ ] Nested module declarations
 
 * Go over ReportMissing/Unexpected, see which ExpectedSyntax is passed in (and to make more specific)

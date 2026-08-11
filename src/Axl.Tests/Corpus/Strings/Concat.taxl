@@ -1,0 +1,17 @@
+﻿//@run-pass
+
+using Standard;
+
+var str1 = "Hello";
+var str2 = " ";
+var str3 = "World";
+
+PrintLine("{str1}{str2}{str3}");
+PrintLine("Second {
+    str1} to{str2}the {str3
+        }");
+var a = 2;
+
+//=== stdout
+// Hello World
+// Second Hello to the World

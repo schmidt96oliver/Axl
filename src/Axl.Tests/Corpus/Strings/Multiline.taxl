@@ -1,0 +1,16 @@
+﻿//@run-pass
+
+using Standard;
+
+PrintLine("A{
+    }B{
+    }C{
+    }D");
+    
+
+    
+//=== stdout
+// A
+// B
+// C
+// D

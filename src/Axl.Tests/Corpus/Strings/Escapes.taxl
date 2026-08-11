@@ -1,0 +1,15 @@
+﻿//@run-pass
+
+using Standard;
+
+PrintLine("Hello\nWorld"); 
+PrintLine("\{1\}");
+PrintLine("\"2\"");
+PrintLine("\\n");
+
+//=== stdout
+// Hello
+// World
+// {1}
+// "2"
+// \n
