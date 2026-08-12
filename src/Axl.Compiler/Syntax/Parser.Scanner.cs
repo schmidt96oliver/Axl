@@ -104,6 +104,8 @@ public partial class Parser
 
         public bool IsAtEnd => IsAt(TokenKind.Eof);
 
+        public int Position => _nextToken;
+
 
         public Scanner(ImmutableArray<Token> tokens)
         {

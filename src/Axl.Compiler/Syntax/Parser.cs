@@ -6,8 +6,16 @@ namespace Axl.Compiler.Syntax;
 
 public partial class Parser
 {
+    private record ErrorContext(DiagnosticBag Bag)
+    {
+        /// <summary>
+        /// Position <see cref="Scanner"/> was at, when the last error was reported.
+        /// </summary>
+        public int LastErrorPosition { get; set; } = -1;
+    }
+    
     private readonly SourceFileView _source;
-    private readonly DiagnosticBag _diagnosticBag;
+    private readonly ErrorContext _errorContext;
 
     private readonly Scanner _scanner;
 
@@ -16,7 +24,7 @@ public partial class Parser
     {
         _source = source;
         _scanner = scanner;
-        _diagnosticBag = diagnosticBag;
+        _errorContext = new ErrorContext(diagnosticBag);
     }
 
     public static SyntaxTree Parse(SourceFileView source)
@@ -113,12 +121,37 @@ public partial class Parser
     }
 
 
+    /// <summary>
+    /// Reports <paramref name="error"/> and suppresses multiple <see cref="Diagnostic.UnexpectedToken"/>
+    /// or <see cref="Diagnostic.MissingToken"/> errors at the same
+    /// position. 
+    /// </summary>
+    private void ReportError(Diagnostic.Error error)
+    {
+        if (error is not (Diagnostic.UnexpectedToken or Diagnostic.MissingToken))
+        {
+            // Don't update the LastErrorPosition, because otherwise an InvalidOperatorChaining
+            // error could suppress a missing ";" error, which we don't want. Error that
+            // are not unexpected or missing token should always be reported and not influence
+            // reporting of those.
+            
+            _errorContext.Bag.ReportError(error);
+            return;
+        }
+        
+        if (_errorContext.LastErrorPosition != _scanner.Position)
+        {
+            _errorContext.Bag.ReportError(error);
+            _errorContext.LastErrorPosition = _scanner.Position;
+        }
+    }
+    
     private void ReportUnexpected(ExpectedSyntax expected)
-        => _diagnosticBag.ReportError(new Diagnostic.UnexpectedToken(
+        => ReportError(new Diagnostic.UnexpectedToken(
             _source, _scanner.Peek(), expected));
 
     private void ReportMissing(ExpectedSyntax expected)
-        => _diagnosticBag.ReportError(new Diagnostic.MissingToken(
+        => ReportError(new Diagnostic.MissingToken(
             _source,
             Previous: _scanner.Last,
             Next: _scanner.Peek(),

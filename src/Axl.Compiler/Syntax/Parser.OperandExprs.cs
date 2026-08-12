@@ -205,7 +205,7 @@ public partial class Parser
         if (ateAmbiguousOperatorChain)
         {
             //Report combined diagnostic.
-            _diagnosticBag.ReportError(new Diagnostic.InvalidOperatorChaining(_source,
+            ReportError(new Diagnostic.InvalidOperatorChaining(_source,
                 ambiguousOperators!.DrainToImmutable()));
         }
     }

@@ -58,8 +58,8 @@ public partial class Parser
                     {
                         return new SyntaxTree(
                             root: node,
-                            diagnostics: _diagnosticBag.Drain(),
-                            hasError: _diagnosticBag.HasError);
+                            diagnostics: _errorContext.Bag.Drain(),
+                            hasError: _errorContext.Bag.HasError);
                     }
 
                     nodes.Peek().Nodes.Add(node);

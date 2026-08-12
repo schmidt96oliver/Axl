@@ -10,7 +10,6 @@
 
 **Next**: 
 * Missing,Unexpected only first until scanner progress
-* UnclosedString -> MissingToken
 * test: Parser token and node spans partition source
 
 * Regression in BrokenTrees.Strings

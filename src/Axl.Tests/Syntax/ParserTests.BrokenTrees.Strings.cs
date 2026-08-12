@@ -17,7 +17,6 @@ public partial class ParserTests
                                                 }
                                                 """), """
                     ERROR MissingToken@[21, 21): Expected '"'.
-                    ERROR MissingToken@[21, 21): Expected ';'.
 
 
                     FnDecl
@@ -42,7 +41,6 @@ public partial class ParserTests
                                                 }
                                                 """), """
                     ERROR MissingToken@[23, 23): Expected '"'.
-                    ERROR MissingToken@[23, 23): Expected ';'.
 
 
                     FnDecl
@@ -68,7 +66,6 @@ public partial class ParserTests
                                                 }
                                                 """), """
                     ERROR MissingToken@[25, 25): Expected '"'.
-                    ERROR MissingToken@[25, 25): Expected ';'.
 
 
                     FnDecl
@@ -96,8 +93,6 @@ public partial class ParserTests
                                                 }
                                                 """), """
                     ERROR MissingToken@[27, 27): Expected an expression.
-                    ERROR MissingToken@[27, 27): Expected '"'.
-                    ERROR MissingToken@[27, 27): Expected ';'.
 
 
                     FnDecl
@@ -127,7 +122,6 @@ public partial class ParserTests
                                                 }
                                                 """), """
                     ERROR MissingToken@[29, 29): Expected '"'.
-                    ERROR MissingToken@[29, 29): Expected ';'.
 
 
                     FnDecl
@@ -158,7 +152,6 @@ public partial class ParserTests
                                                 }
                                                 """), """
                     ERROR MissingToken@[31, 31): Expected '"'.
-                    ERROR MissingToken@[31, 31): Expected ';'.
 
 
                     FnDecl
@@ -191,7 +184,6 @@ public partial class ParserTests
                                                 }
                                                 """), """
                     ERROR MissingToken@[21, 21): Expected '"'.
-                    ERROR MissingToken@[21, 21): Expected ';'.
 
 
                     FnDecl
@@ -223,8 +215,6 @@ public partial class ParserTests
                                                 }
                                                 """), """
                     ERROR MissingToken@[25, 25): Expected '}'.
-                    ERROR MissingToken@[25, 25): Expected '"'.
-                    ERROR MissingToken@[25, 25): Expected ';'.
 
 
                     FnDecl
@@ -259,7 +249,6 @@ public partial class ParserTests
                                                 }
                                                 """), """
                     ERROR MissingToken@[37, 37): Expected '"'.
-                    ERROR MissingToken@[37, 37): Expected ';'.
 
 
                     FnDecl
@@ -297,7 +286,6 @@ public partial class ParserTests
                                                 { }
                                                 """), """
                     ERROR MissingToken@[1, 1): Expected '"'.
-                    ERROR MissingToken@[1, 1): Expected ';'.
 
 
                     ExprStmt
@@ -313,7 +301,6 @@ public partial class ParserTests
                                                 { }
                                                 """), """
                     ERROR MissingToken@[5, 5): Expected '"'.
-                    ERROR MissingToken@[5, 5): Expected ';'.
 
 
                     ExprStmt
@@ -331,7 +318,6 @@ public partial class ParserTests
                                                 { }
                                                 """), """
                     ERROR MissingToken@[8, 8): Expected '"'.
-                    ERROR MissingToken@[8, 8): Expected ';'.
 
 
                     ExprStmt
@@ -343,13 +329,34 @@ public partial class ParserTests
                     · BlockExpr '{' '}'
                     """);
 
-            // [Fact]
-            // public void OpenInterpolationInCall_FollowedByVar()
-            //     // EXPECT: One error; VarDecl is global
-            //     => InlineSnapshot.Validate(Tree("""
-            //                                     Standard.PrintLine("{ 
-            //                                     var a = 2;
-            //                                     """));
+            [Fact]
+            public void OpenInterpolationInCall_FollowedByVar()
+                // EXPECT: One error; VarDecl is global
+                => InlineSnapshot.Validate(Tree("""
+                                                Standard.PrintLine("{ 
+                                                var a = 2;
+                                                """), """
+                    ERROR MissingToken@[21, 21): Expected an expression.
+
+
+                    ExprStmt
+                    · CallExpr
+                    · · GetMemberExpr
+                    · · · IdName 'Standard'
+                    · · · '.'
+                    · · · IdName 'PrintLine'
+                    · · ArgList
+                    · · · '('
+                    · · · StringExpr
+                    · · · · '"'
+                    · · · · StringInterpolation '{'
+                    VarDecl
+                    · 'var'
+                    · IdName 'a'
+                    · '='
+                    · NumberLiteral '2'
+                    · ';'
+                    """);
         }
     }
 }
