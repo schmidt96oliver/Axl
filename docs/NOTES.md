@@ -9,7 +9,6 @@
 11.08 14:27: Roughly Ende der Zeit; Harndrang; "das geht noch schnell "
 
 **Next**: 
-* `native()` expected string! -> Regression
 
 **Small points**:
 * ?? `RecoverTo` UnexpectedToken -> Squiggle all tokens

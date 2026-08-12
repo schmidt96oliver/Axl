@@ -4,7 +4,7 @@ namespace Axl.Tests.Syntax;
 
 public partial class ParserTests
 {
-    public class BrokenTrees
+    public partial class BrokenTrees
     {
         public sealed class Strings
         {

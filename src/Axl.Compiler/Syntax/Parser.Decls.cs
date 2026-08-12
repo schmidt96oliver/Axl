@@ -1,6 +1,7 @@
 using System.Diagnostics;
 using Axl.Compiler.Diagnostics;
 // ReSharper disable UnusedMethodReturnValue.Local
+// ReSharper disable ClassCannotBeInstantiated
 
 namespace Axl.Compiler.Syntax;
 
@@ -95,14 +96,13 @@ public partial class Parser
         {
             var nativeClause = _scanner.Open();
             _scanner.EatToken(TokenKind.NativeKw);
+            
             ExpectToken(TokenKind.OpenParen);
             if (_scanner.IsAt(TokenKind.StringStart))
                 EatStringExpr(fnDeclAnchor | TokenKind.CloseParen);
             else
-            {
-                // TODO: Expected string?
-                ReportMissing(expected: ExpectedSyntax.Expr);
-            }
+                ReportMissing(expected: ExpectedSyntax.String);
+            
             ExpectToken(TokenKind.CloseParen);
 
             hasNativeClause = true;

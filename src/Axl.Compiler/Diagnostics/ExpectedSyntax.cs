@@ -16,6 +16,7 @@ public readonly struct ExpectedSyntax
     public static readonly ExpectedSyntax TypeName = new("a type name");
     public static readonly ExpectedSyntax Member = new("a member ('fn' or 'module')");
     public static readonly ExpectedSyntax ParamList = new("parameters");
+    public static readonly ExpectedSyntax String = new("a string");
 
     private ExpectedSyntax(string description)
         => DisplayName = description;
@@ -30,6 +31,7 @@ public readonly struct ExpectedSyntax
     /// </summary>
     public string DisplayName { get; }
 
-    
+
+
     public override string ToString() => DisplayName;
 }
