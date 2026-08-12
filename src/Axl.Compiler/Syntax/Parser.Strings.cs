@@ -1,3 +1,4 @@
+
 using System.Diagnostics;
 using Axl.Compiler.Diagnostics;
 // ReSharper disable UnusedMethodReturnValue.Local
@@ -68,22 +69,15 @@ public partial class Parser
         var interpolationHole = _scanner.Open();
         _scanner.EatToken(TokenKind.OpenBrace);
 
-        // --- Parse Expression or empty interpolation
+        // --- Parse Expression
         // `{ `}` will fall through and consume `}` as closing.
-        var errorReported = false;
-        if (!_scanner.IsAt(TokenKind.CloseBrace))
-        {
-            errorReported = ExpectExpr(anchor | TokenKind.CloseBrace) is null;
-        }
+        if (_scanner.IsAt(FirstSet.Expr))
+            EatExpr(anchor | TokenKind.CloseBrace);
 
         // --- Recover to anchor or close brace if needed
         if (!_scanner.IsAt(TokenKind.CloseBrace))
         {
-            if (!errorReported)
-            {
-                ReportMissing(TokenKind.CloseBrace);
-                errorReported = true;
-            }
+            ReportMissing(TokenKind.CloseBrace);
 
             // Parser is confused now. Recover and pass anchors that we got
             // from the enclosing loop. Note that it will handle {, }, StringStart,
@@ -92,29 +86,25 @@ public partial class Parser
         }
 
         // --- Close brace, valid closing
-        if (_scanner.IsAt(TokenKind.CloseBrace))
+        // We need to catch common typing-cases here like
+        //    fn a()
+        //    {
+        //       "Hello {
+        //    }
+        // We want the last `}` to close the function body instead of this
+        // interpolation.
+
+        // Closing brace can only be a valid interpolation close,
+        // if it is followed by StringText, StringEnd or another OpenBrace
+        // (starts a new interpolation directly). If that is not the case, the
+        // string is unclosed. If } is on the same line, take it as closing the
+        // interpolation, otherwise leave it to enclosing loops.
+        if (_scanner.IsAt(TokenKind.CloseBrace) && (FirstSet.StringContinuation.Contains(_scanner.Peek(1).Kind) ||
+                                                    !HasNewlineBeforeNextToken()))
         {
-            // We need to catch common typing-cases here like
-            //    fn a()
-            //    {
-            //       "Hello {
-            //    }
-            // We want the last `}` to close the function body instead of this
-            // interpolation.
-
-            // Closing brace can only be a valid interpolation close,
-            // if it is followed by StringText, StringEnd or another OpenBrace
-            // (starts a new interpolation directly). If that is not the case, the
-            // string is unclosed. If } is on the same line, take it as closing the
-            // interpolation, otherwise leave it to enclosing loops.
-
-            if (FirstSet.StringContinuation.Contains(_scanner.Peek(1).Kind) ||
-                !HasNewlineBeforeNextToken())
-            {
-                _scanner.EatToken(TokenKind.CloseBrace);
-            }
+            _scanner.EatToken(TokenKind.CloseBrace);
         }
-        else if (!errorReported)
+        else
         {
             ReportMissing(TokenKind.CloseBrace);
         }

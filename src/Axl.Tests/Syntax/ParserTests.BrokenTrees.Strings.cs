@@ -40,7 +40,7 @@ public partial class ParserTests
                                                     "Hello {
                                                 }
                                                 """), """
-                    ERROR MissingToken@[23, 23): Expected '"'.
+                    ERROR MissingToken@[23, 23): Expected '}'.
 
 
                     FnDecl
@@ -65,7 +65,7 @@ public partial class ParserTests
                                                     "Hello { 1
                                                 }
                                                 """), """
-                    ERROR MissingToken@[25, 25): Expected '"'.
+                    ERROR MissingToken@[25, 25): Expected '}'.
 
 
                     FnDecl
@@ -121,7 +121,7 @@ public partial class ParserTests
                                                     "Hello { 1 + 6
                                                 }
                                                 """), """
-                    ERROR MissingToken@[29, 29): Expected '"'.
+                    ERROR MissingToken@[29, 29): Expected '}'.
 
 
                     FnDecl
@@ -336,7 +336,7 @@ public partial class ParserTests
                                                 Standard.PrintLine("{ 
                                                 var a = 2;
                                                 """), """
-                    ERROR MissingToken@[21, 21): Expected an expression.
+                    ERROR MissingToken@[21, 21): Expected '}'.
 
 
                     ExprStmt
