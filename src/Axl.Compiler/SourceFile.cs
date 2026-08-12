@@ -3,9 +3,15 @@ using System.Diagnostics;
 
 namespace Axl.Compiler;
 
-public readonly record struct LineInfo(int LineNumber, SourceSpan Span)
+/// <param name="EndingLength">Length of the line-ending. 0 (no ending), 1 (\n) or 2 (\r\n).</param>
+public readonly record struct LineInfo(int LineNumber, SourceSpan Span, int EndingLength)
 {
     public int Length => Span.Length;
+
+    /// <summary>
+    /// Length of the line in characters without the ending.
+    /// </summary>
+    public int LengthWithoutEnding => Length - EndingLength;
 }
 
 public sealed class SourceFile
@@ -173,7 +179,11 @@ public sealed class SourceFile
             {
                 // This line must include \n, so it spans one further.
                 var span = SourceSpan.InsideSourceFile(lineStart, length: currentChar + 1 - lineStart);
-                builder.Add(new LineInfo(lineIndex, span));
+                
+                // Find ending
+                var endingLength = currentChar - 1 >= lineStart && Text[currentChar - 1] is '\r' ? 2 : 1;
+                
+                builder.Add(new LineInfo(lineIndex, span, endingLength));
                 
                 lineIndex++;
                 lineStart = currentChar + 1;
@@ -182,7 +192,15 @@ public sealed class SourceFile
         }
 
         if (lineStart < Text.Length)
-            builder.Add(new LineInfo(lineIndex, SourceSpan.InsideSourceFile(lineStart, length: Text.Length - lineStart)));
+        {
+            var endingLength = Text.Length - 1 >= lineStart && Text[^1] is '\n'
+                ? Text.Length - 2 >= lineStart && Text[^2] is '\r' ? 2 : 1
+                : 0;
+
+            builder.Add(new LineInfo(lineIndex,
+                SourceSpan.InsideSourceFile(lineStart, length: Text.Length - lineStart),
+                endingLength));
+        }
         
         return builder.ToImmutable();
     }

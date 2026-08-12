@@ -121,4 +121,25 @@ public class SourceFileTests
         // So if a new one had been constructed, this will fail.
         (array1 == array2).ShouldBeTrue();
     }
+
+    [Theory]
+    [InlineData("\n", 1)]
+    [InlineData("\r\n", 2)]
+    
+    [InlineData("\n\n", 1, 1)]
+    [InlineData("\n\r\n", 1, 2)]
+    [InlineData("\r\n\r\n", 2, 2)]
+    
+    
+    [InlineData("1\n2\r\n", 1, 2)]
+    [InlineData("1\n2\r\n3", 1, 2, 0)]
+    [InlineData("1\r\n2\n3", 2, 1, 0)]
+    [InlineData("1\r\n2\n3\n", 2, 1, 1)]
+    private void EndingLength(string text, params int[] expectedEndingLengths)
+    {
+        var sourceFile = SourceFile.FromText(text);
+        sourceFile.Lines.IsDefault.ShouldBeFalse();
+        
+        sourceFile.Lines.Select(l => l.EndingLength).ShouldBe(expectedEndingLengths);
+    }
 }
