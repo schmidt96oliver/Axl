@@ -1,0 +1,54 @@
+﻿//@check
+
+module Standard;
+
+private native("I32ToString") fn I32ToString(i: i32) -> string;
+private native("I64ToString") fn I64ToString(i: i64) -> string;
+private native("F32ToString") fn F32ToString(i: f32) -> string;
+private native("F64ToString") fn F64ToString(i: f64) -> string;
+
+public native("Print") fn Print(input: string) -> none;
+
+public native("Panic") fn Panic(msg: string) -> never;
+public fn Panic() -> never
+    => Panic("");
+
+public fn Print(i: i32)
+    => Print(I32ToString(i));
+public fn Print(i: i64)
+    => Print(I64ToString(i));
+public fn Print(i: f32)
+    => Print(F32ToString(i));
+public fn Print(i: f64)
+    => Print(F32ToString(i));
+public fn Print(b: bool)
+    => Print(if b => "true" else => "false");
+
+public fn PrintLine(input: string)
+    => Print("{input}\n");
+    
+public fn PrintLine(input: i32)
+{
+    Print(input);
+    Print("\n");
+}
+public fn PrintLine(input: i64)
+{
+    Print(input);
+    Print("\n");
+}
+public fn PrintLine(input: f32)
+{
+    Print(input);
+    Print("\n");
+}
+public fn PrintLine(input: f64)
+{
+    Print(input);
+    Print("\n");
+}
+public fn PrintLine(input: bool)
+{
+    Print(input);
+    Print("\n");
+}

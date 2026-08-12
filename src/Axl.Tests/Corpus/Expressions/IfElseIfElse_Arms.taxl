@@ -1,0 +1,15 @@
+﻿//@run-pass
+
+using Standard;
+
+var predicate = true;
+
+if predicate
+    => PrintLine("A")
+else if 1 == predicate
+    => PrintLine("B")
+else 
+    => PrintLine("C");
+    
+//=== stdout
+// A

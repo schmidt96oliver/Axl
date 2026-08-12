@@ -1,0 +1,12 @@
+﻿//@run-pass
+
+Other.Do("Hello");
+
+//--- Other.axl
+module Other;
+
+public fn Do(msg : string) -> none
+    => Standard.PrintLine(msg);
+    
+//=== stdout
+// Hello

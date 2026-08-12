@@ -9,6 +9,7 @@
 11.08 14:27: Roughly Ende der Zeit; Harndrang; "das geht noch schnell "
 
 **Next**: 
+* `native()` expected string! -> Regression
 
 **Small points**:
 * ?? `RecoverTo` UnexpectedToken -> Squiggle all tokens
@@ -21,7 +22,7 @@
 # Parser
 [x] Corpus & Corpus-Test-Runner (expect: Parses without diagnostics)
 [ ] Write corpus files. Use Ungrammar
-   * [ ] All native types: "i32" | "i64" | "f32" | "f64" | "string" | "none"
+   * [x] All native types: "i32" | "i64" | "f32" | "f64" | "string" | "none"
    * [ ] Break, Continue, Return. Nested cases
    * [ ] All Binary ("+"|"-"|"*"|"/"|"<"|"<="|">"|">="  |"=="|"!=" |"and"|"or")
    * [ ] All Unary ("-" | "not")
@@ -33,37 +34,37 @@
      * [ ] Trailing Block, Break, Continue, Return
      * [ ] Nested
 
-   * [ ] Strings
+   * [x] Strings
      * [x] No interpolation                 (Strings/Concat.taxl)
      * [x] 1 level interpolation            (Strings/Concat.taxl)
-     * [ ] multi-level interpolation        
+     * [x] multi-level interpolation        (Strings/DeepInterpolation.taxl)
      * [x] empty interpolation              (Strings/Multiline.taxl)
      * [x] multi-line string                (Strings/Multiline.taxl)
-     * [ ] multi-line interpolation
-     * [ ] multi-level, multi-line interpolation
+     * [x] multi-line interpolation         (Strings/DeepInterpolation.taxl)
+     * [x] multi-level, multi-line interpolation  (Strings/DeepInterpolation.taxl)
      * [x] escapes                          (Strings/Escapes.taxl)
      * [x] bodied expression in interpolation   (Strings/IfInInterpolation.taxl)
-   * [ ] Bodied Expr in Group
-   * [ ] If/Else If/If
+     * [x] Bodied Expr in Group             (Expressions(IfInGroup.taxl))
+   * [x] If/Else If/If
      * [x] only if block                    (Loops/BuildingMultiLineString.taxl)
-     * [ ] with, without arms/blocks
+     * [x] with, without arms/blocks
    * [x] Loop, break expr;                  (Loops/BuildingMultiLineString.taxl)
 
-   * [ ] VarDecl with/without type annotation
+   * [x] VarDecl with/without type annotation
      * [x] with bodied initializer          (Loops/BuildingMultiLineString.taxl)
 
    * [ ] Fn
-     * [ ] with/without parameters
-     * [ ] never return type
-     * [ ] with/without return type
-     * [ ] with arm, with block
-     * [ ] native
-     * [ ] public, private, no modifier
+     * [x] with/without parameters
+     * [x] never return type
+     * [x] with/without return type
+     * [x] with arm, with block
+     * [x] native
+     * [x] public, private, no modifier
      * [ ] fn in fn
      * [ ] fn in fn in fn
      * [ ] fn in blocks
 
-   * [ ] File-scoped module decl
+   * [x] File-scoped module decl
    * [x] Using propagates name   (Standard literally everywhere)
      * [ ] Sub-module using
    * [ ] Nested module declarations

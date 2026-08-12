@@ -1,0 +1,13 @@
+﻿//@run-pass
+
+using Standard;
+
+PrintLine("{ "{ "{ "1" }" }" }");
+PrintLine("{ "{ "{ 
+        if true => "y"
+        else => "n"
+    }" }" }");
+    
+//=== stdout
+// 1
+// y

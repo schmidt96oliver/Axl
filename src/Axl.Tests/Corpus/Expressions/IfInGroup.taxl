@@ -1,0 +1,16 @@
+﻿//@run-pass
+
+using Standard;
+
+var a: i32 = 1;
+var predicate: bool = false;
+
+var doubleOrSingle = a + (if predicate => a else => 0);
+var doubleOrSingle_Alt = if predicate => 2 * a else => a;
+
+PrintLine(doubleOrSingle);
+PrintLine(doubleOrSingle_Alt);
+
+//=== stdout
+// 1
+// 1

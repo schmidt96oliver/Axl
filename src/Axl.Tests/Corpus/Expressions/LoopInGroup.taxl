@@ -1,0 +1,14 @@
+﻿//@run-pass
+
+using Standard;
+
+var i = 0;
+var a = 1;
+var b = 1 + (loop {
+                i += 1;
+                if i >= 2 => break i;
+            });
+Print(b);
+
+//=== stdout
+// 3
