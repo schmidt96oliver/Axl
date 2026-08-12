@@ -5,14 +5,6 @@ namespace Axl.Compiler.Diagnostics;
 
 public abstract partial record Diagnostic
 {
-    public sealed record UnclosedString(SourceFileView Source, Token LastToken) : Error
-    {
-        public override ImmutableArray<SourceLocation> Locations =>
-            [Source.GetLocation(SourceSpan.EmptyAfter(LastToken.Span))];
-
-        public override string Message => "String has not been closed.";
-    }
-
     public sealed record UnexpectedToken(SourceFileView Source, Token Actual, ExpectedSyntax Expected) : Error
     {
         public override ImmutableArray<SourceLocation> Locations => [Source.GetLocation(Actual.Span)];

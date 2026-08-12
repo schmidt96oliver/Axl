@@ -13,7 +13,6 @@ public partial class Parser
         var expr = _scanner.Open();
         _scanner.EatToken(TokenKind.StringStart);
 
-        var isClosed = false;
         foreach (var _ in _scanner.MustEatEachIteration())
         {
             // A String can be terminated by a whitespace token. Since we
@@ -32,8 +31,6 @@ public partial class Parser
 
                 // --- StringEnd: Finish
                 case TokenKind.StringEnd:
-                    _scanner.EatToken(TokenKind.StringEnd);
-                    isClosed = true;
                     goto breakLoop;
 
                 // --- Interpolation
@@ -58,16 +55,7 @@ public partial class Parser
 
         breakLoop:
 
-        if (!isClosed)
-        {
-            // We advanced at least the StringStart token, so there must be a
-            // last token.
-            Debug.Assert(_scanner.Last is not null);
-            _diagnosticBag.ReportError(new Diagnostic.UnclosedString(
-                _source,
-                LastToken: _scanner.Last));
-        }
-
+        ExpectToken(TokenKind.StringEnd);
         return _scanner.Close(expr, SyntaxKind.StringExpr);
     }
 
