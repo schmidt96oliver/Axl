@@ -53,4 +53,46 @@ public partial class ParserTests
         tree.HasError.ShouldBeFalse();
         tree.Diagnostics.ShouldBeEmpty();
     }
+
+    [Theory, Corpus]
+    public void Corpus_ChildrenPartitionTheirParent(string path)
+    {
+        var source = SourceFileView.FromFile(path);
+        var tree = Parser.Parse(source);
+
+        AllNodesRecursive(tree.Root).ShouldAllBe(node => node.Span.IsPartitionedBy(node.Children.Select(child => child.Span)));
+        return;
+        
+        IEnumerable<SyntaxNode> AllNodesRecursive(SyntaxNode node)
+        {
+            foreach (var child in node.Children.OfType<SyntaxNode>())
+            {
+                yield return child;
+                foreach (var childNode in AllNodesRecursive(child))
+                    yield return childNode;
+            }
+        }
+    }
+
+    [Theory, Corpus]
+    public void Corpus_TokensPartitionSource(string path)
+    {
+        var source = SourceFileView.FromFile(path);
+        var tree = Parser.Parse(source);
+
+        source.Span.IsPartitionedBy(AllTokenSpansRecursive(tree.Root)).ShouldBeTrue();
+        return;
+        
+        IEnumerable<SourceSpan> AllTokenSpansRecursive(SyntaxElement element)
+        {
+            if (element is Token token)
+                yield return token.Span;
+            else if (element is SyntaxNode node)
+            {
+                var childTokenSpans = node.Children.SelectMany(AllTokenSpansRecursive);
+                foreach (var childTokenSpan in childTokenSpans)
+                    yield return childTokenSpan;
+            }
+        }
+    }
 }

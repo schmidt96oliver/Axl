@@ -9,18 +9,12 @@
 11.08 14:27: Roughly Ende der Zeit; Harndrang; "das geht noch schnell "
 
 **Next**: 
-* Missing,Unexpected only first until scanner progress
-* test: Parser token and node spans partition source
-
-* Regression in BrokenTrees.Strings
-
 
 **Small points**:
 * ?? `RecoverTo` UnexpectedToken -> Squiggle all tokens
 * ?? `RecoverTo` balanced braces/parens (good for garbage in modules `module A { var using module B { } }`)
 * ?? Anchor on newline (flag on method, `Anchor.Newline` that propagates)
 * ?? Where to anchor on `;`?
-* ?? error cascade: Incomplete expr, then `Missing ;`
 
 * `SyntaxFile` add reference to Source
 
