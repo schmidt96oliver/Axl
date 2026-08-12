@@ -1,0 +1,17 @@
+﻿//@check
+// Functions can be declared locally _inside a block_
+// and are visible only inside that block.
+
+fn Outer()
+{
+    InBlock();      //~error
+    
+    if true
+    {
+        InBlock();          // valid
+        fn InBlock()
+            => Standard.Print("");
+    }
+    
+    InBlock();      //~error
+}

@@ -1,0 +1,38 @@
+﻿//@run-pass
+// Nested modules are accessible through `.` syntax.
+// Using declarations can shorten them.
+
+A.B.DoB();
+A.B.C.DoC();
+
+Other.WithUsing();
+
+module A
+{
+    module B 
+    {   
+        public fn DoB() => Standard.Print("B");
+        
+        module C
+        {
+            public fn DoC() => Standard.Print("C");
+        }
+    }
+}
+
+//--- Other.axl
+using A.B;
+
+module Other;
+
+public fn WithUsing()
+{
+    DoB();
+    C.DoC();
+}
+
+//=== stdout
+// B
+// C
+// B
+// C

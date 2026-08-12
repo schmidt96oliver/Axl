@@ -1,0 +1,13 @@
+﻿//@run-pass
+// Functions can be declared locally and are hoisted.
+
+fn Outer()
+{
+    Inner();
+    
+    fn Inner()
+        => Standard.Print("Inner");
+}
+
+//=== stdout
+// Inner

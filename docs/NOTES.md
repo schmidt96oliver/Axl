@@ -18,6 +18,9 @@
 
 * `SyntaxFile` add reference to Source
 
+**Regressions:**
+* `fn A() = Print();` (mis-typed `=>`)
+
 # Parser
 [x] Corpus & Corpus-Test-Runner (expect: Parses without diagnostics)
 [ ] Write corpus files. Use Ungrammar
@@ -52,29 +55,25 @@
    * [x] VarDecl with/without type annotation
      * [x] with bodied initializer          (Loops/BuildingMultiLineString.taxl)
 
-   * [ ] Fn
+   * [x] Fn
      * [x] with/without parameters
      * [x] never return type
      * [x] with/without return type
      * [x] with arm, with block
      * [x] native
      * [x] public, private, no modifier
-     * [ ] fn in fn
-     * [ ] fn in fn in fn
-     * [ ] fn in blocks
+     * [x] fn in fn
+     * [x] fn in blocks
 
    * [x] File-scoped module decl
    * [x] Using propagates name   (Standard literally everywhere)
-     * [ ] Sub-module using
-   * [ ] Nested module declarations
+     * [x] Sub-module using
+   * [x] Nested module declarations
 
-* Go over ReportMissing/Unexpected, see which ExpectedSyntax is passed in (and to make more specific)
 * ?? Better dump format
-
 
 [ ] Proper trivia handling
 [ ] Code lazily: SyntaxViews (only product syntax, never sum syntax). Provide FindNode/FindToken/NthToken/NthNode...
-[ ] Distinguish Script and Module file
 
 # First features
 * i32, i64, f32, f64, bool, string
