@@ -32,15 +32,7 @@ public abstract partial record Diagnostic
                 if (Previous is null)
                     return [Source.GetLocation(SourceSpan.EmptyBefore(Next.Span))];
 
-                // If the next token is on a new line, report after the previous
-                // token. Otherwise, report on the next (offending) token.
-                var newlineBetweenPreviousAndNext = Source
-                    .GetText(SourceSpan.Between(Previous.Span, Next.Span))
-                    .Contains('\n');
-                if (newlineBetweenPreviousAndNext)
-                    return [Source.GetLocation(SourceSpan.EmptyAfter(Previous.Span))];
-
-                return [Source.GetLocation(Next.Span)];
+                return [Source.GetLocation(SourceSpan.EmptyAfter(Previous.Span))];
             }
         }
 

@@ -9,6 +9,11 @@
 11.08 14:27: Roughly Ende der Zeit; Harndrang; "das geht noch schnell "
 
 **Next**: 
+* Missing,Unexpected only first until scanner progress
+* UnclosedString -> MissingToken
+* test: Parser token and node spans partition source
+
+* Regression in BrokenTrees.Strings
 
 
 **Small points**:
@@ -61,6 +66,9 @@
      * [ ] with arm, with block
      * [ ] native
      * [ ] public, private, no modifier
+     * [ ] fn in fn
+     * [ ] fn in fn in fn
+     * [ ] fn in blocks
 
    * [ ] File-scoped module decl
    * [x] Using propagates name   (Standard literally everywhere)
@@ -92,7 +100,7 @@
    * ModifierList
      * accept only valid modifiers
      * error/lint wrong order
-4. Binder
+**Binder**
    * expected type propagation: number literals
    * loop break type checks
    * divergence tracking, definite return
@@ -100,7 +108,9 @@
    * native fn validation
    * SyntaxKind.Error: Bind all children, wrap in HirError
    * ?? never inferred through `var a = break;` or `return break;`
-5. Lowering
+**Taxl**
+   * Split into blocks on `//---` and `//===`
+   * use Claude to write it
 
 # Implementation Ideas
 Doc comments:
