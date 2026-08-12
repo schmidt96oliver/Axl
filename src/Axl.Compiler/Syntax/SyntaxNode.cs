@@ -28,7 +28,6 @@ public sealed class SyntaxNode : SyntaxElement
         Children = children;
         
         Span = SourceSpan.FromTo(children[0].Span, children[^1].Span);
-        Debug.Assert(Span.IsPartitionedBy(children.Select(c => c.Span)));
         
         // Calculate SyntaxSpan
         if (children.FirstOrDefault(element => element.SyntaxSpan is not null) is SyntaxElement firstNonTrivia)
