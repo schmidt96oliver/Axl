@@ -79,7 +79,7 @@ public class SemanticTokensHandler(ILanguageServerFacade facade) : SemanticToken
                     else if (text.StartsWith("//---") || text.StartsWith("//==="))
                     {
                         var length = 5;
-                        while (text[length] is '-' or '=')
+                        while (length < text.Length && text[length] is '-' or '=')
                             length++;
                         
                         builder.Push(startLinePos.Line, startLinePos.Column, length,
