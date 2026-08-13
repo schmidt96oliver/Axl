@@ -1,10 +1,13 @@
-﻿namespace Axl.Compiler.Syntax;
+﻿using System.Diagnostics;
+
+namespace Axl.Compiler.Syntax;
 
 public class Token : SyntaxElement
 {
     public TokenKind Kind { get; }
     public sealed override SourceSpan Span { get; }
     public sealed override SourceSpan? SyntaxSpan => Kind.IsTrivia ? null : Span;
+    public bool IsMissing { get; }
 
     /// <summary>
     /// Some tokens carry a value and must be constructed as a derived type
@@ -12,8 +15,10 @@ public class Token : SyntaxElement
     /// Thus, construction must go through dedicated static methods below, so that
     /// <see cref="TokenKind.Identifier"/> always is a <see cref="IdentifierToken"/> and so on.
     /// </summary>
-    protected Token(SourceSpan span, TokenKind kind)
+    protected Token(SourceSpan span, TokenKind kind, bool isMissing = false)
     {
+        if (isMissing) Guard.MustBe(span.IsEmpty);
+
         Kind = kind;
         Span = span;
     }
