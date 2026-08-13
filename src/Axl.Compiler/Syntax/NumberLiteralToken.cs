@@ -10,10 +10,11 @@ public enum NumberLiteralSuffix
 }
 
 public sealed class NumberLiteralToken(SourceSpan span, string body, NumberLiteralSuffix suffix) 
-    : Token(span, TokenKind.NumberLiteral)
+    : Token(span, TokenKind.NumberLiteral, isMissing: body.Length == 0)
 {
     /// <summary>
-    /// Non-empty and one of these forms:
+    /// Empty, if <see cref="IsMissing"/> is <c>true</c>.
+    /// Otherwise, one of these forms:
     /// <list type="bullet">
     /// <item>0x[0-9A-Fa-f]+</item>
     /// <item>0b[01]+</item>
