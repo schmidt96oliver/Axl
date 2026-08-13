@@ -146,17 +146,24 @@ public partial class Parser
             
         var nativeClause = _scanner.Open();
         _scanner.EatToken(TokenKind.NativeKw);
-            
-        ExpectToken(TokenKind.OpenParen);
-        if (_scanner.IsAt(TokenKind.StringStart))
-            EatStringExpr(nativeClauseAnchor);
-        else
-        {
-            if (!RecoverTo(nativeClauseAnchor, ExpectedSyntax.String))
-                ReportMissing(ExpectedSyntax.String);
-        }
 
-        ExpectToken(TokenKind.CloseParen);
+        // If we don't get "(", break off and leave the
+        // rest to the enclosing function.
+        if (_scanner.IsAt(TokenKind.OpenParen))
+        {
+            _scanner.EatToken(TokenKind.OpenParen);
+            if (_scanner.IsAt(TokenKind.StringStart))
+                EatStringExpr(nativeClauseAnchor);
+            else
+            {
+                if (!RecoverTo(nativeClauseAnchor, ExpectedSyntax.String))
+                    ReportMissing(ExpectedSyntax.String);
+            }
+            ExpectToken(TokenKind.CloseParen);
+        }
+        else 
+            ReportMissing(TokenKind.OpenParen);
+        
         return _scanner.Close(nativeClause, SyntaxKind.NativeClause);
     }
     

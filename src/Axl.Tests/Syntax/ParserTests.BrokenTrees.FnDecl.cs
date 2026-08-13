@@ -450,27 +450,9 @@ public partial class ParserTests
                     · BlockExpr '{' '}'
                     """);
 
-
+            
             [Fact]
-            public void Native_1()
-                => InlineSnapshot.Validate(Tree("""
-                                                native;
-                                                fn A() { }
-                                                """), """
-                    ERROR MissingToken@[6, 6): Expected '('.
-
-
-                    Error
-                    · NativeClause 'native'
-                    · ';'
-                    FnDecl
-                    · 'fn'
-                    · IdName 'A'
-                    · ParamList '(' ')'
-                    · BlockExpr '{' '}'
-                    """);
-            [Fact]
-            public void Native_2()
+            public void NativeNotDelimited_LeavesRestAlone_1()
                 => InlineSnapshot.Validate(Tree("""
                                                 native
                                                 module AB
@@ -491,7 +473,64 @@ public partial class ParserTests
                     · '}'
                     """);
             [Fact]
-            public void Native_3()
+            public void NativeNotDelimited_LeavesRestAlone_2()
+                => InlineSnapshot.Validate(Tree("""
+                                                native
+                                                1 + 2;
+                                                """), """
+                    ERROR MissingToken@[6, 6): Expected '('.
+
+
+                    Error
+                    · NativeClause 'native'
+                    ExprStmt
+                    · BinaryExpr
+                    · · NumberLiteral '1'
+                    · · '+'
+                    · · NumberLiteral '2'
+                    · ';'
+                    """);
+            [Fact]
+            public void NativeNotDelimited_LeavesRestAlone_3()
+                => InlineSnapshot.Validate(Tree("""
+                                                native
+                                                var a = 2;
+                                                """), """
+                    ERROR MissingToken@[6, 6): Expected '('.
+
+
+                    Error
+                    · NativeClause 'native'
+                    VarDecl
+                    · 'var'
+                    · IdName 'a'
+                    · '='
+                    · NumberLiteral '2'
+                    · ';'
+                    """);
+            
+            
+            [Fact]
+            public void Native_1()
+                => InlineSnapshot.Validate(Tree("""
+                                                native;
+                                                fn A() { }
+                                                """), """
+                    ERROR MissingToken@[6, 6): Expected '('.
+
+
+                    Error
+                    · NativeClause 'native'
+                    · ';'
+                    FnDecl
+                    · 'fn'
+                    · IdName 'A'
+                    · ParamList '(' ')'
+                    · BlockExpr '{' '}'
+                    """);
+            
+            [Fact]
+            public void Native_2()
                 => InlineSnapshot.Validate(Tree("""
                                                 native fn ;
                                                 fn A() { }
@@ -511,7 +550,7 @@ public partial class ParserTests
                     · BlockExpr '{' '}'
                     """);
             [Fact]
-            public void Native_4()
+            public void Native_3()
                 => InlineSnapshot.Validate(Tree("native fn A();"), """
                     ERROR MissingToken@[6, 6): Expected '('.
 
@@ -524,7 +563,7 @@ public partial class ParserTests
                     · ';'
                     """);
             [Fact]
-            public void Native_5()
+            public void Native_4()
                 => InlineSnapshot.Validate(Tree("native( fn A();"), """
                     ERROR MissingToken@[7, 7): Expected a string.
 
@@ -537,7 +576,7 @@ public partial class ParserTests
                     · ';'
                     """);
             [Fact]
-            public void Native_6()
+            public void Native_5()
                 => InlineSnapshot.Validate(Tree("native(a fn A();"), """
                     ERROR UnexpectedToken@[7, 8): Expected a string, got an identifier.
                     ERROR MissingToken@[8, 8): Expected ')'.
@@ -554,7 +593,7 @@ public partial class ParserTests
                     · ';'
                     """);
             [Fact]
-            public void Native_7()
+            public void Native_6()
                 => InlineSnapshot.Validate(Tree("native(a) fn A();"), """
                     ERROR UnexpectedToken@[7, 8): Expected a string, got an identifier.
 
@@ -572,7 +611,7 @@ public partial class ParserTests
                     """);
             
             [Fact]
-            public void Native_8()
+            public void Native_7()
                 => InlineSnapshot.Validate(Tree("native(\"Foo\" fn A();"), """
                     ERROR MissingToken@[12, 12): Expected ')'.
 
@@ -591,7 +630,7 @@ public partial class ParserTests
                     · ';'
                     """);
             [Fact]
-            public void Native_9()
+            public void Native_8()
                 => InlineSnapshot.Validate(Tree("native() fn A();"), """
                     ERROR MissingToken@[7, 7): Expected a string.
 
