@@ -103,7 +103,7 @@ public partial class ParserTests
                     ERROR UnknownCharacters@[15, 16): Unknown character '@'.
                     ERROR UnknownCharacters@[16, 17): Unknown character '@'.
                     ERROR UnexpectedToken@[15, 17): Expected a parameter, got an invalid token.
-                    ERROR MissingToken@[17, 17): Expected a parameter.
+                    ERROR MissingToken@[17, 17): Expected ')'.
 
 
                     FnDecl
@@ -125,7 +125,7 @@ public partial class ParserTests
                     ERROR UnknownCharacters@[15, 16): Unknown character '@'.
                     ERROR UnknownCharacters@[16, 17): Unknown character '@'.
                     ERROR UnexpectedToken@[15, 17): Expected a parameter, got an invalid token.
-                    ERROR MissingToken@[17, 17): Expected a parameter.
+                    ERROR MissingToken@[17, 17): Expected ')'.
 
 
                     FnDecl

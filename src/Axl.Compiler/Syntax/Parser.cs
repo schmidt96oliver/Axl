@@ -238,6 +238,11 @@ public partial class Parser
                     _scanner.EatToken(TokenKind.Comma);
                 else if (_scanner.IsAt(closeToken))
                     break;
+                else if (_scanner.IsAt(anchor))
+                {
+                    ReportMissing(closeToken);
+                    break;
+                }
             }
         }
 
