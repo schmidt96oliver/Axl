@@ -10,7 +10,7 @@
 12.08 15:16: Müde, erschöpft, keine Lust mehr. Will unbedingt noch Claude fragen
 
 **Next**: 
-* `fn Foo(@@, a, b) { }` dont report expected identifier at first `,`
+* `fn Foo(@@,@@) { }` UnexpectedToken instead of MissingToken
 
 * regressions.axl
 * TokenKind Error; double UnexpectedToken?

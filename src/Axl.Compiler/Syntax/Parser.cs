@@ -222,7 +222,14 @@ public partial class Parser
             
             // Confused?
             else
+            {
                 RecoverTo(itemAnchor | itemFirst, expected: TokenKind.Comma);
+
+                if (_scanner.IsAt(TokenKind.Comma))
+                    _scanner.EatToken(TokenKind.Comma);
+                else if (_scanner.IsAt(closeToken))
+                    break;
+            }
         }
 
         // --- Expect close

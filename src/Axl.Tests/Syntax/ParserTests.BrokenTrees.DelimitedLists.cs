@@ -168,19 +168,164 @@ public partial class ParserTests
             
             [Fact]
             public void Garbage_ParamList_2()
-                => InlineSnapshot.Validate(Tree("fn Foo(@@ a, b) { }"));
+                => InlineSnapshot.Validate(Tree("fn Foo(@@ a, b) { }"), """
+                    ERROR UnknownCharacters@[7, 8): Unknown character '@'.
+                    ERROR UnknownCharacters@[8, 9): Unknown character '@'.
+                    ERROR MissingToken@[7, 7): Expected an identifier.
+
+
+                    FnDecl
+                    · 'fn'
+                    · IdName 'Foo'
+                    · ParamList
+                    · · '('
+                    · · Error '@@'
+                    · · Param
+                    · · · IdName 'a'
+                    · · ','
+                    · · Param
+                    · · · IdName 'b'
+                    · · ')'
+                    · BlockExpr '{' '}'
+                    """);
             
             [Fact]
             public void Garbage_ParamList_3()
-                => InlineSnapshot.Validate(Tree("fn Foo(@@, a, b) { }"));
+                => InlineSnapshot.Validate(Tree("fn Foo(@@, a, b) { }"), """
+                    ERROR UnknownCharacters@[7, 8): Unknown character '@'.
+                    ERROR UnknownCharacters@[8, 9): Unknown character '@'.
+                    ERROR MissingToken@[7, 7): Expected an identifier.
+
+
+                    FnDecl
+                    · 'fn'
+                    · IdName 'Foo'
+                    · ParamList
+                    · · '('
+                    · · Error '@@'
+                    · · ','
+                    · · Param
+                    · · · IdName 'a'
+                    · · ','
+                    · · Param
+                    · · · IdName 'b'
+                    · · ')'
+                    · BlockExpr '{' '}'
+                    """);
             
             [Fact]
             public void Garbage_ParamList_4()
-                => InlineSnapshot.Validate(Tree("fn Foo(@@, a, b @@) { }"));
+                => InlineSnapshot.Validate(Tree("fn Foo(@@) { }"), """
+                    ERROR UnknownCharacters@[7, 8): Unknown character '@'.
+                    ERROR UnknownCharacters@[8, 9): Unknown character '@'.
+                    ERROR MissingToken@[7, 7): Expected an identifier.
+
+
+                    FnDecl
+                    · 'fn'
+                    · IdName 'Foo'
+                    · ParamList
+                    · · '('
+                    · · Error '@@'
+                    · · ')'
+                    · BlockExpr '{' '}'
+                    """);
             
             [Fact]
             public void Garbage_ParamList_5()
-                => InlineSnapshot.Validate(Tree("fn Foo(@@, a, b, @@) { }"));
+                => InlineSnapshot.Validate(Tree("fn Foo(@@, ) { }"), """
+                    ERROR UnknownCharacters@[7, 8): Unknown character '@'.
+                    ERROR UnknownCharacters@[8, 9): Unknown character '@'.
+                    ERROR MissingToken@[7, 7): Expected an identifier.
+                    ERROR MissingToken@[10, 10): Expected an identifier.
+
+
+                    FnDecl
+                    · 'fn'
+                    · IdName 'Foo'
+                    · ParamList
+                    · · '('
+                    · · Error '@@'
+                    · · ','
+                    · · ')'
+                    · BlockExpr '{' '}'
+                    """);
+            
+            [Fact]
+            public void Garbage_ParamList_6()
+                => InlineSnapshot.Validate(Tree("fn Foo(a @@, @@) { }"), """
+                    ERROR UnknownCharacters@[9, 10): Unknown character '@'.
+                    ERROR UnknownCharacters@[10, 11): Unknown character '@'.
+                    ERROR UnknownCharacters@[13, 14): Unknown character '@'.
+                    ERROR UnknownCharacters@[14, 15): Unknown character '@'.
+                    ERROR UnexpectedToken@[9, 11): Expected ',', got an invalid token.
+                    ERROR MissingToken@[12, 12): Expected an identifier.
+
+
+                    FnDecl
+                    · 'fn'
+                    · IdName 'Foo'
+                    · ParamList
+                    · · '('
+                    · · Param
+                    · · · IdName 'a'
+                    · · Error '@@'
+                    · · ','
+                    · · Error '@@'
+                    · · ')'
+                    · BlockExpr '{' '}'
+                    """);
+            
+            [Fact]
+            public void Garbage_ParamList_7()
+                => InlineSnapshot.Validate(Tree("fn Foo(@@, a, b @@) { }"), """
+                    ERROR UnknownCharacters@[7, 8): Unknown character '@'.
+                    ERROR UnknownCharacters@[8, 9): Unknown character '@'.
+                    ERROR UnknownCharacters@[16, 17): Unknown character '@'.
+                    ERROR UnknownCharacters@[17, 18): Unknown character '@'.
+                    ERROR MissingToken@[7, 7): Expected an identifier.
+                    ERROR UnexpectedToken@[16, 18): Expected ',', got an invalid token.
+
+
+                    FnDecl
+                    · 'fn'
+                    · IdName 'Foo'
+                    · ParamList
+                    · · '('
+                    · · Error '@@'
+                    · · ','
+                    · · Param
+                    · · · IdName 'a'
+                    · · ','
+                    · · Param
+                    · · · IdName 'b'
+                    · · Error '@@'
+                    · · ')'
+                    · BlockExpr '{' '}'
+                    """);
+            
+            [Fact]
+            public void Garbage_ParamList_8()
+                => InlineSnapshot.Validate(Tree("fn Foo(@@,@@) { }"), """
+                    ERROR UnknownCharacters@[7, 8): Unknown character '@'.
+                    ERROR UnknownCharacters@[8, 9): Unknown character '@'.
+                    ERROR UnknownCharacters@[10, 11): Unknown character '@'.
+                    ERROR UnknownCharacters@[11, 12): Unknown character '@'.
+                    ERROR MissingToken@[7, 7): Expected an identifier.
+                    ERROR MissingToken@[10, 10): Expected an identifier.
+
+
+                    FnDecl
+                    · 'fn'
+                    · IdName 'Foo'
+                    · ParamList
+                    · · '('
+                    · · Error '@@'
+                    · · ','
+                    · · Error '@@'
+                    · · ')'
+                    · BlockExpr '{' '}'
+                    """);
 
 
             [Fact]
