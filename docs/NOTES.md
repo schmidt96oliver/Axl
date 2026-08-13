@@ -10,13 +10,12 @@
 12.08 15:16: Müde, erschöpft, keine Lust mehr. Will unbedingt noch Claude fragen
 
 **Next**: 
-* `fn Foo(@@,@@) { }` UnexpectedToken instead of MissingToken
-
 * regressions.axl
 * TokenKind Error; double UnexpectedToken?
   * `fn Foo(a @@ b) { }` suppress unkown characters?
-* ArgList. Synthesize empty arg?
 * `fn Case3( ,  { }` unclosed list
+  * `fn Foo(a: i32, @@ -> string { }` "expected param" should be "expected )"
+* `native("")"` anchors
 
 **Small points**:
 * ?? `RecoverTo` UnexpectedToken -> Squiggle all tokens

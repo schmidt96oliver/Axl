@@ -88,18 +88,19 @@ public partial class Parser
     {
         Debug.Assert(_scanner.IsAt(FirstSet.FnDeclAfterModifiers));
 
-        var fnDeclAnchor = anchor | TokenKind.FnKw;
-
         // --- Native Clause
         var hasNativeClause = false;
         if (_scanner.IsAt(TokenKind.NativeKw))
         {
+            // We can recover from ")" or "fn"
+            var nativeClauseAnchor = anchor | TokenKind.FnKw | TokenKind.CloseParen;
+            
             var nativeClause = _scanner.Open();
             _scanner.EatToken(TokenKind.NativeKw);
             
             ExpectToken(TokenKind.OpenParen);
             if (_scanner.IsAt(TokenKind.StringStart))
-                EatStringExpr(fnDeclAnchor | TokenKind.CloseParen);
+                EatStringExpr(nativeClauseAnchor);
             else
                 ReportMissing(expected: ExpectedSyntax.String);
             
@@ -112,7 +113,10 @@ public partial class Parser
         // --- FnDecl
         ExpectToken(TokenKind.FnKw);
         ExpectIdName();
-        ExpectParamList(anchor);
+
+        // Inside ParamList, we can continue from "{" or "->"
+        var paramListAnchor = anchor | TokenKind.OpenBrace | TokenKind.RightArrow | TokenKind.Semicolon;
+        ExpectParamList(paramListAnchor);
 
         // --- Return type
         if (_scanner.IsAt(TokenKind.RightArrow))
