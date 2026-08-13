@@ -31,7 +31,7 @@ public partial class Parser
         Debug.Assert(_scanner.IsAt(TokenKind.VarKw));
 
         var varDecl = _scanner.Open();
-        _scanner.EatToken(TokenKind.VarKw);
+        _scanner.EatKnownToken(TokenKind.VarKw);
 
         // --- Name
         ExpectIdName();
@@ -39,14 +39,14 @@ public partial class Parser
         // --- Optional type annotation
         if (_scanner.IsAt(TokenKind.Colon))
         {
-            _scanner.EatToken(TokenKind.Colon);
+            _scanner.EatKnownToken(TokenKind.Colon);
             ExpectTypeName();
         }
 
         // --- Optional initializer
         if (_scanner.IsAt(TokenKind.Equal))
         {
-            _scanner.EatToken(TokenKind.Equal);
+            _scanner.EatKnownToken(TokenKind.Equal);
             ExpectExpr(anchor);
         }
 

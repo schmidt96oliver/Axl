@@ -46,14 +46,14 @@ public partial class Parser
             // --- TailExprs
             case TokenKind.BreakKw:
                 var breakExpr = _scanner.Open();
-                _scanner.EatToken(TokenKind.BreakKw);
+                _scanner.EatKnownToken(TokenKind.BreakKw);
                 if (_scanner.IsAt(FirstSet.Expr))
                     EatExpr(anchor);
                 return _scanner.Close(breakExpr, SyntaxKind.BreakExpr);
 
             case TokenKind.ReturnKw:
                 var returnExpr = _scanner.Open();
-                _scanner.EatToken(TokenKind.ReturnKw);
+                _scanner.EatKnownToken(TokenKind.ReturnKw);
                 if (_scanner.IsAt(FirstSet.Expr))
                     EatExpr(anchor);
                 return _scanner.Close(returnExpr, SyntaxKind.ReturnExpr);
@@ -71,7 +71,7 @@ public partial class Parser
         Debug.Assert(_scanner.IsAt(TokenKind.IfKw));
 
         var ifExpr = _scanner.Open();
-        _scanner.EatToken(TokenKind.IfKw);
+        _scanner.EatKnownToken(TokenKind.IfKw);
 
         // --- Condition and body
         var ifAnchor = anchor | TokenKind.ElseKw;
@@ -83,7 +83,7 @@ public partial class Parser
         // we cannot handle it after we've seen it once.
         if (_scanner.IsAt(TokenKind.ElseKw))
         {
-            _scanner.EatToken(TokenKind.ElseKw);
+            _scanner.EatKnownToken(TokenKind.ElseKw);
 
             if (_scanner.IsAt(TokenKind.IfKw))
                 EatIf(anchor);
@@ -99,7 +99,7 @@ public partial class Parser
         Debug.Assert(_scanner.IsAt(TokenKind.LoopKw));
 
         var loopExpr = _scanner.Open();
-        _scanner.EatToken(TokenKind.LoopKw);
+        _scanner.EatKnownToken(TokenKind.LoopKw);
         ExpectBody(anchor);
         return _scanner.Close(loopExpr, SyntaxKind.LoopExpr);
     }
@@ -111,7 +111,7 @@ public partial class Parser
         Debug.Assert(_scanner.IsAt(TokenKind.OpenBrace));
 
         var block = _scanner.Open();
-        _scanner.EatToken(TokenKind.OpenBrace);
+        _scanner.EatKnownToken(TokenKind.OpenBrace);
 
         // Stmt can start from Expr or Var. Anchor only on
         // VarKw, because Expr would be too permissive.
@@ -176,7 +176,7 @@ public partial class Parser
         Debug.Assert(_scanner.IsAt(TokenKind.RightDoubleArrow));
 
         var arm = _scanner.Open();
-        _scanner.EatToken(TokenKind.RightDoubleArrow);
+        _scanner.EatKnownToken(TokenKind.RightDoubleArrow);
         ExpectExpr(anchor);
         return _scanner.Close(arm, SyntaxKind.Arm);
     }

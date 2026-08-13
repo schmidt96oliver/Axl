@@ -17,7 +17,7 @@ public partial class Parser
             if (!_scanner.IsAt(TokenKind.Dot))
                 break;
 
-            _scanner.EatToken(TokenKind.Dot);
+            _scanner.EatKnownToken(TokenKind.Dot);
             var idExpr = ExpectIdName();
             if (idExpr is null)
                 break;

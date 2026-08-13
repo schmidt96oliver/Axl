@@ -12,21 +12,21 @@ public partial class Parser
         Debug.Assert(_scanner.IsAt(TokenKind.ModuleKw));
 
         var moduleDecl = _scanner.Open();
-        _scanner.EatToken(TokenKind.ModuleKw);
+        _scanner.EatKnownToken(TokenKind.ModuleKw);
 
         ExpectQualifiedName();
 
         // --- ";" means its a global declaration
         if (_scanner.IsAt(TokenKind.Semicolon))
         {
-            _scanner.EatToken(TokenKind.Semicolon);
+            _scanner.EatKnownToken(TokenKind.Semicolon);
             return _scanner.Close(moduleDecl, SyntaxKind.GlobalModuleDecl);
         }
 
         // --- "}" means we parse the entire block
         if (_scanner.IsAt(TokenKind.OpenBrace))
         {
-            _scanner.EatToken(TokenKind.OpenBrace);
+            _scanner.EatKnownToken(TokenKind.OpenBrace);
 
             var moduleBodyAnchor = Anchor.Forced | FirstSet.MemberDecl | TokenKind.CloseBrace;
             foreach (var _ in _scanner.MustEatEachIteration())
@@ -58,7 +58,7 @@ public partial class Parser
         Debug.Assert(_scanner.IsAt(TokenKind.UsingKw));
 
         var usingDecl = _scanner.Open();
-        _scanner.EatToken(TokenKind.UsingKw);
+        _scanner.EatKnownToken(TokenKind.UsingKw);
         ExpectQualifiedName();
         ExpectToken(TokenKind.Semicolon);
         return _scanner.Close(usingDecl, SyntaxKind.UsingDecl);
@@ -106,7 +106,7 @@ public partial class Parser
             // that here. It was probably meant to close a native fn declaration,
             // so just eat it.
             if (_scanner.IsAt(TokenKind.Semicolon))
-                _scanner.EatToken(TokenKind.Semicolon);
+                _scanner.EatKnownToken(TokenKind.Semicolon);
             
             return _scanner.Close(fnDecl, SyntaxKind.Error);
         }
@@ -119,7 +119,7 @@ public partial class Parser
         // --- Return type
         if (_scanner.IsAt(TokenKind.RightArrow))
         {
-            _scanner.EatToken(TokenKind.RightArrow);
+            _scanner.EatKnownToken(TokenKind.RightArrow);
 
             // --- Special case "never" keyword
             if (_scanner.Peek() is IdentifierToken { Identifier: "never" })
@@ -145,13 +145,13 @@ public partial class Parser
         var nativeClauseAnchor = anchor | TokenKind.CloseParen;
             
         var nativeClause = _scanner.Open();
-        _scanner.EatToken(TokenKind.NativeKw);
+        _scanner.EatKnownToken(TokenKind.NativeKw);
 
         // If we don't get "(", break off and leave the
         // rest to the enclosing function.
         if (_scanner.IsAt(TokenKind.OpenParen))
         {
-            _scanner.EatToken(TokenKind.OpenParen);
+            _scanner.EatKnownToken(TokenKind.OpenParen);
             if (_scanner.IsAt(TokenKind.StringStart))
                 EatStringExpr(nativeClauseAnchor);
             else
@@ -183,7 +183,7 @@ public partial class Parser
             EatIdName();
             if (_scanner.IsAt(TokenKind.Colon))
             {
-                _scanner.EatToken(TokenKind.Colon);
+                _scanner.EatKnownToken(TokenKind.Colon);
                 ExpectTypeName();
             }
 

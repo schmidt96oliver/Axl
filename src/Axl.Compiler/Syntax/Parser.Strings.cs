@@ -12,7 +12,7 @@ public partial class Parser
         Debug.Assert(_scanner.IsAt(TokenKind.StringStart));
 
         var expr = _scanner.Open();
-        _scanner.EatToken(TokenKind.StringStart);
+        _scanner.EatKnownToken(TokenKind.StringStart);
 
         foreach (var _ in _scanner.MustEatEachIteration())
         {
@@ -67,7 +67,7 @@ public partial class Parser
         // Grammar is "{" Expr? "}" and allows for multi-line Expr inside this interpolation.
         // --- Advance `{`
         var interpolationHole = _scanner.Open();
-        _scanner.EatToken(TokenKind.OpenBrace);
+        _scanner.EatKnownToken(TokenKind.OpenBrace);
 
         // --- Parse Expression
         // `{ `}` will fall through and consume `}` as closing.
@@ -102,7 +102,7 @@ public partial class Parser
         if (_scanner.IsAt(TokenKind.CloseBrace) && (FirstSet.StringContinuation.Contains(_scanner.Peek(1).Kind) ||
                                                     !HasNewlineBeforeNextToken()))
         {
-            _scanner.EatToken(TokenKind.CloseBrace);
+            _scanner.EatKnownToken(TokenKind.CloseBrace);
         }
         else
         {

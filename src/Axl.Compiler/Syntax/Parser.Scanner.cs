@@ -193,7 +193,7 @@ public partial class Parser
         /// Same as <see cref="EatToken"/>, but assert, that <paramref name="knownKind"/>
         /// was eaten.
         /// </summary>
-        public Token EatToken(TokenKind knownKind)
+        public Token EatKnownToken(TokenKind knownKind)
         {
             var token = EatToken();
             Debug.Assert(token.Kind == knownKind);

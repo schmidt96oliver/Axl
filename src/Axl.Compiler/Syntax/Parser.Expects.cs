@@ -18,7 +18,7 @@ public partial class Parser
             return null;
         }
 
-        return _scanner.EatToken(expectedKind);
+        return _scanner.EatKnownToken(expectedKind);
     }
 
     private MarkClose? ExpectOperandExpr(LeftOperator? left, Anchor anchor)

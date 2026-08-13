@@ -132,7 +132,7 @@ public partial class Parser
         {
             // --- GetMember
             case TokenKind.Dot:
-                _scanner.EatToken(TokenKind.Dot);
+                _scanner.EatKnownToken(TokenKind.Dot);
                 ExpectIdName();
                 return _scanner.Close(expr, SyntaxKind.GetMemberExpr);
 
@@ -216,7 +216,7 @@ public partial class Parser
         Debug.Assert(_scanner.IsAt(TokenKind.OpenParen));
 
         var expr = _scanner.Open();
-        _scanner.EatToken(TokenKind.OpenParen);
+        _scanner.EatKnownToken(TokenKind.OpenParen);
 
         // --- Expression
         var groupAnchor = anchor | TokenKind.CloseParen;
@@ -226,7 +226,7 @@ public partial class Parser
         var errorReported = RecoverTo(groupAnchor, expected: TokenKind.CloseParen);
 
         if (_scanner.IsAt(TokenKind.CloseParen))
-            _scanner.EatToken(TokenKind.CloseParen);
+            _scanner.EatKnownToken(TokenKind.CloseParen);
         else if (!errorReported)
             ReportMissing(TokenKind.CloseParen);
 

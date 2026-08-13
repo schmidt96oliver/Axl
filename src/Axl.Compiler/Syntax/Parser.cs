@@ -79,7 +79,7 @@ public partial class Parser
             }
         }
 
-        _scanner.EatToken(TokenKind.Eof);
+        _scanner.EatKnownToken(TokenKind.Eof);
         _scanner.Close(file, SyntaxKind.TreeRoot);
     }
 
@@ -185,12 +185,12 @@ public partial class Parser
         Debug.Assert(_scanner.IsAt(openToken));
 
         var list = _scanner.Open();
-        _scanner.EatToken(openToken);
+        _scanner.EatKnownToken(openToken);
 
         // --- Special-case the empty list
         if (_scanner.IsAt(closeToken))
         {
-            _scanner.EatToken(closeToken);
+            _scanner.EatKnownToken(closeToken);
             return _scanner.Close(list, listKind);
         }
 
@@ -211,7 +211,7 @@ public partial class Parser
 
             // After item expected: closing or ','
             if (_scanner.IsAt(TokenKind.Comma))
-                _scanner.EatToken(TokenKind.Comma);
+                _scanner.EatKnownToken(TokenKind.Comma);
             else if (_scanner.IsAt(closeToken))
                 break; 
             
@@ -235,7 +235,7 @@ public partial class Parser
                 RecoverTo(itemAnchor | itemFirst, expected: TokenKind.Comma);
 
                 if (_scanner.IsAt(TokenKind.Comma))
-                    _scanner.EatToken(TokenKind.Comma);
+                    _scanner.EatKnownToken(TokenKind.Comma);
                 else if (_scanner.IsAt(closeToken))
                     break;
                 else if (_scanner.IsAt(anchor))
@@ -265,7 +265,7 @@ public partial class Parser
         var omissible = ownsBody && _scanner.Last?.Kind is TokenKind.CloseBrace;
         
         if (omissible && _scanner.IsAt(TokenKind.Semicolon))
-            _scanner.EatToken(TokenKind.Semicolon);
+            _scanner.EatKnownToken(TokenKind.Semicolon);
         else if (!omissible)
             ExpectToken(TokenKind.Semicolon);
     }
