@@ -347,9 +347,10 @@ public partial class ParserTests
                     · · · IdName 'PrintLine'
                     · · ArgList
                     · · · '('
-                    · · · StringExpr
-                    · · · · '"'
-                    · · · · StringInterpolation '{'
+                    · · · Arg
+                    · · · · StringExpr
+                    · · · · · '"'
+                    · · · · · StringInterpolation '{'
                     VarDecl
                     · 'var'
                     · IdName 'a'

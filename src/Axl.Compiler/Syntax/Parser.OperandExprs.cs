@@ -235,11 +235,21 @@ public partial class Parser
 
 
     private MarkClose EatArgList(Anchor anchor)
-        => EatDelimitedList(anchor,
-            openToken: TokenKind.OpenParen, 
+    {
+        return EatDelimitedList(anchor,
+            openToken: TokenKind.OpenParen,
             closeToken: TokenKind.CloseParen,
             listKind: SyntaxKind.ArgList,
             itemFirst: FirstSet.Expr,
             expectedItemSyntax: ExpectedSyntax.Expr,
-            eatItem: EatExpr);
+            eatItem: EatArg);
+
+        MarkClose EatArg(Anchor argAnchor)
+        {
+            Debug.Assert(_scanner.IsAt(FirstSet.Expr));
+            var arg = _scanner.Open();
+            EatExpr(argAnchor);
+            return _scanner.Close(arg, SyntaxKind.Arg);
+        }
+    }
 }

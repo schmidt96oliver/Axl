@@ -53,6 +53,7 @@ public enum SyntaxKind
     
     // Clauses
     ArgList,
+    Arg,
     ParamList,
     Param,
     NativeClause,

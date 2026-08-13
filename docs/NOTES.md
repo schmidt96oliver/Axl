@@ -10,11 +10,6 @@
 12.08 15:16: Müde, erschöpft, keine Lust mehr. Will unbedingt noch Claude fragen
 
 **Next**: 
-* rm: UnknownCharacters from Lexer: Already commented out
-  * test it;
-  * DisplayName: invalid characters
-  * bless
-* add SyntaxKind.Arg
 * regressions.axl
 
 **refactor: Construct missing tokens**

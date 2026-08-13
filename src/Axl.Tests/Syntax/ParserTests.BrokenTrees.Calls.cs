@@ -19,8 +19,10 @@ public partial class ParserTests
                     · · IdName 'Foo'
                     · · ArgList
                     · · · '('
-                    · · · IdName 'a'
-                    · · · IdName 'b'
+                    · · · Arg
+                    · · · · IdName 'a'
+                    · · · Arg
+                    · · · · IdName 'b'
                     · · · ')'
                     · ';'
                     """);
@@ -36,16 +38,18 @@ public partial class ParserTests
                     · · IdName 'Foo'
                     · · ArgList
                     · · · '('
-                    · · · BinaryExpr
-                    · · · · IdName 'a'
-                    · · · · '+'
-                    · · · · CallExpr
-                    · · · · · GetMemberExpr
-                    · · · · · · IdName 'b'
-                    · · · · · · '.'
-                    · · · · · · IdName 'c'
-                    · · · · · ArgList '(' ')'
-                    · · · NumberLiteral '1'
+                    · · · Arg
+                    · · · · BinaryExpr
+                    · · · · · IdName 'a'
+                    · · · · · '+'
+                    · · · · · CallExpr
+                    · · · · · · GetMemberExpr
+                    · · · · · · · IdName 'b'
+                    · · · · · · · '.'
+                    · · · · · · · IdName 'c'
+                    · · · · · · ArgList '(' ')'
+                    · · · Arg
+                    · · · · NumberLiteral '1'
                     · · · ')'
                     · ';'
                     """);
@@ -62,11 +66,15 @@ public partial class ParserTests
                     · · IdName 'Foo'
                     · · ArgList
                     · · · '('
-                    · · · IdName 'a'
-                    · · · IdName 'b'
+                    · · · Arg
+                    · · · · IdName 'a'
+                    · · · Arg
+                    · · · · IdName 'b'
                     · · · ','
-                    · · · IdName 'c'
-                    · · · IdName 'd'
+                    · · · Arg
+                    · · · · IdName 'c'
+                    · · · Arg
+                    · · · · IdName 'd'
                     · · · ')'
                     · ';'
                     """);
