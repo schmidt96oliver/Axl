@@ -64,7 +64,7 @@ public sealed class Lexer
         {
             Debug.Assert(_next > _start);
             
-            _tokens.Add(Token.Simple(Source.SpanFromTo(_start, _next), kind));
+            _tokens.Add(Token.MakeSimple(Source.SpanFromTo(_start, _next), kind));
             _start = _next;
         }
 
@@ -80,12 +80,12 @@ public sealed class Lexer
             var span = Source.SpanFromLength(_start, 1);
             if (_tokens.Count > 0 && _tokens[^1].Kind is TokenKind.UnknownCharacters)
             {
-                _tokens[^1] = Token.Simple(
+                _tokens[^1] = Token.MakeSimple(
                     SourceSpan.FromTo(_tokens[^1].Span, span),
                     TokenKind.UnknownCharacters);
             }
             else
-                _tokens.Add(Token.Simple(span, TokenKind.UnknownCharacters));
+                _tokens.Add(Token.MakeSimple(span, TokenKind.UnknownCharacters));
 
             _start = _next;
         }
@@ -93,14 +93,14 @@ public sealed class Lexer
         public void AddStringText(string processedText)
         {
             Debug.Assert(_next > _start);
-            _tokens.Add(Token.StringText(Source.SpanFromTo(_start, _next), processedText));
+            _tokens.Add(Token.MakeStringText(Source.SpanFromTo(_start, _next), processedText));
             _start = _next;
         }
 
         public void AddIdentifier()
         {
             Debug.Assert(_next > _start);
-            _tokens.Add(Token.Identifier(Source.SpanFromTo(_start, _next),
+            _tokens.Add(Token.MakeIdentifier(Source.SpanFromTo(_start, _next),
                 _text[_start.._next].ToString()));
             _start = _next;
         }
@@ -108,7 +108,7 @@ public sealed class Lexer
         public void AddNumberLiteral(string body, NumberLiteralSuffix suffix)
         {
             Debug.Assert(_next > _start);
-            _tokens.Add(Token.NumberLiteral(Source.SpanFromTo(_start, _next), body, suffix));
+            _tokens.Add(Token.MakeNumberLiteral(Source.SpanFromTo(_start, _next), body, suffix));
             _start = _next;
         }
 
@@ -117,7 +117,7 @@ public sealed class Lexer
             Debug.Assert(IsAtEnd);
             Debug.Assert(_start == _next, "Every token must have been added before Eof.");
 
-            _tokens.Add(Token.Simple(Source.SpanFromTo(_start, _next), TokenKind.Eof));
+            _tokens.Add(Token.MakeSimple(Source.SpanFromTo(_start, _next), TokenKind.Eof));
         }
 
 

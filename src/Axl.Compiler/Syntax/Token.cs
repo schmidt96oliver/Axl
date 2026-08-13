@@ -39,7 +39,7 @@ public class Token : SyntaxElement
     /// Creates a token that carries no value.
     /// </summary>
     /// <exception cref="ArgumentException">If <paramref name="kind"/> carries a value. It must be constructed through special constructors.</exception>
-    public static Token Simple(SourceSpan span, TokenKind kind)
+    public static Token MakeSimple(SourceSpan span, TokenKind kind)
     {
         Guard.MustBe(!kind.HasValue,
             "Construct through specialized static methods.");
@@ -47,12 +47,12 @@ public class Token : SyntaxElement
         return new Token(span, kind);
     }
 
-    public static IdentifierToken Identifier(SourceSpan span, string identifier)
+    public static IdentifierToken MakeIdentifier(SourceSpan span, string identifier)
         => new(span, identifier);
 
-    public static NumberLiteralToken NumberLiteral(SourceSpan span, string body, NumberLiteralSuffix suffix)
+    public static NumberLiteralToken MakeNumberLiteral(SourceSpan span, string body, NumberLiteralSuffix suffix)
         => new(span, body, suffix);
 
-    public static StringTextToken StringText(SourceSpan span, string processedText)
+    public static StringTextToken MakeStringText(SourceSpan span, string processedText)
         => new(span, processedText);
 }
