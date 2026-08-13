@@ -143,6 +143,312 @@ public partial class ParserTests
                     · NativeTypeName 'string'
                     · BlockExpr '{' '}'
                     """);
+            
+            
+            [Fact]
+            public void ParamList_ForgottenComma_1()
+                => InlineSnapshot.Validate(Tree("fn Foo(a b) { }"), """
+                    ERROR MissingToken@[8, 8): Expected ','.
+
+
+                    FnDecl
+                    · 'fn'
+                    · IdName 'Foo'
+                    · ParamList
+                    · · '('
+                    · · Param
+                    · · · IdName 'a'
+                    · · Param
+                    · · · IdName 'b'
+                    · · ')'
+                    · BlockExpr '{' '}'
+                    """);
+            
+            [Fact]
+            public void ParamList_ForgottenComma_2()
+                => InlineSnapshot.Validate(Tree("fn Foo(a: i32 b: string) { }"), """
+                    ERROR MissingToken@[13, 13): Expected ','.
+
+
+                    FnDecl
+                    · 'fn'
+                    · IdName 'Foo'
+                    · ParamList
+                    · · '('
+                    · · Param
+                    · · · IdName 'a'
+                    · · · ':'
+                    · · · NativeTypeName 'i32'
+                    · · Param
+                    · · · IdName 'b'
+                    · · · ':'
+                    · · · NativeTypeName 'string'
+                    · · ')'
+                    · BlockExpr '{' '}'
+                    """);
+            
+            [Fact]
+            public void ParamList_ForgottenComma_3()
+                => InlineSnapshot.Validate(Tree("fn Foo(a: i32 b c: bool, d) { }"), """
+                    ERROR MissingToken@[13, 13): Expected ','.
+                    ERROR MissingToken@[15, 15): Expected ','.
+
+
+                    FnDecl
+                    · 'fn'
+                    · IdName 'Foo'
+                    · ParamList
+                    · · '('
+                    · · Param
+                    · · · IdName 'a'
+                    · · · ':'
+                    · · · NativeTypeName 'i32'
+                    · · Param
+                    · · · IdName 'b'
+                    · · Param
+                    · · · IdName 'c'
+                    · · · ':'
+                    · · · NativeTypeName 'bool'
+                    · · ','
+                    · · Param
+                    · · · IdName 'd'
+                    · · ')'
+                    · BlockExpr '{' '}'
+                    """);
+            
+            
+            [Fact]
+            public void ParamList_ForgottenItem_1()
+                => InlineSnapshot.Validate(Tree("fn Foo( , ) { }"), """
+                                                                    ERROR MissingToken@[7, 7): Expected a parameter.
+                                                                    ERROR MissingToken@[9, 9): Expected a parameter.
+
+
+                                                                    FnDecl
+                                                                    · 'fn'
+                                                                    · IdName 'Foo'
+                                                                    · ParamList '(' ',' ')'
+                                                                    · BlockExpr '{' '}'
+                                                                    """);
+
+            [Fact]
+            public void ParamList_ForgottenItem_2()
+                => InlineSnapshot.Validate(Tree("fn Foo( , , ) { }"), """
+                                                                      ERROR MissingToken@[7, 7): Expected a parameter.
+                                                                      ERROR MissingToken@[9, 9): Expected a parameter.
+                                                                      ERROR MissingToken@[11, 11): Expected a parameter.
+
+
+                                                                      FnDecl
+                                                                      · 'fn'
+                                                                      · IdName 'Foo'
+                                                                      · ParamList '(' ',' ',' ')'
+                                                                      · BlockExpr '{' '}'
+                                                                      """);
+
+            [Fact]
+            public void ParamList_ForgottenItem_3()
+                => InlineSnapshot.Validate(Tree("fn Foo(a,) { }"), """
+                                                                   ERROR MissingToken@[9, 9): Expected a parameter.
+
+
+                                                                   FnDecl
+                                                                   · 'fn'
+                                                                   · IdName 'Foo'
+                                                                   · ParamList
+                                                                   · · '('
+                                                                   · · Param
+                                                                   · · · IdName 'a'
+                                                                   · · ','
+                                                                   · · ')'
+                                                                   · BlockExpr '{' '}'
+                                                                   """);
+            
+            
+            
+
+            [Fact]
+            public void ParamList_Garbage_1()
+                => InlineSnapshot.Validate(Tree("fn Foo(a @@ b) { }"), """
+                    ERROR UnknownCharacters@[9, 10): Unknown character '@'.
+                    ERROR UnknownCharacters@[10, 11): Unknown character '@'.
+                    ERROR UnexpectedToken@[9, 11): Expected ',', got an invalid token.
+
+
+                    FnDecl
+                    · 'fn'
+                    · IdName 'Foo'
+                    · ParamList
+                    · · '('
+                    · · Param
+                    · · · IdName 'a'
+                    · · Error '@@'
+                    · · Param
+                    · · · IdName 'b'
+                    · · ')'
+                    · BlockExpr '{' '}'
+                    """);
+            
+            [Fact]
+            public void ParamList_Garbage_2()
+                => InlineSnapshot.Validate(Tree("fn Foo(@@ a, b) { }"), """
+                    ERROR UnknownCharacters@[7, 8): Unknown character '@'.
+                    ERROR UnknownCharacters@[8, 9): Unknown character '@'.
+                    ERROR UnexpectedToken@[7, 9): Expected a parameter, got an invalid token.
+
+
+                    FnDecl
+                    · 'fn'
+                    · IdName 'Foo'
+                    · ParamList
+                    · · '('
+                    · · Error '@@'
+                    · · Param
+                    · · · IdName 'a'
+                    · · ','
+                    · · Param
+                    · · · IdName 'b'
+                    · · ')'
+                    · BlockExpr '{' '}'
+                    """);
+            
+            [Fact]
+            public void ParamList_Garbage_3()
+                => InlineSnapshot.Validate(Tree("fn Foo(@@, a, b) { }"), """
+                    ERROR UnknownCharacters@[7, 8): Unknown character '@'.
+                    ERROR UnknownCharacters@[8, 9): Unknown character '@'.
+                    ERROR UnexpectedToken@[7, 9): Expected a parameter, got an invalid token.
+
+
+                    FnDecl
+                    · 'fn'
+                    · IdName 'Foo'
+                    · ParamList
+                    · · '('
+                    · · Error '@@'
+                    · · ','
+                    · · Param
+                    · · · IdName 'a'
+                    · · ','
+                    · · Param
+                    · · · IdName 'b'
+                    · · ')'
+                    · BlockExpr '{' '}'
+                    """);
+            
+            [Fact]
+            public void ParamList_Garbage_4()
+                => InlineSnapshot.Validate(Tree("fn Foo(@@) { }"), """
+                    ERROR UnknownCharacters@[7, 8): Unknown character '@'.
+                    ERROR UnknownCharacters@[8, 9): Unknown character '@'.
+                    ERROR UnexpectedToken@[7, 9): Expected a parameter, got an invalid token.
+
+
+                    FnDecl
+                    · 'fn'
+                    · IdName 'Foo'
+                    · ParamList
+                    · · '('
+                    · · Error '@@'
+                    · · ')'
+                    · BlockExpr '{' '}'
+                    """);
+            
+            [Fact]
+            public void ParamList_Garbage_5()
+                => InlineSnapshot.Validate(Tree("fn Foo(@@, ) { }"), """
+                    ERROR UnknownCharacters@[7, 8): Unknown character '@'.
+                    ERROR UnknownCharacters@[8, 9): Unknown character '@'.
+                    ERROR UnexpectedToken@[7, 9): Expected a parameter, got an invalid token.
+                    ERROR MissingToken@[10, 10): Expected a parameter.
+
+
+                    FnDecl
+                    · 'fn'
+                    · IdName 'Foo'
+                    · ParamList
+                    · · '('
+                    · · Error '@@'
+                    · · ','
+                    · · ')'
+                    · BlockExpr '{' '}'
+                    """);
+            
+            [Fact]
+            public void ParamList_Garbage_6()
+                => InlineSnapshot.Validate(Tree("fn Foo(a @@, @@) { }"), """
+                    ERROR UnknownCharacters@[9, 10): Unknown character '@'.
+                    ERROR UnknownCharacters@[10, 11): Unknown character '@'.
+                    ERROR UnknownCharacters@[13, 14): Unknown character '@'.
+                    ERROR UnknownCharacters@[14, 15): Unknown character '@'.
+                    ERROR UnexpectedToken@[9, 11): Expected ',', got an invalid token.
+                    ERROR UnexpectedToken@[13, 15): Expected a parameter, got an invalid token.
+
+
+                    FnDecl
+                    · 'fn'
+                    · IdName 'Foo'
+                    · ParamList
+                    · · '('
+                    · · Param
+                    · · · IdName 'a'
+                    · · Error '@@'
+                    · · ','
+                    · · Error '@@'
+                    · · ')'
+                    · BlockExpr '{' '}'
+                    """);
+            
+            [Fact]
+            public void ParamList_Garbage_7()
+                => InlineSnapshot.Validate(Tree("fn Foo(@@, a, b @@) { }"), """
+                    ERROR UnknownCharacters@[7, 8): Unknown character '@'.
+                    ERROR UnknownCharacters@[8, 9): Unknown character '@'.
+                    ERROR UnknownCharacters@[16, 17): Unknown character '@'.
+                    ERROR UnknownCharacters@[17, 18): Unknown character '@'.
+                    ERROR UnexpectedToken@[7, 9): Expected a parameter, got an invalid token.
+                    ERROR UnexpectedToken@[16, 18): Expected ',', got an invalid token.
+
+
+                    FnDecl
+                    · 'fn'
+                    · IdName 'Foo'
+                    · ParamList
+                    · · '('
+                    · · Error '@@'
+                    · · ','
+                    · · Param
+                    · · · IdName 'a'
+                    · · ','
+                    · · Param
+                    · · · IdName 'b'
+                    · · Error '@@'
+                    · · ')'
+                    · BlockExpr '{' '}'
+                    """);
+            
+            [Fact]
+            public void ParamList_Garbage_8()
+                => InlineSnapshot.Validate(Tree("fn Foo(@@,@@) { }"), """
+                    ERROR UnknownCharacters@[7, 8): Unknown character '@'.
+                    ERROR UnknownCharacters@[8, 9): Unknown character '@'.
+                    ERROR UnknownCharacters@[10, 11): Unknown character '@'.
+                    ERROR UnknownCharacters@[11, 12): Unknown character '@'.
+                    ERROR UnexpectedToken@[7, 9): Expected a parameter, got an invalid token.
+                    ERROR UnexpectedToken@[10, 12): Expected a parameter, got an invalid token.
+
+
+                    FnDecl
+                    · 'fn'
+                    · IdName 'Foo'
+                    · ParamList
+                    · · '('
+                    · · Error '@@'
+                    · · ','
+                    · · Error '@@'
+                    · · ')'
+                    · BlockExpr '{' '}'
+                    """);
         }
     }
 }
