@@ -47,6 +47,29 @@ public class Token : SyntaxElement
         return new Token(span, kind);
     }
 
+    /// <summary>
+    /// Creates a missing token of the specified <paramref name="kind"/>.
+    /// <paramref name="kind"/> can carry a value. In this case, a token of
+    /// the specific type with empty value is returned.
+    /// </summary>
+    public static Token MakeMissing(SourceSpan span, TokenKind kind)
+    {
+        Guard.MustBe(span.IsEmpty);
+        
+        switch (kind)
+        {
+            case TokenKind.Identifier:
+                return new IdentifierToken(span, string.Empty);
+            case TokenKind.NumberLiteral:
+                return new NumberLiteralToken(span, body: string.Empty, NumberLiteralSuffix.None);
+            case TokenKind.StringText:
+                return new StringTextToken(span, processedText: string.Empty, isMissing: true);
+            
+            default:
+                return new Token(span, kind, isMissing: true);
+        }
+    }
+    
     public static IdentifierToken MakeIdentifier(SourceSpan span, string identifier)
         => new(span, identifier);
 
