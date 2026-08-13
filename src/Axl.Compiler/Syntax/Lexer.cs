@@ -68,22 +68,24 @@ public sealed class Lexer
             _start = _next;
         }
 
-        public void AddInvalidCharacter()
+        public void AddUnknownCharacter()
         {
             Debug.Assert(_next == _start + 1);
             
-            DiagnosticBag.ReportError(
-                new Diagnostic.UnknownCharacters(Source.LocationFromLength(_start, 1)));
-
+            // Note: No diagnostic reported here. The parser is bound to
+            // complain about an invalid character token, so it will
+            // report the appropriate diagnostic.
+            
             // Combine, if previous token was error as well
             var span = Source.SpanFromLength(_start, 1);
-            if (_tokens.Count > 0 && _tokens[^1].Kind is TokenKind.Error)
+            if (_tokens.Count > 0 && _tokens[^1].Kind is TokenKind.UnknownCharacters)
             {
-                _tokens[^1] = Token.Error(
-                    SourceSpan.FromTo(_tokens[^1].Span, span));
+                _tokens[^1] = Token.Simple(
+                    SourceSpan.FromTo(_tokens[^1].Span, span),
+                    TokenKind.UnknownCharacters);
             }
             else
-                _tokens.Add(Token.Error(span));
+                _tokens.Add(Token.Simple(span, TokenKind.UnknownCharacters));
 
             _start = _next;
         }
@@ -238,7 +240,7 @@ public sealed class Lexer
                 break;
 
             default:
-                scanner.AddInvalidCharacter();
+                scanner.AddUnknownCharacter();
                 break;
         }
     }

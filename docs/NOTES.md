@@ -10,10 +10,15 @@
 12.08 15:16: Müde, erschöpft, keine Lust mehr. Will unbedingt noch Claude fragen
 
 **Next**: 
+* rm: UnknownCharacters from Lexer: Already commented out
+  * test it;
+  * DisplayName: invalid characters
+  * bless
+* add SyntaxKind.Arg
 * regressions.axl
-* TokenKind Error; double UnexpectedToken?
-  * `fn Foo(a @@ b) { }` suppress unkown characters?
-* `native("")"` anchors
+
+**refactor: Construct missing tokens**
+
 
 **Small points**:
 * ?? `RecoverTo` UnexpectedToken -> Squiggle all tokens
@@ -57,6 +62,13 @@
 * native functions: Print, PrintLine, ToString
 * hoisted, overloaded functions
 * multi-file modules
+
+# Possible Refactors
+## String Awkwardness: Lexer <-> Parser
+Lexer emits flat tokens and Parser must reconstruct the Lexers ideas about strings
+(see `WillStringBeContinued`). 
+* Idea: Lexer emits TokenTree. A StringTree = `"` + Text + InterpolationTree
+  * From that, Parser can easily reconstruct the Lexers ideas without unbounded lookahead
 
 # Implementation Requirements
 **Declaration Binding**

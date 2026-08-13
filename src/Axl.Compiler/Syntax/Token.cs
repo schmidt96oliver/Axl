@@ -36,21 +36,18 @@ public class Token : SyntaxElement
     /// <exception cref="ArgumentException">If <paramref name="kind"/> carries a value. It must be constructed through special constructors.</exception>
     public static Token Simple(SourceSpan span, TokenKind kind)
     {
-        Guard.MustBe(!kind.HasValue && kind is not TokenKind.Error,
+        Guard.MustBe(!kind.HasValue,
             "Construct through specialized static methods.");
         
         return new Token(span, kind);
     }
 
     public static IdentifierToken Identifier(SourceSpan span, Identifier id)
-        => new IdentifierToken(span, id);
+        => new(span, id);
 
     public static NumberLiteralToken NumberLiteral(SourceSpan span, string body, NumberLiteralSuffix suffix)
-        => new NumberLiteralToken(span, body, suffix);
+        => new(span, body, suffix);
 
     public static StringTextToken StringText(SourceSpan span, string processedText)
-        => new StringTextToken(span, processedText);
-
-    public static Token Error(SourceSpan span)
-        => new Token(span, TokenKind.Error);
+        => new(span, processedText);
 }

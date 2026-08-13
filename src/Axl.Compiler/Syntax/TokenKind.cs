@@ -5,7 +5,7 @@ public enum TokenKind
     Identifier,
     Comment,
     Whitespace,
-    Error,
+    UnknownCharacters,
     Eof,
 
     // --- Keywords

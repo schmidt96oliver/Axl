@@ -100,9 +100,7 @@ public partial class ParserTests
             [Fact]
             public void UnclosedParamList_7()
                 => InlineSnapshot.Validate(Tree("fn Foo(a: i32, @@ { }"), """
-                    ERROR UnknownCharacters@[15, 16): Unknown character '@'.
-                    ERROR UnknownCharacters@[16, 17): Unknown character '@'.
-                    ERROR UnexpectedToken@[15, 17): Expected a parameter, got an invalid token.
+                    ERROR UnexpectedToken@[15, 17): Expected a parameter, got unknown characters.
                     ERROR MissingToken@[17, 17): Expected ')'.
 
 
@@ -122,9 +120,7 @@ public partial class ParserTests
             [Fact]
             public void UnclosedParamList_8()
                 => InlineSnapshot.Validate(Tree("fn Foo(a: i32, @@ -> string { }"), """
-                    ERROR UnknownCharacters@[15, 16): Unknown character '@'.
-                    ERROR UnknownCharacters@[16, 17): Unknown character '@'.
-                    ERROR UnexpectedToken@[15, 17): Expected a parameter, got an invalid token.
+                    ERROR UnexpectedToken@[15, 17): Expected a parameter, got unknown characters.
                     ERROR MissingToken@[17, 17): Expected ')'.
 
 
@@ -270,9 +266,7 @@ public partial class ParserTests
             [Fact]
             public void ParamList_Garbage_1()
                 => InlineSnapshot.Validate(Tree("fn Foo(a @@ b) { }"), """
-                    ERROR UnknownCharacters@[9, 10): Unknown character '@'.
-                    ERROR UnknownCharacters@[10, 11): Unknown character '@'.
-                    ERROR UnexpectedToken@[9, 11): Expected ',', got an invalid token.
+                    ERROR UnexpectedToken@[9, 11): Expected ',', got unknown characters.
 
 
                     FnDecl
@@ -292,9 +286,7 @@ public partial class ParserTests
             [Fact]
             public void ParamList_Garbage_2()
                 => InlineSnapshot.Validate(Tree("fn Foo(@@ a, b) { }"), """
-                    ERROR UnknownCharacters@[7, 8): Unknown character '@'.
-                    ERROR UnknownCharacters@[8, 9): Unknown character '@'.
-                    ERROR UnexpectedToken@[7, 9): Expected a parameter, got an invalid token.
+                    ERROR UnexpectedToken@[7, 9): Expected a parameter, got unknown characters.
 
 
                     FnDecl
@@ -315,9 +307,7 @@ public partial class ParserTests
             [Fact]
             public void ParamList_Garbage_3()
                 => InlineSnapshot.Validate(Tree("fn Foo(@@, a, b) { }"), """
-                    ERROR UnknownCharacters@[7, 8): Unknown character '@'.
-                    ERROR UnknownCharacters@[8, 9): Unknown character '@'.
-                    ERROR UnexpectedToken@[7, 9): Expected a parameter, got an invalid token.
+                    ERROR UnexpectedToken@[7, 9): Expected a parameter, got unknown characters.
 
 
                     FnDecl
@@ -339,9 +329,7 @@ public partial class ParserTests
             [Fact]
             public void ParamList_Garbage_4()
                 => InlineSnapshot.Validate(Tree("fn Foo(@@) { }"), """
-                    ERROR UnknownCharacters@[7, 8): Unknown character '@'.
-                    ERROR UnknownCharacters@[8, 9): Unknown character '@'.
-                    ERROR UnexpectedToken@[7, 9): Expected a parameter, got an invalid token.
+                    ERROR UnexpectedToken@[7, 9): Expected a parameter, got unknown characters.
 
 
                     FnDecl
@@ -357,9 +345,7 @@ public partial class ParserTests
             [Fact]
             public void ParamList_Garbage_5()
                 => InlineSnapshot.Validate(Tree("fn Foo(@@, ) { }"), """
-                    ERROR UnknownCharacters@[7, 8): Unknown character '@'.
-                    ERROR UnknownCharacters@[8, 9): Unknown character '@'.
-                    ERROR UnexpectedToken@[7, 9): Expected a parameter, got an invalid token.
+                    ERROR UnexpectedToken@[7, 9): Expected a parameter, got unknown characters.
                     ERROR MissingToken@[10, 10): Expected a parameter.
 
 
@@ -377,12 +363,8 @@ public partial class ParserTests
             [Fact]
             public void ParamList_Garbage_6()
                 => InlineSnapshot.Validate(Tree("fn Foo(a @@, @@) { }"), """
-                    ERROR UnknownCharacters@[9, 10): Unknown character '@'.
-                    ERROR UnknownCharacters@[10, 11): Unknown character '@'.
-                    ERROR UnknownCharacters@[13, 14): Unknown character '@'.
-                    ERROR UnknownCharacters@[14, 15): Unknown character '@'.
-                    ERROR UnexpectedToken@[9, 11): Expected ',', got an invalid token.
-                    ERROR UnexpectedToken@[13, 15): Expected a parameter, got an invalid token.
+                    ERROR UnexpectedToken@[9, 11): Expected ',', got unknown characters.
+                    ERROR UnexpectedToken@[13, 15): Expected a parameter, got unknown characters.
 
 
                     FnDecl
@@ -402,12 +384,8 @@ public partial class ParserTests
             [Fact]
             public void ParamList_Garbage_7()
                 => InlineSnapshot.Validate(Tree("fn Foo(@@, a, b @@) { }"), """
-                    ERROR UnknownCharacters@[7, 8): Unknown character '@'.
-                    ERROR UnknownCharacters@[8, 9): Unknown character '@'.
-                    ERROR UnknownCharacters@[16, 17): Unknown character '@'.
-                    ERROR UnknownCharacters@[17, 18): Unknown character '@'.
-                    ERROR UnexpectedToken@[7, 9): Expected a parameter, got an invalid token.
-                    ERROR UnexpectedToken@[16, 18): Expected ',', got an invalid token.
+                    ERROR UnexpectedToken@[7, 9): Expected a parameter, got unknown characters.
+                    ERROR UnexpectedToken@[16, 18): Expected ',', got unknown characters.
 
 
                     FnDecl
@@ -430,12 +408,8 @@ public partial class ParserTests
             [Fact]
             public void ParamList_Garbage_8()
                 => InlineSnapshot.Validate(Tree("fn Foo(@@,@@) { }"), """
-                    ERROR UnknownCharacters@[7, 8): Unknown character '@'.
-                    ERROR UnknownCharacters@[8, 9): Unknown character '@'.
-                    ERROR UnknownCharacters@[10, 11): Unknown character '@'.
-                    ERROR UnknownCharacters@[11, 12): Unknown character '@'.
-                    ERROR UnexpectedToken@[7, 9): Expected a parameter, got an invalid token.
-                    ERROR UnexpectedToken@[10, 12): Expected a parameter, got an invalid token.
+                    ERROR UnexpectedToken@[7, 9): Expected a parameter, got unknown characters.
+                    ERROR UnexpectedToken@[10, 12): Expected a parameter, got unknown characters.
 
 
                     FnDecl

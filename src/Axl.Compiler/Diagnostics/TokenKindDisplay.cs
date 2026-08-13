@@ -17,7 +17,7 @@ public static class TokenKindDisplayExtensions
             TokenKind.Identifier => "an identifier",
             TokenKind.Comment => "a comment",
             TokenKind.Whitespace => "whitespace",
-            TokenKind.Error => "an invalid token",
+            TokenKind.UnknownCharacters => "unknown characters",
             TokenKind.Eof => "end of file",
 
             // --- Keywords

@@ -20,7 +20,7 @@ public class TokenKindTests
             // Described in prose, because they have no fixed spelling.
             TokenKind.Identifier or TokenKind.NumberLiteral or TokenKind.StringText
                 or TokenKind.Comment or TokenKind.Whitespace
-                or TokenKind.Error or TokenKind.Eof => false,
+                or TokenKind.UnknownCharacters or TokenKind.Eof => false,
 
             // Spelled '"', but a lone '"' opens a string, so it lexes as StringStart.
             TokenKind.StringEnd => false,

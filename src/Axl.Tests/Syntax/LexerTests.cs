@@ -66,23 +66,14 @@ public sealed class LexerTests
     public void InvalidCharacters_Sequence()
         => InlineSnapshot.Validate(All("@@@##"),
             """
-            ERROR UnknownCharacters@[0, 1): Unknown character '@'.
-            ERROR UnknownCharacters@[1, 2): Unknown character '@'.
-            ERROR UnknownCharacters@[2, 3): Unknown character '@'.
-            ERROR UnknownCharacters@[3, 4): Unknown character '#'.
-            ERROR UnknownCharacters@[4, 5): Unknown character '#'.
-
-            - Error: "@@@##"
+            - UnknownCharacters: "@@@##"
             - Eof
             """);
 
     [Fact]
     public void InvalidCharacters_UnicodeSurrogate()
         => InlineSnapshot.Validate(All("🂦"), """
-            ERROR UnknownCharacters@[0, 1): Unknown character '\uD83C'.
-            ERROR UnknownCharacters@[1, 2): Unknown character '\uDCA6'.
-
-            - Error: "\uD83C\uDCA6"
+            - UnknownCharacters: "\uD83C\uDCA6"
             - Eof
             """);
 
