@@ -179,7 +179,8 @@ public partial class Parser
         TokenKind closeToken,
         SyntaxKind listKind,
         TokenSet itemFirst,
-        Func<Anchor, MarkClose?> eatItem)
+        ExpectedSyntax expectedItemSyntax,
+        Func<Anchor, MarkClose> eatItem)
     {
         Debug.Assert(_scanner.IsAt(openToken));
 
@@ -198,7 +199,15 @@ public partial class Parser
         foreach (var _ in _scanner.MustEatEachIteration())
         {
             // Each iteration expects another item.
-            eatItem(itemAnchor);
+            if (_scanner.IsAt(itemFirst))
+                eatItem(itemAnchor);
+            else
+            {
+                if (_scanner.IsAt(anchor | TokenKind.Comma | closeToken | itemFirst))
+                    ReportMissing(expectedItemSyntax);
+                else
+                    ReportUnexpected(expectedItemSyntax);
+            }
 
             // After item expected: closing or ','
             if (_scanner.IsAt(TokenKind.Comma))

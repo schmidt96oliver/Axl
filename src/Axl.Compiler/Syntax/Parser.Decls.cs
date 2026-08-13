@@ -144,16 +144,11 @@ public partial class Parser
             closeToken: TokenKind.CloseParen,
             listKind: SyntaxKind.ParamList,
             itemFirst: TokenSet.Of(TokenKind.Identifier),
-            eatItem: ExpectParam);
+            expectedItemSyntax: ExpectedSyntax.Param,
+            eatItem: EatParam);
         
-        MarkClose? ExpectParam(Anchor _)
+        MarkClose EatParam(Anchor _)
         {
-            if (!_scanner.IsAt(TokenKind.Identifier))
-            {
-                ReportMissing(TokenKind.Identifier);
-                return null;
-            }
-
             var param = _scanner.Open();
             EatIdName();
             if (_scanner.IsAt(TokenKind.Colon))

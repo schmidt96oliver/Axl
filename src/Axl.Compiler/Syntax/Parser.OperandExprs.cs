@@ -240,5 +240,6 @@ public partial class Parser
             closeToken: TokenKind.CloseParen,
             listKind: SyntaxKind.ArgList,
             itemFirst: FirstSet.Expr,
-            eatItem: ExpectExpr);
+            expectedItemSyntax: ExpectedSyntax.Expr,
+            eatItem: EatExpr);
 }

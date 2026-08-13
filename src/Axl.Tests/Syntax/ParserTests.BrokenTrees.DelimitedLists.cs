@@ -171,7 +171,7 @@ public partial class ParserTests
                 => InlineSnapshot.Validate(Tree("fn Foo(@@ a, b) { }"), """
                     ERROR UnknownCharacters@[7, 8): Unknown character '@'.
                     ERROR UnknownCharacters@[8, 9): Unknown character '@'.
-                    ERROR MissingToken@[7, 7): Expected an identifier.
+                    ERROR UnexpectedToken@[7, 9): Expected a parameter, got an invalid token.
 
 
                     FnDecl
@@ -194,7 +194,7 @@ public partial class ParserTests
                 => InlineSnapshot.Validate(Tree("fn Foo(@@, a, b) { }"), """
                     ERROR UnknownCharacters@[7, 8): Unknown character '@'.
                     ERROR UnknownCharacters@[8, 9): Unknown character '@'.
-                    ERROR MissingToken@[7, 7): Expected an identifier.
+                    ERROR UnexpectedToken@[7, 9): Expected a parameter, got an invalid token.
 
 
                     FnDecl
@@ -218,7 +218,7 @@ public partial class ParserTests
                 => InlineSnapshot.Validate(Tree("fn Foo(@@) { }"), """
                     ERROR UnknownCharacters@[7, 8): Unknown character '@'.
                     ERROR UnknownCharacters@[8, 9): Unknown character '@'.
-                    ERROR MissingToken@[7, 7): Expected an identifier.
+                    ERROR UnexpectedToken@[7, 9): Expected a parameter, got an invalid token.
 
 
                     FnDecl
@@ -236,8 +236,8 @@ public partial class ParserTests
                 => InlineSnapshot.Validate(Tree("fn Foo(@@, ) { }"), """
                     ERROR UnknownCharacters@[7, 8): Unknown character '@'.
                     ERROR UnknownCharacters@[8, 9): Unknown character '@'.
-                    ERROR MissingToken@[7, 7): Expected an identifier.
-                    ERROR MissingToken@[10, 10): Expected an identifier.
+                    ERROR UnexpectedToken@[7, 9): Expected a parameter, got an invalid token.
+                    ERROR MissingToken@[10, 10): Expected a parameter.
 
 
                     FnDecl
@@ -259,7 +259,7 @@ public partial class ParserTests
                     ERROR UnknownCharacters@[13, 14): Unknown character '@'.
                     ERROR UnknownCharacters@[14, 15): Unknown character '@'.
                     ERROR UnexpectedToken@[9, 11): Expected ',', got an invalid token.
-                    ERROR MissingToken@[12, 12): Expected an identifier.
+                    ERROR UnexpectedToken@[13, 15): Expected a parameter, got an invalid token.
 
 
                     FnDecl
@@ -283,7 +283,7 @@ public partial class ParserTests
                     ERROR UnknownCharacters@[8, 9): Unknown character '@'.
                     ERROR UnknownCharacters@[16, 17): Unknown character '@'.
                     ERROR UnknownCharacters@[17, 18): Unknown character '@'.
-                    ERROR MissingToken@[7, 7): Expected an identifier.
+                    ERROR UnexpectedToken@[7, 9): Expected a parameter, got an invalid token.
                     ERROR UnexpectedToken@[16, 18): Expected ',', got an invalid token.
 
 
@@ -311,8 +311,8 @@ public partial class ParserTests
                     ERROR UnknownCharacters@[8, 9): Unknown character '@'.
                     ERROR UnknownCharacters@[10, 11): Unknown character '@'.
                     ERROR UnknownCharacters@[11, 12): Unknown character '@'.
-                    ERROR MissingToken@[7, 7): Expected an identifier.
-                    ERROR MissingToken@[10, 10): Expected an identifier.
+                    ERROR UnexpectedToken@[7, 9): Expected a parameter, got an invalid token.
+                    ERROR UnexpectedToken@[10, 12): Expected a parameter, got an invalid token.
 
 
                     FnDecl
@@ -331,8 +331,8 @@ public partial class ParserTests
             [Fact]
             public void ForgottenItem_ParamList_1()
                 => InlineSnapshot.Validate(Tree("fn Foo( , ) { }"), """
-                    ERROR MissingToken@[7, 7): Expected an identifier.
-                    ERROR MissingToken@[9, 9): Expected an identifier.
+                    ERROR MissingToken@[7, 7): Expected a parameter.
+                    ERROR MissingToken@[9, 9): Expected a parameter.
 
 
                     FnDecl
@@ -345,9 +345,9 @@ public partial class ParserTests
             [Fact]
             public void ForgottenItem_ParamList_2()
                 => InlineSnapshot.Validate(Tree("fn Foo( , , ) { }"), """
-                    ERROR MissingToken@[7, 7): Expected an identifier.
-                    ERROR MissingToken@[9, 9): Expected an identifier.
-                    ERROR MissingToken@[11, 11): Expected an identifier.
+                    ERROR MissingToken@[7, 7): Expected a parameter.
+                    ERROR MissingToken@[9, 9): Expected a parameter.
+                    ERROR MissingToken@[11, 11): Expected a parameter.
 
 
                     FnDecl
@@ -360,7 +360,7 @@ public partial class ParserTests
             [Fact]
             public void ForgottenItem_ParamList_3()
                 => InlineSnapshot.Validate(Tree("fn Foo(a,) { }"), """
-                    ERROR MissingToken@[9, 9): Expected an identifier.
+                    ERROR MissingToken@[9, 9): Expected a parameter.
 
 
                     FnDecl
