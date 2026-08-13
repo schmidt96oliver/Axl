@@ -178,6 +178,7 @@ public partial class Parser
         TokenKind openToken,
         TokenKind closeToken,
         SyntaxKind listKind,
+        TokenSet itemFirst,
         Func<Anchor, MarkClose?> eatItem)
     {
         Debug.Assert(_scanner.IsAt(openToken));
@@ -196,29 +197,32 @@ public partial class Parser
         var itemAnchor = anchor | closeToken | TokenKind.Comma;
         foreach (var _ in _scanner.MustEatEachIteration())
         {
-            // --- Item
+            // Each iteration expects another item.
             eatItem(itemAnchor);
 
-            // --- Confused?
-            RecoverTo(itemAnchor, expected: TokenKind.Comma);
-
-            // --- Next token
+            // After item expected: closing or ','
             if (_scanner.IsAt(TokenKind.Comma))
-            {
                 _scanner.EatToken(TokenKind.Comma);
-
-                // Expect another item
-                continue;
-            }
-
-            if (_scanner.IsAt(closeToken) ||
-                _scanner.IsAt(anchor))
+            else if (_scanner.IsAt(closeToken))
+                break; 
+            
+            // Next item without comma?
+            else if (_scanner.IsAt(itemFirst))
             {
+                // Another item without comma
+                ReportMissing(TokenKind.Comma);
+            }
+            
+            // Anchor?
+            else if (_scanner.IsAt(anchor))
+            {
+                ReportMissing(closeToken);
                 break;
             }
-
-            // Every branch continues or breaks.
-            throw new UnreachableException();
+            
+            // Confused?
+            else
+                RecoverTo(itemAnchor | itemFirst, expected: TokenKind.Comma);
         }
 
         // --- Expect close

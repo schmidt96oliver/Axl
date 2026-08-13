@@ -140,8 +140,10 @@ public partial class Parser
     private MarkClose EatParamList(Anchor anchor)
     {
         return EatDelimitedList(anchor,
-            TokenKind.OpenParen, TokenKind.CloseParen,
-            SyntaxKind.ParamList,
+            openToken: TokenKind.OpenParen, 
+            closeToken: TokenKind.CloseParen,
+            listKind: SyntaxKind.ParamList,
+            itemFirst: TokenSet.Of(TokenKind.Identifier),
             eatItem: ExpectParam);
         
         MarkClose? ExpectParam(Anchor _)

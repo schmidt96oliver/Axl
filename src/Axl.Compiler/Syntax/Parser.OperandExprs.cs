@@ -236,7 +236,9 @@ public partial class Parser
 
     private MarkClose EatArgList(Anchor anchor)
         => EatDelimitedList(anchor,
-            TokenKind.OpenParen, TokenKind.CloseParen,
-            SyntaxKind.ArgList,
+            openToken: TokenKind.OpenParen, 
+            closeToken: TokenKind.CloseParen,
+            listKind: SyntaxKind.ArgList,
+            itemFirst: FirstSet.Expr,
             eatItem: ExpectExpr);
 }

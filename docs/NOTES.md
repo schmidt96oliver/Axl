@@ -7,8 +7,16 @@
       14:11: Still quick going, caffeinated. Fun. Can slow down, its not gonna get finished :).
 11.08 11:40: Hungrig; macht Spaß; "einer geht noch"
 11.08 14:27: Roughly Ende der Zeit; Harndrang; "das geht noch schnell "
+12.08 15:16: Müde, erschöpft, keine Lust mehr. Will unbedingt noch Claude fragen
 
 **Next**: 
+* `fn Foo(@@, a, b) { }` dont report expected identifier at first `,`
+
+* regressions.axl
+* TokenKind Error; double UnexpectedToken?
+  * `fn Foo(a @@ b) { }` suppress unkown characters?
+* ArgList. Synthesize empty arg?
+* `fn Case3( ,  { }` unclosed list
 
 **Small points**:
 * ?? `RecoverTo` UnexpectedToken -> Squiggle all tokens
@@ -35,40 +43,6 @@
    * [ ] Assign "="|"+="|"-="
      * [ ] Trailing Block, Break, Continue, Return
      * [ ] Nested
-
-   * [x] Strings
-     * [x] No interpolation                 (Strings/Concat.taxl)
-     * [x] 1 level interpolation            (Strings/Concat.taxl)
-     * [x] multi-level interpolation        (Strings/DeepInterpolation.taxl)
-     * [x] empty interpolation              (Strings/Multiline.taxl)
-     * [x] multi-line string                (Strings/Multiline.taxl)
-     * [x] multi-line interpolation         (Strings/DeepInterpolation.taxl)
-     * [x] multi-level, multi-line interpolation  (Strings/DeepInterpolation.taxl)
-     * [x] escapes                          (Strings/Escapes.taxl)
-     * [x] bodied expression in interpolation   (Strings/IfInInterpolation.taxl)
-     * [x] Bodied Expr in Group             (Expressions(IfInGroup.taxl))
-   * [x] If/Else If/If
-     * [x] only if block                    (Loops/BuildingMultiLineString.taxl)
-     * [x] with, without arms/blocks
-   * [x] Loop, break expr;                  (Loops/BuildingMultiLineString.taxl)
-
-   * [x] VarDecl with/without type annotation
-     * [x] with bodied initializer          (Loops/BuildingMultiLineString.taxl)
-
-   * [x] Fn
-     * [x] with/without parameters
-     * [x] never return type
-     * [x] with/without return type
-     * [x] with arm, with block
-     * [x] native
-     * [x] public, private, no modifier
-     * [x] fn in fn
-     * [x] fn in blocks
-
-   * [x] File-scoped module decl
-   * [x] Using propagates name   (Standard literally everywhere)
-     * [x] Sub-module using
-   * [x] Nested module declarations
 
 * ?? Better dump format
 
