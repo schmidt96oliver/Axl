@@ -92,26 +92,24 @@ public partial class Parser
         var hasNativeClause = false;
         if (_scanner.IsAt(TokenKind.NativeKw))
         {
-            // We can recover from ")" or "fn"
-            var nativeClauseAnchor = anchor | TokenKind.FnKw | TokenKind.CloseParen;
-            
-            var nativeClause = _scanner.Open();
-            _scanner.EatToken(TokenKind.NativeKw);
-            
-            ExpectToken(TokenKind.OpenParen);
-            if (_scanner.IsAt(TokenKind.StringStart))
-                EatStringExpr(nativeClauseAnchor);
-            else
-                ReportMissing(expected: ExpectedSyntax.String);
-            
-            ExpectToken(TokenKind.CloseParen);
-
+            // We can recover from:
+            // - "fn" starts fn
+            // - ";" ends fn declaration directly (eaten, if fn was missing)
+            EatNativeDecl(anchor | TokenKind.FnKw | TokenKind.Semicolon);
             hasNativeClause = true;
-            _scanner.Close(nativeClause, SyntaxKind.NativeClause);
         }
 
         // --- FnDecl
-        ExpectToken(TokenKind.FnKw);
+        if (ExpectToken(TokenKind.FnKw) is null)
+        {
+            // Since we anchor on ";" in EatNativeDecl, we need to handle
+            // that here. It was probably meant to close a native fn declaration,
+            // so just eat it.
+            if (_scanner.IsAt(TokenKind.Semicolon))
+                _scanner.EatToken(TokenKind.Semicolon);
+            
+            return _scanner.Close(fnDecl, SyntaxKind.Error);
+        }
         ExpectIdName();
 
         // Inside ParamList, we can continue from "{" or "->"
@@ -141,6 +139,27 @@ public partial class Parser
         return _scanner.Close(fnDecl, SyntaxKind.FnDecl);
     }
 
+    private MarkClose EatNativeDecl(Anchor anchor)
+    {
+        // We can handle ")".
+        var nativeClauseAnchor = anchor | TokenKind.CloseParen;
+            
+        var nativeClause = _scanner.Open();
+        _scanner.EatToken(TokenKind.NativeKw);
+            
+        ExpectToken(TokenKind.OpenParen);
+        if (_scanner.IsAt(TokenKind.StringStart))
+            EatStringExpr(nativeClauseAnchor);
+        else
+        {
+            if (!RecoverTo(nativeClauseAnchor, ExpectedSyntax.String))
+                ReportMissing(ExpectedSyntax.String);
+        }
+
+        ExpectToken(TokenKind.CloseParen);
+        return _scanner.Close(nativeClause, SyntaxKind.NativeClause);
+    }
+    
     private MarkClose EatParamList(Anchor anchor)
     {
         return EatDelimitedList(anchor,

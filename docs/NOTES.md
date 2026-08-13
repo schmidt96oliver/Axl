@@ -13,8 +13,6 @@
 * regressions.axl
 * TokenKind Error; double UnexpectedToken?
   * `fn Foo(a @@ b) { }` suppress unkown characters?
-* `fn Case3( ,  { }` unclosed list
-  * `fn Foo(a: i32, @@ -> string { }` "expected param" should be "expected )"
 * `native("")"` anchors
 
 **Small points**:

@@ -449,6 +449,160 @@ public partial class ParserTests
                     · · ')'
                     · BlockExpr '{' '}'
                     """);
+
+
+            [Fact]
+            public void Native_1()
+                => InlineSnapshot.Validate(Tree("""
+                                                native;
+                                                fn A() { }
+                                                """), """
+                    ERROR MissingToken@[6, 6): Expected '('.
+
+
+                    Error
+                    · NativeClause 'native'
+                    · ';'
+                    FnDecl
+                    · 'fn'
+                    · IdName 'A'
+                    · ParamList '(' ')'
+                    · BlockExpr '{' '}'
+                    """);
+            [Fact]
+            public void Native_2()
+                => InlineSnapshot.Validate(Tree("""
+                                                native
+                                                module AB
+                                                {
+                                                    
+                                                }
+                                                """), """
+                    ERROR MissingToken@[6, 6): Expected '('.
+
+
+                    Error
+                    · NativeClause 'native'
+                    ModuleDecl
+                    · 'module'
+                    · QualifiedName
+                    · · IdName 'AB'
+                    · '{'
+                    · '}'
+                    """);
+            [Fact]
+            public void Native_3()
+                => InlineSnapshot.Validate(Tree("""
+                                                native fn ;
+                                                fn A() { }
+                                                """), """
+                    ERROR MissingToken@[6, 6): Expected '('.
+                    ERROR MissingToken@[9, 9): Expected an identifier.
+
+
+                    FnDecl
+                    · NativeClause 'native'
+                    · 'fn'
+                    · ';'
+                    FnDecl
+                    · 'fn'
+                    · IdName 'A'
+                    · ParamList '(' ')'
+                    · BlockExpr '{' '}'
+                    """);
+            [Fact]
+            public void Native_4()
+                => InlineSnapshot.Validate(Tree("native fn A();"), """
+                    ERROR MissingToken@[6, 6): Expected '('.
+
+
+                    FnDecl
+                    · NativeClause 'native'
+                    · 'fn'
+                    · IdName 'A'
+                    · ParamList '(' ')'
+                    · ';'
+                    """);
+            [Fact]
+            public void Native_5()
+                => InlineSnapshot.Validate(Tree("native( fn A();"), """
+                    ERROR MissingToken@[7, 7): Expected a string.
+
+
+                    FnDecl
+                    · NativeClause 'native' '('
+                    · 'fn'
+                    · IdName 'A'
+                    · ParamList '(' ')'
+                    · ';'
+                    """);
+            [Fact]
+            public void Native_6()
+                => InlineSnapshot.Validate(Tree("native(a fn A();"), """
+                    ERROR UnexpectedToken@[7, 8): Expected a string, got an identifier.
+                    ERROR MissingToken@[8, 8): Expected ')'.
+
+
+                    FnDecl
+                    · NativeClause
+                    · · 'native'
+                    · · '('
+                    · · Error 'a'
+                    · 'fn'
+                    · IdName 'A'
+                    · ParamList '(' ')'
+                    · ';'
+                    """);
+            [Fact]
+            public void Native_7()
+                => InlineSnapshot.Validate(Tree("native(a) fn A();"), """
+                    ERROR UnexpectedToken@[7, 8): Expected a string, got an identifier.
+
+
+                    FnDecl
+                    · NativeClause
+                    · · 'native'
+                    · · '('
+                    · · Error 'a'
+                    · · ')'
+                    · 'fn'
+                    · IdName 'A'
+                    · ParamList '(' ')'
+                    · ';'
+                    """);
+            
+            [Fact]
+            public void Native_8()
+                => InlineSnapshot.Validate(Tree("native(\"Foo\" fn A();"), """
+                    ERROR MissingToken@[12, 12): Expected ')'.
+
+
+                    FnDecl
+                    · NativeClause
+                    · · 'native'
+                    · · '('
+                    · · StringExpr
+                    · · · '"'
+                    · · · StringText 'Foo'
+                    · · · '"'
+                    · 'fn'
+                    · IdName 'A'
+                    · ParamList '(' ')'
+                    · ';'
+                    """);
+            [Fact]
+            public void Native_9()
+                => InlineSnapshot.Validate(Tree("native() fn A();"), """
+                    ERROR MissingToken@[7, 7): Expected a string.
+
+
+                    FnDecl
+                    · NativeClause 'native' '(' ')'
+                    · 'fn'
+                    · IdName 'A'
+                    · ParamList '(' ')'
+                    · ';'
+                    """);
         }
     }
 }
