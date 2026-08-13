@@ -101,7 +101,7 @@ public sealed class Lexer
         {
             Debug.Assert(_next > _start);
             _tokens.Add(Token.Identifier(Source.SpanFromTo(_start, _next),
-                Identifier.FromLexer(_text[_start.._next].ToString())));
+                _text[_start.._next].ToString()));
             _start = _next;
         }
 

@@ -47,8 +47,8 @@ public class Token : SyntaxElement
         return new Token(span, kind);
     }
 
-    public static IdentifierToken Identifier(SourceSpan span, Identifier id)
-        => new(span, id);
+    public static IdentifierToken Identifier(SourceSpan span, string identifier)
+        => new(span, identifier);
 
     public static NumberLiteralToken NumberLiteral(SourceSpan span, string body, NumberLiteralSuffix suffix)
         => new(span, body, suffix);

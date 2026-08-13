@@ -1,7 +1,7 @@
 namespace Axl.Compiler.Syntax;
 
-public sealed class IdentifierToken(SourceSpan span, Identifier id)
-    : Token(span, TokenKind.Identifier)
+public sealed class IdentifierToken(SourceSpan span, string identifier)
+    : Token(span, TokenKind.Identifier, isMissing: identifier.Length == 0)
 {
-    public Identifier Id { get; } = id;
+    public string Identifier { get; } = identifier;
 }

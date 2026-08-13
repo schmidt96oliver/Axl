@@ -122,7 +122,7 @@ public partial class Parser
             _scanner.EatToken(TokenKind.RightArrow);
 
             // --- Special case "never" keyword
-            if (_scanner.Peek() is IdentifierToken { Id.Text: "never" })
+            if (_scanner.Peek() is IdentifierToken { Identifier: "never" })
                 _scanner.EatTokenAs(TokenKind.NeverKw);
             else
                 ExpectTypeName();
