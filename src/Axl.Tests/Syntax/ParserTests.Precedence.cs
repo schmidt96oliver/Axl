@@ -73,9 +73,8 @@ public partial class ParserTests
 
         [Fact]
         public void Comparison_DoesNotChain_KeepsInnerExpr()
-            => InlineSnapshot.Validate(Tree("1 == 1+2*3 != a.b < -4"), """
+            => InlineSnapshot.Validate(Tree("1 == 1+2*3 != a.b < -4;"), """
                 ERROR InvalidOperatorChaining@[2, 4), [11, 13), [18, 19): Cannot chain '==', '!=' and '<'.
-                ERROR MissingToken@[22, 22): Expected ';'.
 
 
                 ExprStmt
@@ -98,6 +97,7 @@ public partial class ParserTests
                 · · UnaryExpr
                 · · · '-'
                 · · · NumberLiteral '4'
+                · ';'
                 """);
 
         [Fact]
