@@ -191,15 +191,15 @@ public partial class Parser
     /// <c>true</c>. Otherwise, creates a missing token of <paramref name="expectedKind"/>,
     /// reports <see cref="Diagnostic.MissingToken"/> and returns <c>false</c>.
     /// </summary>
-    /// <param name="expectedSyntaxName">The <see cref="ExpectedSyntax"/> a missing token will be reported with. <c>null</c> reports
+    /// <param name="expectedSyntax">The <see cref="ExpectedSyntax"/> a missing token will be reported with. <c>null</c> reports
     /// <paramref name="expectedKind"/>.</param>
     /// <returns>If scanner was at <paramref name="expectedKind"/>.</returns>
-    private bool EnsureToken(TokenKind expectedKind, ExpectedSyntax? expectedSyntaxName = null)
+    private bool EnsureToken(TokenKind expectedKind, ExpectedSyntax? expectedSyntax = null)
     {
         if (!_scanner.IsAt(expectedKind))
         {
             _scanner.MakeToken(expectedKind);
-            ReportMissing(expectedSyntaxName ?? expectedKind);
+            ReportMissing(expectedSyntax ?? expectedKind);
             return false;
         }
 

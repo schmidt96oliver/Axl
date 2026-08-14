@@ -12,7 +12,7 @@ public partial class Parser
         var expr = _scanner.Open();
 
         // Special-case for better missing message.
-        if (!EnsureToken(TokenKind.StringStart, expectedSyntaxName: ExpectedSyntax.String))
+        if (!EnsureToken(TokenKind.StringStart, expectedSyntax: ExpectedSyntax.String))
         {
             _scanner.MakeToken(TokenKind.StringEnd);
             return _scanner.Close(expr, SyntaxKind.StringExpr);
