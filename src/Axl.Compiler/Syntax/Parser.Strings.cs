@@ -14,7 +14,7 @@ public partial class Parser
         // Special-case for better missing message.
         if (!EnsureToken(TokenKind.StringStart, expectedSyntax: ExpectedSyntax.String))
         {
-            _scanner.MakeToken(TokenKind.StringEnd);
+            _scanner.Make(TokenKind.StringEnd);
             return _scanner.Close(expr, SyntaxKind.StringExpr);
         }
 
@@ -31,7 +31,7 @@ public partial class Parser
             {
                 // --- StringText: Just add
                 case TokenKind.StringText:
-                    _scanner.EatTokenIntoNode(SyntaxKind.StringText);
+                    _scanner.EatIntoNode(SyntaxKind.StringText);
                     break;
 
                 // --- StringEnd: Finish
@@ -71,7 +71,7 @@ public partial class Parser
         // Grammar is "{" Expr? "}" and allows for multi-line Expr inside this interpolation.
         // --- Advance `{`
         var interpolationHole = _scanner.Open();
-        _scanner.EatKnownToken(TokenKind.OpenBrace);
+        _scanner.EatKnown(TokenKind.OpenBrace);
 
         // --- Parse Expression
         // `{ `}` will fall through and consume `}` as closing.
@@ -106,12 +106,12 @@ public partial class Parser
         if (_scanner.IsAt(TokenKind.CloseBrace) && (FirstSet.StringContinuation.Contains(_scanner.Peek(1).Kind) ||
                                                     !HasNewlineBeforeNextToken()))
         {
-            _scanner.EatKnownToken(TokenKind.CloseBrace);
+            _scanner.EatKnown(TokenKind.CloseBrace);
         }
         else
         {
             ReportMissing(TokenKind.CloseBrace);
-            _scanner.MakeToken(TokenKind.CloseBrace);
+            _scanner.Make(TokenKind.CloseBrace);
         }
 
         return _scanner.Close(interpolationHole, SyntaxKind.StringInterpolation);
@@ -171,7 +171,7 @@ public partial class Parser
 
             // --- Gobble Gobble Gobble
             errorExpr ??= _scanner.Open();
-            var advancedToken = _scanner.EatToken();
+            var advancedToken = _scanner.Eat();
 
             // Recalculate if necessary.
             if (FirstSet.StringPart.Contains(advancedToken.Kind))

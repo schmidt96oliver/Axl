@@ -13,17 +13,18 @@ public partial class Parser
     {
         Open,
         Close,
-        Advance,
+        
+        Eat,
         
         /// <summary>
-        /// Advances one token and patches it into the given kind.
+        /// Eats one token and patches it into the given kind.
         /// </summary>
-        AdvancePatch,
+        EatAs,
         
         /// <summary>
         /// Inserts a missing token with specified kind.
         /// </summary>
-        CreateMissing
+        Make
     }
 
     private readonly record struct ParseEvent(
@@ -39,7 +40,7 @@ public partial class Parser
     private sealed class Scanner
     {
         /// <summary>
-        /// Custom enumerator that asserts the parser has advanced at least one
+        /// Custom enumerator that asserts the parser has eaten at least one
         /// token inside the loop. Otherwise, throws <see cref="ParserStuckException"/>.
         /// It stops at Eof.
         /// </summary>
@@ -58,7 +59,7 @@ public partial class Parser
                 
                 Debug.Assert(scanner._nextToken >= _lastToken, "Scanner moved backwards. Weird!");
                 if (scanner._nextToken == _lastToken)
-                    throw new ParserStuckException("Parser did not advance a token and is stuck.");
+                    throw new ParserStuckException("Parser did not eat a token and is stuck.");
 
                 _lastToken = scanner._nextToken;
                 return true;
@@ -69,7 +70,7 @@ public partial class Parser
 
         
         /// <summary>
-        /// Amount of <see cref="Peek"/>s allowed between two <see cref="EatToken()"/>s.
+        /// Amount of <see cref="Peek"/>s allowed between two <see cref="Eat"/>s.
         /// Generous - real lookahead never goes beyond a handful.
         /// </summary>
         private const int MaxFuel = 256;
@@ -85,7 +86,7 @@ public partial class Parser
         /// <summary>
         /// Backstop for everything <see cref="MustEatEachIteration"/> cannot see:
         /// hand-written loops and recursion that re-enters without consuming a token.
-        /// Refilled by <see cref="EatToken()"/>, burned by <see cref="Peek"/>.
+        /// Refilled by <see cref="Eat"/>, burned by <see cref="Peek"/>.
         /// </summary>
         private int _fuel;
 
@@ -175,38 +176,38 @@ public partial class Parser
         /// <summary>
         /// Creates a missing token of <paramref name="kind"/>.
         /// </summary>
-        public void MakeToken(TokenKind kind)
+        public void Make(TokenKind kind)
         {
-            _events.Add(new ParseEvent(ParseEventKind.CreateMissing, TokenKind: kind));
+            _events.Add(new ParseEvent(ParseEventKind.Make, TokenKind: kind));
         }
 
         /// <summary>
         /// Creates a node of <paramref name="nodeKind"/> with a missing token of <paramref name="tokenKind"/>.
         /// </summary>
-        public MarkClose MakeTokenIntoNode(TokenKind tokenKind, SyntaxKind nodeKind)
+        public MarkClose MakeIntoNode(TokenKind tokenKind, SyntaxKind nodeKind)
         {
             var node = Open();
-            MakeToken(tokenKind);
+            Make(tokenKind);
             return Close(node, nodeKind);
         }
         
         
-        public Token EatToken()
+        public Token Eat()
         {
             Debug.Assert(_nextToken < _tokens.Count);
 
-            _events.Add(new ParseEvent(ParseEventKind.Advance));
+            _events.Add(new ParseEvent(ParseEventKind.Eat));
             _fuel = MaxFuel;
             return _tokens[_nextToken++];
         }
 
         /// <summary>
-        /// Same as <see cref="EatToken"/>, but assert, that <paramref name="knownKind"/>
+        /// Same as <see cref="Eat"/>, but assert, that <paramref name="knownKind"/>
         /// was eaten.
         /// </summary>
-        public Token EatKnownToken(TokenKind knownKind)
+        public Token EatKnown(TokenKind knownKind)
         {
-            var token = EatToken();
+            var token = Eat();
             Debug.Assert(token.Kind == knownKind);
             return token;
         }
@@ -216,19 +217,19 @@ public partial class Parser
         /// to <paramref name="kind"/>. <paramref name="kind"/> must be a
         /// token that doesn't carry a value.
         /// </summary>
-        public Token EatTokenAs(TokenKind kind)
+        public Token EatAs(TokenKind kind)
         {
             Debug.Assert(!kind.HasValue);
             
-            _events.Add(new ParseEvent(ParseEventKind.AdvancePatch, TokenKind: kind));
+            _events.Add(new ParseEvent(ParseEventKind.EatAs, TokenKind: kind));
             _fuel = MaxFuel;
             return _tokens[_nextToken++];
         }
 
-        public MarkClose EatTokenIntoNode(SyntaxKind nodeKind)
+        public MarkClose EatIntoNode(SyntaxKind nodeKind)
         {
             var node = Open();
-            EatToken();
+            Eat();
             return Close(node, nodeKind);
         }
         

@@ -71,12 +71,12 @@ public partial class Parser
                 if (_scanner.IsAt(TokenKind.Semicolon))
                 {
                     ReportUnexpected(ExpectedSyntax.Stmt);
-                    _scanner.EatTokenIntoNode(SyntaxKind.Error);
+                    _scanner.EatIntoNode(SyntaxKind.Error);
                 }
             }
         }
 
-        _scanner.EatKnownToken(TokenKind.Eof);
+        _scanner.EatKnown(TokenKind.Eof);
         _scanner.Close(file, SyntaxKind.TreeRoot);
     }
 
@@ -107,14 +107,14 @@ public partial class Parser
     private void EatGarbageIntoError(Anchor anchor)
     {
         var error = _scanner.Open();
-        _scanner.EatToken();
+        _scanner.Eat();
 
         foreach (var __ in _scanner.MustEatEachIteration())
         {
             if (_scanner.IsAt(anchor))
                 break;
 
-            _scanner.EatToken();
+            _scanner.Eat();
         }
 
         _scanner.Close(error, SyntaxKind.Error);
@@ -197,12 +197,12 @@ public partial class Parser
     {
         if (!_scanner.IsAt(expectedKind))
         {
-            _scanner.MakeToken(expectedKind);
+            _scanner.Make(expectedKind);
             ReportMissing(expectedSyntax ?? expectedKind);
             return false;
         }
 
-        _scanner.EatKnownToken(expectedKind);
+        _scanner.EatKnown(expectedKind);
         return true;
     }
     
@@ -220,7 +220,7 @@ public partial class Parser
         var omissible = ownsBody && _scanner.Last?.Kind is TokenKind.CloseBrace;
         
         if (omissible && _scanner.IsAt(TokenKind.Semicolon))
-            _scanner.EatKnownToken(TokenKind.Semicolon);
+            _scanner.EatKnown(TokenKind.Semicolon);
         else if (!omissible)
             EnsureToken(TokenKind.Semicolon);
     }
@@ -263,14 +263,14 @@ public partial class Parser
         if (!EnsureToken(openToken, expectedOpenSyntax))
         {
             // Make closing token and bail.
-            _scanner.MakeToken(closeToken);
+            _scanner.Make(closeToken);
             return _scanner.Close(list, listKind);
         }
 
         // --- Empty list?
         if (_scanner.IsAt(closeToken))
         {
-            _scanner.EatKnownToken(closeToken);
+            _scanner.EatKnown(closeToken);
             return _scanner.Close(list, listKind);
         }
 

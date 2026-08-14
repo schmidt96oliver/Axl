@@ -24,8 +24,8 @@ public partial class Parser
                     nodes.Push(new BuildingNode(e.SyntaxKind.Value, ImmutableArray.CreateBuilder<SyntaxElement>()));
                     break;
 
-                case ParseEventKind.Advance:
-                case ParseEventKind.AdvancePatch:
+                case ParseEventKind.Eat:
+                case ParseEventKind.EatAs:
                     // Flush all trivia here
                     while (tokens[nextToken].Kind.IsTrivia)
                     {
@@ -34,7 +34,7 @@ public partial class Parser
                     }
 
                     // Add the actual node
-                    var token = e.EventKind is ParseEventKind.Advance
+                    var token = e.EventKind is ParseEventKind.Eat
                         ? tokens[nextToken]
                         : tokens[nextToken].WithKind(e.TokenKind
                                                      ?? throw new UnreachableException("AdvancePatch without kind."));
@@ -43,7 +43,7 @@ public partial class Parser
                     nextToken++;
                     break;
                 
-                case ParseEventKind.CreateMissing:
+                case ParseEventKind.Make:
                     var span = nextToken == 0
                         ? SourceSpan.EmptyBefore(tokens[0].Span)
                         : SourceSpan.EmptyAfter(tokens[nextToken - 1].Span);

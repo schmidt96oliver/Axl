@@ -25,7 +25,7 @@ public partial class Parser
             if (!_scanner.IsAt(TokenKind.Dot))
                 break;
 
-            _scanner.EatKnownToken(TokenKind.Dot);
+            _scanner.EatKnown(TokenKind.Dot);
             EnsureIdName();
         }
 
@@ -35,7 +35,7 @@ public partial class Parser
     private MarkClose EatNativeTypeName()
     {
         Debug.Assert(_scanner.IsAt(FirstSet.NativeTypeName));
-        return _scanner.EatTokenIntoNode(SyntaxKind.NativeTypeName);
+        return _scanner.EatIntoNode(SyntaxKind.NativeTypeName);
     }
 
     /// <param name="expectedSyntax">

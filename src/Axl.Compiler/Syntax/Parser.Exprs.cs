@@ -23,20 +23,20 @@ public partial class Parser
             // --- TailExprs
             case TokenKind.BreakKw:
                 var breakExpr = _scanner.Open();
-                _scanner.EatKnownToken(TokenKind.BreakKw);
+                _scanner.EatKnown(TokenKind.BreakKw);
                 if (_scanner.IsAt(FirstSet.Expr))
                     EnsureExpr(anchor);
                 return _scanner.Close(breakExpr, SyntaxKind.BreakExpr);
 
             case TokenKind.ReturnKw:
                 var returnExpr = _scanner.Open();
-                _scanner.EatKnownToken(TokenKind.ReturnKw);
+                _scanner.EatKnown(TokenKind.ReturnKw);
                 if (_scanner.IsAt(FirstSet.Expr))
                     EnsureExpr(anchor);
                 return _scanner.Close(returnExpr, SyntaxKind.ReturnExpr);
 
             case TokenKind.ContinueKw:
-                return _scanner.EatTokenIntoNode(SyntaxKind.ContinueExpr);
+                return _scanner.EatIntoNode(SyntaxKind.ContinueExpr);
             
             // --- OperandExprs or Assign
             // Ambiguous between plain OperandExpr and Assign(OperandExpr "=" Expr).
@@ -49,7 +49,7 @@ public partial class Parser
                 {
                     // We have assign.
                     var assignExpr = _scanner.OpenBefore(operandExpr);
-                    _scanner.EatToken();
+                    _scanner.Eat();
                     EnsureExpr(anchor);
                     return _scanner.Close(assignExpr, SyntaxKind.AssignExpr);
                 }
@@ -66,7 +66,7 @@ public partial class Parser
         Debug.Assert(_scanner.IsAt(TokenKind.IfKw));
 
         var ifExpr = _scanner.Open();
-        _scanner.EatKnownToken(TokenKind.IfKw);
+        _scanner.EatKnown(TokenKind.IfKw);
 
         // --- Condition and body
         var ifAnchor = anchor | TokenKind.ElseKw;
@@ -78,7 +78,7 @@ public partial class Parser
         // we cannot handle it after we've seen it once.
         if (_scanner.IsAt(TokenKind.ElseKw))
         {
-            _scanner.EatKnownToken(TokenKind.ElseKw);
+            _scanner.EatKnown(TokenKind.ElseKw);
 
             if (_scanner.IsAt(TokenKind.IfKw))
                 EatIf(anchor);
@@ -94,7 +94,7 @@ public partial class Parser
         Debug.Assert(_scanner.IsAt(TokenKind.LoopKw));
 
         var loopExpr = _scanner.Open();
-        _scanner.EatKnownToken(TokenKind.LoopKw);
+        _scanner.EatKnown(TokenKind.LoopKw);
         EnsureBody(anchor);
         return _scanner.Close(loopExpr, SyntaxKind.LoopExpr);
     }
@@ -107,7 +107,7 @@ public partial class Parser
 
         if (!EnsureToken(TokenKind.OpenBrace, expectedSyntax))
         {
-            _scanner.MakeToken(TokenKind.CloseBrace);
+            _scanner.Make(TokenKind.CloseBrace);
             return _scanner.Close(block, SyntaxKind.BlockExpr);
         }
 
@@ -132,7 +132,7 @@ public partial class Parser
             else if (_scanner.IsAt(TokenKind.Semicolon))
             {
                 ReportUnexpected(ExpectedSyntax.Stmt);
-                _scanner.EatTokenIntoNode(SyntaxKind.Error);
+                _scanner.EatIntoNode(SyntaxKind.Error);
             }
             
             // --- Closing tokens
@@ -146,7 +146,7 @@ public partial class Parser
                 if (_scanner.IsAt(TokenKind.Semicolon) && _scanner.Peek(1).Kind is TokenKind.CloseBrace)
                 {
                     ReportUnexpected(TokenKind.CloseBrace);
-                    _scanner.EatTokenIntoNode(SyntaxKind.Error);
+                    _scanner.EatIntoNode(SyntaxKind.Error);
                 }
                 
                 // Arm ends the block, so break out. After the loop,
@@ -174,7 +174,7 @@ public partial class Parser
         Debug.Assert(_scanner.IsAt(TokenKind.RightDoubleArrow));
 
         var arm = _scanner.Open();
-        _scanner.EatKnownToken(TokenKind.RightDoubleArrow);
+        _scanner.EatKnown(TokenKind.RightDoubleArrow);
         EnsureExpr(anchor);
         return _scanner.Close(arm, SyntaxKind.Arm);
     }

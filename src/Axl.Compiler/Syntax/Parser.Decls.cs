@@ -12,21 +12,21 @@ public partial class Parser
         Debug.Assert(_scanner.IsAt(TokenKind.ModuleKw));
 
         var moduleDecl = _scanner.Open();
-        _scanner.EatKnownToken(TokenKind.ModuleKw);
+        _scanner.EatKnown(TokenKind.ModuleKw);
 
         EnsureQualifiedName(ExpectedSyntax.ModuleName);
 
         // --- ";" means it's a global declaration
         if (_scanner.IsAt(TokenKind.Semicolon))
         {
-            _scanner.EatKnownToken(TokenKind.Semicolon);
+            _scanner.EatKnown(TokenKind.Semicolon);
             return _scanner.Close(moduleDecl, SyntaxKind.GlobalModuleDecl);
         }
 
         // --- Missing { }?
         if (!EnsureToken(TokenKind.OpenBrace))
         {
-            _scanner.MakeToken(TokenKind.CloseBrace);
+            _scanner.Make(TokenKind.CloseBrace);
             return _scanner.Close(moduleDecl, SyntaxKind.ModuleDecl);
         }
 
@@ -56,7 +56,7 @@ public partial class Parser
         Debug.Assert(_scanner.IsAt(TokenKind.UsingKw));
 
         var usingDecl = _scanner.Open();
-        _scanner.EatKnownToken(TokenKind.UsingKw);
+        _scanner.EatKnown(TokenKind.UsingKw);
         EnsureQualifiedName(ExpectedSyntax.ModuleName);
         EnsureToken(TokenKind.Semicolon);
         return _scanner.Close(usingDecl, SyntaxKind.UsingDecl);
@@ -70,7 +70,7 @@ public partial class Parser
 
         // --- Modifier List
         while (_scanner.IsAt(FirstSet.Modifier))
-            _scanner.EatToken();
+            _scanner.Eat();
 
         // --- Actual declaration
         if (_scanner.IsAt(FirstSet.FnDeclAfterModifiers))
@@ -106,12 +106,12 @@ public partial class Parser
             // that here. It was probably meant to close a native fn declaration,
             // so just eat it.
             if (_scanner.IsAt(TokenKind.Semicolon))
-                _scanner.EatKnownToken(TokenKind.Semicolon);
+                _scanner.EatKnown(TokenKind.Semicolon);
             
             return _scanner.Close(fnDecl, SyntaxKind.Error);
         }
 
-        _scanner.EatKnownToken(TokenKind.FnKw);
+        _scanner.EatKnown(TokenKind.FnKw);
         EnsureIdName();
 
         // Inside ParamList, we can continue from "{" or "->"
@@ -121,11 +121,11 @@ public partial class Parser
         // --- Return type
         if (_scanner.IsAt(TokenKind.RightArrow))
         {
-            _scanner.EatKnownToken(TokenKind.RightArrow);
+            _scanner.EatKnown(TokenKind.RightArrow);
 
             // --- Special case "never" keyword
             if (_scanner.Peek() is IdentifierToken { Identifier: "never" })
-                _scanner.EatTokenAs(TokenKind.NeverKw);
+                _scanner.EatAs(TokenKind.NeverKw);
             else
                 EnsureTypeName();
         }
@@ -147,7 +147,7 @@ public partial class Parser
         var nativeClauseAnchor = anchor | TokenKind.CloseParen;
 
         var nativeClause = _scanner.Open();
-        _scanner.EatKnownToken(TokenKind.NativeKw);
+        _scanner.EatKnown(TokenKind.NativeKw);
 
         EnsureToken(TokenKind.OpenParen);
         EnsureStringExpr(nativeClauseAnchor);
@@ -174,7 +174,7 @@ public partial class Parser
             EnsureIdName(ExpectedSyntax.Param);
             if (_scanner.IsAt(TokenKind.Colon))
             {
-                _scanner.EatKnownToken(TokenKind.Colon);
+                _scanner.EatKnown(TokenKind.Colon);
                 EnsureTypeName();
             }
 

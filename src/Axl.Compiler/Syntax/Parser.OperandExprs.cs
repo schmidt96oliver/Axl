@@ -60,7 +60,7 @@ public partial class Parser
             else // Infix expr
             {
                 var expr = _scanner.OpenBefore(lhs);
-                _scanner.EatToken();
+                _scanner.Eat();
 
                 EnsureOperandExprRhs(new LeftOperator(opPrecedence.Value, opToken), anchor,
                     out var ateAmbiguousOperatorChain);
@@ -98,7 +98,7 @@ public partial class Parser
         // For everything else, we can advance a token
         // already and then switch on it.
         var openMark = _scanner.Open();
-        var token = _scanner.EatToken();
+        var token = _scanner.Eat();
 
         // --- Prefix Operator
         if (PrecedenceTable.TryGetPrefixPrecedence(token.Kind) is Precedence prefixPrecedence)
@@ -133,7 +133,7 @@ public partial class Parser
         {
             // --- GetMember
             case TokenKind.Dot:
-                _scanner.EatKnownToken(TokenKind.Dot);
+                _scanner.EatKnown(TokenKind.Dot);
                 EnsureIdName();
                 return _scanner.Close(expr, SyntaxKind.GetMemberExpr);
 
@@ -185,7 +185,7 @@ public partial class Parser
 
             // Next operator is ambiguous.
             // Advance it and parse another expression.
-            _scanner.EatToken();
+            _scanner.Eat();
 
             // If ambiguous operators was empty before, we need to add
             // the operator that was passed in, because that was already
@@ -215,7 +215,7 @@ public partial class Parser
         Debug.Assert(_scanner.IsAt(TokenKind.OpenParen));
 
         var expr = _scanner.Open();
-        _scanner.EatKnownToken(TokenKind.OpenParen);
+        _scanner.EatKnown(TokenKind.OpenParen);
 
         // --- Expression
         var groupAnchor = anchor | TokenKind.CloseParen;
@@ -225,7 +225,7 @@ public partial class Parser
         var errorReported = RecoverTo(groupAnchor, expected: TokenKind.CloseParen);
 
         if (_scanner.IsAt(TokenKind.CloseParen))
-            _scanner.EatKnownToken(TokenKind.CloseParen);
+            _scanner.EatKnown(TokenKind.CloseParen);
         else if (!errorReported)
             ReportMissing(TokenKind.CloseParen);
 
