@@ -101,11 +101,11 @@ public partial class Parser
 
 
 
-    private MarkClose EnsureBlock(Anchor anchor)
+    private MarkClose EnsureBlock(Anchor anchor, ExpectedSyntax? expectedSyntax = null)
     {
         var block = _scanner.Open();
 
-        if (!EnsureToken(TokenKind.OpenBrace))
+        if (!EnsureToken(TokenKind.OpenBrace, expectedSyntax))
         {
             _scanner.MakeToken(TokenKind.CloseBrace);
             return _scanner.Close(block, SyntaxKind.BlockExpr);

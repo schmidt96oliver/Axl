@@ -170,14 +170,7 @@ public partial class Parser
         {
             var param = _scanner.Open();
             
-            // If scanner is not on an identifier, report
-            // our own missing message, because it is more
-            // expressive than "missing identifier", that
-            // EnsureIdName would report.
-            if (!_scanner.IsAt(TokenKind.Identifier))
-                ReportMissing(ExpectedSyntax.Param);
-            
-            EnsureIdName();
+            EnsureIdName(ExpectedSyntax.Param);
             if (_scanner.IsAt(TokenKind.Colon))
             {
                 _scanner.EatKnownToken(TokenKind.Colon);

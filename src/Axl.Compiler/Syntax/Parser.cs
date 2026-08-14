@@ -232,11 +232,7 @@ public partial class Parser
         if (_scanner.IsAt(TokenKind.RightDoubleArrow))
             return EatArm(anchor);
         
-        // Report better missing message
-        if (!_scanner.IsAt(TokenKind.OpenBrace))
-            ReportMissing(ExpectedSyntax.Body);
-
-        return EnsureBlock(anchor);
+        return EnsureBlock(anchor, ExpectedSyntax.Body);
     }
     
     /// <summary>
