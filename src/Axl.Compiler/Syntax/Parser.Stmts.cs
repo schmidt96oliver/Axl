@@ -34,20 +34,20 @@ public partial class Parser
         _scanner.EatKnownToken(TokenKind.VarKw);
 
         // --- Name
-        ExpectIdName();
+        EnsureIdName();
 
         // --- Optional type annotation
         if (_scanner.IsAt(TokenKind.Colon))
         {
             _scanner.EatKnownToken(TokenKind.Colon);
-            ExpectTypeName();
+            EnsureTypeName();
         }
 
         // --- Optional initializer
         if (_scanner.IsAt(TokenKind.Equal))
         {
             _scanner.EatKnownToken(TokenKind.Equal);
-            ExpectExpr(anchor);
+            EnsureExpr(anchor);
         }
 
         // --- Semicolon

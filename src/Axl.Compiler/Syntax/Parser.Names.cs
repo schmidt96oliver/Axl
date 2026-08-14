@@ -30,7 +30,7 @@ public partial class Parser
                 break;
 
             _scanner.EatKnownToken(TokenKind.Dot);
-            ExpectIdName();
+            EnsureIdName();
         }
 
         return _scanner.Close(typeExpr, SyntaxKind.QualifiedName);

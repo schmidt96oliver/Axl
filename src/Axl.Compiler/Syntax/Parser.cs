@@ -184,6 +184,61 @@ public partial class Parser
         return _source.GetText(spanToNextToken).Contains('\n');
     }
 
+    
+
+    /// <summary>
+    /// If the scanner is on <paramref name="expectedKind"/>, eats it and returns
+    /// <c>true</c>. Otherwise, creates a missing token of <paramref name="expectedKind"/>,
+    /// reports <see cref="Diagnostic.MissingToken"/> and returns <c>false</c>.
+    /// </summary>
+    /// <param name="expectedSyntaxName">The <see cref="ExpectedSyntax"/> a missing token will be reported with. <c>null</c> reports
+    /// <paramref name="expectedKind"/>.</param>
+    /// <returns>If scanner was at <paramref name="expectedKind"/>.</returns>
+    private bool EnsureToken(TokenKind expectedKind, ExpectedSyntax? expectedSyntaxName = null)
+    {
+        if (!_scanner.IsAt(expectedKind))
+        {
+            _scanner.MakeToken(expectedKind);
+            ReportMissing(expectedSyntaxName ?? expectedKind);
+            return false;
+        }
+
+        _scanner.EatKnownToken(expectedKind);
+        return true;
+    }
+    
+    /// <summary>
+    /// Applies the semicolon rule. Ensures ";" if required, otherwise eats it
+    /// only if it's there.
+    /// <para>
+    /// Semicolon rule: ";" is omissible iff the statements owns its body and last
+    /// token is "}".
+    /// </para>
+    /// </summary>
+    /// <param name="ownsBody">Whether the consuming nodes owns its body.</param>
+    private void EnsureSemicolonIfRequired(bool ownsBody)
+    {
+        var omissible = ownsBody && _scanner.Last?.Kind is TokenKind.CloseBrace;
+        
+        if (omissible && _scanner.IsAt(TokenKind.Semicolon))
+            _scanner.EatKnownToken(TokenKind.Semicolon);
+        else if (!omissible)
+            EnsureToken(TokenKind.Semicolon);
+    }
+    
+    
+    private MarkClose EnsureBody(Anchor anchor)
+    {
+        if (_scanner.IsAt(TokenKind.RightDoubleArrow))
+            return EatArm(anchor);
+        
+        // Report better missing message
+        if (!_scanner.IsAt(TokenKind.OpenBrace))
+            ReportMissing(ExpectedSyntax.Body);
+
+        return EnsureBlock(anchor);
+    }
+    
     /// <summary>
     /// Eats or makes a <paramref name="listKind"/> comma-delimited list of
     /// form <c>open (item ("," item)*)? close</c> into a <paramref name="listKind"/>.
@@ -251,24 +306,5 @@ public partial class Parser
         // --- Expect close
         EnsureToken(closeToken);
         return _scanner.Close(list, listKind);
-    }
-
-    /// <summary>
-    /// Applies the semicolon rule. Ensures ";" if required, otherwise eats it
-    /// only if it's there.
-    /// <para>
-    /// Semicolon rule: ";" is omissible iff the statements owns its body and last
-    /// token is "}".
-    /// </para>
-    /// </summary>
-    /// <param name="ownsBody">Whether the consuming nodes owns its body.</param>
-    private void EnsureSemicolonIfRequired(bool ownsBody)
-    {
-        var omissible = ownsBody && _scanner.Last?.Kind is TokenKind.CloseBrace;
-        
-        if (omissible && _scanner.IsAt(TokenKind.Semicolon))
-            _scanner.EatKnownToken(TokenKind.Semicolon);
-        else if (!omissible)
-            EnsureToken(TokenKind.Semicolon);
     }
 }

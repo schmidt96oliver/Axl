@@ -8,37 +8,6 @@ public partial class Parser
 {
     private MarkClose EnsureExpr(Anchor anchor)
     {
-        //TODO: Maybe move to OperandExpr logic
-        if (!_scanner.IsAt(FirstSet.Expr))
-        {
-            // Synthesize empty identifier expr
-            ReportMissing(ExpectedSyntax.Expr);
-            var idName = _scanner.Open();
-            _scanner.MakeToken(TokenKind.Identifier);
-            return _scanner.Close(idName, SyntaxKind.IdName);
-        }
-
-        // --- OperandExpr or Assign
-        if (_scanner.IsAt(FirstSet.OperandExpr))
-        {
-            // Ambiguous between plain OperandExpr and
-            // Assign = OperandExpr "=" Expr.
-            // So eat an OperandExpr and handle "=" thereafter
-            // here.
-            var operandExpr = EnsureOperandExpr(left: null, anchor);
-
-            if (_scanner.IsAt(FirstSet.AssignOperator))
-            {
-                // We have assign.
-                var assignExpr = _scanner.OpenBefore(operandExpr);
-                _scanner.EatToken();
-                EnsureExpr(anchor);
-                return _scanner.Close(assignExpr, SyntaxKind.AssignExpr);
-            }
-
-            return operandExpr;
-        }
-
         switch (_scanner.Peek().Kind)
         {
             // --- BodiedExprs
@@ -68,12 +37,30 @@ public partial class Parser
 
             case TokenKind.ContinueKw:
                 return _scanner.EatTokenIntoNode(SyntaxKind.ContinueExpr);
-        }
+            
+            // --- OperandExprs or Assign
+            // Ambiguous between plain OperandExpr and Assign(OperandExpr "=" Expr).
+            // So ensure an OperandExpr and handle "=" thereafter.
+            default:
+            {
+                var operandExpr = EnsureOperandExpr(left: null, anchor);
 
-        throw new UnreachableException($"{nameof(FirstSet.Expr)} was too large");
+                if (_scanner.IsAt(FirstSet.AssignOperator))
+                {
+                    // We have assign.
+                    var assignExpr = _scanner.OpenBefore(operandExpr);
+                    _scanner.EatToken();
+                    EnsureExpr(anchor);
+                    return _scanner.Close(assignExpr, SyntaxKind.AssignExpr);
+                }
+
+                return operandExpr;
+            }
+                
+        }
     }
 
-    
+
     private MarkClose EatIf(Anchor anchor)
     {
         Debug.Assert(_scanner.IsAt(TokenKind.IfKw));
@@ -83,7 +70,7 @@ public partial class Parser
 
         // --- Condition and body
         var ifAnchor = anchor | TokenKind.ElseKw;
-        ExpectOperandExpr(left: null, ifAnchor);
+        EnsureOperandExpr(left: null, ifAnchor);
         EnsureBody(ifAnchor);
 
         // --- Else
@@ -188,7 +175,7 @@ public partial class Parser
 
         var arm = _scanner.Open();
         _scanner.EatKnownToken(TokenKind.RightDoubleArrow);
-        ExpectExpr(anchor);
+        EnsureExpr(anchor);
         return _scanner.Close(arm, SyntaxKind.Arm);
     }
 }

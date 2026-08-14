@@ -14,7 +14,7 @@ public partial class Parser
         var moduleDecl = _scanner.Open();
         _scanner.EatKnownToken(TokenKind.ModuleKw);
 
-        ExpectQualifiedName();
+        EnsureQualifiedName();
 
         // --- ";" means its a global declaration
         if (_scanner.IsAt(TokenKind.Semicolon))
@@ -23,33 +23,31 @@ public partial class Parser
             return _scanner.Close(moduleDecl, SyntaxKind.GlobalModuleDecl);
         }
 
-        // --- "}" means we parse the entire block
-        if (_scanner.IsAt(TokenKind.OpenBrace))
+        // --- Missing { }?
+        if (!EnsureToken(TokenKind.OpenBrace))
         {
-            _scanner.EatKnownToken(TokenKind.OpenBrace);
-
-            var moduleBodyAnchor = Anchor.Forced | FirstSet.MemberDecl | TokenKind.CloseBrace;
-            foreach (var _ in _scanner.MustEatEachIteration())
-            {
-                RecoverTo(moduleBodyAnchor, ExpectedSyntax.Member);
-
-                if (_scanner.IsAt(TokenKind.ModuleKw))
-                    EatModuleDecl();
-                else if (_scanner.IsAt(FirstSet.FnDecl))
-                    EatMemberDecl(moduleBodyAnchor);
-                else
-                {
-                    // Could be `}` or Eof
-                    break;
-                }
-            }
-
-            EnsureToken(TokenKind.CloseBrace);
+            _scanner.MakeToken(TokenKind.CloseBrace);
             return _scanner.Close(moduleDecl, SyntaxKind.ModuleDecl);
         }
 
-        // --- Anything else is garbage
-        ReportMissing(TokenKind.OpenBrace);
+        // --- Eat members
+        var moduleBodyAnchor = Anchor.Forced | FirstSet.MemberDecl | TokenKind.CloseBrace;
+        foreach (var _ in _scanner.MustEatEachIteration())
+        {
+            RecoverTo(moduleBodyAnchor, ExpectedSyntax.Member);
+
+            if (_scanner.IsAt(TokenKind.ModuleKw))
+                EatModuleDecl();
+            else if (_scanner.IsAt(FirstSet.FnDecl))
+                EatMemberDecl(moduleBodyAnchor);
+            else
+            {
+                // Could be `}` or Eof
+                break;
+            }
+        }
+
+        EnsureToken(TokenKind.CloseBrace);
         return _scanner.Close(moduleDecl, SyntaxKind.ModuleDecl);
     }
 
@@ -59,7 +57,7 @@ public partial class Parser
 
         var usingDecl = _scanner.Open();
         _scanner.EatKnownToken(TokenKind.UsingKw);
-        ExpectQualifiedName();
+        EnsureQualifiedName();
         EnsureToken(TokenKind.Semicolon);
         return _scanner.Close(usingDecl, SyntaxKind.UsingDecl);
     }
@@ -151,30 +149,8 @@ public partial class Parser
         var nativeClause = _scanner.Open();
         _scanner.EatKnownToken(TokenKind.NativeKw);
 
-        // if (!EnsureToken(TokenKind.OpenParen))
-        // {
-        //     // "(" is missing. We must special-case this, to ensure
-        //     // that the recovery doesn't gobble things that should belong
-        //     // to the outer loop, as in
-        //     //    native
-        //     //    1 + 2;
-        //     // Thus, break off without recovery.
-        //     EnsureStringExpr(nativeClauseAnchor);
-        //     _scanner.MakeToken(TokenKind.CloseParen);
-        //     return _scanner.Close(nativeClause, SyntaxKind.NativeClause);
-        // }
         EnsureToken(TokenKind.OpenParen);
-        // RecoverTo(nativeClauseAnchor | TokenKind.StringStart, ExpectedSyntax.String);
         EnsureStringExpr(nativeClauseAnchor);
-
-        // if (_scanner.IsAt(TokenKind.StringStart))
-        //     EnsureStringExpr(nativeClauseAnchor);
-        // else
-        // {
-        //     if (!RecoverTo(nativeClauseAnchor, ExpectedSyntax.String))
-        //         ReportMissing(ExpectedSyntax.String);
-        // }
-
         EnsureToken(TokenKind.CloseParen);
 
         return _scanner.Close(nativeClause, SyntaxKind.NativeClause);

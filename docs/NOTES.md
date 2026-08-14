@@ -10,20 +10,11 @@
 12.08 15:16: Müde, erschöpft, keine Lust mehr. Will unbedingt noch Claude fragen
 
 **Next**: 
-```axl
-fn Foo( :i32) { }
-fn Foo( :i32 -> string { }
 
-fn Foo(
-fn Another
-
-fn Foo(a : , b, : i32, :) -> { }
-```
 
 **refactor: Construct missing tokens**
-* terminology: Eat = its there; Make = not there, create missing; Ensure = Eat or Make
-* rewrite Eat/Expect*
 * errors as events to scanner
+* test: broken expressions
 
 **Small points**:
 * regressions.axl
@@ -36,6 +27,17 @@ fn Foo(a : , b, : i32, :) -> { }
 
 **Regressions:**
 * `fn A() = Print();` (mis-typed `=>`)
+
+* `fn Foo( :i32) { }`
+* `fn Foo( :i32 -> string { }`
+
+* `fn Foo(`
+* `fn Another`
+
+* `fn Foo(a : , b, : i32, :) -> { }`
+
+* `native(a) fn Foo();`
+
 
 # Parser
 [x] Corpus & Corpus-Test-Runner (expect: Parses without diagnostics)

@@ -220,7 +220,7 @@ public partial class Parser
 
         // --- Expression
         var groupAnchor = anchor | TokenKind.CloseParen;
-        ExpectExpr(groupAnchor);
+        EnsureExpr(groupAnchor);
 
         // --- Recover if confused
         var errorReported = RecoverTo(groupAnchor, expected: TokenKind.CloseParen);
