@@ -86,9 +86,12 @@ public class Dump(SourceFileView source)
 
                 _builder.Append(prefix);
                 _builder.AppendLine(token.IsMissing
-                    ? $"missing {token.Kind.DisplayName}"
+                    ? $"{GetMissingDisplayText(token)}"
                     : $"\'{source.GetText(token.Span)}\'");
                 break;
+
+                string GetMissingDisplayText(Token tkn)
+                    => tkn.Kind is TokenKind.Identifier ? "??ID" : $"??{tkn.Kind.DisplayName}";
             }
 
             case SyntaxNode node:
@@ -102,8 +105,8 @@ public class Dump(SourceFileView source)
                 var children = filterTrivia
                     ? [.. node.Children.Where(t => t is Token { Kind.IsTrivia: false } or SyntaxNode)]
                     : node.Children;
-                
-                if (children.All(e => e is Token))
+
+                if (children.All(e => e is Token { IsMissing: false }))
                 {
                     foreach (var child in children.OfType<Token>())
                     {

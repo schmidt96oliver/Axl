@@ -20,8 +20,9 @@ public partial class ParserTests
                     · ParamList
                     · · '('
                     · · Param
-                    · · · IdName ''
-                    · · missing ')'
+                    · · · IdName
+                    · · · · ??ID
+                    · · ??')'
                     · BlockExpr '{' '}'
                     """);
             [Fact]
@@ -36,8 +37,9 @@ public partial class ParserTests
                     · ParamList
                     · · '('
                     · · Param
-                    · · · IdName ''
-                    · · missing ')'
+                    · · · IdName
+                    · · · · ??ID
+                    · · ??')'
                     · ';'
                     """);
             [Fact]
@@ -52,8 +54,9 @@ public partial class ParserTests
                     · ParamList
                     · · '('
                     · · Param
-                    · · · IdName ''
-                    · · missing ')'
+                    · · · IdName
+                    · · · · ??ID
+                    · · ??')'
                     · BlockExpr '{' '}'
                     · ';'
                     """);
@@ -69,8 +72,9 @@ public partial class ParserTests
                     · ParamList
                     · · '('
                     · · Param
-                    · · · IdName ''
-                    · · missing ')'
+                    · · · IdName
+                    · · · · ??ID
+                    · · ??')'
                     · '->'
                     · NativeTypeName 'i32'
                     · BlockExpr '{' '}'
@@ -92,8 +96,9 @@ public partial class ParserTests
                     · · · NativeTypeName 'i32'
                     · · ','
                     · · Param
-                    · · · IdName ''
-                    · · missing ')'
+                    · · · IdName
+                    · · · · ??ID
+                    · · ??')'
                     · BlockExpr '{' '}'
                     """);
             [Fact]
@@ -113,8 +118,9 @@ public partial class ParserTests
                     · · · NativeTypeName 'i32'
                     · · ','
                     · · Param
-                    · · · IdName ''
-                    · · missing ')'
+                    · · · IdName
+                    · · · · ??ID
+                    · · ??')'
                     · '->'
                     · NativeTypeName 'i32'
                     · BlockExpr '{' '}'
@@ -137,8 +143,9 @@ public partial class ParserTests
                     · · ','
                     · · Error '@@'
                     · · Param
-                    · · · IdName ''
-                    · · missing ')'
+                    · · · IdName
+                    · · · · ??ID
+                    · · ??')'
                     · BlockExpr '{' '}'
                     """);
             [Fact]
@@ -159,8 +166,9 @@ public partial class ParserTests
                     · · ','
                     · · Error '@@'
                     · · Param
-                    · · · IdName ''
-                    · · missing ')'
+                    · · · IdName
+                    · · · · ??ID
+                    · · ??')'
                     · '->'
                     · NativeTypeName 'string'
                     · BlockExpr '{' '}'
@@ -180,7 +188,7 @@ public partial class ParserTests
                     · · '('
                     · · Param
                     · · · IdName 'a'
-                    · · missing ','
+                    · · ??','
                     · · Param
                     · · · IdName 'b'
                     · · ')'
@@ -202,7 +210,7 @@ public partial class ParserTests
                     · · · IdName 'a'
                     · · · ':'
                     · · · NativeTypeName 'i32'
-                    · · missing ','
+                    · · ??','
                     · · Param
                     · · · IdName 'b'
                     · · · ':'
@@ -227,10 +235,10 @@ public partial class ParserTests
                     · · · IdName 'a'
                     · · · ':'
                     · · · NativeTypeName 'i32'
-                    · · missing ','
+                    · · ??','
                     · · Param
                     · · · IdName 'b'
-                    · · missing ','
+                    · · ??','
                     · · Param
                     · · · IdName 'c'
                     · · · ':'
@@ -256,10 +264,12 @@ public partial class ParserTests
                     · ParamList
                     · · '('
                     · · Param
-                    · · · IdName ''
+                    · · · IdName
+                    · · · · ??ID
                     · · ','
                     · · Param
-                    · · · IdName ''
+                    · · · IdName
+                    · · · · ??ID
                     · · ')'
                     · BlockExpr '{' '}'
                     """);
@@ -278,13 +288,16 @@ public partial class ParserTests
                     · ParamList
                     · · '('
                     · · Param
-                    · · · IdName ''
+                    · · · IdName
+                    · · · · ??ID
                     · · ','
                     · · Param
-                    · · · IdName ''
+                    · · · IdName
+                    · · · · ??ID
                     · · ','
                     · · Param
-                    · · · IdName ''
+                    · · · IdName
+                    · · · · ??ID
                     · · ')'
                     · BlockExpr '{' '}'
                     """);
@@ -304,7 +317,8 @@ public partial class ParserTests
                     · · · IdName 'a'
                     · · ','
                     · · Param
-                    · · · IdName ''
+                    · · · IdName
+                    · · · · ??ID
                     · · ')'
                     · BlockExpr '{' '}'
                     """);
@@ -326,7 +340,7 @@ public partial class ParserTests
                     · · Param
                     · · · IdName 'a'
                     · · Error '@@'
-                    · · missing ','
+                    · · ??','
                     · · Param
                     · · · IdName 'b'
                     · · ')'
@@ -367,7 +381,8 @@ public partial class ParserTests
                     · · '('
                     · · Error '@@'
                     · · Param
-                    · · · IdName ''
+                    · · · IdName
+                    · · · · ??ID
                     · · ','
                     · · Param
                     · · · IdName 'a'
@@ -391,7 +406,8 @@ public partial class ParserTests
                     · · '('
                     · · Error '@@'
                     · · Param
-                    · · · IdName ''
+                    · · · IdName
+                    · · · · ??ID
                     · · ')'
                     · BlockExpr '{' '}'
                     """);
@@ -410,10 +426,12 @@ public partial class ParserTests
                     · · '('
                     · · Error '@@'
                     · · Param
-                    · · · IdName ''
+                    · · · IdName
+                    · · · · ??ID
                     · · ','
                     · · Param
-                    · · · IdName ''
+                    · · · IdName
+                    · · · · ??ID
                     · · ')'
                     · BlockExpr '{' '}'
                     """);
@@ -436,7 +454,8 @@ public partial class ParserTests
                     · · ','
                     · · Error '@@'
                     · · Param
-                    · · · IdName ''
+                    · · · IdName
+                    · · · · ??ID
                     · · ')'
                     · BlockExpr '{' '}'
                     """);
@@ -455,7 +474,8 @@ public partial class ParserTests
                     · · '('
                     · · Error '@@'
                     · · Param
-                    · · · IdName ''
+                    · · · IdName
+                    · · · · ??ID
                     · · ','
                     · · Param
                     · · · IdName 'a'
@@ -481,11 +501,13 @@ public partial class ParserTests
                     · · '('
                     · · Error '@@'
                     · · Param
-                    · · · IdName ''
+                    · · · IdName
+                    · · · · ??ID
                     · · ','
                     · · Error '@@'
                     · · Param
-                    · · · IdName ''
+                    · · · IdName
+                    · · · · ??ID
                     · · ')'
                     · BlockExpr '{' '}'
                     """);
@@ -665,7 +687,7 @@ public partial class ParserTests
                     · · · '"'
                     · · · StringText 'Foo'
                     · · · '"'
-                    · · missing ')'
+                    · · ??')'
                     · 'fn'
                     · IdName 'A'
                     · ParamList '(' ')'

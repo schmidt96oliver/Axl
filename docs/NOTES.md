@@ -16,8 +16,6 @@ fn Foo( :i32 -> string { }
 ```
 
 **refactor: Construct missing tokens**
-* claim error position
-* dump format?
 * terminology: Eat = its there; Make = not there, create missing; Ensure = Eat or Make
 * rewrite Eat/Expect*
 * errors as events to scanner
