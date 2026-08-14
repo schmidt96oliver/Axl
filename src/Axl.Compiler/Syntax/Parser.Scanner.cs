@@ -2,6 +2,7 @@ using System.Collections.Immutable;
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using System.Text;
+using Axl.Compiler.Diagnostics;
 
 namespace Axl.Compiler.Syntax;
 
@@ -9,12 +10,39 @@ public partial class Parser
 {
     public sealed class ParserStuckException(string message)
         : Exception(message);
+
+    private enum ExpectedSyntaxErrorContext
+    {
+        MissingBefore,
+        MissingAfter,
+        Unexpected,
+        ManualReporting,
+    }
     
     private abstract record ParseEvent
     {
         public sealed record Open : ParseEvent
         {
+            /// <summary>
+            /// <c>null</c> only, when node has not yet been closed.
+            /// </summary>
             public SyntaxKind? Kind { get; set; } = null;
+
+            /// <summary>
+            /// If <see cref="Kind"/> is <see cref="SyntaxKind.Error"/>, then this
+            /// is the syntax that was expected instead of the error. <c>null</c> if
+            /// <see cref="Kind"/> is not error -- or -- <see cref="ErrorContext"/> is
+            /// <see cref="ExpectedSyntaxErrorContext.ManualReporting"/> in which case it
+            /// is expected that the calling method already reports the error.
+            /// </summary>
+            public ExpectedSyntax? ExpectedSyntax { get; set; } = null;
+
+            /// <summary>
+            /// The context, <see cref="ExpectedSyntax"/> should be reported in an
+            /// <see cref="SyntaxKind.Error"/> node. <c>null</c>, if <see cref="Kind"/>
+            /// is not <see cref="SyntaxKind.Error"/>.
+            /// </summary>
+            public ExpectedSyntaxErrorContext? ErrorContext { get; set; } = null;
         }
 
         public sealed record Close : ParseEvent;
@@ -29,7 +57,7 @@ public partial class Parser
         /// <summary>
         /// Makes a missing token of <paramref name="Kind"/>.
         /// </summary>
-        public sealed record Make(TokenKind Kind) : ParseEvent;
+        public sealed record Make(TokenKind Kind, ExpectedSyntax ExpectedSyntax) : ParseEvent;
     }
     
 
@@ -154,6 +182,7 @@ public partial class Parser
 
         public MarkClose Close(MarkOpen openMark, SyntaxKind kind)
         {
+            Guard.MustBe(kind is not SyntaxKind.Error, $"Construct through {nameof(CloseAsError)}");
             Debug.Assert(_events[(openMark.OpenEventIndex + 1)..]
                 .Any(ev => ev is ParseEvent.Eat or ParseEvent.EatAs or ParseEvent.Make),
                 "Closed a node which has no tokens.");
@@ -166,6 +195,40 @@ public partial class Parser
             return new MarkClose(openMark.OpenEventIndex);
         }
 
+        public MarkClose CloseAsError(MarkOpen openMark, ExpectedSyntax expectedSyntax, ExpectedSyntaxErrorContext context)
+        {
+            Debug.Assert(_events[(openMark.OpenEventIndex + 1)..]
+                    .Any(ev => ev is ParseEvent.Eat or ParseEvent.EatAs or ParseEvent.Make),
+                "Closed a node which has no tokens.");
+
+            var openEvent = _events[openMark.OpenEventIndex] as ParseEvent.Open;
+            Debug.Assert(openEvent is not null, $"{nameof(openMark.OpenEventIndex)} was not an open event.");
+            
+            openEvent.Kind = SyntaxKind.Error;
+            openEvent.ExpectedSyntax = expectedSyntax;
+            openEvent.ErrorContext = context;
+            
+            _events.Add(new ParseEvent.Close());
+            return new MarkClose(openMark.OpenEventIndex);
+        }
+
+        public MarkClose CloseAsErrorReportManual(MarkOpen openMark)
+        {
+            Debug.Assert(_events[(openMark.OpenEventIndex + 1)..]
+                    .Any(ev => ev is ParseEvent.Eat or ParseEvent.EatAs or ParseEvent.Make),
+                "Closed a node which has no tokens.");
+
+            var openEvent = _events[openMark.OpenEventIndex] as ParseEvent.Open;
+            Debug.Assert(openEvent is not null, $"{nameof(openMark.OpenEventIndex)} was not an open event.");
+            
+            openEvent.Kind = SyntaxKind.Error;
+            openEvent.ExpectedSyntax = null;
+            openEvent.ErrorContext = ExpectedSyntaxErrorContext.ManualReporting;
+            
+            _events.Add(new ParseEvent.Close());
+            return new MarkClose(openMark.OpenEventIndex);
+        }
+        
         /// <summary>
         /// Requires a <see cref="MarkClose"/>, because the mark will be invalidated!
         /// </summary>
@@ -180,17 +243,17 @@ public partial class Parser
         /// <summary>
         /// Creates a missing token of <paramref name="kind"/>.
         /// </summary>
-        public void Make(TokenKind kind)
-         => _events.Add(new ParseEvent.Make(kind));
+        public void Make(TokenKind kind, ExpectedSyntax? expectedSyntax = null)
+         => _events.Add(new ParseEvent.Make(kind, expectedSyntax ?? kind));
         
 
         /// <summary>
         /// Creates a node of <paramref name="nodeKind"/> with a missing token of <paramref name="tokenKind"/>.
         /// </summary>
-        public MarkClose MakeIntoNode(TokenKind tokenKind, SyntaxKind nodeKind)
+        public MarkClose MakeIntoNode(TokenKind tokenKind, SyntaxKind nodeKind, ExpectedSyntax? expectedSyntax)
         {
             var node = Open();
-            Make(tokenKind);
+            Make(tokenKind, expectedSyntax ?? tokenKind);
             return Close(node, nodeKind);
         }
         
@@ -206,9 +269,17 @@ public partial class Parser
         
         public MarkClose EatIntoNode(SyntaxKind nodeKind)
         {
+            Guard.MustBe(nodeKind is not SyntaxKind.Error, $"Must be constructed through {nameof(EatIntoErrorNode)}");
             var node = Open();
             Eat();
             return Close(node, nodeKind);
+        }
+        
+        public MarkClose EatIntoErrorNode(ExpectedSyntax expectedSyntax)
+        {
+            var error = Open();
+            Eat();
+            return CloseAsError(error, expectedSyntax, ExpectedSyntaxErrorContext.Unexpected);
         }
 
         /// <summary>

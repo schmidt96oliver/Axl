@@ -65,10 +65,13 @@ public partial class Parser
                 EnsureOperandExprRhs(new LeftOperator(opPrecedence.Value, opToken), anchor,
                     out var ateAmbiguousOperatorChain);
 
-                lhs = _scanner.Close(expr,
-                    ateAmbiguousOperatorChain
-                        ? SyntaxKind.Error
-                        : SyntaxKind.BinaryExpr);
+                if (ateAmbiguousOperatorChain)
+                {
+                    // Error has been reported by rhs ensuring
+                    lhs = _scanner.CloseAsErrorReportManual(expr);
+                }
+                else
+                    lhs = _scanner.Close(expr, SyntaxKind.BinaryExpr);
             }
         }
 
@@ -222,7 +225,7 @@ public partial class Parser
         EnsureExpr(groupAnchor);
 
         // --- Recover if confused
-        var errorReported = RecoverTo(groupAnchor, expected: TokenKind.CloseParen);
+        var errorReported = RecoverTo(groupAnchor, expectedSyntax: TokenKind.CloseParen);
 
         if (_scanner.IsAt(TokenKind.CloseParen))
             _scanner.EatKnown(TokenKind.CloseParen);

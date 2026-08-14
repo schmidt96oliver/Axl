@@ -66,12 +66,12 @@ public partial class Parser
                 // can start a new statement.
                 RecoverTo(Anchor.From(FirstSet.Stmt)
                           | fileAnchor
-                          | TokenKind.Semicolon, expected: null);
+                          | TokenKind.Semicolon, ExpectedSyntax.Stmt);
 
                 if (_scanner.IsAt(TokenKind.Semicolon))
                 {
                     ReportUnexpected(ExpectedSyntax.Stmt);
-                    _scanner.EatIntoNode(SyntaxKind.Error);
+                    _scanner.EatIntoErrorNode(ExpectedSyntax.Stmt);
                 }
             }
         }
@@ -89,24 +89,40 @@ public partial class Parser
     /// Always leaves the scanner on <paramref name="anchor"/>.
     /// </summary>
     /// <returns><c>True</c> iff garbage was collected and an error node added.</returns>
-    private bool RecoverTo(Anchor anchor, ExpectedSyntax? expected)
+    private bool RecoverTo(Anchor anchor, ExpectedSyntax expectedSyntax)
     {
         if (_scanner.IsAt(anchor))
             return false;
 
-        var errorReported = expected is ExpectedSyntax actualExpected
-                            && ReportUnexpected(actualExpected);
+        ReportUnexpected(expectedSyntax);
 
+        var error = _scanner.Open();
         EatGarbageIntoError(anchor);
-        if (errorReported)
-            SuppressErrorsAtCurrentPosition();
+        _scanner.CloseAsError(error, expectedSyntax, ExpectedSyntaxErrorContext.Unexpected);
+
+        Debug.Assert(_scanner.IsAt(anchor));
+        
+        SuppressErrorsAtCurrentPosition();
+        
+        return true;
+    }
+
+    private bool RecoverTo(Anchor anchor, Func<ExpectedSyntax> expectedSyntaxCallback)
+    {
+        if (_scanner.IsAt(anchor))
+            return false;
+
+        var error = _scanner.Open();
+        EatGarbageIntoError(anchor);
+        _scanner.CloseAsError(error, expectedSyntaxCallback(), ExpectedSyntaxErrorContext.Unexpected);
+
+        Debug.Assert(_scanner.IsAt(anchor));
         
         return true;
     }
 
     private void EatGarbageIntoError(Anchor anchor)
     {
-        var error = _scanner.Open();
         _scanner.Eat();
 
         foreach (var __ in _scanner.MustEatEachIteration())
@@ -116,10 +132,6 @@ public partial class Parser
 
             _scanner.Eat();
         }
-
-        _scanner.Close(error, SyntaxKind.Error);
-
-        Debug.Assert(_scanner.IsAt(anchor));
     }
 
 
@@ -194,7 +206,7 @@ public partial class Parser
     {
         if (!_scanner.IsAt(expectedKind))
         {
-            _scanner.Make(expectedKind);
+            _scanner.Make(expectedKind, expectedSyntax);
             ReportMissing(expectedSyntax ?? expectedKind);
             return false;
         }
@@ -270,7 +282,7 @@ public partial class Parser
         foreach (var _ in _scanner.MustEatEachIteration())
         {
             // --- Item
-            RecoverTo(itemAnchor | itemFirst, expected: expectedItemSyntax);
+            RecoverTo(itemAnchor | itemFirst, expectedSyntax: expectedItemSyntax);
             ensureItem(itemAnchor);
             
             if (_scanner.IsAt(closeToken) ||
@@ -281,7 +293,9 @@ public partial class Parser
             // Recover without error first, so we can report "expected close" or
             // "expected ','" based on what followed.
             var preRecoverToken = _scanner.Peek();
-            var recovered = RecoverTo(itemAnchor | itemFirst, expected: null);
+            var recovered = RecoverTo(itemAnchor | itemFirst, expectedSyntaxCallback: () => 
+                _scanner.IsAt(anchor | closeToken) ? closeToken : TokenKind.Comma);
+            
             if (_scanner.IsAt(closeToken) ||
                 _scanner.IsAt(anchor))
             {

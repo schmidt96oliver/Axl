@@ -42,7 +42,7 @@ public partial class Parser
                     nextToken++;
                     break;
                 
-                case ParseEvent.Make(var kind):
+                case ParseEvent.Make(var kind, var expectedSyntax):
                     var span = nextToken == 0
                         ? SourceSpan.EmptyBefore(tokens[0].Span)
                         : SourceSpan.EmptyAfter(tokens[nextToken - 1].Span);

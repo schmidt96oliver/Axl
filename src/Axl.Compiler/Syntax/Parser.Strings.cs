@@ -178,7 +178,9 @@ public partial class Parser
         }
 
         if (errorExpr is MarkOpen openedErrorExpr)
-            return _scanner.Close(openedErrorExpr, SyntaxKind.Error);
+            return _scanner.CloseAsError(openedErrorExpr, 
+                    expectedSyntax: TokenKind.CloseBrace,
+                    context: ExpectedSyntaxErrorContext.Unexpected);
         return null;
 
         bool WillCurrentStringBeContinued()

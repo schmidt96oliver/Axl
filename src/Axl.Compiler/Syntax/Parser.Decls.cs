@@ -79,7 +79,9 @@ public partial class Parser
         // --- No actual declaration found.
         // Wrap modifiers into an error.
         ReportMissing(TokenKind.FnKw);
-        return _scanner.Close(decl, SyntaxKind.Error);
+        return _scanner.CloseAsError(decl,
+            expectedSyntax: TokenKind.FnKw,
+            context: ExpectedSyntaxErrorContext.MissingAfter);
     }
 
     private MarkClose EatFnDecl(Anchor anchor, MarkOpen fnDecl)
@@ -108,7 +110,11 @@ public partial class Parser
             if (_scanner.IsAt(TokenKind.Semicolon))
                 _scanner.EatKnown(TokenKind.Semicolon);
             
-            return _scanner.Close(fnDecl, SyntaxKind.Error);
+            // TODO: Eat the semicolon somewhere else
+            
+            return _scanner.CloseAsError(fnDecl,
+                expectedSyntax: TokenKind.FnKw,
+                context: ExpectedSyntaxErrorContext.MissingAfter);
         }
 
         _scanner.EatKnown(TokenKind.FnKw);

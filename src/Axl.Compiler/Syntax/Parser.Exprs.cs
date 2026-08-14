@@ -134,7 +134,7 @@ public partial class Parser
             else if (_scanner.IsAt(TokenKind.Semicolon))
             {
                 ReportUnexpected(ExpectedSyntax.Stmt);
-                _scanner.EatIntoNode(SyntaxKind.Error);
+                _scanner.EatIntoErrorNode(ExpectedSyntax.Stmt);
             }
             
             // --- Closing tokens
@@ -148,7 +148,7 @@ public partial class Parser
                 if (_scanner.IsAt(TokenKind.Semicolon) && _scanner.Peek(1).Kind is TokenKind.CloseBrace)
                 {
                     ReportUnexpected(TokenKind.CloseBrace);
-                    _scanner.EatIntoNode(SyntaxKind.Error);
+                    _scanner.EatIntoErrorNode(TokenKind.CloseBrace);
                 }
                 
                 // Arm ends the block, so break out. After the loop,
