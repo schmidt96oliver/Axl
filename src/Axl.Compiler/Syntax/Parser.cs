@@ -234,28 +234,34 @@ public partial class Parser
         
         return EnsureBlock(anchor, ExpectedSyntax.Body);
     }
-    
+
     /// <summary>
     /// Eats or makes a <paramref name="listKind"/> comma-delimited list of
     /// form <c>open (item ("," item)*)? close</c> into a <paramref name="listKind"/>.
     /// </summary>
+    /// <param name="anchor"></param>
+    /// <param name="openToken"></param>
+    /// <param name="closeToken"></param>
+    /// <param name="listKind"></param>
+    /// <param name="itemFirst"></param>
     /// <param name="ensureItem">
-    /// Eats or makes a single item. Gets an anchor that also stops on "," and
-    /// <paramref name="closeToken"/>, so a confused item hands control back here.
+    ///     Eats or makes a single item. Gets an anchor that also stops on "," and
+    ///     <paramref name="closeToken"/>, so a confused item hands control back here.
     /// </param>
-    private MarkClose EnsureDelimitedList(
-        Anchor anchor,
+    /// <param name="expectedItemSyntax"></param>
+    private MarkClose EnsureDelimitedList(Anchor anchor,
         TokenKind openToken,
         TokenKind closeToken,
         SyntaxKind listKind,
         TokenSet itemFirst,
-        ExpectedSyntax expectedItemSyntax,
-        Func<Anchor, MarkClose> ensureItem)
+        Func<Anchor, MarkClose> ensureItem,
+        ExpectedSyntax? expectedOpenSyntax,
+        ExpectedSyntax expectedItemSyntax)
     {
         var list = _scanner.Open();
         
         // --- Open Token
-        if (!EnsureToken(openToken))
+        if (!EnsureToken(openToken, expectedOpenSyntax))
         {
             // Synthesize closing token and bail.
             _scanner.MakeToken(closeToken);

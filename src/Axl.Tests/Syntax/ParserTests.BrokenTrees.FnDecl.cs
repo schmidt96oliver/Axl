@@ -325,7 +325,56 @@ public partial class ParserTests
                     · · ')'
                     · BlockExpr '{' '}'
                     """);
+
+            [Fact]
+            public void NoParamList_1()
+                => InlineSnapshot.Validate(Tree("fn A { }"), """
+                    ERROR MissingToken@[4, 4): Expected parameters ('(').
+
+
+                    FnDecl
+                    · 'fn'
+                    · IdName 'A'
+                    · ParamList
+                    · · ??'('
+                    · · ??')'
+                    · BlockExpr '{' '}'
+                    """);
             
+            [Fact]
+            public void NoParamList_2()
+                => InlineSnapshot.Validate(Tree("fn A => 1;"), """
+                    ERROR MissingToken@[4, 4): Expected parameters ('(').
+
+
+                    FnDecl
+                    · 'fn'
+                    · IdName 'A'
+                    · ParamList
+                    · · ??'('
+                    · · ??')'
+                    · Arm
+                    · · '=>'
+                    · · NumberLiteral '1'
+                    · ';'
+                    """);
+            
+            [Fact]
+            public void NoParamList_3()
+                => InlineSnapshot.Validate(Tree("fn A -> i32 { }"), """
+                    ERROR MissingToken@[4, 4): Expected parameters ('(').
+
+
+                    FnDecl
+                    · 'fn'
+                    · IdName 'A'
+                    · ParamList
+                    · · ??'('
+                    · · ??')'
+                    · '->'
+                    · NativeTypeName 'i32'
+                    · BlockExpr '{' '}'
+                    """);
             
             
 

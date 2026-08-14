@@ -163,8 +163,9 @@ public partial class Parser
             closeToken: TokenKind.CloseParen,
             listKind: SyntaxKind.ParamList,
             itemFirst: TokenSet.Of(TokenKind.Identifier),
-            expectedItemSyntax: ExpectedSyntax.Param,
-            ensureItem: EnsureParam);
+            ensureItem: EnsureParam, 
+            expectedOpenSyntax: ExpectedSyntax.ParamList,
+            expectedItemSyntax: ExpectedSyntax.Param);
         
         MarkClose EnsureParam(Anchor _)
         {

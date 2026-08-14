@@ -241,8 +241,9 @@ public partial class Parser
             closeToken: TokenKind.CloseParen,
             listKind: SyntaxKind.ArgList,
             itemFirst: FirstSet.Expr,
-            expectedItemSyntax: ExpectedSyntax.Expr,
-            ensureItem: EnsureArg);
+            ensureItem: EnsureArg, 
+            expectedOpenSyntax: null,
+            expectedItemSyntax: ExpectedSyntax.Expr);
 
         MarkClose EnsureArg(Anchor argAnchor)
         {
