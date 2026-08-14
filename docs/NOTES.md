@@ -10,6 +10,10 @@
 12.08 15:16: Müde, erschöpft, keine Lust mehr. Will unbedingt noch Claude fragen
 
 **Next**: 
+```axl
+fn Foo( :i32) { }
+fn Foo( :i32 -> string { }
+```
 
 **refactor: Construct missing tokens**
 * claim error position

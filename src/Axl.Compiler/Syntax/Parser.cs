@@ -95,10 +95,13 @@ public partial class Parser
         if (_scanner.IsAt(anchor))
             return false;
 
-        if (expected is ExpectedSyntax actualExpected)
-            ReportUnexpected(actualExpected);
+        var errorReported = expected is ExpectedSyntax actualExpected
+                            && ReportUnexpected(actualExpected);
 
         EatGarbageIntoError(anchor);
+        if (errorReported)
+            SuppressErrorsAtCurrentPosition();
+        
         return true;
     }
 
@@ -126,7 +129,7 @@ public partial class Parser
     /// or <see cref="Diagnostic.MissingToken"/> errors at the same
     /// position. 
     /// </summary>
-    private void ReportError(Diagnostic.Error error)
+    private bool ReportError(Diagnostic.Error error)
     {
         if (error is not (Diagnostic.UnexpectedToken or Diagnostic.MissingToken))
         {
@@ -136,21 +139,36 @@ public partial class Parser
             // reporting of those.
             
             _errorContext.Bag.ReportError(error);
-            return;
+            return true;
         }
         
         if (_errorContext.LastErrorPosition != _scanner.Position)
         {
             _errorContext.Bag.ReportError(error);
             _errorContext.LastErrorPosition = _scanner.Position;
+            return true;
         }
-    }
-    
-    private void ReportUnexpected(ExpectedSyntax expected)
-        => ReportError(new Diagnostic.UnexpectedToken(
-            _source, _scanner.Peek(), expected));
 
-    private void ReportMissing(ExpectedSyntax expected)
+        return false;
+    }
+
+    /// <summary>
+    /// Suppresses further <see cref="Diagnostic.UnexpectedToken"/>
+    /// or <see cref="Diagnostic.MissingToken"/> at the current position.
+    /// </summary>
+    private void SuppressErrorsAtCurrentPosition()
+    {
+        _errorContext.LastErrorPosition = _scanner.Position;
+    }
+
+    private bool ReportUnexpected(ExpectedSyntax expected)
+        => ReportUnexpected(_scanner.Peek(), expected);
+    
+    private bool ReportUnexpected(Token actual, ExpectedSyntax expected)
+        => ReportError(new Diagnostic.UnexpectedToken(
+            _source, actual, expected));
+
+    private bool ReportMissing(ExpectedSyntax expected)
         => ReportError(new Diagnostic.MissingToken(
             _source,
             Previous: _scanner.Last,
@@ -205,32 +223,30 @@ public partial class Parser
         var itemAnchor = anchor | closeToken | TokenKind.Comma;
         foreach (var _ in _scanner.MustEatEachIteration())
         {
+            // --- Item
             RecoverTo(itemAnchor | itemFirst, expected: expectedItemSyntax);
-            
-            parseItem(itemAnchor); //TODO: Suppress error, if has recovered (that reports an error)
+            parseItem(itemAnchor);
             
             if (_scanner.IsAt(closeToken) ||
                 _scanner.IsAt(anchor))
                 break;
             
-            // if (!ExpectToken(TokenKind.Comma))
-            if (_scanner.IsAt(TokenKind.Comma))
-                _scanner.EatKnownToken(TokenKind.Comma);
-            else
+            // --- Comma
+            // Recover without error first, so we can report "expected ')'" or
+            // "expected ','" based on what followed.
+            var preRecoverToken = _scanner.Peek();
+            var recovered = RecoverTo(itemAnchor | itemFirst, expected: null);
+            if (_scanner.IsAt(closeToken) ||
+                _scanner.IsAt(anchor))
             {
-                var hasRecovered = RecoverTo(itemAnchor | itemFirst, expected: TokenKind.Comma);
-                
-                if (_scanner.IsAt(closeToken)
-                    || _scanner.IsAt(anchor))
-                    break;
-                
-                if (!hasRecovered) 
-                    ExpectToken(TokenKind.Comma);
-                else if (_scanner.IsAt(TokenKind.Comma))
-                    _scanner.EatKnownToken(TokenKind.Comma);
-                else
-                    _scanner.AddMissingToken(TokenKind.Comma);
+                if (recovered)
+                    ReportUnexpected(preRecoverToken, expected: TokenKind.CloseParen);
+                break;
             }
+
+            if (recovered)
+                ReportUnexpected(preRecoverToken, expected: TokenKind.Comma);
+            ExpectToken(TokenKind.Comma);
         }
 
         // --- Expect close

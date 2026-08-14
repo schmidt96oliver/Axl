@@ -21,6 +21,7 @@ public partial class ParserTests
                     · · · '('
                     · · · Arg
                     · · · · IdName 'a'
+                    · · · missing ','
                     · · · Arg
                     · · · · IdName 'b'
                     · · · ')'
@@ -48,6 +49,7 @@ public partial class ParserTests
                     · · · · · · · '.'
                     · · · · · · · IdName 'c'
                     · · · · · · ArgList '(' ')'
+                    · · · missing ','
                     · · · Arg
                     · · · · NumberLiteral '1'
                     · · · ')'
@@ -68,11 +70,13 @@ public partial class ParserTests
                     · · · '('
                     · · · Arg
                     · · · · IdName 'a'
+                    · · · missing ','
                     · · · Arg
                     · · · · IdName 'b'
                     · · · ','
                     · · · Arg
                     · · · · IdName 'c'
+                    · · · missing ','
                     · · · Arg
                     · · · · IdName 'd'
                     · · · ')'

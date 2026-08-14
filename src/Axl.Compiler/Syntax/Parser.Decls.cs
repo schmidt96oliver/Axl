@@ -179,13 +179,10 @@ public partial class Parser
         
         MarkClose ParseParam(Anchor _)
         {
-            if (!_scanner.IsAt(TokenKind.Identifier))
-            {
-                ReportMissing(ExpectedSyntax.Param);
-                return ConstructMissingIdName();
-            }
-            
             var param = _scanner.Open();
+            if (!_scanner.IsAt(TokenKind.Identifier))
+                ReportMissing(ExpectedSyntax.Param);
+            
             ParseIdName();
             if (_scanner.IsAt(TokenKind.Colon))
             {

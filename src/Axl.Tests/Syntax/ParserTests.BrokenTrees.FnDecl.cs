@@ -17,7 +17,11 @@ public partial class ParserTests
                     FnDecl
                     · 'fn'
                     · IdName 'Foo'
-                    · ParamList '('
+                    · ParamList
+                    · · '('
+                    · · Param
+                    · · · IdName ''
+                    · · missing ')'
                     · BlockExpr '{' '}'
                     """);
             [Fact]
@@ -29,7 +33,11 @@ public partial class ParserTests
                     FnDecl
                     · 'fn'
                     · IdName 'Foo'
-                    · ParamList '('
+                    · ParamList
+                    · · '('
+                    · · Param
+                    · · · IdName ''
+                    · · missing ')'
                     · ';'
                     """);
             [Fact]
@@ -41,7 +49,11 @@ public partial class ParserTests
                     FnDecl
                     · 'fn'
                     · IdName 'Foo'
-                    · ParamList '('
+                    · ParamList
+                    · · '('
+                    · · Param
+                    · · · IdName ''
+                    · · missing ')'
                     · BlockExpr '{' '}'
                     · ';'
                     """);
@@ -54,7 +66,11 @@ public partial class ParserTests
                     FnDecl
                     · 'fn'
                     · IdName 'Foo'
-                    · ParamList '('
+                    · ParamList
+                    · · '('
+                    · · Param
+                    · · · IdName ''
+                    · · missing ')'
                     · '->'
                     · NativeTypeName 'i32'
                     · BlockExpr '{' '}'
@@ -75,6 +91,9 @@ public partial class ParserTests
                     · · · ':'
                     · · · NativeTypeName 'i32'
                     · · ','
+                    · · Param
+                    · · · IdName ''
+                    · · missing ')'
                     · BlockExpr '{' '}'
                     """);
             [Fact]
@@ -93,6 +112,9 @@ public partial class ParserTests
                     · · · ':'
                     · · · NativeTypeName 'i32'
                     · · ','
+                    · · Param
+                    · · · IdName ''
+                    · · missing ')'
                     · '->'
                     · NativeTypeName 'i32'
                     · BlockExpr '{' '}'
@@ -101,7 +123,6 @@ public partial class ParserTests
             public void UnclosedParamList_7()
                 => InlineSnapshot.Validate(Tree("fn Foo(a: i32, @@ { }"), """
                     ERROR UnexpectedToken@[15, 17): Expected a parameter, got unknown characters.
-                    ERROR MissingToken@[17, 17): Expected ')'.
 
 
                     FnDecl
@@ -115,13 +136,15 @@ public partial class ParserTests
                     · · · NativeTypeName 'i32'
                     · · ','
                     · · Error '@@'
+                    · · Param
+                    · · · IdName ''
+                    · · missing ')'
                     · BlockExpr '{' '}'
                     """);
             [Fact]
             public void UnclosedParamList_8()
                 => InlineSnapshot.Validate(Tree("fn Foo(a: i32, @@ -> string { }"), """
                     ERROR UnexpectedToken@[15, 17): Expected a parameter, got unknown characters.
-                    ERROR MissingToken@[17, 17): Expected ')'.
 
 
                     FnDecl
@@ -135,6 +158,9 @@ public partial class ParserTests
                     · · · NativeTypeName 'i32'
                     · · ','
                     · · Error '@@'
+                    · · Param
+                    · · · IdName ''
+                    · · missing ')'
                     · '->'
                     · NativeTypeName 'string'
                     · BlockExpr '{' '}'
@@ -154,6 +180,7 @@ public partial class ParserTests
                     · · '('
                     · · Param
                     · · · IdName 'a'
+                    · · missing ','
                     · · Param
                     · · · IdName 'b'
                     · · ')'
@@ -175,6 +202,7 @@ public partial class ParserTests
                     · · · IdName 'a'
                     · · · ':'
                     · · · NativeTypeName 'i32'
+                    · · missing ','
                     · · Param
                     · · · IdName 'b'
                     · · · ':'
@@ -199,8 +227,10 @@ public partial class ParserTests
                     · · · IdName 'a'
                     · · · ':'
                     · · · NativeTypeName 'i32'
+                    · · missing ','
                     · · Param
                     · · · IdName 'b'
+                    · · missing ','
                     · · Param
                     · · · IdName 'c'
                     · · · ':'
@@ -216,49 +246,68 @@ public partial class ParserTests
             [Fact]
             public void ParamList_ForgottenItem_1()
                 => InlineSnapshot.Validate(Tree("fn Foo( , ) { }"), """
-                                                                    ERROR MissingToken@[7, 7): Expected a parameter.
-                                                                    ERROR MissingToken@[9, 9): Expected a parameter.
+                    ERROR MissingToken@[7, 7): Expected a parameter.
+                    ERROR MissingToken@[9, 9): Expected a parameter.
 
 
-                                                                    FnDecl
-                                                                    · 'fn'
-                                                                    · IdName 'Foo'
-                                                                    · ParamList '(' ',' ')'
-                                                                    · BlockExpr '{' '}'
-                                                                    """);
+                    FnDecl
+                    · 'fn'
+                    · IdName 'Foo'
+                    · ParamList
+                    · · '('
+                    · · Param
+                    · · · IdName ''
+                    · · ','
+                    · · Param
+                    · · · IdName ''
+                    · · ')'
+                    · BlockExpr '{' '}'
+                    """);
 
             [Fact]
             public void ParamList_ForgottenItem_2()
                 => InlineSnapshot.Validate(Tree("fn Foo( , , ) { }"), """
-                                                                      ERROR MissingToken@[7, 7): Expected a parameter.
-                                                                      ERROR MissingToken@[9, 9): Expected a parameter.
-                                                                      ERROR MissingToken@[11, 11): Expected a parameter.
+                    ERROR MissingToken@[7, 7): Expected a parameter.
+                    ERROR MissingToken@[9, 9): Expected a parameter.
+                    ERROR MissingToken@[11, 11): Expected a parameter.
 
 
-                                                                      FnDecl
-                                                                      · 'fn'
-                                                                      · IdName 'Foo'
-                                                                      · ParamList '(' ',' ',' ')'
-                                                                      · BlockExpr '{' '}'
-                                                                      """);
+                    FnDecl
+                    · 'fn'
+                    · IdName 'Foo'
+                    · ParamList
+                    · · '('
+                    · · Param
+                    · · · IdName ''
+                    · · ','
+                    · · Param
+                    · · · IdName ''
+                    · · ','
+                    · · Param
+                    · · · IdName ''
+                    · · ')'
+                    · BlockExpr '{' '}'
+                    """);
 
             [Fact]
             public void ParamList_ForgottenItem_3()
                 => InlineSnapshot.Validate(Tree("fn Foo(a,) { }"), """
-                                                                   ERROR MissingToken@[9, 9): Expected a parameter.
+                    ERROR MissingToken@[9, 9): Expected a parameter.
 
 
-                                                                   FnDecl
-                                                                   · 'fn'
-                                                                   · IdName 'Foo'
-                                                                   · ParamList
-                                                                   · · '('
-                                                                   · · Param
-                                                                   · · · IdName 'a'
-                                                                   · · ','
-                                                                   · · ')'
-                                                                   · BlockExpr '{' '}'
-                                                                   """);
+                    FnDecl
+                    · 'fn'
+                    · IdName 'Foo'
+                    · ParamList
+                    · · '('
+                    · · Param
+                    · · · IdName 'a'
+                    · · ','
+                    · · Param
+                    · · · IdName ''
+                    · · ')'
+                    · BlockExpr '{' '}'
+                    """);
             
             
             
@@ -277,6 +326,7 @@ public partial class ParserTests
                     · · Param
                     · · · IdName 'a'
                     · · Error '@@'
+                    · · missing ','
                     · · Param
                     · · · IdName 'b'
                     · · ')'
@@ -316,6 +366,8 @@ public partial class ParserTests
                     · ParamList
                     · · '('
                     · · Error '@@'
+                    · · Param
+                    · · · IdName ''
                     · · ','
                     · · Param
                     · · · IdName 'a'
@@ -338,6 +390,8 @@ public partial class ParserTests
                     · ParamList
                     · · '('
                     · · Error '@@'
+                    · · Param
+                    · · · IdName ''
                     · · ')'
                     · BlockExpr '{' '}'
                     """);
@@ -355,7 +409,11 @@ public partial class ParserTests
                     · ParamList
                     · · '('
                     · · Error '@@'
+                    · · Param
+                    · · · IdName ''
                     · · ','
+                    · · Param
+                    · · · IdName ''
                     · · ')'
                     · BlockExpr '{' '}'
                     """);
@@ -377,6 +435,8 @@ public partial class ParserTests
                     · · Error '@@'
                     · · ','
                     · · Error '@@'
+                    · · Param
+                    · · · IdName ''
                     · · ')'
                     · BlockExpr '{' '}'
                     """);
@@ -385,7 +445,7 @@ public partial class ParserTests
             public void ParamList_Garbage_7()
                 => InlineSnapshot.Validate(Tree("fn Foo(@@, a, b @@) { }"), """
                     ERROR UnexpectedToken@[7, 9): Expected a parameter, got unknown characters.
-                    ERROR UnexpectedToken@[16, 18): Expected ',', got unknown characters.
+                    ERROR UnexpectedToken@[16, 18): Expected ')', got unknown characters.
 
 
                     FnDecl
@@ -394,6 +454,8 @@ public partial class ParserTests
                     · ParamList
                     · · '('
                     · · Error '@@'
+                    · · Param
+                    · · · IdName ''
                     · · ','
                     · · Param
                     · · · IdName 'a'
@@ -418,8 +480,12 @@ public partial class ParserTests
                     · ParamList
                     · · '('
                     · · Error '@@'
+                    · · Param
+                    · · · IdName ''
                     · · ','
                     · · Error '@@'
+                    · · Param
+                    · · · IdName ''
                     · · ')'
                     · BlockExpr '{' '}'
                     """);
@@ -561,6 +627,7 @@ public partial class ParserTests
                     · · 'native'
                     · · '('
                     · · Error 'a'
+                    · · missing ')'
                     · 'fn'
                     · IdName 'A'
                     · ParamList '(' ')'
@@ -598,6 +665,7 @@ public partial class ParserTests
                     · · · '"'
                     · · · StringText 'Foo'
                     · · · '"'
+                    · · missing ')'
                     · 'fn'
                     · IdName 'A'
                     · ParamList '(' ')'
