@@ -99,9 +99,11 @@ public partial class Parser
             hasNativeClause = true;
         }
 
-        // --- FnDecl
-        if (!EnsureToken(TokenKind.FnKw))
+        // --- "fn"
+        if (!_scanner.IsAt(TokenKind.FnKw))
         {
+            ReportMissing(TokenKind.FnKw);
+            
             // Since we anchor on ";" in EatNativeDecl, we need to handle
             // that here. It was probably meant to close a native fn declaration,
             // so just eat it.
@@ -110,7 +112,9 @@ public partial class Parser
             
             return _scanner.Close(fnDecl, SyntaxKind.Error);
         }
-        ExpectIdName();
+
+        _scanner.EatKnownToken(TokenKind.FnKw);
+        EnsureIdName();
 
         // Inside ParamList, we can continue from "{" or "->"
         var paramListAnchor = anchor | TokenKind.OpenBrace | TokenKind.RightArrow | TokenKind.Semicolon;
@@ -125,14 +129,14 @@ public partial class Parser
             if (_scanner.Peek() is IdentifierToken { Identifier: "never" })
                 _scanner.EatTokenAs(TokenKind.NeverKw);
             else
-                ExpectTypeName();
+                EnsureTypeName();
         }
 
         if (hasNativeClause)
             EnsureToken(TokenKind.Semicolon);
         else
         {
-            ExpectBody(anchor);
+            EnsureBody(anchor);
             EnsureSemicolonIfRequired(ownsBody: true);
         }
 
@@ -143,30 +147,39 @@ public partial class Parser
     {
         // We can handle ")".
         var nativeClauseAnchor = anchor | TokenKind.CloseParen;
-            
+
         var nativeClause = _scanner.Open();
         _scanner.EatKnownToken(TokenKind.NativeKw);
 
-        // If we don't get "(", break off and leave the
-        // rest to the enclosing function.
-        if (_scanner.IsAt(TokenKind.OpenParen))
-        {
-            _scanner.EatKnownToken(TokenKind.OpenParen);
-            if (_scanner.IsAt(TokenKind.StringStart))
-                EatStringExpr(nativeClauseAnchor);
-            else
-            {
-                if (!RecoverTo(nativeClauseAnchor, ExpectedSyntax.String))
-                    ReportMissing(ExpectedSyntax.String);
-            }
-            EnsureToken(TokenKind.CloseParen);
-        }
-        else 
-            ReportMissing(TokenKind.OpenParen);
-        
+        // if (!EnsureToken(TokenKind.OpenParen))
+        // {
+        //     // "(" is missing. We must special-case this, to ensure
+        //     // that the recovery doesn't gobble things that should belong
+        //     // to the outer loop, as in
+        //     //    native
+        //     //    1 + 2;
+        //     // Thus, break off without recovery.
+        //     EnsureStringExpr(nativeClauseAnchor);
+        //     _scanner.MakeToken(TokenKind.CloseParen);
+        //     return _scanner.Close(nativeClause, SyntaxKind.NativeClause);
+        // }
+        EnsureToken(TokenKind.OpenParen);
+        // RecoverTo(nativeClauseAnchor | TokenKind.StringStart, ExpectedSyntax.String);
+        EnsureStringExpr(nativeClauseAnchor);
+
+        // if (_scanner.IsAt(TokenKind.StringStart))
+        //     EnsureStringExpr(nativeClauseAnchor);
+        // else
+        // {
+        //     if (!RecoverTo(nativeClauseAnchor, ExpectedSyntax.String))
+        //         ReportMissing(ExpectedSyntax.String);
+        // }
+
+        EnsureToken(TokenKind.CloseParen);
+
         return _scanner.Close(nativeClause, SyntaxKind.NativeClause);
     }
-    
+
     private MarkClose EnsureParamList(Anchor anchor)
     {
         return EnsureDelimitedList(anchor,

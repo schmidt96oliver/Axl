@@ -13,6 +13,11 @@
 ```axl
 fn Foo( :i32) { }
 fn Foo( :i32 -> string { }
+
+fn Foo(
+fn Another
+
+fn Foo(a : , b, : i32, :) -> { }
 ```
 
 **refactor: Construct missing tokens**

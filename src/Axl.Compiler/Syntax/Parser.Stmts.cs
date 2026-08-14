@@ -14,7 +14,7 @@ public partial class Parser
             var exprStmt = _scanner.Open();
             var isBodied = _scanner.IsAt(FirstSet.BodiedExpr);
 
-            ParseExpr(anchor | TokenKind.Semicolon);
+            EnsureExpr(anchor | TokenKind.Semicolon);
             EnsureSemicolonIfRequired(ownsBody: isBodied);
             
             return _scanner.Close(exprStmt, SyntaxKind.ExprStmt);

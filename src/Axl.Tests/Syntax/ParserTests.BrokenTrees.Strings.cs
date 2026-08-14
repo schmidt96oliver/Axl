@@ -29,6 +29,8 @@ public partial class ParserTests
                     · · · StringExpr
                     · · · · '"'
                     · · · · StringText 'Hello'
+                    · · · · ??'"'
+                    · · · ??';'
                     · · '}'
                     """);
 
@@ -53,7 +55,11 @@ public partial class ParserTests
                     · · · StringExpr
                     · · · · '"'
                     · · · · StringText 'Hello '
-                    · · · · StringInterpolation '{'
+                    · · · · StringInterpolation
+                    · · · · · '{'
+                    · · · · · ??'}'
+                    · · · · ??'"'
+                    · · · ??';'
                     · · '}'
                     """);
 
@@ -81,6 +87,9 @@ public partial class ParserTests
                     · · · · StringInterpolation
                     · · · · · '{'
                     · · · · · NumberLiteral '1'
+                    · · · · · ??'}'
+                    · · · · ??'"'
+                    · · · ??';'
                     · · '}'
                     """);
 
@@ -110,6 +119,9 @@ public partial class ParserTests
                     · · · · · BinaryExpr
                     · · · · · · NumberLiteral '1'
                     · · · · · · '+'
+                    · · · · · ??'}'
+                    · · · · ??'"'
+                    · · · ??';'
                     · · '}'
                     """);
 
@@ -140,6 +152,9 @@ public partial class ParserTests
                     · · · · · · NumberLiteral '1'
                     · · · · · · '+'
                     · · · · · · NumberLiteral '6'
+                    · · · · · ??'}'
+                    · · · · ??'"'
+                    · · · ??';'
                     · · '}'
                     """);
 
@@ -171,6 +186,8 @@ public partial class ParserTests
                     · · · · · · '+'
                     · · · · · · NumberLiteral '6'
                     · · · · · '}'
+                    · · · · ??'"'
+                    · · · ??';'
                     · · '}'
                     """);
 
@@ -196,6 +213,8 @@ public partial class ParserTests
                     · · · StringExpr
                     · · · · '"'
                     · · · · StringText 'Hello'
+                    · · · · ??'"'
+                    · · · ??';'
                     · · ExprStmt
                     · · · BinaryExpr
                     · · · · NumberLiteral '1'
@@ -230,6 +249,9 @@ public partial class ParserTests
                     · · · · StringInterpolation
                     · · · · · '{'
                     · · · · · NumberLiteral '1'
+                    · · · · · ??'}'
+                    · · · · ??'"'
+                    · · · ??';'
                     · · ExprStmt
                     · · · BinaryExpr
                     · · · · NumberLiteral '1'
@@ -269,6 +291,8 @@ public partial class ParserTests
                     · · · · · · NumberLiteral '6'
                     · · · · · '}'
                     · · · · StringText ' World'
+                    · · · · ??'"'
+                    · · · ??';'
                     · · ExprStmt
                     · · · BinaryExpr
                     · · · · NumberLiteral '1'
@@ -289,7 +313,10 @@ public partial class ParserTests
 
 
                     ExprStmt
-                    · StringExpr '"'
+                    · StringExpr
+                    · · '"'
+                    · · ??'"'
+                    · ??';'
                     ExprStmt
                     · BlockExpr '{' '}'
                     """);
@@ -307,6 +334,8 @@ public partial class ParserTests
                     · StringExpr
                     · · '"'
                     · · StringText 'Text'
+                    · · ??'"'
+                    · ??';'
                     ExprStmt
                     · BlockExpr '{' '}'
                     """);
@@ -325,6 +354,8 @@ public partial class ParserTests
                     · · '"'
                     · · StringText 'Text '
                     · · StringInterpolation '{' '}'
+                    · · ??'"'
+                    · ??';'
                     ExprStmt
                     · BlockExpr '{' '}'
                     """);
@@ -350,7 +381,12 @@ public partial class ParserTests
                     · · · Arg
                     · · · · StringExpr
                     · · · · · '"'
-                    · · · · · StringInterpolation '{'
+                    · · · · · StringInterpolation
+                    · · · · · · '{'
+                    · · · · · · ??'}'
+                    · · · · · ??'"'
+                    · · · ??')'
+                    · ??';'
                     VarDecl
                     · 'var'
                     · IdName 'a'

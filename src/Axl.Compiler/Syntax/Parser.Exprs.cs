@@ -6,7 +6,7 @@ namespace Axl.Compiler.Syntax;
 
 public partial class Parser
 {
-    private MarkClose ParseExpr(Anchor anchor)
+    private MarkClose EnsureExpr(Anchor anchor)
     {
         //TODO: Maybe move to OperandExpr logic
         if (!_scanner.IsAt(FirstSet.Expr))
@@ -32,7 +32,7 @@ public partial class Parser
                 // We have assign.
                 var assignExpr = _scanner.OpenBefore(operandExpr);
                 _scanner.EatToken();
-                ExpectExpr(anchor);
+                EnsureExpr(anchor);
                 return _scanner.Close(assignExpr, SyntaxKind.AssignExpr);
             }
 
@@ -49,21 +49,21 @@ public partial class Parser
                 return EatLoop(anchor);
 
             case TokenKind.OpenBrace:
-                return EatBlock(anchor);
+                return EnsureBlock(anchor);
 
             // --- TailExprs
             case TokenKind.BreakKw:
                 var breakExpr = _scanner.Open();
                 _scanner.EatKnownToken(TokenKind.BreakKw);
                 if (_scanner.IsAt(FirstSet.Expr))
-                    ParseExpr(anchor);
+                    EnsureExpr(anchor);
                 return _scanner.Close(breakExpr, SyntaxKind.BreakExpr);
 
             case TokenKind.ReturnKw:
                 var returnExpr = _scanner.Open();
                 _scanner.EatKnownToken(TokenKind.ReturnKw);
                 if (_scanner.IsAt(FirstSet.Expr))
-                    ParseExpr(anchor);
+                    EnsureExpr(anchor);
                 return _scanner.Close(returnExpr, SyntaxKind.ReturnExpr);
 
             case TokenKind.ContinueKw:
@@ -84,7 +84,7 @@ public partial class Parser
         // --- Condition and body
         var ifAnchor = anchor | TokenKind.ElseKw;
         ExpectOperandExpr(left: null, ifAnchor);
-        ExpectBody(ifAnchor);
+        EnsureBody(ifAnchor);
 
         // --- Else
         // Note, that we don't anchor on else anymore here, since
@@ -96,7 +96,7 @@ public partial class Parser
             if (_scanner.IsAt(TokenKind.IfKw))
                 EatIf(anchor);
             else
-                ExpectBody(anchor);
+                EnsureBody(anchor);
         }
 
         return _scanner.Close(ifExpr, SyntaxKind.IfExpr);
@@ -108,18 +108,21 @@ public partial class Parser
 
         var loopExpr = _scanner.Open();
         _scanner.EatKnownToken(TokenKind.LoopKw);
-        ExpectBody(anchor);
+        EnsureBody(anchor);
         return _scanner.Close(loopExpr, SyntaxKind.LoopExpr);
     }
 
 
 
-    private MarkClose EatBlock(Anchor anchor)
+    private MarkClose EnsureBlock(Anchor anchor)
     {
-        Debug.Assert(_scanner.IsAt(TokenKind.OpenBrace));
-
         var block = _scanner.Open();
-        _scanner.EatKnownToken(TokenKind.OpenBrace);
+
+        if (!EnsureToken(TokenKind.OpenBrace))
+        {
+            _scanner.MakeToken(TokenKind.CloseBrace);
+            return _scanner.Close(block, SyntaxKind.BlockExpr);
+        }
 
         // Stmt can start from Expr or Var. Anchor only on
         // VarKw, because Expr would be too permissive.

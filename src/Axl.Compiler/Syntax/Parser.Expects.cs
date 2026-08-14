@@ -9,15 +9,17 @@ public partial class Parser
     /// <summary>
     /// If the scanner is on <paramref name="expectedKind"/>, eats it and returns
     /// <c>true</c>. Otherwise, creates a missing token of <paramref name="expectedKind"/>,
-    /// reports <see cref="Diagnostic.Missingtoken"/> and returns <c>false</c>.
+    /// reports <see cref="Diagnostic.MissingToken"/> and returns <c>false</c>.
     /// </summary>
+    /// <param name="expectedSyntaxName">The <see cref="ExpectedSyntax"/> a missing token will be reported with. <c>null</c> reports
+    /// <paramref name="expectedKind"/>.</param>
     /// <returns>If scanner was at <paramref name="expectedKind"/>.</returns>
-    private bool EnsureToken(TokenKind expectedKind)
+    private bool EnsureToken(TokenKind expectedKind, ExpectedSyntax? expectedSyntaxName = null)
     {
         if (!_scanner.IsAt(expectedKind))
         {
             _scanner.MakeToken(expectedKind);
-            ReportMissing(expectedKind);
+            ReportMissing(expectedSyntaxName ?? expectedKind);
             return false;
         }
 
@@ -44,23 +46,19 @@ public partial class Parser
             return null;
         }
 
-        return ParseExpr(anchor);
+        return EnsureExpr(anchor);
     }
 
-    private MarkClose? ExpectBody(Anchor anchor)
+    private MarkClose EnsureBody(Anchor anchor)
     {
-        switch (_scanner.Peek().Kind)
-        {
-            case TokenKind.OpenBrace:
-                return EatBlock(anchor);
-            case TokenKind.RightDoubleArrow:
-                return EatArm(anchor);
-            
-            default:
-                Debug.Assert(!_scanner.IsAt(FirstSet.Body), $"{nameof(FirstSet.Body)} is too large.");
-                ReportMissing(ExpectedSyntax.Body);
-                return null;
-        }
+        if (_scanner.IsAt(TokenKind.RightDoubleArrow))
+            return EatArm(anchor);
+        
+        // Report better missing message
+        if (!_scanner.IsAt(TokenKind.OpenBrace))
+            ReportMissing(ExpectedSyntax.Body);
+
+        return EnsureBlock(anchor);
     }
 
     private MarkClose? ExpectTypeName()

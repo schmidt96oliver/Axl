@@ -80,7 +80,7 @@ public partial class Parser
 
         // --- String
         if (_scanner.IsAt(TokenKind.StringStart))
-            return EatStringExpr(anchor);
+            return EnsureStringExpr(anchor);
 
         // --- Group
         if (_scanner.IsAt(TokenKind.OpenParen))
@@ -247,7 +247,7 @@ public partial class Parser
         MarkClose ParseArg(Anchor argAnchor)
         {
             var arg = _scanner.Open();
-            ParseExpr(argAnchor);
+            EnsureExpr(argAnchor);
             return _scanner.Close(arg, SyntaxKind.Arg);
         }
     }

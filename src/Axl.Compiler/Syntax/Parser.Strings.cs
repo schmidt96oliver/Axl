@@ -7,12 +7,16 @@ namespace Axl.Compiler.Syntax;
 
 public partial class Parser
 {
-    private MarkClose EatStringExpr(Anchor anchor)
+    private MarkClose EnsureStringExpr(Anchor anchor)
     {
-        Debug.Assert(_scanner.IsAt(TokenKind.StringStart));
-
         var expr = _scanner.Open();
-        _scanner.EatKnownToken(TokenKind.StringStart);
+
+        // Special-case for better missing message.
+        if (!EnsureToken(TokenKind.StringStart, expectedSyntaxName: ExpectedSyntax.String))
+        {
+            _scanner.MakeToken(TokenKind.StringEnd);
+            return _scanner.Close(expr, SyntaxKind.StringExpr);
+        }
 
         foreach (var _ in _scanner.MustEatEachIteration())
         {
@@ -72,7 +76,7 @@ public partial class Parser
         // --- Parse Expression
         // `{ `}` will fall through and consume `}` as closing.
         if (_scanner.IsAt(FirstSet.Expr))
-            ParseExpr(anchor | TokenKind.CloseBrace);
+            EnsureExpr(anchor | TokenKind.CloseBrace);
 
         // --- Recover to anchor or close brace if needed
         if (!_scanner.IsAt(TokenKind.CloseBrace))
@@ -107,6 +111,7 @@ public partial class Parser
         else
         {
             ReportMissing(TokenKind.CloseBrace);
+            _scanner.MakeToken(TokenKind.CloseBrace);
         }
 
         return _scanner.Close(interpolationHole, SyntaxKind.StringInterpolation);

@@ -40,6 +40,9 @@ public partial class ParserTests
                     · · · IdName
                     · · · · ??ID
                     · · ??')'
+                    · BlockExpr
+                    · · ??'{'
+                    · · ??'}'
                     · ';'
                     """);
             [Fact]
@@ -526,7 +529,13 @@ public partial class ParserTests
 
 
                     Error
-                    · NativeClause 'native'
+                    · NativeClause
+                    · · 'native'
+                    · · ??'('
+                    · · StringExpr
+                    · · · ??'"'
+                    · · · ??'"'
+                    · · ??')'
                     ModuleDecl
                     · 'module'
                     · QualifiedName
@@ -544,7 +553,13 @@ public partial class ParserTests
 
 
                     Error
-                    · NativeClause 'native'
+                    · NativeClause
+                    · · 'native'
+                    · · ??'('
+                    · · StringExpr
+                    · · · ??'"'
+                    · · · ??'"'
+                    · · ??')'
                     ExprStmt
                     · BinaryExpr
                     · · NumberLiteral '1'
@@ -562,7 +577,13 @@ public partial class ParserTests
 
 
                     Error
-                    · NativeClause 'native'
+                    · NativeClause
+                    · · 'native'
+                    · · ??'('
+                    · · StringExpr
+                    · · · ??'"'
+                    · · · ??'"'
+                    · · ??')'
                     VarDecl
                     · 'var'
                     · IdName 'a'
@@ -582,7 +603,13 @@ public partial class ParserTests
 
 
                     Error
-                    · NativeClause 'native'
+                    · NativeClause
+                    · · 'native'
+                    · · ??'('
+                    · · StringExpr
+                    · · · ??'"'
+                    · · · ??'"'
+                    · · ??')'
                     · ';'
                     FnDecl
                     · 'fn'
@@ -602,8 +629,19 @@ public partial class ParserTests
 
 
                     FnDecl
-                    · NativeClause 'native'
+                    · NativeClause
+                    · · 'native'
+                    · · ??'('
+                    · · StringExpr
+                    · · · ??'"'
+                    · · · ??'"'
+                    · · ??')'
                     · 'fn'
+                    · IdName
+                    · · ??ID
+                    · ParamList
+                    · · ??'('
+                    · · ??')'
                     · ';'
                     FnDecl
                     · 'fn'
@@ -618,7 +656,13 @@ public partial class ParserTests
 
 
                     FnDecl
-                    · NativeClause 'native'
+                    · NativeClause
+                    · · 'native'
+                    · · ??'('
+                    · · StringExpr
+                    · · · ??'"'
+                    · · · ??'"'
+                    · · ??')'
                     · 'fn'
                     · IdName 'A'
                     · ParamList '(' ')'
@@ -631,7 +675,13 @@ public partial class ParserTests
 
 
                     FnDecl
-                    · NativeClause 'native' '('
+                    · NativeClause
+                    · · 'native'
+                    · · '('
+                    · · StringExpr
+                    · · · ??'"'
+                    · · · ??'"'
+                    · · ??')'
                     · 'fn'
                     · IdName 'A'
                     · ParamList '(' ')'
@@ -640,36 +690,58 @@ public partial class ParserTests
             [Fact]
             public void Native_5()
                 => InlineSnapshot.Validate(Tree("native(a fn A();"), """
-                    ERROR UnexpectedToken@[7, 8): Expected a string, got an identifier.
-                    ERROR MissingToken@[8, 8): Expected ')'.
+                    ERROR MissingToken@[7, 7): Expected a string.
+                    ERROR MissingToken@[8, 8): Expected ';'.
+                    ERROR MissingToken@[15, 15): Expected a body.
 
 
-                    FnDecl
+                    Error
                     · NativeClause
                     · · 'native'
                     · · '('
-                    · · Error 'a'
-                    · · missing ')'
+                    · · StringExpr
+                    · · · ??'"'
+                    · · · ??'"'
+                    · · ??')'
+                    ExprStmt
+                    · IdName 'a'
+                    · ??';'
+                    FnDecl
                     · 'fn'
                     · IdName 'A'
                     · ParamList '(' ')'
+                    · BlockExpr
+                    · · ??'{'
+                    · · ??'}'
                     · ';'
                     """);
             [Fact]
             public void Native_6()
                 => InlineSnapshot.Validate(Tree("native(a) fn A();"), """
-                    ERROR UnexpectedToken@[7, 8): Expected a string, got an identifier.
+                    ERROR MissingToken@[7, 7): Expected a string.
+                    ERROR MissingToken@[8, 8): Expected ';'.
+                    ERROR MissingToken@[16, 16): Expected a body.
 
 
-                    FnDecl
+                    Error
                     · NativeClause
                     · · 'native'
                     · · '('
-                    · · Error 'a'
-                    · · ')'
+                    · · StringExpr
+                    · · · ??'"'
+                    · · · ??'"'
+                    · · ??')'
+                    ExprStmt
+                    · IdName 'a'
+                    · ??';'
+                    Error ')'
+                    FnDecl
                     · 'fn'
                     · IdName 'A'
                     · ParamList '(' ')'
+                    · BlockExpr
+                    · · ??'{'
+                    · · ??'}'
                     · ';'
                     """);
             
@@ -700,7 +772,13 @@ public partial class ParserTests
 
 
                     FnDecl
-                    · NativeClause 'native' '(' ')'
+                    · NativeClause
+                    · · 'native'
+                    · · '('
+                    · · StringExpr
+                    · · · ??'"'
+                    · · · ??'"'
+                    · · ')'
                     · 'fn'
                     · IdName 'A'
                     · ParamList '(' ')'
