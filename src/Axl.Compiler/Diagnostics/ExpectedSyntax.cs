@@ -18,6 +18,7 @@ public readonly struct ExpectedSyntax
     public static readonly ExpectedSyntax ParamList = new("parameters");
     public static readonly ExpectedSyntax String = new("a string");
     public static readonly ExpectedSyntax Param = new("a parameter");
+    public static readonly ExpectedSyntax ModuleName = new("a module name");
 
     private ExpectedSyntax(string description)
         => DisplayName = description;
@@ -32,6 +33,7 @@ public readonly struct ExpectedSyntax
     /// </summary>
     public string DisplayName { get; }
 
+    
 
 
     public override string ToString() => DisplayName;

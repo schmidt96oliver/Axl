@@ -12,17 +12,13 @@ public partial class Parser
         if (_scanner.IsAt(FirstSet.NativeTypeName))
             return EatNativeTypeName();
         
-        return EnsureQualifiedName();
+        return EnsureQualifiedName(ExpectedSyntax.TypeName);
     }
-    
-    private MarkClose EnsureQualifiedName()
+
+    private MarkClose EnsureQualifiedName(ExpectedSyntax? expectedSyntax = null)
     {
-        // Report better missing message.
-        if (!_scanner.IsAt(TokenKind.Identifier))
-            ReportMissing(ExpectedSyntax.TypeName);
-        
         var typeExpr = _scanner.Open();
-        EnsureIdName();
+        EnsureIdName(expectedSyntax);
 
         foreach (var _ in _scanner.MustEatEachIteration())
         {

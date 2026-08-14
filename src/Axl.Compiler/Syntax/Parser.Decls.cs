@@ -14,9 +14,9 @@ public partial class Parser
         var moduleDecl = _scanner.Open();
         _scanner.EatKnownToken(TokenKind.ModuleKw);
 
-        EnsureQualifiedName();
+        EnsureQualifiedName(ExpectedSyntax.ModuleName);
 
-        // --- ";" means its a global declaration
+        // --- ";" means it's a global declaration
         if (_scanner.IsAt(TokenKind.Semicolon))
         {
             _scanner.EatKnownToken(TokenKind.Semicolon);
@@ -57,7 +57,7 @@ public partial class Parser
 
         var usingDecl = _scanner.Open();
         _scanner.EatKnownToken(TokenKind.UsingKw);
-        EnsureQualifiedName();
+        EnsureQualifiedName(ExpectedSyntax.ModuleName);
         EnsureToken(TokenKind.Semicolon);
         return _scanner.Close(usingDecl, SyntaxKind.UsingDecl);
     }
