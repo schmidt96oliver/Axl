@@ -294,7 +294,7 @@ public partial class Parser
                 _scanner.IsAt(anchor))
             {
                 if (recovered)
-                    ReportUnexpected(preRecoverToken, expected: TokenKind.CloseParen);
+                    ReportUnexpected(preRecoverToken, expected: closeToken);
                 break;
             }
 
