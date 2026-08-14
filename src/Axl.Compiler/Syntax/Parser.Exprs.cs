@@ -43,6 +43,8 @@ public partial class Parser
             // So ensure an OperandExpr and handle "=" thereafter.
             default:
             {
+                Debug.Assert(_scanner.IsAt(FirstSet.OperandExpr) || !_scanner.IsAt(FirstSet.Expr),
+                    $"{nameof(FirstSet.Expr)} is larger than the switch above.");
                 var operandExpr = EnsureOperandExpr(left: null, anchor);
 
                 if (_scanner.IsAt(FirstSet.AssignOperator))
