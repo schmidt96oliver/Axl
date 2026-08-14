@@ -1,5 +1,6 @@
 using System.Collections.Immutable;
 using System.Diagnostics;
+using System.Runtime.CompilerServices;
 using System.Text;
 
 namespace Axl.Compiler.Syntax;
@@ -9,32 +10,32 @@ public partial class Parser
     public sealed class ParserStuckException(string message)
         : Exception(message);
     
-    private enum ParseEventKind
+    private abstract record ParseEvent
     {
-        Open,
-        Close,
-        
-        Eat,
-        
+        public sealed record Open : ParseEvent
+        {
+            public SyntaxKind? Kind { get; set; } = null;
+        }
+
+        public sealed record Close : ParseEvent;
+
+        public sealed record Eat : ParseEvent;
+
         /// <summary>
-        /// Eats one token and patches it into the given kind.
+        /// Eats one token and patches it into <paramref name="Kind"/>.
         /// </summary>
-        EatAs,
-        
+        public sealed record EatAs(TokenKind Kind) : ParseEvent;
+
         /// <summary>
-        /// Inserts a missing token with specified kind.
+        /// Makes a missing token of <paramref name="Kind"/>.
         /// </summary>
-        Make
+        public sealed record Make(TokenKind Kind) : ParseEvent;
     }
+    
 
-    private readonly record struct ParseEvent(
-        ParseEventKind EventKind,
-        SyntaxKind? SyntaxKind = null,
-        TokenKind? TokenKind = null);
+    private readonly record struct MarkOpen(int OpenEventIndex);
 
-    private readonly record struct MarkOpen(int OpenIndex);
-
-    private readonly record struct MarkClose(int OpenIndex);
+    private readonly record struct MarkClose(int OpenEventIndex);
 
     
     private sealed class Scanner
@@ -147,20 +148,22 @@ public partial class Parser
         
         public MarkOpen Open()
         {
-            _events.Add(new ParseEvent(ParseEventKind.Open));
+            _events.Add(new ParseEvent.Open());
             return new MarkOpen(_events.Count - 1);
         }
 
         public MarkClose Close(MarkOpen openMark, SyntaxKind kind)
         {
-            // No event between Open and Close means the node has no children at all.
-            // Every node must cover at least one token (missing or not).
-            Debug.Assert(_events.Count > openMark.OpenIndex + 1, 
-                "Closed an empty node.");
+            Debug.Assert(_events[(openMark.OpenEventIndex + 1)..]
+                .Any(ev => ev is ParseEvent.Eat or ParseEvent.EatAs or ParseEvent.Make),
+                "Closed a node which has no tokens.");
 
-            _events[openMark.OpenIndex] = new ParseEvent(ParseEventKind.Open, kind);
-            _events.Add(new ParseEvent(ParseEventKind.Close));
-            return new MarkClose(openMark.OpenIndex);
+            var openEvent = _events[openMark.OpenEventIndex] as ParseEvent.Open;
+            Debug.Assert(openEvent is not null, $"{nameof(openMark.OpenEventIndex)} was not an open event.");
+            
+            openEvent.Kind = kind;
+            _events.Add(new ParseEvent.Close());
+            return new MarkClose(openMark.OpenEventIndex);
         }
 
         /// <summary>
@@ -168,8 +171,9 @@ public partial class Parser
         /// </summary>
         public MarkOpen OpenBefore(MarkClose before)
         {
-            _events.Insert(before.OpenIndex, new ParseEvent(ParseEventKind.Open));
-            return new MarkOpen(before.OpenIndex);
+            Debug.Assert(_events[before.OpenEventIndex] is ParseEvent.Open);
+            _events.Insert(before.OpenEventIndex, new ParseEvent.Open());
+            return new MarkOpen(before.OpenEventIndex);
         }
 
 
@@ -177,9 +181,8 @@ public partial class Parser
         /// Creates a missing token of <paramref name="kind"/>.
         /// </summary>
         public void Make(TokenKind kind)
-        {
-            _events.Add(new ParseEvent(ParseEventKind.Make, TokenKind: kind));
-        }
+         => _events.Add(new ParseEvent.Make(kind));
+        
 
         /// <summary>
         /// Creates a node of <paramref name="nodeKind"/> with a missing token of <paramref name="tokenKind"/>.
@@ -196,13 +199,20 @@ public partial class Parser
         {
             Debug.Assert(_nextToken < _tokens.Count);
 
-            _events.Add(new ParseEvent(ParseEventKind.Eat));
+            _events.Add(new ParseEvent.Eat());
             _fuel = MaxFuel;
             return _tokens[_nextToken++];
         }
+        
+        public MarkClose EatIntoNode(SyntaxKind nodeKind)
+        {
+            var node = Open();
+            Eat();
+            return Close(node, nodeKind);
+        }
 
         /// <summary>
-        /// Same as <see cref="Eat"/>, but assert, that <paramref name="knownKind"/>
+        /// Same as <see cref="Eat"/>, but asserts, that <paramref name="knownKind"/>
         /// was eaten.
         /// </summary>
         public Token EatKnown(TokenKind knownKind)
@@ -217,21 +227,16 @@ public partial class Parser
         /// to <paramref name="kind"/>. <paramref name="kind"/> must be a
         /// token that doesn't carry a value.
         /// </summary>
-        public Token EatAs(TokenKind kind)
+        public void EatAs(TokenKind kind)
         {
             Debug.Assert(!kind.HasValue);
             
-            _events.Add(new ParseEvent(ParseEventKind.EatAs, TokenKind: kind));
+            _events.Add(new ParseEvent.EatAs(kind));
             _fuel = MaxFuel;
-            return _tokens[_nextToken++];
+            _nextToken++;
         }
 
-        public MarkClose EatIntoNode(SyntaxKind nodeKind)
-        {
-            var node = Open();
-            Eat();
-            return Close(node, nodeKind);
-        }
+        
         
         
         public Token Peek(int lookahead = 0)

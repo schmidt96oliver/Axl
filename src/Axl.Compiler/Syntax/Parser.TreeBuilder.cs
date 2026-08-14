@@ -16,45 +16,42 @@ public partial class Parser
         var nextToken = 0;
         foreach (var e in _scanner.GetEvents())
         {
-            switch (e.EventKind)
+            switch (e)
             {
-                case ParseEventKind.Open:
-                    Debug.Assert(e.SyntaxKind is not null, "Unclosed node");
+                case ParseEvent.Open openEvent:
+                    Debug.Assert(openEvent.Kind is not null, "Unclosed node");
 
-                    nodes.Push(new BuildingNode(e.SyntaxKind.Value, ImmutableArray.CreateBuilder<SyntaxElement>()));
+                    nodes.Push(new BuildingNode(openEvent.Kind.Value, ImmutableArray.CreateBuilder<SyntaxElement>()));
                     break;
 
-                case ParseEventKind.Eat:
-                case ParseEventKind.EatAs:
+                case ParseEvent.Eat:
+                case ParseEvent.EatAs:
                     // Flush all trivia here
-                    while (tokens[nextToken].Kind.IsTrivia)
+                    while (nextToken < tokens.Length && tokens[nextToken].Kind.IsTrivia)
                     {
                         nodes.Peek().Nodes.Add(tokens[nextToken]);
                         nextToken++;
                     }
 
                     // Add the actual node
-                    var token = e.EventKind is ParseEventKind.Eat
-                        ? tokens[nextToken]
-                        : tokens[nextToken].WithKind(e.TokenKind
-                                                     ?? throw new UnreachableException($"{nameof(ParseEventKind.EatAs)} without kind."));
+                    var token = e is ParseEvent.EatAs eatAsEvent
+                        ? tokens[nextToken].WithKind(eatAsEvent.Kind)
+                        : tokens[nextToken];
 
                     nodes.Peek().Nodes.Add(token);
                     nextToken++;
                     break;
                 
-                case ParseEventKind.Make:
+                case ParseEvent.Make(var kind):
                     var span = nextToken == 0
                         ? SourceSpan.EmptyBefore(tokens[0].Span)
                         : SourceSpan.EmptyAfter(tokens[nextToken - 1].Span);
                     
-                    nodes.Peek().Nodes.Add(Token.MakeMissing(
-                        span,
-                        kind: e.TokenKind ?? throw new UnreachableException($"{nameof(ParseEventKind.Make)} event without kind.")));
+                    nodes.Peek().Nodes.Add(Token.MakeMissing(span, kind));
                     break;
                     
 
-                case ParseEventKind.Close:
+                case ParseEvent.Close:
                     var builtNode = nodes.Pop();
                     var isRoot = builtNode.Kind is SyntaxKind.TreeRoot;
                     if (isRoot)

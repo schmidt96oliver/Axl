@@ -11,14 +11,13 @@
 14.08 15:01: Erschöft, Nickerchen wär geil; wollte noch Claudes Antwort abwarten
 
 **Next**: 
-
-
-**refactor: Construct missing tokens**
-* errors as events to scanner
 * test: broken expressions
+* regressions
+* regressions.axl
 
 **Small points**:
-* regressions.axl
+* ?? errors as events to scanner => see Claude
+
 * ?? `RecoverTo` UnexpectedToken -> Squiggle all tokens
 * ?? `RecoverTo` balanced braces/parens (good for garbage in modules `module A { var using module B { } }`)
 * ?? Anchor on newline (flag on method, `Anchor.Newline` that propagates)
@@ -27,6 +26,9 @@
 * `SyntaxFile` add reference to Source
 
 **Regressions:**
+* `fn A(` shouldnt make Param
+
+
 * `fn A() = Print();` (mis-typed `=>`)
 
 * `fn Foo( :i32) { }`
