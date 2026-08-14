@@ -7,9 +7,10 @@ namespace Axl.Compiler.Syntax;
 
 public partial class Parser
 {
-    private MarkClose EatOperandExpr(LeftOperator? left, Anchor anchor)
+    private MarkClose EnsureOperandExpr(LeftOperator? left, Anchor anchor)
     {
-        Debug.Assert(_scanner.IsAt(FirstSet.OperandExpr));
+        if (!_scanner.IsAt(FirstSet.OperandExpr))
+            return EnsureIdName(ExpectedSyntax.Expr);
 
         // --- Head
         var lhs = EatOperandExprHead(anchor);
@@ -61,7 +62,7 @@ public partial class Parser
                 var expr = _scanner.OpenBefore(lhs);
                 _scanner.EatToken();
 
-                AdvanceOperandExprRhs(new LeftOperator(opPrecedence.Value, opToken), anchor,
+                EnsureOperandExprRhs(new LeftOperator(opPrecedence.Value, opToken), anchor,
                     out var ateAmbiguousOperatorChain);
 
                 lhs = _scanner.Close(expr,
@@ -102,7 +103,7 @@ public partial class Parser
         // --- Prefix Operator
         if (PrecedenceTable.TryGetPrefixPrecedence(token.Kind) is Precedence prefixPrecedence)
         {
-            AdvanceOperandExprRhs(new LeftOperator(prefixPrecedence, token), anchor, out var ateAmbiguousOperatorChain);
+            EnsureOperandExprRhs(new LeftOperator(prefixPrecedence, token), anchor, out var ateAmbiguousOperatorChain);
             return _scanner.Close(openMark,
                 ateAmbiguousOperatorChain
                     ? SyntaxKind.Error
@@ -133,12 +134,12 @@ public partial class Parser
             // --- GetMember
             case TokenKind.Dot:
                 _scanner.EatKnownToken(TokenKind.Dot);
-                ExpectIdName();
+                EnsureIdName();
                 return _scanner.Close(expr, SyntaxKind.GetMemberExpr);
 
             // --- Call
             case TokenKind.OpenParen:
-                EatArgList(anchor);
+                EnsureArgList(anchor);
                 return _scanner.Close(expr, SyntaxKind.CallExpr);
 
             default:
@@ -155,7 +156,7 @@ public partial class Parser
     /// <param name="ateAmbiguousOperatorChain">
     /// <c>True</c> iff an ambiguous chain was advanced.
     /// </param>
-    private void AdvanceOperandExprRhs(LeftOperator left, Anchor anchor, out bool ateAmbiguousOperatorChain)
+    private void EnsureOperandExprRhs(LeftOperator left, Anchor anchor, out bool ateAmbiguousOperatorChain)
     {
         ImmutableArray<Token>.Builder? ambiguousOperators = null;
 
@@ -164,8 +165,7 @@ public partial class Parser
         foreach (var _ in _scanner.MustEatEachIteration())
         {
             // Eat OperandExpr
-            if (ExpectOperandExpr(left, anchor) is null)
-                break;
+            EnsureOperandExpr(left, anchor);
 
             // Peek and check if next token is
             // an operator with ambiguous comparison.
@@ -234,7 +234,7 @@ public partial class Parser
     }
 
 
-    private MarkClose EatArgList(Anchor anchor)
+    private MarkClose EnsureArgList(Anchor anchor)
     {
         return EnsureDelimitedList(anchor,
             openToken: TokenKind.OpenParen,
@@ -242,9 +242,9 @@ public partial class Parser
             listKind: SyntaxKind.ArgList,
             itemFirst: FirstSet.Expr,
             expectedItemSyntax: ExpectedSyntax.Expr,
-            ensureItem: ParseArg);
+            ensureItem: EnsureArg);
 
-        MarkClose ParseArg(Anchor argAnchor)
+        MarkClose EnsureArg(Anchor argAnchor)
         {
             var arg = _scanner.Open();
             EnsureExpr(argAnchor);

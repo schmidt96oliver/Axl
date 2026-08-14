@@ -25,7 +25,7 @@ public partial class Parser
             // Assign = OperandExpr "=" Expr.
             // So eat an OperandExpr and handle "=" thereafter
             // here.
-            var operandExpr = EatOperandExpr(left: null, anchor);
+            var operandExpr = EnsureOperandExpr(left: null, anchor);
 
             if (_scanner.IsAt(FirstSet.AssignOperator))
             {

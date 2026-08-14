@@ -35,7 +35,7 @@ public partial class Parser
             return null;
         }
 
-        return EatOperandExpr(left, anchor);
+        return EnsureOperandExpr(left, anchor);
     }
 
     private MarkClose? ExpectExpr(Anchor anchor)

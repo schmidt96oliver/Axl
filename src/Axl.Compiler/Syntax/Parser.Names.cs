@@ -42,10 +42,14 @@ public partial class Parser
         return _scanner.EatTokenIntoNode(SyntaxKind.NativeTypeName);
     }
 
-    private MarkClose EnsureIdName()
+    /// <param name="expectedSyntax">
+    /// The <see cref="ExpectedSyntax"/> a missing identifier token will be reported with.
+    /// <c>null</c> reports <see cref="TokenKind.Identifier"/>.
+    /// </param>
+    private MarkClose EnsureIdName(ExpectedSyntax? expectedSyntax = null)
     {
         var idName = _scanner.Open();
-        EnsureToken(TokenKind.Identifier);
+        EnsureToken(TokenKind.Identifier, expectedSyntax);
         return _scanner.Close(idName, SyntaxKind.IdName);
     }
 }

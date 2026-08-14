@@ -119,6 +119,8 @@ public partial class ParserTests
                     · · · · · BinaryExpr
                     · · · · · · NumberLiteral '1'
                     · · · · · · '+'
+                    · · · · · · IdName
+                    · · · · · · · ??ID
                     · · · · · ??'}'
                     · · · · ??'"'
                     · · · ??';'
