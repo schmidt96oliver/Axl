@@ -26,22 +26,10 @@ public partial class Parser
         CreateMissing
     }
 
-    /// <param name="SyntaxKind">
-    /// Only meaningful on <see cref="ParseEventKind.Open"/>.
-    /// <c>null</c> if no kind has been assigned yet.
-    /// </param>
-    private readonly record struct ParseEvent(ParseEventKind EventKind, SyntaxKind? SyntaxKind = null, TokenKind? TokenKind = null)
-    {
-        public override string ToString()
-            => EventKind switch
-            {
-                ParseEventKind.Open => $"Open {SyntaxKind?.ToString() ?? "?"}",
-                ParseEventKind.Close => "Close",
-                ParseEventKind.Advance => "Advance",
-                ParseEventKind.AdvancePatch => $"AdvancePatch to {TokenKind}",
-                _ => throw new UnreachableException()
-            };
-    }
+    private readonly record struct ParseEvent(
+        ParseEventKind EventKind,
+        SyntaxKind? SyntaxKind = null,
+        TokenKind? TokenKind = null);
 
     private readonly record struct MarkOpen(int OpenIndex);
 
@@ -277,36 +265,5 @@ public partial class Parser
 
         public bool IsAt(TokenSet set)
             => set.Contains(Peek().Kind);
-
-        
-        /// <summary>
-        /// Meant to be executed from the debugger for a better view
-        /// of the parsers events.
-        /// </summary>
-        /// <returns></returns>
-        internal string ToDebugString(SourceFileView source)
-        {
-            var tokenIndex = 0;
-            var builder = new StringBuilder();
-            foreach (var e in _events)
-            {
-                if (e.EventKind is ParseEventKind.Advance)
-                {
-                    var text = source.GetText(_tokens[tokenIndex].Span);
-                    builder.Append($"\'{text}\' ");
-                    tokenIndex++;
-                }
-                else if (e.EventKind is ParseEventKind.Open)
-                {
-                    builder.Append($"[{e.SyntaxKind?.ToString() ?? "?"} ");
-                }
-                else
-                {
-                    builder.Append("]");
-                }
-            }
-
-            return builder.ToString();
-        }
     }
 }
