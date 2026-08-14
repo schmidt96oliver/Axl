@@ -153,10 +153,9 @@ public partial class Parser
         public MarkClose Close(MarkOpen openMark, SyntaxKind kind)
         {
             // No event between Open and Close means the node has no children at all.
-            // Every node must cover at least one token, either advanced directly or
-            // through a child node.
+            // Every node must cover at least one token (missing or not).
             Debug.Assert(_events.Count > openMark.OpenIndex + 1, 
-                "Closed an empty node, which was not the root.");
+                "Closed an empty node.");
 
             _events[openMark.OpenIndex] = new ParseEvent(ParseEventKind.Open, kind);
             _events.Add(new ParseEvent(ParseEventKind.Close));

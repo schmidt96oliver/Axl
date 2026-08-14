@@ -150,7 +150,7 @@ public partial class Parser
                 }
                 
                 // Arm ends the block, so break out. After the loop,
-                // `}` will be expected.
+                // `}` will be ensured.
                 break;
             }
             else if (_scanner.IsAt(anchor))

@@ -8,10 +8,7 @@ public partial class Parser
 {
     private record ErrorContext(DiagnosticBag Bag)
     {
-        /// <summary>
-        /// Position <see cref="Scanner"/> was at, when the last error was reported.
-        /// </summary>
-        public int LastErrorPosition { get; set; } = -1;
+        public int LastMissingOrUnexpectedTokenError { get; set; } = -1;
     }
     
     private readonly SourceFileView _source;
@@ -87,6 +84,8 @@ public partial class Parser
     /// <summary>
     /// If scanner is not at <paramref name="anchor"/>, collects garbage into
     /// a <see cref="SyntaxKind.Error"/> node and reports <see cref="Diagnostic.UnexpectedToken"/>.
+    /// Suppresses further <see cref="Diagnostic.UnexpectedToken"/> or <see cref="Diagnostic.MissingToken"/>
+    /// on the position after garbage.
     /// Always leaves the scanner on <paramref name="anchor"/>.
     /// </summary>
     /// <returns><c>True</c> iff garbage was collected and an error node added.</returns>
@@ -142,10 +141,10 @@ public partial class Parser
             return true;
         }
         
-        if (_errorContext.LastErrorPosition != _scanner.Position)
+        if (_errorContext.LastMissingOrUnexpectedTokenError != _scanner.Position)
         {
             _errorContext.Bag.ReportError(error);
-            _errorContext.LastErrorPosition = _scanner.Position;
+            _errorContext.LastMissingOrUnexpectedTokenError = _scanner.Position;
             return true;
         }
 
@@ -158,7 +157,7 @@ public partial class Parser
     /// </summary>
     private void SuppressErrorsAtCurrentPosition()
     {
-        _errorContext.LastErrorPosition = _scanner.Position;
+        _errorContext.LastMissingOrUnexpectedTokenError = _scanner.Position;
     }
 
     private bool ReportUnexpected(ExpectedSyntax expected)
@@ -236,8 +235,8 @@ public partial class Parser
     }
 
     /// <summary>
-    /// Eats or makes a <paramref name="listKind"/> comma-delimited list of
-    /// form <c>open (item ("," item)*)? close</c> into a <paramref name="listKind"/>.
+    /// Eats or makes a comma-delimited list of form <c>open (item ("," item)*)? close</c>
+    /// into a node of kind <paramref name="listKind"/>.
     /// </summary>
     /// <param name="anchor"></param>
     /// <param name="openToken"></param>
@@ -263,7 +262,7 @@ public partial class Parser
         // --- Open Token
         if (!EnsureToken(openToken, expectedOpenSyntax))
         {
-            // Synthesize closing token and bail.
+            // Make closing token and bail.
             _scanner.MakeToken(closeToken);
             return _scanner.Close(list, listKind);
         }
@@ -275,7 +274,7 @@ public partial class Parser
             return _scanner.Close(list, listKind);
         }
 
-        // --- Expect items
+        // --- Items
         var itemAnchor = anchor | closeToken | TokenKind.Comma;
         foreach (var _ in _scanner.MustEatEachIteration())
         {
@@ -288,7 +287,7 @@ public partial class Parser
                 break;
             
             // --- Comma
-            // Recover without error first, so we can report "expected ')'" or
+            // Recover without error first, so we can report "expected close" or
             // "expected ','" based on what followed.
             var preRecoverToken = _scanner.Peek();
             var recovered = RecoverTo(itemAnchor | itemFirst, expected: null);
@@ -305,7 +304,7 @@ public partial class Parser
             EnsureToken(TokenKind.Comma);
         }
 
-        // --- Expect close
+        // --- Close Token
         EnsureToken(closeToken);
         return _scanner.Close(list, listKind);
     }

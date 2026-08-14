@@ -41,7 +41,7 @@ public partial class Parser
                 Debug.Assert(left is not null);
 
                 // Ambiguous operators belong to the enclosing loop, which will
-                // collect all ambiguous operators in ParseOperandExprTail.
+                // collect all ambiguous operators.
                 break;
 
             }
@@ -148,7 +148,7 @@ public partial class Parser
     }
 
     /// <summary>
-    /// Parses the right side of any OperandExpr.
+    /// Ensures the right side of any OperandExpr.
     /// Handles ambiguous operators gracefully:
     /// It collects all chained ambiguous operators and reports one
     /// diagnostic for them.
@@ -164,7 +164,6 @@ public partial class Parser
 
         foreach (var _ in _scanner.MustEatEachIteration())
         {
-            // Eat OperandExpr
             EnsureOperandExpr(left, anchor);
 
             // Peek and check if next token is
