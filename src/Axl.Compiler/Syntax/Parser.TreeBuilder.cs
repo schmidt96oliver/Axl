@@ -37,7 +37,7 @@ public partial class Parser
                     var token = e.EventKind is ParseEventKind.Eat
                         ? tokens[nextToken]
                         : tokens[nextToken].WithKind(e.TokenKind
-                                                     ?? throw new UnreachableException("AdvancePatch without kind."));
+                                                     ?? throw new UnreachableException($"{nameof(ParseEventKind.EatAs)} without kind."));
 
                     nodes.Peek().Nodes.Add(token);
                     nextToken++;
@@ -50,7 +50,7 @@ public partial class Parser
                     
                     nodes.Peek().Nodes.Add(Token.MakeMissing(
                         span,
-                        kind: e.TokenKind ?? throw new UnreachableException("CreateMissing event without kind.")));
+                        kind: e.TokenKind ?? throw new UnreachableException($"{nameof(ParseEventKind.Make)} event without kind.")));
                     break;
                     
 

@@ -132,10 +132,7 @@ public partial class Parser
     {
         if (error is not (Diagnostic.UnexpectedToken or Diagnostic.MissingToken))
         {
-            // Don't update the LastErrorPosition, because otherwise an InvalidOperatorChaining
-            // error could suppress a missing ";" error, which we don't want. Error that
-            // are not unexpected or missing token should always be reported and not influence
-            // reporting of those.
+            // We only suppress the two mentioned errors. Other ones may be reported freely.
             
             _errorContext.Bag.ReportError(error);
             return true;
@@ -238,16 +235,10 @@ public partial class Parser
     /// Eats or makes a comma-delimited list of form <c>open (item ("," item)*)? close</c>
     /// into a node of kind <paramref name="listKind"/>.
     /// </summary>
-    /// <param name="anchor"></param>
-    /// <param name="openToken"></param>
-    /// <param name="closeToken"></param>
-    /// <param name="listKind"></param>
-    /// <param name="itemFirst"></param>
     /// <param name="ensureItem">
     ///     Eats or makes a single item. Gets an anchor that also stops on "," and
     ///     <paramref name="closeToken"/>, so a confused item hands control back here.
     /// </param>
-    /// <param name="expectedItemSyntax"></param>
     private MarkClose EnsureDelimitedList(Anchor anchor,
         TokenKind openToken,
         TokenKind closeToken,

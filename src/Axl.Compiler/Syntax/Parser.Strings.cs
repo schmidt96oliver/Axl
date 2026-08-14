@@ -11,7 +11,6 @@ public partial class Parser
     {
         var expr = _scanner.Open();
 
-        // Special-case for better missing message.
         if (!EnsureToken(TokenKind.StringStart, expectedSyntax: ExpectedSyntax.String))
         {
             _scanner.Make(TokenKind.StringEnd);

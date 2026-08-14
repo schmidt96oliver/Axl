@@ -8,6 +8,7 @@
 11.08 11:40: Hungrig; macht Spaß; "einer geht noch"
 11.08 14:27: Roughly Ende der Zeit; Harndrang; "das geht noch schnell "
 12.08 15:16: Müde, erschöpft, keine Lust mehr. Will unbedingt noch Claude fragen
+14.08 15:01: Erschöft, Nickerchen wär geil; wollte noch Claudes Antwort abwarten
 
 **Next**: 
 

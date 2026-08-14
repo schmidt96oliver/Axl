@@ -126,7 +126,7 @@ public partial class Parser
 
         
         /// <summary>
-        /// Returns a custom enumerator that asserts the parser has advanced at least one
+        /// Returns a custom enumerator that asserts the parser has eaten at least one
         /// token inside the loop. Otherwise, throws <see cref="ParserStuckException"/>.
         /// Stops at Eof.
         /// </summary>

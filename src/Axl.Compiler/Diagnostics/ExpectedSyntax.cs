@@ -34,7 +34,5 @@ public readonly struct ExpectedSyntax
     public string DisplayName { get; }
 
     
-
-
     public override string ToString() => DisplayName;
 }
