@@ -15,7 +15,7 @@ public partial class Parser
             var isBodied = _scanner.IsAt(FirstSet.BodiedExpr);
 
             ParseExpr(anchor | TokenKind.Semicolon);
-            EatSemicolonIfRequired(ownsBody: isBodied);
+            EnsureSemicolonIfRequired(ownsBody: isBodied);
             
             return _scanner.Close(exprStmt, SyntaxKind.ExprStmt);
         }
@@ -51,7 +51,7 @@ public partial class Parser
         }
 
         // --- Semicolon
-        ExpectToken(TokenKind.Semicolon);
+        EnsureToken(TokenKind.Semicolon);
 
         return _scanner.Close(varDecl, SyntaxKind.VarDecl);
     }

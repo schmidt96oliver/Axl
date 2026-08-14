@@ -92,7 +92,7 @@ public partial class Parser
 
         // --- IdName
         if (_scanner.IsAt(TokenKind.Identifier))
-            return ParseIdName();
+            return EnsureIdName();
 
         // For everything else, we can advance a token
         // already and then switch on it.
@@ -236,13 +236,13 @@ public partial class Parser
 
     private MarkClose EatArgList(Anchor anchor)
     {
-        return EatDelimitedList(anchor,
+        return EnsureDelimitedList(anchor,
             openToken: TokenKind.OpenParen,
             closeToken: TokenKind.CloseParen,
             listKind: SyntaxKind.ArgList,
             itemFirst: FirstSet.Expr,
             expectedItemSyntax: ExpectedSyntax.Expr,
-            parseItem: ParseArg);
+            ensureItem: ParseArg);
 
         MarkClose ParseArg(Anchor argAnchor)
         {

@@ -56,7 +56,7 @@ public partial class Parser
 
         breakLoop:
 
-        ExpectToken(TokenKind.StringEnd);
+        EnsureToken(TokenKind.StringEnd);
         return _scanner.Close(expr, SyntaxKind.StringExpr);
     }
 

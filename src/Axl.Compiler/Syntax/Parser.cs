@@ -185,30 +185,29 @@ public partial class Parser
     }
 
     /// <summary>
-    /// Eats <c>open (item ("," item)*)? close</c> into a <paramref name="listKind"/> node.
+    /// Eats or makes a <paramref name="listKind"/> comma-delimited list of
+    /// form <c>open (item ("," item)*)? close</c> into a <paramref name="listKind"/>.
     /// </summary>
-    /// <param name="parseItem">
-    /// Eats a single item. Gets an anchor that also stops on "," and
+    /// <param name="ensureItem">
+    /// Eats or makes a single item. Gets an anchor that also stops on "," and
     /// <paramref name="closeToken"/>, so a confused item hands control back here.
     /// </param>
-    private MarkClose EatDelimitedList(
+    private MarkClose EnsureDelimitedList(
         Anchor anchor,
         TokenKind openToken,
         TokenKind closeToken,
         SyntaxKind listKind,
         TokenSet itemFirst,
         ExpectedSyntax expectedItemSyntax,
-        Func<Anchor, MarkClose> parseItem)
+        Func<Anchor, MarkClose> ensureItem)
     {
-        Debug.Assert(_scanner.IsAt(openToken));
-        
         var list = _scanner.Open();
         
         // --- Open Token
-        if (!ExpectToken(openToken))
+        if (!EnsureToken(openToken))
         {
             // Synthesize closing token and bail.
-            _scanner.AddMissingToken(closeToken);
+            _scanner.MakeToken(closeToken);
             return _scanner.Close(list, listKind);
         }
 
@@ -225,7 +224,7 @@ public partial class Parser
         {
             // --- Item
             RecoverTo(itemAnchor | itemFirst, expected: expectedItemSyntax);
-            parseItem(itemAnchor);
+            ensureItem(itemAnchor);
             
             if (_scanner.IsAt(closeToken) ||
                 _scanner.IsAt(anchor))
@@ -246,16 +245,16 @@ public partial class Parser
 
             if (recovered)
                 ReportUnexpected(preRecoverToken, expected: TokenKind.Comma);
-            ExpectToken(TokenKind.Comma);
+            EnsureToken(TokenKind.Comma);
         }
 
         // --- Expect close
-        ExpectToken(closeToken);
+        EnsureToken(closeToken);
         return _scanner.Close(list, listKind);
     }
 
     /// <summary>
-    /// Applies the semicolon rule. Expects ";" if required, otherwise eats it
+    /// Applies the semicolon rule. Ensures ";" if required, otherwise eats it
     /// only if it's there.
     /// <para>
     /// Semicolon rule: ";" is omissible iff the statements owns its body and last
@@ -263,13 +262,13 @@ public partial class Parser
     /// </para>
     /// </summary>
     /// <param name="ownsBody">Whether the consuming nodes owns its body.</param>
-    private void EatSemicolonIfRequired(bool ownsBody)
+    private void EnsureSemicolonIfRequired(bool ownsBody)
     {
         var omissible = ownsBody && _scanner.Last?.Kind is TokenKind.CloseBrace;
         
         if (omissible && _scanner.IsAt(TokenKind.Semicolon))
             _scanner.EatKnownToken(TokenKind.Semicolon);
         else if (!omissible)
-            ExpectToken(TokenKind.Semicolon);
+            EnsureToken(TokenKind.Semicolon);
     }
 }

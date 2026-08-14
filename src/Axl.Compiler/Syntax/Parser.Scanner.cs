@@ -185,9 +185,22 @@ public partial class Parser
         }
 
 
-        public void AddMissingToken(TokenKind kind)
+        /// <summary>
+        /// Creates a missing token of <paramref name="kind"/>.
+        /// </summary>
+        public void MakeToken(TokenKind kind)
         {
             _events.Add(new ParseEvent(ParseEventKind.CreateMissing, TokenKind: kind));
+        }
+
+        /// <summary>
+        /// Creates a node of <paramref name="nodeKind"/> with a missing token of <paramref name="tokenKind"/>.
+        /// </summary>
+        public MarkClose MakeTokenIntoNode(TokenKind tokenKind, SyntaxKind nodeKind)
+        {
+            var node = Open();
+            MakeToken(tokenKind);
+            return Close(node, nodeKind);
         }
         
         

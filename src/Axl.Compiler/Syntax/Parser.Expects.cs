@@ -12,11 +12,11 @@ public partial class Parser
     /// reports <see cref="Diagnostic.Missingtoken"/> and returns <c>false</c>.
     /// </summary>
     /// <returns>If scanner was at <paramref name="expectedKind"/>.</returns>
-    private bool ExpectToken(TokenKind expectedKind)
+    private bool EnsureToken(TokenKind expectedKind)
     {
         if (!_scanner.IsAt(expectedKind))
         {
-            _scanner.AddMissingToken(expectedKind);
+            _scanner.MakeToken(expectedKind);
             ReportMissing(expectedKind);
             return false;
         }
@@ -68,7 +68,7 @@ public partial class Parser
         if (_scanner.IsAt(FirstSet.NativeTypeName))
             return EatNativeTypeName();
         if (_scanner.IsAt(TokenKind.Identifier))
-            return ParseQualifiedName();
+            return EnsureQualifiedName();
 
         Debug.Assert(!_scanner.IsAt(FirstSet.TypeName), $"{FirstSet.TypeName} is too large.");
         ReportMissing(ExpectedSyntax.TypeName);
@@ -83,7 +83,7 @@ public partial class Parser
             return null;
         }
 
-        return ParseIdName();
+        return EnsureIdName();
     }
 
     private MarkClose? ExpectQualifiedName()
@@ -94,17 +94,6 @@ public partial class Parser
             return null;
         }
 
-        return ParseQualifiedName();
-    }
-
-    private MarkClose? ExpectParamList(Anchor anchor)
-    {
-        if (!_scanner.IsAt(TokenKind.OpenParen))
-        {
-            ReportMissing(ExpectedSyntax.ParamList);
-            return null;
-        }
-
-        return EatParamList(anchor);
+        return EnsureQualifiedName();
     }
 }

@@ -7,28 +7,22 @@ namespace Axl.Compiler.Syntax;
 
 public partial class Parser
 {
-    private MarkClose ParseTypeName()
+    private MarkClose EnsureTypeName()
     {
         if (_scanner.IsAt(FirstSet.NativeTypeName))
             return EatNativeTypeName();
-        if (_scanner.IsAt(TokenKind.Identifier))
-            return ParseQualifiedName();
         
-        // --- Missing
-        ReportMissing(ExpectedSyntax.TypeName);
-        return ConstructMissingIdName();
+        return EnsureQualifiedName();
     }
     
-    private MarkClose ParseQualifiedName()
+    private MarkClose EnsureQualifiedName()
     {
+        // Report better missing message.
         if (!_scanner.IsAt(TokenKind.Identifier))
-        {
             ReportMissing(ExpectedSyntax.TypeName);
-            return ConstructMissingIdName();
-        }
         
         var typeExpr = _scanner.Open();
-        ParseIdName();
+        EnsureIdName();
 
         foreach (var _ in _scanner.MustEatEachIteration())
         {
@@ -36,9 +30,7 @@ public partial class Parser
                 break;
 
             _scanner.EatKnownToken(TokenKind.Dot);
-            var idExpr = ExpectIdName();
-            if (idExpr is null)
-                break;
+            ExpectIdName();
         }
 
         return _scanner.Close(typeExpr, SyntaxKind.QualifiedName);
@@ -50,17 +42,10 @@ public partial class Parser
         return _scanner.EatTokenIntoNode(SyntaxKind.NativeTypeName);
     }
 
-    private MarkClose ParseIdName()
+    private MarkClose EnsureIdName()
     {
         var idName = _scanner.Open();
-        ExpectToken(TokenKind.Identifier);
-        return _scanner.Close(idName, SyntaxKind.IdName);
-    }
-
-    private MarkClose ConstructMissingIdName()
-    {
-        var idName = _scanner.Open();
-        _scanner.AddMissingToken(TokenKind.Identifier);
+        EnsureToken(TokenKind.Identifier);
         return _scanner.Close(idName, SyntaxKind.IdName);
     }
 }

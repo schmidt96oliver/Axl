@@ -44,7 +44,7 @@ public partial class Parser
                 }
             }
 
-            ExpectToken(TokenKind.CloseBrace);
+            EnsureToken(TokenKind.CloseBrace);
             return _scanner.Close(moduleDecl, SyntaxKind.ModuleDecl);
         }
 
@@ -60,7 +60,7 @@ public partial class Parser
         var usingDecl = _scanner.Open();
         _scanner.EatKnownToken(TokenKind.UsingKw);
         ExpectQualifiedName();
-        ExpectToken(TokenKind.Semicolon);
+        EnsureToken(TokenKind.Semicolon);
         return _scanner.Close(usingDecl, SyntaxKind.UsingDecl);
     }
 
@@ -100,7 +100,7 @@ public partial class Parser
         }
 
         // --- FnDecl
-        if (!ExpectToken(TokenKind.FnKw))
+        if (!EnsureToken(TokenKind.FnKw))
         {
             // Since we anchor on ";" in EatNativeDecl, we need to handle
             // that here. It was probably meant to close a native fn declaration,
@@ -114,7 +114,7 @@ public partial class Parser
 
         // Inside ParamList, we can continue from "{" or "->"
         var paramListAnchor = anchor | TokenKind.OpenBrace | TokenKind.RightArrow | TokenKind.Semicolon;
-        ExpectParamList(paramListAnchor);
+        EnsureParamList(paramListAnchor);
 
         // --- Return type
         if (_scanner.IsAt(TokenKind.RightArrow))
@@ -129,11 +129,11 @@ public partial class Parser
         }
 
         if (hasNativeClause)
-            ExpectToken(TokenKind.Semicolon);
+            EnsureToken(TokenKind.Semicolon);
         else
         {
             ExpectBody(anchor);
-            EatSemicolonIfRequired(ownsBody: true);
+            EnsureSemicolonIfRequired(ownsBody: true);
         }
 
         return _scanner.Close(fnDecl, SyntaxKind.FnDecl);
@@ -159,7 +159,7 @@ public partial class Parser
                 if (!RecoverTo(nativeClauseAnchor, ExpectedSyntax.String))
                     ReportMissing(ExpectedSyntax.String);
             }
-            ExpectToken(TokenKind.CloseParen);
+            EnsureToken(TokenKind.CloseParen);
         }
         else 
             ReportMissing(TokenKind.OpenParen);
@@ -167,27 +167,32 @@ public partial class Parser
         return _scanner.Close(nativeClause, SyntaxKind.NativeClause);
     }
     
-    private MarkClose EatParamList(Anchor anchor)
+    private MarkClose EnsureParamList(Anchor anchor)
     {
-        return EatDelimitedList(anchor,
+        return EnsureDelimitedList(anchor,
             openToken: TokenKind.OpenParen, 
             closeToken: TokenKind.CloseParen,
             listKind: SyntaxKind.ParamList,
             itemFirst: TokenSet.Of(TokenKind.Identifier),
             expectedItemSyntax: ExpectedSyntax.Param,
-            parseItem: ParseParam);
+            ensureItem: EnsureParam);
         
-        MarkClose ParseParam(Anchor _)
+        MarkClose EnsureParam(Anchor _)
         {
             var param = _scanner.Open();
+            
+            // If scanner is not on an identifier, report
+            // our own missing message, because it is more
+            // expressive than "missing identifier", that
+            // EnsureIdName would report.
             if (!_scanner.IsAt(TokenKind.Identifier))
                 ReportMissing(ExpectedSyntax.Param);
             
-            ParseIdName();
+            EnsureIdName();
             if (_scanner.IsAt(TokenKind.Colon))
             {
                 _scanner.EatKnownToken(TokenKind.Colon);
-                ParseTypeName();
+                EnsureTypeName();
             }
 
             return _scanner.Close(param, SyntaxKind.Param);

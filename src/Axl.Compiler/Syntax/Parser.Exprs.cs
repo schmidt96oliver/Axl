@@ -14,7 +14,7 @@ public partial class Parser
             // Synthesize empty identifier expr
             ReportMissing(ExpectedSyntax.Expr);
             var idName = _scanner.Open();
-            _scanner.AddMissingToken(TokenKind.Identifier);
+            _scanner.MakeToken(TokenKind.Identifier);
             return _scanner.Close(idName, SyntaxKind.IdName);
         }
 
@@ -175,7 +175,7 @@ public partial class Parser
             }
         }
 
-        ExpectToken(TokenKind.CloseBrace);
+        EnsureToken(TokenKind.CloseBrace);
         return _scanner.Close(block, SyntaxKind.BlockExpr);
     }
 
