@@ -450,20 +450,16 @@ public static class UiPlayground
 
         private List<Segment> TokenSegments(Token token, bool onErrorNode)
         {
-            var hasError = token.Span.Length != 0 && syntaxTree.Diagnostics.Any(diag =>
-                diag.DefaultSeverity is DiagnosticSeverity.Error &&
-                diag.Locations.Any(location =>
-                    location.Span.Contains(token.Span.First) || location.Span.Contains(token.Span.End - 1)));
-            var hasEndError = syntaxTree.Diagnostics.Any(diag =>
-                diag.DefaultSeverity is DiagnosticSeverity.Error &&
-                diag.Locations.Any(location => location.Span.First == token.Span.End));
-
-            var attribute = hasError ? BrokenTokenAttribute :
+            var attribute = token.IsMissing ? BrokenTokenAttribute :
                 onErrorNode ? InErrorTokenAttribute : TokenAttribute;
+            var text = token.IsMissing
+                ? $"{token.Kind.DisplayName}?"
+                : $"'{Escape(source.GetText(token.Span))}'";
 
-            var segments = new List<Segment> { new($"'{Escape(source.GetText(token.Span))}'", attribute) };
-            if (hasEndError)
-                segments.Add(new Segment("?", BrokenTokenAttribute));
+            var segments = new List<Segment> { new(text, attribute) };
+            // if (token.IsMissing)
+            //     segments.Add(new("missing ", ErrorKindAttribute));
+            // segments.Add(new(text, attribute));
 
             return segments;
         }

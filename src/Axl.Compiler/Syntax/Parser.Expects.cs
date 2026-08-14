@@ -7,18 +7,22 @@ namespace Axl.Compiler.Syntax;
 public partial class Parser
 {
     /// <summary>
-    /// Eats and returns next token, if it has <paramref name="expectedKind"/>.
-    /// Otherwise, reports <see cref="Diagnostic.MissingToken"/> and returns <c>null</c>.
+    /// If the scanner is on <paramref name="expectedKind"/>, eats it and returns
+    /// <c>true</c>. Otherwise, creates a missing token of <paramref name="expectedKind"/>,
+    /// reports <see cref="Diagnostic.Missingtoken"/> and returns <c>false</c>.
     /// </summary>
-    private Token? ExpectToken(TokenKind expectedKind)
+    /// <returns>If scanner was at <paramref name="expectedKind"/>.</returns>
+    private bool ExpectToken(TokenKind expectedKind)
     {
         if (!_scanner.IsAt(expectedKind))
         {
+            _scanner.AddMissingToken(expectedKind);
             ReportMissing(expectedKind);
-            return null;
+            return false;
         }
 
-        return _scanner.EatKnownToken(expectedKind);
+        _scanner.EatKnownToken(expectedKind);
+        return true;
     }
 
     private MarkClose? ExpectOperandExpr(LeftOperator? left, Anchor anchor)
@@ -40,7 +44,7 @@ public partial class Parser
             return null;
         }
 
-        return EatExpr(anchor);
+        return ParseExpr(anchor);
     }
 
     private MarkClose? ExpectBody(Anchor anchor)
@@ -64,7 +68,7 @@ public partial class Parser
         if (_scanner.IsAt(FirstSet.NativeTypeName))
             return EatNativeTypeName();
         if (_scanner.IsAt(TokenKind.Identifier))
-            return EatQualifiedName();
+            return ParseQualifiedName();
 
         Debug.Assert(!_scanner.IsAt(FirstSet.TypeName), $"{FirstSet.TypeName} is too large.");
         ReportMissing(ExpectedSyntax.TypeName);
@@ -79,7 +83,7 @@ public partial class Parser
             return null;
         }
 
-        return EatIdName();
+        return ParseIdName();
     }
 
     private MarkClose? ExpectQualifiedName()
@@ -90,7 +94,7 @@ public partial class Parser
             return null;
         }
 
-        return EatQualifiedName();
+        return ParseQualifiedName();
     }
 
     private MarkClose? ExpectParamList(Anchor anchor)

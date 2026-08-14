@@ -169,7 +169,7 @@ public partial class Parser
     /// <summary>
     /// Eats <c>open (item ("," item)*)? close</c> into a <paramref name="listKind"/> node.
     /// </summary>
-    /// <param name="eatItem">
+    /// <param name="parseItem">
     /// Eats a single item. Gets an anchor that also stops on "," and
     /// <paramref name="closeToken"/>, so a confused item hands control back here.
     /// </param>
@@ -180,14 +180,21 @@ public partial class Parser
         SyntaxKind listKind,
         TokenSet itemFirst,
         ExpectedSyntax expectedItemSyntax,
-        Func<Anchor, MarkClose> eatItem)
+        Func<Anchor, MarkClose> parseItem)
     {
         Debug.Assert(_scanner.IsAt(openToken));
-
+        
         var list = _scanner.Open();
-        _scanner.EatKnownToken(openToken);
+        
+        // --- Open Token
+        if (!ExpectToken(openToken))
+        {
+            // Synthesize closing token and bail.
+            _scanner.AddMissingToken(closeToken);
+            return _scanner.Close(list, listKind);
+        }
 
-        // --- Special-case the empty list
+        // --- Empty list?
         if (_scanner.IsAt(closeToken))
         {
             _scanner.EatKnownToken(closeToken);
@@ -198,51 +205,31 @@ public partial class Parser
         var itemAnchor = anchor | closeToken | TokenKind.Comma;
         foreach (var _ in _scanner.MustEatEachIteration())
         {
-            // Each iteration expects another item.
-            if (_scanner.IsAt(itemFirst))
-                eatItem(itemAnchor);
-            else
-            {
-                if (_scanner.IsAt(anchor | TokenKind.Comma | closeToken | itemFirst))
-                    ReportMissing(expectedItemSyntax);
-                else
-                    ReportUnexpected(expectedItemSyntax);
-            }
-
-            // After item expected: closing or ','
+            RecoverTo(itemAnchor | itemFirst, expected: expectedItemSyntax);
+            
+            parseItem(itemAnchor); //TODO: Suppress error, if has recovered (that reports an error)
+            
+            if (_scanner.IsAt(closeToken) ||
+                _scanner.IsAt(anchor))
+                break;
+            
+            // if (!ExpectToken(TokenKind.Comma))
             if (_scanner.IsAt(TokenKind.Comma))
                 _scanner.EatKnownToken(TokenKind.Comma);
-            else if (_scanner.IsAt(closeToken))
-                break; 
-            
-            // Next item without comma?
-            else if (_scanner.IsAt(itemFirst))
-            {
-                // Another item without comma
-                ReportMissing(TokenKind.Comma);
-            }
-            
-            // Anchor?
-            else if (_scanner.IsAt(anchor))
-            {
-                ReportMissing(closeToken);
-                break;
-            }
-            
-            // Confused?
             else
             {
-                RecoverTo(itemAnchor | itemFirst, expected: TokenKind.Comma);
-
-                if (_scanner.IsAt(TokenKind.Comma))
+                var hasRecovered = RecoverTo(itemAnchor | itemFirst, expected: TokenKind.Comma);
+                
+                if (_scanner.IsAt(closeToken)
+                    || _scanner.IsAt(anchor))
+                    break;
+                
+                if (!hasRecovered) 
+                    ExpectToken(TokenKind.Comma);
+                else if (_scanner.IsAt(TokenKind.Comma))
                     _scanner.EatKnownToken(TokenKind.Comma);
-                else if (_scanner.IsAt(closeToken))
-                    break;
-                else if (_scanner.IsAt(anchor))
-                {
-                    ReportMissing(closeToken);
-                    break;
-                }
+                else
+                    _scanner.AddMissingToken(TokenKind.Comma);
             }
         }
 

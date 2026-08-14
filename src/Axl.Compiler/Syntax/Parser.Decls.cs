@@ -100,7 +100,7 @@ public partial class Parser
         }
 
         // --- FnDecl
-        if (ExpectToken(TokenKind.FnKw) is null)
+        if (!ExpectToken(TokenKind.FnKw))
         {
             // Since we anchor on ";" in EatNativeDecl, we need to handle
             // that here. It was probably meant to close a native fn declaration,
@@ -175,16 +175,22 @@ public partial class Parser
             listKind: SyntaxKind.ParamList,
             itemFirst: TokenSet.Of(TokenKind.Identifier),
             expectedItemSyntax: ExpectedSyntax.Param,
-            eatItem: EatParam);
+            parseItem: ParseParam);
         
-        MarkClose EatParam(Anchor _)
+        MarkClose ParseParam(Anchor _)
         {
+            if (!_scanner.IsAt(TokenKind.Identifier))
+            {
+                ReportMissing(ExpectedSyntax.Param);
+                return ConstructMissingIdName();
+            }
+            
             var param = _scanner.Open();
-            EatIdName();
+            ParseIdName();
             if (_scanner.IsAt(TokenKind.Colon))
             {
                 _scanner.EatKnownToken(TokenKind.Colon);
-                ExpectTypeName();
+                ParseTypeName();
             }
 
             return _scanner.Close(param, SyntaxKind.Param);

@@ -85,12 +85,12 @@ public class Dump(SourceFileView source)
                     return;
 
                 _builder.Append(prefix);
-                _builder.Append('\'');
-                AddLiteralString(source.GetText(token.Span));
-                _builder.AppendLine("\'");
+                _builder.AppendLine(token.IsMissing
+                    ? $"missing {token.Kind.DisplayName}"
+                    : $"\'{source.GetText(token.Span)}\'");
                 break;
             }
-                
+
             case SyntaxNode node:
             {
                 if (!raw)

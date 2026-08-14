@@ -92,7 +92,7 @@ public partial class Parser
 
         // --- IdName
         if (_scanner.IsAt(TokenKind.Identifier))
-            return EatIdName();
+            return ParseIdName();
 
         // For everything else, we can advance a token
         // already and then switch on it.
@@ -242,13 +242,12 @@ public partial class Parser
             listKind: SyntaxKind.ArgList,
             itemFirst: FirstSet.Expr,
             expectedItemSyntax: ExpectedSyntax.Expr,
-            eatItem: EatArg);
+            parseItem: ParseArg);
 
-        MarkClose EatArg(Anchor argAnchor)
+        MarkClose ParseArg(Anchor argAnchor)
         {
-            Debug.Assert(_scanner.IsAt(FirstSet.Expr));
             var arg = _scanner.Open();
-            EatExpr(argAnchor);
+            ParseExpr(argAnchor);
             return _scanner.Close(arg, SyntaxKind.Arg);
         }
     }

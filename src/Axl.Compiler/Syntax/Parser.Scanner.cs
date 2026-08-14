@@ -18,14 +18,19 @@ public partial class Parser
         /// <summary>
         /// Advances one token and patches it into the given kind.
         /// </summary>
-        AdvancePatch
+        AdvancePatch,
+        
+        /// <summary>
+        /// Inserts a missing token with specified kind.
+        /// </summary>
+        CreateMissing
     }
 
     /// <param name="SyntaxKind">
     /// Only meaningful on <see cref="ParseEventKind.Open"/>.
     /// <c>null</c> if no kind has been assigned yet.
     /// </param>
-    private readonly record struct ParseEvent(ParseEventKind EventKind, SyntaxKind? SyntaxKind = null, TokenKind? PatchTokenKind = null)
+    private readonly record struct ParseEvent(ParseEventKind EventKind, SyntaxKind? SyntaxKind = null, TokenKind? TokenKind = null)
     {
         public override string ToString()
             => EventKind switch
@@ -33,7 +38,7 @@ public partial class Parser
                 ParseEventKind.Open => $"Open {SyntaxKind?.ToString() ?? "?"}",
                 ParseEventKind.Close => "Close",
                 ParseEventKind.Advance => "Advance",
-                ParseEventKind.AdvancePatch => $"AdvancePatch to {PatchTokenKind}",
+                ParseEventKind.AdvancePatch => $"AdvancePatch to {TokenKind}",
                 _ => throw new UnreachableException()
             };
     }
@@ -179,6 +184,12 @@ public partial class Parser
             return new MarkOpen(before.OpenIndex);
         }
 
+
+        public void AddMissingToken(TokenKind kind)
+        {
+            _events.Add(new ParseEvent(ParseEventKind.CreateMissing, TokenKind: kind));
+        }
+        
         
         public Token EatToken()
         {
@@ -209,7 +220,7 @@ public partial class Parser
         {
             Debug.Assert(!kind.HasValue);
             
-            _events.Add(new ParseEvent(ParseEventKind.AdvancePatch, PatchTokenKind: kind));
+            _events.Add(new ParseEvent(ParseEventKind.AdvancePatch, TokenKind: kind));
             _fuel = MaxFuel;
             return _tokens[_nextToken++];
         }

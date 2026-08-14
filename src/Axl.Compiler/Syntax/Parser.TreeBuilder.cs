@@ -36,12 +36,23 @@ public partial class Parser
                     // Add the actual node
                     var token = e.EventKind is ParseEventKind.Advance
                         ? tokens[nextToken]
-                        : tokens[nextToken].WithKind(e.PatchTokenKind
+                        : tokens[nextToken].WithKind(e.TokenKind
                                                      ?? throw new UnreachableException("AdvancePatch without kind."));
 
                     nodes.Peek().Nodes.Add(token);
                     nextToken++;
                     break;
+                
+                case ParseEventKind.CreateMissing:
+                    var span = nextToken == 0
+                        ? SourceSpan.EmptyBefore(tokens[0].Span)
+                        : SourceSpan.EmptyAfter(tokens[nextToken - 1].Span);
+                    
+                    nodes.Peek().Nodes.Add(Token.MakeMissing(
+                        span,
+                        kind: e.TokenKind ?? throw new UnreachableException("CreateMissing event without kind.")));
+                    break;
+                    
 
                 case ParseEventKind.Close:
                     var builtNode = nodes.Pop();

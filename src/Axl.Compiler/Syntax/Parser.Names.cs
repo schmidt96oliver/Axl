@@ -1,16 +1,34 @@
 using System.Diagnostics;
+using Axl.Compiler.Diagnostics;
+
 // ReSharper disable UnusedMethodReturnValue.Local
 
 namespace Axl.Compiler.Syntax;
 
 public partial class Parser
 {
-    private MarkClose EatQualifiedName()
+    private MarkClose ParseTypeName()
     {
-        Debug.Assert(_scanner.IsAt(FirstSet.QualifiedName));
-
+        if (_scanner.IsAt(FirstSet.NativeTypeName))
+            return EatNativeTypeName();
+        if (_scanner.IsAt(TokenKind.Identifier))
+            return ParseQualifiedName();
+        
+        // --- Missing
+        ReportMissing(ExpectedSyntax.TypeName);
+        return ConstructMissingIdName();
+    }
+    
+    private MarkClose ParseQualifiedName()
+    {
+        if (!_scanner.IsAt(TokenKind.Identifier))
+        {
+            ReportMissing(ExpectedSyntax.TypeName);
+            return ConstructMissingIdName();
+        }
+        
         var typeExpr = _scanner.Open();
-        ExpectIdName();
+        ParseIdName();
 
         foreach (var _ in _scanner.MustEatEachIteration())
         {
@@ -32,9 +50,17 @@ public partial class Parser
         return _scanner.EatTokenIntoNode(SyntaxKind.NativeTypeName);
     }
 
-    private MarkClose EatIdName()
+    private MarkClose ParseIdName()
     {
-        Debug.Assert(_scanner.IsAt(TokenKind.Identifier));
-        return _scanner.EatTokenIntoNode(SyntaxKind.IdName);
+        var idName = _scanner.Open();
+        ExpectToken(TokenKind.Identifier);
+        return _scanner.Close(idName, SyntaxKind.IdName);
+    }
+
+    private MarkClose ConstructMissingIdName()
+    {
+        var idName = _scanner.Open();
+        _scanner.AddMissingToken(TokenKind.Identifier);
+        return _scanner.Close(idName, SyntaxKind.IdName);
     }
 }

@@ -10,12 +10,16 @@
 12.08 15:16: Müde, erschöpft, keine Lust mehr. Will unbedingt noch Claude fragen
 
 **Next**: 
-* regressions.axl
 
 **refactor: Construct missing tokens**
-
+* claim error position
+* dump format?
+* terminology: Eat = its there; Make = not there, create missing; Ensure = Eat or Make
+* rewrite Eat/Expect*
+* errors as events to scanner
 
 **Small points**:
+* regressions.axl
 * ?? `RecoverTo` UnexpectedToken -> Squiggle all tokens
 * ?? `RecoverTo` balanced braces/parens (good for garbage in modules `module A { var using module B { } }`)
 * ?? Anchor on newline (flag on method, `Anchor.Newline` that propagates)

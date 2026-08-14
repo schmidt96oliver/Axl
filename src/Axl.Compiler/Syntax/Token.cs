@@ -21,6 +21,7 @@ public class Token : SyntaxElement
 
         Kind = kind;
         Span = span;
+        IsMissing = isMissing;
     }
 
 

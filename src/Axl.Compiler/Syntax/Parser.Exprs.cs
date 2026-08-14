@@ -6,9 +6,17 @@ namespace Axl.Compiler.Syntax;
 
 public partial class Parser
 {
-    private MarkClose EatExpr(Anchor anchor)
+    private MarkClose ParseExpr(Anchor anchor)
     {
-        Debug.Assert(_scanner.IsAt(FirstSet.Expr));
+        //TODO: Maybe move to OperandExpr logic
+        if (!_scanner.IsAt(FirstSet.Expr))
+        {
+            // Synthesize empty identifier expr
+            ReportMissing(ExpectedSyntax.Expr);
+            var idName = _scanner.Open();
+            _scanner.AddMissingToken(TokenKind.Identifier);
+            return _scanner.Close(idName, SyntaxKind.IdName);
+        }
 
         // --- OperandExpr or Assign
         if (_scanner.IsAt(FirstSet.OperandExpr))
@@ -48,14 +56,14 @@ public partial class Parser
                 var breakExpr = _scanner.Open();
                 _scanner.EatKnownToken(TokenKind.BreakKw);
                 if (_scanner.IsAt(FirstSet.Expr))
-                    EatExpr(anchor);
+                    ParseExpr(anchor);
                 return _scanner.Close(breakExpr, SyntaxKind.BreakExpr);
 
             case TokenKind.ReturnKw:
                 var returnExpr = _scanner.Open();
                 _scanner.EatKnownToken(TokenKind.ReturnKw);
                 if (_scanner.IsAt(FirstSet.Expr))
-                    EatExpr(anchor);
+                    ParseExpr(anchor);
                 return _scanner.Close(returnExpr, SyntaxKind.ReturnExpr);
 
             case TokenKind.ContinueKw:
