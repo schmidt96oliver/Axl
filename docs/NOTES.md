@@ -6,6 +6,7 @@
 * TreeBuilder: report diagnostics based on events
 
 * `RecoverTo` cleanup
+* check special reporting sites
 
 * test: broken expressions
 * regressions

@@ -146,6 +146,8 @@ public partial class Parser
     /// </summary>
     private bool ReportError(Diagnostic.Error error)
     {
+        return true;
+        
         if (error is not (Diagnostic.UnexpectedToken or Diagnostic.MissingToken))
         {
             // We only suppress the two mentioned errors. Other ones may be reported freely.

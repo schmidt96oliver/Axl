@@ -37,7 +37,7 @@ public partial class Parser
             public Diagnostic.Error? ExplainingError { get; set; } = null;
         }
 
-        public sealed record Close : ParseEvent;
+        public sealed record Close(Open OpenEvent) : ParseEvent;
 
         public sealed record Eat : ParseEvent;
 
@@ -185,7 +185,7 @@ public partial class Parser
             Debug.Assert(openEvent is not null, $"{nameof(openMark.OpenEventIndex)} was not an open event.");
             
             openEvent.Kind = kind;
-            _events.Add(new ParseEvent.Close());
+            _events.Add(new ParseEvent.Close(openEvent));
             return new MarkClose(openMark.OpenEventIndex);
         }
 
@@ -234,7 +234,7 @@ public partial class Parser
             openEvent.Kind = SyntaxKind.Error;
             openEvent.ExplainingError = null;
             
-            _events.Add(new ParseEvent.Close());
+            _events.Add(new ParseEvent.Close(openEvent));
             return new MarkClose(openMark.OpenEventIndex);
         }
 
