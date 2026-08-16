@@ -1,20 +1,27 @@
 # ------------------------------------ Axl Project ------------------------------------
                                        ≽(◕ ᴗ ◕)≼
-
+16.08 18:25: Müde, leichtr brennende Augen; Will das noch fertig machen und aufräumen; kein Wasser mehr :/
 
 **Next**: 
-* TreeBuilder: report diagnostics based on events
+* CURRENT IDEA: ParseError holds GapRange and diagnostics claim gaps
+  * Make gaps clearer, expose scanner.CurrentGap, .NextGap or something
+  * Make gap index -> token index clearer
+  * delete comments, old logic and stuff
+  * ?? ParseError as event or separate?
+  * bless. Native_6 is ugly but correct for now
+  * cleanup Scanner, delete stale methods
+  * rm stale ParseEvent error slots (or keep them and make them carry)
+  * cleanup `DrainDiagnostics` in tree-building
 
 * `RecoverTo` cleanup
 * check special reporting sites
+* extract TreeBuilder into its own class
 
 * test: broken expressions
 * regressions
 * regressions.axl
 
 **Small points**:
-* ?? errors as events to scanner => see Claude
-
 * ?? `RecoverTo` UnexpectedToken -> Squiggle all tokens
 * ?? `RecoverTo` balanced braces/parens (good for garbage in modules `module A { var using module B { } }`)
 * ?? Anchor on newline (flag on method, `Anchor.Newline` that propagates)

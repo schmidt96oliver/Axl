@@ -135,6 +135,7 @@ public partial class Parser
         Debug.Assert(!_scanner.IsAt(TokenKind.CloseBrace));
 
         MarkOpen? errorExpr = null;
+        int? firstErrorGap = null;
         var braceCount = 0;
 
         // Calculate once before the gobble-loop and recalculate
@@ -171,6 +172,7 @@ public partial class Parser
             // --- Gobble Gobble Gobble
             errorExpr ??= _scanner.Open();
             var advancedToken = _scanner.Eat();
+            firstErrorGap ??= _scanner.Position;
 
             // Recalculate if necessary.
             if (FirstSet.StringPart.Contains(advancedToken.Kind))
@@ -178,7 +180,10 @@ public partial class Parser
         }
 
         if (errorExpr is MarkOpen openedErrorExpr)
-            return _scanner.CloseAsError(openedErrorExpr, expectedSyntax: TokenKind.CloseBrace);
+        {
+            _scanner.ReportUnexpectedTokensUntilHere(firstErrorGap!.Value, TokenKind.CloseBrace);
+            return _scanner.CloseAsUnexplainedError(openedErrorExpr);
+        }
         return null;
 
         bool WillCurrentStringBeContinued()

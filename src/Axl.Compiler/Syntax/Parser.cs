@@ -96,11 +96,13 @@ public partial class Parser
 
         ReportUnexpected(expectedSyntax);
 
-        var error = _scanner.Open();
+        var errorNode = _scanner.Open();
+        var first = _scanner.Position + 1;
         EatGarbageIntoError(anchor);
         Debug.Assert(_scanner.IsAt(anchor));
         
-        _scanner.CloseAsError(error, expectedSyntax);
+        _scanner.ReportUnexpectedTokensUntilHere(first, expectedSyntax);
+        _scanner.CloseAsUnexplainedError(errorNode);
         
         SuppressErrorsAtCurrentPosition();
         
@@ -298,18 +300,21 @@ public partial class Parser
             // --- Comma
             // Recover without error first, so we can report "expected close" or
             // "expected ','" based on what followed.
-            var preRecoverToken = _scanner.Peek();
+            // var preRecoverToken = _scanner.Peek();
+
+            var firstClaimedGap = _scanner.Position + 1;
             var unexplainedError = RecoverToUnexplained(itemAnchor | itemFirst);
 
-            if (unexplainedError is MarkClose error)
+            if (firstClaimedGap <= _scanner.Position)
             {
                 // Error needs to be explained.
                 var expected = _scanner.IsAt(closeToken) || _scanner.IsAt(anchor)
                     ? closeToken
                     : TokenKind.Comma;
-                var unexpectedError = new Diagnostic.UnexpectedToken(_source, preRecoverToken, expected);
-                _scanner.ExplainError(error, unexpectedError);
-                ReportUnexpected(preRecoverToken, expected);
+                // var unexpectedError = new Diagnostic.UnexpectedToken(_source, preRecoverToken, expected);
+                // _scanner.ExplainErrorHere(error, unexpectedError);
+                // ReportUnexpected(preRecoverToken, expected);
+                _scanner.ReportUnexpectedTokensUntilHere(firstClaimedGap, expected);
             }
 
             if (_scanner.IsAt(closeToken) || _scanner.IsAt(anchor))

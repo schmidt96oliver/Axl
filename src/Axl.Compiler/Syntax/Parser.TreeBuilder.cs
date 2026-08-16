@@ -15,8 +15,9 @@ public partial class Parser
         Stack<BuildingNode> nodes = [];
         var tokens = _scanner.AllTokens;
         var nextToken = 0;
+        
+        DrainDiagnostics();
 
-        var suppressErrors = false;
         foreach (var e in _scanner.GetEvents())
         {
             switch (e)
@@ -26,8 +27,6 @@ public partial class Parser
 
                     nodes.Push(new BuildingNode(openEvent.Kind.Value, ImmutableArray.CreateBuilder<SyntaxElement>()));
 
-                    
-                    
                     break;
 
                 case ParseEvent.Eat:
@@ -47,34 +46,20 @@ public partial class Parser
                     var buildingNode = nodes.Peek();
                     buildingNode.Nodes.Add(token);
                     
-                    if (buildingNode.Kind is not SyntaxKind.Error)
-                        suppressErrors = false;
                     
                     nextToken++;
                     break;
                 
-                case ParseEvent.Make(var kind, var explainingError):
+                case ParseEvent.Make(var kind):
                     var span = nextToken == 0
                         ? SourceSpan.EmptyBefore(tokens[0].Span)
                         : SourceSpan.EmptyAfter(tokens[nextToken - 1].Span);
                     
                     nodes.Peek().Nodes.Add(Token.MakeMissing(span, kind));
-
-                    if (suppressErrors)
-                        break;
-                    
-                    _errorContext.Bag.ReportError(explainingError);
-                    if (explainingError is Diagnostic.MissingToken or Diagnostic.UnexpectedToken)
-                    {
-                        // Suppress further missing/unexpected errors before the next eat.
-                        suppressErrors = true;
-                    }
-                        
-                    
                     break;
                     
 
-                case ParseEvent.Close(var openEvent):
+                case ParseEvent.Close:
                     var builtNode = nodes.Pop();
                     var isRoot = builtNode.Kind is SyntaxKind.TreeRoot;
                     if (isRoot)
@@ -94,27 +79,31 @@ public partial class Parser
                     }
                     nodes.Peek().Nodes.Add(node);
                     
-                    // Report error only on close, because errors might have been reported
-                    // from make or inner errors that have priority. Only report, if nothing
-                    // suppressed so far.
-                    if (openEvent.Kind is SyntaxKind.Error)
-                    {
-                        Debug.Assert(openEvent.ExplainingError is not null, "Unexplained error node.");
-                        if (suppressErrors)
-                            break;
-                        
-                        _errorContext.Bag.ReportError(openEvent.ExplainingError);
-                        if (openEvent.ExplainingError is Diagnostic.MissingToken or Diagnostic.UnexpectedToken)
-                        {
-                            // Suppress further missing/unexpected errors before the next eat.
-                            suppressErrors = true;
-                        }
-                    }
-
                     break;
             }
         }
 
         throw new UnreachableException();
+    }
+
+    private void DrainDiagnostics()
+    {
+        var orderedErrors = _scanner.GetErrors()
+            .OrderBy(error => error.ClaimedRange.First)
+            .ThenBy(error => error.Sequence);
+
+        ClaimedRange? lastClaimed = null;
+        foreach (var error in orderedErrors)
+        {
+            if (!error.IsSuppressible)
+                _errorContext.Bag.ReportError(error.Error);
+            else if (lastClaimed is not ClaimedRange range
+                || error.ClaimedRange.First > range.Last)
+            {
+                _errorContext.Bag.ReportError(error.Error);
+                lastClaimed = error.ClaimedRange;
+                continue;
+            }
+        }
     }
 }
