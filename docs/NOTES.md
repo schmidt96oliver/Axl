@@ -1,16 +1,12 @@
 # ------------------------------------ Axl Project ------------------------------------
                                        ≽(◕ ᴗ ◕)≼
 
-10.08 10:54: Erschöpft, will weiter kommen, "nur noch das eine Ding"
-      11:02: Noch erschöpfter. Schnell noch fertig!
-10.08 13:45: Quick going, a little restless. Still fun :)
-      14:11: Still quick going, caffeinated. Fun. Can slow down, its not gonna get finished :).
-11.08 11:40: Hungrig; macht Spaß; "einer geht noch"
-11.08 14:27: Roughly Ende der Zeit; Harndrang; "das geht noch schnell "
-12.08 15:16: Müde, erschöpft, keine Lust mehr. Will unbedingt noch Claude fragen
-14.08 15:01: Erschöft, Nickerchen wär geil; wollte noch Claudes Antwort abwarten
 
 **Next**: 
+* TreeBuilder: report diagnostics based on events
+
+* `RecoverTo` cleanup
+
 * test: broken expressions
 * regressions
 * regressions.axl
@@ -22,7 +18,7 @@
 * ?? `RecoverTo` balanced braces/parens (good for garbage in modules `module A { var using module B { } }`)
 * ?? Anchor on newline (flag on method, `Anchor.Newline` that propagates)
 * ?? Where to anchor on `;`?
-
+* ?? `PeekAll` to replace `UnsafePeek`. as ref struct?
 * `SyntaxFile` add reference to Source
 
 **Regressions:**

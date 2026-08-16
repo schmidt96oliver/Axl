@@ -62,16 +62,11 @@ public partial class Parser
                 var expr = _scanner.OpenBefore(lhs);
                 _scanner.Eat();
 
-                EnsureOperandExprRhs(new LeftOperator(opPrecedence.Value, opToken), anchor,
-                    out var ateAmbiguousOperatorChain);
-
-                if (ateAmbiguousOperatorChain)
-                {
-                    // Error has been reported by rhs ensuring
-                    lhs = _scanner.CloseAsErrorReportManual(expr);
-                }
+                EnsureOperandExprRhs(new LeftOperator(opPrecedence.Value, opToken), anchor, out var invalidChainingError);
+                if (invalidChainingError is not null)
+                    lhs = _scanner.CloseAsError(expr, invalidChainingError);
                 else
-                    lhs = _scanner.Close(expr, SyntaxKind.BinaryExpr);
+                    lhs =  _scanner.Close(expr, SyntaxKind.BinaryExpr);
             }
         }
 
@@ -106,11 +101,11 @@ public partial class Parser
         // --- Prefix Operator
         if (PrecedenceTable.TryGetPrefixPrecedence(token.Kind) is Precedence prefixPrecedence)
         {
-            EnsureOperandExprRhs(new LeftOperator(prefixPrecedence, token), anchor, out var ateAmbiguousOperatorChain);
-            return _scanner.Close(openMark,
-                ateAmbiguousOperatorChain
-                    ? SyntaxKind.Error
-                    : SyntaxKind.UnaryExpr);
+            EnsureOperandExprRhs(new LeftOperator(prefixPrecedence, token), anchor, out var invalidChainingError);
+            if (invalidChainingError is not null)
+                return _scanner.CloseAsError(openMark, invalidChainingError);
+            else
+                return _scanner.Close(openMark, SyntaxKind.UnaryExpr);
         }
 
         // Switch on everything else
@@ -159,7 +154,7 @@ public partial class Parser
     /// <param name="ateAmbiguousOperatorChain">
     /// <c>True</c> iff an ambiguous chain was advanced.
     /// </param>
-    private void EnsureOperandExprRhs(LeftOperator left, Anchor anchor, out bool ateAmbiguousOperatorChain)
+    private void EnsureOperandExprRhs(LeftOperator left, Anchor anchor, out Diagnostic.InvalidOperatorChaining? invalidChainingError)
     {
         ImmutableArray<Token>.Builder? ambiguousOperators = null;
 
@@ -202,14 +197,14 @@ public partial class Parser
             ambiguousOperators.Add(nextOpToken);
         }
 
-        ateAmbiguousOperatorChain = ambiguousOperators is not null;
-
-        if (ateAmbiguousOperatorChain)
+        if (ambiguousOperators is not null)
         {
-            //Report combined diagnostic.
-            ReportError(new Diagnostic.InvalidOperatorChaining(_source,
-                ambiguousOperators!.DrainToImmutable()));
+            invalidChainingError = new Diagnostic.InvalidOperatorChaining(_source,
+                ambiguousOperators!.DrainToImmutable());
+            ReportError(invalidChainingError);
         }
+        else
+            invalidChainingError = null;
     }
 
 

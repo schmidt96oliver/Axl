@@ -29,20 +29,12 @@ public partial class Parser
             public SyntaxKind? Kind { get; set; } = null;
 
             /// <summary>
-            /// If <see cref="Kind"/> is <see cref="SyntaxKind.Error"/>, then this
-            /// is the syntax that was expected instead of the error. <c>null</c> if
-            /// <see cref="Kind"/> is not error -- or -- <see cref="ErrorContext"/> is
-            /// <see cref="ExpectedSyntaxErrorContext.ManualReporting"/> in which case it
-            /// is expected that the calling method already reports the error.
+            /// If <see cref="Kind"/> is <see cref="SyntaxKind.Error"/>, this is
+            /// the <see cref="Diagnostic"/>, that explains the error.
+            /// <c>null</c> for other kinds and for still unexplained errors.
+            /// During tree-building, every error must be explained.
             /// </summary>
-            public ExpectedSyntax? ExpectedSyntax { get; set; } = null;
-
-            /// <summary>
-            /// The context, <see cref="ExpectedSyntax"/> should be reported in an
-            /// <see cref="SyntaxKind.Error"/> node. <c>null</c>, if <see cref="Kind"/>
-            /// is not <see cref="SyntaxKind.Error"/>.
-            /// </summary>
-            public ExpectedSyntaxErrorContext? ErrorContext { get; set; } = null;
+            public Diagnostic.Error? ExplainingError { get; set; } = null;
         }
 
         public sealed record Close : ParseEvent;
@@ -57,7 +49,7 @@ public partial class Parser
         /// <summary>
         /// Makes a missing token of <paramref name="Kind"/>.
         /// </summary>
-        public sealed record Make(TokenKind Kind, ExpectedSyntax ExpectedSyntax) : ParseEvent;
+        public sealed record Make(TokenKind Kind, Diagnostic.Error ExplainingError) : ParseEvent;
     }
     
 
@@ -110,6 +102,7 @@ public partial class Parser
         /// </summary>
         private readonly List<Token> _tokens;
         private readonly List<ParseEvent> _events;
+        private readonly SourceFileView _source;
         private int _nextToken;
 
         /// <summary>
@@ -130,8 +123,9 @@ public partial class Parser
         public int Position => _nextToken;
 
 
-        public Scanner(ImmutableArray<Token> tokens)
+        public Scanner(SourceFileView source, ImmutableArray<Token> tokens)
         {
+            _source = source;
             AllTokens = tokens;
 
             // This list will be oversized by exactly the amount of trivia tokens.
@@ -195,39 +189,64 @@ public partial class Parser
             return new MarkClose(openMark.OpenEventIndex);
         }
 
-        public MarkClose CloseAsError(MarkOpen openMark, ExpectedSyntax expectedSyntax, ExpectedSyntaxErrorContext context)
+
+        /// <summary>
+        /// Explains the error as <see cref="Diagnostic.UnexpectedToken"/> on the first token
+        /// inside.
+        /// </summary>
+        public MarkClose CloseAsError(MarkOpen openMark, ExpectedSyntax expectedSyntax)
+        {
+            // Find first token that was eaten inside the error
+            var openNode = _events[openMark.OpenEventIndex] as ParseEvent.Open;
+            Debug.Assert(openNode is not null);
+
+            var eatCount = _events[(openMark.OpenEventIndex + 1)..]
+                .Count(e => e is ParseEvent.Eat or ParseEvent.EatAs);
+            Debug.Assert(eatCount > 0, "Closed a node which has no tokens.");
+
+            var firstTokenIndex = _nextToken - eatCount;
+            var unexpectedToken = _tokens[firstTokenIndex];
+            var unexpectedError = new Diagnostic.UnexpectedToken(_source, unexpectedToken, expectedSyntax);
+            return CloseAsError(openMark, unexpectedError);
+        }
+        
+        public MarkClose CloseAsError(MarkOpen openMark, Diagnostic.Error explanation)
+        {
+            var errorNode = CloseAsUnexplainedError(openMark);
+            ExplainError(errorNode, explanation);
+            return errorNode;
+        }
+        
+        /// <summary>
+        /// Closes <paramref name="openMark"/> as <see cref="SyntaxKind.Error"/> and leaves
+        /// it unexplained. Needs to be explained through <see cref="ExplainError"/> before
+        /// tree-building.
+        /// </summary>
+        public MarkClose CloseAsUnexplainedError(MarkOpen openMark)
         {
             Debug.Assert(_events[(openMark.OpenEventIndex + 1)..]
-                    .Any(ev => ev is ParseEvent.Eat or ParseEvent.EatAs or ParseEvent.Make),
-                "Closed a node which has no tokens.");
+                    .Any(ev => ev is ParseEvent.Eat or ParseEvent.EatAs),
+                "Closed an error node which has not eaten tokens.");
 
             var openEvent = _events[openMark.OpenEventIndex] as ParseEvent.Open;
             Debug.Assert(openEvent is not null, $"{nameof(openMark.OpenEventIndex)} was not an open event.");
             
             openEvent.Kind = SyntaxKind.Error;
-            openEvent.ExpectedSyntax = expectedSyntax;
-            openEvent.ErrorContext = context;
+            openEvent.ExplainingError = null;
             
             _events.Add(new ParseEvent.Close());
             return new MarkClose(openMark.OpenEventIndex);
         }
 
-        public MarkClose CloseAsErrorReportManual(MarkOpen openMark)
+        public void ExplainError(MarkClose errorNode, Diagnostic.Error explanation)
         {
-            Debug.Assert(_events[(openMark.OpenEventIndex + 1)..]
-                    .Any(ev => ev is ParseEvent.Eat or ParseEvent.EatAs or ParseEvent.Make),
-                "Closed a node which has no tokens.");
+            var openEvent = _events[errorNode.OpenEventIndex] as ParseEvent.Open;
+            Debug.Assert(openEvent?.Kind is SyntaxKind.Error, $"{nameof(errorNode)} not an open event with kind error.");
+            Debug.Assert(openEvent.ExplainingError is null, "Error already explained.");
 
-            var openEvent = _events[openMark.OpenEventIndex] as ParseEvent.Open;
-            Debug.Assert(openEvent is not null, $"{nameof(openMark.OpenEventIndex)} was not an open event.");
-            
-            openEvent.Kind = SyntaxKind.Error;
-            openEvent.ExpectedSyntax = null;
-            openEvent.ErrorContext = ExpectedSyntaxErrorContext.ManualReporting;
-            
-            _events.Add(new ParseEvent.Close());
-            return new MarkClose(openMark.OpenEventIndex);
+            openEvent.ExplainingError = explanation;
         }
+
         
         /// <summary>
         /// Requires a <see cref="MarkClose"/>, because the mark will be invalidated!
@@ -240,11 +259,25 @@ public partial class Parser
         }
 
 
+
         /// <summary>
-        /// Creates a missing token of <paramref name="kind"/>.
+        /// Creates a missing token of <paramref name="kind"/> and explains
+        /// it with <paramref name="explanation"/>.
         /// </summary>
+        public void Make(TokenKind kind, Diagnostic.Error explanation)
+            => _events.Add(new ParseEvent.Make(kind, explanation));
+
+        /// <summary>
+        /// Creates a missing token of <paramref name="kind"/> and explains it
+        /// as <see cref="Diagnostic.MissingToken"/> on the next token.
+        /// </summary>
+        /// <param name="expectedSyntax"><c>null</c>: <paramref name="kind"/> will be used.</param>
         public void Make(TokenKind kind, ExpectedSyntax? expectedSyntax = null)
-         => _events.Add(new ParseEvent.Make(kind, expectedSyntax ?? kind));
+            => Make(kind, new Diagnostic.MissingToken(
+                _source,
+                Previous: _nextToken > 0 ? _tokens[_nextToken - 1] : null,
+                Next: Peek(),
+                Expected: expectedSyntax ?? kind));
         
 
         /// <summary>
@@ -253,7 +286,7 @@ public partial class Parser
         public MarkClose MakeIntoNode(TokenKind tokenKind, SyntaxKind nodeKind, ExpectedSyntax? expectedSyntax)
         {
             var node = Open();
-            Make(tokenKind, expectedSyntax ?? tokenKind);
+            Make(tokenKind, expectedSyntax);
             return Close(node, nodeKind);
         }
         
@@ -279,7 +312,7 @@ public partial class Parser
         {
             var error = Open();
             Eat();
-            return CloseAsError(error, expectedSyntax, ExpectedSyntaxErrorContext.Unexpected);
+            return CloseAsError(error, expectedSyntax);
         }
 
         /// <summary>

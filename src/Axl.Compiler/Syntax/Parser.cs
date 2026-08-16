@@ -29,7 +29,7 @@ public partial class Parser
         var diagnosticBag = new DiagnosticBag();
         var tokens = Lexer.Lex(source, diagnosticBag);
 
-        var scanner = new Scanner(tokens);
+        var scanner = new Scanner(source, tokens);
         var parser = new Parser(source, scanner, diagnosticBag);
         parser.EatRoot();
         return parser.BuildTree();
@@ -98,27 +98,31 @@ public partial class Parser
 
         var error = _scanner.Open();
         EatGarbageIntoError(anchor);
-        _scanner.CloseAsError(error, expectedSyntax, ExpectedSyntaxErrorContext.Unexpected);
-
         Debug.Assert(_scanner.IsAt(anchor));
+        
+        _scanner.CloseAsError(error, expectedSyntax);
         
         SuppressErrorsAtCurrentPosition();
         
         return true;
     }
 
-    private bool RecoverTo(Anchor anchor, Func<ExpectedSyntax> expectedSyntaxCallback)
+    /// <summary>
+    /// If scanner is not at <paramref name="anchor"/>, collects garbage into
+    /// a <see cref="SyntaxKind.Error"/> node and leaves it unexplained.
+    /// Always leaves the scanner on <paramref name="anchor"/>.
+    /// </summary>
+    /// <returns><c>null</c>, if no tokens have been eaten. The error <see cref="MarkClose"/> otherwise.</returns>
+    private MarkClose? RecoverToUnexplained(Anchor anchor)
     {
         if (_scanner.IsAt(anchor))
-            return false;
+            return null;
 
         var error = _scanner.Open();
         EatGarbageIntoError(anchor);
-        _scanner.CloseAsError(error, expectedSyntaxCallback(), ExpectedSyntaxErrorContext.Unexpected);
-
         Debug.Assert(_scanner.IsAt(anchor));
         
-        return true;
+        return _scanner.CloseAsUnexplainedError(error);
     }
 
     private void EatGarbageIntoError(Anchor anchor)
@@ -293,19 +297,22 @@ public partial class Parser
             // Recover without error first, so we can report "expected close" or
             // "expected ','" based on what followed.
             var preRecoverToken = _scanner.Peek();
-            var recovered = RecoverTo(itemAnchor | itemFirst, expectedSyntaxCallback: () => 
-                _scanner.IsAt(anchor | closeToken) ? closeToken : TokenKind.Comma);
-            
-            if (_scanner.IsAt(closeToken) ||
-                _scanner.IsAt(anchor))
+            var unexplainedError = RecoverToUnexplained(itemAnchor | itemFirst);
+
+            if (unexplainedError is MarkClose error)
             {
-                if (recovered)
-                    ReportUnexpected(preRecoverToken, expected: closeToken);
-                break;
+                // Error needs to be explained.
+                var expected = _scanner.IsAt(closeToken) || _scanner.IsAt(anchor)
+                    ? closeToken
+                    : TokenKind.Comma;
+                var unexpectedError = new Diagnostic.UnexpectedToken(_source, preRecoverToken, expected);
+                _scanner.ExplainError(error, unexpectedError);
+                ReportUnexpected(preRecoverToken, expected);
             }
 
-            if (recovered)
-                ReportUnexpected(preRecoverToken, expected: TokenKind.Comma);
+            if (_scanner.IsAt(closeToken) || _scanner.IsAt(anchor))
+                break;
+            
             EnsureToken(TokenKind.Comma);
         }
 

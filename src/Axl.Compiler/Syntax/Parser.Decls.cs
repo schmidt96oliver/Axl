@@ -78,10 +78,13 @@ public partial class Parser
 
         // --- No actual declaration found.
         // Wrap modifiers into an error.
+        var missingFnError = new Diagnostic.MissingToken(
+            _source,
+            Previous: _scanner.Last,
+            Next: _scanner.Peek(),
+            Expected: TokenKind.FnKw);
         ReportMissing(TokenKind.FnKw);
-        return _scanner.CloseAsError(decl,
-            expectedSyntax: TokenKind.FnKw,
-            context: ExpectedSyntaxErrorContext.MissingAfter);
+        return _scanner.CloseAsError(decl, missingFnError);
     }
 
     private MarkClose EatFnDecl(Anchor anchor, MarkOpen fnDecl)
@@ -102,6 +105,12 @@ public partial class Parser
         // --- "fn"
         if (!_scanner.IsAt(TokenKind.FnKw))
         {
+            var missingFnError = new Diagnostic.MissingToken(
+                _source,
+                Previous: _scanner.Last,
+                Next: _scanner.Peek(),
+                Expected: TokenKind.FnKw);
+            
             ReportMissing(TokenKind.FnKw);
             
             // Since we anchor on ";" in EatNativeDecl, we need to handle
@@ -110,11 +119,7 @@ public partial class Parser
             if (_scanner.IsAt(TokenKind.Semicolon))
                 _scanner.EatKnown(TokenKind.Semicolon);
             
-            // TODO: Eat the semicolon somewhere else
-            
-            return _scanner.CloseAsError(fnDecl,
-                expectedSyntax: TokenKind.FnKw,
-                context: ExpectedSyntaxErrorContext.MissingAfter);
+            return _scanner.CloseAsError(fnDecl, missingFnError);
         }
 
         _scanner.EatKnown(TokenKind.FnKw);
