@@ -97,7 +97,7 @@ public partial class Parser
         ReportUnexpected(expectedSyntax);
 
         var errorNode = _scanner.Open();
-        var first = _scanner.Position + 1;
+        var first = _scanner.Position;
         EatGarbageIntoError(anchor);
         Debug.Assert(_scanner.IsAt(anchor));
         
@@ -302,10 +302,10 @@ public partial class Parser
             // "expected ','" based on what followed.
             // var preRecoverToken = _scanner.Peek();
 
-            var firstClaimedGap = _scanner.Position + 1;
+            var firstUnexpected = _scanner.Position;
             var unexplainedError = RecoverToUnexplained(itemAnchor | itemFirst);
 
-            if (firstClaimedGap <= _scanner.Position)
+            if (firstUnexpected < _scanner.Position)
             {
                 // Error needs to be explained.
                 var expected = _scanner.IsAt(closeToken) || _scanner.IsAt(anchor)
@@ -314,7 +314,7 @@ public partial class Parser
                 // var unexpectedError = new Diagnostic.UnexpectedToken(_source, preRecoverToken, expected);
                 // _scanner.ExplainErrorHere(error, unexpectedError);
                 // ReportUnexpected(preRecoverToken, expected);
-                _scanner.ReportUnexpectedTokensUntilHere(firstClaimedGap, expected);
+                _scanner.ReportUnexpectedTokensUntilHere(firstUnexpected, expected);
             }
 
             if (_scanner.IsAt(closeToken) || _scanner.IsAt(anchor))

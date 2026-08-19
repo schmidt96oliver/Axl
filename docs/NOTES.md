@@ -4,7 +4,6 @@
 
 **Next**: 
 * assert Error has report
-* clarify UnexepcetedToken position logic
 * move diagnosticbag to treebuilder only
 
 * tree builder cleanup

@@ -253,8 +253,9 @@ public partial class Parser
         /// </summary>
         public MarkClose EatIntoErrorAndReport(ExpectedSyntax expectedSyntax)
         {
+            var first = Position;
             var node = EatInto(SyntaxKind.Error);
-            ReportUnexpectedTokensUntilHere(Position, expectedSyntax);
+            ReportUnexpectedTokensUntilHere(first, expectedSyntax);
             return node;
         }
 
@@ -275,15 +276,28 @@ public partial class Parser
             ReportHere(error, isSuppressible: true);
         }
 
-        public void ReportUnexpectedTokensUntilHere(int firstClaimedGap, ExpectedSyntax expectedSyntax)
+        /// <param name="first">
+        /// Scanner position in front of the first token that
+        /// was unexpected.
+        /// </param>
+        public void ReportUnexpectedTokensUntilHere(int first, ExpectedSyntax expectedSyntax)
         {
-            Guard.InRange(firstClaimedGap > 0);
-            Guard.InRange(firstClaimedGap <= Position);
+            Debug.Assert(first >= 0);
+            Debug.Assert(first < Position, "Empty unexpected token error.");
             
-            var token = _tokens[firstClaimedGap - 1];
-            var error = new Diagnostic.UnexpectedToken(_source, token, expectedSyntax);
+            // @@ @@ ;
+            // ^^       Error
+            //   ^  ^   Claimed positions
+            // Claim the positions between unexpected tokens
+            // and the one thereafter. The unexpected token error
+            // will explain any missing token error that appears
+            // directly after, but it does not explain missing errors
+            // that appear directly before.
+            
+            var errorToken = _tokens[first];
+            var error = new Diagnostic.UnexpectedToken(_source, errorToken, expectedSyntax);
             Report(error,
-                new ClaimedRange(firstClaimedGap, Position),
+                new ClaimedRange(first + 1, Position),
                 isSuppressible: true);
         }
 
