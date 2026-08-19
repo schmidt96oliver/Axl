@@ -13,17 +13,9 @@ public partial class Parser
 
 
     /// <summary>
-    /// Range of gaps between tokens claimed by one <see cref="ParseError"/>. The gap
-    /// before token <c>i</c> has index <c>i</c>.
+    /// Range of scanner positions claimed by one <see cref="ParseError.Report"/>.
     /// </summary>
-    /// <param name="First">First gap index.</param>
-    /// <param name="Last">Last gap index, inclusive.</param>
     private readonly record struct ClaimedRange(int First, int Last);
-    
-    /// <param name="ClaimedRange">Range this error claims.</param>
-    /// <param name="Sequence">Sequence errors were reported in by the parser.</param>
-    private readonly record struct ParseError(ClaimedRange ClaimedRange, int Sequence, Diagnostic.Error Error, bool IsSuppressible);
-    
     
     private abstract record ParseEvent
     {
@@ -48,6 +40,18 @@ public partial class Parser
         /// Makes a missing token of <paramref name="Kind"/>.
         /// </summary>
         public sealed record Make(TokenKind Kind) : ParseEvent;
+
+        /// <summary>
+        /// Reports an <paramref name="Error"/>. Might be suppressed, if another <see cref="Report"/> already
+        /// claimed that range through its own <paramref name="ClaimedRange"/>.
+        /// </summary>
+        /// <param name="ClaimedRange">
+        /// Range, this diagnostics explains.
+        /// Succeeding diagnostics within this range that are suppressible
+        /// will be suppressed.
+        /// </param>
+        /// <param name="IsSuppressible"><c>False</c> will always report this diagnostic.</param>
+        public sealed record Report(Diagnostic.Error Error, ClaimedRange ClaimedRange, bool IsSuppressible) : ParseEvent;
     }
     
 
@@ -100,7 +104,6 @@ public partial class Parser
         /// </summary>
         private readonly List<Token> _tokens;
         private readonly List<ParseEvent> _events;
-        private readonly List<ParseError> _errors;
         private readonly SourceFileView _source;
         private int _nextToken;
 
@@ -138,7 +141,6 @@ public partial class Parser
             }
 
             _events = [];
-            _errors = [];
             _nextToken = 0;
             _fuel = MaxFuel;
         }
@@ -146,9 +148,6 @@ public partial class Parser
 
         public IEnumerable<ParseEvent> GetEvents()
             => _events;
-
-        public IEnumerable<ParseError> GetErrors()
-            => _errors;
 
         
         /// <summary>
@@ -283,6 +282,12 @@ public partial class Parser
             _nextToken++;
         }
 
+        public void Report(Diagnostic.Error error, ClaimedRange range, bool isSuppressible = false)
+            => _events.Add(new ParseEvent.Report(error, range, isSuppressible));
+
+        public void ReportHere(Diagnostic.Error error, bool isSuppressible = false)
+            => Report(error, new ClaimedRange(_nextToken, _nextToken), isSuppressible);
+        
         
         public void ReportMissingTokenHere(ExpectedSyntax expectedSyntax)
         {
@@ -291,10 +296,7 @@ public partial class Parser
                 Previous: Last,
                 Next: Peek(),
                 expectedSyntax);
-            _errors.Add(new ParseError(new ClaimedRange(_nextToken, _nextToken),
-                Sequence: _errors.Count,
-                error,
-                IsSuppressible: true));
+            ReportHere(error, isSuppressible: true);
         }
 
         public void ReportUnexpectedTokensUntilHere(int firstClaimedGap, ExpectedSyntax expectedSyntax)
@@ -304,20 +306,11 @@ public partial class Parser
             
             var token = _tokens[firstClaimedGap - 1];
             var error = new Diagnostic.UnexpectedToken(_source, token, expectedSyntax);
-            _errors.Add(new ParseError(new ClaimedRange(firstClaimedGap, _nextToken),
-                Sequence: _errors.Count,
-                error,
-                IsSuppressible: true));
+            Report(error,
+                new ClaimedRange(firstClaimedGap, _nextToken),
+                isSuppressible: true);
         }
 
-        public void ReportUnsuppressible(Diagnostic.Error error)
-        {
-            _errors.Add(new ParseError(new ClaimedRange(_nextToken, _nextToken),
-                Sequence: _errors.Count,
-                error,
-                IsSuppressible: false));
-        }
-        
         
         
         public Token Peek(int lookahead = 0)

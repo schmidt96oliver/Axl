@@ -65,7 +65,7 @@ public partial class Parser
                 EnsureOperandExprRhs(new LeftOperator(opPrecedence.Value, opToken), anchor, out var invalidChainingError);
                 if (invalidChainingError is not null)
                 {
-                    _scanner.ReportUnsuppressible(invalidChainingError);
+                    _scanner.ReportHere(invalidChainingError);
                     lhs = _scanner.CloseAsUnexplainedError(expr);
                 }
                 else
@@ -107,7 +107,7 @@ public partial class Parser
             EnsureOperandExprRhs(new LeftOperator(prefixPrecedence, token), anchor, out var invalidChainingError);
             if (invalidChainingError is not null)
             {
-                _scanner.ReportUnsuppressible(invalidChainingError);
+                _scanner.ReportHere(invalidChainingError);
                 return _scanner.CloseAsUnexplainedError(openMark);
             }
             else

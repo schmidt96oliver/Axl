@@ -10,14 +10,12 @@ public partial class Parser
 
     private SyntaxTree BuildTree()
     {
-        //TODO: Add good trivia logic here
-
         Stack<BuildingNode> nodes = [];
         var tokens = _scanner.AllTokens;
         var nextToken = 0;
         
-        DrainDiagnostics();
-
+        ClaimedRange lastClaimedError = new(-1, -1);
+        
         foreach (var e in _scanner.GetEvents())
         {
             switch (e)
@@ -80,30 +78,28 @@ public partial class Parser
                     nodes.Peek().Nodes.Add(node);
                     
                     break;
+                
+                case ParseEvent.Report(var error, var range, var isSuppressible):
+                {
+                    Debug.Assert(range.First >= lastClaimedError.First, "Error claimed ranges are not sequential");
+                    
+                    if (!isSuppressible)
+                    {
+                        _errorContext.Bag.ReportError(error);
+                        break;
+                    }
+                    
+                    if (range.First > lastClaimedError.Last)
+                    {
+                        _errorContext.Bag.ReportError(error);
+                        lastClaimedError = range;
+                    }
+                    
+                    break;
+                }
             }
         }
 
         throw new UnreachableException();
-    }
-
-    private void DrainDiagnostics()
-    {
-        var orderedErrors = _scanner.GetErrors()
-            .OrderBy(error => error.ClaimedRange.First)
-            .ThenBy(error => error.Sequence);
-
-        ClaimedRange? lastClaimed = null;
-        foreach (var error in orderedErrors)
-        {
-            if (!error.IsSuppressible)
-                _errorContext.Bag.ReportError(error.Error);
-            else if (lastClaimed is not ClaimedRange range
-                || error.ClaimedRange.First > range.Last)
-            {
-                _errorContext.Bag.ReportError(error.Error);
-                lastClaimed = error.ClaimedRange;
-                continue;
-            }
-        }
     }
 }
