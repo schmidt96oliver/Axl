@@ -47,8 +47,8 @@ public partial class Parser
                 EatModuleDecl();
             else if (_scanner.IsAt(TokenKind.UsingKw))
                 EatUsingDecl();
-            else if (_scanner.IsAt(FirstSet.MemberDecl))
-                EatMemberDecl(fileAnchor);
+            else if (_scanner.IsAt(FirstSet.FnDecl))
+                EatFnDecl(fileAnchor);
             else
             {
                 // Recover to the next Stmt start, which includes Expr.

@@ -39,7 +39,7 @@ public partial class Parser
             if (_scanner.IsAt(TokenKind.ModuleKw))
                 EatModuleDecl();
             else if (_scanner.IsAt(FirstSet.FnDecl))
-                EatMemberDecl(moduleBodyAnchor);
+                EatFnDecl(moduleBodyAnchor);
             else
             {
                 // Could be `}` or Eof
@@ -62,30 +62,16 @@ public partial class Parser
         return _scanner.Close(usingDecl, SyntaxKind.UsingDecl);
     }
 
-    private MarkClose EatMemberDecl(Anchor anchor)
+    private MarkClose EatFnDecl(Anchor anchor)
     {
-        Debug.Assert(_scanner.IsAt(FirstSet.MemberDecl));
+        Debug.Assert(_scanner.IsAt(FirstSet.FnDecl));
 
-        var decl = _scanner.Open();
+        var fnDecl = _scanner.Open();
 
         // --- Modifier List
         while (_scanner.IsAt(FirstSet.Modifier))
             _scanner.Eat();
-
-        // --- Actual declaration
-        if (_scanner.IsAt(FirstSet.FnDeclAfterModifiers))
-            return EatFnDecl(anchor, decl);
-
-        // --- No actual declaration found.
-        // Wrap modifiers into an error.
-        _scanner.ReportMissingTokenHere(TokenKind.FnKw);
-        return _scanner.Close(decl, SyntaxKind.Error);
-    }
-
-    private MarkClose EatFnDecl(Anchor anchor, MarkOpen fnDecl)
-    {
-        Debug.Assert(_scanner.IsAt(FirstSet.FnDeclAfterModifiers));
-
+        
         // --- Native Clause
         var hasNativeClause = false;
         if (_scanner.IsAt(TokenKind.NativeKw))

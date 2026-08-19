@@ -128,7 +128,7 @@ public partial class Parser
             if (_scanner.IsAt(FirstSet.Stmt))
                 EatStmt(blockAnchor);
             else if (_scanner.IsAt(FirstSet.FnDecl))
-                EatMemberDecl(blockAnchor);
+                EatFnDecl(blockAnchor);
             
             // --- lone ";" special case
             else if (_scanner.IsAt(TokenKind.Semicolon))
