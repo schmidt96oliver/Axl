@@ -12,7 +12,6 @@
 * ?? `RecoverTo` balanced braces/parens (good for garbage in modules `module A { var using module B { } }`)
 * ?? Anchor on newline (flag on method, `Anchor.Newline` that propagates)
 * ?? Where to anchor on `;`?
-* ?? `PeekAll` to replace `UnsafePeek`. as ref struct?; Uses fuel per call (not per iteration)
 * `SyntaxFile` add reference to Source
 
 **Regressions:**

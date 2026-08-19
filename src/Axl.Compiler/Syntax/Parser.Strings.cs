@@ -205,12 +205,8 @@ public partial class Parser
             // this StringStart.
 
             var depth = 0;
-            for (var n = 0;; n++)
+            foreach (var token in _scanner.PeekAll())
             {
-                // We can and must use UnsafePeek, because our loop is bounded and
-                // does not nest. It is necessary, because we might be scanning an entire file
-                // ahead and normal Peek might/will trigger the infinite loop protection of scanner.
-                var token = _scanner.UnsafePeek(n);
                 switch (token.Kind)
                 {
                     case TokenKind.StringStart:
@@ -232,6 +228,8 @@ public partial class Parser
                         return false;
                 }
             }
+
+            return false;
         }
     }
 }
