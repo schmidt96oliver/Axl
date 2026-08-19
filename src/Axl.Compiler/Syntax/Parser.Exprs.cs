@@ -71,7 +71,7 @@ public partial class Parser
         _scanner.EatKnown(TokenKind.IfKw);
 
         // --- Condition and body
-        var ifAnchor = anchor | TokenKind.ElseKw;
+        var ifAnchor = anchor | FirstSet.Body | TokenKind.ElseKw;
         EnsureOperandExpr(left: null, ifAnchor);
         EnsureBody(ifAnchor);
 
