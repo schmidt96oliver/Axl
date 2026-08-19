@@ -34,7 +34,7 @@ public partial class Parser
         var moduleBodyAnchor = Anchor.Forced | FirstSet.MemberDecl | TokenKind.CloseBrace;
         foreach (var _ in _scanner.MustEatEachIteration())
         {
-            RecoverTo(moduleBodyAnchor, ExpectedSyntax.Member);
+            RecoverToAndReport(moduleBodyAnchor, ExpectedSyntax.Member);
 
             if (_scanner.IsAt(TokenKind.ModuleKw))
                 EatModuleDecl();

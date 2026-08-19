@@ -55,7 +55,7 @@ public partial class Parser
                 // This is deliberately different from the anchor for EatStmt above.
                 // If the parser is already confused, we recover to any position that
                 // can start a new statement.
-                RecoverTo(Anchor.From(FirstSet.Stmt) | fileAnchor | TokenKind.Semicolon, 
+                RecoverToAndReport(Anchor.From(FirstSet.Stmt) | fileAnchor | TokenKind.Semicolon, 
                     ExpectedSyntax.Stmt);
 
                 if (_scanner.IsAt(TokenKind.Semicolon))
@@ -74,10 +74,10 @@ public partial class Parser
     /// Always leaves the scanner on <paramref name="anchor"/>.
     /// </summary>
     /// <returns><c>True</c> iff garbage was collected and an error node added.</returns>
-    private bool RecoverTo(Anchor anchor, ExpectedSyntax expectedSyntax)
+    private bool RecoverToAndReport(Anchor anchor, ExpectedSyntax expectedSyntax)
     {
         var first = _scanner.Position;
-        if (RecoverToUnexplained(anchor))
+        if (RecoverTo(anchor))
         {
             Debug.Assert(first < _scanner.Position);
             _scanner.ReportUnexpectedTokensUntilHere(first, expectedSyntax);
@@ -93,7 +93,7 @@ public partial class Parser
     /// Always leaves the scanner on <paramref name="anchor"/>.
     /// </summary>
     /// <returns><c>True</c> iff garbage was collected and an error node added.</returns>
-    private bool RecoverToUnexplained(Anchor anchor)
+    private bool RecoverTo(Anchor anchor)
     {
         if (_scanner.IsAt(anchor))
             return false;
@@ -210,7 +210,7 @@ public partial class Parser
         foreach (var _ in _scanner.MustEatEachIteration())
         {
             // --- Item
-            RecoverTo(itemAnchor | itemFirst, expectedSyntax: expectedItemSyntax);
+            RecoverToAndReport(itemAnchor | itemFirst, expectedSyntax: expectedItemSyntax);
             ensureItem(itemAnchor);
             
             if (_scanner.IsAt(closeToken) ||
@@ -222,7 +222,7 @@ public partial class Parser
             // "expected ','" based on what followed.
             
             var firstUnexpected = _scanner.Position;
-            if (RecoverToUnexplained(itemAnchor | itemFirst))
+            if (RecoverTo(itemAnchor | itemFirst))
             {
                 _scanner.ReportUnexpectedTokensUntilHere(firstUnexpected,
                     expectedSyntax: _scanner.IsAt(closeToken) || _scanner.IsAt(anchor)

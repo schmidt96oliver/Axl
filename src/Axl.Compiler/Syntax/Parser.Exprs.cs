@@ -157,7 +157,7 @@ public partial class Parser
             {
                 // Recover to Expr as well, because they can legitimately start
                 // another Stmt.
-                RecoverTo(blockAnchor | FirstSet.Expr, ExpectedSyntax.Stmt);
+                RecoverToAndReport(blockAnchor | FirstSet.Expr, ExpectedSyntax.Stmt);
             }
         }
 

@@ -212,7 +212,7 @@ public partial class Parser
         EnsureExpr(groupAnchor);
 
         // --- Recover if confused
-        RecoverTo(groupAnchor, expectedSyntax: TokenKind.CloseParen);
+        RecoverToAndReport(groupAnchor, expectedSyntax: TokenKind.CloseParen);
         
         EnsureToken(TokenKind.CloseParen);
         return _scanner.Close(expr, SyntaxKind.GroupExpr);
