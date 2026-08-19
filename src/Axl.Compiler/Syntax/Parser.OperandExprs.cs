@@ -145,7 +145,7 @@ public partial class Parser
     /// It collects all chained ambiguous operators and reports one
     /// diagnostic for them.
     /// </summary>
-    /// <param name="ateAmbiguousOperatorChain">
+    /// <param name="wasAmbiguous">
     /// <c>True</c> iff an ambiguous chain was advanced.
     /// </param>
     private void EnsureOperandExprRhs(LeftOperator left, Anchor anchor, out bool wasAmbiguous)

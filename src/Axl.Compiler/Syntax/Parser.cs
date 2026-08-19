@@ -220,19 +220,14 @@ public partial class Parser
             // --- Comma
             // Recover without error first, so we can report "expected close" or
             // "expected ','" based on what followed.
-            // var preRecoverToken = _scanner.Peek();
-
+            
             var firstUnexpected = _scanner.Position;
             if (RecoverToUnexplained(itemAnchor | itemFirst))
             {
-                // Error needs to be explained.
-                var expected = _scanner.IsAt(closeToken) || _scanner.IsAt(anchor)
-                    ? closeToken
-                    : TokenKind.Comma;
-                // var unexpectedError = new Diagnostic.UnexpectedToken(_source, preRecoverToken, expected);
-                // _scanner.ExplainErrorHere(error, unexpectedError);
-                // ReportUnexpected(preRecoverToken, expected);
-                _scanner.ReportUnexpectedTokensUntilHere(firstUnexpected, expected);
+                _scanner.ReportUnexpectedTokensUntilHere(firstUnexpected,
+                    expectedSyntax: _scanner.IsAt(closeToken) || _scanner.IsAt(anchor)
+                        ? closeToken
+                        : TokenKind.Comma);
             }
 
             if (_scanner.IsAt(closeToken) || _scanner.IsAt(anchor))
