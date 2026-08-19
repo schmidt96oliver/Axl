@@ -43,7 +43,7 @@ public partial class Parser
             if (_scanner.IsAt(FirstSet.Stmt))
                 EatStmt(fileAnchor | TokenKind.Semicolon);
             else if (_scanner.IsAt(TokenKind.ModuleKw))
-                EatModuleDecl();
+                EatModuleDecl(onGlobalScope: true);
             else if (_scanner.IsAt(TokenKind.UsingKw))
                 EatUsingDecl();
             else if (_scanner.IsAt(FirstSet.FnDecl))

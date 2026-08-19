@@ -7,7 +7,7 @@ namespace Axl.Compiler.Syntax;
 
 public partial class Parser
 {
-    private MarkClose EatModuleDecl()
+    private MarkClose EatModuleDecl(bool onGlobalScope)
     {
         Debug.Assert(_scanner.IsAt(TokenKind.ModuleKw));
 
@@ -24,20 +24,36 @@ public partial class Parser
         }
 
         // --- Missing { }?
-        if (!EnsureToken(TokenKind.OpenBrace))
+        if (!_scanner.IsAt(TokenKind.OpenBrace))
         {
-            _scanner.MakeAndReport(TokenKind.CloseBrace);
-            return _scanner.Close(moduleDecl, SyntaxKind.ModuleDecl);
+            // Input looks like 'module A' and could be meant to be a global
+            // module decl or a bodied module. If we're inside another module
+            // it surely will be bodied, since global is only allowed on global
+            // scope. On global scope, it could be both, but we just default to
+            // completing it as a global declaration as a heuristic.
+            
+            if (onGlobalScope)
+            {
+                EnsureToken(TokenKind.Semicolon);
+                return _scanner.Close(moduleDecl, SyntaxKind.GlobalModuleDecl);
+            }
+            else
+            {
+                _scanner.MakeAndReport(TokenKind.OpenBrace);
+                _scanner.MakeAndReport(TokenKind.CloseBrace);
+                return _scanner.Close(moduleDecl, SyntaxKind.ModuleDecl);
+            }
         }
-
+        
         // --- Eat members
+        EnsureToken(TokenKind.OpenBrace);
         var moduleBodyAnchor = Anchor.Forced | FirstSet.MemberDecl | TokenKind.CloseBrace;
         foreach (var _ in _scanner.MustEatEachIteration())
         {
             RecoverToAndReport(moduleBodyAnchor, ExpectedSyntax.Member);
 
             if (_scanner.IsAt(TokenKind.ModuleKw))
-                EatModuleDecl();
+                EatModuleDecl(onGlobalScope: false);
             else if (_scanner.IsAt(FirstSet.FnDecl))
                 EatFnDecl(moduleBodyAnchor);
             else

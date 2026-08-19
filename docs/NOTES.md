@@ -22,16 +22,8 @@
 * `a == ==`
 * `(1 @@@@)` recovery in GroupExpr
 
-_Below: run through the parser, outcomes observed._
+* `if a = 1 => Print("eq");`
 
-
-
-
-**One typo, several squiggles:**
-* `if a = 1 => Print("eq");` -> 4 diagnostics. `if` gets an empty body, `= 1` splits into
-  Error + ExprStmt, the Arm floats up to block level
-
-**Structure lost quietly:**
 * missing closing quote -> next line becomes a second Arg with a synthesized `,`;
   both lines end up in one call
   ```
@@ -49,34 +41,24 @@ _Below: run through the parser, outcomes observed._
   }
   ```
 
-**Misleading message, correct tree:**
-* `public var x = 1;` -> "Expected 'fn'." reported at `var`
 * `private module A { }` -> "Expected 'fn'." with `module` sitting right there
-* `Print("value: {Compute(}")` -> tree recovers perfectly, but the one diagnostic says
-  "Expected an expression" when the missing token is `)`
 
-**Modelling, decide before the Binder sees it:**
-* "no expression here" is modelled as a missing *identifier*: `()`, `var x = ;`, `a = ;`
+
+?? (what else?) "no expression here" is modelled as a missing *identifier*: `()`, `var x = ;`, `a = ;`
   all yield `IdName(<missing>)`
-* `module A.B` -> makes both `{` and `}`. Probably should read as a global module decl
-  missing `;`
-* `break break;` -> legal per grammar, zero diagnostics. Binder's problem, noting it so it
-  doesn't get lost.
-
-**Checked, came out clean (1 diagnostic, sensible tree) - don't re-test:**
-* unclosed call with a valid line under it; one `}` too many at file scope; unclosed brace
-  adopting the next decl; nested module with unclosed fn body
-* all EOF cases: `fn F(a: i32`, `module A { public fn F() { Print(`, `var x =`,
-  unclosed string with open interpolation
-
-
-!! trailing dot, next line is a valid stmt -> parses as `Std.Std.Print("x")`
+?? (Parser sees it correctly and the stmt could genuinely be multi-line. what else to do?) trailing dot, next line is a valid stmt -> parses as `Std.Std.Print("x")`
   ```
   Std.
   Std.Print("x");
   ```
-!! `public public fn F() { }` repeated modifier, both eaten
-!! `Print(,)` -> 2x "Expected an expression" for one `(,)`
+
+!! (parser is permissive; declaration binding will error/lint) `public public fn F() { }` repeated modifier, both eaten
+!! (intended, looks like 2 params were intended) `Print(,)` -> 2x "Expected an expression" for one `(,)`
+!! (MissingToken after public is correct) `public var x = 1;` -> "Expected 'fn'." reported at `var`
+!! (nope, diagnostic says "expected )". Possbily fixed with one of the last commits) `Print("value: {Compute(}")` -> tree recovers perfectly, but the one diagnostic says
+  "Expected an expression" when the missing token is `)`
+
+
 
 # Parser
 [x] Corpus & Corpus-Test-Runner (expect: Parses without diagnostics)
