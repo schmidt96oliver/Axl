@@ -30,7 +30,6 @@ public partial class Parser
 
     private void EatRoot()
     {
-        //TODO: Distinguish script and module file
         var file = _scanner.Open();
 
         // Stmt can start from Expr or Decl. Recover only from
