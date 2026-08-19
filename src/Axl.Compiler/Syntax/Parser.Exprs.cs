@@ -157,7 +157,11 @@ public partial class Parser
             {
                 // Recover to Expr as well, because they can legitimately start
                 // another Stmt.
-                RecoverToAndReport(blockAnchor | FirstSet.Expr, ExpectedSyntax.Stmt);
+                var recovered = RecoverToAndReport(blockAnchor | FirstSet.Expr, ExpectedSyntax.Stmt);
+                
+                // If it's followed by a ';', eat it into an error silently.
+                if (recovered && _scanner.IsAt(TokenKind.Semicolon))
+                    _scanner.EatInto(SyntaxKind.Error);
             }
         }
 

@@ -24,26 +24,10 @@
 
 _Below: run through the parser, outcomes observed._
 
-**Silently wrong, no diagnostic at all:**
-* trailing dot, next line is a valid stmt -> parses as `Std.Std.Print("x")`
-  ```
-  Std.
-  Std.Print("x");
-  ```
-* `public public fn F() { }` repeated modifier, both eaten
+
+
 
 **One typo, several squiggles:**
-* `@@ ;` at file scope -> 2x "Expected a statement" (EatRoot recovers, then eats `;` into
-  a second Error and reports again)
-* `Print(,)` -> 2x "Expected an expression" for one `(,)`
-* unclosed `(` in if-condition -> 3 diagnostics. GroupExpr swallows the if-body, `}` is
-  eaten as the `)`, the fn's own `}` becomes a file-scope Error
-  ```
-  if (a > b
-  {
-      Print("bigger");
-  }
-  ```
 * `if a = 1 => Print("eq");` -> 4 diagnostics. `if` gets an empty body, `= 1` splits into
   Error + ExprStmt, the Arm floats up to block level
 
@@ -85,6 +69,14 @@ _Below: run through the parser, outcomes observed._
 * all EOF cases: `fn F(a: i32`, `module A { public fn F() { Print(`, `var x =`,
   unclosed string with open interpolation
 
+
+!! trailing dot, next line is a valid stmt -> parses as `Std.Std.Print("x")`
+  ```
+  Std.
+  Std.Print("x");
+  ```
+!! `public public fn F() { }` repeated modifier, both eaten
+!! `Print(,)` -> 2x "Expected an expression" for one `(,)`
 
 # Parser
 [x] Corpus & Corpus-Test-Runner (expect: Parses without diagnostics)

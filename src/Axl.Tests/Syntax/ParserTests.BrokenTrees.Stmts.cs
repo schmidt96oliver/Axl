@@ -45,6 +45,29 @@ public partial class ParserTests
                     · · Error ';'
                     · · '}'
                     """);
+
+            [Fact]
+            public void SemicolonAfterError_Global()
+                => InlineSnapshot.Validate(Tree("@@ ;"), """
+                    ERROR UnexpectedToken@[0, 2): Expected a statement, got unknown characters.
+
+
+                    Error '@@'
+                    Error ';'
+                    """);
+            [Fact]
+            public void SemicolonAfterError_InBlock()
+                => InlineSnapshot.Validate(Tree("{ @@ ; }"), """
+                    ERROR UnexpectedToken@[2, 4): Expected a statement, got unknown characters.
+
+
+                    ExprStmt
+                    · BlockExpr
+                    · · '{'
+                    · · Error '@@'
+                    · · Error ';'
+                    · · '}'
+                    """);
         }
     }
 }

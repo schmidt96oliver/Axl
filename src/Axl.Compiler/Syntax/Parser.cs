@@ -54,11 +54,19 @@ public partial class Parser
                 // This is deliberately different from the anchor for EatStmt above.
                 // If the parser is already confused, we recover to any position that
                 // can start a new statement.
-                RecoverToAndReport(Anchor.From(FirstSet.Stmt) | fileAnchor | TokenKind.Semicolon, 
+                var recovered = RecoverToAndReport(Anchor.From(FirstSet.Stmt) | fileAnchor | TokenKind.Semicolon, 
                     ExpectedSyntax.Stmt);
 
                 if (_scanner.IsAt(TokenKind.Semicolon))
-                    _scanner.EatIntoErrorAndReport(ExpectedSyntax.Stmt);
+                {
+                    // If the parser has recovered before, there already is an error
+                    // and we eat the ';' silently. Otherwise, report the error.
+                    
+                    if (recovered)
+                        _scanner.EatInto(SyntaxKind.Error);
+                    else
+                        _scanner.EatIntoErrorAndReport(ExpectedSyntax.Stmt);
+                }
             }
         }
 
