@@ -144,11 +144,15 @@ public partial class Parser
 
     private MarkClose EnsureParamList(Anchor anchor)
     {
+        // Add ':' and type names to the first set, to catch
+        // cases like 'fn A( : i32)' gracefully.
+        var itemFirst = FirstSet.TypeName | TokenSet.Of(TokenKind.Identifier, TokenKind.Colon);
+        
         return EnsureDelimitedList(anchor,
             openToken: TokenKind.OpenParen, 
             closeToken: TokenKind.CloseParen,
             listKind: SyntaxKind.ParamList,
-            itemFirst: TokenSet.Of(TokenKind.Identifier),
+            itemFirst,
             ensureItem: EnsureParam, 
             expectedOpenSyntax: ExpectedSyntax.ParamList,
             expectedItemSyntax: ExpectedSyntax.Param);
@@ -156,11 +160,19 @@ public partial class Parser
         MarkClose EnsureParam(Anchor _)
         {
             var param = _scanner.Open();
-            
-            EnsureIdName(ExpectedSyntax.Param);
-            if (_scanner.IsAt(TokenKind.Colon))
+
+            EnsureIdName(expectedSyntax: _scanner.IsAt(itemFirst)
+                ? TokenKind.Identifier
+                : ExpectedSyntax.Param);
+
+            // A plain next identifier must not be eaten, it will become the next
+            // parameter. But if it looks like a qualified name, like 'fn A(a a.b)',
+            // then eat it as a type name for this parameter.
+            if (_scanner.IsAt(TokenKind.Colon)
+                || _scanner.IsAt(FirstSet.NativeTypeName)
+                || _scanner.IsAt(TokenKind.Identifier) && _scanner.Peek(1).Kind is TokenKind.Dot)
             {
-                _scanner.EatKnown(TokenKind.Colon);
+                EnsureToken(TokenKind.Colon);
                 EnsureTypeName();
             }
 

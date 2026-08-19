@@ -17,13 +17,9 @@
 **Regressions:**
 * `fn A() = Print();` (mis-typed `=>`)
 
-* `fn Foo( :i32) { }`
 * `fn Foo( :i32 -> string { }`
 
-* `fn Foo(`
 * `fn Another`
-
-* `fn Foo(a : , b, : i32, :) -> { }`
 
 * `native(a) fn Foo();`
 

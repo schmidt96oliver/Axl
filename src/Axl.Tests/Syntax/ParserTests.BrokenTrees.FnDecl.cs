@@ -240,6 +240,133 @@ public partial class ParserTests
                     · · ')'
                     · BlockExpr '{' '}'
                     """);
+
+            
+            [Fact]
+            public void Param_ForgottenId()
+                => InlineSnapshot.Validate(Tree("fn A( : i32) { } "), """
+                    ERROR MissingToken@[5, 5): Expected an identifier.
+
+
+                    FnDecl
+                    · 'fn'
+                    · IdName 'A'
+                    · ParamList
+                    · · '('
+                    · · Param
+                    · · · IdName
+                    · · · · ??ID
+                    · · · ':'
+                    · · · NativeTypeName 'i32'
+                    · · ')'
+                    · BlockExpr '{' '}'
+                    """);
+            
+            [Fact]
+            public void Param_ForgottenTypeName()
+                => InlineSnapshot.Validate(Tree("fn A(a : ) { } "), """
+                    ERROR MissingToken@[8, 8): Expected a type name.
+
+
+                    FnDecl
+                    · 'fn'
+                    · IdName 'A'
+                    · ParamList
+                    · · '('
+                    · · Param
+                    · · · IdName 'a'
+                    · · · ':'
+                    · · · QualifiedName
+                    · · · · IdName
+                    · · · · · ??ID
+                    · · ')'
+                    · BlockExpr '{' '}'
+                    """);
+            
+            [Fact]
+            public void Param_ForgottenColon_FollowedByNativeTypeName()
+                => InlineSnapshot.Validate(Tree("fn A(a i32) { } "), """
+                    ERROR MissingToken@[6, 6): Expected ':'.
+
+
+                    FnDecl
+                    · 'fn'
+                    · IdName 'A'
+                    · ParamList
+                    · · '('
+                    · · Param
+                    · · · IdName 'a'
+                    · · · ??':'
+                    · · · NativeTypeName 'i32'
+                    · · ')'
+                    · BlockExpr '{' '}'
+                    """);
+            
+            [Fact]
+            public void Param_ForgottenColon_FollowedByQualifiedName_1()
+                => InlineSnapshot.Validate(Tree("fn A(a a.b) { } "), """
+                    ERROR MissingToken@[6, 6): Expected ':'.
+
+
+                    FnDecl
+                    · 'fn'
+                    · IdName 'A'
+                    · ParamList
+                    · · '('
+                    · · Param
+                    · · · IdName 'a'
+                    · · · ??':'
+                    · · · QualifiedName
+                    · · · · IdName 'a'
+                    · · · · '.'
+                    · · · · IdName 'b'
+                    · · ')'
+                    · BlockExpr '{' '}'
+                    """);
+            
+            [Fact]
+            public void Param_ForgottenColon_FollowedByQualifiedName_2()
+                => InlineSnapshot.Validate(Tree("fn A(a a.) { } "), """
+                    ERROR MissingToken@[6, 6): Expected ':'.
+                    ERROR MissingToken@[9, 9): Expected an identifier.
+
+
+                    FnDecl
+                    · 'fn'
+                    · IdName 'A'
+                    · ParamList
+                    · · '('
+                    · · Param
+                    · · · IdName 'a'
+                    · · · ??':'
+                    · · · QualifiedName
+                    · · · · IdName 'a'
+                    · · · · '.'
+                    · · · · IdName
+                    · · · · · ??ID
+                    · · ')'
+                    · BlockExpr '{' '}'
+                    """);
+            
+            [Fact]
+            public void Param_OnlyNativeTypeName()
+                => InlineSnapshot.Validate(Tree("fn A(f32) { } "), """
+                    ERROR MissingToken@[5, 5): Expected an identifier.
+
+
+                    FnDecl
+                    · 'fn'
+                    · IdName 'A'
+                    · ParamList
+                    · · '('
+                    · · Param
+                    · · · IdName
+                    · · · · ??ID
+                    · · · ??':'
+                    · · · NativeTypeName 'f32'
+                    · · ')'
+                    · BlockExpr '{' '}'
+                    """);
             
             
             [Fact]
