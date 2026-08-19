@@ -1,0 +1,26 @@
+﻿
+public trait Equatable for TSelf
+{
+    public fn Equals(this, other: TSelf) -> bool;
+}
+
+public trait Clonable for TSelf
+{
+    public fn Clone(this) -> TSelf;
+}
+
+public value record Vec2 : Equatable
+{
+    public var X: f64;
+    public var Y: f64;
+
+    public fn Equals(this, other: Vec2) -> bool
+        => this.X == other.X and this.Y == other.Y;
+    
+    public fn Clone(this) -> Vec2
+        => Vec2(X = this.X, Y = this.Y);
+}
+
+fn DoStuffWithTrait<T: Equatable, Clonable>(obj: T) -> bool
+    where T implements Equatable, Clonable
+    => obj.Clone().Equals(obj);

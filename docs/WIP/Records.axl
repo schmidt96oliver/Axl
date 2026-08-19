@@ -1,0 +1,22 @@
+﻿module Stuff;
+
+public value record Type
+{
+    var Number: f64;
+    var Item: string;
+    var Data: i32[];
+    
+    
+    public fn New(n: i32) -> Type
+        => Type (
+            Number = n.ToF64(),
+            Item = n.ToString(),
+            Data = i32[n],
+        );
+        
+    public fn DoCalc(this) -> i32
+        => this.Number.ToI32() + this.Item.Length;
+}
+
+var type = Type.New();
+var otherType = Type(Number = 1, Item = "", Data = i32[]);
