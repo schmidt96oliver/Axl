@@ -6,11 +6,9 @@ namespace Axl.Compiler.Syntax;
 
 public partial class Parser
 {
-    private record BuildingNode(SyntaxKind Kind, ImmutableArray<SyntaxElement>.Builder Nodes);
-
     private SyntaxTree BuildTree(ImmutableArray<Token> tokens, DiagnosticBag diagnosticBag)
     {
-        Stack<BuildingNode> nodes = [];
+        Stack<ImmutableArray<SyntaxElement>.Builder> nodeBuilders = [];
         var nextToken = 0;
         
         var lastClaimedError = new ClaimedRange(-1, -1);
@@ -19,11 +17,8 @@ public partial class Parser
         {
             switch (e)
             {
-                case ParseEvent.Open openEvent:
-                    Debug.Assert(openEvent.Kind is not null, "Unclosed node");
-
-                    nodes.Push(new BuildingNode(openEvent.Kind.Value, ImmutableArray.CreateBuilder<SyntaxElement>()));
-
+                case ParseEvent.Open:
+                    nodeBuilders.Push(ImmutableArray.CreateBuilder<SyntaxElement>());
                     break;
 
                 case ParseEvent.Eat:
@@ -31,7 +26,7 @@ public partial class Parser
                     // Flush all trivia here
                     while (nextToken < tokens.Length && tokens[nextToken].Kind.IsTrivia)
                     {
-                        nodes.Peek().Nodes.Add(tokens[nextToken]);
+                        nodeBuilders.Peek().Add(tokens[nextToken]);
                         nextToken++;
                     }
 
@@ -40,8 +35,7 @@ public partial class Parser
                         ? tokens[nextToken].WithKind(eatAsEvent.Kind)
                         : tokens[nextToken];
 
-                    var buildingNode = nodes.Peek();
-                    buildingNode.Nodes.Add(token);
+                    nodeBuilders.Peek().Add(token);
 
                     // Advance
                     nextToken++;
@@ -52,30 +46,27 @@ public partial class Parser
                         ? SourceSpan.EmptyBefore(tokens[0].Span)
                         : SourceSpan.EmptyAfter(tokens[nextToken - 1].Span);
 
-                    nodes.Peek().Nodes.Add(Token.MakeMissing(span, kind));
+                    nodeBuilders.Peek().Add(Token.MakeMissing(span, kind));
                     break;
 
 
-                case ParseEvent.Close when nodes.Peek().Kind is SyntaxKind.TreeRoot:
+                case ParseEvent.Close { Kind: SyntaxKind.TreeRoot }:
                 {
-                    Debug.Assert(nodes.Count == 1, "TreeRoot was not the root.");
+                    Debug.Assert(nodeBuilders.Count == 1, "TreeRoot was not the root.");
                     Debug.Assert(nextToken == tokens.Length, "TreeRoot did not eat all tokens.");
 
-                    var builtNode = nodes.Pop();
-                    var rootNode = new SyntaxNode(builtNode.Kind, builtNode.Nodes.DrainToImmutable());
-
+                    var rootNode = new SyntaxNode(SyntaxKind.TreeRoot, nodeBuilders.Pop().DrainToImmutable());
                     return new SyntaxTree(
                         root: rootNode,
                         diagnostics: diagnosticBag.Drain(),
                         hasError: diagnosticBag.HasError);
                 }
 
-                case ParseEvent.Close:
+                case ParseEvent.Close(var kind):
                 {
-                    var builtNode = nodes.Pop();
-
-                    var node = new SyntaxNode(builtNode.Kind, builtNode.Nodes.DrainToImmutable());
-                    nodes.Peek().Nodes.Add(node);
+                    var nodeBuilder = nodeBuilders.Pop();
+                    var syntaxNode = new SyntaxNode(kind, nodeBuilder.DrainToImmutable());
+                    nodeBuilders.Peek().Add(syntaxNode);
 
                     break;
                 }

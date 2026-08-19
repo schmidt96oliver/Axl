@@ -46,15 +46,9 @@ public partial class Parser
     
     private abstract record ParseEvent
     {
-        public sealed record Open : ParseEvent
-        {
-            /// <summary>
-            /// <c>null</c> only, when node has not yet been closed.
-            /// </summary>
-            public SyntaxKind? Kind { get; set; } = null;
-        }
+        public sealed record Open : ParseEvent;
 
-        public sealed record Close : ParseEvent;
+        public sealed record Close(SyntaxKind Kind) : ParseEvent;
 
         public sealed record Eat : ParseEvent;
 
@@ -170,15 +164,17 @@ public partial class Parser
 
         public MarkClose Close(MarkOpen openMark, SyntaxKind kind)
         {
+            // Take parameter openMark basically only for correctness assertions.
+            // It's helpful also to enforce, that the parser knows which
+            // node it's closing.
+            
+            Debug.Assert(_events[openMark.OpenEventIndex] is ParseEvent.Open, 
+                $"{nameof(openMark.OpenEventIndex)} was not an open event.");
             Debug.Assert(_events[(openMark.OpenEventIndex + 1)..]
                 .Any(ev => ev is ParseEvent.Eat or ParseEvent.EatAs or ParseEvent.Make),
                 "Closed a node which has no tokens.");
-
-            var openEvent = _events[openMark.OpenEventIndex] as ParseEvent.Open;
-            Debug.Assert(openEvent is not null, $"{nameof(openMark.OpenEventIndex)} was not an open event.");
             
-            openEvent.Kind = kind;
-            _events.Add(new ParseEvent.Close());
+            _events.Add(new ParseEvent.Close(kind));
             return new MarkClose(openMark.OpenEventIndex);
         }
 
