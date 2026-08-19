@@ -170,8 +170,10 @@ public partial class Parser
             
             Debug.Assert(_events[openMark.OpenEventIndex] is ParseEvent.Open, 
                 $"{nameof(openMark.OpenEventIndex)} was not an open event.");
-            Debug.Assert(_events[(openMark.OpenEventIndex + 1)..]
-                .Any(ev => ev is ParseEvent.Eat or ParseEvent.EatAs or ParseEvent.Make),
+            Debug.Assert(_events.FindIndex(
+                             startIndex: openMark.OpenEventIndex + 1,
+                             ev => ev is ParseEvent.Eat or ParseEvent.EatAs or ParseEvent.Make)
+                         >= 0,
                 "Closed a node which has no tokens.");
             
             _events.Add(new ParseEvent.Close(kind));
