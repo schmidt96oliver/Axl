@@ -78,7 +78,7 @@ public partial class Parser
         }
         
         // --- Eat members
-        EnsureToken(TokenKind.OpenBrace);
+        _scanner.EatKnown(TokenKind.OpenBrace);
         var moduleBodyAnchor = Anchor.Forced | FirstSet.MemberDecl | TokenKind.CloseBrace;
         foreach (var _ in _scanner.MustEatEachIteration())
         {
