@@ -132,10 +132,7 @@ public partial class Parser
             
             // --- lone ";" special case
             else if (_scanner.IsAt(TokenKind.Semicolon))
-            {
-                ReportUnexpected(ExpectedSyntax.Stmt);
                 _scanner.EatIntoErrorAndReport(ExpectedSyntax.Stmt);
-            }
             
             // --- Closing tokens
             else if (_scanner.IsAt(TokenKind.CloseBrace))
@@ -146,10 +143,7 @@ public partial class Parser
 
                 // --- Catch common `=> expr; }` error, where arm is closed with semicolon
                 if (_scanner.IsAt(TokenKind.Semicolon) && _scanner.Peek(1).Kind is TokenKind.CloseBrace)
-                {
-                    ReportUnexpected(TokenKind.CloseBrace);
                     _scanner.EatIntoErrorAndReport(TokenKind.CloseBrace);
-                }
                 
                 // Arm ends the block, so break out. After the loop,
                 // `}` will be ensured.

@@ -62,14 +62,8 @@ public partial class Parser
                 var expr = _scanner.OpenBefore(lhs);
                 _scanner.Eat();
 
-                EnsureOperandExprRhs(new LeftOperator(opPrecedence.Value, opToken), anchor, out var invalidChainingError);
-                if (invalidChainingError is not null)
-                {
-                    _scanner.ReportHere(invalidChainingError);
-                    lhs = _scanner.Close(expr, SyntaxKind.Error);
-                }
-                else
-                    lhs =  _scanner.Close(expr, SyntaxKind.BinaryExpr);
+                EnsureOperandExprRhs(new LeftOperator(opPrecedence.Value, opToken), anchor, out var wasAmbiguous);
+                lhs = _scanner.Close(expr, wasAmbiguous ? SyntaxKind.Error : SyntaxKind.BinaryExpr);
             }
         }
 
@@ -104,14 +98,8 @@ public partial class Parser
         // --- Prefix Operator
         if (PrecedenceTable.TryGetPrefixPrecedence(token.Kind) is Precedence prefixPrecedence)
         {
-            EnsureOperandExprRhs(new LeftOperator(prefixPrecedence, token), anchor, out var invalidChainingError);
-            if (invalidChainingError is not null)
-            {
-                _scanner.ReportHere(invalidChainingError);
-                return _scanner.Close(openMark, SyntaxKind.Error);
-            }
-            else
-                return _scanner.Close(openMark, SyntaxKind.UnaryExpr);
+            EnsureOperandExprRhs(new LeftOperator(prefixPrecedence, token), anchor, out var wasAmbiguous);
+            return _scanner.Close(openMark, wasAmbiguous ? SyntaxKind.Error : SyntaxKind.UnaryExpr);
         }
 
         // Switch on everything else
@@ -160,7 +148,7 @@ public partial class Parser
     /// <param name="ateAmbiguousOperatorChain">
     /// <c>True</c> iff an ambiguous chain was advanced.
     /// </param>
-    private void EnsureOperandExprRhs(LeftOperator left, Anchor anchor, out Diagnostic.InvalidOperatorChaining? invalidChainingError)
+    private void EnsureOperandExprRhs(LeftOperator left, Anchor anchor, out bool wasAmbiguous)
     {
         ImmutableArray<Token>.Builder? ambiguousOperators = null;
 
@@ -203,14 +191,12 @@ public partial class Parser
             ambiguousOperators.Add(nextOpToken);
         }
 
+        wasAmbiguous = ambiguousOperators is not null;
         if (ambiguousOperators is not null)
         {
-            invalidChainingError = new Diagnostic.InvalidOperatorChaining(_source,
-                ambiguousOperators!.DrainToImmutable());
-            ReportError(invalidChainingError);
+            _scanner.ReportHere(new Diagnostic.InvalidOperatorChaining(_source,
+                ambiguousOperators.DrainToImmutable()));
         }
-        else
-            invalidChainingError = null;
     }
 
 
@@ -226,13 +212,9 @@ public partial class Parser
         EnsureExpr(groupAnchor);
 
         // --- Recover if confused
-        var errorReported = RecoverTo(groupAnchor, expectedSyntax: TokenKind.CloseParen);
-
-        if (_scanner.IsAt(TokenKind.CloseParen))
-            _scanner.EatKnown(TokenKind.CloseParen);
-        else if (!errorReported)
-            ReportMissing(TokenKind.CloseParen);
-
+        RecoverTo(groupAnchor, expectedSyntax: TokenKind.CloseParen);
+        
+        EnsureToken(TokenKind.CloseParen);
         return _scanner.Close(expr, SyntaxKind.GroupExpr);
     }
 

@@ -40,6 +40,9 @@
 * `native(a) fn Foo();`
 
 * `a == ==`
+* `;;;` plain semicolons
+* `{ => a; }`
+* `(1 @@@@)` recovery in GroupExpr
 
 
 # Parser

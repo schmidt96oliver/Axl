@@ -78,7 +78,6 @@ public partial class Parser
 
         // --- No actual declaration found.
         // Wrap modifiers into an error.
-        ReportMissing(TokenKind.FnKw);
         _scanner.ReportMissingTokenHere(TokenKind.FnKw);
         return _scanner.Close(decl, SyntaxKind.Error);
     }
@@ -101,8 +100,6 @@ public partial class Parser
         // --- "fn"
         if (!_scanner.IsAt(TokenKind.FnKw))
         {
-            // var missingFnError = _scanner.MakeMissingErrorHere(TokenKind.FnKw);
-            ReportMissing(TokenKind.FnKw);
             _scanner.ReportMissingTokenHere(TokenKind.FnKw);
             
             // Since we anchor on ";" in EatNativeDecl, we need to handle

@@ -80,8 +80,6 @@ public partial class Parser
         // --- Recover to anchor or close brace if needed
         if (!_scanner.IsAt(TokenKind.CloseBrace))
         {
-            ReportMissing(TokenKind.CloseBrace);
-
             // Parser is confused now. Recover and pass anchors that we got
             // from the enclosing loop. Note that it will handle {, }, StringStart,
             // StringText and StringEnd itself.
@@ -109,7 +107,6 @@ public partial class Parser
         }
         else
         {
-            ReportMissing(TokenKind.CloseBrace);
             _scanner.MakeAndReport(TokenKind.CloseBrace);
         }
 

@@ -6,13 +6,7 @@ namespace Axl.Compiler.Syntax;
 
 public partial class Parser
 {
-    private record ErrorContext(DiagnosticBag Bag)
-    {
-        public int LastMissingOrUnexpectedTokenError { get; set; } = -1;
-    }
-    
     private readonly SourceFileView _source;
-
     private readonly Scanner _scanner;
 
 
@@ -56,21 +50,15 @@ public partial class Parser
                 EatMemberDecl(fileAnchor);
             else
             {
-                ReportUnexpected(ExpectedSyntax.Stmt);
-
                 // Recover to the next Stmt start, which includes Expr.
                 // This is deliberately different from the anchor for EatStmt above.
                 // If the parser is already confused, we recover to any position that
                 // can start a new statement.
-                RecoverTo(Anchor.From(FirstSet.Stmt)
-                          | fileAnchor
-                          | TokenKind.Semicolon, ExpectedSyntax.Stmt);
+                RecoverTo(Anchor.From(FirstSet.Stmt) | fileAnchor | TokenKind.Semicolon, 
+                    ExpectedSyntax.Stmt);
 
                 if (_scanner.IsAt(TokenKind.Semicolon))
-                {
-                    ReportUnexpected(ExpectedSyntax.Stmt);
                     _scanner.EatIntoErrorAndReport(ExpectedSyntax.Stmt);
-                }
             }
         }
 
@@ -92,18 +80,15 @@ public partial class Parser
         if (_scanner.IsAt(anchor))
             return false;
 
-        ReportUnexpected(expectedSyntax);
-
         var errorNode = _scanner.Open();
         var first = _scanner.Position;
+        
         EatGarbageIntoError(anchor);
+        
         Debug.Assert(_scanner.IsAt(anchor));
         
         _scanner.ReportUnexpectedTokensUntilHere(first, expectedSyntax);
         _scanner.Close(errorNode, SyntaxKind.Error);
-        
-        SuppressErrorsAtCurrentPosition();
-        
         return true;
     }
 
@@ -138,58 +123,7 @@ public partial class Parser
         }
     }
 
-
-    /// <summary>
-    /// Reports <paramref name="error"/> and suppresses multiple <see cref="Diagnostic.UnexpectedToken"/>
-    /// or <see cref="Diagnostic.MissingToken"/> errors at the same
-    /// position. 
-    /// </summary>
-    private bool ReportError(Diagnostic.Error error)
-    {
-        return true;
-        
-        // if (error is not (Diagnostic.UnexpectedToken or Diagnostic.MissingToken))
-        // {
-        //     // We only suppress the two mentioned errors. Other ones may be reported freely.
-        //     
-        //     _errorContext.Bag.ReportError(error);
-        //     return true;
-        // }
-        //
-        // if (_errorContext.LastMissingOrUnexpectedTokenError != _scanner.Position)
-        // {
-        //     _errorContext.Bag.ReportError(error);
-        //     _errorContext.LastMissingOrUnexpectedTokenError = _scanner.Position;
-        //     return true;
-        // }
-        //
-        // return false;
-    }
-
-    /// <summary>
-    /// Suppresses further <see cref="Diagnostic.UnexpectedToken"/>
-    /// or <see cref="Diagnostic.MissingToken"/> at the current position.
-    /// </summary>
-    private void SuppressErrorsAtCurrentPosition()
-    {
-        // _errorContext.LastMissingOrUnexpectedTokenError = _scanner.Position;
-    }
-
-    private bool ReportUnexpected(ExpectedSyntax expected)
-        => ReportUnexpected(_scanner.Peek(), expected);
     
-    private bool ReportUnexpected(Token actual, ExpectedSyntax expected)
-        => ReportError(new Diagnostic.UnexpectedToken(
-            _source, actual, expected));
-
-    private bool ReportMissing(ExpectedSyntax expected)
-        => ReportError(new Diagnostic.MissingToken(
-            _source,
-            Previous: _scanner.Last,
-            Next: _scanner.Peek(),
-            expected));
-
-
     private bool HasNewlineBeforeNextToken()
     {
         var spanToNextToken = _scanner.Last is null
@@ -213,7 +147,6 @@ public partial class Parser
         if (!_scanner.IsAt(expectedKind))
         {
             _scanner.MakeAndReport(expectedKind, expectedSyntax);
-            ReportMissing(expectedSyntax ?? expectedKind);
             return false;
         }
 
