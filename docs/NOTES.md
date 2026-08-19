@@ -3,9 +3,6 @@
 16.08 18:25: Müde, leichtr brennende Augen; Will das noch fertig machen und aufräumen; kein Wasser mehr :/
 
 **Next**: 
-* `RecoverToUnexplained` old vocabulary
-* assert Error has report
-
 * test: broken expressions
 * regressions
 * regressions.axl

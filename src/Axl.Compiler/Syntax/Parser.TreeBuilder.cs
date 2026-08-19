@@ -12,6 +12,7 @@ public partial class Parser
         var nextToken = 0;
         
         var lastClaimedError = new ClaimedRange(-1, -1);
+        var sawErrorElement = false;
         
         foreach (var e in _scanner.GetEvents())
         {
@@ -47,6 +48,8 @@ public partial class Parser
                         : SourceSpan.EmptyAfter(tokens[nextToken - 1].Span);
 
                     nodeBuilders.Peek().Add(Token.MakeMissing(span, kind));
+
+                    sawErrorElement = true;
                     break;
 
 
@@ -56,6 +59,11 @@ public partial class Parser
                     Debug.Assert(nextToken == tokens.Length, "TreeRoot did not eat all tokens.");
 
                     var rootNode = new SyntaxNode(SyntaxKind.TreeRoot, nodeBuilders.Pop().DrainToImmutable());
+                    
+                    Debug.Assert(sawErrorElement == diagnosticBag.HasError,
+                        sawErrorElement 
+                            ? "Saw error element(s), but no diagnostics."
+                            : "Saw no error element(s), but reported an error.");
                     return new SyntaxTree(
                         root: rootNode,
                         diagnostics: diagnosticBag.Drain(),
@@ -68,6 +76,9 @@ public partial class Parser
                     var syntaxNode = new SyntaxNode(kind, nodeBuilder.DrainToImmutable());
                     nodeBuilders.Peek().Add(syntaxNode);
 
+                    if (kind is SyntaxKind.Error)
+                        sawErrorElement = true;
+                    
                     break;
                 }
 
