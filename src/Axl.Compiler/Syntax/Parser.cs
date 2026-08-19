@@ -42,12 +42,10 @@ public partial class Parser
         {
             if (_scanner.IsAt(FirstSet.Stmt))
                 EatStmt(fileAnchor | TokenKind.Semicolon);
-            else if (_scanner.IsAt(TokenKind.ModuleKw))
-                EatModuleDecl(onGlobalScope: true);
+            else if (_scanner.IsAt(FirstSet.MemberDecl))
+                EatMemberDecl(fileAnchor, onGlobalScope: true);
             else if (_scanner.IsAt(TokenKind.UsingKw))
                 EatUsingDecl();
-            else if (_scanner.IsAt(FirstSet.FnDecl))
-                EatFnDecl(fileAnchor);
             else
             {
                 // Recover to the next Stmt start, which includes Expr.

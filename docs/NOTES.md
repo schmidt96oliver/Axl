@@ -28,9 +28,6 @@
   Print("world");
   ```
 
-* ?! (allow visibility on modules; either permissive or semnatically as well)
-      `private module A { }` -> "Expected 'fn'." with `module` sitting right there
-
 
 ?? (what else?) "no expression here" is modelled as a missing *identifier*: `()`, `var x = ;`, `a = ;`
   all yield `IdName(<missing>)`

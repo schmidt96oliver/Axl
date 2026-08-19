@@ -7,11 +7,43 @@ namespace Axl.Compiler.Syntax;
 
 public partial class Parser
 {
-    private MarkClose EatModuleDecl(bool onGlobalScope)
+    private MarkClose EatUsingDecl()
     {
-        Debug.Assert(_scanner.IsAt(TokenKind.ModuleKw));
+        Debug.Assert(_scanner.IsAt(TokenKind.UsingKw));
 
-        var moduleDecl = _scanner.Open();
+        var usingDecl = _scanner.Open();
+        _scanner.EatKnown(TokenKind.UsingKw);
+        EnsureQualifiedName(ExpectedSyntax.ModuleName);
+        EnsureToken(TokenKind.Semicolon);
+        return _scanner.Close(usingDecl, SyntaxKind.UsingDecl);
+    }
+
+
+    private MarkClose EatMemberDecl(Anchor anchor, bool onGlobalScope)
+    {
+        Debug.Assert(_scanner.IsAt(FirstSet.MemberDecl));
+
+        var decl = _scanner.Open();
+        
+        // --- Modifier List
+        while (_scanner.IsAt(FirstSet.Modifier))
+            _scanner.Eat();
+        
+        // --- Dispatch
+        if (_scanner.IsAt(FirstSet.ModuleDeclAfterModifiers))
+            return EatModuleDeclAfterModifiers(decl, onGlobalScope);
+        if (_scanner.IsAt(FirstSet.FnDeclAfterModifiers))
+            return EatFnDeclAfterModifiers(decl, anchor);
+        
+        // --- Nothing valid
+        _scanner.ReportMissingTokenHere(ExpectedSyntax.Member);
+        return _scanner.Close(decl, SyntaxKind.Error);
+    }
+    
+    private MarkClose EatModuleDeclAfterModifiers(MarkOpen decl, bool onGlobalScope)
+    {
+        Debug.Assert(_scanner.IsAt(FirstSet.ModuleDeclAfterModifiers));
+
         _scanner.EatKnown(TokenKind.ModuleKw);
 
         EnsureQualifiedName(ExpectedSyntax.ModuleName);
@@ -20,7 +52,7 @@ public partial class Parser
         if (_scanner.IsAt(TokenKind.Semicolon))
         {
             _scanner.EatKnown(TokenKind.Semicolon);
-            return _scanner.Close(moduleDecl, SyntaxKind.GlobalModuleDecl);
+            return _scanner.Close(decl, SyntaxKind.GlobalModuleDecl);
         }
 
         // --- Missing { }?
@@ -35,13 +67,13 @@ public partial class Parser
             if (onGlobalScope)
             {
                 EnsureToken(TokenKind.Semicolon);
-                return _scanner.Close(moduleDecl, SyntaxKind.GlobalModuleDecl);
+                return _scanner.Close(decl, SyntaxKind.GlobalModuleDecl);
             }
             else
             {
                 _scanner.MakeAndReport(TokenKind.OpenBrace);
                 _scanner.MakeAndReport(TokenKind.CloseBrace);
-                return _scanner.Close(moduleDecl, SyntaxKind.ModuleDecl);
+                return _scanner.Close(decl, SyntaxKind.ModuleDecl);
             }
         }
         
@@ -52,10 +84,8 @@ public partial class Parser
         {
             RecoverToAndReport(moduleBodyAnchor, ExpectedSyntax.Member);
 
-            if (_scanner.IsAt(TokenKind.ModuleKw))
-                EatModuleDecl(onGlobalScope: false);
-            else if (_scanner.IsAt(FirstSet.FnDecl))
-                EatFnDecl(moduleBodyAnchor);
+            if (_scanner.IsAt(FirstSet.MemberDecl))
+                EatMemberDecl(moduleBodyAnchor, onGlobalScope: false);
             else
             {
                 // Could be `}` or Eof
@@ -64,30 +94,15 @@ public partial class Parser
         }
 
         EnsureToken(TokenKind.CloseBrace);
-        return _scanner.Close(moduleDecl, SyntaxKind.ModuleDecl);
+        return _scanner.Close(decl, SyntaxKind.ModuleDecl);
     }
 
-    private MarkClose EatUsingDecl()
+    
+
+    private MarkClose EatFnDeclAfterModifiers(MarkOpen decl, Anchor anchor)
     {
-        Debug.Assert(_scanner.IsAt(TokenKind.UsingKw));
+        Debug.Assert(_scanner.IsAt(FirstSet.FnDeclAfterModifiers));
 
-        var usingDecl = _scanner.Open();
-        _scanner.EatKnown(TokenKind.UsingKw);
-        EnsureQualifiedName(ExpectedSyntax.ModuleName);
-        EnsureToken(TokenKind.Semicolon);
-        return _scanner.Close(usingDecl, SyntaxKind.UsingDecl);
-    }
-
-    private MarkClose EatFnDecl(Anchor anchor)
-    {
-        Debug.Assert(_scanner.IsAt(FirstSet.FnDecl));
-
-        var fnDecl = _scanner.Open();
-
-        // --- Modifier List
-        while (_scanner.IsAt(FirstSet.Modifier))
-            _scanner.Eat();
-        
         // --- Native Clause
         var hasNativeClause = false;
         if (_scanner.IsAt(TokenKind.NativeKw))
@@ -110,7 +125,7 @@ public partial class Parser
             if (_scanner.IsAt(TokenKind.Semicolon))
                 _scanner.EatKnown(TokenKind.Semicolon);
             
-            return _scanner.Close(fnDecl, SyntaxKind.Error);
+            return _scanner.Close(decl, SyntaxKind.Error);
         }
 
         _scanner.EatKnown(TokenKind.FnKw);
@@ -140,7 +155,7 @@ public partial class Parser
             EnsureSemicolonIfRequired(ownsBody: true);
         }
 
-        return _scanner.Close(fnDecl, SyntaxKind.FnDecl);
+        return _scanner.Close(decl, SyntaxKind.FnDecl);
     }
 
     private MarkClose EatNativeDecl(Anchor anchor)

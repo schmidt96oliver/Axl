@@ -781,6 +781,32 @@ public partial class ParserTests
                     · ';'
                     """);
             
+            [Fact]
+            public void NativeNotDelimited_LeavesRestAlone_4()
+                => InlineSnapshot.Validate(Tree("""
+                                                public native
+                                                var a = 2;
+                                                """), """
+                    ERROR MissingToken@[13, 13): Expected '('.
+
+
+                    Error
+                    · 'public'
+                    · NativeClause
+                    · · 'native'
+                    · · ??'('
+                    · · StringExpr
+                    · · · ??'"'
+                    · · · ??'"'
+                    · · ??')'
+                    VarDecl
+                    · 'var'
+                    · IdName 'a'
+                    · '='
+                    · NumberLiteral '2'
+                    · ';'
+                    """);
+            
             
             [Fact]
             public void Native_1()
@@ -914,6 +940,49 @@ public partial class ParserTests
                     · 'fn'
                     · IdName 'A'
                     · ParamList '(' ')'
+                    · ';'
+                    """);
+            [Fact]
+            public void Native_7()
+                => InlineSnapshot.Validate(Tree("public native ;"), """
+                    ERROR MissingToken@[13, 13): Expected '('.
+
+
+                    Error
+                    · 'public'
+                    · NativeClause
+                    · · 'native'
+                    · · ??'('
+                    · · StringExpr
+                    · · · ??'"'
+                    · · · ??'"'
+                    · · ??')'
+                    · ';'
+                    """);
+            [Fact]
+            public void Native_8()
+                => InlineSnapshot.Validate(Tree("public public private native fn;"), """
+                    ERROR MissingToken@[28, 28): Expected '('.
+                    ERROR MissingToken@[31, 31): Expected an identifier.
+
+
+                    FnDecl
+                    · 'public'
+                    · 'public'
+                    · 'private'
+                    · NativeClause
+                    · · 'native'
+                    · · ??'('
+                    · · StringExpr
+                    · · · ??'"'
+                    · · · ??'"'
+                    · · ??')'
+                    · 'fn'
+                    · IdName
+                    · · ??ID
+                    · ParamList
+                    · · ??'('
+                    · · ??')'
                     · ';'
                     """);
         }

@@ -128,7 +128,12 @@ public partial class Parser
             if (_scanner.IsAt(FirstSet.Stmt))
                 EatStmt(blockAnchor);
             else if (_scanner.IsAt(FirstSet.FnDecl))
-                EatFnDecl(blockAnchor);
+            {
+                // MemberDecl will parse modifiers and fn declaration. It would
+                // parse other members as well, but we special cased 'fn' for that reason
+                // here.
+                EatMemberDecl(blockAnchor, onGlobalScope: false);
+            }
             
             // --- lone ";" special case
             else if (_scanner.IsAt(TokenKind.Semicolon))

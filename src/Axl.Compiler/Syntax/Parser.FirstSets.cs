@@ -58,8 +58,11 @@ public partial class Parser
 
         public static readonly TokenSet FnDecl = Modifier | FnDeclAfterModifiers;
 
-        public static readonly TokenSet MemberDecl = FnDecl | TokenSet.Of(
-            TokenKind.ModuleKw);
+        public static readonly TokenSet ModuleDeclAfterModifiers = TokenSet.Of(TokenKind.ModuleKw);
+
+        public static readonly TokenSet ModuleDecl = Modifier | ModuleDeclAfterModifiers;
+
+        public static readonly TokenSet MemberDecl = FnDecl | ModuleDecl;
 
 
         // --- Not FIRST sets, but alternations the ungrammar spells out.
