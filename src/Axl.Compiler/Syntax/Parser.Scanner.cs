@@ -112,11 +112,6 @@ public partial class Parser
 
         
         /// <summary>
-        /// All tokens, including trivia.
-        /// </summary>
-        public ImmutableArray<Token> AllTokens { get; }
-
-        /// <summary>
         /// Position is always a gap between tokens. Position <c>i</c> means, the
         /// scanner is sitting before non-trivia token <c>i</c>.
         /// </summary>
@@ -130,7 +125,6 @@ public partial class Parser
         public Scanner(SourceFileView source, ImmutableArray<Token> tokens)
         {
             _source = source;
-            AllTokens = tokens;
 
             // This list will be oversized by exactly the amount of trivia tokens.
             // If that every shows up, we could count non-trivia tokens before.

@@ -4,7 +4,6 @@
 
 **Next**: 
 * assert Error has report
-* parser _source = _scanner.Source?
 
 * tree builder cleanup
 * `RecoverTo` cleanup
