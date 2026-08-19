@@ -15,9 +15,6 @@
 * `SyntaxFile` add reference to Source
 
 **Regressions:**
-* `fn A(` shouldnt make Param
-
-
 * `fn A() = Print();` (mis-typed `=>`)
 
 * `fn Foo( :i32) { }`
@@ -34,6 +31,69 @@
 * `;;;` plain semicolons
 * `{ => a; }`
 * `(1 @@@@)` recovery in GroupExpr
+
+_Below: run through the parser, outcomes observed._
+
+**Silently wrong, no diagnostic at all:**
+* trailing dot, next line is a valid stmt -> parses as `Std.Std.Print("x")`
+  ```
+  Std.
+  Std.Print("x");
+  ```
+* `public public fn F() { }` repeated modifier, both eaten
+
+**One typo, several squiggles:**
+* `@@ ;` at file scope -> 2x "Expected a statement" (EatRoot recovers, then eats `;` into
+  a second Error and reports again)
+* `Print(,)` -> 2x "Expected an expression" for one `(,)`
+* unclosed `(` in if-condition -> 3 diagnostics. GroupExpr swallows the if-body, `}` is
+  eaten as the `)`, the fn's own `}` becomes a file-scope Error
+  ```
+  if (a > b
+  {
+      Print("bigger");
+  }
+  ```
+* `if a = 1 => Print("eq");` -> 4 diagnostics. `if` gets an empty body, `= 1` splits into
+  Error + ExprStmt, the Arm floats up to block level
+
+**Structure lost quietly:**
+* missing closing quote -> next line becomes a second Arg with a synthesized `,`;
+  both lines end up in one call
+  ```
+  Print("hello);
+  Print("world");
+  ```
+* brace-valued initializer in a module body -> recovery is brace-unbalanced, so the `}` of
+  `{ => 2 }` closes the *module*. `Survives` leaks to file scope, module's real `}` becomes
+  an Error. (This is the "recover to balanced braces" small point above.)
+  ```
+  module A
+  {
+      var y = { => 2 };
+      public fn Survives() => Print("did I?");
+  }
+  ```
+
+**Misleading message, correct tree:**
+* `public var x = 1;` -> "Expected 'fn'." reported at `var`
+* `private module A { }` -> "Expected 'fn'." with `module` sitting right there
+* `Print("value: {Compute(}")` -> tree recovers perfectly, but the one diagnostic says
+  "Expected an expression" when the missing token is `)`
+
+**Modelling, decide before the Binder sees it:**
+* "no expression here" is modelled as a missing *identifier*: `()`, `var x = ;`, `a = ;`
+  all yield `IdName(<missing>)`
+* `module A.B` -> makes both `{` and `}`. Probably should read as a global module decl
+  missing `;`
+* `break break;` -> legal per grammar, zero diagnostics. Binder's problem, noting it so it
+  doesn't get lost.
+
+**Checked, came out clean (1 diagnostic, sensible tree) - don't re-test:**
+* unclosed call with a valid line under it; one `}` too many at file scope; unclosed brace
+  adopting the next decl; nested module with unclosed fn body
+* all EOF cases: `fn F(a: i32`, `module A { public fn F() { Print(`, `var x =`,
+  unclosed string with open interpolation
 
 
 # Parser

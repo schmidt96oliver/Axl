@@ -203,6 +203,15 @@ public partial class Parser
             _scanner.EatKnown(closeToken);
             return _scanner.Close(list, listKind);
         }
+        
+        // --- Already at anchor?
+        // Special-case here, so we report "expected close" instead of
+        // "expected item" in cases like `Call( `.
+        if (_scanner.IsAt(anchor))
+        {
+            EnsureToken(closeToken);
+            return _scanner.Close(list, listKind);
+        }
 
         // --- Items
         var itemAnchor = anchor | closeToken | TokenKind.Comma;
@@ -211,10 +220,6 @@ public partial class Parser
             // --- Item
             RecoverToAndReport(itemAnchor | itemFirst, expectedSyntax: expectedItemSyntax);
             ensureItem(itemAnchor);
-            
-            if (_scanner.IsAt(closeToken) ||
-                _scanner.IsAt(anchor))
-                break;
             
             // --- Comma
             // Recover without error first, so we can report "expected close" or

@@ -11,7 +11,7 @@ public partial class ParserTests
             [Fact]
             public void UnclosedParamList_1()
                 => InlineSnapshot.Validate(Tree("fn Foo( { }"), """
-                    ERROR MissingToken@[7, 7): Expected a parameter.
+                    ERROR MissingToken@[7, 7): Expected ')'.
 
 
                     FnDecl
@@ -19,16 +19,13 @@ public partial class ParserTests
                     · IdName 'Foo'
                     · ParamList
                     · · '('
-                    · · Param
-                    · · · IdName
-                    · · · · ??ID
                     · · ??')'
                     · BlockExpr '{' '}'
                     """);
             [Fact]
             public void UnclosedParamList_2()
                 => InlineSnapshot.Validate(Tree("fn Foo( ;"), """
-                    ERROR MissingToken@[7, 7): Expected a parameter.
+                    ERROR MissingToken@[7, 7): Expected ')'.
 
 
                     FnDecl
@@ -36,9 +33,6 @@ public partial class ParserTests
                     · IdName 'Foo'
                     · ParamList
                     · · '('
-                    · · Param
-                    · · · IdName
-                    · · · · ??ID
                     · · ??')'
                     · BlockExpr
                     · · ??'{'
@@ -48,7 +42,7 @@ public partial class ParserTests
             [Fact]
             public void UnclosedParamList_3()
                 => InlineSnapshot.Validate(Tree("fn Foo( { };"), """
-                    ERROR MissingToken@[7, 7): Expected a parameter.
+                    ERROR MissingToken@[7, 7): Expected ')'.
 
 
                     FnDecl
@@ -56,9 +50,6 @@ public partial class ParserTests
                     · IdName 'Foo'
                     · ParamList
                     · · '('
-                    · · Param
-                    · · · IdName
-                    · · · · ??ID
                     · · ??')'
                     · BlockExpr '{' '}'
                     · ';'
@@ -66,7 +57,7 @@ public partial class ParserTests
             [Fact]
             public void UnclosedParamList_4()
                 => InlineSnapshot.Validate(Tree("fn Foo( -> i32 { }"), """
-                    ERROR MissingToken@[7, 7): Expected a parameter.
+                    ERROR MissingToken@[7, 7): Expected ')'.
 
 
                     FnDecl
@@ -74,9 +65,6 @@ public partial class ParserTests
                     · IdName 'Foo'
                     · ParamList
                     · · '('
-                    · · Param
-                    · · · IdName
-                    · · · · ??ID
                     · · ??')'
                     · '->'
                     · NativeTypeName 'i32'
