@@ -40,6 +40,37 @@ public partial class ParserTests
                     · · ??'}'
                     · '}'
                     """);
+
+            [Fact]
+            public void ErrorWithBracesInsideBody()
+                => InlineSnapshot.Validate(Tree("""
+                                                module A
+                                                {
+                                                  {}
+                                                  
+                                                  fn Survives() => 1;
+                                                } 
+                                                """
+                ), """
+                    ERROR UnexpectedToken@[15, 16): Expected a member ('fn' or 'module'), got '{'.
+
+
+                    ModuleDecl
+                    · 'module'
+                    · QualifiedName
+                    · · IdName 'A'
+                    · '{'
+                    · Error '{' '}'
+                    · FnDecl
+                    · · 'fn'
+                    · · IdName 'Survives'
+                    · · ParamList '(' ')'
+                    · · Arm
+                    · · · '=>'
+                    · · · NumberLiteral '1'
+                    · · ';'
+                    · '}'
+                    """);
         }
     }
 }

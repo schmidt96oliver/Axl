@@ -9,9 +9,6 @@
 
 **Small points**:
 * ?? `RecoverTo` UnexpectedToken -> Squiggle all tokens
-* ?? `RecoverTo` balanced braces/parens (good for garbage in modules `module A { var using module B { } }`)
-* ?? Anchor on newline (flag on method, `Anchor.Newline` that propagates)
-* ?? Where to anchor on `;`?
 * `SyntaxFile` add reference to Source
 
 **Regressions:**
@@ -30,18 +27,9 @@
   Print("hello);
   Print("world");
   ```
-* brace-valued initializer in a module body -> recovery is brace-unbalanced, so the `}` of
-  `{ => 2 }` closes the *module*. `Survives` leaks to file scope, module's real `}` becomes
-  an Error. (This is the "recover to balanced braces" small point above.)
-  ```
-  module A
-  {
-      var y = { => 2 };
-      public fn Survives() => Print("did I?");
-  }
-  ```
 
-* `private module A { }` -> "Expected 'fn'." with `module` sitting right there
+* ?! (allow visibility on modules; either permissive or semnatically as well)
+      `private module A { }` -> "Expected 'fn'." with `module` sitting right there
 
 
 ?? (what else?) "no expression here" is modelled as a missing *identifier*: `()`, `var x = ;`, `a = ;`
@@ -97,7 +85,11 @@
 Lexer emits flat tokens and Parser must reconstruct the Lexers ideas about strings
 (see `WillStringBeContinued`). 
 * Idea: Lexer emits TokenTree. A StringTree = `"` + Text + InterpolationTree
-  * From that, Parser can easily reconstruct the Lexers ideas without unbounded lookahead
+* Idea: Tokens are a singly linked list.
+  * normal Tokens have on `Next` pointer
+  * DelimitedToken has pointers `Next` and `EndGroup`
+  * StringInterpolation: Parser can easily reconstruct the Lexers ideas without unbounded lookahead
+  * RecoverTo: {} balancing is free, because it can skip until `EndGroup`
 
 # Implementation Requirements
 **Declaration Binding**

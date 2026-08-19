@@ -106,14 +106,25 @@ public partial class Parser
             return false;
 
         var error = _scanner.Open();
-        _scanner.Eat();
 
+        var braceCount = 0;
+        
         foreach (var _ in _scanner.MustEatEachIteration())
         {
-            if (_scanner.IsAt(anchor))
-                break;
+            var garbageToken = _scanner.Eat();
+            
+            // Balance '{ }'
+            switch (garbageToken.Kind)
+            {
+                case TokenKind.OpenBrace: 
+                    braceCount++; break;
+                case TokenKind.CloseBrace when braceCount > 0: 
+                    braceCount--; break;
+            }
 
-            _scanner.Eat();
+            // Only allow breaking off, if braces are balanced.
+            if (_scanner.IsAt(anchor) && braceCount == 0)
+                break;
         }
         
         _scanner.Close(error, SyntaxKind.Error);

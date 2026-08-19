@@ -9,6 +9,31 @@ public partial class ParserTests
         public sealed class FnDecl
         {
             [Fact]
+            public void BracedGarbageInsideBody()
+                => InlineSnapshot.Validate(Tree("fn F() { (@@ {}); }"), """
+                    ERROR MissingToken@[10, 10): Expected an expression.
+                    ERROR UnexpectedToken@[10, 12): Expected ')', got unknown characters.
+
+
+                    FnDecl
+                    · 'fn'
+                    · IdName 'F'
+                    · ParamList '(' ')'
+                    · BlockExpr
+                    · · '{'
+                    · · ExprStmt
+                    · · · GroupExpr
+                    · · · · '('
+                    · · · · IdName
+                    · · · · · ??ID
+                    · · · · Error '@@' '{' '}'
+                    · · · · ')'
+                    · · · ';'
+                    · · '}'
+                    """);
+            
+            
+            [Fact]
             public void UnclosedParamList_1()
                 => InlineSnapshot.Validate(Tree("fn Foo( { }"), """
                     ERROR MissingToken@[7, 7): Expected ')'.
