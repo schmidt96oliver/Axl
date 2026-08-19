@@ -16,6 +16,7 @@ public partial class Parser
         _scanner = scanner;
     }
 
+    
     public static SyntaxTree Parse(SourceFileView source)
     {
         var diagnosticBag = new DiagnosticBag();
@@ -70,59 +71,48 @@ public partial class Parser
     /// <summary>
     /// If scanner is not at <paramref name="anchor"/>, collects garbage into
     /// a <see cref="SyntaxKind.Error"/> node and reports <see cref="Diagnostic.UnexpectedToken"/>.
-    /// Suppresses further <see cref="Diagnostic.UnexpectedToken"/> or <see cref="Diagnostic.MissingToken"/>
-    /// on the position after garbage.
     /// Always leaves the scanner on <paramref name="anchor"/>.
     /// </summary>
     /// <returns><c>True</c> iff garbage was collected and an error node added.</returns>
     private bool RecoverTo(Anchor anchor, ExpectedSyntax expectedSyntax)
     {
-        if (_scanner.IsAt(anchor))
-            return false;
-
-        var errorNode = _scanner.Open();
         var first = _scanner.Position;
-        
-        EatGarbageIntoError(anchor);
-        
-        Debug.Assert(_scanner.IsAt(anchor));
-        
-        _scanner.ReportUnexpectedTokensUntilHere(first, expectedSyntax);
-        _scanner.Close(errorNode, SyntaxKind.Error);
-        return true;
+        if (RecoverToUnexplained(anchor))
+        {
+            Debug.Assert(first < _scanner.Position);
+            _scanner.ReportUnexpectedTokensUntilHere(first, expectedSyntax);
+            return true;
+        }
+
+        return false;
     }
 
     /// <summary>
     /// If scanner is not at <paramref name="anchor"/>, collects garbage into
-    /// a <see cref="SyntaxKind.Error"/> node and leaves it unexplained.
+    /// a <see cref="SyntaxKind.Error"/> node and reports no error.
     /// Always leaves the scanner on <paramref name="anchor"/>.
     /// </summary>
-    /// <returns><c>null</c>, if no tokens have been eaten. The error <see cref="MarkClose"/> otherwise.</returns>
-    private MarkClose? RecoverToUnexplained(Anchor anchor)
+    /// <returns><c>True</c> iff garbage was collected and an error node added.</returns>
+    private bool RecoverToUnexplained(Anchor anchor)
     {
         if (_scanner.IsAt(anchor))
-            return null;
+            return false;
 
         var error = _scanner.Open();
-        EatGarbageIntoError(anchor);
-        Debug.Assert(_scanner.IsAt(anchor));
-        
-        return _scanner.Close(error, SyntaxKind.Error);
-    }
-
-    private void EatGarbageIntoError(Anchor anchor)
-    {
         _scanner.Eat();
 
-        foreach (var __ in _scanner.MustEatEachIteration())
+        foreach (var _ in _scanner.MustEatEachIteration())
         {
             if (_scanner.IsAt(anchor))
                 break;
 
             _scanner.Eat();
         }
+        
+        _scanner.Close(error, SyntaxKind.Error);
+        return true;
     }
-
+    
     
     private bool HasNewlineBeforeNextToken()
     {
@@ -133,7 +123,6 @@ public partial class Parser
     }
 
     
-
     /// <summary>
     /// If the scanner is on <paramref name="expectedKind"/>, eats it and returns
     /// <c>true</c>. Otherwise, creates a missing token of <paramref name="expectedKind"/>,
@@ -234,9 +223,7 @@ public partial class Parser
             // var preRecoverToken = _scanner.Peek();
 
             var firstUnexpected = _scanner.Position;
-            var unexplainedError = RecoverToUnexplained(itemAnchor | itemFirst);
-
-            if (firstUnexpected < _scanner.Position)
+            if (RecoverToUnexplained(itemAnchor | itemFirst))
             {
                 // Error needs to be explained.
                 var expected = _scanner.IsAt(closeToken) || _scanner.IsAt(anchor)

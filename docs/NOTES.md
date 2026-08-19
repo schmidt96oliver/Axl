@@ -5,8 +5,6 @@
 **Next**: 
 * assert Error has report
 
-* `RecoverTo` cleanup
-
 * test: broken expressions
 * regressions
 * regressions.axl
