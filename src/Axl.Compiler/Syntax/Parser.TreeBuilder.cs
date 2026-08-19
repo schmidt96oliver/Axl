@@ -13,7 +13,7 @@ public partial class Parser
         Stack<BuildingNode> nodes = [];
         var nextToken = 0;
         
-        ClaimedRange lastClaimedError = new(-1, -1);
+        var lastClaimedError = new ClaimedRange(-1, -1);
         
         foreach (var e in _scanner.GetEvents())
         {
@@ -42,60 +42,60 @@ public partial class Parser
 
                     var buildingNode = nodes.Peek();
                     buildingNode.Nodes.Add(token);
-                    
-                    
+
+                    // Advance
                     nextToken++;
                     break;
-                
+
                 case ParseEvent.Make(var kind):
                     var span = nextToken == 0
                         ? SourceSpan.EmptyBefore(tokens[0].Span)
                         : SourceSpan.EmptyAfter(tokens[nextToken - 1].Span);
-                    
+
                     nodes.Peek().Nodes.Add(Token.MakeMissing(span, kind));
                     break;
-                    
+
+
+                case ParseEvent.Close when nodes.Peek().Kind is SyntaxKind.TreeRoot:
+                {
+                    Debug.Assert(nodes.Count == 1, "TreeRoot was not the root.");
+                    Debug.Assert(nextToken == tokens.Length, "TreeRoot did not eat all tokens.");
+
+                    var builtNode = nodes.Pop();
+                    var rootNode = new SyntaxNode(builtNode.Kind, builtNode.Nodes.DrainToImmutable());
+
+                    return new SyntaxTree(
+                        root: rootNode,
+                        diagnostics: diagnosticBag.Drain(),
+                        hasError: diagnosticBag.HasError);
+                }
 
                 case ParseEvent.Close:
+                {
                     var builtNode = nodes.Pop();
-                    var isRoot = builtNode.Kind is SyntaxKind.TreeRoot;
-                    if (isRoot)
-                    {
-                        Debug.Assert(nodes.Count == 0, "TreeRoot was not the root.");
-                        Debug.Assert(nextToken == tokens.Length, "TreeRoot did not eat all tokens.");
-                    }
 
                     var node = new SyntaxNode(builtNode.Kind, builtNode.Nodes.DrainToImmutable());
-
-                    if (isRoot)
-                    {
-                        return new SyntaxTree(
-                            root: node,
-                            diagnostics: diagnosticBag.Drain(),
-                            hasError: diagnosticBag.HasError);
-                    }
                     nodes.Peek().Nodes.Add(node);
-                    
+
                     break;
-                
-                case ParseEvent.Report(var error, var range, var isSuppressible):
+                }
+
+                case ParseEvent.Report { Error: var error, ClaimedRange: var range, IsSuppressible: true }:
                 {
                     Debug.Assert(range.First >= lastClaimedError.First, "Error claimed ranges are not sequential");
-                    
-                    if (!isSuppressible)
-                    {
-                        diagnosticBag.ReportError(error);
-                        break;
-                    }
-                    
+
                     if (range.First > lastClaimedError.Last)
                     {
                         diagnosticBag.ReportError(error);
                         lastClaimedError = range;
                     }
-                    
+
                     break;
                 }
+
+                case ParseEvent.Report { Error: var error, IsSuppressible: false }:
+                    diagnosticBag.ReportError(error);
+                    break;
             }
         }
 

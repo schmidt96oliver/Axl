@@ -5,10 +5,7 @@
 **Next**: 
 * assert Error has report
 
-* tree builder cleanup
 * `RecoverTo` cleanup
-* check special reporting sites
-* extract TreeBuilder into its own class
 
 * test: broken expressions
 * regressions
