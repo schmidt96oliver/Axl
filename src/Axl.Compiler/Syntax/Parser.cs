@@ -12,16 +12,14 @@ public partial class Parser
     }
     
     private readonly SourceFileView _source;
-    private readonly ErrorContext _errorContext;
 
     private readonly Scanner _scanner;
 
 
-    private Parser(SourceFileView source, Scanner scanner, DiagnosticBag diagnosticBag)
+    private Parser(SourceFileView source, Scanner scanner)
     {
         _source = source;
         _scanner = scanner;
-        _errorContext = new ErrorContext(diagnosticBag);
     }
 
     public static SyntaxTree Parse(SourceFileView source)
@@ -30,9 +28,9 @@ public partial class Parser
         var tokens = Lexer.Lex(source, diagnosticBag);
 
         var scanner = new Scanner(source, tokens);
-        var parser = new Parser(source, scanner, diagnosticBag);
+        var parser = new Parser(source, scanner);
         parser.EatRoot();
-        return parser.BuildTree();
+        return parser.BuildTree(tokens, diagnosticBag);
     }
 
     private void EatRoot()
@@ -150,22 +148,22 @@ public partial class Parser
     {
         return true;
         
-        if (error is not (Diagnostic.UnexpectedToken or Diagnostic.MissingToken))
-        {
-            // We only suppress the two mentioned errors. Other ones may be reported freely.
-            
-            _errorContext.Bag.ReportError(error);
-            return true;
-        }
-        
-        if (_errorContext.LastMissingOrUnexpectedTokenError != _scanner.Position)
-        {
-            _errorContext.Bag.ReportError(error);
-            _errorContext.LastMissingOrUnexpectedTokenError = _scanner.Position;
-            return true;
-        }
-
-        return false;
+        // if (error is not (Diagnostic.UnexpectedToken or Diagnostic.MissingToken))
+        // {
+        //     // We only suppress the two mentioned errors. Other ones may be reported freely.
+        //     
+        //     _errorContext.Bag.ReportError(error);
+        //     return true;
+        // }
+        //
+        // if (_errorContext.LastMissingOrUnexpectedTokenError != _scanner.Position)
+        // {
+        //     _errorContext.Bag.ReportError(error);
+        //     _errorContext.LastMissingOrUnexpectedTokenError = _scanner.Position;
+        //     return true;
+        // }
+        //
+        // return false;
     }
 
     /// <summary>
@@ -174,7 +172,7 @@ public partial class Parser
     /// </summary>
     private void SuppressErrorsAtCurrentPosition()
     {
-        _errorContext.LastMissingOrUnexpectedTokenError = _scanner.Position;
+        // _errorContext.LastMissingOrUnexpectedTokenError = _scanner.Position;
     }
 
     private bool ReportUnexpected(ExpectedSyntax expected)

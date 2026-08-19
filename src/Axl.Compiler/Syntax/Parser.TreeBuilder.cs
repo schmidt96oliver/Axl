@@ -8,10 +8,9 @@ public partial class Parser
 {
     private record BuildingNode(SyntaxKind Kind, ImmutableArray<SyntaxElement>.Builder Nodes);
 
-    private SyntaxTree BuildTree()
+    private SyntaxTree BuildTree(ImmutableArray<Token> tokens, DiagnosticBag diagnosticBag)
     {
         Stack<BuildingNode> nodes = [];
-        var tokens = _scanner.AllTokens;
         var nextToken = 0;
         
         ClaimedRange lastClaimedError = new(-1, -1);
@@ -72,8 +71,8 @@ public partial class Parser
                     {
                         return new SyntaxTree(
                             root: node,
-                            diagnostics: _errorContext.Bag.Drain(),
-                            hasError: _errorContext.Bag.HasError);
+                            diagnostics: diagnosticBag.Drain(),
+                            hasError: diagnosticBag.HasError);
                     }
                     nodes.Peek().Nodes.Add(node);
                     
@@ -85,13 +84,13 @@ public partial class Parser
                     
                     if (!isSuppressible)
                     {
-                        _errorContext.Bag.ReportError(error);
+                        diagnosticBag.ReportError(error);
                         break;
                     }
                     
                     if (range.First > lastClaimedError.Last)
                     {
-                        _errorContext.Bag.ReportError(error);
+                        diagnosticBag.ReportError(error);
                         lastClaimedError = range;
                     }
                     

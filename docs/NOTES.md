@@ -4,7 +4,7 @@
 
 **Next**: 
 * assert Error has report
-* move diagnosticbag to treebuilder only
+* parser _source = _scanner.Source?
 
 * tree builder cleanup
 * `RecoverTo` cleanup
