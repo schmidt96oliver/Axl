@@ -90,6 +90,6 @@ public partial class Parser
             }
         }
 
-        throw new UnreachableException();
+        throw new UnreachableException("Event stream ended without closing TreeRoot.");
     }
 }
