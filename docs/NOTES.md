@@ -17,15 +17,9 @@
 **Regressions:**
 * `fn A() = Print();` (mis-typed `=>`)
 
-* `fn Foo( :i32 -> string { }`
-
-* `fn Another`
-
 * `native(a) fn Foo();`
 
 * `a == ==`
-* `;;;` plain semicolons
-* `{ => a; }`
 * `(1 @@@@)` recovery in GroupExpr
 
 _Below: run through the parser, outcomes observed._
