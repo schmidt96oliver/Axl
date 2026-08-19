@@ -66,7 +66,7 @@ public partial class Parser
                 if (invalidChainingError is not null)
                 {
                     _scanner.ReportHere(invalidChainingError);
-                    lhs = _scanner.CloseAsUnexplainedError(expr);
+                    lhs = _scanner.Close(expr, SyntaxKind.Error);
                 }
                 else
                     lhs =  _scanner.Close(expr, SyntaxKind.BinaryExpr);
@@ -108,7 +108,7 @@ public partial class Parser
             if (invalidChainingError is not null)
             {
                 _scanner.ReportHere(invalidChainingError);
-                return _scanner.CloseAsUnexplainedError(openMark);
+                return _scanner.Close(openMark, SyntaxKind.Error);
             }
             else
                 return _scanner.Close(openMark, SyntaxKind.UnaryExpr);

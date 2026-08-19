@@ -26,7 +26,7 @@ public partial class Parser
         // --- Missing { }?
         if (!EnsureToken(TokenKind.OpenBrace))
         {
-            _scanner.Make(TokenKind.CloseBrace);
+            _scanner.MakeAndReport(TokenKind.CloseBrace);
             return _scanner.Close(moduleDecl, SyntaxKind.ModuleDecl);
         }
 
@@ -80,7 +80,7 @@ public partial class Parser
         // Wrap modifiers into an error.
         ReportMissing(TokenKind.FnKw);
         _scanner.ReportMissingTokenHere(TokenKind.FnKw);
-        return _scanner.CloseAsUnexplainedError(decl);
+        return _scanner.Close(decl, SyntaxKind.Error);
     }
 
     private MarkClose EatFnDecl(Anchor anchor, MarkOpen fnDecl)
@@ -111,7 +111,7 @@ public partial class Parser
             if (_scanner.IsAt(TokenKind.Semicolon))
                 _scanner.EatKnown(TokenKind.Semicolon);
             
-            return _scanner.CloseAsUnexplainedError(fnDecl);
+            return _scanner.Close(fnDecl, SyntaxKind.Error);
         }
 
         _scanner.EatKnown(TokenKind.FnKw);

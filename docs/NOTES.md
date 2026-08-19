@@ -3,16 +3,11 @@
 16.08 18:25: Müde, leichtr brennende Augen; Will das noch fertig machen und aufräumen; kein Wasser mehr :/
 
 **Next**: 
-* CURRENT IDEA: ParseError holds GapRange and diagnostics claim gaps
-  * Make gaps clearer, expose scanner.CurrentGap, .NextGap or something
-  * Make gap index -> token index clearer
-  * delete comments, old logic and stuff
-  * ?? ParseError as event or separate?
-  * bless. Native_6 is ugly but correct for now
-  * cleanup Scanner, delete stale methods
-  * rm stale ParseEvent error slots (or keep them and make them carry)
-  * cleanup `DrainDiagnostics` in tree-building
+* assert Error has report
+* clarify UnexepcetedToken position logic
+* move diagnosticbag to treebuilder only
 
+* tree builder cleanup
 * `RecoverTo` cleanup
 * check special reporting sites
 * extract TreeBuilder into its own class

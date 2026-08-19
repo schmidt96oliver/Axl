@@ -13,7 +13,7 @@ public partial class Parser
 
         if (!EnsureToken(TokenKind.StringStart, expectedSyntax: ExpectedSyntax.String))
         {
-            _scanner.Make(TokenKind.StringEnd);
+            _scanner.MakeAndReport(TokenKind.StringEnd);
             return _scanner.Close(expr, SyntaxKind.StringExpr);
         }
 
@@ -30,7 +30,7 @@ public partial class Parser
             {
                 // --- StringText: Just add
                 case TokenKind.StringText:
-                    _scanner.EatIntoNode(SyntaxKind.StringText);
+                    _scanner.EatInto(SyntaxKind.StringText);
                     break;
 
                 // --- StringEnd: Finish
@@ -110,7 +110,7 @@ public partial class Parser
         else
         {
             ReportMissing(TokenKind.CloseBrace);
-            _scanner.Make(TokenKind.CloseBrace);
+            _scanner.MakeAndReport(TokenKind.CloseBrace);
         }
 
         return _scanner.Close(interpolationHole, SyntaxKind.StringInterpolation);
@@ -182,7 +182,7 @@ public partial class Parser
         if (errorExpr is MarkOpen openedErrorExpr)
         {
             _scanner.ReportUnexpectedTokensUntilHere(firstErrorGap!.Value, TokenKind.CloseBrace);
-            return _scanner.CloseAsUnexplainedError(openedErrorExpr);
+            return _scanner.Close(openedErrorExpr, SyntaxKind.Error);
         }
         return null;
 

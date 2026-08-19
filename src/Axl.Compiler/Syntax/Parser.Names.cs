@@ -35,7 +35,7 @@ public partial class Parser
     private MarkClose EatNativeTypeName()
     {
         Debug.Assert(_scanner.IsAt(FirstSet.NativeTypeName));
-        return _scanner.EatIntoNode(SyntaxKind.NativeTypeName);
+        return _scanner.EatInto(SyntaxKind.NativeTypeName);
     }
 
     /// <param name="expectedSyntax">

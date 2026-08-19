@@ -36,7 +36,7 @@ public partial class Parser
                 return _scanner.Close(returnExpr, SyntaxKind.ReturnExpr);
 
             case TokenKind.ContinueKw:
-                return _scanner.EatIntoNode(SyntaxKind.ContinueExpr);
+                return _scanner.EatInto(SyntaxKind.ContinueExpr);
             
             // --- OperandExprs or Assign
             // Ambiguous between plain OperandExpr and Assign(OperandExpr "=" Expr).
@@ -109,7 +109,7 @@ public partial class Parser
 
         if (!EnsureToken(TokenKind.OpenBrace, expectedSyntax))
         {
-            _scanner.Make(TokenKind.CloseBrace);
+            _scanner.MakeAndReport(TokenKind.CloseBrace);
             return _scanner.Close(block, SyntaxKind.BlockExpr);
         }
 
@@ -134,7 +134,7 @@ public partial class Parser
             else if (_scanner.IsAt(TokenKind.Semicolon))
             {
                 ReportUnexpected(ExpectedSyntax.Stmt);
-                _scanner.EatIntoErrorNode(ExpectedSyntax.Stmt);
+                _scanner.EatIntoErrorAndReport(ExpectedSyntax.Stmt);
             }
             
             // --- Closing tokens
@@ -148,7 +148,7 @@ public partial class Parser
                 if (_scanner.IsAt(TokenKind.Semicolon) && _scanner.Peek(1).Kind is TokenKind.CloseBrace)
                 {
                     ReportUnexpected(TokenKind.CloseBrace);
-                    _scanner.EatIntoErrorNode(TokenKind.CloseBrace);
+                    _scanner.EatIntoErrorAndReport(TokenKind.CloseBrace);
                 }
                 
                 // Arm ends the block, so break out. After the loop,

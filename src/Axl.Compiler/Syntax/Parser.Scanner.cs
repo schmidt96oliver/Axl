@@ -1,7 +1,5 @@
 using System.Collections.Immutable;
 using System.Diagnostics;
-using System.Runtime.CompilerServices;
-using System.Text;
 using Axl.Compiler.Diagnostics;
 
 namespace Axl.Compiler.Syntax;
@@ -10,8 +8,37 @@ public partial class Parser
 {
     public sealed class ParserStuckException(string message)
         : Exception(message);
+    
+    /// <summary>
+    /// Custom enumerator that asserts the parser has eaten at least one
+    /// token inside the loop. Otherwise, throws <see cref="ParserStuckException"/>.
+    /// It stops at Eof.
+    /// </summary>
+    private ref struct LoopGuard(Scanner scanner)
+    {
+        private int _lastToken = -1;
 
+        public readonly int Current => _lastToken;
+            
+        [DebuggerHidden]
+        [StackTraceHidden]
+        public bool MoveNext()
+        {
+            if (scanner.IsAtEnd)
+                return false;
+                
+            Debug.Assert(scanner.Position >= _lastToken, "Scanner moved backwards. Weird!");
+            if (scanner.Position == _lastToken)
+                throw new ParserStuckException("Parser did not eat a token and is stuck.");
 
+            _lastToken = scanner.Position;
+            return true;
+        }
+
+        public readonly LoopGuard GetEnumerator() => this;
+    }
+
+    
     /// <summary>
     /// Range of scanner positions claimed by one <see cref="ParseError.Report"/>.
     /// </summary>
@@ -63,41 +90,18 @@ public partial class Parser
     private sealed class Scanner
     {
         /// <summary>
-        /// Custom enumerator that asserts the parser has eaten at least one
-        /// token inside the loop. Otherwise, throws <see cref="ParserStuckException"/>.
-        /// It stops at Eof.
-        /// </summary>
-        public ref struct LoopGuard(Scanner scanner)
-        {
-            private int _lastToken = -1;
-
-            public readonly int Current => _lastToken;
-            
-            [DebuggerHidden]
-            [StackTraceHidden]
-            public bool MoveNext()
-            {
-                if (scanner.IsAtEnd)
-                    return false;
-                
-                Debug.Assert(scanner._nextToken >= _lastToken, "Scanner moved backwards. Weird!");
-                if (scanner._nextToken == _lastToken)
-                    throw new ParserStuckException("Parser did not eat a token and is stuck.");
-
-                _lastToken = scanner._nextToken;
-                return true;
-            }
-
-            public readonly LoopGuard GetEnumerator() => this;
-        }
-
-        
-        /// <summary>
         /// Amount of <see cref="Peek"/>s allowed between two <see cref="Eat"/>s.
         /// Generous - real lookahead never goes beyond a handful.
         /// </summary>
         private const int MaxFuel = 256;
 
+        /// <summary>
+        /// Backstop for everything <see cref="MustEatEachIteration"/> cannot see:
+        /// handwritten loops and recursion that re-enters without consuming a token.
+        /// Refilled by <see cref="Eat"/>, burned by <see cref="Peek"/>.
+        /// </summary>
+        private int _fuel;
+        
         /// <summary>
         /// Only non-trivia tokens. Must not be modified, but is kept as a list
         /// to avoid another allocation.
@@ -105,25 +109,23 @@ public partial class Parser
         private readonly List<Token> _tokens;
         private readonly List<ParseEvent> _events;
         private readonly SourceFileView _source;
-        private int _nextToken;
 
-        /// <summary>
-        /// Backstop for everything <see cref="MustEatEachIteration"/> cannot see:
-        /// hand-written loops and recursion that re-enters without consuming a token.
-        /// Refilled by <see cref="Eat"/>, burned by <see cref="Peek"/>.
-        /// </summary>
-        private int _fuel;
-
-
+        
         /// <summary>
         /// All tokens, including trivia.
         /// </summary>
         public ImmutableArray<Token> AllTokens { get; }
 
+        /// <summary>
+        /// Position is always a gap between tokens. Position <c>i</c> means, the
+        /// scanner is sitting before non-trivia token <c>i</c>.
+        /// </summary>
+        public int Position { get; private set; }
+
+        public Token? Last => Position > 0 ? _tokens[Position - 1] : null;
+
         public bool IsAtEnd => IsAt(TokenKind.Eof);
-
-        public int Position => _nextToken;
-
+        
 
         public Scanner(SourceFileView source, ImmutableArray<Token> tokens)
         {
@@ -141,7 +143,7 @@ public partial class Parser
             }
 
             _events = [];
-            _nextToken = 0;
+            Position = 0;
             _fuel = MaxFuel;
         }
 
@@ -149,7 +151,6 @@ public partial class Parser
         public IEnumerable<ParseEvent> GetEvents()
             => _events;
 
-        
         /// <summary>
         /// Returns a custom enumerator that asserts the parser has eaten at least one
         /// token inside the loop. Otherwise, throws <see cref="ParserStuckException"/>.
@@ -166,9 +167,6 @@ public partial class Parser
         public LoopGuard MustEatEachIteration()
             => new(this);
         
-        public Token? Last
-            => _nextToken > 0 ? _tokens[_nextToken - 1] : null;
-
         
         public MarkOpen Open()
         {
@@ -178,7 +176,6 @@ public partial class Parser
 
         public MarkClose Close(MarkOpen openMark, SyntaxKind kind)
         {
-            Guard.MustBe(kind is not SyntaxKind.Error, $"Construct through {nameof(CloseAsUnexplainedError)}");
             Debug.Assert(_events[(openMark.OpenEventIndex + 1)..]
                 .Any(ev => ev is ParseEvent.Eat or ParseEvent.EatAs or ParseEvent.Make),
                 "Closed a node which has no tokens.");
@@ -191,28 +188,6 @@ public partial class Parser
             return new MarkClose(openMark.OpenEventIndex);
         }
 
-        /// <summary>
-        /// Closes <paramref name="openMark"/> as <see cref="SyntaxKind.Error"/> and leaves
-        /// it unexplained. Needs to be explained through one of the Report* methods.
-        /// </summary>
-        public MarkClose CloseAsUnexplainedError(MarkOpen openMark)
-        {
-            Debug.Assert(_events[(openMark.OpenEventIndex + 1)..]
-                    .Any(ev => ev is ParseEvent.Eat or ParseEvent.EatAs),
-                "Closed an error node which has not eaten tokens.");
-
-            var openEvent = _events[openMark.OpenEventIndex] as ParseEvent.Open;
-            Debug.Assert(openEvent is not null, $"{nameof(openMark.OpenEventIndex)} was not an open event.");
-            
-            openEvent.Kind = SyntaxKind.Error;
-            
-            _events.Add(new ParseEvent.Close());
-            return new MarkClose(openMark.OpenEventIndex);
-        }
-
-        /// <summary>
-        /// Requires a <see cref="MarkClose"/>, because the mark will be invalidated!
-        /// </summary>
         public MarkOpen OpenBefore(MarkClose before)
         {
             Debug.Assert(_events[before.OpenEventIndex] is ParseEvent.Open);
@@ -220,58 +195,28 @@ public partial class Parser
             return new MarkOpen(before.OpenEventIndex);
         }
 
-        /// <summary>
-        /// Creates a missing token of <paramref name="kind"/> and reports a
-        /// <see cref="Diagnostic.MissingToken"/> on the next token.
-        /// </summary>
-        /// <param name="expectedSyntax"><c>null</c>: <paramref name="kind"/> will be used.</param>
-        public void Make(TokenKind kind, ExpectedSyntax? expectedSyntax = null)
-        {
-            ReportMissingTokenHere(expectedSyntax ?? kind);
-            _events.Add(new ParseEvent.Make(kind));
-        }
-        
         public Token Eat()
         {
-            Debug.Assert(_nextToken < _tokens.Count);
+            Debug.Assert(Position < _tokens.Count);
 
             _events.Add(new ParseEvent.Eat());
             _fuel = MaxFuel;
-            return _tokens[_nextToken++];
+            return _tokens[Position++];
         }
         
-        public MarkClose EatIntoNode(SyntaxKind nodeKind)
-        {
-            Guard.MustBe(nodeKind is not SyntaxKind.Error, $"Must be constructed through {nameof(EatIntoErrorNode)}");
-            var node = Open();
-            Eat();
-            return Close(node, nodeKind);
-        }
-        
-        public MarkClose EatIntoErrorNode(ExpectedSyntax expectedSyntax)
-        {
-            var error = Open();
-            // var parseError = MakeUnexpectedErrorHere(expectedSyntax);
-            Eat();
-            ReportUnexpectedTokensUntilHere(_nextToken, expectedSyntax);
-            return CloseAsUnexplainedError(error);
-        }
-
         /// <summary>
         /// Same as <see cref="Eat"/>, but asserts, that <paramref name="knownKind"/>
         /// was eaten.
         /// </summary>
-        public Token EatKnown(TokenKind knownKind)
+        public void EatKnown(TokenKind knownKind)
         {
             var token = Eat();
             Debug.Assert(token.Kind == knownKind);
-            return token;
         }
-
+        
         /// <summary>
         /// Eats the next token and rewrites its <see cref="TokenKind"/>
-        /// to <paramref name="kind"/>. <paramref name="kind"/> must be a
-        /// token that doesn't carry a value.
+        /// to <paramref name="kind"/>. Only for tokens that don't carry a value.
         /// </summary>
         public void EatAs(TokenKind kind)
         {
@@ -279,15 +224,46 @@ public partial class Parser
             
             _events.Add(new ParseEvent.EatAs(kind));
             _fuel = MaxFuel;
-            _nextToken++;
+            Position++;
+        }
+        
+        
+        /// <summary>
+        /// Creates a missing token of <paramref name="kind"/> and reports a
+        /// <see cref="Diagnostic.MissingToken"/> on the next token.
+        /// </summary>
+        /// <param name="expectedSyntax"><c>null</c>: <paramref name="kind"/> will be used.</param>
+        public void MakeAndReport(TokenKind kind, ExpectedSyntax? expectedSyntax = null)
+        {
+            ReportMissingTokenHere(expectedSyntax ?? kind);
+            _events.Add(new ParseEvent.Make(kind));
+        }
+        
+        
+        public MarkClose EatInto(SyntaxKind nodeKind)
+        {
+            var node = Open();
+            Eat();
+            return Close(node, nodeKind);
         }
 
-        public void Report(Diagnostic.Error error, ClaimedRange range, bool isSuppressible = false)
+        /// <summary>
+        /// Eats the next token into a <see cref="SyntaxKind.Error"/> node and reports
+        /// a <see cref="Diagnostic.UnexpectedToken"/>.
+        /// </summary>
+        public MarkClose EatIntoErrorAndReport(ExpectedSyntax expectedSyntax)
+        {
+            var node = EatInto(SyntaxKind.Error);
+            ReportUnexpectedTokensUntilHere(Position, expectedSyntax);
+            return node;
+        }
+
+        
+        private void Report(Diagnostic.Error error, ClaimedRange range, bool isSuppressible = false)
             => _events.Add(new ParseEvent.Report(error, range, isSuppressible));
 
         public void ReportHere(Diagnostic.Error error, bool isSuppressible = false)
-            => Report(error, new ClaimedRange(_nextToken, _nextToken), isSuppressible);
-        
+            => Report(error, new ClaimedRange(Position, Position), isSuppressible);
         
         public void ReportMissingTokenHere(ExpectedSyntax expectedSyntax)
         {
@@ -302,22 +278,22 @@ public partial class Parser
         public void ReportUnexpectedTokensUntilHere(int firstClaimedGap, ExpectedSyntax expectedSyntax)
         {
             Guard.InRange(firstClaimedGap > 0);
-            Guard.InRange(firstClaimedGap <= _nextToken);
+            Guard.InRange(firstClaimedGap <= Position);
             
             var token = _tokens[firstClaimedGap - 1];
             var error = new Diagnostic.UnexpectedToken(_source, token, expectedSyntax);
             Report(error,
-                new ClaimedRange(firstClaimedGap, _nextToken),
+                new ClaimedRange(firstClaimedGap, Position),
                 isSuppressible: true);
         }
 
         
-        
-        public Token Peek(int lookahead = 0)
+        /// <param name="skipCount"><c>0</c> returns the next token. <c>1</c> the one thereafter and so on.</param>
+        public Token Peek(int skipCount = 0)
         {
             if (--_fuel < 0)
                 throw new ParserStuckException("Parser peeked too often without advancing and is stuck.");
-            return UnsafePeek(lookahead);
+            return UnsafePeek(skipCount);
         }
 
         /// <summary>
@@ -328,14 +304,13 @@ public partial class Parser
         {
             Debug.Assert(lookahead >= 0);
 
-            if (_nextToken + lookahead < _tokens.Count)
-                return _tokens[_nextToken + lookahead];
+            if (Position + lookahead < _tokens.Count)
+                return _tokens[Position + lookahead];
 
             Debug.Assert(_tokens[^1].Kind is TokenKind.Eof);
             return _tokens[^1];
         }
 
-        
         
         public bool IsAt(TokenKind kind)
             => Peek().Kind == kind;

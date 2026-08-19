@@ -71,7 +71,7 @@ public partial class Parser
                 if (_scanner.IsAt(TokenKind.Semicolon))
                 {
                     ReportUnexpected(ExpectedSyntax.Stmt);
-                    _scanner.EatIntoErrorNode(ExpectedSyntax.Stmt);
+                    _scanner.EatIntoErrorAndReport(ExpectedSyntax.Stmt);
                 }
             }
         }
@@ -102,7 +102,7 @@ public partial class Parser
         Debug.Assert(_scanner.IsAt(anchor));
         
         _scanner.ReportUnexpectedTokensUntilHere(first, expectedSyntax);
-        _scanner.CloseAsUnexplainedError(errorNode);
+        _scanner.Close(errorNode, SyntaxKind.Error);
         
         SuppressErrorsAtCurrentPosition();
         
@@ -124,7 +124,7 @@ public partial class Parser
         EatGarbageIntoError(anchor);
         Debug.Assert(_scanner.IsAt(anchor));
         
-        return _scanner.CloseAsUnexplainedError(error);
+        return _scanner.Close(error, SyntaxKind.Error);
     }
 
     private void EatGarbageIntoError(Anchor anchor)
@@ -214,7 +214,7 @@ public partial class Parser
     {
         if (!_scanner.IsAt(expectedKind))
         {
-            _scanner.Make(expectedKind, expectedSyntax);
+            _scanner.MakeAndReport(expectedKind, expectedSyntax);
             ReportMissing(expectedSyntax ?? expectedKind);
             return false;
         }
@@ -274,7 +274,7 @@ public partial class Parser
         if (!EnsureToken(openToken, expectedOpenSyntax))
         {
             // Make closing token and bail.
-            _scanner.Make(closeToken);
+            _scanner.MakeAndReport(closeToken);
             return _scanner.Close(list, listKind);
         }
 
