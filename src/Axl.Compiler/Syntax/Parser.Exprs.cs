@@ -184,10 +184,7 @@ public partial class Parser
         var arm = _scanner.Open();
 
         if (_scanner.IsAt(TokenKind.Equal))
-        {
-            _scanner.EatAs(TokenKind.RightDoubleArrow);
-            _scanner.ReportUnexpectedTokensUntilHere(first: _scanner.Position - 1, TokenKind.RightDoubleArrow);
-        }
+            _scanner.EatAsAndReport(TokenKind.RightDoubleArrow);
         else
             _scanner.EatKnown(TokenKind.RightDoubleArrow);
         
