@@ -1,5 +1,5 @@
-using Axl.Compiler;
 using Axl.Compiler.Syntax;
+using OmniSharp.Extensions.LanguageServer.Protocol;
 using OmniSharp.Extensions.LanguageServer.Protocol.Client.Capabilities;
 using OmniSharp.Extensions.LanguageServer.Protocol.Document;
 using OmniSharp.Extensions.LanguageServer.Protocol.Models;
@@ -32,31 +32,42 @@ public class SemanticTokensHandler(ILanguageServerFacade facade) : SemanticToken
     protected override Task Tokenize(SemanticTokensBuilder builder, ITextDocumentIdentifierParams identifier,
         CancellationToken cancellationToken)
     {
-        var file = DocumentStore.Get(identifier.TextDocument.Uri);
-        var tree = Parser.Parse(SourceFileView.Whole(file));
-        
+        var compilation = DocumentStore.GetCompilation(identifier.TextDocument.Uri);
+        if (compilation is null)
+            return Task.CompletedTask;
+
+        foreach (var tree in DocumentStore.GetFileIds(identifier.TextDocument.Uri).Select(compilation.GetSyntaxTree))
+        {
+            TokenizeTree(identifier.TextDocument.Uri, builder, tree);
+        }
+
+        return Task.CompletedTask;
+    }
+
+    private void TokenizeTree(DocumentUri uri, SemanticTokensBuilder builder, SyntaxTree tree)
+    {
         // --- Push diagnostics
         facade.TextDocument.PublishDiagnostics(new PublishDiagnosticsParams()
         {
-            Uri = identifier.TextDocument.Uri,
+            Uri = uri,
             Diagnostics = DiagnosticConverter.Convert(tree.Diagnostics)
         });
-        
+
         // --- Build semantic tokens
         var isInOutput = false;
         foreach (var token in EnumerateTokens(tree.Root))
         {
             if (token.Span.Length == 0)
                 continue;
-            if (token.Span.First >= file.Text.Length)
+            if (token.Span.First >= tree.Source.File.Text.Length)
                 continue;
-            
-            var startLinePos = file.GetLinePosition(token.Span.First);
+
+            var startLinePos = tree.Source.File.GetLinePosition(token.Span.First);
             switch (token.Kind)
             {
                 case TokenKind.Comment:
                 {
-                    var text = file.GetText(token.Span);
+                    var text = tree.Source.File.GetText(token.Span);
                     if (text.StartsWith("//@") || text.StartsWith("//~"))
                     {
                         var length = 3;
@@ -65,14 +76,16 @@ public class SemanticTokensHandler(ILanguageServerFacade facade) : SemanticToken
                         {
                             length++;
                         }
+
                         builder.Push(startLinePos.Line, startLinePos.Column, length,
                             (SemanticTokenType?)SemanticTokenType.Decorator);
-                        
+
                         // See if there is a comment
                         var commentStart = text[2..].IndexOf("//") + 2;
                         if (commentStart > 2)
                         {
-                            builder.Push(startLinePos.Line, startLinePos.Column + commentStart, text.Length - commentStart,
+                            builder.Push(startLinePos.Line, startLinePos.Column + commentStart,
+                                text.Length - commentStart,
                                 (SemanticTokenType?)SemanticTokenType.Comment);
                         }
                     }
@@ -81,7 +94,7 @@ public class SemanticTokensHandler(ILanguageServerFacade facade) : SemanticToken
                         var length = 5;
                         while (length < text.Length && text[length] is '-' or '=')
                             length++;
-                        
+
                         builder.Push(startLinePos.Line, startLinePos.Column, length,
                             (SemanticTokenType?)SemanticTokenType.Decorator);
 
@@ -98,7 +111,7 @@ public class SemanticTokensHandler(ILanguageServerFacade facade) : SemanticToken
                         // `//` is now a decorator
                         builder.Push(startLinePos.Line, startLinePos.Column, 2,
                             (SemanticTokenType?)SemanticTokenType.Decorator);
-                        
+
                         // Everything thereafter is string
                         if (text.Length > 2)
                         {
@@ -106,6 +119,7 @@ public class SemanticTokensHandler(ILanguageServerFacade facade) : SemanticToken
                                 (SemanticTokenType?)SemanticTokenType.String);
                         }
                     }
+
                     break;
                 }
 
@@ -114,12 +128,12 @@ public class SemanticTokensHandler(ILanguageServerFacade facade) : SemanticToken
                     builder.Push(startLinePos.Line, startLinePos.Column, token.Span.Length,
                         (SemanticTokenType?)SemanticTokenType.String);
                     break;
-                
+
                 case TokenKind.StringText:
                 {
                     // Partition the string text into escape and non-escape
-                    var text = file.GetText(token.Span);
-                    
+                    var text = tree.Source.File.GetText(token.Span);
+
                     var stringTokenStart = 0;
                     for (var i = 0; i < text.Length; i++)
                     {
@@ -149,8 +163,8 @@ public class SemanticTokensHandler(ILanguageServerFacade facade) : SemanticToken
                     // Push rest string
                     if (text.Length > stringTokenStart)
                     {
-                        builder.Push(startLinePos.Line, 
-                            @char: startLinePos.Column + stringTokenStart, 
+                        builder.Push(startLinePos.Line,
+                            @char: startLinePos.Column + stringTokenStart,
                             length: text.Length - stringTokenStart,
                             (SemanticTokenType?)SemanticTokenType.String);
                     }
@@ -189,8 +203,6 @@ public class SemanticTokensHandler(ILanguageServerFacade facade) : SemanticToken
                     break;
             }
         }
-        
-        return Task.CompletedTask;
     }
 
     private IEnumerable<Token> EnumerateTokens(SyntaxElement element)

@@ -14,6 +14,9 @@ public class Compilation
     private readonly FileIdTable<SyntaxTree> _syntaxTrees = [];
 
 
+    public IReadOnlyCollection<FileId> FileIds => _sourceFileViews.Keys;
+    
+
     private Compilation()
     {
     }
@@ -26,6 +29,13 @@ public class Compilation
         return compilation;
     }
 
+    public static Compilation FromSource(SourceFileView source)
+    {
+        var compilation = new Compilation();
+        compilation._sourceFileViews.Add(compilation.NewFileId(), source);
+        return compilation;
+    }
+
 
     private FileId NewFileId()
     {
@@ -34,6 +44,9 @@ public class Compilation
         return id;
     }
 
+    public FileId GetFileId(SourceFileView source)
+        => _sourceFileViews.First(kvp => kvp.Value == source).Key;
+    
 
     public SourceFileView GetSource(FileId fileId)
         => _sourceFileViews[fileId];
