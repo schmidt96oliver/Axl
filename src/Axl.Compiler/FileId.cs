@@ -1,3 +1,3 @@
 ﻿namespace Axl.Compiler;
 
-public readonly record struct FileId(int Value);
+public readonly record struct FileId(int Id);

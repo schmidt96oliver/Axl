@@ -1,40 +1,12 @@
 # ------------------------------------ Axl Project ------------------------------------
                                        ≽(◕ ᴗ ◕)≼
-16.08 18:25: Müde, leichtr brennende Augen; Will das noch fertig machen und aufräumen; kein Wasser mehr :/
-19.08 16:41: M+de, bewegungsdrang, etwas schlecht. Will noch fertig lesen. Eigtl guter Punkt um einfach morgen zu lesen :)
 
 **Next**: 
-* test: broken expressions
-* regressions
-* regressions.axl
+
+
 
 **Small points**:
-* ?? `RecoverTo` UnexpectedToken -> Squiggle all tokens
 * `SyntaxFile` add reference to Source
-
-**Regressions:**
-* `native(a) fn Foo();`; allow operandexpr, see Claude
-
-
-# Parser
-[x] Corpus & Corpus-Test-Runner (expect: Parses without diagnostics)
-[ ] Write corpus files. Use Ungrammar
-   * [x] All native types: "i32" | "i64" | "f32" | "f64" | "string" | "none"
-   * [ ] Break, Continue, Return. Nested cases
-   * [ ] All Binary ("+"|"-"|"*"|"/"|"<"|"<="|">"|">="  |"=="|"!=" |"and"|"or")
-   * [ ] All Unary ("-" | "not")
-   * [ ] call Expr: Empty argList, args
-     * [ ] Empty arglist
-     * [x] with arg     (calling PrintLine literally everywhere)
-   * [ ] GetMember
-   * [ ] Assign "="|"+="|"-="
-     * [ ] Trailing Block, Break, Continue, Return
-     * [ ] Nested
-
-* ?? Better dump format
-
-[ ] Proper trivia handling
-[ ] Code lazily: SyntaxViews (only product syntax, never sum syntax). Provide FindNode/FindToken/NthToken/NthNode...
 
 # First features
 * i32, i64, f32, f64, bool, string

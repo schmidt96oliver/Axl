@@ -66,6 +66,7 @@ public partial class Parser
                             : "Saw no error element(s), but reported an error.");
                     return new SyntaxTree(
                         root: rootNode,
+                        _source,
                         diagnostics: diagnosticBag.Drain(),
                         hasError: diagnosticBag.HasError);
                 }
