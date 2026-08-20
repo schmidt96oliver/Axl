@@ -218,17 +218,6 @@ public partial class Parser
             _fuel = MaxFuel;
             Position++;
         }
-
-        /// <summary>
-        /// Eats the next token, rewrites it to <paramref name="kind"/> and reports an
-        /// <see cref="Diagnostic.UnexpectedToken"/> error.
-        /// </summary>
-        /// <param name="expectedSyntax">If <c>null</c>, <paramref name="kind"/> will be reported.</param>
-        public void EatAsAndReport(TokenKind kind, ExpectedSyntax? expectedSyntax = null)
-        {
-            EatAs(kind);
-            ReportUnexpectedTokensUntilHere(Position - 1, expectedSyntax ?? kind);
-        }
         
         
         /// <summary>

@@ -103,7 +103,8 @@ public partial class ParserTests
                     · IdName 'A'
                     · ParamList '(' ')'
                     · Arm
-                    · · '='
+                    · · Error '='
+                    · · ??'=>'
                     · · NumberLiteral '1'
                     · ';'
                     """);
@@ -119,7 +120,8 @@ public partial class ParserTests
                     · · 'if'
                     · · TrueLiteral 'true'
                     · · Arm
-                    · · · '='
+                    · · · Error '='
+                    · · · ??'=>'
                     · · · NumberLiteral '1'
                     · ';'
                     """);
@@ -134,7 +136,8 @@ public partial class ParserTests
                     · LoopExpr
                     · · 'loop'
                     · · Arm
-                    · · · '='
+                    · · · Error '='
+                    · · · ??'=>'
                     · · · NumberLiteral '1'
                     · ';'
                     """);
@@ -154,7 +157,8 @@ public partial class ParserTests
                     · · · NumberLiteral '1'
                     · · 'else'
                     · · Arm
-                    · · · '='
+                    · · · Error '='
+                    · · · ??'=>'
                     · · · NumberLiteral '2'
                     · ';'
                     """);
@@ -169,7 +173,8 @@ public partial class ParserTests
                     · BlockExpr
                     · · '{'
                     · · Arm
-                    · · · '='
+                    · · · Error '='
+                    · · · ??'=>'
                     · · · NumberLiteral '1'
                     · · '}'
                     """);

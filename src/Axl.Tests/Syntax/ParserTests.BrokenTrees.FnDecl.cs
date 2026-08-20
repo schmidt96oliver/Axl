@@ -238,7 +238,8 @@ public partial class ParserTests
                     · · · · ??ID
                     · · ??')'
                     · Arm
-                    · · '='
+                    · · Error '='
+                    · · ??'=>'
                     · · NumberLiteral '1'
                     · ';'
                     """);

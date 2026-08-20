@@ -184,7 +184,12 @@ public partial class Parser
         var arm = _scanner.Open();
 
         if (_scanner.IsAt(TokenKind.Equal))
-            _scanner.EatAsAndReport(TokenKind.RightDoubleArrow);
+        {
+            // Eat the `=` as an error to be honest and construct a missing
+            // `=>`, so the grammar still reads correctly.
+            _scanner.EatIntoErrorAndReport(TokenKind.RightDoubleArrow);
+            _scanner.MakeAndReport(TokenKind.RightDoubleArrow);
+        }
         else
             _scanner.EatKnown(TokenKind.RightDoubleArrow);
         
