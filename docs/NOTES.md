@@ -1,6 +1,7 @@
 # ------------------------------------ Axl Project ------------------------------------
                                        ≽(◕ ᴗ ◕)≼
 16.08 18:25: Müde, leichtr brennende Augen; Will das noch fertig machen und aufräumen; kein Wasser mehr :/
+19.08 16:41: M+de, bewegungsdrang, etwas schlecht. Will noch fertig lesen. Eigtl guter Punkt um einfach morgen zu lesen :)
 
 **Next**: 
 * test: broken expressions
@@ -12,37 +13,9 @@
 * `SyntaxFile` add reference to Source
 
 **Regressions:**
-* `fn A() = Print();` (mis-typed `=>`)
+* `if a = 1 => Print("eq");`; error-prod
 
-* `native(a) fn Foo();`
-
-* `a == ==`
-* `(1 @@@@)` recovery in GroupExpr
-
-* `if a = 1 => Print("eq");`
-
-* missing closing quote -> next line becomes a second Arg with a synthesized `,`;
-  both lines end up in one call
-  ```
-  Print("hello);
-  Print("world");
-  ```
-
-
-?? (what else?) "no expression here" is modelled as a missing *identifier*: `()`, `var x = ;`, `a = ;`
-  all yield `IdName(<missing>)`
-?? (Parser sees it correctly and the stmt could genuinely be multi-line. what else to do?) trailing dot, next line is a valid stmt -> parses as `Std.Std.Print("x")`
-  ```
-  Std.
-  Std.Print("x");
-  ```
-
-!! (parser is permissive; declaration binding will error/lint) `public public fn F() { }` repeated modifier, both eaten
-!! (intended, looks like 2 params were intended) `Print(,)` -> 2x "Expected an expression" for one `(,)`
-!! (MissingToken after public is correct) `public var x = 1;` -> "Expected 'fn'." reported at `var`
-!! (nope, diagnostic says "expected )". Possbily fixed with one of the last commits) `Print("value: {Compute(}")` -> tree recovers perfectly, but the one diagnostic says
-  "Expected an expression" when the missing token is `)`
-
+* `native(a) fn Foo();`; allow operandexpr, see Claude
 
 
 # Parser

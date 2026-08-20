@@ -60,10 +60,8 @@ public partial class Parser
 
                     var rootNode = new SyntaxNode(SyntaxKind.TreeRoot, nodeBuilders.Pop().DrainToImmutable());
                     
-                    Debug.Assert(sawErrorElement == diagnosticBag.HasError,
-                        sawErrorElement 
-                            ? "Saw error element(s), but no diagnostics."
-                            : "Saw no error element(s), but reported an error.");
+                    Debug.Assert(!sawErrorElement || diagnosticBag.HasError,
+                            "Saw error element(s), but no diagnostics.");
                     return new SyntaxTree(
                         root: rootNode,
                         diagnostics: diagnosticBag.Drain(),

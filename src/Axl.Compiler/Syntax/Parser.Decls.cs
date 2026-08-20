@@ -132,7 +132,7 @@ public partial class Parser
         EnsureIdName();
 
         // Inside ParamList, we can continue from "{" or "->"
-        var paramListAnchor = anchor | TokenKind.OpenBrace | TokenKind.RightArrow | TokenKind.Semicolon;
+        var paramListAnchor = anchor | FirstSet.Body | TokenKind.RightArrow | TokenKind.Semicolon;
         EnsureParamList(paramListAnchor);
 
         // --- Return type

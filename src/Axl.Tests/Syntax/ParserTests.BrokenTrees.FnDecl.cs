@@ -190,6 +190,59 @@ public partial class ParserTests
                     · BlockExpr '{' '}'
                     """);
             
+            [Fact]
+            public void UnclosedParamList_9()
+                => InlineSnapshot.Validate(Tree("fn Foo(a: i32,  => 1;"), """
+                    ERROR MissingToken@[14, 14): Expected a parameter.
+
+
+                    FnDecl
+                    · 'fn'
+                    · IdName 'Foo'
+                    · ParamList
+                    · · '('
+                    · · Param
+                    · · · IdName 'a'
+                    · · · ':'
+                    · · · NativeTypeName 'i32'
+                    · · ','
+                    · · Param
+                    · · · IdName
+                    · · · · ??ID
+                    · · ??')'
+                    · Arm
+                    · · '=>'
+                    · · NumberLiteral '1'
+                    · ';'
+                    """);
+            
+            [Fact]
+            public void UnclosedParamList_10()
+                => InlineSnapshot.Validate(Tree("fn Foo(a: i32,  = 1;"), """
+                    ERROR MissingToken@[14, 14): Expected a parameter.
+                    ERROR UnexpectedToken@[16, 17): Expected '=>', got '='.
+
+
+                    FnDecl
+                    · 'fn'
+                    · IdName 'Foo'
+                    · ParamList
+                    · · '('
+                    · · Param
+                    · · · IdName 'a'
+                    · · · ':'
+                    · · · NativeTypeName 'i32'
+                    · · ','
+                    · · Param
+                    · · · IdName
+                    · · · · ??ID
+                    · · ??')'
+                    · Arm
+                    · · '='
+                    · · NumberLiteral '1'
+                    · ';'
+                    """);
+            
             
             [Fact]
             public void ParamList_ForgottenComma_1()

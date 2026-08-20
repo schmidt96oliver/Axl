@@ -47,8 +47,12 @@ public partial class Parser
 
         public static readonly TokenSet Stmt = Expr | TokenKind.VarKw;
 
-        public static readonly TokenSet Body = TokenSet.Of(
-            TokenKind.OpenBrace, TokenKind.RightDoubleArrow);
+        /// <summary>
+        /// `=` as error production.
+        /// </summary>
+        public static readonly TokenSet Arm = TokenSet.Of(TokenKind.RightDoubleArrow, TokenKind.Equal);
+
+        public static readonly TokenSet Body = Arm | TokenKind.OpenBrace;
 
         public static readonly TokenSet Modifier = TokenSet.Of(TokenKind.PublicKw, TokenKind.PrivateKw);
 

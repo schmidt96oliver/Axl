@@ -181,7 +181,7 @@ public partial class Parser
     
     private MarkClose EnsureBody(Anchor anchor)
     {
-        if (_scanner.IsAt(TokenKind.RightDoubleArrow))
+        if (_scanner.IsAt(FirstSet.Arm))
             return EatArm(anchor);
         
         return EnsureBlock(anchor, ExpectedSyntax.Body);

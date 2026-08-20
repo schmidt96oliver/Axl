@@ -119,7 +119,7 @@ public partial class Parser
         // a natural boundary for statements.
         var blockAnchor = anchor |
                           TokenKind.VarKw | FirstSet.FnDecl |
-                          TokenKind.RightDoubleArrow | TokenKind.CloseBrace |
+                          FirstSet.Arm | TokenKind.CloseBrace |
                           TokenKind.Semicolon;
 
         foreach (var _ in _scanner.MustEatEachIteration())
@@ -142,8 +142,10 @@ public partial class Parser
             // --- Closing tokens
             else if (_scanner.IsAt(TokenKind.CloseBrace))
                 break;
-            else if (_scanner.IsAt(TokenKind.RightDoubleArrow))
+            else if (_scanner.IsAt(FirstSet.Arm))
             {
+                // Arm contains `=` as error production. It's safe because any
+                // assign expression has already been eaten.
                 EatArm(blockAnchor);
 
                 // --- Catch common `=> expr; }` error, where arm is closed with semicolon
@@ -176,11 +178,21 @@ public partial class Parser
 
     private MarkClose EatArm(Anchor anchor)
     {
-        Debug.Assert(_scanner.IsAt(TokenKind.RightDoubleArrow));
+        // Accept '=' as error production.
+        Debug.Assert(_scanner.IsAt(FirstSet.Arm));
 
         var arm = _scanner.Open();
-        _scanner.EatKnown(TokenKind.RightDoubleArrow);
+
+        if (_scanner.IsAt(TokenKind.Equal))
+        {
+            _scanner.EatAs(TokenKind.RightDoubleArrow);
+            _scanner.ReportUnexpectedTokensUntilHere(first: _scanner.Position - 1, TokenKind.RightDoubleArrow);
+        }
+        else
+            _scanner.EatKnown(TokenKind.RightDoubleArrow);
+        
         EnsureExpr(anchor);
+        
         return _scanner.Close(arm, SyntaxKind.Arm);
     }
 }
