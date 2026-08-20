@@ -2,20 +2,19 @@
 and Parse* names where they are sum ungrammars.
 
 # Top-Level
-ScriptFile      = UsingDecl* (Stmt | MemberDecl)*
-ModuleFile      = UsingDecl* GlobalModuleDecl MemberDecl*
+File            = (Stmt | MemberDecl | GlobalModuleDecl | UsingDecl)*
 
 UsingDecl       = "using" QualifiedName ";"
 GlobalModuleDecl= "module" QualifiedName ";"
 
 ## Member Declarations
-MemberDecl      = FnDecl
-                | ModuleDecl
+MemberDecl      = ModifierList (FnDecl | ModuleDecl)
+                
 
 ModifierList    = ("public" | "private")*
 // DeclBinder only accepts correct combinations
 
-FnDecl          = ModifierList NativeClause? "fn" IdName ParamList ("->" (TypeName | "never"))? Body? ";"§
+FnDecl          = NativeClause? "fn" IdName ParamList ("->" (TypeName | "never"))? Body? ";"§
 // Identifier "never" is promoted to SyntaxKind.NativeTypeName with TokenKind.NeverKw
 // DeclBinder requires Body on non-native functions
 
@@ -27,11 +26,7 @@ ParamList       = "(" ")"
                 | "(" Param ("," Param)* ")"
 Param           = IdName TypeAnnotation       
 
-ModuleDecl      = "module" QualifiedName "{" Stmt* "}"
-// DeclBinder rejects anything but MemberDecl
-// Note: No modifiers on module
-// Note: Allow semicolon for symmetry with FnDecl. It is not needed at all
-// is omissible anytime and will probably not ever be written.
+ModuleDecl      = "module" QualifiedName "{" (Stmt | MemberDecl)* "}"
 
 ## Statements
 Stmt        = ExprStmt
@@ -63,6 +58,7 @@ Expr        = BodiedExpr | OperandExpr | TailExpr
 Body        = Block
             | Arm
 Arm         = "=>" Expr
+            | "=" Expr      // ERROR PRODUCTION
 
 BodiedExpr  = Block | If | Loop
 //          = Expressions that own a body.
@@ -71,6 +67,7 @@ Block       = "{" (Stmt | FnDecl)* Arm? "}"
 
 If          = "if" OperandExpr Body ElseClause?     
 // Condition is OperandExpr to disallow any unparenthesized body inside it.
+// ERROR PRODUCTION: "=" accepted after OperandExpr
 
 ElseClause  = "else" (Body | If)
 Loop        = "loop" Body
@@ -131,10 +128,7 @@ QualifiedName   = IdName ("." IdName)*
 
 TypeAnnotation  = ":" TypeName
 
-# Implementation
-Only ParseOperandExpr runs a Pratt Parser. Everything else is recursive descent.
-
-## Precedence table for operand expressions:
+# Precedence Table
 . (                 (left-assoc)
 -                   (prefix)
 * /                 (left-assoc)
