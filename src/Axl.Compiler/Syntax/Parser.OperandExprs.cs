@@ -12,9 +12,12 @@ public partial class Parser
         if (!_scanner.IsAt(FirstSet.OperandExpr))
             return EnsureIdName(ExpectedSyntax.Expr);
 
-        // --- Head
         var lhs = EatOperandExprHead(anchor);
+        return ContinueOperandExpr(lhs, left, anchor);
+    }
 
+    private MarkClose ContinueOperandExpr(MarkClose lhs, LeftOperator? left, Anchor anchor)
+    {
         // --- Pratt loop
         foreach (var _ in _scanner.MustEatEachIteration())
         {
@@ -69,7 +72,7 @@ public partial class Parser
 
         return lhs;
     }
-
+    
     private MarkClose EatOperandExprHead(Anchor anchor)
     {
         Debug.Assert(_scanner.IsAt(FirstSet.OperandExpr));

@@ -72,7 +72,39 @@ public partial class Parser
 
         // --- Condition and body
         var ifAnchor = anchor | FirstSet.Body | TokenKind.ElseKw;
-        EnsureOperandExpr(left: null, ifAnchor);
+        var predicate = EnsureOperandExpr(left: null, ifAnchor);
+
+        if (_scanner.IsAt(TokenKind.Equal))
+        {
+            // Two error production collide. `if a = 1` could be read as
+            //   1. Arm: `if a => 1`
+            //   2. Equality: `if a == 1`
+            // Number 2 is probably more often what is meant. So check, if the
+            // next token can start an OperandExpr. If so, take 2. Otherwise,
+            // take 1.
+            if (FirstSet.OperandExpr.Contains(_scanner.Peek(1).Kind))
+            {
+                var equalsPredicate = _scanner.OpenBefore(predicate);
+                
+                // Eat `=` as error and insert missing `==`
+                var equalToken = _scanner.Peek();
+                _scanner.EatIntoErrorAndReport(TokenKind.DoubleEqual);
+                _scanner.MakeAndReport(TokenKind.DoubleEqual);
+
+                // Eat rhs
+                var leftOperator = new LeftOperator(PrecedenceTable.TryGetInfixPrecedence(TokenKind.DoubleEqual)!.Value,
+                    equalToken);
+                EnsureOperandExprRhs(leftOperator, anchor, out var wasAmbiguous);
+
+                predicate = _scanner.Close(equalsPredicate, wasAmbiguous ? SyntaxKind.Error : SyntaxKind.BinaryExpr);
+                
+                // Continue pratt loop to consume operator of lower precedence.
+                // Pass in null as left operator, because that is what we passed
+                // in originally.
+                predicate = ContinueOperandExpr(predicate, left: null, anchor);
+            }
+        }
+        
         EnsureBody(ifAnchor);
 
         // --- Else

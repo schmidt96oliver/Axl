@@ -13,8 +13,6 @@
 * `SyntaxFile` add reference to Source
 
 **Regressions:**
-* `if a = 1 => Print("eq");`; error-prod
-
 * `native(a) fn Foo();`; allow operandexpr, see Claude
 
 
