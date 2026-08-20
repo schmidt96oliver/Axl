@@ -1,4 +1,5 @@
-﻿using Axl.Compiler.Syntax;
+﻿using Axl.Compiler;
+using Axl.Compiler.Syntax;
 using OmniSharp.Extensions.LanguageServer.Protocol.Client.Capabilities;
 using OmniSharp.Extensions.LanguageServer.Protocol.Document;
 using OmniSharp.Extensions.LanguageServer.Protocol.Models;
@@ -25,17 +26,24 @@ public class FoldingRangeHandler : FoldingRangeHandlerBase
             .Select(compilation.GetSyntaxTree)
             .SelectMany(GetFoldingRanges));
             
-        return Task.FromResult(container);
+        return Task.FromResult(container)!;
     }
 
     private IEnumerable<FoldingRange> GetFoldingRanges(SyntaxTree tree)
     {
-        return EnumerateAllChildNodes(tree.Root)
-            .Select(GetFoldingRange)
-            .Where(range => range is not null)
-            .Select(range => range!);
+        foreach (var range in GetCommentFoldingRanges(tree.Root, tree.Source))
+            yield return range;
+        
+        foreach (var node in EnumerateAllChildNodes(tree.Root))
+        {
+            if (GetFnOrModuleFoldingRange(node) is FoldingRange foldingRange)
+                yield return foldingRange;
 
-        FoldingRange? GetFoldingRange(SyntaxNode node)
+            foreach (var range in GetCommentFoldingRanges(node, tree.Source))
+                yield return range;
+        }
+        
+        FoldingRange? GetFnOrModuleFoldingRange(SyntaxNode node)
         {
             if (node.Kind is not (SyntaxKind.ModuleDecl or SyntaxKind.BlockExpr))
                 return null;
@@ -64,15 +72,64 @@ public class FoldingRangeHandler : FoldingRangeHandlerBase
                 return null;
             }
             
-            var startLinePos = tree.Source.File.GetLinePositionOrEof(start.Span.First);
-            var endLinePos = tree.Source.File.GetLinePositionOrEof(end.Span.End);
-            return new FoldingRange()
+            return FoldingRangeFromTo(start.Span.First, end.Span.End);
+        }
+
+        IEnumerable<FoldingRange> GetCommentFoldingRanges(SyntaxNode node, SourceFileView source)
+        {
+            for (var i = 0; i < node.Children.Length; i++)
+            {
+                if (node.Children[i] is not Token { Kind: TokenKind.Comment })
+                    continue;
+
+                // Search last comment in this group
+                var firstComment = i;
+                var lastComment = i;
+                for (; i < node.Children.Length; i++)
+                {
+                    if (node.Children[i] is Token { Kind: TokenKind.Comment })
+                        lastComment = i;
+
+                    else if (node.Children[i] is Token { Kind: TokenKind.Whitespace, Span: var span })
+                    { 
+                        // More than one newline breaks the group.
+                        // One newline is expected after each comment.
+                        if (source.GetText(span).Count('\n') > 1)
+                            break;
+                    }
+                    
+                    else
+                        break;
+                }
+
+                if (lastComment > firstComment)
+                {
+                    var lastPos = node.Children[lastComment].Span.End;
+                    
+                    // If last position is at EOF, the editor will discard the
+                    // folding range. Weirdly enough. So we just crop the range
+                    // by one at the end. Looks a little weird, but it does the job.
+                    yield return FoldingRangeFromTo(
+                        start: node.Children[firstComment].Span.End,
+                        end: lastPos == source.File.Text.Length
+                            ? lastPos - 1
+                            : lastPos,
+                        kind: FoldingRangeKind.Comment);
+                }
+            }
+        }
+
+        FoldingRange FoldingRangeFromTo(int start, int end, FoldingRangeKind? kind = null)
+        {
+            var startLinePos = tree.Source.File.GetLinePositionOrEof(start);
+            var endLinePos = tree.Source.File.GetLinePositionOrEof(end);
+            return new FoldingRange
             {
                 StartLine = startLinePos.Line,
                 StartCharacter = startLinePos.Column,
                 EndLine = endLinePos.Line,
                 EndCharacter = endLinePos.Column,
-                
+                Kind = kind,
             };
         }
     }
