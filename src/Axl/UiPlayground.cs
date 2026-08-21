@@ -1,6 +1,8 @@
+using System.Reflection;
 using Axl.Compiler;
 using Axl.Compiler.Diagnostics;
 using Axl.Compiler.Syntax;
+using Axl.Compiler.Syntax.Tree;
 using Terminal.Gui.App;
 using Terminal.Gui.Drawing;
 using Terminal.Gui.Input;
@@ -40,7 +42,7 @@ public static class UiPlayground
         => new(new Color(color), new Color(StandardColor.Black), style);
 
     private static readonly Attribute PlainAttribute = Fg(StandardColor.White);
-    private static readonly Attribute KindAttribute = Fg(StandardColor.BrightGreen, TextStyle.Bold);
+    private static readonly Attribute KindAttribute = Fg(StandardColor.LightBlue, TextStyle.Bold);
     private static readonly Attribute ErrorKindAttribute = Fg(StandardColor.BrightRed, TextStyle.Bold);
     private static readonly Attribute ErrorLineAttribute = Fg(StandardColor.BrightRed);
     private static readonly Attribute TokenAttribute = Fg(StandardColor.Khaki);
@@ -217,7 +219,11 @@ public static class UiPlayground
         private readonly FrameView _diagnosticsFrame;
         private readonly RowTreeView _diagnosticsView = new(selectable: false);
         private readonly FrameView _treeFrame;
-        private readonly RowTreeView _treeView = new(selectable: false);
+        private readonly Tabs _treeTabs = new();
+        private readonly View _cstTab = new() { Title = "CST" };
+        private readonly RowTreeView _cstView = new(selectable: false) { Width = Dim.Fill(), Height = Dim.Fill() };
+        private readonly View _astTab = new() { Title = "AST" };
+        private readonly RowTreeView _astView = new(selectable: false) { Width = Dim.Fill(), Height = Dim.Fill() };
         private readonly Label _status = new();
 
         private string? _previousText;
@@ -252,16 +258,20 @@ public static class UiPlayground
                 Y = Pos.Bottom(_diagnosticsFrame),
                 Width = Dim.Fill(),
                 Height = Dim.Fill(1),
-                CanFocus = false,
+
+                // Unlike the diagnostics, the tabs in here need focus to be switchable.
+                CanFocus = true,
             };
-            _treeView.Width = Dim.Fill();
-            _treeView.Height = Dim.Fill();
-            _treeFrame.Add(_treeView);
+            _cstTab.Add(_cstView);
+            _astTab.Add(_astView);
+            _treeTabs.Add(_cstTab, _astTab);
+            _treeFrame.Add(_treeTabs);
 
             _status.X = 0;
             _status.Y = Pos.AnchorEnd(1);
             _status.Width = Dim.Fill();
-            _status.Text = "click a row to fold/unfold  -  wheel to scroll  -  reloads on save  -  Esc to quit";
+            _status.Text =
+                "click a row to fold/unfold  -  wheel to scroll  -  arrows switch tabs  -  reloads on save  -  Esc to quit";
 
             Add(_diagnosticsFrame, _treeFrame, _status);
 
@@ -314,7 +324,8 @@ public static class UiPlayground
             var diagnosticLines = diagnosticRows.Sum(row => 1 + row.Children.Count);
             _diagnosticsFrame.Height = Dim.Absolute(Math.Clamp(diagnosticLines + 2, 3, 14));
 
-            _treeView.SetRoots([builder.BuildTree()]);
+            _cstView.SetRoots([builder.BuildCstTree()]);
+            _astView.SetRoots([builder.BuildAstTree()]);
             _treeFrame.Title = syntaxTree.HasError
                 ? $"Syntax Tree - {Path.GetFileName(_path)} (has errors)"
                 : $"Syntax Tree - {Path.GetFileName(_path)}";
@@ -330,7 +341,7 @@ public static class UiPlayground
     /// </summary>
     private sealed class RowBuilder(SyntaxTree syntaxTree, SourceFileView source)
     {
-        public Row BuildTree()
+        public Row BuildCstTree()
         {
             // The root covers the whole file, so a preview of it says nothing.
             var root = new Row([new Segment($"{syntaxTree.Root.Kind}", KindAttribute)]);
@@ -430,6 +441,148 @@ public static class UiPlayground
                     AddChildren(childRow, childNode, onErrorNode: isErrorNode, deeperLanes);
                 }
             }
+        }
+
+        /// <summary>
+        /// The AST view of the same tree: every node that got a concrete type shows its members
+        /// instead of its raw children. A node that stayed a plain <see cref="SyntaxNode"/> has no
+        /// AST shape at all, so it falls back to the CST style and is marked as such.
+        /// </summary>
+        public Row BuildAstTree() => AstNodeRow(syntaxTree.Root, leading: []);
+
+        /// <param name="leading">
+        /// Segments the row opens with, so that a member can put its own name in front of the node
+        /// it holds instead of spending a row on it.
+        /// </param>
+        private Row AstNodeRow(SyntaxNode node, IReadOnlyList<Segment> leading)
+        {
+            var isErrorNode = node.Kind is SyntaxKind.Garbage or SyntaxKind.ErrorExpr;
+            var members = AstMembers(node.GetType());
+
+            if (members is null)
+            {
+                var cstRow = new Row([.. leading, new Segment($"CSTNode {node.Kind}", ErrorKindAttribute)]);
+                foreach (var child in node.Children)
+                {
+                    if (child is Token { Kind.IsTrivia: false } token)
+                        cstRow.Children.Add(new Row(TokenSegments(token, isErrorNode)));
+                    else if (child is SyntaxNode childNode)
+                        cstRow.Children.Add(AstNodeRow(childNode, leading: []));
+                }
+
+                return cstRow;
+            }
+
+            var row = new Row([.. leading, new Segment(node.GetType().Name, KindAttribute)]);
+            foreach (var member in members)
+                row.Children.Add(AstMemberRow(node, member, isErrorNode));
+
+            return row;
+        }
+
+        private Row AstMemberRow(SyntaxNode node, PropertyInfo member, bool onErrorNode)
+        {
+            List<Segment> label =
+            [
+                new(member.Name, TokenAttribute),
+                new(": ", PlainAttribute),
+            ];
+
+            object? value;
+            try
+            {
+                // A member reads the children by position, so a tree the parser recovered into a
+                // shape the member did not expect throws right here. That is worth seeing.
+                value = member.GetValue(node);
+            }
+            catch (Exception exception)
+            {
+                return new Row([.. label, ErrorSegment(exception)]);
+            }
+
+            switch (value)
+            {
+                case null:
+                    return new Row([.. label, new Segment("<null>", CoveredTextAttribute)]);
+
+                case Token token:
+                    return new Row([.. label, .. TokenSegments(token, onErrorNode)]);
+
+                case SyntaxNode child:
+                    return AstNodeRow(child, label);
+
+                case IEnumerable<SyntaxElement> elements:
+                    return AstListRow(label, elements, onErrorNode);
+
+                default:
+                    return new Row([.. label, new Segment($"{value}", PlainAttribute)]);
+            }
+        }
+
+        private Row AstListRow(List<Segment> label, IEnumerable<SyntaxElement> elements, bool onErrorNode)
+        {
+            // Such a member usually is an iterator, so it only runs - and only throws - right here.
+            List<SyntaxElement> items;
+            try
+            {
+                items = elements.ToList();
+            }
+            catch (Exception exception)
+            {
+                return new Row([.. label, ErrorSegment(exception)]);
+            }
+
+            var row = new Row([.. label, new Segment($"[{items.Count}]", CoveredTextAttribute)]);
+            foreach (var item in items)
+            {
+                row.Children.Add(item switch
+                {
+                    Token token => new Row(TokenSegments(token, onErrorNode)),
+                    SyntaxNode child => AstNodeRow(child, leading: []),
+                    _ => new Row([new Segment($"{item}", PlainAttribute)]),
+                });
+            }
+
+            return row;
+        }
+
+        private static Segment ErrorSegment(Exception exception)
+        {
+            // Reflection wraps whatever the member threw, and the wrapper says nothing.
+            var thrown = exception is TargetInvocationException { InnerException: { } inner } ? inner : exception;
+            return new Segment($"<{thrown.GetType().Name}: {thrown.Message}>", ErrorKindAttribute);
+        }
+
+        private static readonly Dictionary<Type, IReadOnlyList<PropertyInfo>?> AstMemberCache = [];
+
+        /// <returns>
+        /// The AST members of <paramref name="type"/>, base class first, or <c>null</c> if the node
+        /// never got a type of its own and so has no AST layer to show.
+        /// </returns>
+        private static IReadOnlyList<PropertyInfo>? AstMembers(Type type)
+        {
+            if (AstMemberCache.TryGetValue(type, out var cached))
+                return cached;
+
+            IReadOnlyList<PropertyInfo>? members = null;
+            if (typeof(AstBase).IsAssignableFrom(type))
+            {
+                var collected = new List<PropertyInfo>();
+
+                // Everything AstBase and below is the syntax plumbing, not the AST shape.
+                for (var current = type; current is not null && current != typeof(AstBase); current = current.BaseType)
+                {
+                    // Walking up runs into the derived members first, so each level goes in front.
+                    collected.InsertRange(0, current
+                        .GetProperties(BindingFlags.Public | BindingFlags.Instance | BindingFlags.DeclaredOnly)
+                        .Where(property => property.CanRead && property.GetIndexParameters().Length == 0));
+                }
+
+                members = collected;
+            }
+
+            AstMemberCache[type] = members;
+            return members;
         }
 
         /// <summary>
