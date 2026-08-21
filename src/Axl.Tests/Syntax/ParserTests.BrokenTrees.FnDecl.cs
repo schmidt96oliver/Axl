@@ -26,7 +26,7 @@ public partial class ParserTests
                     · · · · '('
                     · · · · IdName
                     · · · · · ??ID
-                    · · · · Error '@@' '{' '}'
+                    · · · · Garbage '@@' '{' '}'
                     · · · · ')'
                     · · · ';'
                     · · '}'
@@ -157,7 +157,7 @@ public partial class ParserTests
                     · · · ':'
                     · · · NativeTypeName 'i32'
                     · · ','
-                    · · Error '@@'
+                    · · Garbage '@@'
                     · · Param
                     · · · IdName
                     · · · · ??ID
@@ -180,7 +180,7 @@ public partial class ParserTests
                     · · · ':'
                     · · · NativeTypeName 'i32'
                     · · ','
-                    · · Error '@@'
+                    · · Garbage '@@'
                     · · Param
                     · · · IdName
                     · · · · ??ID
@@ -238,7 +238,7 @@ public partial class ParserTests
                     · · · · ??ID
                     · · ??')'
                     · Arm
-                    · · Error '='
+                    · · Garbage '='
                     · · ??'=>'
                     · · NumberLiteral '1'
                     · ';'
@@ -585,7 +585,7 @@ public partial class ParserTests
                     · · '('
                     · · Param
                     · · · IdName 'a'
-                    · · Error '@@'
+                    · · Garbage '@@'
                     · · ??','
                     · · Param
                     · · · IdName 'b'
@@ -604,7 +604,7 @@ public partial class ParserTests
                     · IdName 'Foo'
                     · ParamList
                     · · '('
-                    · · Error '@@'
+                    · · Garbage '@@'
                     · · Param
                     · · · IdName 'a'
                     · · ','
@@ -625,7 +625,7 @@ public partial class ParserTests
                     · IdName 'Foo'
                     · ParamList
                     · · '('
-                    · · Error '@@'
+                    · · Garbage '@@'
                     · · Param
                     · · · IdName
                     · · · · ??ID
@@ -650,7 +650,7 @@ public partial class ParserTests
                     · IdName 'Foo'
                     · ParamList
                     · · '('
-                    · · Error '@@'
+                    · · Garbage '@@'
                     · · Param
                     · · · IdName
                     · · · · ??ID
@@ -670,7 +670,7 @@ public partial class ParserTests
                     · IdName 'Foo'
                     · ParamList
                     · · '('
-                    · · Error '@@'
+                    · · Garbage '@@'
                     · · Param
                     · · · IdName
                     · · · · ??ID
@@ -696,9 +696,9 @@ public partial class ParserTests
                     · · '('
                     · · Param
                     · · · IdName 'a'
-                    · · Error '@@'
+                    · · Garbage '@@'
                     · · ','
-                    · · Error '@@'
+                    · · Garbage '@@'
                     · · Param
                     · · · IdName
                     · · · · ??ID
@@ -718,7 +718,7 @@ public partial class ParserTests
                     · IdName 'Foo'
                     · ParamList
                     · · '('
-                    · · Error '@@'
+                    · · Garbage '@@'
                     · · Param
                     · · · IdName
                     · · · · ??ID
@@ -728,7 +728,7 @@ public partial class ParserTests
                     · · ','
                     · · Param
                     · · · IdName 'b'
-                    · · Error '@@'
+                    · · Garbage '@@'
                     · · ')'
                     · BlockExpr '{' '}'
                     """);
@@ -745,12 +745,12 @@ public partial class ParserTests
                     · IdName 'Foo'
                     · ParamList
                     · · '('
-                    · · Error '@@'
+                    · · Garbage '@@'
                     · · Param
                     · · · IdName
                     · · · · ??ID
                     · · ','
-                    · · Error '@@'
+                    · · Garbage '@@'
                     · · Param
                     · · · IdName
                     · · · · ??ID
@@ -771,7 +771,7 @@ public partial class ParserTests
                     ERROR MissingToken@[6, 6): Expected '('.
 
 
-                    Error
+                    Garbage
                     · NativeClause
                     · · 'native'
                     · · ??'('
@@ -795,7 +795,7 @@ public partial class ParserTests
                     ERROR MissingToken@[6, 6): Expected '('.
 
 
-                    Error
+                    Garbage
                     · NativeClause
                     · · 'native'
                     · · ??'('
@@ -819,7 +819,7 @@ public partial class ParserTests
                     ERROR MissingToken@[6, 6): Expected '('.
 
 
-                    Error
+                    Garbage
                     · NativeClause
                     · · 'native'
                     · · ??'('
@@ -844,7 +844,7 @@ public partial class ParserTests
                     ERROR MissingToken@[13, 13): Expected '('.
 
 
-                    Error
+                    Garbage
                     · 'public'
                     · NativeClause
                     · · 'native'
@@ -871,7 +871,7 @@ public partial class ParserTests
                     ERROR MissingToken@[6, 6): Expected '('.
 
 
-                    Error
+                    Garbage
                     · NativeClause
                     · · 'native'
                     · · ??'('
@@ -1002,7 +1002,7 @@ public partial class ParserTests
                     ERROR MissingToken@[13, 13): Expected '('.
 
 
-                    Error
+                    Garbage
                     · 'public'
                     · NativeClause
                     · · 'native'

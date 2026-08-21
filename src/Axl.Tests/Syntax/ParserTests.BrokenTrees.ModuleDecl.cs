@@ -60,7 +60,7 @@ public partial class ParserTests
                     · QualifiedName
                     · · IdName 'A'
                     · '{'
-                    · Error '{' '}'
+                    · Garbage '{' '}'
                     · FnDecl
                     · · 'fn'
                     · · IdName 'Survives'

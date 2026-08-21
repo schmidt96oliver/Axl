@@ -66,7 +66,7 @@ public partial class Parser
                 _scanner.Eat();
 
                 EnsureOperandExprRhs(new LeftOperator(opPrecedence.Value, opToken), anchor, out var wasAmbiguous);
-                lhs = _scanner.Close(expr, wasAmbiguous ? SyntaxKind.Error : SyntaxKind.BinaryExpr);
+                lhs = _scanner.Close(expr, wasAmbiguous ? SyntaxKind.ErrorExpr : SyntaxKind.BinaryExpr);
             }
         }
 
@@ -102,7 +102,7 @@ public partial class Parser
         if (PrecedenceTable.TryGetPrefixPrecedence(token.Kind) is Precedence prefixPrecedence)
         {
             EnsureOperandExprRhs(new LeftOperator(prefixPrecedence, token), anchor, out var wasAmbiguous);
-            return _scanner.Close(openMark, wasAmbiguous ? SyntaxKind.Error : SyntaxKind.UnaryExpr);
+            return _scanner.Close(openMark, wasAmbiguous ? SyntaxKind.ErrorExpr : SyntaxKind.UnaryExpr);
         }
 
         // Switch on everything else

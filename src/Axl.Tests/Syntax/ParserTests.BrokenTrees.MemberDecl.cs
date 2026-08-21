@@ -14,7 +14,7 @@ public partial class ParserTests
                     ERROR MissingToken@[6, 6): Expected a member ('fn' or 'module').
 
 
-                    Error 'public'
+                    Garbage 'public'
                     """);
             
             [Fact]
@@ -23,7 +23,7 @@ public partial class ParserTests
                     ERROR MissingToken@[21, 21): Expected a member ('fn' or 'module').
 
 
-                    Error 'public' 'private' 'public'
+                    Garbage 'public' 'private' 'public'
                     """);
         }
     }

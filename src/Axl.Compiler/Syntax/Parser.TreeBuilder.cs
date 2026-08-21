@@ -77,7 +77,7 @@ public partial class Parser
                     var syntaxNode = new SyntaxNode(kind, nodeBuilder.DrainToImmutable());
                     nodeBuilders.Peek().Add(syntaxNode);
 
-                    if (kind is SyntaxKind.Error)
+                    if (kind is SyntaxKind.Garbage or SyntaxKind.ErrorExpr)
                         sawErrorElement = true;
                     
                     break;

@@ -88,7 +88,7 @@ public partial class Parser
                 
                 // Eat `=` as error and insert missing `==`
                 var equalToken = _scanner.Peek();
-                _scanner.EatIntoErrorAndReport(TokenKind.DoubleEqual);
+                _scanner.EatIntoGarbageAndReport(TokenKind.DoubleEqual);
                 _scanner.MakeAndReport(TokenKind.DoubleEqual);
 
                 // Eat rhs
@@ -96,7 +96,7 @@ public partial class Parser
                     equalToken);
                 EnsureOperandExprRhs(leftOperator, anchor, out var wasAmbiguous);
 
-                predicate = _scanner.Close(equalsPredicate, wasAmbiguous ? SyntaxKind.Error : SyntaxKind.BinaryExpr);
+                predicate = _scanner.Close(equalsPredicate, wasAmbiguous ? SyntaxKind.ErrorExpr : SyntaxKind.BinaryExpr);
                 
                 // Continue pratt loop to consume operator of lower precedence.
                 // Pass in null as left operator, because that is what we passed
@@ -169,7 +169,7 @@ public partial class Parser
             
             // --- lone ";" special case
             else if (_scanner.IsAt(TokenKind.Semicolon))
-                _scanner.EatIntoErrorAndReport(ExpectedSyntax.Stmt);
+                _scanner.EatIntoGarbageAndReport(ExpectedSyntax.Stmt);
             
             // --- Closing tokens
             else if (_scanner.IsAt(TokenKind.CloseBrace))
@@ -182,7 +182,7 @@ public partial class Parser
 
                 // --- Catch common `=> expr; }` error, where arm is closed with semicolon
                 if (_scanner.IsAt(TokenKind.Semicolon) && _scanner.Peek(1).Kind is TokenKind.CloseBrace)
-                    _scanner.EatIntoErrorAndReport(TokenKind.CloseBrace);
+                    _scanner.EatIntoGarbageAndReport(TokenKind.CloseBrace);
                 
                 // Arm ends the block, so break out. After the loop,
                 // `}` will be ensured.
@@ -200,7 +200,7 @@ public partial class Parser
                 
                 // If it's followed by a ';', eat it into an error silently.
                 if (recovered && _scanner.IsAt(TokenKind.Semicolon))
-                    _scanner.EatInto(SyntaxKind.Error);
+                    _scanner.EatInto(SyntaxKind.Garbage);
             }
         }
 
@@ -219,7 +219,7 @@ public partial class Parser
         {
             // Eat the `=` as an error to be honest and construct a missing
             // `=>`, so the grammar still reads correctly.
-            _scanner.EatIntoErrorAndReport(TokenKind.RightDoubleArrow);
+            _scanner.EatIntoGarbageAndReport(TokenKind.RightDoubleArrow);
             _scanner.MakeAndReport(TokenKind.RightDoubleArrow);
         }
         else

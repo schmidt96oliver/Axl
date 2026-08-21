@@ -78,7 +78,7 @@ public partial class ParserTests
 
 
                 ExprStmt
-                · Error
+                · ErrorExpr
                 · · NumberLiteral '1'
                 · · '=='
                 · · BinaryExpr

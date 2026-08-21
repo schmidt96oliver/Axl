@@ -179,7 +179,7 @@ public partial class Parser
         if (errorExpr is MarkOpen openedErrorExpr)
         {
             _scanner.ReportUnexpectedTokensUntilHere(firstPosition, TokenKind.CloseBrace);
-            return _scanner.Close(openedErrorExpr, SyntaxKind.Error);
+            return _scanner.Close(openedErrorExpr, SyntaxKind.Garbage);
         }
         return null;
 

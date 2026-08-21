@@ -243,10 +243,10 @@ public partial class Parser
         /// Eats the next token into a <see cref="SyntaxKind.Error"/> node and reports
         /// a <see cref="Diagnostic.UnexpectedToken"/>.
         /// </summary>
-        public MarkClose EatIntoErrorAndReport(ExpectedSyntax expectedSyntax)
+        public MarkClose EatIntoGarbageAndReport(ExpectedSyntax expectedSyntax)
         {
             var first = Position;
-            var node = EatInto(SyntaxKind.Error);
+            var node = EatInto(SyntaxKind.Garbage);
             ReportUnexpectedTokensUntilHere(first, expectedSyntax);
             return node;
         }

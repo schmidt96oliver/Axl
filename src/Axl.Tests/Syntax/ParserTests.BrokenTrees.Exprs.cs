@@ -105,7 +105,7 @@ public partial class ParserTests
                     · · 'if'
                     · · TrueLiteral 'true'
                     · · Arm
-                    · · · Error '='
+                    · · · Garbage '='
                     · · · ??'=>'
                     · · · BreakExpr 'break'
                     · ';'
@@ -124,7 +124,7 @@ public partial class ParserTests
                     · · 'if'
                     · · BinaryExpr
                     · · · IdName 'a'
-                    · · · Error '='
+                    · · · Garbage '='
                     · · · ??'=='
                     · · · NumberLiteral '1'
                     · · BlockExpr
@@ -145,7 +145,7 @@ public partial class ParserTests
                     · · 'if'
                     · · BinaryExpr
                     · · · IdName 'a'
-                    · · · Error '='
+                    · · · Garbage '='
                     · · · ??'=='
                     · · · NumberLiteral '1'
                     · · Arm
@@ -167,11 +167,11 @@ public partial class ParserTests
                     · · 'if'
                     · · BinaryExpr
                     · · · IdName 'a'
-                    · · · Error '='
+                    · · · Garbage '='
                     · · · ??'=='
                     · · · NumberLiteral '1'
                     · · Arm
-                    · · · Error '='
+                    · · · Garbage '='
                     · · · ??'=>'
                     · · · TrueLiteral 'true'
                     · ';'
@@ -189,7 +189,7 @@ public partial class ParserTests
                     · · 'if'
                     · · IdName 'a'
                     · · Arm
-                    · · · Error '='
+                    · · · Garbage '='
                     · · · ??'=>'
                     · · · BlockExpr
                     · · · · '{'
@@ -210,9 +210,9 @@ public partial class ParserTests
                     ExprStmt
                     · IfExpr
                     · · 'if'
-                    · · Error
+                    · · ErrorExpr
                     · · · IdName 'a'
-                    · · · Error '='
+                    · · · Garbage '='
                     · · · ??'=='
                     · · · NumberLiteral '1'
                     · · · '=='
@@ -236,7 +236,7 @@ public partial class ParserTests
                     · · BinaryExpr
                     · · · BinaryExpr
                     · · · · IdName 'a'
-                    · · · · Error '='
+                    · · · · Garbage '='
                     · · · · ??'=='
                     · · · · NumberLiteral '1'
                     · · · 'and'
@@ -262,7 +262,7 @@ public partial class ParserTests
                     · · 'if'
                     · · BinaryExpr
                     · · · IdName 'a'
-                    · · · Error '='
+                    · · · Garbage '='
                     · · · ??'=='
                     · · · BinaryExpr
                     · · · · NumberLiteral '1'
@@ -289,7 +289,7 @@ public partial class ParserTests
                     · IdName 'A'
                     · ParamList '(' ')'
                     · Arm
-                    · · Error '='
+                    · · Garbage '='
                     · · ??'=>'
                     · · NumberLiteral '1'
                     · ';'
@@ -305,7 +305,7 @@ public partial class ParserTests
                     · LoopExpr
                     · · 'loop'
                     · · Arm
-                    · · · Error '='
+                    · · · Garbage '='
                     · · · ??'=>'
                     · · · NumberLiteral '1'
                     · ';'
@@ -326,7 +326,7 @@ public partial class ParserTests
                     · · · NumberLiteral '1'
                     · · 'else'
                     · · Arm
-                    · · · Error '='
+                    · · · Garbage '='
                     · · · ??'=>'
                     · · · NumberLiteral '2'
                     · ';'
@@ -342,7 +342,7 @@ public partial class ParserTests
                     · BlockExpr
                     · · '{'
                     · · Arm
-                    · · · Error '='
+                    · · · Garbage '='
                     · · · ??'=>'
                     · · · NumberLiteral '1'
                     · · '}'

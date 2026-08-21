@@ -394,7 +394,7 @@ public static class UiPlayground
                 }
                 else if (child is SyntaxNode childNode)
                 {
-                    var isErrorNode = childNode.Kind is SyntaxKind.Error;
+                    var isErrorNode = childNode.Kind is SyntaxKind.Garbage or SyntaxKind.ErrorExpr;
                     var kindAttribute = isErrorNode ? ErrorKindAttribute : KindAttribute;
 
                     var nonTrivia = childNode.Children

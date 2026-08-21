@@ -61,9 +61,9 @@ public partial class Parser
                     // and we eat the ';' silently. Otherwise, report the error.
                     
                     if (recovered)
-                        _scanner.EatInto(SyntaxKind.Error);
+                        _scanner.EatInto(SyntaxKind.Garbage);
                     else
-                        _scanner.EatIntoErrorAndReport(ExpectedSyntax.Stmt);
+                        _scanner.EatIntoGarbageAndReport(ExpectedSyntax.Stmt);
                 }
             }
         }
@@ -125,7 +125,7 @@ public partial class Parser
                 break;
         }
         
-        _scanner.Close(error, SyntaxKind.Error);
+        _scanner.Close(error, SyntaxKind.Garbage);
         return true;
     }
     

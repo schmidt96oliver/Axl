@@ -14,7 +14,7 @@ public partial class ParserTests
                     ERROR UnexpectedToken@[0, 1): Expected a statement, got ';'.
 
 
-                    Error ';'
+                    Garbage ';'
                     """);
             
             [Fact]
@@ -26,7 +26,7 @@ public partial class ParserTests
                     ExprStmt
                     · BlockExpr
                     · · '{'
-                    · · Error ';'
+                    · · Garbage ';'
                     · · '}'
                     """);
             
@@ -42,7 +42,7 @@ public partial class ParserTests
                     · · Arm
                     · · · '=>'
                     · · · NumberLiteral '1'
-                    · · Error ';'
+                    · · Garbage ';'
                     · · '}'
                     """);
 
@@ -52,8 +52,8 @@ public partial class ParserTests
                     ERROR UnexpectedToken@[0, 2): Expected a statement, got unknown characters.
 
 
-                    Error '@@'
-                    Error ';'
+                    Garbage '@@'
+                    Garbage ';'
                     """);
             [Fact]
             public void SemicolonAfterError_InBlock()
@@ -64,8 +64,8 @@ public partial class ParserTests
                     ExprStmt
                     · BlockExpr
                     · · '{'
-                    · · Error '@@'
-                    · · Error ';'
+                    · · Garbage '@@'
+                    · · Garbage ';'
                     · · '}'
                     """);
         }

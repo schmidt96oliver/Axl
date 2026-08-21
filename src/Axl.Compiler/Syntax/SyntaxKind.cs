@@ -2,7 +2,18 @@
 
 public enum SyntaxKind
 {
-    Error,
+    /// <summary>
+    /// Flat tokens the parser could not understand. They have
+    /// no relevance for consumers.
+    /// </summary>
+    Garbage,
+    
+    /// <summary>
+    /// An expr the parser could understand, but only
+    /// ambiguously. Only used by invalidly chained operators
+    /// now. Can be consumed with caution.
+    /// </summary>
+    ErrorExpr,
     
     // Top-Level
     TreeRoot,

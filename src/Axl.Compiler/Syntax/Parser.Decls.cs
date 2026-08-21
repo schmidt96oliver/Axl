@@ -37,7 +37,7 @@ public partial class Parser
         
         // --- Nothing valid
         _scanner.ReportMissingTokenHere(ExpectedSyntax.Member);
-        return _scanner.Close(decl, SyntaxKind.Error);
+        return _scanner.Close(decl, SyntaxKind.Garbage);
     }
     
     private MarkClose EatModuleDeclAfterModifiers(MarkOpen decl, bool onGlobalScope)
@@ -125,7 +125,7 @@ public partial class Parser
             if (_scanner.IsAt(TokenKind.Semicolon))
                 _scanner.EatKnown(TokenKind.Semicolon);
             
-            return _scanner.Close(decl, SyntaxKind.Error);
+            return _scanner.Close(decl, SyntaxKind.Garbage);
         }
 
         _scanner.EatKnown(TokenKind.FnKw);
