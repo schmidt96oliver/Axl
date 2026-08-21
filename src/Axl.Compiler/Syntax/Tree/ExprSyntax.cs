@@ -1,35 +1,8 @@
 ﻿using System.Collections.Immutable;
-using System.Diagnostics;
 
 namespace Axl.Compiler.Syntax.Tree;
 
-public abstract class AstBase(SyntaxKind kind, ImmutableArray<SyntaxElement> children) 
-    : SyntaxNode(kind, children)
-{
-    protected IEnumerable<SyntaxElement> SyntaxChildren()
-        => Children
-            .Where(child => child is Token { Kind.IsTrivia: false } 
-                or SyntaxNode { Kind: not SyntaxKind.Garbage });
-    
-    protected T NthChild<T>(int n)
-        where T : SyntaxElement
-        => MaybeNthChild<T>(n) ?? throw new UnreachableException($"Slot {n} is not present.");
-
-    protected T? MaybeNthChild<T>(int n)
-        where T : SyntaxElement
-    {
-        var child = SyntaxChildren()
-            .Skip(n)
-            .FirstOrDefault();
-        if (child is null)
-            return null;
-        
-        Guard.MustBe(child is T, $"Slot {n} is {child.GetType().Name}, but expected {typeof(T).Name}");
-        return (T)child;
-    }
-}
-
-public abstract class ExprSyntax(SyntaxKind kind, ImmutableArray<SyntaxElement> children) : AstBase(kind, children)
+public abstract class ExprSyntax(SyntaxKind kind, ImmutableArray<SyntaxElement> children) : SyntaxNode(kind, children)
 {
     
 }
@@ -37,21 +10,21 @@ public abstract class ExprSyntax(SyntaxKind kind, ImmutableArray<SyntaxElement> 
 public sealed class BinaryExprSyntax(ImmutableArray<SyntaxElement> children)
     : ExprSyntax(SyntaxKind.BinaryExpr, children)
 {
-    public ExprSyntax Left => NthChild<ExprSyntax>(0);
+    public ExprSyntax Left => NthSlot<ExprSyntax>(0);
 
-    public Token Operator => NthChild<Token>(1);
+    public Token Operator => NthSlot<Token>(1);
     
-    public ExprSyntax Right => NthChild<ExprSyntax>(2);
+    public ExprSyntax Right => NthSlot<ExprSyntax>(2);
 }
 
 public sealed class IfExprSyntax(ImmutableArray<SyntaxElement> children)
     : ExprSyntax(SyntaxKind.IfExpr, children)
 {
-    public ExprSyntax Predicate => NthChild<ExprSyntax>(1);
+    public ExprSyntax Predicate => NthSlot<ExprSyntax>(1);
 
-    public BodySyntax Body => NthChild<BodySyntax>(2);
+    public BodySyntax Body => NthSlot<BodySyntax>(2);
     
-    public ExprSyntax? ElseBody => MaybeNthChild<ExprSyntax>(4);
+    public ExprSyntax? ElseBody => NthSlotOrNull<ExprSyntax>(4);
 }
 
 public abstract class BodySyntax(SyntaxKind kind, ImmutableArray<SyntaxElement> children)
@@ -88,7 +61,7 @@ public sealed class BlockSyntax(ImmutableArray<SyntaxElement> children)
 public sealed class ArmSyntax(ImmutableArray<SyntaxElement> children)
     : BodySyntax(SyntaxKind.Arm, children)
 {
-    public ExprSyntax Expr => NthChild<ExprSyntax>(1);
+    public ExprSyntax Expr => NthSlot<ExprSyntax>(1);
 }
 
 public sealed class TrueLiteralSyntax(ImmutableArray<SyntaxElement> children)
@@ -99,7 +72,7 @@ public sealed class FalseLiteralSyntax(ImmutableArray<SyntaxElement> children)
 public sealed class NumberLiteralSyntax(ImmutableArray<SyntaxElement> children)
     : ExprSyntax(SyntaxKind.NumberLiteral, children)
 {
-    public Token ValueToken => NthChild<Token>(0);
+    public Token ValueToken => NthSlot<Token>(0);
 }
 
 public sealed class ErrorExprSyntax(ImmutableArray<SyntaxElement> children)
