@@ -74,15 +74,9 @@ Only change, when there is really no other possibility at all and consider conse
                                      ▼
                                     [VM]
 
-   * **Compilation** - immutable and lazy. Forked for edited files. Carries over old symbols/caches if possible.
+   * **Compilation** - immutable and lazy
      * Answers questions about code; always has the same answer (it arrives at lazily)
-     * Parsing, building of DeclarationTable and signature binding is _eager_
-     * Binding, Lowering, Diagnostics are _lazy_
    * **SyntaxTree**: lossless, spans recreate source text completely, carries all trivia; feeds Binding, Formatting
-   * **Symbols** = (DeclId, Name, Signature, Visibility); DeclId = (FileId, Ordinal)
-     * Based on reference equality
-     * **carry no syntax** - No nodes, no location, no `Compilation` reference reachable through symbols. Syntax is fetched on demand.
-     * **can be shared across Compilations** - Compilation forking decides whether to carry them over or not. 
    * **HIR**: Follows syntax closely (no desugaring), types and names resolved; feeds Lsp, Lowering
    * **MIR**: Register-based, three-adress-code, CFG, carries type information and syntax references. 2 Phases:
      * _Generic_: has type parameters; feeds CFG passes with diagnostics, e.g. definite assignment
