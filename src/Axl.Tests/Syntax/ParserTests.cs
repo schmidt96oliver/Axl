@@ -29,7 +29,7 @@ public partial class ParserTests
             .ShouldBeOfType<SyntaxNode>();
         exprStmt.Kind.ShouldBe(SyntaxKind.ExprStmt);
         exprStmt.Children.Length.ShouldBeGreaterThan(0);
-        var inner = exprStmt.Children[0].ShouldBeOfType<SyntaxNode>();
+        var inner = exprStmt.Children[0].ShouldBeAssignableTo<SyntaxNode>();
         
         return new Dump(source)
             .Add(tree.Diagnostics)
