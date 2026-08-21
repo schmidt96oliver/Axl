@@ -1,9 +1,8 @@
 ﻿using System.Collections.Immutable;
-using System.Diagnostics;
 
 namespace Axl.Compiler.Syntax;
 
-public sealed class SyntaxNode : SyntaxElement
+public class SyntaxNode : SyntaxElement
 {
     public SyntaxKind Kind { get; }
     

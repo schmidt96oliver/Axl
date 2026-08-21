@@ -1,6 +1,7 @@
 using System.Collections.Immutable;
 using System.Diagnostics;
 using Axl.Compiler.Diagnostics;
+using Axl.Compiler.Syntax.Tree;
 
 namespace Axl.Compiler.Syntax;
 
@@ -74,7 +75,7 @@ public partial class Parser
                 case ParseEvent.Close(var kind):
                 {
                     var nodeBuilder = nodeBuilders.Pop();
-                    var syntaxNode = new SyntaxNode(kind, nodeBuilder.DrainToImmutable());
+                    var syntaxNode = CreateNode(kind, nodeBuilder.DrainToImmutable());
                     nodeBuilders.Peek().Add(syntaxNode);
 
                     if (kind is SyntaxKind.Garbage or SyntaxKind.ErrorExpr)
@@ -104,4 +105,18 @@ public partial class Parser
 
         throw new UnreachableException("Event stream ended without closing TreeRoot.");
     }
+
+    private SyntaxNode CreateNode(SyntaxKind kind, ImmutableArray<SyntaxElement> elements)
+        => kind switch
+        {
+            SyntaxKind.BinaryExpr => new BinaryExprSyntax(elements),
+            SyntaxKind.IfExpr => new IfExprSyntax(elements),
+            SyntaxKind.BlockExpr => new BlockSyntax(elements),
+            SyntaxKind.Arm => new ArmSyntax(elements),
+            SyntaxKind.TrueLiteral => new TrueLiteralSyntax(elements),
+            SyntaxKind.FalseLiteral => new FalseLiteralSyntax(elements),
+            SyntaxKind.NumberLiteral => new NumberLiteralSyntax(elements),
+            SyntaxKind.ErrorExpr => new ErrorExprSyntax(elements),
+            _ => new SyntaxNode(kind, elements),
+        };
 }
