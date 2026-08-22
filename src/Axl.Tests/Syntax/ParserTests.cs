@@ -1,6 +1,5 @@
 ﻿using System.Text;
 using Axl.Compiler;
-using Axl.Compiler.Diagnostics;
 using Axl.Compiler.Syntax;
 using Shouldly;
 
@@ -62,7 +61,7 @@ public partial class ParserTests
         var source = SourceFileView.FromFile(path);
         var tree = Parser.Parse(source);
 
-        AllNodesRecursive(tree.Root).ShouldAllBe(node => node.FullSpan.IsPartitionedBy(node.Children.Select(child => child.FullSpan)));
+        SyntaxWalk.AllNodesRecursive(tree.Root).ShouldAllBe(node => node.FullSpan.IsPartitionedBy(node.Children.Select(child => child.FullSpan)));
     }
 
     [Theory, Corpus]
@@ -71,92 +70,21 @@ public partial class ParserTests
         var source = SourceFileView.FromFile(path);
         var tree = Parser.Parse(source);
 
-        source.Span.IsPartitionedBy(AllTokenSpansRecursive(tree.Root)).ShouldBeTrue();
+        source.Span.IsPartitionedBy(SyntaxWalk.AllTokenSpansRecursive(tree.Root)).ShouldBeTrue();
     }
 
 
-    /// <summary>
-    /// Every character prefix of every corpus file is what that file looked like at
-    /// some keystroke while it was typed. Character granularity (rather than token)
-    /// is deliberate: it is what produces half-formed tokens like an unterminated
-    /// string or one half of a "=&gt;".
-    /// </summary>
+    /// <inheritdoc cref="CorpusMutations.Prefixes"/>
     [Fact]
     public void PrefixTruncationOnCorpus_KeepsInvariants()
-        => CheckMutatedCorpus(Prefixes);
+        => CorpusMutations.Check(CorpusMutations.Prefixes, CheckTreeInvariants,
+            "A truncated corpus file broke tree invariants.");
 
-    /// <summary>
-    /// Deleting a single token models a backspace over a whole word, which is the
-    /// other transient state an editing session produces constantly.
-    /// </summary>
+    /// <inheritdoc cref="CorpusMutations.TokenDeletions"/>
     [Fact]
     public void TokenDeletionOnCorpus_KeepsInvariants()
-        => CheckMutatedCorpus(TokenDeletions);
-
-
-    private static IEnumerable<(string Label, string Text)> Prefixes(string text)
-    {
-        for (var length = 0; length <= text.Length; length++)
-            yield return ($"prefix of length {length}", text[..length]);
-    }
-
-    private static IEnumerable<(string Label, string Text)> TokenDeletions(string text)
-    {
-        var tokens = Lexer.Lex(SourceFileView.FromText(text), new DiagnosticBag());
-
-        foreach (var token in tokens)
-        {
-            if (token.Kind.IsTrivia || token.Kind is TokenKind.Eof)
-                continue;
-
-            yield return ($"without {token.Kind}@{token.FullSpan}",
-                text[..token.FullSpan.First] + text[token.FullSpan.End..]);
-        }
-    }
-
-    /// <summary>
-    /// Runs <paramref name="mutate"/> over every corpus file and asserts
-    /// <see cref="CheckTreeInvariants"/> on each mutation. Failing sources are
-    /// written verbatim to the test output.
-    /// </summary>
-    private static void CheckMutatedCorpus(Func<string, IEnumerable<(string Label, string Text)>> mutate)
-    {
-        // A broken invariant usually breaks for a whole family of mutations at once,
-        // so a handful of examples is enough to work with and keeps the output readable.
-        const int maxReportedFailures = 10;
-
-        var output = TestContext.Current.TestOutputHelper;
-        var caseCount = 0;
-        var failureCount = 0;
-
-        var corpusFiles = Directory.EnumerateFiles(CorpusAttribute.Root, "*.taxl", SearchOption.AllDirectories);
-        foreach (var path in corpusFiles)
-        {
-            var name = Path.GetRelativePath(CorpusAttribute.Root, path);
-
-            foreach (var (label, text) in mutate(File.ReadAllText(path)))
-            {
-                caseCount++;
-
-                if (CheckTreeInvariants(text) is not string violation)
-                    continue;
-
-                failureCount++;
-                if (failureCount > maxReportedFailures)
-                    continue;
-
-                output?.WriteLine($"=== FAILURE {failureCount}: {name}, {label} ===");
-                output?.WriteLine(violation);
-                output?.WriteLine($"--- source ({text.Length} chars) ---");
-                output?.WriteLine(text);
-                output?.WriteLine("--- end of source ---");
-                output?.WriteLine("");
-            }
-        }
-
-        output?.WriteLine($"{caseCount} cases, {failureCount} failures.");
-        failureCount.ShouldBe(0, "Mutated corpus broke tree invariants. See test output for the failing sources.");
-    }
+        => CorpusMutations.Check(CorpusMutations.TokenDeletions, CheckTreeInvariants,
+            "A corpus file with a token deleted broke tree invariants.");
 
     /// <summary>
     /// Parses <paramref name="text"/> and checks the invariants that must hold for
@@ -168,11 +96,12 @@ public partial class ParserTests
     /// <item>Concatenating all token texts reproduces the source verbatim.</item>
     /// </list>
     /// </summary>
-    /// <returns><c>null</c> if all invariants hold, otherwise a description of the first violation.</returns>
-    private static string? CheckTreeInvariants(string text)
+    /// <returns>Nothing if all invariants hold, otherwise the first violation.</returns>
+    private static IEnumerable<Finding> CheckTreeInvariants(string text)
     {
-        SourceFileView source;
-        SyntaxTree tree;
+        var source = default(SourceFileView);
+        SyntaxTree? tree = null;
+        Exception? parseError = null;
         try
         {
             source = SourceFileView.FromText(text);
@@ -180,55 +109,42 @@ public partial class ParserTests
         }
         catch (Exception e)
         {
-            return $"(1) Parsing threw {e.GetType().Name}: {e.Message}";
+            parseError = e;
         }
 
-        foreach (var node in AllNodesRecursive(tree.Root))
+        if (tree is null)
         {
-            if (!node.FullSpan.IsPartitionedBy(node.Children.Select(child => child.FullSpan)))
-                return $"(2) {node.Kind}@{node.FullSpan} is not partitioned by its children.";
+            yield return new Finding($"(1) Parsing throws {parseError!.GetType().Name}",
+                $"Parsing threw {parseError.GetType().Name}: {parseError.Message}");
+            yield break;
         }
 
-        var tokenSpans = AllTokenSpansRecursive(tree.Root).ToList();
+        foreach (var node in SyntaxWalk.AllNodesRecursive(tree.Root))
+        {
+            if (node.FullSpan.IsPartitionedBy(node.Children.Select(child => child.FullSpan)))
+                continue;
+
+            yield return new Finding("(2) Node is not partitioned by its children",
+                $"{node.Kind}@{node.FullSpan} is not partitioned by its children.");
+            yield break;
+        }
+
+        var tokenSpans = SyntaxWalk.AllTokenSpansRecursive(tree.Root).ToList();
         if (!source.Span.IsPartitionedBy(tokenSpans))
-            return $"(3) Source@{source.Span} is not partitioned by its {tokenSpans.Count} tokens.";
+        {
+            yield return new Finding("(3) Source is not partitioned by its tokens",
+                $"Source@{source.Span} is not partitioned by its {tokenSpans.Count} tokens.");
+            yield break;
+        }
 
         var concatenated = new StringBuilder();
         foreach (var span in tokenSpans)
             concatenated.Append(source.GetText(span));
 
         if (concatenated.ToString() != text)
-            return $"(4) Concatenating all tokens does not reproduce the source. Got:\n{concatenated}";
-
-        return null;
-    }
-
-
-    /// <summary>
-    /// <paramref name="node"/> and all its descendants, parents before children.
-    /// </summary>
-    private static IEnumerable<SyntaxNode> AllNodesRecursive(SyntaxNode node)
-    {
-        yield return node;
-
-        foreach (var child in node.Children.OfType<SyntaxNode>())
-        foreach (var childNode in AllNodesRecursive(child))
-            yield return childNode;
-    }
-
-    /// <summary>
-    /// Spans of all tokens under <paramref name="element"/>, in document order.
-    /// Includes trivia and missing (empty) tokens.
-    /// </summary>
-    private static IEnumerable<SourceSpan> AllTokenSpansRecursive(SyntaxElement element)
-    {
-        if (element is Token token)
-            yield return token.FullSpan;
-        else if (element is SyntaxNode node)
         {
-            var childTokenSpans = node.Children.SelectMany(AllTokenSpansRecursive);
-            foreach (var childTokenSpan in childTokenSpans)
-                yield return childTokenSpan;
+            yield return new Finding("(4) Token texts do not reproduce the source",
+                $"Concatenating all tokens does not reproduce the source. Got:\n{concatenated}");
         }
     }
 }
