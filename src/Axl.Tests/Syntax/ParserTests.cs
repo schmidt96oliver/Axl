@@ -26,7 +26,7 @@ public partial class ParserTests
 
         var exprStmt = tree.Root.Children[..^1]
             .ShouldHaveSingleItem()
-            .ShouldBeOfType<SyntaxNode>();
+            .ShouldBeAssignableTo<SyntaxNode>();
         exprStmt.Kind.ShouldBe(SyntaxKind.ExprStmt);
         exprStmt.Children.Length.ShouldBeGreaterThan(0);
         var inner = exprStmt.Children[0].ShouldBeAssignableTo<SyntaxNode>();
