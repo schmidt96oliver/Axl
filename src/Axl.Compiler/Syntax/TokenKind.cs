@@ -85,5 +85,8 @@ public static class TokenKindExtensions
 
         public bool HasValue =>
             kind is TokenKind.Identifier or TokenKind.NumberLiteral or TokenKind.StringText;
+
+        public bool IsModifier =>
+            kind is TokenKind.PublicKw or TokenKind.PrivateKw;
     }
 }

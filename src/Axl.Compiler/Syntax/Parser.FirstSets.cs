@@ -16,6 +16,13 @@ public partial class Parser
     /// </remarks>
     private static class FirstSet
     {
+        static FirstSet()
+        {
+            Debug.Assert(Enum.GetValues<TokenKind>().All(
+                kind => FirstSet.Modifier.Contains(kind) == kind.IsModifier),
+                $"{nameof(FirstSet.Modifier)} and {nameof(TokenKindExtensions.get_IsModifier)} out of sync.");    
+        }
+        
         public static readonly TokenSet NativeTypeName = TokenSet.Of(
             TokenKind.I32Kw, TokenKind.I64Kw, TokenKind.F32Kw, TokenKind.F64Kw, TokenKind.StringKw,
             TokenKind.BoolKw,

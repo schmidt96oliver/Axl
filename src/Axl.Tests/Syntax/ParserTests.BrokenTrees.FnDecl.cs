@@ -91,8 +91,9 @@ public partial class ParserTests
                     · ParamList
                     · · '('
                     · · ??')'
-                    · '->'
-                    · NativeTypeName 'i32'
+                    · TypeAnnotationClause
+                    · · '->'
+                    · · NativeTypeName 'i32'
                     · BlockExpr '{' '}'
                     """);
             [Fact]
@@ -139,8 +140,9 @@ public partial class ParserTests
                     · · · IdName
                     · · · · ??ID
                     · · ??')'
-                    · '->'
-                    · NativeTypeName 'i32'
+                    · TypeAnnotationClause
+                    · · '->'
+                    · · NativeTypeName 'i32'
                     · BlockExpr '{' '}'
                     """);
             [Fact]
@@ -189,8 +191,9 @@ public partial class ParserTests
                     · · · IdName
                     · · · · ??ID
                     · · ??')'
-                    · '->'
-                    · NativeTypeName 'string'
+                    · TypeAnnotationClause
+                    · · '->'
+                    · · NativeTypeName 'string'
                     · BlockExpr '{' '}'
                     """);
             
@@ -581,8 +584,9 @@ public partial class ParserTests
                     · ParamList
                     · · ??'('
                     · · ??')'
-                    · '->'
-                    · NativeTypeName 'i32'
+                    · TypeAnnotationClause
+                    · · '->'
+                    · · NativeTypeName 'i32'
                     · BlockExpr '{' '}'
                     """);
             

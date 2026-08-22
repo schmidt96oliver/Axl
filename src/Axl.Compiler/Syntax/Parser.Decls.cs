@@ -138,13 +138,19 @@ public partial class Parser
         // --- Return type
         if (_scanner.IsAt(TokenKind.RightArrow))
         {
+            var returnTypeAnnotation = _scanner.Open();
             _scanner.EatKnown(TokenKind.RightArrow);
 
             // --- Special case "never" keyword
             if (_scanner.Peek() is IdentifierToken { Identifier: "never" })
+            {
+                var nativeTypeName = _scanner.Open();
                 _scanner.EatAs(TokenKind.NeverKw);
+                _scanner.Close(nativeTypeName, SyntaxKind.NativeTypeName);
+            }
             else
                 EnsureTypeName();
+            _scanner.Close(returnTypeAnnotation, SyntaxKind.TypeAnnotationClause);
         }
 
         if (hasNativeClause)
