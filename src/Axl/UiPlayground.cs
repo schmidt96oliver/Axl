@@ -565,11 +565,11 @@ public static class UiPlayground
                 return cached;
 
             IReadOnlyList<PropertyInfo>? members = null;
-            if (typeof(SyntaxNode).IsAssignableFrom(type))
+            if (typeof(SyntaxNode).IsAssignableFrom(type) && type != typeof(SyntaxNode))
             {
                 var collected = new List<PropertyInfo>();
 
-                // Everything AstBase and below is the syntax plumbing, not the AST shape.
+                // Everything SyntaxNode and below is the syntax plumbing, not the AST shape.
                 for (var current = type; current is not null && current != typeof(SyntaxNode); current = current.BaseType)
                 {
                     // Walking up runs into the derived members first, so each level goes in front.

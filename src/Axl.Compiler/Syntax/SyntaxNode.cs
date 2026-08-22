@@ -41,38 +41,24 @@ public class SyntaxNode : SyntaxElement
     }
     
     
-    /// <summary>
-    /// Enumerates children that have a syntax role. It excludes trivia
-    /// token and garbage nodes. Since the parser inserts missing items,
-    /// slots in this enumeration are stable.
-    /// </summary>
-    protected IEnumerable<SyntaxElement> SyntaxChildren()
-        => Children
-            .Where(child => child is Token { Kind.IsTrivia: false } 
-                or SyntaxNode { Kind: not SyntaxKind.Garbage });
-    
-    /// <summary>
-    /// Returns the <paramref name="n"/>th child. Throws, if it is null
-    /// or not of type <typeparamref name="T"/>.
-    /// </summary>
-    protected T NthSlot<T>(int n)
+    protected T? NthChildOfTypeOrNull<T>(int n)
         where T : SyntaxElement
-        => NthSlotOrNull<T>(n) ?? throw new ArgumentException($"Slot {n} is not present.", nameof(n));
-
-    /// <summary>
-    /// Returns the <paramref name="n"/>th syntax child or <c>null</c> if it is not
-    /// present. Throws if present, but not type <typeparamref name="T"/>.
-    /// </summary>
-    protected T? NthSlotOrNull<T>(int n)
-        where T : SyntaxElement
-    {
-        var child = SyntaxChildren()
+        => Children.OfType<T>()
             .Skip(n)
             .FirstOrDefault();
-        if (child is null)
-            return null;
-        
-        Guard.MustBe(child is T, $"Slot {n} is {child.GetType().Name}, but expected {typeof(T).Name}");
-        return (T)child;
-    }
+
+    protected T NthChildOfType<T>(int n)
+        where T: SyntaxElement
+        => NthChildOfTypeOrNull<T>(n) ??
+           throw new ArgumentException($"Node does not have {n} nodes of type {typeof(T).Name}.", nameof(n));
+    
+    protected Token? NthTokenOrNull(int n)
+        => Children.OfType<Token>()
+            .Where(t => !t.Kind.IsTrivia)
+            .Skip(n)
+            .FirstOrDefault();
+    
+    protected Token NthToken(int n)
+        => NthTokenOrNull(n) ?? 
+           throw new ArgumentException($"Node does not have {n} tokens.", nameof(n));
 }

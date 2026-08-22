@@ -2,7 +2,9 @@
                                        ≽(◕ ᴗ ◕)≼
 
 **Next**: 
-AST
+  * If: else clause
+  * VarDecl: initializer clause, type annotation
+  * block: Items = <Expr>; Arm = <Arm>; FnDecls = <FnDecl>
 
 **Small points**:
 * SyntaxNode enumerator (all nodes, BFS/DFS, all tokens in sequence)
