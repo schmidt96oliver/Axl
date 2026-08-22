@@ -62,7 +62,7 @@ public partial class ParserTests
         var source = SourceFileView.FromFile(path);
         var tree = Parser.Parse(source);
 
-        AllNodesRecursive(tree.Root).ShouldAllBe(node => node.Span.IsPartitionedBy(node.Children.Select(child => child.Span)));
+        AllNodesRecursive(tree.Root).ShouldAllBe(node => node.FullSpan.IsPartitionedBy(node.Children.Select(child => child.FullSpan)));
     }
 
     [Theory, Corpus]
@@ -109,8 +109,8 @@ public partial class ParserTests
             if (token.Kind.IsTrivia || token.Kind is TokenKind.Eof)
                 continue;
 
-            yield return ($"without {token.Kind}@{token.Span}",
-                text[..token.Span.First] + text[token.Span.End..]);
+            yield return ($"without {token.Kind}@{token.FullSpan}",
+                text[..token.FullSpan.First] + text[token.FullSpan.End..]);
         }
     }
 
@@ -185,8 +185,8 @@ public partial class ParserTests
 
         foreach (var node in AllNodesRecursive(tree.Root))
         {
-            if (!node.Span.IsPartitionedBy(node.Children.Select(child => child.Span)))
-                return $"(2) {node.Kind}@{node.Span} is not partitioned by its children.";
+            if (!node.FullSpan.IsPartitionedBy(node.Children.Select(child => child.FullSpan)))
+                return $"(2) {node.Kind}@{node.FullSpan} is not partitioned by its children.";
         }
 
         var tokenSpans = AllTokenSpansRecursive(tree.Root).ToList();
@@ -223,7 +223,7 @@ public partial class ParserTests
     private static IEnumerable<SourceSpan> AllTokenSpansRecursive(SyntaxElement element)
     {
         if (element is Token token)
-            yield return token.Span;
+            yield return token.FullSpan;
         else if (element is SyntaxNode node)
         {
             var childTokenSpans = node.Children.SelectMany(AllTokenSpansRecursive);

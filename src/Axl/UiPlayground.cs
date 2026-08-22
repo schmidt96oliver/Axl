@@ -611,7 +611,7 @@ public static class UiPlayground
             const int maxLength = 10;
 
             // Trivia at the edges is not what the node is about, so the tighter span reads better.
-            var text = Escape(source.GetText(node.SyntaxSpan ?? node.Span));
+            var text = Escape(source.GetText(node.Span ?? node.FullSpan));
             if (text.Length > maxLength)
                 text = $"{text[..maxLength]}…";
 
@@ -624,7 +624,7 @@ public static class UiPlayground
                 onErrorNode ? InErrorTokenAttribute : TokenAttribute;
             var text = token.IsMissing
                 ? $"{token.Kind.DisplayName}?"
-                : $"'{Escape(source.GetText(token.Span))}'";
+                : $"'{Escape(source.GetText(token.FullSpan))}'";
 
             var segments = new List<Segment> { new(text, attribute) };
             // if (token.IsMissing)

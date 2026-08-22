@@ -57,17 +57,17 @@ public class SemanticTokensHandler(ILanguageServerFacade facade) : SemanticToken
         var isInOutput = false;
         foreach (var token in EnumerateTokens(tree.Root))
         {
-            if (token.Span.Length == 0)
+            if (token.FullSpan.Length == 0)
                 continue;
-            if (token.Span.First >= tree.Source.File.Text.Length)
+            if (token.FullSpan.First >= tree.Source.File.Text.Length)
                 continue;
 
-            var startLinePos = tree.Source.File.GetLinePosition(token.Span.First);
+            var startLinePos = tree.Source.File.GetLinePosition(token.FullSpan.First);
             switch (token.Kind)
             {
                 case TokenKind.Comment:
                 {
-                    var text = tree.Source.File.GetText(token.Span);
+                    var text = tree.Source.File.GetText(token.FullSpan);
                     if (text.StartsWith("//@") || text.StartsWith("//~"))
                     {
                         var length = 3;
@@ -103,7 +103,7 @@ public class SemanticTokensHandler(ILanguageServerFacade facade) : SemanticToken
                     else if (!isInOutput)
                     {
                         // Entire line is a comment
-                        builder.Push(startLinePos.Line, startLinePos.Column, token.Span.Length,
+                        builder.Push(startLinePos.Line, startLinePos.Column, token.FullSpan.Length,
                             (SemanticTokenType?)SemanticTokenType.Comment);
                     }
                     else if (isInOutput)
@@ -125,14 +125,14 @@ public class SemanticTokensHandler(ILanguageServerFacade facade) : SemanticToken
 
                 case TokenKind.StringStart:
                 case TokenKind.StringEnd:
-                    builder.Push(startLinePos.Line, startLinePos.Column, token.Span.Length,
+                    builder.Push(startLinePos.Line, startLinePos.Column, token.FullSpan.Length,
                         (SemanticTokenType?)SemanticTokenType.String);
                     break;
 
                 case TokenKind.StringText:
                 {
                     // Partition the string text into escape and non-escape
-                    var text = tree.Source.File.GetText(token.Span);
+                    var text = tree.Source.File.GetText(token.FullSpan);
 
                     var stringTokenStart = 0;
                     for (var i = 0; i < text.Length; i++)
@@ -198,7 +198,7 @@ public class SemanticTokensHandler(ILanguageServerFacade facade) : SemanticToken
                 case TokenKind.F64Kw:
                 case TokenKind.I32Kw:
                 case TokenKind.I64Kw:
-                    builder.Push(startLinePos.Line, startLinePos.Column, token.Span.Length,
+                    builder.Push(startLinePos.Line, startLinePos.Column, token.FullSpan.Length,
                         (SemanticTokenType?)SemanticTokenType.Keyword);
                     break;
             }

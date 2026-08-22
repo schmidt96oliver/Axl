@@ -43,7 +43,7 @@ public class Dump(SourceFileView source)
             }
             
             _builder.Append($"- {token.Kind}: \"");
-            AddLiteralString(source.GetText(token.Span));
+            AddLiteralString(source.GetText(token.FullSpan));
             _builder.Append('"');
 
             switch (token)
@@ -87,7 +87,7 @@ public class Dump(SourceFileView source)
                 _builder.Append(prefix);
                 _builder.AppendLine(token.IsMissing
                     ? $"{GetMissingDisplayText(token)}"
-                    : $"\'{source.GetText(token.Span)}\'");
+                    : $"\'{source.GetText(token.FullSpan)}\'");
                 break;
 
                 string GetMissingDisplayText(Token tkn)
@@ -111,7 +111,7 @@ public class Dump(SourceFileView source)
                     foreach (var child in children.OfType<Token>())
                     {
                         _builder.Append(" \'");
-                        AddLiteralString(source.GetText(child.Span));
+                        AddLiteralString(source.GetText(child.FullSpan));
                         _builder.Append("\'");
                     }
 
@@ -167,7 +167,7 @@ public class Dump(SourceFileView source)
                 return;
 
             case Token token:
-                AddLiteralString(source.GetText(token.Span));
+                AddLiteralString(source.GetText(token.FullSpan));
                 _builder.Append(' ');
                 break;
 

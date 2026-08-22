@@ -5,8 +5,8 @@ namespace Axl.Compiler.Syntax;
 public class Token : SyntaxElement
 {
     public TokenKind Kind { get; }
-    public sealed override SourceSpan Span { get; }
-    public sealed override SourceSpan? SyntaxSpan => Kind.IsTrivia ? null : Span;
+    public sealed override SourceSpan FullSpan { get; }
+    public sealed override SourceSpan? Span => Kind.IsTrivia ? null : FullSpan;
     public bool IsMissing { get; }
 
     /// <summary>
@@ -20,7 +20,7 @@ public class Token : SyntaxElement
         if (isMissing) Guard.MustBe(span.IsEmpty);
 
         Kind = kind;
-        Span = span;
+        FullSpan = span;
         IsMissing = isMissing;
     }
 
@@ -32,7 +32,7 @@ public class Token : SyntaxElement
     public Token WithKind(TokenKind kind)
     {
         Guard.MustBe(!kind.HasValue);
-        return new Token(Span, kind);
+        return new Token(FullSpan, kind);
     }
     
     

@@ -9,10 +9,10 @@ public class SyntaxNode : SyntaxElement
     public ImmutableArray<SyntaxElement> Children { get; }
     
     /// <inheritdoc/>
-    public override SourceSpan Span { get; }
+    public override SourceSpan FullSpan { get; }
     
     /// <inheritdoc/>
-    public override SourceSpan? SyntaxSpan { get; }
+    public override SourceSpan? Span { get; }
 
 
     /// <param name="children">
@@ -26,18 +26,18 @@ public class SyntaxNode : SyntaxElement
         Kind = kind;
         Children = children;
         
-        Span = SourceSpan.FromTo(children[0].Span, children[^1].Span);
+        FullSpan = SourceSpan.FromTo(children[0].FullSpan, children[^1].FullSpan);
         
-        // Calculate SyntaxSpan
-        if (children.FirstOrDefault(element => element.SyntaxSpan is not null) is SyntaxElement firstNonTrivia)
+        // Calculate Span
+        if (children.FirstOrDefault(element => element.Span is not null) is SyntaxElement firstNonTrivia)
         {
             // Since there was a first element, Last will always find something.
-            var lastNonTrivia = children.Last(element => element.SyntaxSpan is not null);
-            SyntaxSpan = SourceSpan.FromTo(firstNonTrivia.SyntaxSpan!.Value,
-                lastNonTrivia.SyntaxSpan!.Value);
+            var lastNonTrivia = children.Last(element => element.Span is not null);
+            Span = SourceSpan.FromTo(firstNonTrivia.Span!.Value,
+                lastNonTrivia.Span!.Value);
         }
         else
-            SyntaxSpan = null;
+            Span = null;
     }
 
     public IEnumerable<SyntaxNode> NodesOfKind(SyntaxKind kind)

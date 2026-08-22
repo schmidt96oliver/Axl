@@ -81,7 +81,7 @@ public sealed class Lexer
             if (_tokens.Count > 0 && _tokens[^1].Kind is TokenKind.UnknownCharacters)
             {
                 _tokens[^1] = Token.MakeSimple(
-                    SourceSpan.FromTo(_tokens[^1].Span, span),
+                    SourceSpan.FromTo(_tokens[^1].FullSpan, span),
                     TokenKind.UnknownCharacters);
             }
             else
