@@ -3,14 +3,8 @@
 
 **Next**: 
 
-* ?? rename VarDecl -> VarStmt; UsingDecl -> UsingStmt
-* ?? rename GlobalModuleDecl to GlobalModule**; Decl = Member
-  * --or-- FnMemberSyntax, ModuleMemberSyntax, ...
-* ?? Rename Span->FullSpan, SyntaxSpan->Span
-
 **Small points**:
 * SyntaxNode enumerator (all nodes, BFS/DFS, all tokens in sequence)
-* ?? rename `QualifiedName` to `PathName`
 * rename `FileId` to `UnitId` (because it's not a _file_ per se. Several `FileId` could point to the same file on disc)
 
 # Semantics

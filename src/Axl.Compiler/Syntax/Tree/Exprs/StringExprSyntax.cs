@@ -17,7 +17,10 @@ public sealed class StringTextSyntax(ImmutableArray<SyntaxElement> children)
 public sealed class StringInterpolationSyntax(ImmutableArray<SyntaxElement> children)
     : StringPartSyntax(SyntaxKind.StringInterpolation, children)
 {
-    public ExprSyntax Expr => NthChildOfType<ExprSyntax>(0);
+    /// <summary>
+    /// <c>null</c>, if the interpolation is empty.
+    /// </summary>
+    public ExprSyntax? Expr => NthChildOfTypeOrNull<ExprSyntax>(0);
 }
 
 public sealed class StringExprSyntax(ImmutableArray<SyntaxElement> children)
