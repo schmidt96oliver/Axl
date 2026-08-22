@@ -123,7 +123,7 @@ public partial class Parser
             SyntaxKind.AssignExpr => new AssignExprSyntax(elements),
             SyntaxKind.IfExpr => new IfExprSyntax(elements),
             SyntaxKind.LoopExpr => new LoopExprSyntax(elements),
-            SyntaxKind.BlockExpr => new BlockSyntax(elements),
+            SyntaxKind.BlockExpr => new BlockExprSyntax(elements),
             SyntaxKind.Arm => new ArmSyntax(elements),
             SyntaxKind.TrueLiteral => new TrueLiteralSyntax(elements),
             SyntaxKind.FalseLiteral => new FalseLiteralSyntax(elements),

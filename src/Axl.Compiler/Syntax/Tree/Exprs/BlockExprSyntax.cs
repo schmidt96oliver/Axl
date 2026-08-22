@@ -18,7 +18,7 @@ public partial record BlockItem
         };
 }
 
-public sealed class BlockSyntax(ImmutableArray<SyntaxElement> children)
+public sealed class BlockExprSyntax(ImmutableArray<SyntaxElement> children)
     : BodySyntax(SyntaxKind.BlockExpr, children)
 {
     public IEnumerable<BlockItem> Items
