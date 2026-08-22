@@ -73,7 +73,7 @@ public partial class Parser
 
         public static readonly TokenSet ModuleDecl = Modifier | ModuleDeclAfterModifiers;
 
-        public static readonly TokenSet MemberDecl = FnDecl | ModuleDecl;
+        public static readonly TokenSet Member = FnDecl | ModuleDecl;
 
 
         // --- Not FIRST sets, but alternations the ungrammar spells out.

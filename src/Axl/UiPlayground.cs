@@ -527,7 +527,7 @@ public static class UiPlayground
                         .Select(part => (SyntaxElement)(part switch
                         {
                             RootItem.Stmt(var stmt) => stmt,
-                            RootItem.MemberDecl(var memberDecl) => memberDecl,
+                            RootItem.Member(var memberSyntax) => memberSyntax,
                             RootItem.GlobalModuleDecl(var decl) => decl
                         })), onErrorNode);
 

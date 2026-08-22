@@ -19,9 +19,9 @@ public partial class Parser
     }
 
 
-    private MarkClose EatMemberDecl(Anchor anchor, bool onGlobalScope)
+    private MarkClose EatMember(Anchor anchor, bool onGlobalScope)
     {
-        Debug.Assert(_scanner.IsAt(FirstSet.MemberDecl));
+        Debug.Assert(_scanner.IsAt(FirstSet.Member));
 
         var decl = _scanner.Open();
         
@@ -79,13 +79,13 @@ public partial class Parser
         
         // --- Eat members
         _scanner.EatKnown(TokenKind.OpenBrace);
-        var moduleBodyAnchor = Anchor.Forced | FirstSet.MemberDecl | TokenKind.CloseBrace;
+        var moduleBodyAnchor = Anchor.Forced | FirstSet.Member | TokenKind.CloseBrace;
         foreach (var _ in _scanner.MustEatEachIteration())
         {
             RecoverToAndReport(moduleBodyAnchor, ExpectedSyntax.Member);
 
-            if (_scanner.IsAt(FirstSet.MemberDecl))
-                EatMemberDecl(moduleBodyAnchor, onGlobalScope: false);
+            if (_scanner.IsAt(FirstSet.Member))
+                EatMember(moduleBodyAnchor, onGlobalScope: false);
             else
             {
                 // Could be `}` or Eof

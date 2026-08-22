@@ -2,12 +2,12 @@
 and Parse* names where they are sum ungrammars.
 
 # Top-Level
-File            = (Stmt | MemberDecl | GlobalModuleDecl)*
+File            = (Stmt | Member | GlobalModuleDecl)*
 
 GlobalModuleDecl= "module" Path ";"
 
 ## Member Declarations
-MemberDecl      = ModifierList (FnDecl | ModuleDecl)
+Member      = ModifierList (FnDecl | ModuleDecl)
                 
 
 ModifierList    = ("public" | "private")*
@@ -25,7 +25,7 @@ ParamList       = "(" ")"
                 | "(" Param ("," Param)* ")"
 Param           = IdName TypeAnnotation       
 
-ModuleDecl      = "module" Path "{" (Stmt | MemberDecl)* "}"
+ModuleDecl      = "module" Path "{" (Stmt | Member)* "}"
 
 ## Statements
 Stmt        = ExprStmt

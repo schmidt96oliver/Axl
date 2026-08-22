@@ -6,7 +6,7 @@ public partial class ParserTests
 {
     public partial class BrokenTrees
     {
-        public sealed class MemberDecl
+        public sealed class Members
         {
             [Fact]
             public void StrayModifiers_1()
