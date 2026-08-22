@@ -34,14 +34,12 @@ public partial class Parser
 
         // Stmt can start from Expr or Decl. Recover only from
         // Decl, because Expr would be too permissive.
-        var fileAnchor = Anchor.From(FirstSet.Member)
-            | TokenKind.UsingKw | TokenKind.ModuleKw
-            | TokenKind.VarKw;
+        var fileAnchor = Anchor.From(FirstSet.Member) | FirstSet.NonExprStmt;
 
         foreach (var _ in _scanner.MustEatEachIteration())
         {
-            if (_scanner.IsAt(FirstSet.Stmt))
-                EatStmt(fileAnchor | TokenKind.Semicolon);
+            if (_scanner.IsAt(FirstSet.Stmt | TokenKind.UsingKw))
+                EatStmtOrUsing(fileAnchor | TokenKind.Semicolon);
             else if (_scanner.IsAt(FirstSet.Member))
                 EatMember(fileAnchor, onGlobalScope: true);
             else

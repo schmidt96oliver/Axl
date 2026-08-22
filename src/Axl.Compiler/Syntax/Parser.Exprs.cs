@@ -151,23 +151,17 @@ public partial class Parser
         // VarKw, because Expr would be too permissive.
         // FnDecl, `=>`, `}` is what we handle here. `;` is
         // a natural boundary for statements.
-        var blockAnchor = anchor |
-                          TokenKind.VarKw | FirstSet.FnDecl |
+        var blockAnchor = anchor | FirstSet.NonExprStmt | FirstSet.Member |
                           FirstSet.Arm | TokenKind.CloseBrace |
                           TokenKind.Semicolon;
 
         foreach (var _ in _scanner.MustEatEachIteration())
         {
             // --- Statement or FnDecl
-            if (_scanner.IsAt(FirstSet.Stmt))
-                EatStmt(blockAnchor);
-            else if (_scanner.IsAt(FirstSet.FnDecl))
-            {
-                // Member will parse modifiers and fn declaration. It would
-                // parse other members as well, but we special cased 'fn' for that reason
-                // here.
+            if (_scanner.IsAt(FirstSet.Stmt | TokenKind.UsingKw))
+                EatStmtOrUsing(blockAnchor);
+            else if (_scanner.IsAt(FirstSet.Member))
                 EatMember(blockAnchor, onGlobalScope: false);
-            }
             
             // --- lone ";" special case
             else if (_scanner.IsAt(TokenKind.Semicolon))

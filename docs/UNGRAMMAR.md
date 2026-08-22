@@ -2,13 +2,14 @@
 and Parse* names where they are sum ungrammars.
 
 # Top-Level
-File            = (Stmt | Member | GlobalModuleDecl)*
+File            = BlockItem*
+BlockItem       = (Stmt | Member)
 
-GlobalModuleDecl= "module" Path ";"
 
 ## Member Declarations
-Member      = ModifierList (FnDecl | ModuleDecl)
+Member      = ModifierList (FnDecl | ModuleDecl | GlobalModuleDecl)
                 
+GlobalModuleDecl= "module" Path ";"
 
 ModifierList    = ("public" | "private")*
 // DeclBinder only accepts correct combinations
@@ -65,7 +66,7 @@ Arm         = "=>" Expr
 BodiedExpr  = Block | If | Loop
 //          = Expressions that own a body.
 
-Block       = "{" (Stmt | FnDecl)* Arm? "}"
+Block       = "{" (BlockItem)* Arm? "}"
 
 If          = "if" OperandExpr Body ElseClause?     
 // Condition is OperandExpr to disallow any unparenthesized body inside it.

@@ -52,7 +52,9 @@ public partial class Parser
 
         public static readonly TokenSet Expr = TailExpr | BodiedExpr;
 
-        public static readonly TokenSet Stmt = Expr | TokenKind.VarKw | TokenKind.UsingKw;
+        public static readonly TokenSet NonExprStmt = TokenSet.Of(TokenKind.VarKw, TokenKind.UsingKw);
+        
+        public static readonly TokenSet Stmt = Expr | NonExprStmt;
 
         /// <summary>
         /// `=` as error production.
@@ -74,7 +76,7 @@ public partial class Parser
         public static readonly TokenSet ModuleDecl = Modifier | ModuleDeclAfterModifiers;
 
         public static readonly TokenSet Member = FnDecl | ModuleDecl;
-
+        
 
         // --- Not FIRST sets, but alternations the ungrammar spells out.
 
