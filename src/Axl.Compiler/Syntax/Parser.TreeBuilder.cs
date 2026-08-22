@@ -59,7 +59,7 @@ public partial class Parser
                     Debug.Assert(nodeBuilders.Count == 1, "TreeRoot was not the root.");
                     Debug.Assert(nextToken == tokens.Length, "TreeRoot did not eat all tokens.");
 
-                    var rootNode = new SyntaxNode(SyntaxKind.TreeRoot, nodeBuilders.Pop().DrainToImmutable());
+                    var rootNode = new TreeRootSyntax(nodeBuilders.Pop().DrainToImmutable());
                     
                     Debug.Assert(sawErrorElement == diagnosticBag.HasError,
                         sawErrorElement

@@ -17,59 +17,58 @@ public enum SyntaxKind
     
     // Top-Level
     TreeRoot,
-    ExprStmt, //x
+    ExprStmt,
     
     // Declarations
     UsingDecl,
     GlobalModuleDecl,
     ModuleDecl,
-    VarDecl, //x
+    VarDecl,
     FnDecl,
     
     // Type Expressions
-    QualifiedName, //x
-    NativeTypeName, //x
+    QualifiedName,
+    NativeTypeName,
     
     // Operand Expressions
-    TrueLiteral, //x
-    FalseLiteral, //x
-    NumberLiteral, //x
+    TrueLiteral,
+    FalseLiteral,
+    NumberLiteral,
     
-    IdName, //x
+    IdName,
     
-    GroupExpr, //x
-    BinaryExpr, //x
-    UnaryExpr, //x
-    CallExpr, //x
-    GetMemberExpr, //x
+    GroupExpr,
+    BinaryExpr,
+    UnaryExpr,
+    CallExpr,
+    GetMemberExpr,
     
     // Tail Expressions
-    BreakExpr, //x
-    ContinueExpr, //x
-    ReturnExpr, //x
-    AssignExpr, //x
+    BreakExpr,
+    ContinueExpr,
+    ReturnExpr,
+    AssignExpr,
     
     // Bodied Expressions
     BlockExpr,
-    IfExpr, //x
-    LoopExpr, //x
+    IfExpr,
+    LoopExpr,
     
     // Strings
-    StringExpr, //x
-    StringInterpolation, //
-    StringText, //
+    StringExpr,
+    StringInterpolation,
+    StringText,
     
     // Arm
-    Arm, //x
+    Arm,
     
     // Clauses
-    ArgList, //
-    Arg, //
+    ArgList,
+    Arg,
     ParamList,
     Param,
     NativeClause,
-    ElseClause //
-    ,
+    ElseClause,
     TypeAnnotationClause,
     InitializerClause
 }

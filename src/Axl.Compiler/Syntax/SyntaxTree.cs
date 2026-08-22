@@ -1,5 +1,6 @@
 using System.Collections.Immutable;
 using Axl.Compiler.Diagnostics;
+using Axl.Compiler.Syntax.Tree;
 
 namespace Axl.Compiler.Syntax;
 
@@ -8,7 +9,7 @@ public sealed class SyntaxTree
     /// <summary>
     /// The <see cref="SyntaxKind.TreeRoot"/> node spanning the whole file.
     /// </summary>
-    public SyntaxNode Root { get; }
+    public TreeRootSyntax Root { get; }
     
     public SourceFileView Source { get; }
 
@@ -16,7 +17,7 @@ public sealed class SyntaxTree
 
     public bool HasError { get; }
 
-    internal SyntaxTree(SyntaxNode root, SourceFileView source, ImmutableArray<Diagnostic> diagnostics, bool hasError)
+    internal SyntaxTree(TreeRootSyntax root, SourceFileView source, ImmutableArray<Diagnostic> diagnostics, bool hasError)
     {
         Guard.MustBe(root.Kind is SyntaxKind.TreeRoot);
 

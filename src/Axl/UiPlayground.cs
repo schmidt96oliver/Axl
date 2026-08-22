@@ -529,6 +529,14 @@ public static class UiPlayground
                             BlockItem.Stmt(var stmt) => stmt,
                             BlockItem.FnDecl(var fnDecl) => fnDecl
                         })), onErrorNode);
+                case IEnumerable<RootItem> rootItems:
+                    return AstListRow(label, rootItems
+                        .Select(part => (SyntaxElement)(part switch
+                        {
+                            RootItem.Stmt(var stmt) => stmt,
+                            RootItem.MemberDecl(var memberDecl) => memberDecl,
+                            RootItem.GlobalModuleDecl(var decl) => decl
+                        })), onErrorNode);
 
                 default:
                     return new Row([.. label, new Segment($"{value}", PlainAttribute)]);
