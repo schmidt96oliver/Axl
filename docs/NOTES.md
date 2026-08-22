@@ -2,9 +2,12 @@
                                        ≽(◕ ᴗ ◕)≼
 
 **Next**: 
-  * If: else clause
-  * VarDecl: initializer clause, type annotation
-  * block: Items = <Expr>; Arm = <Arm>; FnDecls = <FnDecl>
+
+* ?? rename VarDecl -> VarStmt; UsingDecl -> UsingStmt
+* ?? rename GlobalModuleDecl to GlobalModule**; Decl = Member
+  * --or-- FnMemberSyntax, ModuleMemberSyntax, ...
+* ?? StringPartSyntax, have complete syntax
+* ?? Rename Span->FullSpan, SyntaxSpan->Span
 
 **Small points**:
 * SyntaxNode enumerator (all nodes, BFS/DFS, all tokens in sequence)
