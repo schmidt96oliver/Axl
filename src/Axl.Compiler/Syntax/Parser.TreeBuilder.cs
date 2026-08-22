@@ -1,4 +1,4 @@
-using System.Collections.Immutable;
+﻿using System.Collections.Immutable;
 using System.Diagnostics;
 using Axl.Compiler.Diagnostics;
 using Axl.Compiler.Syntax.Tree;
@@ -109,14 +109,26 @@ public partial class Parser
     private SyntaxNode CreateNode(SyntaxKind kind, ImmutableArray<SyntaxElement> elements)
         => kind switch
         {
+            SyntaxKind.IdName => new IdNameSyntax(elements),
+            SyntaxKind.NativeTypeName => new NativeTypeName(elements),
+            SyntaxKind.QualifiedName => new QualifiedNameSyntax(elements),
             SyntaxKind.BinaryExpr => new BinaryExprSyntax(elements),
+            SyntaxKind.UnaryExpr => new UnaryExprSyntax(elements),
+            SyntaxKind.GroupExpr => new GroupExprSyntax(elements),
+            SyntaxKind.CallExpr => new CallExprSyntax(elements),
+            SyntaxKind.GetMemberExpr => new GetMemberExprSyntax(elements),
+            SyntaxKind.BreakExpr => new BreakExprSyntax(elements),
+            SyntaxKind.ContinueExpr => new ContinueExprSyntax(elements),
+            SyntaxKind.ReturnExpr => new ReturnExprSyntax(elements),
+            SyntaxKind.AssignExpr => new AssignExprSyntax(elements),
             SyntaxKind.IfExpr => new IfExprSyntax(elements),
-            SyntaxKind.ElseClause => new ElseClauseSyntax(elements),
+            SyntaxKind.LoopExpr => new LoopExprSyntax(elements),
             SyntaxKind.BlockExpr => new BlockSyntax(elements),
             SyntaxKind.Arm => new ArmSyntax(elements),
             SyntaxKind.TrueLiteral => new TrueLiteralSyntax(elements),
             SyntaxKind.FalseLiteral => new FalseLiteralSyntax(elements),
             SyntaxKind.NumberLiteral => new NumberLiteralSyntax(elements),
+            SyntaxKind.StringExpr => new StringExprSyntax(elements),
             SyntaxKind.ErrorExpr => new ErrorExprSyntax(elements),
             _ => new SyntaxNode(kind, elements),
         };

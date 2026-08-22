@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using System.Reflection;
 using Axl.Compiler;
 using Axl.Compiler.Diagnostics;
@@ -513,6 +514,14 @@ public static class UiPlayground
 
                 case IEnumerable<SyntaxElement> elements:
                     return AstListRow(label, elements, onErrorNode);
+                
+                case IEnumerable<StringPart> stringParts:
+                    return AstListRow(label, stringParts
+                        .Select(part => (SyntaxElement)(part switch
+                        {
+                            StringPart.Text(var token) => token,
+                            StringPart.Interpolation(var expr) => expr
+                        })), onErrorNode);
 
                 default:
                     return new Row([.. label, new Segment($"{value}", PlainAttribute)]);

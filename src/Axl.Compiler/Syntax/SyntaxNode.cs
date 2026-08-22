@@ -39,26 +39,35 @@ public class SyntaxNode : SyntaxElement
         else
             SyntaxSpan = null;
     }
+
+    public IEnumerable<SyntaxNode> NodesOfKind(SyntaxKind kind)
+        => Children.OfType<SyntaxNode>().Where(node => node.Kind == kind);
     
+    public SyntaxNode? NthNodeOfKindOrNull(SyntaxKind kind, int n)
+        => NodesOfKind(kind).Skip(n).FirstOrDefault();
+
+    public SyntaxNode NthNodeOfKind(SyntaxKind kind, int n)
+        => NthNodeOfKindOrNull(kind, n)
+           ?? throw new ArgumentException($"Node does not have {n} nodes of kind {kind}.", nameof(n));
     
-    protected T? NthChildOfTypeOrNull<T>(int n)
+    public T? NthChildOfTypeOrNull<T>(int n)
         where T : SyntaxElement
         => Children.OfType<T>()
             .Skip(n)
             .FirstOrDefault();
 
-    protected T NthChildOfType<T>(int n)
+    public T NthChildOfType<T>(int n)
         where T: SyntaxElement
         => NthChildOfTypeOrNull<T>(n) ??
            throw new ArgumentException($"Node does not have {n} nodes of type {typeof(T).Name}.", nameof(n));
     
-    protected Token? NthTokenOrNull(int n)
+    public Token? NthTokenOrNull(int n)
         => Children.OfType<Token>()
             .Where(t => !t.Kind.IsTrivia)
             .Skip(n)
             .FirstOrDefault();
     
-    protected Token NthToken(int n)
+    public Token NthToken(int n)
         => NthTokenOrNull(n) ?? 
            throw new ArgumentException($"Node does not have {n} tokens.", nameof(n));
 }
