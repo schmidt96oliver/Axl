@@ -514,22 +514,6 @@ public static class UiPlayground
 
                 case IEnumerable<SyntaxElement> elements:
                     return AstListRow(label, elements, onErrorNode);
-                
-                case IEnumerable<BlockItem> blockItems:
-                    return AstListRow(label, blockItems
-                        .Select(part => (SyntaxElement)(part switch
-                        {
-                            BlockItem.Stmt(var stmt) => stmt,
-                            BlockItem.FnDecl(var fnDecl) => fnDecl
-                        })), onErrorNode);
-                case IEnumerable<RootItem> rootItems:
-                    return AstListRow(label, rootItems
-                        .Select(part => (SyntaxElement)(part switch
-                        {
-                            RootItem.Stmt(var stmt) => stmt,
-                            RootItem.Member(var memberSyntax) => memberSyntax,
-                            RootItem.GlobalModuleDecl(var decl) => decl
-                        })), onErrorNode);
 
                 default:
                     return new Row([.. label, new Segment($"{value}", PlainAttribute)]);
