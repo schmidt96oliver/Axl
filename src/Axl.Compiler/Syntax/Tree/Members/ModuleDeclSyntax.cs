@@ -2,7 +2,7 @@
 
 namespace Axl.Compiler.Syntax.Tree;
 
-public sealed class ModuleSyntax(ImmutableArray<SyntaxElement> children)
+public sealed class ModuleDeclSyntax(ImmutableArray<SyntaxElement> children)
     : MemberSyntax(SyntaxKind.ModuleDecl, children)
 {
     public PathSyntax Name => Children.FirstOfType<PathSyntax>();
