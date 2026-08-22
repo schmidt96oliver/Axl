@@ -5,6 +5,6 @@ namespace Axl.Compiler.Syntax.Tree;
 public sealed class AssignExprSyntax(ImmutableArray<SyntaxElement> children)
     : ExprSyntax(SyntaxKind.AssignExpr, children)
 {
-    public ExprSyntax Target => NthChildOfType<ExprSyntax>(0);
-    public ExprSyntax Value => NthChildOfType<ExprSyntax>(1);
+    public ExprSyntax Target => Children.FirstOfType<ExprSyntax>();
+    public ExprSyntax Value => Children.SecondOfType<ExprSyntax>();
 }

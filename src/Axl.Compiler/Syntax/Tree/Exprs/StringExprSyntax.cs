@@ -8,7 +8,7 @@ public abstract class StringPartSyntax(SyntaxKind kind, ImmutableArray<SyntaxEle
 public sealed class StringTextSyntax(ImmutableArray<SyntaxElement> children)
     : StringPartSyntax(SyntaxKind.StringText, children)
 {
-    public StringTextToken Text => NthToken(0) as StringTextToken
+    public StringTextToken Text => Children.FirstNonTriviaToken() as StringTextToken
                                    ?? throw new ArgumentException(
                                        $"Token on {nameof(StringTextSyntax)} was not {nameof(StringTextToken)}",
                                        nameof(children));
@@ -20,13 +20,12 @@ public sealed class StringInterpolationSyntax(ImmutableArray<SyntaxElement> chil
     /// <summary>
     /// <c>null</c>, if the interpolation is empty.
     /// </summary>
-    public ExprSyntax? Expr => NthChildOfTypeOrNull<ExprSyntax>(0);
+    public ExprSyntax? Expr => Children.FirstOfTypeOrNull<ExprSyntax>();
 }
 
 public sealed class StringExprSyntax(ImmutableArray<SyntaxElement> children)
     : ExprSyntax(SyntaxKind.StringExpr, children)
 {
     public IEnumerable<StringPartSyntax> Parts
-        => Children
-            .OfType<StringPartSyntax>();
+        => Children.OfType<StringPartSyntax>();
 }

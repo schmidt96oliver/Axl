@@ -5,5 +5,5 @@ namespace Axl.Compiler.Syntax.Tree;
 public sealed class BreakExprSyntax(ImmutableArray<SyntaxElement> children)
     : ExprSyntax(SyntaxKind.BreakExpr, children)
 {
-    public ExprSyntax? Expr => NthChildOfTypeOrNull<ExprSyntax>(0);
+    public ExprSyntax? Expr => Children.FirstOfTypeOrNull<ExprSyntax>();
 }

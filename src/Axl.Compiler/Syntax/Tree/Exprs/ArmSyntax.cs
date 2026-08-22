@@ -10,5 +10,5 @@ namespace Axl.Compiler.Syntax.Tree;
 public sealed class ArmSyntax(ImmutableArray<SyntaxElement> children)
     : BodySyntax(SyntaxKind.Arm, children)
 {
-    public ExprSyntax Expr => NthChildOfType<ExprSyntax>(0);
+    public ExprSyntax Expr => Children.FirstOfType<ExprSyntax>();
 }

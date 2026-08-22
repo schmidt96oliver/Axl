@@ -5,11 +5,12 @@ namespace Axl.Compiler.Syntax.Tree;
 public sealed class IfExprSyntax(ImmutableArray<SyntaxElement> children)
     : ExprSyntax(SyntaxKind.IfExpr, children)
 {
-    public ExprSyntax Predicate => NthChildOfType<ExprSyntax>(0);
+    public ExprSyntax Predicate => Children.FirstOfType<ExprSyntax>();
 
-    public BodySyntax Body => NthChildOfType<BodySyntax>(0);
+    // Body is an expression, but bodies are strictly not allowed
+    // in predicate position and the parser never puts them there.
+    public BodySyntax Body => Children.FirstOfType<BodySyntax>();
 
-    public ExprSyntax? ElseBody => 
-        NthNodeOfKindOrNull(SyntaxKind.ElseClause, 0)?
-            .NthChildOfType<ExprSyntax>(0);
+    public ExprSyntax? ElseBody => Children.FirstOfKindOrNull(SyntaxKind.ElseClause)?
+        .Children.FirstOfType<ExprSyntax>();
 }

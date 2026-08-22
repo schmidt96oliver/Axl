@@ -5,9 +5,9 @@ namespace Axl.Compiler.Syntax.Tree;
 public sealed class GetMemberExprSyntax(ImmutableArray<SyntaxElement> children)
     : ExprSyntax(SyntaxKind.GetMemberExpr, children)
 {
-    public ExprSyntax Left => NthChildOfType<ExprSyntax>(0);
+    public ExprSyntax Left => Children.FirstOfType<ExprSyntax>();
 
-    public IdNameSyntax Member => ChildrenAfter(TokenKind.Dot)
-        .OfType<IdNameSyntax>()
-        .First();
+    public IdNameSyntax Member => Children
+        .AfterToken(TokenKind.Dot)
+        .FirstOfType<IdNameSyntax>();
 }

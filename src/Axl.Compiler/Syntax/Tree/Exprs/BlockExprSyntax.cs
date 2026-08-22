@@ -22,9 +22,10 @@ public sealed class BlockExprSyntax(ImmutableArray<SyntaxElement> children)
     : BodySyntax(SyntaxKind.BlockExpr, children)
 {
     public IEnumerable<BlockItem> Items
-        => Children.OfType<SyntaxNode>()
-            .Where(node => node is StmtSyntax or FnSyntax)
+        => Children
+            .NodesOfAnyType<StmtSyntax, FnSyntax>()
             .Select(BlockItem.From);
-    
-    public ArmSyntax? Arm => NthChildOfTypeOrNull<ArmSyntax>(0);
+
+    public ArmSyntax? Arm => Children
+        .FirstOfTypeOrNull<ArmSyntax>();
 }

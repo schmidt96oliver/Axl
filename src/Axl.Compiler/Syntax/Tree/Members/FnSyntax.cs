@@ -5,10 +5,11 @@ namespace Axl.Compiler.Syntax.Tree;
 public sealed class ParamSyntax(ImmutableArray<SyntaxElement> children)
     : SyntaxNode(SyntaxKind.Param, children)
 {
-    public IdentifierToken Name => NthChildOfType<IdNameSyntax>(0).Token;
+    public IdentifierToken Name => Children.FirstOfType<IdNameSyntax>().Token;
     
-    public TypeNameSyntax? TypeAnnotation => NthNodeOfKindOrNull(SyntaxKind.TypeAnnotationClause, 0)?
-        .NthChildOfType<TypeNameSyntax>(0);
+    public TypeNameSyntax? TypeAnnotation => Children
+        .FirstOfKindOrNull(SyntaxKind.TypeAnnotationClause)?
+        .Children.FirstOfType<TypeNameSyntax>();
 }
 
 public sealed class FnSyntax(ImmutableArray<SyntaxElement> children)
@@ -18,21 +19,21 @@ public sealed class FnSyntax(ImmutableArray<SyntaxElement> children)
         => Children.OfType<Token>().Where(token => token.Kind.IsModifier);
 
     public StringExprSyntax? NativeName
-        => NthNodeOfKindOrNull(SyntaxKind.NativeClause, 0)?
-            .NthChildOfType<StringExprSyntax>(0);
+        => Children.FirstOfKindOrNull(SyntaxKind.NativeClause)?
+            .Children.FirstOfType<StringExprSyntax>();
     
-    public IdentifierToken Name => NthChildOfType<IdNameSyntax>(0).Token;
+    public IdentifierToken Name => Children.FirstOfType<IdNameSyntax>().Token;
 
     public IEnumerable<ParamSyntax> Parameters
-        => NthNodeOfKind(SyntaxKind.ParamList, 0)
+        => Children.FirstOfKind(SyntaxKind.ParamList)
             .Children.OfType<ParamSyntax>();
 
     public TypeNameSyntax? ReturnTypeAnnotation
-        => NthNodeOfKindOrNull(SyntaxKind.TypeAnnotationClause, 0)?
-            .NthChildOfType<TypeNameSyntax>(0);
+        => Children.FirstOfKindOrNull(SyntaxKind.TypeAnnotationClause)?
+        .Children.FirstOfType<TypeNameSyntax>();
     
     /// <summary>
     /// Only <c>null</c>, if <see cref="NativeName"/> is not <c>null</c>.
     /// </summary>
-    public BodySyntax? Body => NthChildOfTypeOrNull<BodySyntax>(0);
+    public BodySyntax? Body => Children.FirstOfTypeOrNull<BodySyntax>();
 }

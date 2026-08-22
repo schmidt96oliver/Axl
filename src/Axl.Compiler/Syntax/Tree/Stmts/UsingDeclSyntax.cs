@@ -5,5 +5,5 @@ namespace Axl.Compiler.Syntax.Tree;
 public sealed class UsingDeclSyntax(ImmutableArray<SyntaxElement> children)
     : StmtSyntax(SyntaxKind.UsingDecl, children)
 {
-    public PathSyntax Name => NthChildOfType<PathSyntax>(0);
+    public PathSyntax Name => Children.FirstOfType<PathSyntax>();
 }
