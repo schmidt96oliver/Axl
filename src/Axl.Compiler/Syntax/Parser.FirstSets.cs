@@ -52,7 +52,7 @@ public partial class Parser
 
         public static readonly TokenSet Expr = TailExpr | BodiedExpr;
 
-        public static readonly TokenSet Stmt = Expr | TokenKind.VarKw;
+        public static readonly TokenSet Stmt = Expr | TokenKind.VarKw | TokenKind.UsingKw;
 
         /// <summary>
         /// `=` as error production.

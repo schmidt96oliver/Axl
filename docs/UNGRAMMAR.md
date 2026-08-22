@@ -2,9 +2,8 @@
 and Parse* names where they are sum ungrammars.
 
 # Top-Level
-File            = (Stmt | MemberDecl | GlobalModuleDecl | UsingDecl)*
+File            = (Stmt | MemberDecl | GlobalModuleDecl)*
 
-UsingDecl       = "using" QualifiedName ";"
 GlobalModuleDecl= "module" QualifiedName ";"
 
 ## Member Declarations
@@ -31,6 +30,9 @@ ModuleDecl      = "module" QualifiedName "{" (Stmt | MemberDecl)* "}"
 ## Statements
 Stmt        = ExprStmt
             | VarDecl
+            | UsingDecl
+
+UsingDecl   = "using" QualifiedName ";"
 
 ExprStmt    = BodiedExpr ";"§               // ";" omissible, iff last token is "}"
             | (OperandExpr | TailExpr) ";"  // ";" always required

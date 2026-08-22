@@ -23,6 +23,9 @@ public partial class Parser
         if (_scanner.IsAt(TokenKind.VarKw))
             return EatVarDecl(anchor);
 
+        if (_scanner.IsAt(TokenKind.UsingKw))
+            return EatUsingDecl();
+
         throw new UnreachableException($"{nameof(FirstSet.Stmt)} too large.");
     }
 

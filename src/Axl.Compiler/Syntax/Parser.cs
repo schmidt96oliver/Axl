@@ -44,8 +44,6 @@ public partial class Parser
                 EatStmt(fileAnchor | TokenKind.Semicolon);
             else if (_scanner.IsAt(FirstSet.MemberDecl))
                 EatMemberDecl(fileAnchor, onGlobalScope: true);
-            else if (_scanner.IsAt(TokenKind.UsingKw))
-                EatUsingDecl();
             else
             {
                 // Recover to the next Stmt start, which includes Expr.
