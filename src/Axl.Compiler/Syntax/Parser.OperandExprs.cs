@@ -153,8 +153,17 @@ public partial class Parser
     /// </param>
     private void EnsureOperandExprRhs(LeftOperator left, Anchor anchor, out bool wasAmbiguous)
     {
+        // Short-circuit if at Eof, because the loop below would not
+        // enter and in cases like `1 + [EOF]` leave the binary expression
+        // unfinished.
+        if (_scanner.IsAtEnd)
+        {
+            EnsureOperandExpr(left, anchor);
+            wasAmbiguous = false;
+            return;
+        }
+        
         ImmutableArray<Token>.Builder? ambiguousOperators = null;
-
         var previousOperatorPrecedence = left.Precedence;
 
         foreach (var _ in _scanner.MustEatEachIteration())
