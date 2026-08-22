@@ -17,13 +17,13 @@ public enum SyntaxKind
     
     // Top-Level
     TreeRoot,
-    ExprStmt,
+    ExprStmt, //x
     
     // Declarations
     UsingDecl,
     GlobalModuleDecl,
     ModuleDecl,
-    VarDecl,
+    VarDecl, //x
     FnDecl,
     
     // Type Expressions

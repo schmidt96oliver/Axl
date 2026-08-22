@@ -182,10 +182,28 @@ public sealed class LoopExprSyntax(ImmutableArray<SyntaxElement> children)
 public abstract class BodySyntax(SyntaxKind kind, ImmutableArray<SyntaxElement> children)
     : ExprSyntax(kind, children);
 
+[Union]
+public partial record BlockItem
+{
+    public partial record Stmt(StmtSyntax Syntax);
+    public partial record FnDecl(FnDeclSyntax Syntax);
+
+    public static BlockItem From(SyntaxNode node)
+        => node switch
+        {
+            StmtSyntax stmt => new Stmt(stmt),
+            FnDeclSyntax fnDecl => new FnDecl(fnDecl),
+            _ => throw new ArgumentException($"{nameof(node)} is not a valid block item.", nameof(node))
+        };
+}
+
 public sealed class BlockSyntax(ImmutableArray<SyntaxElement> children)
     : BodySyntax(SyntaxKind.BlockExpr, children)
 {
-    //TODO: Add Items as Stmt | FnDecl
+    public IEnumerable<BlockItem> Items
+        => Children.OfType<SyntaxNode>()
+            .Where(node => node is StmtSyntax or FnDeclSyntax)
+            .Select(BlockItem.From);
     
     public ArmSyntax? Arm => NthChildOfTypeOrNull<ArmSyntax>(0);
 }

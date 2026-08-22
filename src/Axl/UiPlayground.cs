@@ -522,6 +522,13 @@ public static class UiPlayground
                             StringPart.Text(var token) => token,
                             StringPart.Interpolation(var expr) => expr
                         })), onErrorNode);
+                case IEnumerable<BlockItem> blockItems:
+                    return AstListRow(label, blockItems
+                        .Select(part => (SyntaxElement)(part switch
+                        {
+                            BlockItem.Stmt(var stmt) => stmt,
+                            BlockItem.FnDecl(var fnDecl) => fnDecl
+                        })), onErrorNode);
 
                 default:
                     return new Row([.. label, new Segment($"{value}", PlainAttribute)]);
