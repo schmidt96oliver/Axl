@@ -6,7 +6,6 @@
 * ?? rename VarDecl -> VarStmt; UsingDecl -> UsingStmt
 * ?? rename GlobalModuleDecl to GlobalModule**; Decl = Member
   * --or-- FnMemberSyntax, ModuleMemberSyntax, ...
-* ?? StringPartSyntax, have complete syntax
 * ?? Rename Span->FullSpan, SyntaxSpan->Span
 
 **Small points**:

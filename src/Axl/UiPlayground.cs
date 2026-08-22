@@ -515,13 +515,6 @@ public static class UiPlayground
                 case IEnumerable<SyntaxElement> elements:
                     return AstListRow(label, elements, onErrorNode);
                 
-                case IEnumerable<StringPart> stringParts:
-                    return AstListRow(label, stringParts
-                        .Select(part => (SyntaxElement)(part switch
-                        {
-                            StringPart.Text(var token) => token,
-                            StringPart.Interpolation(var expr) => expr
-                        })), onErrorNode);
                 case IEnumerable<BlockItem> blockItems:
                     return AstListRow(label, blockItems
                         .Select(part => (SyntaxElement)(part switch

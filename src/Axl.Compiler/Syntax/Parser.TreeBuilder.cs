@@ -129,6 +129,8 @@ public partial class Parser
             SyntaxKind.FalseLiteral => new FalseLiteralSyntax(elements),
             SyntaxKind.NumberLiteral => new NumberLiteralSyntax(elements),
             SyntaxKind.StringExpr => new StringExprSyntax(elements),
+            SyntaxKind.StringText => new StringTextSyntax(elements),
+            SyntaxKind.StringInterpolation => new StringInterpolationSyntax(elements),
             SyntaxKind.ErrorExpr => new ErrorExprSyntax(elements),
             SyntaxKind.ExprStmt => new ExprStmtSyntax(elements),
             SyntaxKind.VarDecl => new VarDeclSyntax(elements),

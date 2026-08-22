@@ -1,34 +1,29 @@
 ﻿using System.Collections.Immutable;
-using Dunet;
 
 namespace Axl.Compiler.Syntax.Tree;
 
-[Union]
-public partial record StringPart
+public abstract class StringPartSyntax(SyntaxKind kind, ImmutableArray<SyntaxElement> children)
+    : SyntaxNode(kind, children);
+
+public sealed class StringTextSyntax(ImmutableArray<SyntaxElement> children)
+    : StringPartSyntax(SyntaxKind.StringText, children)
 {
-    public partial record Text(StringTextToken Token);
+    public StringTextToken Text => NthToken(0) as StringTextToken
+                                   ?? throw new ArgumentException(
+                                       $"Token on {nameof(StringTextSyntax)} was not {nameof(StringTextToken)}",
+                                       nameof(children));
+}
 
-    public partial record Interpolation(ExprSyntax Expr);
-
-    public static StringPart From(SyntaxNode node)
-        => node.Kind switch
-        {
-            SyntaxKind.StringInterpolation => new Interpolation(node.NthChildOfType<ExprSyntax>(0)),
-            SyntaxKind.StringText => new Text(node.NthToken(0) as StringTextToken
-                                              ?? throw new ArgumentException(
-                                                  $"Token on {nameof(SyntaxKind.StringText)} was not {nameof(StringTextToken)}",
-                                                  nameof(node))),
-
-            _ => throw new ArgumentException($"{nameof(node)} is not a string part.", nameof(node))
-        };
+public sealed class StringInterpolationSyntax(ImmutableArray<SyntaxElement> children)
+    : StringPartSyntax(SyntaxKind.StringInterpolation, children)
+{
+    public ExprSyntax Expr => NthChildOfType<ExprSyntax>(0);
 }
 
 public sealed class StringExprSyntax(ImmutableArray<SyntaxElement> children)
     : ExprSyntax(SyntaxKind.StringExpr, children)
 {
-    public IEnumerable<StringPart> Parts
+    public IEnumerable<StringPartSyntax> Parts
         => Children
-            .OfType<SyntaxNode>()
-            .Where(node => node.Kind is SyntaxKind.StringText or SyntaxKind.StringInterpolation)
-            .Select(StringPart.From);
+            .OfType<StringPartSyntax>();
 }
