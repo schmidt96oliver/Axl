@@ -12,7 +12,7 @@ public sealed class ParamSyntax(ImmutableArray<SyntaxElement> children)
         .Children.FirstOfType<TypeNameSyntax>();
 }
 
-public sealed class FnSyntax(ImmutableArray<SyntaxElement> children)
+public sealed class FnDeclSyntax(ImmutableArray<SyntaxElement> children)
     : MemberSyntax(SyntaxKind.FnDecl, children)
 {
     public IEnumerable<Token> Modifiers

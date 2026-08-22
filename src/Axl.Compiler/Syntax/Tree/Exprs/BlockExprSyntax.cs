@@ -7,13 +7,13 @@ namespace Axl.Compiler.Syntax.Tree;
 public partial record BlockItem
 {
     public partial record Stmt(StmtSyntax Syntax);
-    public partial record FnDecl(FnSyntax Syntax);
+    public partial record FnDecl(FnDeclSyntax Syntax);
 
     public static BlockItem From(SyntaxNode node)
         => node switch
         {
             StmtSyntax stmt => new Stmt(stmt),
-            FnSyntax fnDecl => new FnDecl(fnDecl),
+            FnDeclSyntax fnDecl => new FnDecl(fnDecl),
             _ => throw new ArgumentException($"{nameof(node)} is not a valid block item.", nameof(node))
         };
 }
@@ -23,7 +23,7 @@ public sealed class BlockExprSyntax(ImmutableArray<SyntaxElement> children)
 {
     public IEnumerable<BlockItem> Items
         => Children
-            .NodesOfAnyType<StmtSyntax, FnSyntax>()
+            .NodesOfAnyType<StmtSyntax, FnDeclSyntax>()
             .Select(BlockItem.From);
 
     public ArmSyntax? Arm => Children
