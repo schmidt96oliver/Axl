@@ -7,6 +7,12 @@ namespace Axl.Compiler.Syntax.Tree;
 public abstract class StmtSyntax(SyntaxKind kind, ImmutableArray<SyntaxElement> children)
     : SyntaxNode(kind, children);
 
+public sealed class UsingDeclSyntax(ImmutableArray<SyntaxElement> children)
+    : StmtSyntax(SyntaxKind.UsingDecl, children)
+{
+    public QualifiedNameSyntax Name => NthChildOfType<QualifiedNameSyntax>(0);
+}
+
 public sealed class ExprStmtSyntax(ImmutableArray<SyntaxElement> children)
     : StmtSyntax(SyntaxKind.ExprStmt, children)
 {
