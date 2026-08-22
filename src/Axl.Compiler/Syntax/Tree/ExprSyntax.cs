@@ -25,8 +25,11 @@ public sealed class VarDeclSyntax(ImmutableArray<SyntaxElement> children)
         .NthChildOfType<ExprSyntax>(0);
 }
 
+public abstract class MemberDeclSyntax(SyntaxKind kind, ImmutableArray<SyntaxElement> children)
+    : SyntaxNode(kind, children);
+
 public sealed class FnDeclSyntax(ImmutableArray<SyntaxElement> children)
-    : SyntaxNode(SyntaxKind.FnDecl, children)
+    : MemberDeclSyntax(SyntaxKind.FnDecl, children)
 {
     public IEnumerable<Token> Modifiers
         => Children.OfType<Token>().Where(token => token.Kind.IsModifier);
@@ -49,6 +52,21 @@ public sealed class FnDeclSyntax(ImmutableArray<SyntaxElement> children)
     /// Only <c>null</c>, if <see cref="NativeName"/> is not <c>null</c>.
     /// </summary>
     public BodySyntax? Body => NthChildOfTypeOrNull<BodySyntax>(0);
+}
+
+public sealed class ModuleDeclSyntax(ImmutableArray<SyntaxElement> children)
+    : MemberDeclSyntax(SyntaxKind.ModuleDecl, children)
+{
+    public QualifiedNameSyntax Name => NthChildOfType<QualifiedNameSyntax>(0);
+
+    public IEnumerable<MemberDeclSyntax> Members
+        => Children.OfType<MemberDeclSyntax>();
+}
+
+public sealed class GlobalModuleDeclSyntax(ImmutableArray<SyntaxElement> children)
+    : SyntaxNode(SyntaxKind.GlobalModuleDecl, children)
+{
+    public QualifiedNameSyntax Name => NthChildOfType<QualifiedNameSyntax>(0);
 }
 
 public sealed class ParamSyntax(ImmutableArray<SyntaxElement> children)

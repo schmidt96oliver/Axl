@@ -134,6 +134,8 @@ public partial class Parser
             SyntaxKind.VarDecl => new VarDeclSyntax(elements),
             SyntaxKind.Param => new ParamSyntax(elements),
             SyntaxKind.FnDecl => new FnDeclSyntax(elements),
+            SyntaxKind.ModuleDecl => new ModuleDeclSyntax(elements),
+            SyntaxKind.GlobalModuleDecl => new GlobalModuleDeclSyntax(elements),
             _ => new SyntaxNode(kind, elements),
         };
 }
