@@ -70,4 +70,9 @@ public class SyntaxNode : SyntaxElement
     public Token NthToken(int n)
         => NthTokenOrNull(n) ?? 
            throw new ArgumentException($"Node does not have {n} tokens.", nameof(n));
+    
+    public IEnumerable<SyntaxElement> ChildrenAfter(TokenKind token)
+        => Children
+            .SkipWhile(child => !(child is Token childToken && childToken.Kind == token))
+            .Skip(1); // Skip the token itself
 }

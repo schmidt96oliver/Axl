@@ -7,5 +7,7 @@ public sealed class GetMemberExprSyntax(ImmutableArray<SyntaxElement> children)
 {
     public ExprSyntax Left => NthChildOfType<ExprSyntax>(0);
 
-    public IdNameSyntax Member => NthChildOfType<IdNameSyntax>(0);
+    public IdNameSyntax Member => ChildrenAfter(TokenKind.Dot)
+        .OfType<IdNameSyntax>()
+        .First();
 }
