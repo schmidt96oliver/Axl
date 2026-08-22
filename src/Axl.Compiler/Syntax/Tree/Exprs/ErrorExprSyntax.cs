@@ -6,5 +6,5 @@ public sealed class ErrorExprSyntax(ImmutableArray<SyntaxElement> children)
     : ExprSyntax(SyntaxKind.ErrorExpr, children)
 {
     public IEnumerable<SyntaxNode> RecoverableNodes
-        => Children.OfType<SyntaxNode>().Where(child => child.Kind is not SyntaxKind.Garbage);
+        => Children.OfType<ExprSyntax>();
 }
