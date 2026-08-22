@@ -111,6 +111,7 @@ public partial class Parser
         {
             SyntaxKind.BinaryExpr => new BinaryExprSyntax(elements),
             SyntaxKind.IfExpr => new IfExprSyntax(elements),
+            SyntaxKind.ElseClause => new ElseClauseSyntax(elements),
             SyntaxKind.BlockExpr => new BlockSyntax(elements),
             SyntaxKind.Arm => new ArmSyntax(elements),
             SyntaxKind.TrueLiteral => new TrueLiteralSyntax(elements),

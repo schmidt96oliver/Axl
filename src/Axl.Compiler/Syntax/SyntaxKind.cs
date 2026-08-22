@@ -68,4 +68,5 @@ public enum SyntaxKind
     ParamList,
     Param,
     NativeClause,
+    ElseClause
 }

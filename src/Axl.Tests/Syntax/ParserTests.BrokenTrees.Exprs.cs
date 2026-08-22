@@ -85,10 +85,11 @@ public partial class ParserTests
                     · · BlockExpr
                     · · · ??'{'
                     · · · ??'}'
-                    · · 'else'
-                    · · Arm
-                    · · · '=>'
-                    · · · IdName 'inner'
+                    · · ElseClause
+                    · · · 'else'
+                    · · · Arm
+                    · · · · '=>'
+                    · · · · IdName 'inner'
                     · ';'
                     """);
 
@@ -324,11 +325,12 @@ public partial class ParserTests
                     · · Arm
                     · · · '=>'
                     · · · NumberLiteral '1'
-                    · · 'else'
-                    · · Arm
-                    · · · Garbage '='
-                    · · · ??'=>'
-                    · · · NumberLiteral '2'
+                    · · ElseClause
+                    · · · 'else'
+                    · · · Arm
+                    · · · · Garbage '='
+                    · · · · ??'=>'
+                    · · · · NumberLiteral '2'
                     · ';'
                     """);
             

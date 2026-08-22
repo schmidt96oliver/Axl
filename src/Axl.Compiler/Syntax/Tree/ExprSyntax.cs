@@ -2,10 +2,8 @@
 
 namespace Axl.Compiler.Syntax.Tree;
 
-public abstract class ExprSyntax(SyntaxKind kind, ImmutableArray<SyntaxElement> children) : SyntaxNode(kind, children)
-{
-    
-}
+public abstract class ExprSyntax(SyntaxKind kind, ImmutableArray<SyntaxElement> children)
+    : SyntaxNode(kind, children);
 
 public sealed class BinaryExprSyntax(ImmutableArray<SyntaxElement> children)
     : ExprSyntax(SyntaxKind.BinaryExpr, children)
@@ -23,8 +21,18 @@ public sealed class IfExprSyntax(ImmutableArray<SyntaxElement> children)
     public ExprSyntax Predicate => NthChildOfType<ExprSyntax>(0);
 
     public BodySyntax Body => NthChildOfType<BodySyntax>(0);
-    
-    public ExprSyntax? ElseBody => NthChildOfType<ExprSyntax>(1);
+
+    public ExprSyntax? ElseBody => NthChildOfTypeOrNull<ElseClauseSyntax>(0)?
+        .Body;
+}
+
+public sealed class ElseClauseSyntax(ImmutableArray<SyntaxElement> children)
+    : SyntaxNode(SyntaxKind.ElseClause, children)
+{
+    /// <summary>
+    /// Either <see cref="IfExprSyntax"/> or <see cref="BodySyntax"/>.
+    /// </summary>
+    public ExprSyntax Body => NthChildOfType<ExprSyntax>(0);
 }
 
 public abstract class BodySyntax(SyntaxKind kind, ImmutableArray<SyntaxElement> children)

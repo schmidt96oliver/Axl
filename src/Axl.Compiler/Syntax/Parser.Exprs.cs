@@ -112,12 +112,14 @@ public partial class Parser
         // we cannot handle it after we've seen it once.
         if (_scanner.IsAt(TokenKind.ElseKw))
         {
+            var elseClause = _scanner.Open();
             _scanner.EatKnown(TokenKind.ElseKw);
 
             if (_scanner.IsAt(TokenKind.IfKw))
                 EatIf(anchor);
             else
                 EnsureBody(anchor);
+            _scanner.Close(elseClause, SyntaxKind.ElseClause);
         }
 
         return _scanner.Close(ifExpr, SyntaxKind.IfExpr);
