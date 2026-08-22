@@ -39,15 +39,19 @@ public partial class Parser
         // --- Optional type annotation
         if (_scanner.IsAt(TokenKind.Colon))
         {
+            var typeAnnotation = _scanner.Open();
             _scanner.EatKnown(TokenKind.Colon);
             EnsureTypeName();
+            _scanner.Close(typeAnnotation, SyntaxKind.TypeAnnotationClause);
         }
 
         // --- Optional initializer
         if (_scanner.IsAt(TokenKind.Equal))
         {
+            var initializer = _scanner.Open();
             _scanner.EatKnown(TokenKind.Equal);
             EnsureExpr(anchor);
+            _scanner.Close(initializer, SyntaxKind.InitializerClause);
         }
 
         // --- Semicolon

@@ -203,8 +203,10 @@ public partial class Parser
                 || _scanner.IsAt(FirstSet.NativeTypeName)
                 || _scanner.IsAt(TokenKind.Identifier) && _scanner.Peek(1).Kind is TokenKind.Dot)
             {
+                var typeAnnotation = _scanner.Open();
                 EnsureToken(TokenKind.Colon);
                 EnsureTypeName();
+                _scanner.Close(typeAnnotation, SyntaxKind.TypeAnnotationClause);
             }
 
             return _scanner.Close(param, SyntaxKind.Param);

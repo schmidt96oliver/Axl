@@ -27,46 +27,49 @@ public enum SyntaxKind
     FnDecl,
     
     // Type Expressions
-    QualifiedName,
-    NativeTypeName,
+    QualifiedName, //x
+    NativeTypeName, //x
     
     // Operand Expressions
-    TrueLiteral,
-    FalseLiteral,
-    NumberLiteral,
+    TrueLiteral, //x
+    FalseLiteral, //x
+    NumberLiteral, //x
     
-    IdName,
+    IdName, //x
     
-    GroupExpr,
-    BinaryExpr,
-    UnaryExpr,
-    CallExpr,
-    GetMemberExpr,
+    GroupExpr, //x
+    BinaryExpr, //x
+    UnaryExpr, //x
+    CallExpr, //x
+    GetMemberExpr, //x
     
     // Tail Expressions
-    BreakExpr,
-    ContinueExpr,
-    ReturnExpr,
-    AssignExpr,
+    BreakExpr, //x
+    ContinueExpr, //x
+    ReturnExpr, //x
+    AssignExpr, //x
     
     // Bodied Expressions
     BlockExpr,
-    IfExpr,
-    LoopExpr,
+    IfExpr, //x
+    LoopExpr, //x
     
     // Strings
-    StringExpr,
-    StringInterpolation,
-    StringText,
+    StringExpr, //x
+    StringInterpolation, //
+    StringText, //
     
     // Arm
-    Arm,
+    Arm, //x
     
     // Clauses
-    ArgList,
-    Arg,
+    ArgList, //
+    Arg, //
     ParamList,
     Param,
     NativeClause,
-    ElseClause
+    ElseClause //
+    ,
+    TypeAnnotationClause,
+    InitializerClause
 }

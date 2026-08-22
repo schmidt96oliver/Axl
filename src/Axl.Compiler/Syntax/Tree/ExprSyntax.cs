@@ -4,6 +4,28 @@ using Dunet;
 namespace Axl.Compiler.Syntax.Tree;
 
 
+public abstract class StmtSyntax(SyntaxKind kind, ImmutableArray<SyntaxElement> children)
+    : SyntaxNode(kind, children);
+
+public sealed class ExprStmtSyntax(ImmutableArray<SyntaxElement> children)
+    : StmtSyntax(SyntaxKind.ExprStmt, children)
+{
+    public ExprSyntax Expr => NthChildOfType<ExprSyntax>(0);
+}
+
+public sealed class VarDeclSyntax(ImmutableArray<SyntaxElement> children)
+    : StmtSyntax(SyntaxKind.VarDecl, children)
+{
+    public IdentifierToken Name => NthChildOfType<IdNameSyntax>(0).Token;
+
+    public TypeNameSyntax? TypeAnnotation => NthNodeOfKindOrNull(SyntaxKind.TypeAnnotationClause, 0)?
+        .NthChildOfType<TypeNameSyntax>(0);
+    
+    public ExprSyntax? Initializer => NthNodeOfKindOrNull(SyntaxKind.InitializerClause, 0)?
+        .NthChildOfType<ExprSyntax>(0);
+}
+
+
 /// <summary>
 /// Derives from <see cref="ExprSyntax"/> because <see cref="IdNameSyntax"/> has two roles:
 /// As expression and as type name. This allows easier access on the AST. 
@@ -21,7 +43,7 @@ public sealed class IdNameSyntax(ImmutableArray<SyntaxElement> children)
                                         nameof(children));
 }
 
-public sealed class NativeTypeName(ImmutableArray<SyntaxElement> children)
+public sealed class NativeTypeNameSyntax(ImmutableArray<SyntaxElement> children)
     : TypeNameSyntax(SyntaxKind.NativeTypeName, children)
 {
     public Token Token => NthToken(0);
@@ -31,7 +53,7 @@ public sealed class QualifiedNameSyntax(ImmutableArray<SyntaxElement> children)
     : TypeNameSyntax(SyntaxKind.QualifiedName, children)
 {
     public IEnumerable<IdentifierToken> Parts
-        => Children.OfType<IdentifierToken>();
+        => Children.OfType<IdNameSyntax>().Select(idNameSyntax => idNameSyntax.Token);
 }
 
 

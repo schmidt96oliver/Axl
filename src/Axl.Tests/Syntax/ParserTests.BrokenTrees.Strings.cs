@@ -392,8 +392,9 @@ public partial class ParserTests
                     VarDecl
                     · 'var'
                     · IdName 'a'
-                    · '='
-                    · NumberLiteral '2'
+                    · InitializerClause
+                    · · '='
+                    · · NumberLiteral '2'
                     · ';'
                     """);
         }

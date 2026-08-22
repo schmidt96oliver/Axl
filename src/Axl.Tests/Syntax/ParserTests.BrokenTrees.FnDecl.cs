@@ -108,8 +108,9 @@ public partial class ParserTests
                     · · '('
                     · · Param
                     · · · IdName 'a'
-                    · · · ':'
-                    · · · NativeTypeName 'i32'
+                    · · · TypeAnnotationClause
+                    · · · · ':'
+                    · · · · NativeTypeName 'i32'
                     · · ','
                     · · Param
                     · · · IdName
@@ -130,8 +131,9 @@ public partial class ParserTests
                     · · '('
                     · · Param
                     · · · IdName 'a'
-                    · · · ':'
-                    · · · NativeTypeName 'i32'
+                    · · · TypeAnnotationClause
+                    · · · · ':'
+                    · · · · NativeTypeName 'i32'
                     · · ','
                     · · Param
                     · · · IdName
@@ -154,8 +156,9 @@ public partial class ParserTests
                     · · '('
                     · · Param
                     · · · IdName 'a'
-                    · · · ':'
-                    · · · NativeTypeName 'i32'
+                    · · · TypeAnnotationClause
+                    · · · · ':'
+                    · · · · NativeTypeName 'i32'
                     · · ','
                     · · Garbage '@@'
                     · · Param
@@ -177,8 +180,9 @@ public partial class ParserTests
                     · · '('
                     · · Param
                     · · · IdName 'a'
-                    · · · ':'
-                    · · · NativeTypeName 'i32'
+                    · · · TypeAnnotationClause
+                    · · · · ':'
+                    · · · · NativeTypeName 'i32'
                     · · ','
                     · · Garbage '@@'
                     · · Param
@@ -203,8 +207,9 @@ public partial class ParserTests
                     · · '('
                     · · Param
                     · · · IdName 'a'
-                    · · · ':'
-                    · · · NativeTypeName 'i32'
+                    · · · TypeAnnotationClause
+                    · · · · ':'
+                    · · · · NativeTypeName 'i32'
                     · · ','
                     · · Param
                     · · · IdName
@@ -230,8 +235,9 @@ public partial class ParserTests
                     · · '('
                     · · Param
                     · · · IdName 'a'
-                    · · · ':'
-                    · · · NativeTypeName 'i32'
+                    · · · TypeAnnotationClause
+                    · · · · ':'
+                    · · · · NativeTypeName 'i32'
                     · · ','
                     · · Param
                     · · · IdName
@@ -278,13 +284,15 @@ public partial class ParserTests
                     · · '('
                     · · Param
                     · · · IdName 'a'
-                    · · · ':'
-                    · · · NativeTypeName 'i32'
+                    · · · TypeAnnotationClause
+                    · · · · ':'
+                    · · · · NativeTypeName 'i32'
                     · · ??','
                     · · Param
                     · · · IdName 'b'
-                    · · · ':'
-                    · · · NativeTypeName 'string'
+                    · · · TypeAnnotationClause
+                    · · · · ':'
+                    · · · · NativeTypeName 'string'
                     · · ')'
                     · BlockExpr '{' '}'
                     """);
@@ -303,16 +311,18 @@ public partial class ParserTests
                     · · '('
                     · · Param
                     · · · IdName 'a'
-                    · · · ':'
-                    · · · NativeTypeName 'i32'
+                    · · · TypeAnnotationClause
+                    · · · · ':'
+                    · · · · NativeTypeName 'i32'
                     · · ??','
                     · · Param
                     · · · IdName 'b'
                     · · ??','
                     · · Param
                     · · · IdName 'c'
-                    · · · ':'
-                    · · · NativeTypeName 'bool'
+                    · · · TypeAnnotationClause
+                    · · · · ':'
+                    · · · · NativeTypeName 'bool'
                     · · ','
                     · · Param
                     · · · IdName 'd'
@@ -335,8 +345,9 @@ public partial class ParserTests
                     · · Param
                     · · · IdName
                     · · · · ??ID
-                    · · · ':'
-                    · · · NativeTypeName 'i32'
+                    · · · TypeAnnotationClause
+                    · · · · ':'
+                    · · · · NativeTypeName 'i32'
                     · · ')'
                     · BlockExpr '{' '}'
                     """);
@@ -354,10 +365,11 @@ public partial class ParserTests
                     · · '('
                     · · Param
                     · · · IdName 'a'
-                    · · · ':'
-                    · · · QualifiedName
-                    · · · · IdName
-                    · · · · · ??ID
+                    · · · TypeAnnotationClause
+                    · · · · ':'
+                    · · · · QualifiedName
+                    · · · · · IdName
+                    · · · · · · ??ID
                     · · ')'
                     · BlockExpr '{' '}'
                     """);
@@ -375,8 +387,9 @@ public partial class ParserTests
                     · · '('
                     · · Param
                     · · · IdName 'a'
-                    · · · ??':'
-                    · · · NativeTypeName 'i32'
+                    · · · TypeAnnotationClause
+                    · · · · ??':'
+                    · · · · NativeTypeName 'i32'
                     · · ')'
                     · BlockExpr '{' '}'
                     """);
@@ -394,11 +407,12 @@ public partial class ParserTests
                     · · '('
                     · · Param
                     · · · IdName 'a'
-                    · · · ??':'
-                    · · · QualifiedName
-                    · · · · IdName 'a'
-                    · · · · '.'
-                    · · · · IdName 'b'
+                    · · · TypeAnnotationClause
+                    · · · · ??':'
+                    · · · · QualifiedName
+                    · · · · · IdName 'a'
+                    · · · · · '.'
+                    · · · · · IdName 'b'
                     · · ')'
                     · BlockExpr '{' '}'
                     """);
@@ -417,12 +431,13 @@ public partial class ParserTests
                     · · '('
                     · · Param
                     · · · IdName 'a'
-                    · · · ??':'
-                    · · · QualifiedName
-                    · · · · IdName 'a'
-                    · · · · '.'
-                    · · · · IdName
-                    · · · · · ??ID
+                    · · · TypeAnnotationClause
+                    · · · · ??':'
+                    · · · · QualifiedName
+                    · · · · · IdName 'a'
+                    · · · · · '.'
+                    · · · · · IdName
+                    · · · · · · ??ID
                     · · ')'
                     · BlockExpr '{' '}'
                     """);
@@ -441,8 +456,9 @@ public partial class ParserTests
                     · · Param
                     · · · IdName
                     · · · · ??ID
-                    · · · ??':'
-                    · · · NativeTypeName 'f32'
+                    · · · TypeAnnotationClause
+                    · · · · ??':'
+                    · · · · NativeTypeName 'f32'
                     · · ')'
                     · BlockExpr '{' '}'
                     """);
@@ -830,8 +846,9 @@ public partial class ParserTests
                     VarDecl
                     · 'var'
                     · IdName 'a'
-                    · '='
-                    · NumberLiteral '2'
+                    · InitializerClause
+                    · · '='
+                    · · NumberLiteral '2'
                     · ';'
                     """);
             
@@ -856,8 +873,9 @@ public partial class ParserTests
                     VarDecl
                     · 'var'
                     · IdName 'a'
-                    · '='
-                    · NumberLiteral '2'
+                    · InitializerClause
+                    · · '='
+                    · · NumberLiteral '2'
                     · ';'
                     """);
             

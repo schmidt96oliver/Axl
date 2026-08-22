@@ -110,7 +110,7 @@ public partial class Parser
         => kind switch
         {
             SyntaxKind.IdName => new IdNameSyntax(elements),
-            SyntaxKind.NativeTypeName => new NativeTypeName(elements),
+            SyntaxKind.NativeTypeName => new NativeTypeNameSyntax(elements),
             SyntaxKind.QualifiedName => new QualifiedNameSyntax(elements),
             SyntaxKind.BinaryExpr => new BinaryExprSyntax(elements),
             SyntaxKind.UnaryExpr => new UnaryExprSyntax(elements),
@@ -130,6 +130,8 @@ public partial class Parser
             SyntaxKind.NumberLiteral => new NumberLiteralSyntax(elements),
             SyntaxKind.StringExpr => new StringExprSyntax(elements),
             SyntaxKind.ErrorExpr => new ErrorExprSyntax(elements),
+            SyntaxKind.ExprStmt => new ExprStmtSyntax(elements),
+            SyntaxKind.VarDecl => new VarDeclSyntax(elements),
             _ => new SyntaxNode(kind, elements),
         };
 }
