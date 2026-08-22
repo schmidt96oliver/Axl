@@ -370,7 +370,7 @@ public partial class ParserTests
                     · · · IdName 'a'
                     · · · TypeAnnotationClause
                     · · · · ':'
-                    · · · · QualifiedName
+                    · · · · Path
                     · · · · · IdName
                     · · · · · · ??ID
                     · · ')'
@@ -412,7 +412,7 @@ public partial class ParserTests
                     · · · IdName 'a'
                     · · · TypeAnnotationClause
                     · · · · ??':'
-                    · · · · QualifiedName
+                    · · · · Path
                     · · · · · IdName 'a'
                     · · · · · '.'
                     · · · · · IdName 'b'
@@ -436,7 +436,7 @@ public partial class ParserTests
                     · · · IdName 'a'
                     · · · TypeAnnotationClause
                     · · · · ??':'
-                    · · · · QualifiedName
+                    · · · · Path
                     · · · · · IdName 'a'
                     · · · · · '.'
                     · · · · · IdName
@@ -801,7 +801,7 @@ public partial class ParserTests
                     · · ??')'
                     ModuleDecl
                     · 'module'
-                    · QualifiedName
+                    · Path
                     · · IdName 'AB'
                     · '{'
                     · '}'

@@ -16,7 +16,7 @@ public partial class ParserTests
 
                     GlobalModuleDecl
                     · 'module'
-                    · QualifiedName
+                    · Path
                     · · IdName 'A'
                     · ??';'
                     """);
@@ -29,12 +29,12 @@ public partial class ParserTests
 
                     ModuleDecl
                     · 'module'
-                    · QualifiedName
+                    · Path
                     · · IdName 'A'
                     · '{'
                     · ModuleDecl
                     · · 'module'
-                    · · QualifiedName
+                    · · Path
                     · · · IdName 'B'
                     · · ??'{'
                     · · ??'}'
@@ -57,7 +57,7 @@ public partial class ParserTests
 
                     ModuleDecl
                     · 'module'
-                    · QualifiedName
+                    · Path
                     · · IdName 'A'
                     · '{'
                     · Garbage '{' '}'

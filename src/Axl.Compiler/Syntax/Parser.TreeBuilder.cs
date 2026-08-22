@@ -111,7 +111,7 @@ public partial class Parser
         {
             SyntaxKind.IdName => new IdNameSyntax(elements),
             SyntaxKind.NativeTypeName => new NativeTypeNameSyntax(elements),
-            SyntaxKind.QualifiedName => new QualifiedNameSyntax(elements),
+            SyntaxKind.Path => new PathSyntax(elements),
             SyntaxKind.BinaryExpr => new BinaryExprSyntax(elements),
             SyntaxKind.UnaryExpr => new UnaryExprSyntax(elements),
             SyntaxKind.GroupExpr => new GroupExprSyntax(elements),

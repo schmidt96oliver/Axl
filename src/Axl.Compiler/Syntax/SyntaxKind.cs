@@ -27,7 +27,7 @@ public enum SyntaxKind
     FnDecl,
     
     // Type Expressions
-    QualifiedName,
+    Path,
     NativeTypeName,
     
     // Operand Expressions

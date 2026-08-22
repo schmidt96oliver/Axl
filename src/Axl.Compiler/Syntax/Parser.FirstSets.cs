@@ -29,9 +29,9 @@ public partial class Parser
             TokenKind.NoneKw
         );
 
-        public static readonly TokenSet QualifiedName = TokenSet.Of(TokenKind.Identifier);
+        public static readonly TokenSet Path = TokenSet.Of(TokenKind.Identifier);
 
-        public static readonly TokenSet TypeName = NativeTypeName | QualifiedName;
+        public static readonly TokenSet TypeName = NativeTypeName | Path;
 
 
         public static readonly TokenSet OperandExpr = NativeTypeName | TokenSet.Of(

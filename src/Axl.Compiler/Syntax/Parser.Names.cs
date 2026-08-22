@@ -12,10 +12,10 @@ public partial class Parser
         if (_scanner.IsAt(FirstSet.NativeTypeName))
             return EatNativeTypeName();
         
-        return EnsureQualifiedName(ExpectedSyntax.TypeName);
+        return EnsurePath(ExpectedSyntax.TypeName);
     }
 
-    private MarkClose EnsureQualifiedName(ExpectedSyntax? expectedSyntax = null)
+    private MarkClose EnsurePath(ExpectedSyntax? expectedSyntax = null)
     {
         var typeExpr = _scanner.Open();
         EnsureIdName(expectedSyntax);
@@ -29,7 +29,7 @@ public partial class Parser
             EnsureIdName();
         }
 
-        return _scanner.Close(typeExpr, SyntaxKind.QualifiedName);
+        return _scanner.Close(typeExpr, SyntaxKind.Path);
     }
 
     private MarkClose EatNativeTypeName()

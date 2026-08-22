@@ -13,7 +13,7 @@ public partial class Parser
 
         var usingDecl = _scanner.Open();
         _scanner.EatKnown(TokenKind.UsingKw);
-        EnsureQualifiedName(ExpectedSyntax.ModuleName);
+        EnsurePath(ExpectedSyntax.ModuleName);
         EnsureToken(TokenKind.Semicolon);
         return _scanner.Close(usingDecl, SyntaxKind.UsingDecl);
     }
@@ -46,7 +46,7 @@ public partial class Parser
 
         _scanner.EatKnown(TokenKind.ModuleKw);
 
-        EnsureQualifiedName(ExpectedSyntax.ModuleName);
+        EnsurePath(ExpectedSyntax.ModuleName);
 
         // --- ";" means it's a global declaration
         if (_scanner.IsAt(TokenKind.Semicolon))
@@ -203,7 +203,7 @@ public partial class Parser
                 : ExpectedSyntax.Param);
 
             // A plain next identifier must not be eaten, it will become the next
-            // parameter. But if it looks like a qualified name, like 'fn A(a a.b)',
+            // parameter. But if it looks like a path, like 'fn A(a a.b)',
             // then eat it as a type name for this parameter.
             if (_scanner.IsAt(TokenKind.Colon)
                 || _scanner.IsAt(FirstSet.NativeTypeName)

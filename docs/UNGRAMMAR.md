@@ -4,7 +4,7 @@ and Parse* names where they are sum ungrammars.
 # Top-Level
 File            = (Stmt | MemberDecl | GlobalModuleDecl)*
 
-GlobalModuleDecl= "module" QualifiedName ";"
+GlobalModuleDecl= "module" Path ";"
 
 ## Member Declarations
 MemberDecl      = ModifierList (FnDecl | ModuleDecl)
@@ -25,14 +25,14 @@ ParamList       = "(" ")"
                 | "(" Param ("," Param)* ")"
 Param           = IdName TypeAnnotation       
 
-ModuleDecl      = "module" QualifiedName "{" (Stmt | MemberDecl)* "}"
+ModuleDecl      = "module" Path "{" (Stmt | MemberDecl)* "}"
 
 ## Statements
 Stmt        = ExprStmt
             | VarDecl
             | UsingDecl
 
-UsingDecl   = "using" QualifiedName ";"
+UsingDecl   = "using" Path ";"
 
 ExprStmt    = BodiedExpr ";"§               // ";" omissible, iff last token is "}"
             | (OperandExpr | TailExpr) ";"  // ";" always required
@@ -119,14 +119,14 @@ Return      = "return" Expr?
 
 ## Type Expressions/Clauses
 TypeName        = NativeTypeName
-                | QualifiedName
+                | Path
 // Note that TypeName is deliberately a subset of OperandExpr
 
 NativeTypeName  = "i32" | "i64" | "f32" | "f64" | "string" | "none"
 // SyntaxKind.NativeTypeName can also hold TokenKind.NeverKw. NeverKw is promoted
 // from TokenKind.Identifier if FnDecl return type and only there.
 
-QualifiedName   = IdName ("." IdName)*
+Path   = IdName ("." IdName)*
 
 TypeAnnotation  = ":" TypeName
 
