@@ -17,29 +17,34 @@ public enum SyntaxKind
     
     // Top-Level
     File,
-    ExprStmt,
     
-    // Directives
+    // Directives, Statements
+    ExprStmt,
     UsingDirective,
+    VarDecl,
     
     // Declarations
-    FileScopedModuleDecl,
     ModuleDecl,
-    VarDecl,
-    NativeFnDecl,
+    FileScopedModuleDecl,
     FnDecl,
+    NativeFnDecl,
     
-    // Type Expressions
+    // Type Names
     Path,
+    IdName,
     NativeTypeName,
     
-    // Operand Expressions
+    // Literals
     TrueLiteral,
     FalseLiteral,
     NumberLiteral,
     
-    IdName,
+    // Strings
+    StringExpr,
+    StringInterpolation,
+    StringText,
     
+    // Operand Expressions
     GroupExpr,
     BinaryExpr,
     UnaryExpr,
@@ -57,19 +62,14 @@ public enum SyntaxKind
     IfExpr,
     LoopExpr,
     
-    // Strings
-    StringExpr,
-    StringInterpolation,
-    StringText,
-    
     // Arm
     Arm,
     
     // Clauses
-    ArgList,
     Arg,
-    ParamList,
+    ArgList,
     Param,
+    ParamList,
     NativeClause,
     ElseClause,
     TypeAnnotationClause,
