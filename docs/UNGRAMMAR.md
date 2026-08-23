@@ -19,25 +19,24 @@ UsingDirective  = "using" Path ";"
 ## Member Declarations
 > Declaration: Introduces a name.
 
-Member           = Modifier* (FnDecl | ModuleDecl | GlobalModuleDecl)
+Member           = Modifier* (FnDecl | NativeFnDecl | ModuleDecl | GlobalModuleDecl)
                 
 Modifier         = "public" | "private"
 
 ModuleDecl       = "module" Path "{" (UsingDirective | Member)* "}"
 GlobalModuleDecl = "module" Path ";"
 
-
-FnDecl           = NativeClause? "fn" IdName ParamList ("->" (TypeName | "never"))? Body? ";"§
+FnDecl           = "fn" IdName ParamList ReturnTypeAnnotation? Body ";"§
 > Identifier "never" is promoted to SyntaxKind.NativeTypeName with TokenKind.NeverKw
-> Binder requires Body on non-native functions
-
-NativeClause    = "native" "(" StringExpr ")"
-> Binder rejects interpolations inside StringExpr
 
 ParamList       = "(" ")"
                 | "(" Param ("," Param)* ")"
+Param           = IdName TypeAnnotation?
+ReturnTypeAnnotation    = "->" (TypeName | "never")
 
-Param           = IdName TypeAnnotation?       
+NativeFnDecl    = NativeClause "fn" IdName ParamList ReturnTypeAnnotation? ";"
+NativeClause    = "native" "(" StringExpr ")"
+> Binder rejects interpolations inside StringExpr
 
 ## Statements
 > Semicolon rule (";"§): ";" is omissible, iff the last token is "}"

@@ -20,8 +20,10 @@ public partial class Parser
         // --- Dispatch
         if (_scanner.IsAt(FirstSet.ModuleDeclAfterModifiers))
             return EatModuleDeclAfterModifiers(decl, onGlobalScope);
-        if (_scanner.IsAt(FirstSet.FnDeclAfterModifiers))
+        if (_scanner.IsAt(TokenKind.FnKw))
             return EatFnDeclAfterModifiers(decl, anchor);
+        if (_scanner.IsAt(TokenKind.NativeKw))
+            return EatNativeFnDeclAfterModifiers(decl, anchor);
         
         // --- Nothing valid
         _scanner.ReportMissingTokenHere(ExpectedSyntax.Member);
@@ -87,74 +89,60 @@ public partial class Parser
         return _scanner.Close(decl, SyntaxKind.ModuleDecl);
     }
 
-    
+
 
     private MarkClose EatFnDeclAfterModifiers(MarkOpen decl, Anchor anchor)
     {
-        Debug.Assert(_scanner.IsAt(FirstSet.FnDeclAfterModifiers));
+        Debug.Assert(_scanner.IsAt(TokenKind.FnKw));
 
-        // --- Native Clause
-        var hasNativeClause = false;
-        if (_scanner.IsAt(TokenKind.NativeKw))
-        {
-            // We can recover from:
-            // - "fn" starts fn
-            // - ";" ends fn declaration directly (eaten, if fn was missing)
-            EatNativeDecl(anchor | TokenKind.FnKw | TokenKind.Semicolon);
-            hasNativeClause = true;
-        }
+        _scanner.EatKnown(TokenKind.FnKw);
+        EnsureIdName();
 
-        // --- "fn"
+        // Inside ParamList, we can continue from "{" or "->"
+        EnsureParamList(anchor | FirstSet.Body | TokenKind.RightArrow | TokenKind.Semicolon);
+
+        if (_scanner.IsAt(TokenKind.RightArrow))
+            EatReturnTypeAnnotation();
+
+        EnsureBody(anchor);
+        EnsureSemicolonIfRequired(ownsBody: true);
+
+        return _scanner.Close(decl, SyntaxKind.FnDecl);
+    }
+
+    private MarkClose EatNativeFnDeclAfterModifiers(MarkOpen decl, Anchor anchor)
+    {
+        Debug.Assert(_scanner.IsAt(TokenKind.NativeKw));
+
+        EatNativeClause(anchor | TokenKind.FnKw | TokenKind.Semicolon);
+
         if (!_scanner.IsAt(TokenKind.FnKw))
         {
             _scanner.ReportMissingTokenHere(TokenKind.FnKw);
-            
+
             // Since we anchor on ";" in EatNativeDecl, we need to handle
             // that here. It was probably meant to close a native fn declaration,
             // so just eat it.
             if (_scanner.IsAt(TokenKind.Semicolon))
                 _scanner.EatKnown(TokenKind.Semicolon);
-            
+
             return _scanner.Close(decl, SyntaxKind.Garbage);
         }
 
         _scanner.EatKnown(TokenKind.FnKw);
         EnsureIdName();
 
-        // Inside ParamList, we can continue from "{" or "->"
-        var paramListAnchor = anchor | FirstSet.Body | TokenKind.RightArrow | TokenKind.Semicolon;
-        EnsureParamList(paramListAnchor);
+        EnsureParamList(anchor | TokenKind.RightArrow | TokenKind.Semicolon);
 
-        // --- Return type
         if (_scanner.IsAt(TokenKind.RightArrow))
-        {
-            var returnTypeAnnotation = _scanner.Open();
-            _scanner.EatKnown(TokenKind.RightArrow);
+            EatReturnTypeAnnotation();
 
-            // --- Special case "never" keyword
-            if (_scanner.Peek() is IdentifierToken { Identifier: "never" })
-            {
-                var nativeTypeName = _scanner.Open();
-                _scanner.EatAs(TokenKind.NeverKw);
-                _scanner.Close(nativeTypeName, SyntaxKind.NativeTypeName);
-            }
-            else
-                EnsureTypeName();
-            _scanner.Close(returnTypeAnnotation, SyntaxKind.TypeAnnotationClause);
-        }
+        EnsureToken(TokenKind.Semicolon);
 
-        if (hasNativeClause)
-            EnsureToken(TokenKind.Semicolon);
-        else
-        {
-            EnsureBody(anchor);
-            EnsureSemicolonIfRequired(ownsBody: true);
-        }
-
-        return _scanner.Close(decl, SyntaxKind.FnDecl);
+        return _scanner.Close(decl, SyntaxKind.NativeFnDecl);
     }
 
-    private MarkClose EatNativeDecl(Anchor anchor)
+    private MarkClose EatNativeClause(Anchor anchor)
     {
         // We can handle ")".
         var nativeClauseAnchor = anchor | TokenKind.CloseParen;
@@ -167,6 +155,26 @@ public partial class Parser
         EnsureToken(TokenKind.CloseParen);
 
         return _scanner.Close(nativeClause, SyntaxKind.NativeClause);
+    }
+
+    private MarkClose EatReturnTypeAnnotation()
+    {
+        Debug.Assert(_scanner.IsAt(TokenKind.RightArrow));
+
+        var returnTypeAnnotation = _scanner.Open();
+        _scanner.EatKnown(TokenKind.RightArrow);
+
+        // --- Special case "never" keyword
+        if (_scanner.Peek() is IdentifierToken { Identifier: "never" })
+        {
+            var nativeTypeName = _scanner.Open();
+            _scanner.EatAs(TokenKind.NeverKw);
+            _scanner.Close(nativeTypeName, SyntaxKind.NativeTypeName);
+        }
+        else
+            EnsureTypeName();
+
+        return _scanner.Close(returnTypeAnnotation, SyntaxKind.TypeAnnotationClause);
     }
 
     private MarkClose EnsureParamList(Anchor anchor)

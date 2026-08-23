@@ -5,7 +5,6 @@
 * see Claude for AST tightening
 
 * ?? `GlobalModuleDecl` -> `FileScopedModuleDecl`
-* ?? split `FnDecl` and `NativeFnDecl`
 * Regressions: `1+[EOF]`, `-[EOF]`
 * Grammar comments (Type=Expr;Arm=Expr)
   * sort `SyntaxKind` and TreeBuilder

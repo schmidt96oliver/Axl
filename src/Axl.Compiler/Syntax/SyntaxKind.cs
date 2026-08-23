@@ -26,6 +26,7 @@ public enum SyntaxKind
     GlobalModuleDecl,
     ModuleDecl,
     VarDecl,
+    NativeFnDecl,
     FnDecl,
     
     // Type Expressions
@@ -72,5 +73,5 @@ public enum SyntaxKind
     NativeClause,
     ElseClause,
     TypeAnnotationClause,
-    InitializerClause
+    InitializerClause,
 }

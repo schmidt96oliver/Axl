@@ -919,7 +919,7 @@ public partial class ParserTests
                     ERROR MissingToken@[9, 9): Expected an identifier.
 
 
-                    FnDecl
+                    NativeFnDecl
                     · NativeClause
                     · · 'native'
                     · · ??'('
@@ -946,7 +946,7 @@ public partial class ParserTests
                     ERROR MissingToken@[6, 6): Expected '('.
 
 
-                    FnDecl
+                    NativeFnDecl
                     · NativeClause
                     · · 'native'
                     · · ??'('
@@ -965,7 +965,7 @@ public partial class ParserTests
                     ERROR MissingToken@[7, 7): Expected a string.
 
 
-                    FnDecl
+                    NativeFnDecl
                     · NativeClause
                     · · 'native'
                     · · '('
@@ -985,7 +985,7 @@ public partial class ParserTests
                     ERROR MissingToken@[12, 12): Expected ')'.
 
 
-                    FnDecl
+                    NativeFnDecl
                     · NativeClause
                     · · 'native'
                     · · '('
@@ -1005,7 +1005,7 @@ public partial class ParserTests
                     ERROR MissingToken@[7, 7): Expected a string.
 
 
-                    FnDecl
+                    NativeFnDecl
                     · NativeClause
                     · · 'native'
                     · · '('
@@ -1042,7 +1042,7 @@ public partial class ParserTests
                     ERROR MissingToken@[31, 31): Expected an identifier.
 
 
-                    FnDecl
+                    NativeFnDecl
                     · 'public'
                     · 'public'
                     · 'private'
