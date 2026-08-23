@@ -3,7 +3,7 @@
 namespace Axl.Compiler.Syntax.Tree;
 
 public sealed class ElseClauseSyntax(ImmutableArray<SyntaxElement> children)
-    : ExprSyntax(SyntaxKind.ElseClause, children)
+    : SyntaxNode(SyntaxKind.ElseClause, children)
 {
     public ExprSyntax Body => Children.FirstOfType<ExprSyntax>();
 }
