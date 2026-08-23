@@ -129,7 +129,7 @@ TypeName        = NativeTypeName
 > same syntax but in expression position. In AST, they both collapse
 > into Expr to be better nameable.
 
-NativeTypeName  = "i32" | "i64" | "f32" | "f64" | "string" | "none"
+NativeTypeName  = "i32" | "i64" | "f32" | "f64" | "string" | "bool" | "none"
 > SyntaxKind.NativeTypeName can also hold TokenKind.NeverKw. NeverKw is promoted
 > from TokenKind.Identifier if FnDecl return type and only there.
 
