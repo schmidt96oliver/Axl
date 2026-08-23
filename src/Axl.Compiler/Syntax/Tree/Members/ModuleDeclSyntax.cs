@@ -9,4 +9,7 @@ public sealed class ModuleDeclSyntax(ImmutableArray<SyntaxElement> children)
 
     public IEnumerable<MemberSyntax> Members
         => Children.OfType<MemberSyntax>();
+    
+    public IEnumerable<UsingDirectiveSyntax> Usings
+        => Children.OfType<UsingDirectiveSyntax>();   
 }
