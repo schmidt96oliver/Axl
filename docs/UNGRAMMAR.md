@@ -7,7 +7,7 @@ File            = (Stmt | UsingDirective | Member)*
 > The distinction between script and module files is not made in the parser
 > or AST, but by declaration binding later in the pipeline.
 
-ModuleFile      = (UsingDirective | ModuleDecl | FileScopedModuleDecl)*
+ModuleFile      = (UsingDirective | Member)*
 ScriptFile      = (Stmt | UsingDirective | Member)*
 
 
