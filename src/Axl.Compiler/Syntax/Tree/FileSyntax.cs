@@ -2,8 +2,8 @@
 
 namespace Axl.Compiler.Syntax.Tree;
 
-public sealed class TreeRootSyntax(ImmutableArray<SyntaxElement> children)
-    : SyntaxNode(SyntaxKind.TreeRoot, children)
+public sealed class FileSyntax(ImmutableArray<SyntaxElement> children)
+    : SyntaxNode(SyntaxKind.File, children)
 {
     public IEnumerable<UsingDirectiveSyntax> Usings
         => Children.OfType<UsingDirectiveSyntax>();   

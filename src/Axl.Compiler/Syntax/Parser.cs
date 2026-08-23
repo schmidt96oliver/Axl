@@ -67,7 +67,7 @@ public partial class Parser
         }
 
         _scanner.EatKnown(TokenKind.Eof);
-        _scanner.Close(file, SyntaxKind.TreeRoot);
+        _scanner.Close(file, SyntaxKind.File);
     }
 
 

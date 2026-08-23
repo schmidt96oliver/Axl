@@ -55,7 +55,7 @@ public class AstTests
     {
         var produced = new HashSet<Type>();
         foreach (var (_, text) in CorpusMutations.Files())
-        foreach (var node in SyntaxWalk.AllNodesRecursive(Parser.Parse(SourceFileView.FromText(text)).Root))
+        foreach (var node in SyntaxWalk.AllNodesRecursive(Parser.Parse(SourceFileView.FromText(text)).FileSyntax))
             produced.Add(node.GetType());
 
         var missing = typeof(SyntaxNode).Assembly.GetTypes()
@@ -104,9 +104,9 @@ public class AstTests
             yield break;
         }
 
-        var parents = BuildParentMap(tree.Root);
+        var parents = BuildParentMap(tree.FileSyntax);
 
-        foreach (var node in SyntaxWalk.AllNodesRecursive(tree.Root))
+        foreach (var node in SyntaxWalk.AllNodesRecursive(tree.FileSyntax))
         foreach (var finding in InspectNode(node, parents))
             yield return finding;
     }

@@ -54,19 +54,19 @@ public partial class Parser
                     break;
 
 
-                case ParseEvent.Close { Kind: SyntaxKind.TreeRoot }:
+                case ParseEvent.Close { Kind: SyntaxKind.File }:
                 {
-                    Debug.Assert(nodeBuilders.Count == 1, "TreeRoot was not the root.");
-                    Debug.Assert(nextToken == tokens.Length, "TreeRoot did not eat all tokens.");
+                    Debug.Assert(nodeBuilders.Count == 1, "File was not the root.");
+                    Debug.Assert(nextToken == tokens.Length, "File did not eat all tokens.");
 
-                    var rootNode = new TreeRootSyntax(nodeBuilders.Pop().DrainToImmutable());
+                    var rootNode = new FileSyntax(nodeBuilders.Pop().DrainToImmutable());
                     
                     Debug.Assert(sawErrorElement == diagnosticBag.HasError,
                         sawErrorElement
                             ? "Saw error element(s), but no diagnostics."
                             : "Saw no error element(s), but reported an error.");
                     return new SyntaxTree(
-                        root: rootNode,
+                        fileSyntax: rootNode,
                         _source,
                         diagnostics: diagnosticBag.Drain(),
                         hasError: diagnosticBag.HasError);
@@ -103,7 +103,7 @@ public partial class Parser
             }
         }
 
-        throw new UnreachableException("Event stream ended without closing TreeRoot.");
+        throw new UnreachableException("Event stream ended without closing File.");
     }
 
     private SyntaxNode CreateNode(SyntaxKind kind, ImmutableArray<SyntaxElement> elements)

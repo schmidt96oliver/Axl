@@ -16,7 +16,7 @@ public enum SyntaxKind
     ErrorExpr,
     
     // Top-Level
-    TreeRoot,
+    File,
     ExprStmt,
     
     // Directives

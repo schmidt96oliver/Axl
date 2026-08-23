@@ -31,10 +31,10 @@ public class FoldingRangeHandler : FoldingRangeHandlerBase
 
     private IEnumerable<FoldingRange> GetFoldingRanges(SyntaxTree tree)
     {
-        foreach (var range in GetCommentFoldingRanges(tree.Root, tree.Source))
+        foreach (var range in GetCommentFoldingRanges(tree.FileSyntax, tree.Source))
             yield return range;
         
-        foreach (var node in EnumerateAllChildNodes(tree.Root))
+        foreach (var node in EnumerateAllChildNodes(tree.FileSyntax))
         {
             if (GetFnOrModuleFoldingRange(node) is FoldingRange foldingRange)
                 yield return foldingRange;

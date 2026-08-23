@@ -14,7 +14,7 @@ public partial class ParserTests
 
         return new Dump(source)
             .Add(tree.Diagnostics)
-            .AddChildren(tree.Root, filterTrivia: true, filterEof: true)
+            .AddChildren(tree.FileSyntax, filterTrivia: true, filterEof: true)
             .ToString();
     }
 
@@ -23,7 +23,7 @@ public partial class ParserTests
         var source = SourceFileView.FromText(text);
         var tree = Parser.Parse(source);
 
-        var exprStmt = tree.Root.Children[..^1]
+        var exprStmt = tree.FileSyntax.Children[..^1]
             .ShouldHaveSingleItem()
             .ShouldBeAssignableTo<SyntaxNode>();
         exprStmt.Kind.ShouldBe(SyntaxKind.ExprStmt);
@@ -61,7 +61,7 @@ public partial class ParserTests
         var source = SourceFileView.FromFile(path);
         var tree = Parser.Parse(source);
 
-        SyntaxWalk.AllNodesRecursive(tree.Root).ShouldAllBe(node => node.FullSpan.IsPartitionedBy(node.Children.Select(child => child.FullSpan)));
+        SyntaxWalk.AllNodesRecursive(tree.FileSyntax).ShouldAllBe(node => node.FullSpan.IsPartitionedBy(node.Children.Select(child => child.FullSpan)));
     }
 
     [Theory, Corpus]
@@ -70,7 +70,7 @@ public partial class ParserTests
         var source = SourceFileView.FromFile(path);
         var tree = Parser.Parse(source);
 
-        source.Span.IsPartitionedBy(SyntaxWalk.AllTokenSpansRecursive(tree.Root)).ShouldBeTrue();
+        source.Span.IsPartitionedBy(SyntaxWalk.AllTokenSpansRecursive(tree.FileSyntax)).ShouldBeTrue();
     }
 
 
@@ -119,7 +119,7 @@ public partial class ParserTests
             yield break;
         }
 
-        foreach (var node in SyntaxWalk.AllNodesRecursive(tree.Root))
+        foreach (var node in SyntaxWalk.AllNodesRecursive(tree.FileSyntax))
         {
             if (node.FullSpan.IsPartitionedBy(node.Children.Select(child => child.FullSpan)))
                 continue;
@@ -129,7 +129,7 @@ public partial class ParserTests
             yield break;
         }
 
-        var tokenSpans = SyntaxWalk.AllTokenSpansRecursive(tree.Root).ToList();
+        var tokenSpans = SyntaxWalk.AllTokenSpansRecursive(tree.FileSyntax).ToList();
         if (!source.Span.IsPartitionedBy(tokenSpans))
         {
             yield return new Finding("(3) Source is not partitioned by its tokens",

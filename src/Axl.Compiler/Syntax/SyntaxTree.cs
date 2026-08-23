@@ -7,9 +7,9 @@ namespace Axl.Compiler.Syntax;
 public sealed class SyntaxTree
 {
     /// <summary>
-    /// The <see cref="SyntaxKind.TreeRoot"/> node spanning the whole file.
+    /// The <see cref="SyntaxKind.File"/> node spanning the whole file.
     /// </summary>
-    public TreeRootSyntax Root { get; }
+    public FileSyntax FileSyntax { get; }
     
     public SourceFileView Source { get; }
 
@@ -17,11 +17,11 @@ public sealed class SyntaxTree
 
     public bool HasError { get; }
 
-    internal SyntaxTree(TreeRootSyntax root, SourceFileView source, ImmutableArray<Diagnostic> diagnostics, bool hasError)
+    internal SyntaxTree(FileSyntax fileSyntax, SourceFileView source, ImmutableArray<Diagnostic> diagnostics, bool hasError)
     {
-        Guard.MustBe(root.Kind is SyntaxKind.TreeRoot);
+        Guard.MustBe(fileSyntax.Kind is SyntaxKind.File);
 
-        Root = root;
+        FileSyntax = fileSyntax;
         Source = source;
         Diagnostics = diagnostics;
         HasError = hasError;

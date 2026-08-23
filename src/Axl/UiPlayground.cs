@@ -345,8 +345,8 @@ public static class UiPlayground
         public Row BuildCstTree()
         {
             // The root covers the whole file, so a preview of it says nothing.
-            var root = new Row([new Segment($"{syntaxTree.Root.Kind}", KindAttribute)]);
-            AddChildren(root, syntaxTree.Root, onErrorNode: false, errorLanesAbove: []);
+            var root = new Row([new Segment($"{syntaxTree.FileSyntax.Kind}", KindAttribute)]);
+            AddChildren(root, syntaxTree.FileSyntax, onErrorNode: false, errorLanesAbove: []);
             return root;
         }
 
@@ -449,7 +449,7 @@ public static class UiPlayground
         /// instead of its raw children. A node that stayed a plain <see cref="SyntaxNode"/> has no
         /// AST shape at all, so it falls back to the CST style and is marked as such.
         /// </summary>
-        public Row BuildAstTree() => AstNodeRow(syntaxTree.Root, leading: []);
+        public Row BuildAstTree() => AstNodeRow(syntaxTree.FileSyntax, leading: []);
 
         /// <param name="leading">
         /// Segments the row opens with, so that a member can put its own name in front of the node

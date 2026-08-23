@@ -7,7 +7,6 @@
 * Regressions: `1+[EOF]`, `-[EOF]`
 * Grammar comments (Type=Expr;Arm=Expr)
   * sort `SyntaxKind` and TreeBuilder
-* ?? `TreeRoot` -> `FileSyntax`, ...?
 
 * Tests:
   * `MangledCorpus`
