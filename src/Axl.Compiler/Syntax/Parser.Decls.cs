@@ -42,7 +42,7 @@ public partial class Parser
         if (_scanner.IsAt(TokenKind.Semicolon))
         {
             _scanner.EatKnown(TokenKind.Semicolon);
-            return _scanner.Close(decl, SyntaxKind.GlobalModuleDecl);
+            return _scanner.Close(decl, SyntaxKind.FileScopedModuleDecl);
         }
 
         // --- Missing { }?
@@ -57,7 +57,7 @@ public partial class Parser
             if (onGlobalScope)
             {
                 EnsureToken(TokenKind.Semicolon);
-                return _scanner.Close(decl, SyntaxKind.GlobalModuleDecl);
+                return _scanner.Close(decl, SyntaxKind.FileScopedModuleDecl);
             }
             else
             {

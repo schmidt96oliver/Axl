@@ -138,7 +138,7 @@ public partial class Parser
             SyntaxKind.FnDecl => new FnDeclSyntax(elements),
             SyntaxKind.NativeFnDecl => new NativeFnDeclSyntax(elements),
             SyntaxKind.ModuleDecl => new ModuleDeclSyntax(elements),
-            SyntaxKind.GlobalModuleDecl => new GlobalModuleDeclSyntax(elements),
+            SyntaxKind.FileScopedModuleDecl => new FileScopedModuleDeclSyntax(elements),
             SyntaxKind.UsingDirective => new UsingDirectiveSyntax(elements),
             _ => new SyntaxNode(kind, elements),
         };

@@ -7,7 +7,7 @@ File            = (Stmt | UsingDirective | Member)*
 > The distinction between script and module files is not made in the parser
 > or AST, but by declaration binding later in the pipeline.
 
-ModuleFile      = (UsingDirective | ModuleDecl | GlobalModuleDecl)*
+ModuleFile      = (UsingDirective | ModuleDecl | FileScopedModuleDecl)*
 ScriptFile      = (Stmt | UsingDirective | Member)*
 
 
@@ -19,12 +19,12 @@ UsingDirective  = "using" Path ";"
 ## Member Declarations
 > Declaration: Introduces a name.
 
-Member           = Modifier* (FnDecl | NativeFnDecl | ModuleDecl | GlobalModuleDecl)
+Member           = Modifier* (FnDecl | NativeFnDecl | ModuleDecl | FileScopedModuleDecl)
                 
 Modifier         = "public" | "private"
 
 ModuleDecl       = "module" Path "{" (UsingDirective | Member)* "}"
-GlobalModuleDecl = "module" Path ";"
+FileScopedModuleDecl = "module" Path ";"
 
 FnDecl           = "fn" IdName ParamList ReturnTypeAnnotation? Body ";"§
 > Identifier "never" is promoted to SyntaxKind.NativeTypeName with TokenKind.NeverKw

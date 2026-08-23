@@ -23,7 +23,7 @@ public enum SyntaxKind
     UsingDirective,
     
     // Declarations
-    GlobalModuleDecl,
+    FileScopedModuleDecl,
     ModuleDecl,
     VarDecl,
     NativeFnDecl,

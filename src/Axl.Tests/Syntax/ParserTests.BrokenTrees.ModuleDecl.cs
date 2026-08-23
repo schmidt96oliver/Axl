@@ -9,12 +9,12 @@ public partial class ParserTests
         public sealed class ModuleDecl
         {
             [Fact]
-            public void MissingBodyAndSemicolon_Global()
+            public void MissingBodyAndSemicolon_FileScoped()
                 => InlineSnapshot.Validate(Tree("module A"), """
                     ERROR MissingToken@[8, 8): Expected ';'.
 
 
-                    GlobalModuleDecl
+                    FileScopedModuleDecl
                     · 'module'
                     · Path
                     · · IdName 'A'
