@@ -19,8 +19,10 @@ public enum SyntaxKind
     TreeRoot,
     ExprStmt,
     
+    // Directives
+    UsingDirective,
+    
     // Declarations
-    UsingDecl,
     GlobalModuleDecl,
     ModuleDecl,
     VarDecl,

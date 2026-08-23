@@ -5,7 +5,7 @@ namespace Axl.Compiler.Syntax;
 
 public partial class Parser
 {
-    private MarkClose EatStmtOrUsing(Anchor anchor)
+    private MarkClose EatStmt(Anchor anchor)
     {
         Debug.Assert(_scanner.IsAt(FirstSet.Stmt));
 
@@ -22,11 +22,6 @@ public partial class Parser
 
         if (_scanner.IsAt(TokenKind.VarKw))
             return EatVarDecl(anchor);
-
-        // Using is here for convenience, since it's allowed
-        // in every statement position.
-        if (_scanner.IsAt(TokenKind.UsingKw))
-            return EatUsingDecl();
 
         throw new UnreachableException($"{nameof(FirstSet.Stmt)} too large.");
     }

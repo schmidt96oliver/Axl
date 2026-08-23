@@ -2,6 +2,21 @@
                                        ≽(◕ ᴗ ◕)≼
 
 **Next**: 
+* see Claude for AST tightening
+
+* ?? `GlobalModuleDecl` -> `FileScopedModuleDecl`
+* ?? `EatStmtOrUsing` -> `EatStmt`
+* ?? split `FnDecl` and `NativeFnDecl`
+* Regressions: `1+[EOF]`, `-[EOF]`
+* Tests:
+  * `MangledCorpus`
+  * 1 invariant = 1 test
+* TreeBuilder creates plain nodes?
+* Grammar comments (Type=Expr;Arm=Expr)
+  * check alignment
+  * sort `SyntaxKind` and TreeBuilder
+
+* Have BlockExprSxntax.Members, .Usings, .Stmts
 
 **Small points**:
 * SyntaxNode enumerator (all nodes, BFS/DFS, all tokens in sequence)

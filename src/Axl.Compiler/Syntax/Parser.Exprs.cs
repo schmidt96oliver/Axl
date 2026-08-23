@@ -158,8 +158,10 @@ public partial class Parser
         foreach (var _ in _scanner.MustEatEachIteration())
         {
             // --- Statement or FnDecl
-            if (_scanner.IsAt(FirstSet.Stmt | TokenKind.UsingKw))
-                EatStmtOrUsing(blockAnchor);
+            if (_scanner.IsAt(FirstSet.Stmt))
+                EatStmt(blockAnchor);
+            else if (_scanner.IsAt(TokenKind.UsingKw))
+                EatUsingDirective();
             else if (_scanner.IsAt(FirstSet.Member))
                 EatMember(blockAnchor, onGlobalScope: false);
             

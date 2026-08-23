@@ -7,18 +7,6 @@ namespace Axl.Compiler.Syntax;
 
 public partial class Parser
 {
-    private MarkClose EatUsingDecl()
-    {
-        Debug.Assert(_scanner.IsAt(TokenKind.UsingKw));
-
-        var usingDecl = _scanner.Open();
-        _scanner.EatKnown(TokenKind.UsingKw);
-        EnsurePath(ExpectedSyntax.ModuleName);
-        EnsureToken(TokenKind.Semicolon);
-        return _scanner.Close(usingDecl, SyntaxKind.UsingDecl);
-    }
-
-
     private MarkClose EatMember(Anchor anchor, bool onGlobalScope)
     {
         Debug.Assert(_scanner.IsAt(FirstSet.Member));
@@ -79,13 +67,15 @@ public partial class Parser
         
         // --- Eat members
         _scanner.EatKnown(TokenKind.OpenBrace);
-        var moduleBodyAnchor = Anchor.Forced | FirstSet.Member | TokenKind.CloseBrace;
+        var moduleBodyAnchor = Anchor.Forced | TokenKind.UsingKw | FirstSet.Member | TokenKind.CloseBrace;
         foreach (var _ in _scanner.MustEatEachIteration())
         {
             RecoverToAndReport(moduleBodyAnchor, ExpectedSyntax.Member);
 
             if (_scanner.IsAt(FirstSet.Member))
                 EatMember(moduleBodyAnchor, onGlobalScope: false);
+            else if (_scanner.IsAt(TokenKind.UsingKw))
+                EatUsingDirective();
             else
             {
                 // Could be `}` or Eof
