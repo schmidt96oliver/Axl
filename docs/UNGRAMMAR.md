@@ -105,7 +105,8 @@ GetMember   = OperandExpr "." IdName
 Call        = OperandExpr ArgList
 
 ArgList     = "(" ")"
-            | "(" Expr ("," Expr)* ")"
+            | "(" Arg ("," Arg)* ")"
+Arg         = Expr
 
 StringExpr            = StringStart (StringText | StringInterpolation)* StringEnd
 StringInterpolation   = "{" Expr? "}"
