@@ -1,3 +1,21 @@
 [*.cs]
 # CS8509: The switch expression does not handle all possible values of its input type (it is not exhaustive).
 dotnet_diagnostic.CS8509.severity = error
+
+# CS1574: XML comment has cref attribute that could not be resolved
+dotnet_diagnostic.CS1574.severity = error
+
+# CS1584: XML comment has syntactically incorrect cref attribute
+dotnet_diagnostic.CS1584.severity = error
+
+# CS1581: Invalid return type in XML comment cref attribute
+dotnet_diagnostic.CS1581.severity = error
+
+# CS1580: Invalid type for parameter in XML comment cref attribute
+dotnet_diagnostic.CS1580.severity = error
+
+# CS1591: Missing XML comment for publicly visible type or member
+dotnet_diagnostic.CS1591.severity = none
+
+# CS1573: Missing <param> tag for one of the method parameters
+dotnet_diagnostic.CS1573.severity = none

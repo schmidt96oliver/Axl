@@ -6,6 +6,14 @@
         <Nullable>enable</Nullable>
     </PropertyGroup>
 
+    <PropertyGroup Condition=" '$(Configuration)' == 'Debug' ">
+      <DocumentationFile>C:\Users\schmi\Source\Axl\artifacts\bin\Axl.Compiler\debug\Axl.Compiler.xml</DocumentationFile>
+    </PropertyGroup>
+
+    <PropertyGroup Condition=" '$(Configuration)' == 'Release' ">
+      <DocumentationFile>C:\Users\schmi\Source\Axl\artifacts\bin\Axl.Compiler\release\Axl.Compiler.xml</DocumentationFile>
+    </PropertyGroup>
+
     <ItemGroup>
         <AssemblyAttribute Include="System.Runtime.CompilerServices.InternalsVisibleToAttribute">
             <_Parameter1>Axl.Compiler.UnitTests</_Parameter1>

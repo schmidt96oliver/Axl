@@ -13,7 +13,7 @@ public sealed class NumberLiteralToken(SourceSpan span, string body, NumberLiter
     : Token(span, TokenKind.NumberLiteral, isMissing: body.Length == 0)
 {
     /// <summary>
-    /// Empty, if <see cref="IsMissing"/> is <c>true</c>.
+    /// Empty, if <see cref="Token.IsMissing"/> is <c>true</c>.
     /// Otherwise, one of these forms:
     /// <list type="bullet">
     /// <item>0x[0-9A-Fa-f]+</item>

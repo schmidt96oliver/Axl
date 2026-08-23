@@ -13,8 +13,5 @@ public sealed class FnDeclSyntax(ImmutableArray<SyntaxElement> children)
     public TypeNameSyntax? ReturnTypeAnnotation
         => Children.FirstOfTypeOrNull<TypeAnnotationClauseSyntax>()?.TypeName;
     
-    /// <summary>
-    /// Only <c>null</c>, if <see cref="NativeName"/> is not <c>null</c>.
-    /// </summary>
     public BodySyntax Body => Children.FirstOfType<BodySyntax>();
 }

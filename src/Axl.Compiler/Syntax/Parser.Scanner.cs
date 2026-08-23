@@ -40,7 +40,7 @@ public partial class Parser
 
     
     /// <summary>
-    /// Range of scanner positions claimed by one <see cref="ParseError.Report"/>.
+    /// Range of scanner positions claimed by one <see cref="ParseEvent.Report"/>.
     /// </summary>
     private readonly record struct ClaimedRange(int First, int Last);
     
@@ -63,7 +63,7 @@ public partial class Parser
         public sealed record Make(TokenKind Kind) : ParseEvent;
 
         /// <summary>
-        /// Reports an <paramref name="Error"/>. Might be suppressed, if another <see cref="Report"/> already
+        /// Reports an <paramref name="Error"/>. Might be suppressed, if another <see cref="ParseEvent.Report"/> already
         /// claimed that range through its own <paramref name="ClaimedRange"/>.
         /// </summary>
         /// <param name="ClaimedRange">
