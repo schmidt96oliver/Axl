@@ -19,14 +19,12 @@ UsingDirective  = "using" Path ";"
 ## Member Declarations
 > Declaration: Introduces a name.
 
-Member           = FnDecl 
-                 | ModuleDecl 
-                 | GlobalModuleDecl
+Member           = Modifier* (FnDecl | ModuleDecl | GlobalModuleDecl)
                 
 Modifier         = "public" | "private"
 
-ModuleDecl       = Modifier* "module" Path "{" (UsingDirective | Member)* "}"
-GlobalModuleDecl = Modifier* "module" Path ";"
+ModuleDecl       = "module" Path "{" (UsingDirective | Member)* "}"
+GlobalModuleDecl = "module" Path ";"
 
 
 FnDecl           = NativeClause? "fn" IdName ParamList ("->" (TypeName | "never"))? Body? ";"§

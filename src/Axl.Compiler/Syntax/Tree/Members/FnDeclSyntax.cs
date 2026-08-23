@@ -15,9 +15,6 @@ public sealed class ParamSyntax(ImmutableArray<SyntaxElement> children)
 public sealed class FnDeclSyntax(ImmutableArray<SyntaxElement> children)
     : MemberSyntax(SyntaxKind.FnDecl, children)
 {
-    public IEnumerable<Token> Modifiers
-        => Children.OfType<Token>().Where(token => token.Kind.IsModifier);
-
     public StringExprSyntax? NativeName
         => Children.FirstOfKindOrNull(SyntaxKind.NativeClause)?
             .Children.FirstOfType<StringExprSyntax>();
