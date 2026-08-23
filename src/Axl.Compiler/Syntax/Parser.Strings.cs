@@ -73,7 +73,7 @@ public partial class Parser
         _scanner.EatKnown(TokenKind.OpenBrace);
 
         // --- Parse Expression
-        // `{ `}` will fall through and consume `}` as closing.
+        // `{ }` will fall through and consume `}` as closing.
         if (_scanner.IsAt(FirstSet.Expr))
             EnsureExpr(anchor | TokenKind.CloseBrace);
 

@@ -73,7 +73,7 @@ public partial class Parser
 
     /// <summary>
     /// If scanner is not at <paramref name="anchor"/>, collects garbage into
-    /// a <see cref="SyntaxKind.Error"/> node and reports <see cref="Diagnostic.UnexpectedToken"/>.
+    /// a <see cref="SyntaxKind.Garbage"/> node and reports <see cref="Diagnostic.UnexpectedToken"/>.
     /// Always leaves the scanner on <paramref name="anchor"/>.
     /// </summary>
     /// <returns><c>True</c> iff garbage was collected and an error node added.</returns>
@@ -92,7 +92,7 @@ public partial class Parser
 
     /// <summary>
     /// If scanner is not at <paramref name="anchor"/>, collects garbage into
-    /// a <see cref="SyntaxKind.Error"/> node and reports no error.
+    /// a <see cref="SyntaxKind.Garbage"/> node and reports no error.
     /// Always leaves the scanner on <paramref name="anchor"/>.
     /// </summary>
     /// <returns><c>True</c> iff garbage was collected and an error node added.</returns>

@@ -83,7 +83,7 @@ public static class UiPlayground
         public List<Row> Children { get; } = [];
 
         /// <summary>
-        /// For every <see cref="SyntaxKind.Error"/> node this row hangs under, how many levels above the
+        /// For every <see cref="SyntaxKind.Garbage"/> node this row hangs under, how many levels above the
         /// row it sits - so <c>1</c> for a direct child. That is all it takes to find the spine running
         /// down its children, and unlike an absolute depth it cannot drift out of step with the tree.
         /// </summary>
@@ -387,7 +387,7 @@ public static class UiPlayground
         }
 
         /// <param name="onErrorNode">
-        /// Whether <paramref name="node"/> is a <see cref="SyntaxKind.Error"/>, which only colors its
+        /// Whether <paramref name="node"/> is a <see cref="SyntaxKind.Garbage"/>, which only colors its
         /// own tokens red. A valid node inside an error node is green again, together with its tokens.
         /// </param>
         /// <param name="errorLanesAbove">

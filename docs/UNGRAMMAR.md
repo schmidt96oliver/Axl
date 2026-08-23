@@ -1,7 +1,6 @@
-﻿Ungrammar names follow SyntaxKind names where they are product ungrammars
-and Parse* names where they are sum ungrammars.
-
+﻿
 # Top-Level
+
 File            = (Stmt | UsingDirective | Member)*
 
 > The distinction between script and module files is not made in the parser

@@ -187,8 +187,7 @@ public class AstTests
 
     /// <summary>
     /// The single element an accessor returned, or the elements of the sequence it
-    /// returned. Sequence items that are not <see cref="SyntaxElement"/>s — the Dunet
-    /// item unions, for instance — are covered by invariant 1 only.
+    /// returned. Sequence items that are not <see cref="SyntaxElement"/>s
     /// </summary>
     private static IEnumerable<SyntaxElement> ElementsOf(object? value, IReadOnlyList<object?> items)
     {

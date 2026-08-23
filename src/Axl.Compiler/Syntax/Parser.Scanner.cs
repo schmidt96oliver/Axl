@@ -240,7 +240,7 @@ public partial class Parser
         }
 
         /// <summary>
-        /// Eats the next token into a <see cref="SyntaxKind.Error"/> node and reports
+        /// Eats the next token into a <see cref="SyntaxKind.Garbage"/> node and reports
         /// a <see cref="Diagnostic.UnexpectedToken"/>.
         /// </summary>
         public MarkClose EatIntoGarbageAndReport(ExpectedSyntax expectedSyntax)

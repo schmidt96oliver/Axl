@@ -32,7 +32,7 @@ Folding Ranges for segments
 * Binder is owned by `Compilation`; no SemanticModel (yet)
 * Special case `Standard.PrintLine` until fns
 * expected-type propagation; `loop`/`break` type checks
-* `SyntaxKind.Error` → bind children, wrap in `HirError`.
+* `SyntaxKind.ErrorExpr` → bind children, wrap in `HirError`.
 
 ## Phase 2 — Script functions
 
