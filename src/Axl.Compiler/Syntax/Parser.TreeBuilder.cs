@@ -75,7 +75,7 @@ public partial class Parser
                 case ParseEvent.Close(var kind):
                 {
                     var nodeBuilder = nodeBuilders.Pop();
-                    var syntaxNode = CreateNode(kind, nodeBuilder.DrainToImmutable());
+                    var syntaxNode = SyntaxNodeFactory.Create(kind, nodeBuilder.DrainToImmutable());
                     nodeBuilders.Peek().Add(syntaxNode);
 
                     if (kind is SyntaxKind.Garbage or SyntaxKind.ErrorExpr)
@@ -105,41 +105,4 @@ public partial class Parser
 
         throw new UnreachableException("Event stream ended without closing File.");
     }
-
-    private SyntaxNode CreateNode(SyntaxKind kind, ImmutableArray<SyntaxElement> elements)
-        => kind switch
-        {
-            SyntaxKind.IdName => new IdNameSyntax(elements),
-            SyntaxKind.NativeTypeName => new NativeTypeNameSyntax(elements),
-            SyntaxKind.Path => new PathSyntax(elements),
-            SyntaxKind.BinaryExpr => new BinaryExprSyntax(elements),
-            SyntaxKind.UnaryExpr => new UnaryExprSyntax(elements),
-            SyntaxKind.GroupExpr => new GroupExprSyntax(elements),
-            SyntaxKind.CallExpr => new CallExprSyntax(elements),
-            SyntaxKind.GetMemberExpr => new GetMemberExprSyntax(elements),
-            SyntaxKind.BreakExpr => new BreakExprSyntax(elements),
-            SyntaxKind.ContinueExpr => new ContinueExprSyntax(elements),
-            SyntaxKind.ReturnExpr => new ReturnExprSyntax(elements),
-            SyntaxKind.AssignExpr => new AssignExprSyntax(elements),
-            SyntaxKind.IfExpr => new IfExprSyntax(elements),
-            SyntaxKind.LoopExpr => new LoopExprSyntax(elements),
-            SyntaxKind.BlockExpr => new BlockExprSyntax(elements),
-            SyntaxKind.Arm => new ArmSyntax(elements),
-            SyntaxKind.TrueLiteral => new TrueLiteralSyntax(elements),
-            SyntaxKind.FalseLiteral => new FalseLiteralSyntax(elements),
-            SyntaxKind.NumberLiteral => new NumberLiteralSyntax(elements),
-            SyntaxKind.StringExpr => new StringExprSyntax(elements),
-            SyntaxKind.StringText => new StringTextSyntax(elements),
-            SyntaxKind.StringInterpolation => new StringInterpolationSyntax(elements),
-            SyntaxKind.ErrorExpr => new ErrorExprSyntax(elements),
-            SyntaxKind.ExprStmt => new ExprStmtSyntax(elements),
-            SyntaxKind.VarDecl => new VarDeclSyntax(elements),
-            SyntaxKind.Param => new ParamSyntax(elements),
-            SyntaxKind.FnDecl => new FnDeclSyntax(elements),
-            SyntaxKind.NativeFnDecl => new NativeFnDeclSyntax(elements),
-            SyntaxKind.ModuleDecl => new ModuleDeclSyntax(elements),
-            SyntaxKind.FileScopedModuleDecl => new FileScopedModuleDeclSyntax(elements),
-            SyntaxKind.UsingDirective => new UsingDirectiveSyntax(elements),
-            _ => new SyntaxNode(kind, elements),
-        };
 }
