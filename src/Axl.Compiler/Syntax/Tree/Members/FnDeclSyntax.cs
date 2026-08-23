@@ -8,12 +8,10 @@ public sealed class FnDeclSyntax(ImmutableArray<SyntaxElement> children)
     public IdentifierToken Name => Children.FirstOfType<IdNameSyntax>().Token;
 
     public IEnumerable<ParamSyntax> Parameters
-        => Children.FirstOfKind(SyntaxKind.ParamList)
-            .Children.OfType<ParamSyntax>();
+        => Children.FirstOfType<ParamListSyntax>().Parameters;
 
     public TypeNameSyntax? ReturnTypeAnnotation
-        => Children.FirstOfKindOrNull(SyntaxKind.TypeAnnotationClause)?
-        .Children.FirstOfType<TypeNameSyntax>();
+        => Children.FirstOfTypeOrNull<TypeAnnotationClauseSyntax>()?.TypeName;
     
     /// <summary>
     /// Only <c>null</c>, if <see cref="NativeName"/> is not <c>null</c>.

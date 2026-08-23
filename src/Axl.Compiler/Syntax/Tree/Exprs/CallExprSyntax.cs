@@ -7,8 +7,8 @@ public sealed class CallExprSyntax(ImmutableArray<SyntaxElement> children)
 {
     public ExprSyntax Callee => Children.FirstOfType<ExprSyntax>();
 
-    public IEnumerable<ExprSyntax> Arguments => 
-        Children.FirstOfKind(SyntaxKind.ArgList)
-        .Children.OfKind(SyntaxKind.Arg)
-        .Select(node => node.Children.FirstOfType<ExprSyntax>());
+    public IEnumerable<ExprSyntax> ArgumentExprs => 
+        Children.FirstOfType<ArgListSyntax>()
+        .Arguments
+        .Select(arg => arg.Expr);
 }

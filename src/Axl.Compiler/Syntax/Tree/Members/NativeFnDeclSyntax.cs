@@ -6,16 +6,13 @@ public class NativeFnDeclSyntax(ImmutableArray<SyntaxElement> children)
     : MemberSyntax(SyntaxKind.NativeFnDecl, children)
 {
     public StringExprSyntax NativeName
-        => Children.FirstOfKind(SyntaxKind.NativeClause)
-            .Children.FirstOfType<StringExprSyntax>();
+        => Children.FirstOfType<NativeClauseSyntax>().NativeName;
     
     public IdentifierToken Name => Children.FirstOfType<IdNameSyntax>().Token;
     
     public IEnumerable<ParamSyntax> Parameters
-        => Children.FirstOfKind(SyntaxKind.ParamList)
-            .Children.OfType<ParamSyntax>();
+        => Children.FirstOfType<ParamListSyntax>().Parameters;
 
     public TypeNameSyntax? ReturnTypeAnnotation
-        => Children.FirstOfKindOrNull(SyntaxKind.TypeAnnotationClause)?
-            .Children.FirstOfType<TypeNameSyntax>();
+        => Children.FirstOfTypeOrNull<TypeAnnotationClauseSyntax>()?.TypeName;
 }

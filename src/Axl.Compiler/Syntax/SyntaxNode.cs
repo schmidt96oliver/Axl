@@ -2,7 +2,7 @@
 
 namespace Axl.Compiler.Syntax;
 
-public class SyntaxNode : SyntaxElement
+public abstract class SyntaxNode : SyntaxElement
 {
     public SyntaxKind Kind { get; }
     

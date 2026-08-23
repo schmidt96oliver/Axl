@@ -33,7 +33,17 @@ public static class SyntaxNodeFactory
             factories.Add(kind, array => (SyntaxNode)suitableConstructor.Invoke([array]));
         }
 
-        return factories.ToFrozenDictionary();
+        var frozenFactories = factories.ToFrozenDictionary();
+        AssertAllKindsHaveAFactory(allKinds, frozenFactories);
+        return frozenFactories;
+    }
+
+    [Conditional("DEBUG")]
+    private static void AssertAllKindsHaveAFactory(SyntaxKind[] allKinds,
+        FrozenDictionary<SyntaxKind, Func<ElementArray, SyntaxNode>> factories)
+    {
+        var withoutFactory = allKinds.Where(kind => !factories.ContainsKey(kind)).ToList();
+        Debug.Assert(withoutFactory.Count == 0, $"{nameof(SyntaxKind)}s {string.Join(", ", withoutFactory)} have no ast-node.");
     }
     
     private static SyntaxKind GetKind(Type type, SyntaxKind[] allKinds)
@@ -48,16 +58,15 @@ public static class SyntaxNodeFactory
 
         return kind;
     }
-    
-    
+
+
     public static SyntaxNode Create(SyntaxKind kind, ElementArray children)
     {
-        if (FactoriesByKind.TryGetValue(kind, out var constructor))
-        {
-            var node = constructor(children);
-            Debug.Assert(node.Kind == kind);
-            return node;
-        }
-        return new SyntaxNode(kind, children);
+        Guard.MustBe(FactoriesByKind.ContainsKey(kind), $"{kind} is not a known {nameof(SyntaxKind)}.");
+
+        var node = FactoriesByKind[kind](children);
+        Debug.Assert(node.Kind == kind);
+        
+        return node;
     }
 }

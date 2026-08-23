@@ -11,6 +11,6 @@ public sealed class IfExprSyntax(ImmutableArray<SyntaxElement> children)
     // in predicate position and the parser never puts them there.
     public BodySyntax Body => Children.FirstOfType<BodySyntax>();
 
-    public ExprSyntax? ElseBody => Children.FirstOfKindOrNull(SyntaxKind.ElseClause)?
-        .Children.FirstOfType<ExprSyntax>();
+    public ExprSyntax? ElseBody 
+        => Children.FirstOfTypeOrNull<ElseClauseSyntax>()?.Body;
 }

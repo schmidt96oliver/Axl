@@ -11,7 +11,6 @@
 * Tests:
   * `MangledCorpus`
   * 1 invariant = 1 test
-* TreeBuilder creates plain nodes?
 
 **Small points**:
 * SyntaxNode enumerator (all nodes, BFS/DFS, all tokens in sequence)

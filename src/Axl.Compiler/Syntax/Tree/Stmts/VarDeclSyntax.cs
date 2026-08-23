@@ -8,10 +8,9 @@ public sealed class VarDeclSyntax(ImmutableArray<SyntaxElement> children)
     public IdentifierToken Name => Children.FirstOfType<IdNameSyntax>().Token;
 
     public TypeNameSyntax? TypeAnnotation => Children
-        .FirstOfKindOrNull(SyntaxKind.TypeAnnotationClause)?
-        .Children.FirstOfType<TypeNameSyntax>();
-    
+        .FirstOfTypeOrNull<TypeAnnotationClauseSyntax>()?
+        .TypeName;
+
     public ExprSyntax? Initializer => Children
-        .FirstOfKindOrNull(SyntaxKind.InitializerClause)?
-        .Children.FirstOfType<ExprSyntax>();
+        .FirstOfTypeOrNull<InitializerClauseSyntax>()?.Expr;
 }
