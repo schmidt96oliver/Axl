@@ -2,47 +2,57 @@
 and Parse* names where they are sum ungrammars.
 
 # Top-Level
-File            = BlockItem*
-BlockItem       = (Stmt | Member)
+File            = (Stmt | UsingDirective | Member)*
 
+> The distinction between script and module files is not made in the parser
+> or AST, but by declaration binding later in the pipeline.
+
+ModuleFile      = (UsingDirective | ModuleDecl | GlobalModuleDecl)*
+ScriptFile      = (Stmt | UsingDirective | Member)*
+
+
+## Directives
+> Directive: Tells the compiler how to process code.
+
+UsingDirective  = "using" Path ";"
 
 ## Member Declarations
-Member      = ModifierList (FnDecl | ModuleDecl | GlobalModuleDecl)
+> Declaration: Introduces a name.
+
+Member           = FnDecl 
+                 | ModuleDecl 
+                 | GlobalModuleDecl
                 
-GlobalModuleDecl= "module" Path ";"
+Modifier         = "public" | "private"
 
-ModifierList    = ("public" | "private")*
-// DeclBinder only accepts correct combinations
+ModuleDecl       = Modifier* "module" Path "{" (UsingDirective | Member)* "}"
+GlobalModuleDecl = Modifier* "module" Path ";"
 
-FnDecl          = NativeClause? "fn" IdName ParamList ("->" (TypeName | "never"))? Body? ";"§
-// Identifier "never" is promoted to SyntaxKind.NativeTypeName with TokenKind.NeverKw
-// DeclBinder requires Body on non-native functions
+
+FnDecl           = NativeClause? "fn" IdName ParamList ("->" (TypeName | "never"))? Body? ";"§
+> Identifier "never" is promoted to SyntaxKind.NativeTypeName with TokenKind.NeverKw
+> Binder requires Body on non-native functions
 
 NativeClause    = "native" "(" StringExpr ")"
-// DeclBinder rejects interpolations inside StringExpr
-// Syntactically, we can permit them to get better parses
+> Binder rejects interpolations inside StringExpr
 
 ParamList       = "(" ")"
                 | "(" Param ("," Param)* ")"
-Param           = IdName TypeAnnotation       
 
-ModuleDecl      = "module" Path "{" (Stmt | Member)* "}"
+Param           = IdName TypeAnnotation?       
 
 ## Statements
+> Semicolon rule (";"§): ";" is omissible, iff the last token is "}"
+
 Stmt        = ExprStmt
             | VarDecl
-            | UsingDecl
 
-UsingDecl   = "using" Path ";"
+ExprStmt    = BodiedExpr ";"§             
+            | (OperandExpr | TailExpr) ";"
 
-ExprStmt    = BodiedExpr ";"§               // ";" omissible, iff last token is "}"
-            | (OperandExpr | TailExpr) ";"  // ";" always required
 
-VarDecl         = "var" IdName TypeAnnotation? InitializerClause? ";"
-// InitializerClause required by Binder. Parser is permissive
-
+VarDecl             = "var" IdName TypeAnnotation? InitializerClause? ";"
 InitializerClause   = "=" Expr
-
 
 # Expressions
 There needs to be a division between 3 different types of expressions:
@@ -52,31 +62,31 @@ There needs to be a division between 3 different types of expressions:
         * ";" always required.
         * They might leak bodies into Exprs where bodies are not allowed, so they need to be their own category.
     3. OperandExpr - Contains bodies only in _clearly delimited_ cases
-This is to avoid certain syntax footgun and ambiguities. Also The semicolon
-rule is stated much more clearly in this framing.
+This is to avoid certain syntax footgun and ambiguities. Also the semicolon
+rule is stated more clearly in this framing.
 
 Expr        = BodiedExpr | OperandExpr | TailExpr
 
 ## Body, BodiedExpr, Arm
-Body        = Block
+Body        = BlockExpr
             | Arm
 Arm         = "=>" Expr
-            | "=" Expr      // ERROR PRODUCTION
+            | "=" Expr      > ERROR PRODUCTION
+> In AST, Body and Arm are Expr as well, to allow it being named in expression positions.
+> However, the grammar does not allow Arm in expression position.
 
 BodiedExpr  = Block | If | Loop
-//          = Expressions that own a body.
 
-Block       = "{" (BlockItem)* Arm? "}"
+BlockExpr   = "{" (Stmt | UsingDirective | Member)* Arm? "}"
 
 If          = "if" OperandExpr Body ElseClause?     
-// Condition is OperandExpr to disallow any unparenthesized body inside it.
-// ERROR PRODUCTION: "=" accepted after OperandExpr
+> Condition is OperandExpr to disallow any unparenthesized body inside it.
+> ERROR PRODUCTION: "=" accepted after OperandExpr
 
 ElseClause  = "else" (Body | If)
 Loop        = "loop" Body
 
 ## Operand Expressions
-Expressions that contain bodies only in very limited, clearly delimited cases.
 
 OperandExpr = Literal | IdName | StringExpr
             | Group
@@ -86,7 +96,6 @@ OperandExpr = Literal | IdName | StringExpr
             | GetMember
 
 Group       = "(" Expr ")"
-// Clearly delimited by `)`, so it may contain a body.
 
 Literal     = "true" | "false"
             | NumberLiteral
@@ -100,15 +109,12 @@ Call        = OperandExpr ArgList
 
 ArgList     = "(" ")"
             | "(" Expr ("," Expr)* ")"
-// Arg is clearly delimited by `)` or `,`, so may contain body
 
 StringExpr            = StringStart (StringText | StringInterpolation)* StringEnd
 StringInterpolation   = "{" Expr? "}"
-// Interpolation is clearly delimited by `}`, so may contain body
-// It can also be empty to allow multi-line breaks.
+> Can be empty to allow multi-line breaks.
 
 ## Tail Expressions
-Expressions that don't own a body but might contain one.
 
 TailExpr    = Break | Continue | Return | Assign
 
@@ -118,14 +124,17 @@ Break       = "break" Expr?
 Continue    = "continue"
 Return      = "return" Expr?
 
-## Type Expressions/Clauses
+## Type Names
 TypeName        = NativeTypeName
                 | Path
-// Note that TypeName is deliberately a subset of OperandExpr
+> TypeName is an Expr in AST. In the grammar we need to distinguish:
+> Path is a TypeName construct, whereas GetMemberExpr would parse the
+> same syntax but in expression position. In AST, they both collapse
+> into Expr to be better nameable.
 
 NativeTypeName  = "i32" | "i64" | "f32" | "f64" | "string" | "none"
-// SyntaxKind.NativeTypeName can also hold TokenKind.NeverKw. NeverKw is promoted
-// from TokenKind.Identifier if FnDecl return type and only there.
+> SyntaxKind.NativeTypeName can also hold TokenKind.NeverKw. NeverKw is promoted
+> from TokenKind.Identifier if FnDecl return type and only there.
 
 Path   = IdName ("." IdName)*
 
