@@ -6,6 +6,8 @@ using System.Collections.Immutable;
 using Axl.Compiler;
 using Axl.Compiler.Syntax;
 using Axl.Compiler.Syntax.Tree;
+using Axl.Compiler.Semantics.Symbols;
+using Axl.Compiler.Semantics.Types;
 
 
 var input = """
@@ -38,102 +40,6 @@ var table = Declarator.GetSymbolTable(compilation, [compilation.GetSyntaxTree(co
 foreach (var symbol in table.AllSymbols.OfType<ModuleSymbol>())
 {
     Console.WriteLine($"{symbol.Name}: Parent = {symbol.Parent?.Name ?? "<null>"}, SyntaxCount = {symbol.Syntaxes.Length}");
-}
-
-public readonly record struct SymbolName
-{
-    public string Text { get; private init; }
-
-    private SymbolName(string text)
-    {
-        Text = text;
-    }
-
-    public static SymbolName From(string text)
-    {
-        if (string.IsNullOrWhiteSpace(text))
-            throw new ArgumentException();
-        return new SymbolName(text);
-    }
-
-    public static SymbolName From(IdentifierToken token)
-        => From(token.Identifier);
-
-    public static SymbolName From(IdNameSyntax idNameSyntax)
-        => From(idNameSyntax.Token);
-
-
-    public static implicit operator string(SymbolName symbolName)
-        => symbolName.Text;
-}
-
-/// <summary>
-/// Declaration stuff is built eagerly. Lazily binds on request.
-/// </summary>
-/// <param name="Compilation"></param>
-/// <param name="Name"></param>
-public abstract record Symbol(Compilation Compilation, SymbolName Name, Symbol? Parent = null);
-
-/// <summary>
-/// Eagerly built during local body binding by a LocalBinder.
-/// </summary>
-public sealed record LocalSymbol(Compilation Compilation, SymbolName Name, 
-    AxlType Type, VarDeclSyntax Syntax,
-    Symbol? Parent) 
-    : Symbol(Compilation, Name, Parent);
-
-public sealed record FnSymbol(Compilation Compilation, SymbolName Name, 
-    FnDeclSyntax Syntax, Symbol? Parent)
-    : Symbol(Compilation, Name, Parent)
-{
-    public ImmutableArray<LocalSymbol> GetParameters()
-    {
-        var paramSyntaxes = Syntax.Parameters.ToList();
-        
-        var array = ImmutableArray.CreateBuilder<LocalSymbol>(initialCapacity: paramSyntaxes.Count);
-        // foreach (var paramSyntax in paramSyntaxes)
-        // {
-        //     // Bind Type
-        //     var binderContext = Compilation.GetBindingContext(paramSyntax.TypeAnnotation);
-        //     var boundType = Binder.BindType(paramSyntax.TypeAnnotation, binderContext);
-        //     array.Add(new LocalSymbol(Compilation, SymbolName.From(paramSyntax.Name), boundType, null));
-        // }
-
-        return array.DrainToImmutable();
-    }
-}
-
-public sealed record ModuleSymbol(Compilation Compilation, SymbolName Name, 
-    ImmutableArray<ModuleDeclSyntax> Syntaxes, Symbol? Parent)
-    : Symbol(Compilation, Name, Parent);
-
-
-
-public abstract record AxlType(Compilation Compilation, SymbolName Name) 
-    : Symbol (Compilation, Name);
-
-public sealed record FnType(Compilation Compilation, ImmutableArray<AxlType> ParameterTypes, AxlType ReturnType)
-    : AxlType(Compilation, 
-        SymbolName.From($"fn ({string.Join(", ", ParameterTypes.Select(type => type.Name))}) -> {ReturnType.Name}"));
-
-public abstract record NativeType(Compilation Compilation, SymbolName Name)  : AxlType(Compilation, Name);
-public sealed record I32Type(Compilation Compilation) : NativeType(Compilation, SymbolName.From("i32"));
-public sealed record I64Type(Compilation Compilation) : NativeType(Compilation, SymbolName.From("i64"));
-public sealed record NoneType(Compilation Compilation) : NativeType(Compilation, SymbolName.From("none"));
-public sealed record NeverType(Compilation Compilation) : NativeType(Compilation, SymbolName.From("never"));
-public sealed record ErrorType(Compilation Compilation) : NativeType(Compilation, SymbolName.From("???"));
-
-public sealed class TypeContext(Compilation compilation)
-{
-    public I32Type I32 { get; } = new(compilation);
-    public I64Type I64 { get; } = new(compilation);
-    
-    public NoneType None { get; } = new(compilation);
-    public NeverType Never { get; } = new(compilation);
-    public ErrorType Error { get; } = new(compilation);
-    
-    public FnType GetFnType(ImmutableArray<AxlType> paramTypes, AxlType returnType)
-        => new(compilation, paramTypes, returnType);
 }
 
 /// <summary>
@@ -204,7 +110,8 @@ public class Declarator
         }
         
         // Create each fn symbol
-        
+        foreach (var tree in trees)
+            VisitNode(compilation, symbols, tree.FileSyntax, null);
         
         return new SymbolTable(compilation, symbols.ToFrozenDictionary(), allSymbols);
 
@@ -228,7 +135,7 @@ public class Declarator
         }
     }
 
-    private static void VisitNode(Compilation compilation, Dictionary<SyntaxNode, Symbol> symbols,
+    private static IEnumerable<Symbol> VisitNode(Compilation compilation, Dictionary<SyntaxNode, Symbol> symbols,
         SyntaxNode node, Symbol? parent)
     {
         switch (node)
@@ -236,12 +143,13 @@ public class Declarator
             case ModuleDeclSyntax moduleDecl:
                 var moduleSymbol = symbols[moduleDecl];
                 foreach (var member in moduleDecl.Members)
-                    VisitNode(compilation, symbols, member, parent: moduleSymbol);
+                foreach (var symbol in VisitNode(compilation, symbols, member, parent: moduleSymbol))
+                    yield return symbol;
                 break;
             
             case FnDeclSyntax fnDecl:
                 var fnSymbol = new FnSymbol(compilation, SymbolName.From(fnDecl.Name), fnDecl, parent);
-                symbols.Add(fnDecl, fnSymbol);
+                yield return fnSymbol;
                 break;
         }
     }
