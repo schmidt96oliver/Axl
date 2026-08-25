@@ -1,65 +1,38 @@
-﻿using System.Diagnostics;
+﻿using System.Collections.Immutable;
+using Axl.Compiler.Semantics.Symbols;
 using Axl.Compiler.Syntax;
 
 namespace Axl.Compiler;
 
 public class Compilation
 {
-    private sealed class FileIdTable<T> : Dictionary<FileId, T>
+    private sealed class SyntaxTreeTable<T> : Dictionary<SyntaxTree, T>;
+
+    private SymbolTable? _symbolTable = null;
+    
+    public ImmutableArray<SyntaxTree> SyntaxTrees { get; }
+
+    private Compilation(ImmutableArray<SyntaxTree> syntaxTrees)
     {
+        SyntaxTrees = syntaxTrees;
     }
 
-    
-    private readonly FileIdTable<SourceFileView> _sourceFileViews = [];
-    private readonly FileIdTable<SyntaxTree> _syntaxTrees = [];
-
-
-    public IReadOnlyCollection<FileId> FileIds => _sourceFileViews.Keys;
-    
-
-    private Compilation()
-    {
-    }
-    
     public static Compilation FromFile(string path)
     {
-        var compilation = new Compilation();
-        compilation._sourceFileViews.Add(compilation.NewFileId(),
-            SourceFileView.FromFile(path));
-        return compilation;
+        var tree = Parser.Parse(SourceFileView.FromFile(path));
+        return new Compilation([tree]);
     }
 
     public static Compilation FromSource(SourceFileView source)
     {
-        var compilation = new Compilation();
-        compilation._sourceFileViews.Add(compilation.NewFileId(), source);
-        return compilation;
+        var tree = Parser.Parse(source);
+        return new Compilation([tree]);
     }
 
 
-    private FileId NewFileId()
+    public SymbolTable GetSymbolTable()
     {
-        var id = new FileId(_sourceFileViews.Count);
-        Debug.Assert(!_sourceFileViews.ContainsKey(id));
-        return id;
-    }
-
-    public FileId GetFileId(SourceFileView source)
-        => _sourceFileViews.First(kvp => kvp.Value == source).Key;
-    
-
-    public SourceFileView GetSource(FileId fileId)
-        => _sourceFileViews[fileId];
-    
-    public SyntaxTree GetSyntaxTree(FileId fileId)
-    {
-        if (!_syntaxTrees.TryGetValue(fileId, out var syntaxTree))
-        {
-            var tree = Parser.Parse(GetSource(fileId));
-            _syntaxTrees.Add(fileId, tree);
-            return tree;
-        }
-
-        return syntaxTree;
+        _symbolTable ??= Declarator.GetSymbolTable(this, SyntaxTrees);
+        return _symbolTable;
     }
 }

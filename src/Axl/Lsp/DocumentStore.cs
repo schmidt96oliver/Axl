@@ -7,9 +7,6 @@ namespace Axl.Lsp;
 
 public static class DocumentStore
 {
-    private static readonly ConcurrentDictionary<DocumentUri, SourceFile> Documents = new();
-    
-    private static readonly ConcurrentDictionary<DocumentUri, ImmutableArray<FileId>> FileIds = new();
     private static readonly ConcurrentDictionary<DocumentUri, Compilation> Compilations = new();
 
 
@@ -20,9 +17,6 @@ public static class DocumentStore
             var compilation = text is null
                 ? Compilation.FromFile(uri.GetFileSystemPath())
                 : Compilation.FromSource(SourceFileView.FromText(text));
-            var fileId = compilation.FileIds.First();
-
-            FileIds[uri] = [fileId];
             Compilations[uri] = compilation;
         }
         catch
@@ -34,22 +28,10 @@ public static class DocumentStore
     
     public static void Remove(DocumentUri uri)
     {
-        FileIds.TryRemove(uri, out _);
         Compilations.TryRemove(uri, out _);
     }
 
-
-    public static ImmutableArray<FileId> GetFileIds(DocumentUri uri)
-    {
-        if (!FileIds.ContainsKey(uri))
-            Load(uri);
-
-        if (FileIds.TryGetValue(uri, out var fileIds))
-            return fileIds;
-
-        return [];
-    }
-
+    
     public static Compilation? GetCompilation(DocumentUri uri)
     {
         if (!Compilations.ContainsKey(uri))

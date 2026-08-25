@@ -36,7 +36,7 @@ public class SemanticTokensHandler(ILanguageServerFacade facade) : SemanticToken
         if (compilation is null)
             return Task.CompletedTask;
 
-        foreach (var tree in DocumentStore.GetFileIds(identifier.TextDocument.Uri).Select(compilation.GetSyntaxTree))
+        foreach (var tree in compilation.SyntaxTrees)
         {
             TokenizeTree(identifier.TextDocument.Uri, builder, tree);
         }

@@ -22,8 +22,7 @@ public class FoldingRangeHandler : FoldingRangeHandlerBase
         if (compilation is null)
             return Task.FromResult<Container<FoldingRange>?>(null);
 
-        var container = Container.From(DocumentStore.GetFileIds(request.TextDocument.Uri)
-            .Select(compilation.GetSyntaxTree)
+        var container = Container.From(compilation.SyntaxTrees
             .SelectMany(GetFoldingRanges));
             
         return Task.FromResult(container)!;
