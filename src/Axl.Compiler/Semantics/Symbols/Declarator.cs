@@ -67,6 +67,7 @@ public class Declarator
         foreach (var pathToModuleDecl in moduleDecls)
         {
             var moduleSymbol = GetModuleByPath(pathToModuleDecl.Key);
+            moduleSymbol.GetMembers();
             
             foreach (var moduleSyntax in pathToModuleDecl.Value)
                 symbols.Add(moduleSyntax, moduleSymbol);

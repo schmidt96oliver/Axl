@@ -1,11 +1,9 @@
 ﻿#!/usr/bin/env dotnet
 #:project src/Axl.Compiler/Axl.Compiler.csproj
 
-using System.Collections.Frozen;
 using System.Collections.Immutable;
 using Axl.Compiler;
 using Axl.Compiler.Syntax;
-using Axl.Compiler.Syntax.Tree;
 using Axl.Compiler.Semantics.Symbols;
 using Axl.Compiler.Semantics.Types;
 
@@ -37,14 +35,12 @@ var input = """
 
 var compilation = Compilation.FromText(input);
 var table = compilation.GetSymbolTable();
-foreach (var symbol in table.AllSymbols)
+foreach (var symbol in table.AllSymbols.OfType<ModuleSymbol>())
 {
-    Console.Write($"{symbol.GetType().Name} {symbol.Name}: Parent = {symbol.Parent?.Name ?? "<null>"}");
-    if (symbol is ModuleSymbol module)
-        Console.WriteLine($", SyntaxCount = {module.Syntaxes.Length}");
-    else
+    Console.WriteLine($"Module {symbol.Name}: Parent = {symbol.Parent?.Name ?? "<null>"}");
+    foreach (var memberSymbol in symbol.GetMembers())
     {
-        Console.WriteLine();
+        Console.WriteLine($"   {memberSymbol.GetType()} {memberSymbol.Name}");
     }
 }
 

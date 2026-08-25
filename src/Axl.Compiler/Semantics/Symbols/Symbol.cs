@@ -40,6 +40,26 @@ public sealed record FnSymbol(Compilation Compilation, SymbolName Name,
     }
 }
 
-public sealed record ModuleSymbol(Compilation Compilation, SymbolName Name, 
-    ImmutableArray<ModuleDeclSyntax> Syntaxes, Symbol? Parent)
-    : Symbol(Compilation, Name, Parent);
+public sealed record ModuleSymbol(
+    Compilation Compilation,
+    SymbolName Name,
+    ImmutableArray<ModuleDeclSyntax> Syntaxes,
+    Symbol? Parent)
+    : Symbol(Compilation, Name, Parent)
+{
+    private ImmutableArray<Symbol> _members = default;
+    
+    public ImmutableArray<Symbol> GetMembers()
+    {
+        if (_members.IsDefault)
+        {
+            _members = Syntaxes
+                .SelectMany(syntax => syntax.Members)
+                .Select(Compilation.GetSymbolTable().GetSymbol)
+                .ToHashSet()
+                .ToImmutableArray();
+        }
+
+        return _members;
+    }
+}
