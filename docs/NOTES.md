@@ -1,18 +1,60 @@
 # ------------------------------------ Axl Project ------------------------------------
                                        ≽(◕ ᴗ ◕)≼
 
+**Symbol** = Outer surface; Eagerly built by declarations; lazy for binding needs
+**Scope** = Eagerly built per-file; local scopes built during binding
+
+1. Definition *Scope* and *Symbol*
+   - What do they carry? What is queried elsewhere?
+2. Pipeline AST to Bound- and Type-checked structure; How to avoid cycles?
+3. Scopes persistent or transient? When created?
+
+**Requirements**
+**LSP**:
+    1. Get file diagnostics
+    2. What names are in scope at position n?
+**Signature binding**:
+    1. What names are in scope at module/file level?
+**Code=Body binding**:
+    1. What names are in scope at module/file level?
+    2. What names are in scope inside _this block_?
+    3. What locals are in scope at _this position_?
+    4. Which declaration do they refer to? (for type-checking)
+
+- LocalSymbols have Type => must be created by Binder _during_ type-checking
+
+
+---- Roslyn:
+**Symbol**
+    * Container (module, assembly, type, ...)
+    * Name
+    * Visibility/Modifiers
+    * Declaring Syntax (location and node)
+    * Type
+    * _MethodSymbol_: ParameterTypes, ReturnType, Parameter_Symbols_; NO local fns
+    * _NamespaceSymbol_: Members belong to symbol; lazily merged
+
+
+
+**Scopes**
+1. Single mutable `Scope` weaved as parameter
+   - Awkward: Mutable, mutation not visible, hard to reason about, declaration can be forgotten, hard to answer "Whats visible at (1,3)?"
+   - Nice: Easy, pragmatic
+
+QUESTIONS:
+1. Persistent or binder-temporary?
+2. Immutable or mutable?
+
 **Next**: 
-* see Claude for AST tightening
 
+
+**Small points**:
 * Regressions: `1+[EOF]`, `-[EOF]`
-
+* SyntaxNode enumerator (all nodes, BFS/DFS, all tokens in sequence)
+* rename `FileId` to `UnitId` (because it's not a _file_ per se. Several `FileId` could point to the same file on disc)
 * Tests:
   * `MangledCorpus`
   * 1 invariant = 1 test
-
-**Small points**:
-* SyntaxNode enumerator (all nodes, BFS/DFS, all tokens in sequence)
-* rename `FileId` to `UnitId` (because it's not a _file_ per se. Several `FileId` could point to the same file on disc)
 
 # Semantics
 
