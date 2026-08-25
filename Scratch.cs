@@ -35,9 +35,8 @@ var input = """
             module Some.Other.D { }
             """;
 
-var source = SourceFileView.FromText(input);
-var compilation = Compilation.FromSource(source);
-var table = Declarator.GetSymbolTable(compilation, [compilation.GetSyntaxTree(compilation.GetFileId(source))]);
+var compilation = Compilation.FromText(input);
+var table = compilation.GetSymbolTable();
 foreach (var symbol in table.AllSymbols)
 {
     Console.Write($"{symbol.GetType().Name} {symbol.Name}: Parent = {symbol.Parent?.Name ?? "<null>"}");

@@ -16,7 +16,7 @@ public static class DocumentStore
         {
             var compilation = text is null
                 ? Compilation.FromFile(uri.GetFileSystemPath())
-                : Compilation.FromSource(SourceFileView.FromText(text));
+                : Compilation.FromText(text);
             Compilations[uri] = compilation;
         }
         catch

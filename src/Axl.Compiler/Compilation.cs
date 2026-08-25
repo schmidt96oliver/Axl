@@ -23,9 +23,9 @@ public class Compilation
         return new Compilation([tree]);
     }
 
-    public static Compilation FromSource(SourceFileView source)
+    public static Compilation FromText(string sourceText)
     {
-        var tree = Parser.Parse(source);
+        var tree = Parser.Parse(SourceFileView.FromText(sourceText));
         return new Compilation([tree]);
     }
 
