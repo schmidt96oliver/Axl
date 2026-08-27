@@ -16,22 +16,24 @@ var input = """
             {
                 module B
                 {
-                    fn Test1(i: i32) { Test2(1, 1); }
-                    fn Test2(arg: string, b: bool) { }
+                    module C { fn Test1() { } fn Test2() { } }
+                    fn Test2() { }
                 }
             }
+            module A.B.C { fn TestInC() { } }
             module A
             {
-                module B
-                {
-                    fn Test2() { Test1(1); }
-                }
+                fn TestInA() { }
+                module B.C { fn TestInC2() { } }
             }
             """;
 
 var compilation = Compilation.FromText(input);
 var table = compilation.GetSymbolTable();
-foreach (var symbol in table.AllSymbols.OfType<ModuleSymbol>().Where(module => !module.Name.Text.Contains('.')))
+// foreach (var symbol in table.AllSymbols)
+//     Console.WriteLine($"{symbol.Path}: {symbol.GetType().Name} {symbol.Name} Parent = {symbol.Parent?.Path.ToString() ?? "<null>"}");
+// return;
+foreach (var symbol in table.AllSymbols.Where(symbol => symbol.Parent is null))
 {
     PrintSymbol(symbol, "");
     // Console.WriteLine($"Module {symbol.Name}: Parent = {symbol.Parent?.Name ?? "<null>"}");
@@ -52,7 +54,7 @@ void PrintSymbol(Symbol symbol, string prefix)
     switch (symbol)
     {
         case ModuleSymbol moduleSymbol:
-            Console.WriteLine($"{prefix}Module \"{moduleSymbol.Name}\"");
+            Console.WriteLine($"{prefix}Module \"{moduleSymbol.Name}\", Path = \"{moduleSymbol.Path}\"");
             foreach (var member in moduleSymbol.GetMembers())
             {
                 PrintSymbol(member, prefix + "  ");
@@ -61,13 +63,13 @@ void PrintSymbol(Symbol symbol, string prefix)
             break;
 
         case FnSymbol fnSymbol:
-            Console.WriteLine($"{prefix}Fn \"{fnSymbol.Name}");
-            var fnPrefix = prefix + "   ";
-            Console.WriteLine($"{fnPrefix}- Parameters:");
-            foreach (var local in fnSymbol.GetParameters())
-                PrintSymbol(local, fnPrefix + "   ");
-            Console.WriteLine($"{fnPrefix}- HIR:");
-            PrintHir(fnSymbol.GetHir(), fnPrefix + "   ");
+            Console.WriteLine($"{prefix}Fn \"{fnSymbol.Name}, Path = \"{fnSymbol.Path}\"");
+            // var fnPrefix = prefix + "   ";
+            // Console.WriteLine($"{fnPrefix}- Parameters:");
+            // foreach (var local in fnSymbol.GetParameters())
+            //     PrintSymbol(local, fnPrefix + "   ");
+            // Console.WriteLine($"{fnPrefix}- HIR:");
+            // PrintHir(fnSymbol.GetHir(), fnPrefix + "   ");
             
             break;
         

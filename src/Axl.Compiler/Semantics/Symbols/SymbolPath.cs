@@ -10,6 +10,8 @@ public readonly struct SymbolPath : IEquatable<SymbolPath>
 {
     public ImmutableArray<SymbolName> Parts { get; }
 
+    public SymbolName LastPart => Parts[^1];
+
     private SymbolPath(ImmutableArray<SymbolName> parts)
     {
         Parts = parts;
@@ -20,7 +22,7 @@ public readonly struct SymbolPath : IEquatable<SymbolPath>
         Guard.MustBe(!parts.IsDefaultOrEmpty);
         return new SymbolPath(parts);
     }
-
+    
     public static SymbolPath From(params ReadOnlySpan<SymbolName> parts)
         => From(parts.ToImmutableArray());
 
@@ -48,6 +50,13 @@ public readonly struct SymbolPath : IEquatable<SymbolPath>
         => new([.. path.Parts, extension]);
 
 
+    public SymbolPath? GetParentPath()
+    {
+        if (Parts.Length <= 1) return null;
+        return From(Parts[..^1]);
+    }
+    
+
     public bool Equals(SymbolPath other)
     {
         if (other.Parts.Length != this.Parts.Length)
@@ -74,4 +83,17 @@ public readonly struct SymbolPath : IEquatable<SymbolPath>
             hashCode.Add(part);
         return hashCode.ToHashCode();
     }
+
+    public static bool operator ==(SymbolPath path1, SymbolPath path2)
+    {
+        return path1.Equals(path2);
+    }
+
+    public static bool operator !=(SymbolPath path1, SymbolPath path2)
+    {
+        return !path1.Equals(path2);
+    }
+    
+    public override string ToString()
+        => string.Join(".", Parts);
 }

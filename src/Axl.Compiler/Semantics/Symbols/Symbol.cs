@@ -79,7 +79,7 @@ public sealed record ModuleSymbol(
             _members = Syntaxes
                 .SelectMany(syntax => syntax.Members)
                 .Select(Compilation.GetSymbolTable().GetSymbol)
-                .ToHashSet()
+                .Where(symbol => symbol.Parent == this)
                 .ToImmutableArray();
         }
 

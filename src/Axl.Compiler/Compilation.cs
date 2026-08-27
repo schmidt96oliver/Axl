@@ -84,10 +84,7 @@ public class Compilation
     public SymbolTable GetSymbolTable()
     {
         _symbolTable ??= Protect(QueryKind.GetSymbolTable, null,
-            () =>
-            {
-                return Declarator.GetSymbolTable(this, SyntaxTrees);
-            });
+            () => SymbolTableBuilder.Build(this));
 
         return _symbolTable;
     }
