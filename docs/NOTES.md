@@ -1,20 +1,28 @@
 # ------------------------------------ Axl Project ------------------------------------
                                        ≽(◕ ᴗ ◕)≼
 
+1. Declarations: Eager walk over _all_ files. Walks _all_ syntax nodes. Verifies them. Produces declared symbols.
+   * Walk per-file. On compilation-fork, only new SyntaxTrees are walked
+2. BinderFactory (rename to file scope, ...?): Walks scope-producing nodes. Produces map decl syntax to binder
+3. Symbol evaluates lazy through: GetBinderFactory(tree).GetBinder(syntax).Bind***
+
 * Symbol = Unit of lazy binding; represents one declaration
 * Binder = per-file, knows it's context
 
 
-
-
 **Next**:
+- make `BinderFactory` per SyntaxTree
+- better name for `BinderFactory`? (ScopeManager, ... ?)
+- Have `Declarator` walk _all_ nodes (stops at body boundaries)
+- Compilation.GetMembers(syntax tree) -> only top-level members
+- separate `PathName` from `SymbolName` (disallow .)
+
 - Diagnostics: How do they weave through the query architecture?
 
 
 **Small points**:
 * Regressions: `1+[EOF]`, `-[EOF]`
 * SyntaxNode enumerator (all nodes, BFS/DFS, all tokens in sequence)
-* rename `FileId` to `UnitId` (because it's not a _file_ per se. Several `FileId` could point to the same file on disc)
 * Tests:
   * `MangledCorpus`
   * 1 invariant = 1 test

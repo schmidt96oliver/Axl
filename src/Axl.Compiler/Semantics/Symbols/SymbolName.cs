@@ -3,22 +3,24 @@ using Axl.Compiler.Syntax.Tree;
 
 namespace Axl.Compiler.Semantics.Symbols;
 
+/// <summary>
+/// The name of a <see cref="Symbol"/>. It is never a path and does not
+/// contain dots.
+/// </summary>
 public readonly record struct SymbolName
 {
-    public string Text { get; private init; }
+    public string Text { get; }
 
     private SymbolName(string text)
     {
         Text = text;
     }
 
-    public static SymbolName From(string text)
+    public static SymbolName From(ReadOnlySpan<char> text)
     {
-        if (string.IsNullOrWhiteSpace(text))
-            throw new ArgumentException();
-        return new SymbolName(text);
+        Guard.MustBe(!text.IsEmpty && !text.IsWhiteSpace() && !text.Contains('.'));
+        return new SymbolName(text.Trim().ToString());
     }
-
 
     public static SymbolName From(IdentifierToken token)
     {
