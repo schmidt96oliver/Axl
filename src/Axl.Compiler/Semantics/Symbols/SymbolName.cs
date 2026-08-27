@@ -32,4 +32,7 @@ public readonly record struct SymbolName
 
     public static implicit operator string(SymbolName symbolName)
         => symbolName.Text;
+
+    public override string ToString()
+        => Text;
 }

@@ -1,4 +1,5 @@
 ﻿using System.Collections.Immutable;
+using Axl.Compiler.Semantics.Binders;
 using Axl.Compiler.Semantics.Types;
 using Axl.Compiler.Syntax.Tree;
 
@@ -28,15 +29,23 @@ public sealed record FnSymbol(Compilation Compilation, SymbolName Name,
         var paramSyntaxes = Syntax.Parameters.ToList();
         
         var array = ImmutableArray.CreateBuilder<LocalSymbol>(initialCapacity: paramSyntaxes.Count);
-        // foreach (var paramSyntax in paramSyntaxes)
-        // {
-        //     // Bind Type
-        //     var binderContext = Compilation.GetBindingContext(paramSyntax.TypeAnnotation);
-        //     var boundType = Binder.BindType(paramSyntax.TypeAnnotation, binderContext);
-        //     array.Add(new LocalSymbol(Compilation, SymbolName.From(paramSyntax.Name), boundType, null));
-        // }
+        foreach (var paramSyntax in paramSyntaxes)
+        {
+            // Bind Type
+            var binder = Compilation.GetBinderFactory().GetBinderAt(Syntax);
+            var boundType = binder.BindType(paramSyntax.TypeAnnotation!);
+            array.Add(new LocalSymbol(Compilation, SymbolName.From(paramSyntax.Name), boundType, null, this));
+        }
 
         return array.DrainToImmutable();
+    }
+
+    public HirBody GetHir()
+    {
+        var parentBinder = Compilation.GetBinderFactory().GetBinderAt(Syntax);
+        var fnBinder = new FnBinder(parentBinder, this);
+
+        return fnBinder.BindBody(Syntax.Body);
     }
 }
 

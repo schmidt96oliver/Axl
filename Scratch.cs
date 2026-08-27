@@ -3,9 +3,12 @@
 
 using System.Collections.Immutable;
 using Axl.Compiler;
+using Axl.Compiler.Semantics.Binders;
+using Axl.Compiler.Semantics.Symbols;
 using Axl.Compiler.Syntax;
 using Axl.Compiler.Semantics.Symbols;
 using Axl.Compiler.Semantics.Types;
+using Axl.Compiler.Syntax.Tree;
 
 
 var input = """
@@ -13,38 +16,237 @@ var input = """
             {
                 module B
                 {
-                    fn Test1() { }
-                    fn Test2() { }
-                    module C { }
+                    fn Test1(i: i32) { Test2(1, 1); }
+                    fn Test2(arg: string, b: bool) { }
                 }
             }
             module A
             {
                 module B
                 {
-                    fn Test2() { }
-                    module C { }
+                    fn Test2() { Test1(1); }
                 }
-                module C { }
-                module A { }
             }
-            module B { }
-            module A.B.C { }
-            module Some.Other.D { }
             """;
 
 var compilation = Compilation.FromText(input);
 var table = compilation.GetSymbolTable();
-foreach (var symbol in table.AllSymbols.OfType<ModuleSymbol>())
+foreach (var symbol in table.AllSymbols.OfType<ModuleSymbol>().Where(module => !module.Name.Text.Contains('.')))
 {
-    Console.WriteLine($"Module {symbol.Name}: Parent = {symbol.Parent?.Name ?? "<null>"}");
-    foreach (var memberSymbol in symbol.GetMembers())
+    PrintSymbol(symbol, "");
+    // Console.WriteLine($"Module {symbol.Name}: Parent = {symbol.Parent?.Name ?? "<null>"}");
+    // foreach (var memberSymbol in symbol.GetMembers())
+    // {
+    //     Console.WriteLine($"   {memberSymbol.GetType().Name} {memberSymbol.Name}");
+    //     if (memberSymbol is FnSymbol fnSymbol)
+    //     {
+    //         Console.WriteLine(
+    //             $"     - (Binder: {GetBinderChainText(compilation.GetBinderFactory().GetBinderAt(fnSymbol.Syntax))})");
+    //         Console.WriteLine($"     - Locals: {string.Join(", ", fnSymbol.GetParameters().Select(param => $"{param.Name} : {param.Type}"))}");
+    //     }
+    // }
+}
+
+void PrintSymbol(Symbol symbol, string prefix)
+{
+    switch (symbol)
     {
-        Console.WriteLine($"   {memberSymbol.GetType()} {memberSymbol.Name}");
+        case ModuleSymbol moduleSymbol:
+            Console.WriteLine($"{prefix}Module \"{moduleSymbol.Name}\"");
+            foreach (var member in moduleSymbol.GetMembers())
+            {
+                PrintSymbol(member, prefix + "  ");
+            }
+
+            break;
+
+        case FnSymbol fnSymbol:
+            Console.WriteLine($"{prefix}Fn \"{fnSymbol.Name}");
+            var fnPrefix = prefix + "   ";
+            Console.WriteLine($"{fnPrefix}- Parameters:");
+            foreach (var local in fnSymbol.GetParameters())
+                PrintSymbol(local, fnPrefix + "   ");
+            Console.WriteLine($"{fnPrefix}- HIR:");
+            PrintHir(fnSymbol.GetHir(), fnPrefix + "   ");
+            
+            break;
+        
+        case LocalSymbol localSymbol:
+            Console.WriteLine($"{prefix}\"{localSymbol.Name}\" : {localSymbol.Type}");
+            break;
     }
 }
 
+void PrintHir(HirNode hirNode, string prefix)
+{
+    switch (hirNode)
+    {
+        case HirBody body:
+            foreach (var stmt in body.Stmts)
+                PrintHir(stmt, prefix);
+            break;
 
+        default:
+            Console.WriteLine($"{prefix}{hirNode}");
+
+            break;
+    }
+}
+
+string GetBinderChainText(Binder binder)
+{
+    var parentText = binder.Parent is not null ? GetBinderChainText(binder.Parent) : "";
+
+    var symbolName = binder switch
+    {
+        CompilationBinder => "<compilation>",
+        FileBinder fileBinder => fileBinder.SyntaxTree.Source.File.Path ?? "<internal file>",
+        ModuleFragmentBinder moduleBinder => moduleBinder.ModuleSymbol.Name,
+        FnBinder fnBinder => fnBinder.FnSymbol.Name,
+
+        _ => "???"
+    };
+    
+    return parentText + $"->{binder.GetType().Name} \"{symbolName}\"";
+}
+
+// Get member binders per syntax tree
+
+
+
+// public abstract class Symbol(SymbolName name)
+// {
+//     public SymbolName Name { get; } = name;
+// }
+//
+// public sealed class CompilationExt
+// {
+//     private readonly ImmutableArray<SyntaxTree> _syntaxTrees;
+//
+//
+//     public CompilationExt(ImmutableArray<SyntaxTree> syntaxTrees)
+//     {
+//         _syntaxTrees = syntaxTrees;
+//     }
+//
+//     private ImmutableArray<ModuleSymbol.Fragment> GetModuleFragments()
+//     {
+//         var compilationBinder = new CompilationBinder(typeContext);
+//         
+//         var fragments = ImmutableArray.CreateBuilder<ModuleSymbol.Fragment>();
+//
+//         foreach (var tree in _syntaxTrees)
+//         {
+//             var fileBinder = new FileBinder(tree, parent: compilationBinder);
+//
+//             foreach (var moduleDeclSyntax in tree.FileSyntax.Members.OfType<ModuleDeclSyntax>())
+//             {
+//                 
+//             }
+//         }
+//     }
+//     
+//     public ImmutableArray<ModuleSymbol> GetModules()
+//     {
+//         throw new NotImplementedException();
+//     }
+//     
+//     public HirBody GetScriptHir()
+//     {
+//         throw new NotImplementedException();
+//     }
+// }
+//
+// // public sealed class ModuleFragment
+// // {
+// //     public Binder FragmentBinder { get; }
+// //     
+// //     public ModuleDeclSyntax Syntax { get; }
+// //
+// //     public ModuleFragmentSymbol(SymbolName moduleName, ModuleDeclSyntax syntax, Binder fragmentBinder)
+// //         :base(moduleName)
+// //     {
+// //         Syntax = syntax;
+// //         FragmentBinder = fragmentBinder;
+// //     }
+// //     
+// //     public ImmutableArray<Symbol> GetMembers()
+// //     {
+// //         var builder = ImmutableArray.CreateBuilder<Symbol>();
+// //         foreach (var memberSyntax in Syntax.Members)
+// //         {
+// //             builder.Add(FragmentBinder.BindMember(memberSyntax));
+// //         }
+// //
+// //         return builder.DrainToImmutable();
+// //     }
+// // }
+//
+// public sealed class ModuleSymbol : Symbol
+// {
+//     public readonly record struct Fragment(string Path, ModuleDeclSyntax Syntax, Binder Binder);
+//     
+//     private ImmutableArray<Fragment> Fragments { get; }
+//
+//
+//     public ModuleSymbol(SymbolName name, ImmutableArray<ModuleSymbol.Fragment> fragments)
+//         : base(name)
+//     {
+//         Fragments = fragments;
+//     }
+//
+//
+//     public ImmutableArray<Symbol> GetMembers()
+//     {
+//         var builder = ImmutableArray.CreateBuilder<Symbol>();
+//         foreach (var fragment in Fragments)
+//         foreach (var memberSyntax in fragment.Syntax.Members)
+//         {
+//             builder.Add(fragment.Binder.BindMember(memberSyntax));
+//         }
+//
+//         return builder.DrainToImmutable();
+//     }
+// }
+//
+// public sealed class FnSymbol : Symbol
+// {
+//     public FnDeclSyntax Syntax { get; }
+//     public FnBinder Binder { get; }
+//
+//     public FnSymbol(SymbolName name, FnDeclSyntax syntax, FnBinder binder) :
+//         base(name)
+//     {
+//         Syntax = syntax;
+//         Binder = binder;
+//     }
+//     
+//     public ImmutableArray<AxlType> GetParameterTypes()
+//     {
+//         //TODO: Lazy eval
+//         return [.. Syntax.Parameters.Select(paramSyntax => Binder.BindType(paramSyntax.TypeAnnotation!))];
+//     }
+//
+//     public AxlType GetReturnType()
+//     {
+//         //TODO: Lazy eval
+//         return Binder.BindType(Syntax.ReturnTypeAnnotation ?? throw new Exception("ReturnTypeAnnotation required."));
+//     }
+//     
+//     public HirBody GetHir()
+//     {
+//         //TODO: Lazy eval
+//         return Binder.BindBody(Syntax.Body);
+//     }
+// }
+//
+// public sealed class LocalSymbol(SymbolName name) : Symbol(name)
+// {
+//     public AxlType Type { get; }
+//     
+//     public HirExpr Initializer { get; }
+// }
+//
 
 
 
@@ -170,155 +372,4 @@ foreach (var symbol in table.AllSymbols.OfType<ModuleSymbol>())
 //
 //     public override List<Symbol> CollectAt(int position)
 //         => [_print, _printLine];
-// }
-
-
-
-// ----- LOCAL Binder
-
-public abstract record HirNode;
-
-public abstract record HirExpr(AxlType Type) : HirNode;
-
-public sealed record HirNumberLiteralExpr(NumberLiteralToken Token, AxlType Type) : HirExpr(Type);
-
-public sealed record HirLoopExpr(HirBody Body, AxlType Type) : HirExpr(Type);
-
-public sealed record HirSymbolRef(LocalSymbol Symbol, AxlType Type) : HirExpr(Type);
-
-public sealed record HirBreakExpr(HirExpr? Expr, AxlType Type) : HirExpr(Type);
-
-public sealed record HirCallDirect(Symbol FnSymbol, ImmutableArray<HirExpr> Arguments, AxlType Type) : HirExpr(Type);
-
-public abstract record HirStmt : HirNode;
-
-public sealed record HirExprStmt(HirExpr Expr) : HirStmt;
-public sealed record HirVarDecl(LocalSymbol Local, HirExpr Initializer) : HirStmt;
-
-public record HirBody(ImmutableArray<HirStmt> Stmts) : HirNode;
-
-public sealed record LoopContext(List<HirBreakExpr>? BreakExprs);
-//
-// //TODO: SyntaxNode, BodySyntax. Needs to include: fn body & file syntax
-// public class BodyBinder(TypeContext typeContext)
-// {
-//     private ImmutableArray<HirStmt>.Builder _stmts = ImmutableArray.CreateBuilder<HirStmt>();
-//
-//     private HirBody BindBody(SyntaxNode node, Scope scope, LoopContext loopContext)
-//     {
-//         var bodyScope = new LocalScope(scope);
-//         
-//         var boundStmts = ImmutableArray.CreateBuilder<HirStmt>();
-//
-//         var stmtSyntaxes = node switch
-//         {
-//             BlockExprSyntax block => block.Stmts,
-//             FileSyntax file => file.Stmts,
-//             _ => throw new NotImplementedException()
-//         };
-//
-//         foreach (var stmtSyntax in stmtSyntaxes)
-//             boundStmts.Add(BindStmt(stmtSyntax, bodyScope, loopContext));
-//
-//         return new HirBody(boundStmts.DrainToImmutable());
-//     }
-//     
-//     private HirStmt BindStmt(SyntaxNode node, LocalScope scope, LoopContext loopContext) => node switch
-//     {
-//         ExprStmtSyntax exprStmt => new HirExprStmt(BindExpr(exprStmt.Expr, scope, loopContext)),
-//         VarDeclSyntax varDecl => BindVarDecl(varDecl, scope, loopContext),
-//         
-//         _ => throw new NotImplementedException()
-//     };
-//
-//     private HirVarDecl BindVarDecl(VarDeclSyntax syntax, LocalScope scope, LoopContext loopContext)
-//     {
-//         //TODO: Handle absent initializer
-//         if (syntax.Name.IsMissing)
-//             return null; //TODO: Don't declare, but how?
-//         
-//         var name = SymbolName.From(syntax.Name.Identifier);
-//         
-//         var boundInitializer = BindExpr(syntax.Initializer!, scope, loopContext);
-//         var local = new LocalSymbol(name, boundInitializer.Type, syntax);
-//         
-//         scope.Declare(local);
-//         return new HirVarDecl(local, boundInitializer);
-//     }
-//     
-//     
-//     
-//     public static HirBody Bind(SyntaxNode syntax, Scope enclosingScope, TypeContext typeContext)
-//     {
-//         return new BodyBinder(typeContext).BindBody(syntax, enclosingScope, new LoopContext(null));
-//     }
-//
-//
-//
-//     private HirExpr BindExpr(ExprSyntax syntax, Scope scope, LoopContext loopContext) => syntax switch
-//     {
-//         NumberLiteralSyntax numberLiteral => BindNumberLiteral(numberLiteral, scope, loopContext),
-//         IdNameSyntax idName => BindIdName(idName, scope, loopContext),
-//         LoopExprSyntax loop => BindLoop(loop, scope, loopContext),
-//         BreakExprSyntax breakExpr => BindBreak(breakExpr, scope, loopContext),
-//         CallExprSyntax callExpr => BindCall(callExpr, scope, loopContext),
-//         
-//         _ => throw new NotImplementedException()
-//     };
-//
-//     private HirCallDirect BindCall(CallExprSyntax syntax, Scope scope, LoopContext loopContext)
-//     {
-//         if (syntax.Callee is not IdNameSyntax idNameCallee)
-//             throw new Exception("Must be name.");
-//
-//         var symbol = scope.Lookup(SymbolName.From(idNameCallee))
-//                 ?? throw new Exception("UndefinedSymbol");
-//         var args = syntax.ArgumentExprs.Select(argSyntax => BindExpr(argSyntax, scope, loopContext));
-//         return new HirCallDirect(symbol, [.. args], typeContext.None);
-//     }
-//
-//     private HirBreakExpr BindBreak(BreakExprSyntax syntax, Scope scope, LoopContext loopContext)
-//     {
-//         var expr = syntax.Expr is not null ? BindExpr(syntax.Expr, scope, loopContext) : null;
-//         var boundBreak = new HirBreakExpr(expr, typeContext.Never);
-//         loopContext.BreakExprs?.Add(boundBreak);
-//         return boundBreak;
-//     }
-//
-//     private HirExpr BindNumberLiteral(NumberLiteralSyntax numberLiteral, Scope scope, LoopContext loopContext)
-//     {
-//         AxlType type = numberLiteral.Token.Suffix switch
-//         {
-//             NumberLiteralSuffix.I32 => typeContext.I32,
-//             NumberLiteralSuffix.I64 => typeContext.I64,
-//             NumberLiteralSuffix.None => numberLiteral.Token.HasDecimalPoint
-//                 ? throw new NotImplementedException()
-//                 : typeContext.I32,
-//
-//             _ => throw new NotImplementedException()
-//         };
-//         return new HirNumberLiteralExpr(numberLiteral.Token, type);
-//     }
-//
-//     private HirLoopExpr BindLoop(LoopExprSyntax syntax, Scope scope, LoopContext _)
-//     {
-//         var loopContext = new LoopContext([]);
-//         var loopBody = BindBody(syntax.Body, scope, loopContext);
-//
-//         var type = loopContext.BreakExprs!.Count == 0
-//             ? typeContext.Never
-//             : loopContext.BreakExprs[0].Expr?.Type ?? typeContext.None;
-//         return new HirLoopExpr(loopBody, type);
-//     }
-//     
-//     private HirSymbolRef BindIdName(IdNameSyntax syntax, Scope scope, LoopContext loopContext)
-//     {
-//         var symbol = scope.Lookup(SymbolName.From(syntax.Token.Identifier));
-//         if (symbol is null)
-//             throw new Exception("UndefinedSymbol");
-//
-//         var local = (LocalSymbol)symbol;
-//
-//         return new HirSymbolRef(local, local.Type);
-//     }
 // }

@@ -1,6 +1,6 @@
 ﻿namespace Axl.Compiler.Semantics.Types;
 
-public sealed class TypeContext(Compilation compilation)
+public sealed class TypeContext()
 {
     public I32Type I32 { get; } = new();
     public I64Type I64 { get; } = new();

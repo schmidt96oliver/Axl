@@ -19,13 +19,6 @@ public class Declarator
     public static SymbolTable GetSymbolTable(Compilation compilation, ImmutableArray<SyntaxTree> trees)
     {
         var singleModuleDecls = GetModuleDeclTable(trees);
-        foreach (var pathToSyntaxes in singleModuleDecls)
-        {
-            Console.WriteLine(pathToSyntaxes.Key);
-            foreach (var syntax in pathToSyntaxes.Value)
-                Console.WriteLine($"   {syntax.Span ?? syntax.FullSpan}");
-        }
-        
         var table = BuildSymbolTable(compilation, trees, singleModuleDecls);
         return table;
     }
@@ -67,7 +60,6 @@ public class Declarator
         foreach (var pathToModuleDecl in moduleDecls)
         {
             var moduleSymbol = GetModuleByPath(pathToModuleDecl.Key);
-            moduleSymbol.GetMembers();
             
             foreach (var moduleSyntax in pathToModuleDecl.Value)
                 symbols.Add(moduleSyntax, moduleSymbol);

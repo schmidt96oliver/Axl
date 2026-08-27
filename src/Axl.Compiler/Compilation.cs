@@ -1,9 +1,9 @@
 ﻿using System.Collections.Immutable;
 using System.Diagnostics;
+using Axl.Compiler.Semantics.Binders;
 using Axl.Compiler.Semantics.Symbols;
 using Axl.Compiler.Semantics.Types;
 using Axl.Compiler.Syntax;
-using Axl.Compiler.Syntax.Tree;
 
 namespace Axl.Compiler;
 
@@ -14,6 +14,7 @@ public class Compilation
     {
         GetSymbolTable,
         GetType,
+        GetBinderFactory
     }
     public readonly record struct QueryKey(QueryKind Kind, object? Data = null);
 
@@ -32,12 +33,16 @@ public class Compilation
     private SymbolTable? _symbolTable = null;
 
     private Stack<QueryKey> _activeQueries = [];
-    
-    public ImmutableArray<SyntaxTree> SyntaxTrees { get; }
+    private BinderFactory? _binderFactory;
 
+    public ImmutableArray<SyntaxTree> SyntaxTrees { get; }
+    public TypeContext TypeContext { get; set; }
+
+    
     private Compilation(ImmutableArray<SyntaxTree> syntaxTrees)
     {
         SyntaxTrees = syntaxTrees;
+        TypeContext = new TypeContext();
     }
 
     public static Compilation FromFile(string path)
@@ -62,16 +67,36 @@ public class Compilation
         _activeQueries.Push(key);
         return new QueryHandle(key, this);
     }
+
+    private TResult Protect<TResult>(QueryKind query, object? data, Func<TResult> action)
+    {
+        var key = new QueryKey(query, data);
+        if (_activeQueries.Contains(key))
+            throw new CyclicQueryException(_activeQueries, key);
+        
+        _activeQueries.Push(key);
+        var result = action();
+        var poppedKey = _activeQueries.Pop();
+        Debug.Assert(poppedKey == key);
+        return result;
+    }
     
     public SymbolTable GetSymbolTable()
     {
-        if (_symbolTable is null)
-        {
-            using (ProtectedQuery(QueryKind.GetSymbolTable)) 
-                _symbolTable = Declarator.GetSymbolTable(this, SyntaxTrees);
-        }
+        _symbolTable ??= Protect(QueryKind.GetSymbolTable, null,
+            () =>
+            {
+                return Declarator.GetSymbolTable(this, SyntaxTrees);
+            });
 
         return _symbolTable;
+    }
+
+    public BinderFactory GetBinderFactory()
+    {
+        _binderFactory ??= Protect(QueryKind.GetBinderFactory, null,
+            () => BinderFactory.Build(this));
+        return _binderFactory;
     }
 
 }
