@@ -6,11 +6,25 @@ using Axl.Compiler.Syntax.Tree;
 namespace Axl.Compiler.Semantics.Symbols;
 
 /// <summary>
-/// Declaration stuff is built eagerly. Lazily binds on request.
+/// Represents a declaration and executes lazy binding.
 /// </summary>
 /// <param name="Compilation"></param>
 /// <param name="Name"></param>
-public abstract record Symbol(Compilation Compilation, SymbolName Name, Symbol? Parent = null);
+public abstract record Symbol(Compilation Compilation, SymbolName Name, Symbol? Parent = null)
+{
+    private SymbolPath? _lazyPath;
+    public SymbolPath Path
+    {
+        get
+        {
+            _lazyPath ??= Parent is null
+                ? SymbolPath.From(Name)
+                : SymbolPath.Combine(Parent.Path, Name);
+
+            return _lazyPath.Value;
+        }
+    }
+}
 
 /// <summary>
 /// Eagerly built during local body binding by a LocalBinder.

@@ -6,7 +6,7 @@ namespace Axl.Compiler.Semantics.Symbols;
 /// Represents a full or partial path consisting of <see cref="SymbolName"/>s
 /// separated by dots.
 /// </summary>
-public readonly record struct SymbolPath
+public readonly struct SymbolPath : IEquatable<SymbolPath>
 {
     public ImmutableArray<SymbolName> Parts { get; }
 
@@ -42,5 +42,36 @@ public readonly record struct SymbolPath
         if (parts.Count == 0)
             throw new ArgumentException($"{nameof(pathText)} has no parts.", nameof(pathText));
         return new SymbolPath(parts.DrainToImmutable());
+    }
+
+    public static SymbolPath Combine(SymbolPath path, SymbolName extension)
+        => new([.. path.Parts, extension]);
+
+
+    public bool Equals(SymbolPath other)
+    {
+        if (other.Parts.Length != this.Parts.Length)
+            return false;
+
+        for (var i = 0; i < this.Parts.Length; i++)
+        {
+            if (this.Parts[i] != other.Parts[i])
+                return false;
+        }
+
+        return true;
+    }
+
+    public override bool Equals(object? obj)
+    {
+        return obj is SymbolPath other && Equals(other);
+    }
+
+    public override int GetHashCode()
+    {
+        var hashCode = new HashCode();
+        foreach (var part in Parts)
+            hashCode.Add(part);
+        return hashCode.ToHashCode();
     }
 }
