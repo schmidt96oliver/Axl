@@ -1,0 +1,19 @@
+﻿//@check
+
+// Script files may not contain modules.
+// Usings are fine either way.
+
+// The first statement or fn declaration makes this a script file.
+
+var a = 2;  //~error
+module Global1;   //~error
+
+//---
+using Standard;
+
+var a = 2;  //~error
+module Global1;   //~error
+
+//---
+fn A() { }
+module Local1 { }
