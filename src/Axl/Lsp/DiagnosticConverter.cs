@@ -19,7 +19,7 @@ namespace Axl.Lsp;
 /// </remarks>
 public static class DiagnosticConverter
 {
-    public static Container<LspDiagnostic> Convert(ImmutableArray<AxlDiagnostic> diagnostics)
+    public static Container<LspDiagnostic> Convert(IEnumerable<AxlDiagnostic> diagnostics)
         => new(diagnostics.SelectMany(Convert));
 
     // Every underline carries the full message.

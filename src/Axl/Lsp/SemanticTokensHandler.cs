@@ -35,25 +35,28 @@ public class SemanticTokensHandler(ILanguageServerFacade facade) : SemanticToken
         var compilation = DocumentStore.GetCompilation(identifier.TextDocument.Uri);
         if (compilation is null)
             return Task.CompletedTask;
+        
+        PushDiagnostics(identifier.TextDocument.Uri, compilation.GetDiagnostics());
 
         foreach (var tree in compilation.SyntaxTrees)
         {
-            TokenizeTree(identifier.TextDocument.Uri, builder, tree);
+            TokenizeTree(builder, tree);
         }
 
         return Task.CompletedTask;
     }
 
-    private void TokenizeTree(DocumentUri uri, SemanticTokensBuilder builder, SyntaxTree tree)
+    private void PushDiagnostics(DocumentUri uri, IEnumerable<Axl.Compiler.Diagnostics.Diagnostic> diagnostics)
     {
-        // --- Push diagnostics
-        facade.TextDocument.PublishDiagnostics(new PublishDiagnosticsParams()
+        facade.TextDocument.PublishDiagnostics(new PublishDiagnosticsParams
         {
             Uri = uri,
-            Diagnostics = DiagnosticConverter.Convert(tree.Diagnostics)
+            Diagnostics = DiagnosticConverter.Convert(diagnostics)
         });
-
-        // --- Build semantic tokens
+    }
+    
+    private void TokenizeTree(SemanticTokensBuilder builder, SyntaxTree tree)
+    {
         var isInOutput = false;
         foreach (var token in EnumerateTokens(tree.FileSyntax))
         {
