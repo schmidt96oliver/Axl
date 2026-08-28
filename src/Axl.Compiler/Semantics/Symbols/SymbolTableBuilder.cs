@@ -182,11 +182,16 @@ public partial class SymbolTableBuilder
 
     private void BuildFn(FnDeclSyntax syntax, Symbol? parent, BuildingContext context)
     {
+        // Allowed globally in script files or inside module
         if (context is not (BuildingContext.GlobalInScriptFile or BuildingContext.InModule))
         {
             _diagnosticBag.ReportError(new Diagnostic.NotAllowedInFileKind(syntax));
             return;
         }
+        
+        // The symbol is only built inside modules
+        if (context is not BuildingContext.InModule)
+            return;
      
         AnalyzeModifiers(syntax, context);
         
