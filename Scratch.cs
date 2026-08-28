@@ -7,9 +7,11 @@ using Axl.Compiler.Semantics.Symbols;
 
 
 var input = """
+            module GHE;
             module O1..O3.O4 { }
             public module A
             {
+                native("") fn Bla();
                 private module B
                 {
                     module C { fn Test1() { } fn Test2() { } }
@@ -87,6 +89,10 @@ void PrintSymbol(Symbol symbol, string prefix)
         
         case LocalSymbol localSymbol:
             Console.WriteLine($"{prefix}\"{localSymbol.Name}\" : {localSymbol.Type}");
+            break;
+        
+        case ErrorSymbol errorSymbol:
+            Console.WriteLine($"{prefix}ERROR \"{errorSymbol.Name}\"");
             break;
     }
 }

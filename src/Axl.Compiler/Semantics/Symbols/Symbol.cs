@@ -111,3 +111,5 @@ public sealed record ModuleSymbol(
         return _members;
     }
 }
+
+public sealed record ErrorSymbol(Compilation Compilation, SymbolName Name, Symbol? Parent = null) : Symbol(Compilation, Name, Parent);

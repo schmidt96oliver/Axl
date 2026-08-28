@@ -124,11 +124,31 @@ public partial class SymbolTableBuilder
                 break;
             }
             
-            case NativeFnDeclSyntax:
-            case FileScopedModuleDeclSyntax:
-                //TODO: Implement NativeFn, FileScopedModuleDecl
+            case NativeFnDeclSyntax nativeFnDecl:
+            {
+                //TODO: Implement native fn decl
+                
                 _diagnosticBag.ReportError(new Diagnostic.UnsupportedFeature(syntax));
+                var errorSymbol = new ErrorSymbol(_compilation, SymbolName.From(nativeFnDecl.Name), parent);
+                _symbolsBySyntax.Add(nativeFnDecl, errorSymbol);
+                if (parent is null)
+                    _topLevelSymbols.Add(errorSymbol);
+                
                 break;
+            }
+                
+            case FileScopedModuleDeclSyntax fileScopedModuleDecl:
+            {
+                //TODO: Implement file scoped module decl
+                
+                _diagnosticBag.ReportError(new Diagnostic.UnsupportedFeature(syntax));
+                var errorSymbol = new ErrorSymbol(_compilation, SymbolName.From(fileScopedModuleDecl.Name.Parts.Last()), parent);
+                _symbolsBySyntax.Add(fileScopedModuleDecl, errorSymbol);
+                if (parent is null)
+                    _topLevelSymbols.Add(errorSymbol);
+                
+                break;
+            }
             
             default:
                 throw new NotImplementedException();

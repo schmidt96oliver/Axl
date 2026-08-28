@@ -11,19 +11,17 @@
 
 
 **Next**:
+- Unsupported -> ErrorSymbol
+
+- make `DiagnosticList` with diagnostics and `HasError` or similar
+- how to ensure, every syntax is seen by some semantic stage?
+- distinguish script and module files
+
 - make `BinderFactory` per SyntaxTree
 - better name for `BinderFactory`? (ScopeManager, ... ?)
 - Compilation.GetMembers(syntax tree) -> only top-level members
 
-- `SymbolTable` to `DeclarationTree` or `SymbolTree`. Queries
-  - GetSymbol(MemberSyntax)
-  - GetBinderAt(MemberSyntax)
-  - GetSymbols(SyntaxTree)
-  - IsScriptFile/ModuleFile(SyntaxTree)
-
 - Diagnostics: How do they weave through the query architecture?
-
-? `SymbolPath` by string for performance
 
 **Small points**:
 * Regressions: `1+[EOF]`, `-[EOF]`
@@ -31,6 +29,10 @@
 * Tests:
   * `MangledCorpus`
   * 1 invariant = 1 test
+
+* Compilation cycle logic
+* Compilation.Fork; preserve ModuleDeclTable per SyntaxFile; Merge on demand by .GetMembers
+* Debug.MarkVisited, AssertAllVisitedOnce: All syntax nodes must be visited semantically
 
 # Semantics
 
