@@ -101,18 +101,27 @@ public partial class SymbolTableBuilder
     
     private void BuildSyntaxTree(SyntaxTree syntaxTree)
     {
+        var context = syntaxTree.GetAxlFileKind() is AxlFileKind.ModuleFile
+            ? BuildingContext.GlobalInModuleFile
+            : BuildingContext.GlobalInScriptFile;
+        
         foreach (var member in syntaxTree.FileSyntax.Members)
-        {
-            Build(member,
-                parent: null,
-                context: syntaxTree.GetAxlFileKind() is AxlFileKind.ModuleFile
-                    ? BuildingContext.GlobalInModuleFile
-                    : BuildingContext.GlobalInScriptFile);
-        }
+            BuildMember(member, parent: null, context);
+
+        foreach (var fileSyntaxStmt in syntaxTree.FileSyntax.Stmts)
+            VisitStmt(fileSyntaxStmt, context);
     }
 
+    private void VisitStmt(StmtSyntax syntax, BuildingContext context)
+    {
+        // Only allowed globally inside a script file
+        if (context is BuildingContext.GlobalInScriptFile)
+            return;
+        
+        _diagnosticBag.ReportError(new Diagnostic.NotAllowedInFileKind(syntax));
+    }
     
-    private void Build(MemberSyntax syntax, Symbol? parent, BuildingContext context)
+    private void BuildMember(MemberSyntax syntax, Symbol? parent, BuildingContext context)
     {
         switch (syntax)
         {
@@ -166,7 +175,7 @@ public partial class SymbolTableBuilder
         var moduleSymbol = (ModuleSymbol)_symbolsBySyntax[syntax];
                 
         foreach (var member in syntax.Members)
-            Build(member, 
+            BuildMember(member, 
                 parent: moduleSymbol,
                 BuildingContext.InModule);
     }

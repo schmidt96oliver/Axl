@@ -23,7 +23,7 @@ public abstract partial record Diagnostic
             };
     }
 
-    public sealed record NotAllowedInFileKind(MemberSyntax Syntax) : Error
+    public sealed record NotAllowedInFileKind(SyntaxNode Syntax) : Error
     {
         public override ImmutableArray<SourceLocation> Locations =>
         [
