@@ -7,11 +7,11 @@ namespace Axl.Compiler.Semantics.Symbols;
 
 public partial class SymbolTableBuilder
 {
-    private record ModuleDecl(SymbolName? Name, List<ModuleDeclSyntax> Syntaxes, List<ModuleDecl> Children);
+    private record ModuleDecl(SymbolName Name, List<ModuleDeclSyntax> Syntaxes, List<ModuleDecl> Children);
 
     private class ModuleDeclBuilder
     {
-        private ImmutableArray<ModuleDecl>.Builder _topLevelDecls 
+        private readonly ImmutableArray<ModuleDecl>.Builder _topLevelDecls 
             = ImmutableArray.CreateBuilder<ModuleDecl>();
 
         private ModuleDeclBuilder()
@@ -44,21 +44,22 @@ public partial class SymbolTableBuilder
         private ModuleDecl GetDeclFromSyntax(ModuleDeclSyntax syntax, ModuleDecl? parent)
         {
             var partNames = syntax.Name.Parts
-                .Select(token => token.IsMissing ? (SymbolName?)null : SymbolName.From(token)
-                ).ToList();
-
-            Debug.Assert(partNames.Count >= 1,
-                "Path had no parts. At least one should've been synthesized by the parser.");
+                .Select(SymbolName.From);
 
             var currentDecl = parent;
             foreach (var partName in partNames)
                 currentDecl = GetOrCreateDecl(partName, parent: currentDecl);
-            return currentDecl!;
+            
+            Debug.Assert(currentDecl != parent, $"{nameof(syntax.Name)} has no parts.");
+            Debug.Assert(currentDecl is not null);
+            
+            return currentDecl;
         }
         
-        private ModuleDecl GetOrCreateDecl(SymbolName? name, ModuleDecl? parent)
+        private ModuleDecl GetOrCreateDecl(SymbolName name, ModuleDecl? parent)
         {
-            if (name is not null)
+            // Don't search empty names. They will always get their own decl.
+            if (!name.IsEmpty)
             {
                 var moduleDecl = parent is null
                     ? _topLevelDecls.FirstOrDefault(decl => decl.Name == name)

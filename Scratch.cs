@@ -7,7 +7,7 @@ using Axl.Compiler.Semantics.Symbols;
 
 
 var input = """
-            module O1.O2.O3.O4 { }
+            module O1..O3.O4 { }
             module A
             {
                 module B
@@ -15,6 +15,7 @@ var input = """
                     module C { fn Test1() { } fn Test2() { } }
                     fn Test2() { }
                 }
+                module { fn InNoName() { } }
                 module Nope.D { }
             }
             module A.B.C { fn TestInC() { } }

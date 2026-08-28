@@ -56,7 +56,7 @@ public partial class SymbolTableBuilder
     {
         var symbol = new ModuleSymbol(
             _compilation,
-            decl.Name!.Value,   //TODO: Handle null name
+            decl.Name,
             [..decl.Syntaxes],
             parent
         );
