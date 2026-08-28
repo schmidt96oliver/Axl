@@ -3,6 +3,7 @@ using System.Diagnostics;
 using System.Security.Cryptography;
 using Axl.Compiler.Semantics.Binders;
 using Axl.Compiler.Semantics.Types;
+using Axl.Compiler.Syntax;
 using Axl.Compiler.Syntax.Tree;
 
 namespace Axl.Compiler.Semantics.Symbols;
@@ -26,15 +27,25 @@ public abstract record Symbol(Compilation Compilation, SymbolName Name, Symbol? 
             return _lazyPath.Value;
         }
     }
+
+
+    public abstract ImmutableArray<SyntaxNode> GetDeclaringSyntaxes();
 }
 
 /// <summary>
 /// Eagerly built during local body binding by a LocalBinder.
 /// </summary>
-public sealed record LocalSymbol(Compilation Compilation, SymbolName Name, 
-    AxlType Type, VarDeclSyntax Syntax,
-    Symbol? Parent) 
-    : Symbol(Compilation, Name, Parent);
+public sealed record LocalSymbol(
+    Compilation Compilation,
+    SymbolName Name,
+    AxlType Type,
+    VarDeclSyntax Syntax,
+    Symbol? Parent)
+    : Symbol(Compilation, Name, Parent)
+{
+    public override ImmutableArray<SyntaxNode> GetDeclaringSyntaxes()
+        => [Syntax];
+}
 
 public sealed record FnSymbol(Compilation Compilation, SymbolName Name, 
     FnDeclSyntax Syntax, Symbol? Parent)
@@ -63,6 +74,9 @@ public sealed record FnSymbol(Compilation Compilation, SymbolName Name,
 
         return fnBinder.BindBody(Syntax.Body);
     }
+    
+    public override ImmutableArray<SyntaxNode> GetDeclaringSyntaxes()
+        => [Syntax];
 }
 
 public sealed record ModuleSymbol(
@@ -110,6 +124,15 @@ public sealed record ModuleSymbol(
 
         return _members;
     }
+
+
+    public override ImmutableArray<SyntaxNode> GetDeclaringSyntaxes()
+        => [.. Syntaxes.Select(SyntaxNode (memberDeclSyntax) => memberDeclSyntax)];
 }
 
-public sealed record ErrorSymbol(Compilation Compilation, SymbolName Name, Symbol? Parent = null) : Symbol(Compilation, Name, Parent);
+public sealed record ErrorSymbol(Compilation Compilation, SymbolName Name, SyntaxNode? Syntax, Symbol? Parent = null)
+    : Symbol(Compilation, Name, Parent)
+{
+    public override ImmutableArray<SyntaxNode> GetDeclaringSyntaxes()
+        => Syntax is not null ? [Syntax] : [];
+}

@@ -69,10 +69,7 @@ public partial class SymbolTableBuilder
         );
         
         // Add references
-        if (parent is null)
-            _topLevelSymbols.Add(symbol);
-        foreach (var syntax in decl.Syntaxes)
-            _symbolsBySyntax.Add(syntax, symbol);
+        AddSymbol(symbol);
         
         // Build children
         var children = decl.Children.Select(childDecl => BuildModuleSymbol(childDecl, symbol)).ToImmutableArray();
@@ -80,7 +77,19 @@ public partial class SymbolTableBuilder
 
         return symbol;
     }
-    
+
+
+    private void AddSymbol(Symbol symbol)
+    {
+        foreach (var syntax in symbol.GetDeclaringSyntaxes())
+        {
+            Debug.Assert(!_symbolsBySyntax.ContainsKey((MemberSyntax)syntax));
+            _symbolsBySyntax.Add((MemberSyntax)syntax, symbol);
+        }
+        
+        if (symbol.Parent is null)
+            _topLevelSymbols.Add(symbol);
+    }
     
     private void BuildSyntaxTree(SyntaxTree syntaxTree)
     {
@@ -106,10 +115,8 @@ public partial class SymbolTableBuilder
                     SymbolName.From(fnDecl.Name),
                     fnDecl,
                     parent);
-                _symbolsBySyntax.Add(fnDecl, fnSymbol);
-                if (parent is null)
-                    _topLevelSymbols.Add(fnSymbol);
                 
+                AddSymbol(fnSymbol);
                 break;
 
             case ModuleDeclSyntax moduleDeclSyntax:
@@ -129,11 +136,9 @@ public partial class SymbolTableBuilder
                 //TODO: Implement native fn decl
                 
                 _diagnosticBag.ReportError(new Diagnostic.UnsupportedFeature(syntax));
-                var errorSymbol = new ErrorSymbol(_compilation, SymbolName.From(nativeFnDecl.Name), parent);
-                _symbolsBySyntax.Add(nativeFnDecl, errorSymbol);
-                if (parent is null)
-                    _topLevelSymbols.Add(errorSymbol);
+                var errorSymbol = new ErrorSymbol(_compilation, SymbolName.From(nativeFnDecl.Name), nativeFnDecl, parent);
                 
+                AddSymbol(errorSymbol);
                 break;
             }
                 
@@ -142,11 +147,9 @@ public partial class SymbolTableBuilder
                 //TODO: Implement file scoped module decl
                 
                 _diagnosticBag.ReportError(new Diagnostic.UnsupportedFeature(syntax));
-                var errorSymbol = new ErrorSymbol(_compilation, SymbolName.From(fileScopedModuleDecl.Name.Parts.Last()), parent);
-                _symbolsBySyntax.Add(fileScopedModuleDecl, errorSymbol);
-                if (parent is null)
-                    _topLevelSymbols.Add(errorSymbol);
+                var errorSymbol = new ErrorSymbol(_compilation, SymbolName.From(fileScopedModuleDecl.Name.Parts.Last()), fileScopedModuleDecl, parent);
                 
+                AddSymbol(errorSymbol);
                 break;
             }
             
