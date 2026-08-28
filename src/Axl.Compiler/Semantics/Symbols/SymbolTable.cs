@@ -1,5 +1,6 @@
 ﻿using System.Collections.Frozen;
 using System.Collections.Immutable;
+using Axl.Compiler.Diagnostics;
 using Axl.Compiler.Syntax;
 using Axl.Compiler.Syntax.Tree;
 
@@ -9,11 +10,16 @@ public sealed class SymbolTable
 {
     private readonly FrozenDictionary<MemberSyntax, Symbol> _symbolsBySyntax;
     public ImmutableArray<Symbol> TopLevelSymbols { get; }
+    public ImmutableArray<Diagnostic> Diagnostics { get; }
+    public bool HadError { get; }
 
-    internal SymbolTable(FrozenDictionary<MemberSyntax, Symbol> symbolsBySyntax, ImmutableArray<Symbol> topLevelSymbols)
+    internal SymbolTable(FrozenDictionary<MemberSyntax, Symbol> symbolsBySyntax, ImmutableArray<Symbol> topLevelSymbols,
+        ImmutableArray<Diagnostic> diagnostics, bool hadError)
     {
         _symbolsBySyntax = symbolsBySyntax;
         TopLevelSymbols = topLevelSymbols;
+        Diagnostics = diagnostics;
+        HadError = hadError;
     }
     
     public Symbol GetSymbol(MemberSyntax node)

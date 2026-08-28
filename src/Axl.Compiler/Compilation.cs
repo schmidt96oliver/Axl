@@ -1,5 +1,6 @@
 ﻿using System.Collections.Immutable;
 using System.Diagnostics;
+using Axl.Compiler.Diagnostics;
 using Axl.Compiler.Semantics.Binders;
 using Axl.Compiler.Semantics.Symbols;
 using Axl.Compiler.Semantics.Types;
@@ -96,6 +97,12 @@ public class Compilation
         return _binderFactory;
     }
 
+    public IEnumerable<Diagnostic> GetDiagnostics()
+    {
+        return SyntaxTrees
+            .SelectMany(tree => tree.Diagnostics)
+            .Concat(GetSymbolTable().Diagnostics);
+    }
 }
 
 public class CyclicQueryException(Stack<Compilation.QueryKey> activeQuery, Compilation.QueryKey offendingQuery) 

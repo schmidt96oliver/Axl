@@ -1,6 +1,7 @@
 ﻿using System.Collections.Frozen;
 using System.Collections.Immutable;
 using System.Diagnostics;
+using Axl.Compiler.Diagnostics;
 using Axl.Compiler.Syntax;
 using Axl.Compiler.Syntax.Tree;
 
@@ -21,6 +22,7 @@ public partial class SymbolTableBuilder
 
     private readonly Dictionary<MemberSyntax, Symbol> _symbolsBySyntax = [];
     private readonly List<Symbol> _topLevelSymbols = [];
+    private readonly DiagnosticBag _diagnosticBag = new();
 
     private SymbolTableBuilder(Compilation compilation)
     {
@@ -38,7 +40,9 @@ public partial class SymbolTableBuilder
         
         return new SymbolTable(
             builder._symbolsBySyntax.ToFrozenDictionary(),
-            [.. builder._topLevelSymbols]);
+            [.. builder._topLevelSymbols],
+            builder._diagnosticBag.Drain(),
+            builder._diagnosticBag.HasError);
     }
 
     
@@ -88,6 +92,10 @@ public partial class SymbolTableBuilder
 
     private void Build(MemberSyntax syntax, Symbol? parent)
     {
+        //TODO: Implement Modifiers
+        foreach (var modifier in syntax.Modifiers)
+            _diagnosticBag.ReportError(new Diagnostic.UnsupportedFeature(modifier));
+        
         switch (syntax)
         {
             case FnDeclSyntax fnDecl:
@@ -112,12 +120,17 @@ public partial class SymbolTableBuilder
                 
                 foreach (var member in moduleDeclSyntax.Members)
                     Build(member, parent: moduleSymbol);
+                
                 break;
             }
             
+            case NativeFnDeclSyntax:
+            case FileScopedModuleDeclSyntax:
+                //TODO: Implement NativeFn, FileScopedModuleDecl
+                _diagnosticBag.ReportError(new Diagnostic.UnsupportedFeature(syntax));
+                break;
+            
             default:
-                //TODO: NativeFnDecl
-                //TODO: FileScopeModuleDecl
                 throw new NotImplementedException();
         }
     }

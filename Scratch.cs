@@ -8,9 +8,9 @@ using Axl.Compiler.Semantics.Symbols;
 
 var input = """
             module O1..O3.O4 { }
-            module A
+            public module A
             {
-                module B
+                private module B
                 {
                     module C { fn Test1() { } fn Test2() { } }
                     fn Test2() { }
@@ -35,6 +35,11 @@ var input2 = """
              """;
 
 var compilation = Compilation.FromText(input);
+foreach (var diagnostic in compilation.GetDiagnostics())
+{
+    Console.WriteLine($"{diagnostic.DefaultSeverity.ToString().ToUpper()} {diagnostic.Id}: {diagnostic.Message}");
+}
+
 var table = compilation.GetSymbolTable();
 
 // foreach (var symbol in table.AllSymbols)
