@@ -10,11 +10,19 @@
 * Binder = per-file, knows it's context
 
 
-**Next**:
+**Next**: *SymbolTableBuilder*
+
+- File-scoped not allowed diagnostic!
+- SymbolTableBuilder: on seeing FileScopedDecl, change context to InModule
+- create ErrorSymbol for invalid contexts
+
 - SyntaxKind, AxlFileKind DisplayExtensions
 
+
+
+**Moving On**
+
 - make `DiagnosticList` with diagnostics and `HasError` or similar
-- distinguish script and module files
 
 - make `BinderFactory` per SyntaxTree
 - better name for `BinderFactory`? (ScopeManager, ... ?)
@@ -22,7 +30,7 @@
 
 - Diagnostics: How do they weave through the query architecture?
 
-**Small points**:
+**Stashed small ones**:
 * Regressions: `1+[EOF]`, `-[EOF]`
 * SyntaxNode enumerator (all nodes, BFS/DFS, all tokens in sequence)
 * Tests:

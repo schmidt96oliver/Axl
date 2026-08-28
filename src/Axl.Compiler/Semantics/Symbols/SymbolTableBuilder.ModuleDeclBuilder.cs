@@ -7,7 +7,7 @@ namespace Axl.Compiler.Semantics.Symbols;
 
 public partial class SymbolTableBuilder
 {
-    private record ModuleDecl(SymbolName Name, List<ModuleDeclSyntax> Syntaxes, List<ModuleDecl> Children);
+    private record ModuleDecl(SymbolName Name, List<NormalOrFileScopedModuleDeclSyntax> Syntaxes, List<ModuleDecl> Children);
 
     private class ModuleDeclBuilder
     {
@@ -23,17 +23,50 @@ public partial class SymbolTableBuilder
         {
             var builder = new ModuleDeclBuilder();
             
+            // Only visit module files
             foreach (var tree in trees.Where(tree => tree.GetAxlFileKind() is AxlFileKind.ModuleFile))
-            foreach (var moduleDeclSyntax in tree.FileSyntax.Children.OfType<ModuleDeclSyntax>())
-                builder.VisitModuleSyntax(moduleDeclSyntax, parent: null);
+            {
+                var allowFileScopedDecl = true;
+                ModuleDecl? fileScopedModuleParent = null;
+                
+                foreach (var memberSyntax in tree.FileSyntax.Members)
+                {
+                    if (memberSyntax is FileScopedModuleDeclSyntax fileScopedDeclSyntax)
+                    {
+                        // Just skip additional file-scoped declarations. They will be 
+                        // reported be symbol table building later.
+                        if (!allowFileScopedDecl)
+                            continue;
+
+                        fileScopedModuleParent = builder.VisitFileScopedModuleSyntax(fileScopedDeclSyntax);
+
+                        // Allow only one file-scoped declaration
+                        allowFileScopedDecl = false;
+                    }
+                    else if (memberSyntax is ModuleDeclSyntax moduleDeclSyntax)
+                    {
+                        builder.VisitModuleSyntax(moduleDeclSyntax, parent: fileScopedModuleParent);
+
+                        // File-scoped declarations may not come after module
+                        // declarations.
+                        allowFileScopedDecl = false;
+                    }
+                }
+            }
 
             return builder._topLevelDecls.DrainToImmutable();
         }
-        
+
+        private ModuleDecl VisitFileScopedModuleSyntax(FileScopedModuleDeclSyntax syntax)
+        {
+            var moduleDecl = GetDeclFromPath(syntax.Name, parent: null);
+            moduleDecl.Syntaxes.Add(syntax);
+            return moduleDecl;
+        }
         
         private void VisitModuleSyntax(ModuleDeclSyntax syntax, ModuleDecl? parent)
         {
-            var moduleDecl = GetDeclFromSyntax(syntax, parent);
+            var moduleDecl = GetDeclFromPath(syntax.Name, parent);
 
             moduleDecl.Syntaxes.Add(syntax);
 
@@ -41,16 +74,16 @@ public partial class SymbolTableBuilder
                 VisitModuleSyntax(childModuleSyntax, parent: moduleDecl);
         }
         
-        private ModuleDecl GetDeclFromSyntax(ModuleDeclSyntax syntax, ModuleDecl? parent)
+        private ModuleDecl GetDeclFromPath(PathSyntax pathSyntax, ModuleDecl? parent)
         {
-            var partNames = syntax.Name.Parts
+            var partNames = pathSyntax.Parts
                 .Select(SymbolName.From);
 
             var currentDecl = parent;
             foreach (var partName in partNames)
                 currentDecl = GetOrCreateDecl(partName, parent: currentDecl);
             
-            Debug.Assert(currentDecl != parent, $"{nameof(syntax.Name)} has no parts.");
+            Debug.Assert(currentDecl != parent, $"{nameof(pathSyntax)} has no parts.");
             Debug.Assert(currentDecl is not null);
             
             return currentDecl;

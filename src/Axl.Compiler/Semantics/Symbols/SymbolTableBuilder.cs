@@ -106,7 +106,9 @@ public partial class SymbolTableBuilder
             : BuildingContext.GlobalInScriptFile;
         
         foreach (var member in syntaxTree.FileSyntax.Members)
+        {
             BuildMember(member, parent: null, context);
+        }
 
         foreach (var fileSyntaxStmt in syntaxTree.FileSyntax.Stmts)
             VisitStmt(fileSyntaxStmt, context);
@@ -206,18 +208,27 @@ public partial class SymbolTableBuilder
     
     private void BuildFileScopedModule(FileScopedModuleDeclSyntax syntax, Symbol? parent, BuildingContext context)
     {
-        // if (context is not (BuildingContext.GlobalInModuleFile or BuildingContext.InModule))
-        // {
-        //     _diagnosticBag.ReportError();
-        //     return;
-        // }
+        if (context is BuildingContext.GlobalInScriptFile)
+        {
+            _diagnosticBag.ReportError(new Diagnostic.NotAllowedInFileKind(syntax));
+            return;
+        }
+
+        // Module declaration building already filters only the one correct
+        // file-scoped declaration. It will ignore invalid ones, so those will
+        // not have a symbol.
+        if (!_symbolsBySyntax.TryGetValue(syntax, out var moduleSymbol))
+        {
+            //TODO: File-scoped not allowed diagnostic!
+            _diagnosticBag.ReportError(new Diagnostic.NotAllowedInFileKind(syntax));
+            return;
+        }
         
-        //TODO: Implement file scoped module decl
-                
-        _diagnosticBag.ReportError(new Diagnostic.UnsupportedFeature(syntax));
-        var errorSymbol = new ErrorSymbol(_compilation, SymbolName.From(syntax.Name.Parts.Last()), syntax, parent);
-                
-        AddSymbol(errorSymbol);
+        AnalyzeModifiers(syntax, context);
+        
+        // Members are on file syntax and will be walked anyway without going
+        // manually here.
+        //TODO: Change context to InModule
     }
 
     private void BuildNativeFn(NativeFnDeclSyntax syntax, Symbol? parent, BuildingContext context)

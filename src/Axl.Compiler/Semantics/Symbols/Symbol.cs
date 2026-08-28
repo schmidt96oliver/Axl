@@ -82,7 +82,7 @@ public sealed record FnSymbol(Compilation Compilation, SymbolName Name,
 public sealed record ModuleSymbol(
     Compilation Compilation,
     SymbolName Name,
-    ImmutableArray<ModuleDeclSyntax> Syntaxes,
+    ImmutableArray<NormalOrFileScopedModuleDeclSyntax> Syntaxes,
     Symbol? Parent)
     : Symbol(Compilation, Name, Parent)
 {
@@ -114,7 +114,7 @@ public sealed record ModuleSymbol(
         if (_members.IsDefault)
         {
             var nonModuleMembers = Syntaxes
-                .SelectMany(syntax => syntax.Members)
+                .SelectMany(SelectMembers)
                 .Where(syntax => syntax is not ModuleDeclSyntax)
                 .Select(Compilation.GetSymbolTable().GetSymbol)
                 .Where(symbol => symbol.Parent == this);
@@ -123,6 +123,17 @@ public sealed record ModuleSymbol(
         }
 
         return _members;
+
+        IEnumerable<MemberSyntax> SelectMembers(NormalOrFileScopedModuleDeclSyntax syntax) => syntax switch
+        {
+            ModuleDeclSyntax normalDecl => normalDecl.Members,
+
+            // File-scoped declarations that are not on file syntax directly are
+            // rejected by symbol building pass.
+            FileScopedModuleDeclSyntax => ((FileSyntax)syntax.Parent!).Members,
+
+            _ => throw new UnreachableException()
+        };
     }
 
 

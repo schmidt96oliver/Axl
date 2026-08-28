@@ -7,61 +7,14 @@ using Axl.Compiler.Semantics.Symbols;
 using Axl.Compiler.Syntax;
 
 
-var input = """
-            module GHE;
-            module O1..O3.O4 { }
-            public module A
-            {
-                native("") fn Bla();
-                private module B
-                {
-                    module C { fn Test1() { } fn Test2() { } }
-                    fn Test2() { }
-                }
-                module { fn InNoName() { } }
-                module Nope.D { }
-            }
-            module A.B.C { fn TestInC() { } }
-            module A
-            {
-                fn TestInA() { }
-                module B.C { fn TestInC2() { } }
-            }
-            """;
-
-var input2 = """
-             module A.B.C { fn Test2() { } }
-             module A
-             {
-                module B { module C { fn Test1() { } } }
-             }
-             """;
-
 string[] inputs = ["""
-                   module Global1 {}
-                   var a = 2;  //~error
+                   module Global1;
+                   module A { fn Test() {} }
                    """,
-                   """
-                   fn A() { }
-                   
-                   module Global2{}   //~error
-                   """,
-                   """
-                   module A2 { }
-                   a;          //~error
-                   """,
-                   """
-                   module Global3{}
-                   var a = 2;  //~error
-                   """,
-                   """
-                   module Global4{}
-                   
-                   var a = 2;      //~error
-                   a = true;       //~error
-                   
-                   module A4 { }    
-                   """,
+                    """
+                    module Global1.A.B;
+                    fn Test2() {}
+                    """
 ];
 
 var trees = inputs.Select(text => Parser.Parse(SourceFileView.FromText(text)));
