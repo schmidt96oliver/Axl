@@ -13,12 +13,17 @@
 **Next**:
 - make `BinderFactory` per SyntaxTree
 - better name for `BinderFactory`? (ScopeManager, ... ?)
-- Have `Declarator` walk _all_ nodes (stops at body boundaries)
 - Compilation.GetMembers(syntax tree) -> only top-level members
-- separate `PathName` from `SymbolName` (disallow .)
+
+- `SymbolTable` to `DeclarationTree` or `SymbolTree`. Queries
+  - GetSymbol(MemberSyntax)
+  - GetBinderAt(MemberSyntax)
+  - GetSymbols(SyntaxTree)
+  - IsScriptFile/ModuleFile(SyntaxTree)
 
 - Diagnostics: How do they weave through the query architecture?
 
+? `SymbolPath` by string for performance
 
 **Small points**:
 * Regressions: `1+[EOF]`, `-[EOF]`

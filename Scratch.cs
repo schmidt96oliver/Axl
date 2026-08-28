@@ -12,6 +12,7 @@ using Axl.Compiler.Syntax.Tree;
 
 
 var input = """
+            module O1..O3.O4 { }
             module A
             {
                 module B
@@ -19,6 +20,9 @@ var input = """
                     module C { fn Test1() { } fn Test2() { } }
                     fn Test2() { }
                 }
+                module Nope.D { }
+                module {  module InError }
+                module { module InError2 { } }
             }
             module A.B.C { fn TestInC() { } }
             module A
@@ -30,6 +34,21 @@ var input = """
 
 var compilation = Compilation.FromText(input);
 var table = compilation.GetSymbolTable();
+
+var moduleTable = ModuleDeclTableBuilder.Build(compilation.SyntaxTrees);
+foreach (var moduleDecl in moduleTable.AllModuleDecls.Where(decl => decl.Parent is null)) 
+    PrintModuleDecl(moduleDecl, "");
+
+void PrintModuleDecl(ModuleDecl decl, string prefix)
+{
+    Console.WriteLine($"{prefix}Module {decl.Name}, declared by {decl.Syntaxes.Count} nodes");
+
+    var children = moduleTable.AllModuleDecls.Where(childDecl => childDecl.Parent == decl);
+    foreach (var child in children)
+        PrintModuleDecl(child, prefix + "  ");
+}
+
+return;
 // foreach (var symbol in table.AllSymbols)
 //     Console.WriteLine($"{symbol.Path}: {symbol.GetType().Name} {symbol.Name} Parent = {symbol.Parent?.Path.ToString() ?? "<null>"}");
 // return;
