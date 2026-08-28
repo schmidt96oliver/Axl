@@ -41,8 +41,11 @@ public partial class SymbolTableBuilder
             [.. builder._topLevelSymbols]);
     }
 
+    
     /// <summary>
-    /// Eagerly builds all module symbols from their declarations.
+    /// Eagerly builds all module symbols before walking the tree.
+    /// Can't be built during tree-walking, because we need to attach
+    /// all module-children eagerly. See also <see cref="ModuleSymbol.ModuleMembers"/>.
     /// </summary>
     private void BuildModuleSymbols()
     {
@@ -73,6 +76,7 @@ public partial class SymbolTableBuilder
 
         return symbol;
     }
+    
     
     private void BuildSyntaxTree(SyntaxTree syntaxTree)
     {
