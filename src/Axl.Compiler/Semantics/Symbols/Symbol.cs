@@ -1,4 +1,6 @@
 ﻿using System.Collections.Immutable;
+using System.Diagnostics;
+using System.Security.Cryptography;
 using Axl.Compiler.Semantics.Binders;
 using Axl.Compiler.Semantics.Types;
 using Axl.Compiler.Syntax.Tree;
@@ -70,17 +72,40 @@ public sealed record ModuleSymbol(
     Symbol? Parent)
     : Symbol(Compilation, Name, Parent)
 {
+    /// <summary>
+    /// Set eagerly during construction, because modules might not contain
+    /// syntax.
+    /// </summary>
+    /// <example>
+    /// `module A.B.C` has module A and B without syntax.
+    /// </example>
+    internal ImmutableArray<ModuleSymbol> ModuleMembers
+    {
+        get
+        {
+            Debug.Assert(!field.IsDefault, "Not set during construction.");
+            return field; 
+        }
+        set
+        {
+            Debug.Assert(field.IsDefault, "Set multiple times during construction.");
+            field = value;
+        }
+    }
+
     private ImmutableArray<Symbol> _members = default;
     
     public ImmutableArray<Symbol> GetMembers()
     {
         if (_members.IsDefault)
         {
-            _members = Syntaxes
+            var nonModuleMembers = Syntaxes
                 .SelectMany(syntax => syntax.Members)
+                .Where(syntax => syntax is not ModuleDeclSyntax)
                 .Select(Compilation.GetSymbolTable().GetSymbol)
-                .Where(symbol => symbol.Parent == this)
-                .ToImmutableArray();
+                .Where(symbol => symbol.Parent == this);
+
+            _members = [.. ModuleMembers, .. nonModuleMembers];
         }
 
         return _members;

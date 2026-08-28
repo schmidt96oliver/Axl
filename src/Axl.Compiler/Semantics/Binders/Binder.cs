@@ -200,7 +200,7 @@ public sealed class CompilationBinder : Binder
 
     public override Symbol? Lookup(SymbolName name)
     {
-        return _symbolTable.AllSymbols.FirstOrDefault(symbol => symbol.Name == name);
+        return _symbolTable.TopLevelSymbols.FirstOrDefault(symbol => symbol.Name == name);
     }
 }
 

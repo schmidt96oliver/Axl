@@ -18,30 +18,62 @@ namespace Axl.Compiler.Semantics.Symbols;
 public partial class SymbolTableBuilder
 {
     private readonly Compilation _compilation;
-    private readonly ModuleDeclTable _moduleDeclTable;
 
     private readonly Dictionary<MemberSyntax, Symbol> _symbolsBySyntax = [];
-    private readonly HashSet<Symbol> _allSymbols = [];
+    private readonly List<Symbol> _topLevelSymbols = [];
 
-    private SymbolTableBuilder(Compilation compilation, ModuleDeclTable moduleDeclTable)
+    private SymbolTableBuilder(Compilation compilation)
     {
         _compilation = compilation;
-        _moduleDeclTable = moduleDeclTable;
     }
     
     
     public static SymbolTable Build(Compilation compilation)
     {
-        var moduleDeclTable = ModuleDeclTable.Build(compilation.SyntaxTrees);
-        var builder = new SymbolTableBuilder(compilation, moduleDeclTable);
+        var builder = new SymbolTableBuilder(compilation);
+        
+        builder.BuildModuleSymbols();
         foreach (var syntaxTree in compilation.SyntaxTrees)
             builder.BuildSyntaxTree(syntaxTree);
         
-        return new SymbolTable(compilation,
+        return new SymbolTable(
             builder._symbolsBySyntax.ToFrozenDictionary(),
-            builder._allSymbols);
+            [.. builder._topLevelSymbols]);
     }
 
+    /// <summary>
+    /// Eagerly builds all module symbols from their declarations.
+    /// </summary>
+    private void BuildModuleSymbols()
+    {
+        var topLevelDecls = ModuleDeclBuilder.Build(_compilation.SyntaxTrees);
+        
+        foreach (var moduleDecl in topLevelDecls)
+            BuildModuleSymbol(moduleDecl, parent: null);
+    }
+
+    private ModuleSymbol BuildModuleSymbol(ModuleDecl decl, ModuleSymbol? parent)
+    {
+        var symbol = new ModuleSymbol(
+            _compilation,
+            decl.Name!.Value,   //TODO: Handle null name
+            [..decl.Syntaxes],
+            parent
+        );
+        
+        // Add references
+        if (parent is null)
+            _topLevelSymbols.Add(symbol);
+        foreach (var syntax in decl.Syntaxes)
+            _symbolsBySyntax.Add(syntax, symbol);
+        
+        // Build children
+        var children = decl.Children.Select(childDecl => BuildModuleSymbol(childDecl, symbol)).ToImmutableArray();
+        symbol.ModuleMembers = children;
+
+        return symbol;
+    }
+    
     private void BuildSyntaxTree(SyntaxTree syntaxTree)
     {
         foreach (var member in syntaxTree.FileSyntax.Members)
@@ -63,19 +95,16 @@ public partial class SymbolTableBuilder
                     fnDecl,
                     parent);
                 _symbolsBySyntax.Add(fnDecl, fnSymbol);
+                if (parent is null)
+                    _topLevelSymbols.Add(fnSymbol);
+                
                 break;
 
             case ModuleDeclSyntax moduleDeclSyntax:
             {
-                // Check, if it has already been built.
-                if (!_symbolsBySyntax.TryGetValue(moduleDeclSyntax, out var moduleSymbol))
-                {
-                    var path = GetModuleDeclSyntaxPath(moduleDeclSyntax, parent?.Path);
-                    if (path is null)
-                        break;
-                    
-                    moduleSymbol = GetOrCreateModuleSymbolByPath(path.Value);
-                }
+                // Already built eagerly. Just assert.
+                Debug.Assert(_symbolsBySyntax[moduleDeclSyntax] is ModuleSymbol);
+                var moduleSymbol = (ModuleSymbol)_symbolsBySyntax[moduleDeclSyntax];
                 
                 foreach (var member in moduleDeclSyntax.Members)
                     Build(member, parent: moduleSymbol);
