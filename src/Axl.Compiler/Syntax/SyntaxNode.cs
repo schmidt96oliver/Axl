@@ -28,6 +28,10 @@ public abstract class SyntaxNode : SyntaxElement
         
         FullSpan = SourceSpan.FromTo(children[0].FullSpan, children[^1].FullSpan);
         
+        // Set parents
+        foreach (var child in children)
+            child.Parent = this;
+        
         // Calculate Span
         if (children.FirstOrDefault(element => element.Span is not null) is SyntaxElement firstNonTrivia)
         {

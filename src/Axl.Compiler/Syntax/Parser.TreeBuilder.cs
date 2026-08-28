@@ -61,15 +61,23 @@ public partial class Parser
 
                     var rootNode = new FileSyntax(nodeBuilders.Pop().DrainToImmutable());
                     
-                    Debug.Assert(sawErrorElement == diagnosticBag.HasError,
-                        sawErrorElement
-                            ? "Saw error element(s), but no diagnostics."
-                            : "Saw no error element(s), but reported an error.");
-                    return new SyntaxTree(
+                    // Explicitly set its parent, because there is no parent node
+                    // to do it. Normally they are set in syntax node constructor.
+                    rootNode.Parent = null;
+                    
+                    var tree = new SyntaxTree(
                         fileSyntax: rootNode,
                         _source,
                         diagnostics: diagnosticBag.Drain(),
                         hasError: diagnosticBag.HasError);
+
+                    rootNode.Tree = tree;
+                    
+                    Debug.Assert(sawErrorElement == diagnosticBag.HasError,
+                        sawErrorElement
+                            ? "Saw error element(s), but no diagnostics."
+                            : "Saw no error element(s), but reported an error.");
+                    return tree;
                 }
 
                 case ParseEvent.Close(var kind):
