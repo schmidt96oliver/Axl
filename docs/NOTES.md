@@ -11,10 +11,9 @@
 
 
 **Next**:
-- Unsupported -> ErrorSymbol
+- SyntaxKind, AxlFileKind DisplayExtensions
 
 - make `DiagnosticList` with diagnostics and `HasError` or similar
-- how to ensure, every syntax is seen by some semantic stage?
 - distinguish script and module files
 
 - make `BinderFactory` per SyntaxTree

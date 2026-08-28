@@ -18,6 +18,14 @@ namespace Axl.Compiler.Semantics.Symbols;
 /// </remarks>
 public partial class SymbolTableBuilder
 {
+    private enum BuildingContext
+    {
+        GlobalInModuleFile,
+        GlobalInScriptFile,
+        InModule
+    }
+    
+    
     private readonly Compilation _compilation;
 
     private readonly Dictionary<MemberSyntax, Symbol> _symbolsBySyntax = [];
@@ -95,66 +103,122 @@ public partial class SymbolTableBuilder
     {
         foreach (var member in syntaxTree.FileSyntax.Members)
         {
-            Build(member, parent: null);
+            Build(member,
+                parent: null,
+                context: syntaxTree.GetAxlFileKind() is AxlFileKind.ModuleFile
+                    ? BuildingContext.GlobalInModuleFile
+                    : BuildingContext.GlobalInScriptFile);
         }
     }
 
-    private void Build(MemberSyntax syntax, Symbol? parent)
+    
+    private void Build(MemberSyntax syntax, Symbol? parent, BuildingContext context)
     {
-        //TODO: Implement Modifiers
-        foreach (var modifier in syntax.Modifiers)
-            _diagnosticBag.ReportError(new Diagnostic.UnsupportedFeature(modifier));
-        
         switch (syntax)
         {
             case FnDeclSyntax fnDecl:
-                if (fnDecl.Name.IsMissing)
-                    break;
-
-                var fnSymbol = new FnSymbol(_compilation,
-                    SymbolName.From(fnDecl.Name),
-                    fnDecl,
-                    parent);
-                
-                AddSymbol(fnSymbol);
+                BuildFn(fnDecl, parent, context);
                 break;
 
             case ModuleDeclSyntax moduleDeclSyntax:
             {
-                // Already built eagerly. Just assert.
-                Debug.Assert(_symbolsBySyntax[moduleDeclSyntax] is ModuleSymbol);
-                var moduleSymbol = (ModuleSymbol)_symbolsBySyntax[moduleDeclSyntax];
-                
-                foreach (var member in moduleDeclSyntax.Members)
-                    Build(member, parent: moduleSymbol);
-                
+                BuildModule(moduleDeclSyntax, context);
                 break;
             }
             
             case NativeFnDeclSyntax nativeFnDecl:
             {
-                //TODO: Implement native fn decl
-                
-                _diagnosticBag.ReportError(new Diagnostic.UnsupportedFeature(syntax));
-                var errorSymbol = new ErrorSymbol(_compilation, SymbolName.From(nativeFnDecl.Name), nativeFnDecl, parent);
-                
-                AddSymbol(errorSymbol);
+                BuildNativeFn(nativeFnDecl, parent, context);
                 break;
             }
                 
             case FileScopedModuleDeclSyntax fileScopedModuleDecl:
             {
-                //TODO: Implement file scoped module decl
-                
-                _diagnosticBag.ReportError(new Diagnostic.UnsupportedFeature(syntax));
-                var errorSymbol = new ErrorSymbol(_compilation, SymbolName.From(fileScopedModuleDecl.Name.Parts.Last()), fileScopedModuleDecl, parent);
-                
-                AddSymbol(errorSymbol);
+                BuildFileScopedModule(fileScopedModuleDecl, parent, context);
                 break;
             }
             
             default:
                 throw new NotImplementedException();
         }
+    }
+
+    
+    private void AnalyzeModifiers(MemberSyntax syntax, BuildingContext context)
+    {
+        //TODO: Implement Modifiers
+        foreach (var modifier in syntax.Modifiers)
+            _diagnosticBag.ReportError(new Diagnostic.UnsupportedFeature(modifier));
+    }
+    
+    private void BuildModule(ModuleDeclSyntax syntax, BuildingContext context)
+    {
+        if (context is not (BuildingContext.GlobalInModuleFile or BuildingContext.InModule))
+        {
+            _diagnosticBag.ReportError(new Diagnostic.NotAllowedInFileKind(syntax));
+            return;
+        }
+        
+        AnalyzeModifiers(syntax, context);
+        
+        // Already built eagerly. Just assert.
+        Debug.Assert(_symbolsBySyntax[syntax] is ModuleSymbol);
+        var moduleSymbol = (ModuleSymbol)_symbolsBySyntax[syntax];
+                
+        foreach (var member in syntax.Members)
+            Build(member, 
+                parent: moduleSymbol,
+                BuildingContext.InModule);
+    }
+
+    private void BuildFn(FnDeclSyntax syntax, Symbol? parent, BuildingContext context)
+    {
+        if (context is not (BuildingContext.GlobalInScriptFile or BuildingContext.InModule))
+        {
+            _diagnosticBag.ReportError(new Diagnostic.NotAllowedInFileKind(syntax));
+            return;
+        }
+     
+        AnalyzeModifiers(syntax, context);
+        
+        var fnSymbol = new FnSymbol(_compilation,
+            SymbolName.From(syntax.Name),
+            syntax,
+            parent);
+                
+        AddSymbol(fnSymbol);
+    }
+    
+    
+    private void BuildFileScopedModule(FileScopedModuleDeclSyntax syntax, Symbol? parent, BuildingContext context)
+    {
+        // if (context is not (BuildingContext.GlobalInModuleFile or BuildingContext.InModule))
+        // {
+        //     _diagnosticBag.ReportError();
+        //     return;
+        // }
+        
+        //TODO: Implement file scoped module decl
+                
+        _diagnosticBag.ReportError(new Diagnostic.UnsupportedFeature(syntax));
+        var errorSymbol = new ErrorSymbol(_compilation, SymbolName.From(syntax.Name.Parts.Last()), syntax, parent);
+                
+        AddSymbol(errorSymbol);
+    }
+
+    private void BuildNativeFn(NativeFnDeclSyntax syntax, Symbol? parent, BuildingContext context)
+    {
+        // if (context is not (BuildingContext.GlobalInScriptFile or BuildingContext.InModule))
+        // {
+        //     _diagnosticBag.ReportError();
+        //     return;
+        // }
+        
+        //TODO: Implement native fn decl
+                
+        _diagnosticBag.ReportError(new Diagnostic.UnsupportedFeature(syntax));
+        var errorSymbol = new ErrorSymbol(_compilation, SymbolName.From(syntax.Name), syntax, parent);
+                
+        AddSymbol(errorSymbol);
     }
 }

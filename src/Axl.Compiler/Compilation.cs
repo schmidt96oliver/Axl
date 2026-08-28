@@ -58,6 +58,15 @@ public class Compilation
         return new Compilation([tree]);
     }
 
+    public static Compilation FromTrees(params ReadOnlySpan<SyntaxTree> trees)
+    {
+        return new Compilation([.. trees]);
+    }
+    public static Compilation FromTrees(IEnumerable<SyntaxTree> trees)
+    {
+        return new Compilation([.. trees]);
+    }
+    
 
     private QueryHandle ProtectedQuery(QueryKind query, object? data = null)
     {

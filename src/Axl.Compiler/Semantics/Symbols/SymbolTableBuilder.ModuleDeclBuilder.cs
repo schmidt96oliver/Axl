@@ -23,7 +23,7 @@ public partial class SymbolTableBuilder
         {
             var builder = new ModuleDeclBuilder();
             
-            foreach (var tree in trees)
+            foreach (var tree in trees.Where(tree => tree.GetAxlFileKind() is AxlFileKind.ModuleFile))
             foreach (var moduleDeclSyntax in tree.FileSyntax.Children.OfType<ModuleDeclSyntax>())
                 builder.VisitModuleSyntax(moduleDeclSyntax, parent: null);
 

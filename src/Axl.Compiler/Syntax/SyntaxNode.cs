@@ -43,4 +43,14 @@ public abstract class SyntaxNode : SyntaxElement
         else
             Span = null;
     }
+
+
+    /// <summary>
+    /// Enumerates all elements relevant for syntax. That excludes trivia,
+    /// garbage nodes and unknown character tokens.
+    /// </summary>
+    public IEnumerable<SyntaxElement> SyntaxElements()
+        => Children.Where(element =>
+            element is not (Token { Kind.IsTrivia: true } or Token { Kind: TokenKind.UnknownCharacters }
+                or SyntaxNode { Kind: SyntaxKind.Garbage }));
 }

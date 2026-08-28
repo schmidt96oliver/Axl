@@ -1,5 +1,6 @@
 ﻿using System.Collections.Immutable;
 using Axl.Compiler.Syntax;
+using Axl.Compiler.Syntax.Tree;
 
 namespace Axl.Compiler.Diagnostics;
 
@@ -20,5 +21,17 @@ public abstract partial record Diagnostic
                 SyntaxNode node => node.Kind.ToString(),
                 _ => "??"
             };
+    }
+
+    public sealed record NotAllowedInFileKind(MemberSyntax Syntax) : Error
+    {
+        public override ImmutableArray<SourceLocation> Locations =>
+        [
+            // Put error on the first syntax token/element. Normally this would be the
+            // first keyword. If not possible, squiggle the entire syntax.
+            Syntax.SyntaxElements().FirstOrDefault()?.GetLocation() ?? Syntax.GetLocation()
+        ];
+        
+        public override string Message => $"{Syntax.Kind} is not allowed in {Syntax.Tree.GetAxlFileKind()}." ;
     }
 }

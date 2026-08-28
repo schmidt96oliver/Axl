@@ -4,6 +4,7 @@
 using Axl.Compiler;
 using Axl.Compiler.Semantics.Binders;
 using Axl.Compiler.Semantics.Symbols;
+using Axl.Compiler.Syntax;
 
 
 var input = """
@@ -36,7 +37,36 @@ var input2 = """
              }
              """;
 
-var compilation = Compilation.FromText(input);
+string[] inputs = ["""
+                   module Global1 {}
+                   var a = 2;  //~error
+                   """,
+                   """
+                   fn A() { }
+                   
+                   module Global2{}   //~error
+                   """,
+                   """
+                   module A2 { }
+                   a;          //~error
+                   """,
+                   """
+                   module Global3{}
+                   var a = 2;  //~error
+                   """,
+                   """
+                   module Global4{}
+                   
+                   var a = 2;      //~error
+                   a = true;       //~error
+                   
+                   module A4 { }    
+                   """,
+];
+
+var trees = inputs.Select(text => Parser.Parse(SourceFileView.FromText(text)));
+var compilation = Compilation.FromTrees(trees.ToList());
+
 foreach (var diagnostic in compilation.GetDiagnostics())
 {
     Console.WriteLine($"{diagnostic.DefaultSeverity.ToString().ToUpper()} {diagnostic.Id}: {diagnostic.Message}");
