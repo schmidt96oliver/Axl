@@ -1,21 +1,14 @@
 # ------------------------------------ Axl Project ------------------------------------
                                        ≽(◕ ᴗ ◕)≼
 
-1. Declarations: Eager walk over _all_ files. Walks _all_ syntax nodes. Verifies them. Produces declared symbols.
-   * Walk per-file. On compilation-fork, only new SyntaxTrees are walked
-2. BinderFactory (rename to file scope, ...?): Walks scope-producing nodes. Produces map decl syntax to binder
-3. Symbol evaluates lazy through: GetBinderFactory(tree).GetBinder(syntax).Bind***
-
-* Symbol = Unit of lazy binding; represents one declaration
-* Binder = per-file, knows it's context
-
-
 **Next**: *Ctd. DeclarationTable -> Symbol*
 
-- Invalid file-scoped decl => ErrorSymbol
-- Handle script files (all modules become ErrorSymbol ?)
-
-- File-scoped not allowed diagnostic!
+- Handle script files
+- Handle diagnostics, weave into their symbols
+  - Invalid file-scoped decl (multiple if on another file-scoped node)
+  - Invalid statements
+  - Modules in script files
+- move script file detection to DeclTableBuilder?
 
 - SyntaxKind, AxlFileKind DisplayExtensions
 
