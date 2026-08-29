@@ -10,11 +10,12 @@
 * Binder = per-file, knows it's context
 
 
-**Next**: *SymbolTableBuilder*
+**Next**: *Ctd. DeclarationTable -> Symbol*
+
+- Invalid file-scoped decl => ErrorSymbol
+- Handle script files (all modules become ErrorSymbol ?)
 
 - File-scoped not allowed diagnostic!
-- SymbolTableBuilder: on seeing FileScopedDecl, change context to InModule
-- create ErrorSymbol for invalid contexts
 
 - SyntaxKind, AxlFileKind DisplayExtensions
 

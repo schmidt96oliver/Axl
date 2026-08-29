@@ -1,24 +1,85 @@
 ﻿#!/usr/bin/env dotnet
 #:project src/Axl.Compiler/Axl.Compiler.csproj
 
+using System.Collections.Immutable;
+using System.Diagnostics;
 using Axl.Compiler;
+using Axl.Compiler.Diagnostics;
 using Axl.Compiler.Semantics.Binders;
 using Axl.Compiler.Semantics.Symbols;
 using Axl.Compiler.Syntax;
+using Axl.Compiler.Syntax.Tree;
 
 
 string[] inputs = ["""
-                   module Global1;
-                   module A { fn Test() {} }
+                   module A
+                   {
+                        module C;
+                       fn Fn_A() { }
+                       module B 
+                       {
+                            fn Fn_B() { }
+                       }
+                   }
+                   ""","""
+                   module A.B;
+                   
+                            fn Fn2_B() { }
+                       
+                   
                    """,
-                    """
-                    module Global1.A.B;
-                    fn Test2() {}
-                    """
 ];
 
-var trees = inputs.Select(text => Parser.Parse(SourceFileView.FromText(text)));
-var compilation = Compilation.FromTrees(trees.ToList());
+var trees = inputs.Select(text => Parser.Parse(SourceFileView.FromText(text))).ToImmutableArray();
+var compilation = Compilation.FromTrees(trees);
+var declTable = new DeclarationTable(compilation.SyntaxTrees);
+
+Console.WriteLine("*** SINGLE");
+foreach (var tree in trees)
+{
+    var singleRoot = declTable.GetSyntaxTreeSingleRoot(tree);
+    Console.WriteLine("----");
+    PrintSingleDecl(singleRoot, "");
+}
+
+Console.WriteLine("*** MERGED");
+PrintMergedDecl(declTable.GetMergedRoot(), string.Empty);
+
+Console.WriteLine("*** Global Symbol");
+var globalSymbol = new NewModuleSymbol(compilation, declTable.GetMergedRoot(), Parent: null);
+PrintSymbol(globalSymbol, "");
+
+
+void PrintSingleDecl(SingleModuleDecl decl, string prefix)
+{
+    var name = decl.Name.IsEmpty ? "ROOT" : decl.Name;
+    var diagText = decl.Diagnostics.Length > 0 ? $"[ERRORx{decl.Diagnostics.Length}]" : "";
+    var memberText = string.Join(" | ", decl.NonModuleMemberSyntaxes.Select(SelectName));
+    
+    Console.WriteLine($"{prefix}{name} {diagText} ({memberText})");
+    foreach (var child in decl.Children) PrintSingleDecl(child, prefix + " - ");
+}
+
+void PrintMergedDecl(MergedModuleDecl decl, string prefix)
+{
+    var name = decl.Name.IsEmpty ? "ROOT" : decl.Name;
+    var diagText = decl.Diagnostics.Length > 0 ? $"[ERRORx{decl.Diagnostics.Length}]" : "";
+    var memberText = string.Join(" | ", decl.NonModuleMemberSyntaxes.Select(SelectName));
+    
+    Console.WriteLine($"{prefix}{name} {diagText} ({memberText})");
+    foreach (var child in decl.Children) PrintMergedDecl(child, prefix + " ");
+
+    
+}
+string SelectName(MemberSyntax syntax) => syntax switch
+{
+    BaseModuleDeclSyntax moduleDecl => $"module {string.Join(".", moduleDecl.Name.Parts.Select(t => t.Identifier))}",
+    FnDeclSyntax fnDecl => $"fn {fnDecl.Name.Identifier}",
+    NativeFnDeclSyntax nativeFnDecl => $"native fn {nativeFnDecl.Name.Identifier}",
+    _ => "??"
+};
+return;
+
 
 foreach (var diagnostic in compilation.GetDiagnostics())
 {
@@ -46,12 +107,28 @@ foreach (var symbol in table.TopLevelSymbols)
     // }
 }
 
+string MakeSyntaxText(SyntaxNode node)
+{
+    var treeIndex = trees.IndexOf(node.Tree);
+    var startLinePos = node.GetLocation().StartLinePosition;
+    var endLinePos = node.GetLocation().EndLinePosition;
+    var text = startLinePos.Line != endLinePos.Line
+        ? $"[{treeIndex}] l.{startLinePos.Line} - l.{endLinePos.Line}"
+        : $"[{treeIndex}] l.{startLinePos.Line}";
+    return text;
+}
+
 void PrintSymbol(Symbol symbol, string prefix)
 {
+    var syntaxText = symbol.GetDeclaringSyntaxes().Length > 0
+        ? string.Join(", ", symbol.GetDeclaringSyntaxes().Select(MakeSyntaxText))
+        : "<none>";
+    
     switch (symbol)
     {
-        case ModuleSymbol moduleSymbol:
-            Console.WriteLine($"{prefix}Module \"{moduleSymbol.Name}\", Path = \"{moduleSymbol.Path}\"");
+        case NewModuleSymbol moduleSymbol:
+            
+            Console.WriteLine($"{prefix}Module \"{moduleSymbol.Name}\", Path = \"{moduleSymbol.Path}\", Syntax = {syntaxText}");
             foreach (var member in moduleSymbol.GetMembers())
             {
                 PrintSymbol(member, prefix + "  ");
@@ -60,7 +137,7 @@ void PrintSymbol(Symbol symbol, string prefix)
             break;
 
         case FnSymbol fnSymbol:
-            Console.WriteLine($"{prefix}Fn \"{fnSymbol.Name}, Path = \"{fnSymbol.Path}\"");
+            Console.WriteLine($"{prefix}Fn \"{fnSymbol.Name}, Path = \"{fnSymbol.Path}\", Syntax = {syntaxText}");
             // var fnPrefix = prefix + "   ";
             // Console.WriteLine($"{fnPrefix}- Parameters:");
             // foreach (var local in fnSymbol.GetParameters())
@@ -71,11 +148,11 @@ void PrintSymbol(Symbol symbol, string prefix)
             break;
         
         case LocalSymbol localSymbol:
-            Console.WriteLine($"{prefix}\"{localSymbol.Name}\" : {localSymbol.Type}");
+            Console.WriteLine($"{prefix}\"{localSymbol.Name}\" : {localSymbol.Type}, Syntax = {syntaxText}");
             break;
         
         case ErrorSymbol errorSymbol:
-            Console.WriteLine($"{prefix}ERROR \"{errorSymbol.Name}\"");
+            Console.WriteLine($"{prefix}ERROR \"{errorSymbol.Name}\", Syntax = {syntaxText}");
             break;
     }
 }
@@ -113,266 +190,240 @@ string GetBinderChainText(Binder binder)
     return parentText + $"->{binder.GetType().Name} \"{symbolName}\"";
 }
 
-// Get member binders per syntax tree
 
 
+// --------- SingleModuleDecl Builder
+/// <summary>
+/// A single module declaration. Unmerged, even across the same file.
+/// </summary>
+/// <param name="Syntax">Declaring syntax.</param>
+/// <param name="NonModuleMemberSyntaxes">
+/// Syntax for all members that are not module decls.
+/// Needs to be specially here, because file-scoped declarations
+/// make all members below their own members.
+/// </param>
+/// <param name="Children">Child single module declarations.</param>
+public sealed record SingleModuleDecl(SymbolName Name, 
+    SyntaxNode Syntax,
+    ImmutableArray<MemberSyntax> NonModuleMemberSyntaxes,    // needs to be given, because file-scoped is flat in syntax tree
+    ImmutableArray<SingleModuleDecl> Children,
+    ImmutableArray<Diagnostic> Diagnostics);
+//TODO: Split root (empty name) from actual declarations?
+//TODO: Can syntax tree actually be walked by scope tree builder?
 
-// public abstract class Symbol(SymbolName name)
-// {
-//     public SymbolName Name { get; } = name;
-// }
-//
-// public sealed class CompilationExt
-// {
-//     private readonly ImmutableArray<SyntaxTree> _syntaxTrees;
-//
-//
-//     public CompilationExt(ImmutableArray<SyntaxTree> syntaxTrees)
-//     {
-//         _syntaxTrees = syntaxTrees;
-//     }
-//
-//     private ImmutableArray<ModuleSymbol.Fragment> GetModuleFragments()
-//     {
-//         var compilationBinder = new CompilationBinder(typeContext);
-//         
-//         var fragments = ImmutableArray.CreateBuilder<ModuleSymbol.Fragment>();
-//
-//         foreach (var tree in _syntaxTrees)
-//         {
-//             var fileBinder = new FileBinder(tree, parent: compilationBinder);
-//
-//             foreach (var moduleDeclSyntax in tree.FileSyntax.Members.OfType<ModuleDeclSyntax>())
-//             {
-//                 
-//             }
-//         }
-//     }
-//     
-//     public ImmutableArray<ModuleSymbol> GetModules()
-//     {
-//         throw new NotImplementedException();
-//     }
-//     
-//     public HirBody GetScriptHir()
-//     {
-//         throw new NotImplementedException();
-//     }
-// }
-//
-// // public sealed class ModuleFragment
-// // {
-// //     public Binder FragmentBinder { get; }
-// //     
-// //     public ModuleDeclSyntax Syntax { get; }
-// //
-// //     public ModuleFragmentSymbol(SymbolName moduleName, ModuleDeclSyntax syntax, Binder fragmentBinder)
-// //         :base(moduleName)
-// //     {
-// //         Syntax = syntax;
-// //         FragmentBinder = fragmentBinder;
-// //     }
-// //     
-// //     public ImmutableArray<Symbol> GetMembers()
-// //     {
-// //         var builder = ImmutableArray.CreateBuilder<Symbol>();
-// //         foreach (var memberSyntax in Syntax.Members)
-// //         {
-// //             builder.Add(FragmentBinder.BindMember(memberSyntax));
-// //         }
-// //
-// //         return builder.DrainToImmutable();
-// //     }
-// // }
-//
-// public sealed class ModuleSymbol : Symbol
-// {
-//     public readonly record struct Fragment(string Path, ModuleDeclSyntax Syntax, Binder Binder);
-//     
-//     private ImmutableArray<Fragment> Fragments { get; }
-//
-//
-//     public ModuleSymbol(SymbolName name, ImmutableArray<ModuleSymbol.Fragment> fragments)
-//         : base(name)
-//     {
-//         Fragments = fragments;
-//     }
-//
-//
-//     public ImmutableArray<Symbol> GetMembers()
-//     {
-//         var builder = ImmutableArray.CreateBuilder<Symbol>();
-//         foreach (var fragment in Fragments)
-//         foreach (var memberSyntax in fragment.Syntax.Members)
-//         {
-//             builder.Add(fragment.Binder.BindMember(memberSyntax));
-//         }
-//
-//         return builder.DrainToImmutable();
-//     }
-// }
-//
-// public sealed class FnSymbol : Symbol
-// {
-//     public FnDeclSyntax Syntax { get; }
-//     public FnBinder Binder { get; }
-//
-//     public FnSymbol(SymbolName name, FnDeclSyntax syntax, FnBinder binder) :
-//         base(name)
-//     {
-//         Syntax = syntax;
-//         Binder = binder;
-//     }
-//     
-//     public ImmutableArray<AxlType> GetParameterTypes()
-//     {
-//         //TODO: Lazy eval
-//         return [.. Syntax.Parameters.Select(paramSyntax => Binder.BindType(paramSyntax.TypeAnnotation!))];
-//     }
-//
-//     public AxlType GetReturnType()
-//     {
-//         //TODO: Lazy eval
-//         return Binder.BindType(Syntax.ReturnTypeAnnotation ?? throw new Exception("ReturnTypeAnnotation required."));
-//     }
-//     
-//     public HirBody GetHir()
-//     {
-//         //TODO: Lazy eval
-//         return Binder.BindBody(Syntax.Body);
-//     }
-// }
-//
-// public sealed class LocalSymbol(SymbolName name) : Symbol(name)
-// {
-//     public AxlType Type { get; }
-//     
-//     public HirExpr Initializer { get; }
-// }
-//
+public sealed class MergedModuleDecl(SymbolName name, ImmutableArray<SingleModuleDecl> singleModuleDecls)
+{
+    public SymbolName Name { get; } = name;
+    
+    public ImmutableArray<SingleModuleDecl> SingleModuleDecls { get; } = singleModuleDecls;
+
+    public ImmutableArray<MergedModuleDecl> Children
+    {
+        get
+        {
+            if (field.IsDefault)
+                field = MergeChildren();
+            return field;
+        }
+    }
+
+    public ImmutableArray<Diagnostic> Diagnostics
+    {
+        get
+        {
+            if (field.IsDefault)
+                field = [.. SingleModuleDecls.SelectMany(decl => decl.Diagnostics)];
+            return field;
+        }
+    }
+
+    public IEnumerable<MemberSyntax> NonModuleMemberSyntaxes
+        => SingleModuleDecls.SelectMany(decl => decl.NonModuleMemberSyntaxes);
+
+    private ImmutableArray<MergedModuleDecl> MergeChildren()
+    {
+        var singleChildren = SingleModuleDecls.SelectMany(singleDecl => singleDecl.Children);
+
+        var groupsByName = singleChildren.GroupBy(singleDecl => singleDecl.Name);
+
+        var mergedChildren = groupsByName.Select(grp =>
+            new MergedModuleDecl(grp.Key, grp.ToImmutableArray())).ToImmutableArray();
+
+        return mergedChildren;
+    }
+}
+
+public sealed class DeclarationBuilder
+{
+    public static SingleModuleDecl Build(SyntaxTree tree)
+    {
+        var firstMember = tree.FileSyntax.Members.FirstOrDefault();
+        var builder = new DeclarationBuilder();
+        
+        switch (firstMember)
+        {
+            case FileScopedModuleDeclSyntax fileScopedModuleDecl:
+            {
+                var members = tree.FileSyntax.Members
+                    .Skip(1)
+                    .ToImmutableArray();
+                var decl = builder.VisitBaseModuleDecl(fileScopedModuleDecl,
+                    members, new DiagnosticBag());
+
+                return new SingleModuleDecl(SymbolName.Empty,
+                    Syntax: tree.FileSyntax,
+                    NonModuleMemberSyntaxes: [], // members are now part of the file-scoped decl
+                    Children: [decl],
+                    Diagnostics: []);
+            }
+            case ModuleDeclSyntax moduleDecl:
+            {
+                var children = tree.FileSyntax.Members
+                    .OfType<BaseModuleDeclSyntax>()
+                    .Select(builder.VisitModuleDecl)
+                    .ToImmutableArray();
+                
+                return new SingleModuleDecl(SymbolName.Empty,
+                    Syntax: tree.FileSyntax,
+                    NonModuleMemberSyntaxes: [],
+                    Children: children,
+                    Diagnostics: []);
+            }
+            default:
+                // Something else entirely, means we have a script file.
+                // Might also be null (no member at all): Script file as well (?)
+                //TODO: Visit script file
+
+                return new SingleModuleDecl(
+                    SymbolName.Empty,
+                    Syntax: tree.FileSyntax,
+                    NonModuleMemberSyntaxes: [],
+                    Children: [],
+                    Diagnostics: []);
+        }
+    }
+
+    private SingleModuleDecl VisitBaseModuleDecl(BaseModuleDeclSyntax syntax, ImmutableArray<MemberSyntax> members, DiagnosticBag diagnostics)
+    {
+        // Visit all children module decls
+        var childrenModuleDecls = members
+            .OfType<BaseModuleDeclSyntax>()
+            .Select(VisitModuleDecl)
+            .ToImmutableArray();
+        var nonModuleMemberSyntaxes = members
+            .Where(s => s is not BaseModuleDeclSyntax)
+            .ToImmutableArray();
+        
+        // Reduce dotted paths as in
+        // `module A.B.C`
+        var pathNameParts = syntax.Name.Parts.ToList();
+        Debug.Assert(pathNameParts.Count >= 1, $"Parser must emit at least one part for {nameof(PathSyntax)}");
+        
+        for (var pathPart = pathNameParts.Count - 1; pathPart >= 1; pathPart--)
+        {
+            var decl = new SingleModuleDecl(SymbolName.From(pathNameParts[pathPart]), 
+                syntax,
+                nonModuleMemberSyntaxes,
+                childrenModuleDecls, 
+                Diagnostics: []);
+            
+            childrenModuleDecls = [decl];
+            nonModuleMemberSyntaxes = [];
+        }
+        
+        return new SingleModuleDecl(SymbolName.From(pathNameParts[0]), 
+            syntax, 
+            nonModuleMemberSyntaxes, 
+            childrenModuleDecls, 
+            diagnostics.Drain());
+    }
+
+    private SingleModuleDecl VisitModuleDecl(BaseModuleDeclSyntax syntax)
+    {
+        var diagnostics = new DiagnosticBag();
+        
+        // File-scoped declaration is illegal here, since the valid case is handled
+        // special-cased. Emit a single declaration for it without children and
+        // with an error attached.
+        
+        if (syntax is FileScopedModuleDeclSyntax)
+        {
+            //TODO: Report doubles or misplaced file-scoped module decl error
+            diagnostics.ReportError(new Diagnostic.UnsupportedFeature(syntax));
+        }
+
+        return VisitBaseModuleDecl(syntax, 
+            members: syntax is ModuleDeclSyntax moduleDeclSyntax ? [.. moduleDeclSyntax.Members] : [],
+            diagnostics);
+    }
+}
+
+public sealed class DeclarationTable(ImmutableArray<SyntaxTree> trees)
+{
+    private readonly ImmutableArray<SyntaxTree> _trees = trees;
+    private readonly Dictionary<SyntaxTree, SingleModuleDecl> _rootPerTree = [];
+
+    private MergedModuleDecl? _lazyMergedRoot = null; 
+    
+    
+    public SingleModuleDecl GetSyntaxTreeSingleRoot(SyntaxTree tree)
+    {
+        if (_rootPerTree.TryGetValue(tree, out var root))
+            return root;
+
+        root = DeclarationBuilder.Build(tree);
+        _rootPerTree.Add(tree, root);
+        return root;
+    }
+
+    public MergedModuleDecl GetMergedRoot()
+    {
+        _lazyMergedRoot ??= MakeMergedRoot();
+            
+        return _lazyMergedRoot;
+    }
+
+    private MergedModuleDecl MakeMergedRoot()
+    {
+        var globalSingleDecls = _trees.Select(GetSyntaxTreeSingleRoot).ToImmutableArray();
+        Debug.Assert(globalSingleDecls.All(root => root.Name.IsEmpty));
+
+        return new MergedModuleDecl(SymbolName.Empty,
+            singleModuleDecls: globalSingleDecls);
+    }
+}
+
+public sealed record NewModuleSymbol(
+    Compilation Compilation,
+    MergedModuleDecl MergedDecl,
+    Symbol? Parent)
+    : Symbol(Compilation, MergedDecl.Name, Parent)
+{
+    private ImmutableArray<Symbol> _members = default;
+
+    private Symbol MakeSymbol(MemberSyntax syntax) => syntax switch
+    {
+        FnDeclSyntax fnDecl => new FnSymbol(Compilation, SymbolName.From(fnDecl.Name),
+            fnDecl, Parent: this),
+        _ => throw new UnreachableException()
+    };
+    
+    public ImmutableArray<Symbol> GetMembers()
+    {
+        if (_members.IsDefault)
+        {
+            // Create Module Symbols
+            var moduleMembers = MergedDecl.Children.Select(
+                mergedDecl => new NewModuleSymbol(Compilation, mergedDecl, Parent: this));
+            var otherMembers = MergedDecl.NonModuleMemberSyntaxes.Select(MakeSymbol);
+            
+            _members = [.. moduleMembers, .. otherMembers];
+        }
+
+        return _members;
+    }
 
 
-
-// public class GlobalBinderContextBuilder
-// {
-//     public static BinderContext Build(Compilation compilation, SyntaxTree tree)
-//     {
-//         var globalScope = new TempGlobalScope();
-//
-//         foreach (var memberSyntax in tree.FileSyntax.Members)
-//         {
-//             var memberSymbol = compilation.GetSymbol(memberSyntax);
-//             var memberScope = memberSymbol switch
-//             {
-//                 ModuleSymbol moduleSymbol => new ModuleScope(parent: globalScope, moduleSymbol),
-//                     ...
-//             }
-//         }
-//     }
-//
-//     private static BinderContext GetMemberContext(Compilation compilation, BinderContext? parent, MemberSyntax syntax)
-//     {
-//         var memberSymbol = compilation.GetSymbol(syntax);
-//         return memberSymbol switch
-//         {
-//             ModuleSymbol moduleSymbol => new BinderContext(parent, new ModuleScope(moduleSymbol)),
-//             FnSymbol fnSymbol => new BinderContext(parent, new FnScope(fnSymbol)),
-//         };
-//     }
-// }
-
-// public record BinderContext(BinderContext? Parent, Scope Scope);
-//
-// public class Binder
-// {
-//     public static AxlType BindType(TypeNameSyntax syntax, BinderContext context)
-//     {
-//         var idNameSyntax = (IdNameSyntax)syntax;
-//         var symbol = context.Scope.Lookup(SymbolName.From(idNameSyntax.Token));
-//     }
-// }
-//
-// public sealed record ModuleSymbol(Compilation Compilation, SymbolName Name, ModuleDeclSyntax Syntax) 
-//     : Symbol(Compilation, Name)
-// {
-//     public ImmutableArray<Symbol> GetMembers()
-//     {
-//         return [.. Syntax.Members.Select(Compilation.GetSymbol)];
-//     }
-// }
-//
-// public sealed record TempPrintFnSymbol() : Symbol(SymbolName.From("Print"));
-// public sealed record TempPrintLineFnSymbol() : Symbol(SymbolName.From("PrintLine"));
-//
-// public abstract class Scope
-// {
-//     public abstract Symbol? Lookup(SymbolName name);
-//     public abstract List<Symbol> CollectAt(int position);
-// }
-//
-// /// <summary>
-// /// Mutable scope built as the binder walks the AST.
-// /// </summary>
-// public class LocalScope(Scope? parent = null) : Scope
-// {
-//     private readonly List<LocalSymbol> _locals = [];
-//
-//     public Scope? Parent { get; } = parent;
-//
-//     public override Symbol? Lookup(SymbolName name) // NON-EMPTY
-//     {
-//         // Search from last index, because shadowing might declare 
-//         // multiple locals with the same name.
-//         if (_locals.LastOrDefault(s => s.Name == name) is LocalSymbol symbol)
-//             return symbol;
-//         
-//         return Parent?.Lookup(name);
-//     }
-//
-//     public override List<Symbol> CollectAt(int position)
-//     {
-//         var collectedByName = new Dictionary<SymbolName, Symbol>();
-//
-//         for (var i = _locals.Count; i >= 0; i--)
-//         {
-//             var local = _locals[i];
-//             if (local.Syntax.Span!.Value.End > position)
-//                 continue;
-//             collectedByName.TryAdd(local.Name, local);
-//         }
-//
-//         if (Parent is null)
-//             return [.. collectedByName.Values];
-//
-//         foreach (var symbol in Parent.CollectAt(position))
-//         {
-//             collectedByName.TryAdd(symbol.Name, symbol);
-//         }
-//         
-//         return [.. collectedByName.Values];
-//     }
-//     
-//     public void Declare(LocalSymbol symbol)
-//     {
-//         _locals.Add(symbol);
-//     }
-// }
-//
-// public class TempGlobalScope() : Scope
-// {
-//     private readonly TempPrintFnSymbol _print = new();
-//     private readonly TempPrintLineFnSymbol _printLine = new();
-//     
-//     public override Symbol? Lookup(SymbolName name)
-//     {
-//         if (name == _print.Name)
-//             return _print;
-//         if (name == _printLine.Name)
-//             return _printLine;
-//
-//         return null;
-//     }
-//
-//     public override List<Symbol> CollectAt(int position)
-//         => [_print, _printLine];
-// }
+    public override ImmutableArray<SyntaxNode> GetDeclaringSyntaxes()
+        => [.. MergedDecl.SingleModuleDecls.Select(single => single.Syntax)];
+}

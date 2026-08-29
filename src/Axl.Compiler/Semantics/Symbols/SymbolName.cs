@@ -10,6 +10,8 @@ namespace Axl.Compiler.Semantics.Symbols;
 /// </summary>
 public readonly record struct SymbolName
 {
+    public static readonly SymbolName Empty = From(string.Empty);
+    
     public string Text { get; }
 
     public bool IsEmpty => Text.Length == 0;
