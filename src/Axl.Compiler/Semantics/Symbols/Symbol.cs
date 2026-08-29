@@ -82,7 +82,7 @@ public sealed record FnSymbol(Compilation Compilation, SymbolName Name,
 public sealed record ModuleSymbol(
     Compilation Compilation,
     SymbolName Name,
-    ImmutableArray<NormalOrFileScopedModuleDeclSyntax> Syntaxes,
+    ImmutableArray<BaseModuleDeclSyntax> Syntaxes,
     Symbol? Parent)
     : Symbol(Compilation, Name, Parent)
 {
@@ -124,7 +124,7 @@ public sealed record ModuleSymbol(
 
         return _members;
 
-        IEnumerable<MemberSyntax> SelectMembers(NormalOrFileScopedModuleDeclSyntax syntax) => syntax switch
+        IEnumerable<MemberSyntax> SelectMembers(BaseModuleDeclSyntax syntax) => syntax switch
         {
             ModuleDeclSyntax normalDecl => normalDecl.Members,
 

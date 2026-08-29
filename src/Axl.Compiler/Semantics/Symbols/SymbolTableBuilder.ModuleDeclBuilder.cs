@@ -7,7 +7,7 @@ namespace Axl.Compiler.Semantics.Symbols;
 
 public partial class SymbolTableBuilder
 {
-    private record ModuleDecl(SymbolName Name, List<NormalOrFileScopedModuleDeclSyntax> Syntaxes, List<ModuleDecl> Children);
+    private record ModuleDecl(SymbolName Name, List<BaseModuleDeclSyntax> Syntaxes, List<ModuleDecl> Children);
 
     private class ModuleDeclBuilder
     {

@@ -3,4 +3,4 @@
 namespace Axl.Compiler.Syntax.Tree;
 
 public sealed class FileScopedModuleDeclSyntax(ImmutableArray<SyntaxElement> children)
-    : NormalOrFileScopedModuleDeclSyntax(SyntaxKind.FileScopedModuleDecl, children);
+    : BaseModuleDeclSyntax(SyntaxKind.FileScopedModuleDecl, children);

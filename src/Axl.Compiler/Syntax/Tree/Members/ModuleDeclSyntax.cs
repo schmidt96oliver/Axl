@@ -3,7 +3,7 @@
 namespace Axl.Compiler.Syntax.Tree;
 
 public sealed class ModuleDeclSyntax(ImmutableArray<SyntaxElement> children)
-    : NormalOrFileScopedModuleDeclSyntax(SyntaxKind.ModuleDecl, children)
+    : BaseModuleDeclSyntax(SyntaxKind.ModuleDecl, children)
 {
     public PathSyntax Name => Children.FirstOfType<PathSyntax>();
 

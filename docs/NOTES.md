@@ -18,17 +18,17 @@
 
 - SyntaxKind, AxlFileKind DisplayExtensions
 
-
-
 **Moving On**
 
-- make `DiagnosticList` with diagnostics and `HasError` or similar
+- drop `HasError` from `DiagnosticList`
 
 - make `BinderFactory` per SyntaxTree
 - better name for `BinderFactory`? (ScopeManager, ... ?)
 - Compilation.GetMembers(syntax tree) -> only top-level members
 
 - Diagnostics: How do they weave through the query architecture?
+
+- LSP: Make Serial (see Omnisharp) and weave CancellationToken
 
 **Stashed small ones**:
 * Regressions: `1+[EOF]`, `-[EOF]`
@@ -40,6 +40,8 @@
 * Compilation cycle logic
 * Compilation.Fork; preserve ModuleDeclTable per SyntaxFile; Merge on demand by .GetMembers
 * Debug.MarkVisited, AssertAllVisitedOnce: All syntax nodes must be visited semantically
+
+* API: `SyntaxTree.ParseFrom`, `*Tree/Table.BuildFrom`
 
 # Semantics
 
