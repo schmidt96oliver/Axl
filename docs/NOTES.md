@@ -19,6 +19,9 @@
 
 - SyntaxKind, AxlFileKind DisplayExtensions
 
+- Property naming: Property = cannot fail, always same result, no arguments. Can be lazy
+    Get* = needs arguments, different results, can fail
+
 **Moving On**
 
 - drop `HasError` from `DiagnosticList`

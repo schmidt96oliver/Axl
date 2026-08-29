@@ -19,7 +19,7 @@ public partial class Parser
         
         // --- Dispatch
         if (_scanner.IsAt(FirstSet.ModuleDeclAfterModifiers))
-            return EatModuleDeclAfterModifiers(decl, onGlobalScope);
+            return EatModuleDeclAfterModifiers(decl, anchor, onGlobalScope);
         if (_scanner.IsAt(TokenKind.FnKw))
             return EatFnDeclAfterModifiers(decl, anchor);
         if (_scanner.IsAt(TokenKind.NativeKw))
@@ -29,8 +29,8 @@ public partial class Parser
         _scanner.ReportMissingTokenHere(ExpectedSyntax.Member);
         return _scanner.Close(decl, SyntaxKind.Garbage);
     }
-    
-    private MarkClose EatModuleDeclAfterModifiers(MarkOpen decl, bool onGlobalScope)
+
+    private MarkClose EatModuleDeclAfterModifiers(MarkOpen decl, Anchor anchor, bool onGlobalScope)
     {
         Debug.Assert(_scanner.IsAt(FirstSet.ModuleDeclAfterModifiers));
 
@@ -42,34 +42,50 @@ public partial class Parser
         if (_scanner.IsAt(TokenKind.Semicolon))
         {
             _scanner.EatKnown(TokenKind.Semicolon);
+
+            // Eat the entire rest of the file.
+            EatModuleMembersInsideBody(anchor);
+
             return _scanner.Close(decl, SyntaxKind.FileScopedModuleDecl);
         }
 
-        // --- Missing { }?
-        if (!_scanner.IsAt(TokenKind.OpenBrace))
+        // --- "{" means it's a bodied declaration
+        if (_scanner.IsAt(TokenKind.OpenBrace))
         {
-            // Input looks like 'module A' and could be meant to be a global
-            // module decl or a bodied module. If we're inside another module
-            // it surely will be bodied, since global is only allowed on global
-            // scope. On global scope, it could be both, but we just default to
-            // completing it as a global declaration as a heuristic.
-            
-            if (onGlobalScope)
-            {
-                EnsureToken(TokenKind.Semicolon);
-                return _scanner.Close(decl, SyntaxKind.FileScopedModuleDecl);
-            }
-            else
-            {
-                _scanner.MakeAndReport(TokenKind.OpenBrace);
-                _scanner.MakeAndReport(TokenKind.CloseBrace);
-                return _scanner.Close(decl, SyntaxKind.ModuleDecl);
-            }
+            _scanner.EatKnown(TokenKind.OpenBrace);
+
+            EatModuleMembersInsideBody(anchor | TokenKind.CloseBrace);
+
+            EnsureToken(TokenKind.CloseBrace);
+            return _scanner.Close(decl, SyntaxKind.ModuleDecl);
         }
+
+        // --- Invalid
+        // module A [something unrecognized]
         
-        // --- Eat members
-        _scanner.EatKnown(TokenKind.OpenBrace);
-        var moduleBodyAnchor = Anchor.Forced | TokenKind.UsingKw | FirstSet.Member | TokenKind.CloseBrace;
+        // Input looks like 'module A' and could be meant to be a global
+        // module decl or a bodied module. If we're inside another module
+        // it surely will be bodied, since global is only allowed on global
+        // scope. On global scope, it could be both, but we just default to
+        // completing it as a global declaration as a heuristic.
+
+        if (onGlobalScope)
+        {
+            EnsureToken(TokenKind.Semicolon);
+            EatModuleMembersInsideBody(Anchor.Forced);
+            return _scanner.Close(decl, SyntaxKind.FileScopedModuleDecl);
+        }
+        else
+        {
+            _scanner.MakeAndReport(TokenKind.OpenBrace);
+            _scanner.MakeAndReport(TokenKind.CloseBrace);
+            return _scanner.Close(decl, SyntaxKind.ModuleDecl);
+        }
+    }
+
+    private void EatModuleMembersInsideBody(Anchor anchor)
+    {
+        var moduleBodyAnchor = anchor | TokenKind.UsingKw | FirstSet.Member;
         foreach (var _ in _scanner.MustEatEachIteration())
         {
             RecoverToAndReport(moduleBodyAnchor, ExpectedSyntax.Member);
@@ -79,16 +95,9 @@ public partial class Parser
             else if (_scanner.IsAt(TokenKind.UsingKw))
                 EatUsingDirective();
             else
-            {
-                // Could be `}` or Eof
                 break;
-            }
         }
-
-        EnsureToken(TokenKind.CloseBrace);
-        return _scanner.Close(decl, SyntaxKind.ModuleDecl);
     }
-
 
 
     private MarkClose EatFnDeclAfterModifiers(MarkOpen decl, Anchor anchor)

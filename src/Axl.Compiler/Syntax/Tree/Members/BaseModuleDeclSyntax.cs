@@ -6,4 +6,10 @@ public abstract class BaseModuleDeclSyntax(SyntaxKind kind, ImmutableArray<Synta
     : MemberSyntax(kind, children)
 {
     public PathSyntax Name => Children.FirstOfType<PathSyntax>();
+    
+    public IEnumerable<MemberSyntax> Members
+        => Children.OfType<MemberSyntax>();
+    
+    public IEnumerable<UsingDirectiveSyntax> Usings
+        => Children.OfType<UsingDirectiveSyntax>();   
 }
