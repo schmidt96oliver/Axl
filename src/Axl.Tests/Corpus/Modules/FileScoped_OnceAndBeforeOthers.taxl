@@ -2,7 +2,8 @@
 
 // For a file-scoped module declaration it makes sense to
 // allow it only once per file and only before any other modules.
-// Because other modules become part of the globally declared module.
+// Otherwise, it becomes hard to reason about module structure,
+// because they modules become part of the globally declared module.
 
 module Global;
 module A { }

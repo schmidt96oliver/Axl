@@ -43,9 +43,15 @@ public partial class Parser
         {
             _scanner.EatKnown(TokenKind.Semicolon);
 
-            // Eat the entire rest of the file.
-            EatModuleMembersInsideBody(anchor);
-
+            // Only the first file-scoped decl of the file can be valid,
+            // so only this one will eat members. All others will be invalid,
+            // and it's better for diagnostics not to eat any members then.
+            if (onGlobalScope)
+            {
+                // We are supposed to eat everything thereafter, since we're commited.
+                EatModuleMembersInsideBody(Anchor.Forced);
+            }
+            
             return _scanner.Close(decl, SyntaxKind.FileScopedModuleDecl);
         }
 
@@ -61,26 +67,9 @@ public partial class Parser
         }
 
         // --- Invalid
-        // module A [something unrecognized]
-        
-        // Input looks like 'module A' and could be meant to be a global
-        // module decl or a bodied module. If we're inside another module
-        // it surely will be bodied, since global is only allowed on global
-        // scope. On global scope, it could be both, but we just default to
-        // completing it as a global declaration as a heuristic.
-
-        if (onGlobalScope)
-        {
-            EnsureToken(TokenKind.Semicolon);
-            EatModuleMembersInsideBody(Anchor.Forced);
-            return _scanner.Close(decl, SyntaxKind.FileScopedModuleDecl);
-        }
-        else
-        {
-            _scanner.MakeAndReport(TokenKind.OpenBrace);
-            _scanner.MakeAndReport(TokenKind.CloseBrace);
-            return _scanner.Close(decl, SyntaxKind.ModuleDecl);
-        }
+        _scanner.MakeAndReport(TokenKind.OpenBrace);
+        _scanner.MakeAndReport(TokenKind.CloseBrace);
+        return _scanner.Close(decl, SyntaxKind.ModuleDecl);
     }
 
     private void EatModuleMembersInsideBody(Anchor anchor)

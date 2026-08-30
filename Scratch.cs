@@ -283,7 +283,10 @@ public sealed class DeclarationBuilder
 
     private SingleModuleDecl VisitModuleDecl(BaseModuleDeclSyntax syntax)
     {
-        //TODO: Add diagnostics for multiple file-scoped decls
+        //TODO: Implement file-scoped decl rules
+        // - If invalid, don't emit a module decl. Add diagnostic to it's parent
+        // - Must be before any member or stmt. Can come after using.
+        // - Hint diagnostic at first decl
         
         // Visit all children module decls
         var childModuleDecls = syntax.Members

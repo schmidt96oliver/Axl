@@ -1,14 +1,16 @@
 # ------------------------------------ Axl Project ------------------------------------
                                        ≽(◕ ᴗ ◕)≼
 
-**Next**: *Ctd. DeclarationTable -> Symbol*
 
-- Handle script files
+
+**Next**: *Ctd. DeclarationTable -> Symbol*
+- *No script/module files*
+    - Modules are visible everywhere
+- rules for file-scoped:
+    - Must be before any member or stmt. Can come after using.
+    - Must be only one (falls out of the above)
+    - rm: AxlFileKind
 - Handle diagnostics, weave into their symbols
-  - Invalid file-scoped decl (multiple if on another file-scoped node)
-  - Invalid statements
-  - Modules in script files
-- move script file detection to DeclTableBuilder?
 
 - SyntaxKind, AxlFileKind DisplayExtensions
 
