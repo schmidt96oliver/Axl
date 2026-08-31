@@ -14,12 +14,6 @@
 - add cycle protection
 
 **Moving On**
-- Handle diagnostics, weave into their symbols
-
-- ModuleDecl and ModuleDeclFragment?
-- FileRootDecls, GlobalDecls root class for decls?
-- UniverseSymbol/GlobalSymbol?
-
 - Further symbols:
     - GetDeclSymbol (=GetDeclSymbol(parent).Members.First(memberSyntax == syntax))
     - memoize all decl syntaxes

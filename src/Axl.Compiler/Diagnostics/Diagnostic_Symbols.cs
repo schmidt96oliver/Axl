@@ -23,18 +23,6 @@ public abstract partial record Diagnostic
             };
     }
 
-    public sealed record NotAllowedInFileKind(SyntaxNode Syntax) : Error
-    {
-        public override ImmutableArray<SourceLocation> Locations =>
-        [
-            // Put error on the first syntax token/element. Normally this would be the
-            // first keyword. If not possible, squiggle the entire syntax.
-            Syntax.SyntaxElements().FirstOrDefault()?.GetLocation() ?? Syntax.GetLocation()
-        ];
-        
-        public override string Message => $"{Syntax.Kind} is not allowed in {Syntax.Tree.GetAxlFileKind()}." ;
-    }
-
     public sealed record InvalidFileScopedModuleDecl(FileScopedModuleDeclSyntax Syntax) : Error
     {
         public override ImmutableArray<SourceLocation> Locations 
