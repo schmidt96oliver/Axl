@@ -53,4 +53,10 @@ public abstract class SyntaxNode : SyntaxElement
         => Children.Where(element =>
             element is not (Token { Kind.IsTrivia: true } or Token { Kind: TokenKind.UnknownCharacters }
                 or SyntaxNode { Kind: SyntaxKind.Garbage }));
+    
+    /// <summary>
+    /// Enumerates all nodes relevant for syntax. That excludes gargabe nodes.
+    /// </summary>
+    public IEnumerable<SyntaxNode> SyntaxNodes()
+        => Children.OfType<SyntaxNode>().Where(node => node.Kind is not SyntaxKind.Garbage);
 }

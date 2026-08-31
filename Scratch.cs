@@ -12,50 +12,46 @@ using Axl.Compiler.Syntax.Tree;
 
 
 string[] inputs = ["""
-                   module A
-                   {
-                       fn Fn_A() { }
-                       module B 
-                       {
-                            fn Fn_B() { }
-                       }
-                   }
+                    var a = 2;
+                    module A { fn NOPE() { } }
                    ""","""
+                   module A { }
                    module A.B;
-                   
-                            fn Fn2_B() { }
-                       
-                   
+                   fn Fn2_B() { }
                    """,
-    """
-    module Global;
-    module Inner { fn Fn_Inner() {} }
-    """,
-    """
-    module Global.Inner { module InnerInner { fn Fn_2Inner() { } } }
-    module A.B.C { fn Fn_C() {} }
-    """
+    
+                    """
+                    module A;
+                    module B;
+                    module C { }
+                    """,
+                    """
+                    module A;
+                    module B { module C; fn In_B() { } }
+                    """
 ];
 
 var trees = inputs.Select(text => Parser.Parse(SourceFileView.FromText(text))).ToImmutableArray();
 var compilation = Compilation.FromTrees(trees);
 var declTable = new DeclarationTable(compilation.SyntaxTrees);
 
-Console.WriteLine("*** SINGLE");
-foreach (var tree in trees)
-{
-    var roots = declTable.GetRootModuleDecls(tree);
-    Console.WriteLine("----");
-    foreach (var singleRoot in roots)
-        PrintSingleDecl(singleRoot, "");
-}
+// Console.WriteLine("*** SINGLE");
+// foreach (var tree in trees)
+// {
+//     var roots = declTable.GetRootModuleDecls(tree);
+//     Console.WriteLine("----");
+//     foreach (var singleRoot in roots)
+//         PrintSingleDecl(singleRoot, "");
+// }
 
 Console.WriteLine("*** MERGED");
-foreach (var merged in declTable.MergedRootDecls)
+foreach (var diag in declTable.GlobalDecls.Diagnostics)
+    Console.WriteLine($"[ERROR] {diag.Id}: {diag.Message}");
+foreach (var merged in declTable.GlobalDecls.Decls)
     PrintMergedDecl(merged, string.Empty);
 
 Console.WriteLine("*** Global Symbols");
-foreach (var merged in declTable.MergedRootDecls)
+foreach (var merged in declTable.GlobalDecls.Decls)
 {
     var symbol = new NewModuleSymbol(compilation, merged, Parent: null);
     PrintSymbol(symbol, "");
@@ -265,32 +261,96 @@ public sealed class MergedModuleDecl(SymbolName name, ImmutableArray<SingleModul
     }
 }
 
+public sealed class MergedGlobalDecls(ImmutableArray<FileDeclarations> fileDeclarations)
+{
+    public ImmutableArray<Diagnostic> Diagnostics
+    {
+        get
+        {
+            if (field.IsDefault)
+                field = [.. fileDeclarations.SelectMany(decl => decl.Diagnostics)];
+            return field;
+        }
+    }
+
+    public ImmutableArray<MergedModuleDecl> Decls
+    {
+        get
+        {
+            if (field.IsDefault)
+            {
+                field =
+                [
+                    .. fileDeclarations.SelectMany(file => file.SingleModuleDecls)
+                        .GroupBy(singleDecl => singleDecl.Name)
+                        .Select(grp =>
+                            new MergedModuleDecl(grp.Key, [.. grp]))
+                ];
+            }
+
+            return field;
+        }
+    }
+}
+
+public record FileDeclarations(
+    bool IsScriptFile,
+    ImmutableArray<SingleModuleDecl> SingleModuleDecls,
+    ImmutableArray<Diagnostic> Diagnostics);
+
 public sealed class DeclarationBuilder
 {
-    public static ImmutableArray<SingleModuleDecl> Build(SyntaxTree tree)
+    public static FileDeclarations Build(SyntaxTree tree)
     {
         var builder = new DeclarationBuilder();
+        
+        // Usings are irrelevant for the declaration table.
+        var declNodes = tree.FileSyntax
+            .SyntaxNodes()
+            .Where(node => node.Kind is not SyntaxKind.UsingDirective)
+            .ToList();
 
-        return
-        [
-            .. tree.FileSyntax.Members
-                .OfType<BaseModuleDeclSyntax>()
-                .Select(builder.VisitModuleDecl)
-        ];
+        var isScriptFile = declNodes.Any(node => node is not BaseModuleDeclSyntax) || declNodes.Count == 0;
+        if (isScriptFile)
+            return new FileDeclarations(IsScriptFile: true, [], []);
 
-        //TODO: Visit script file
+        var diagnosticBag = new DiagnosticBag();
+        var singleModuleDecls = ImmutableArray.CreateBuilder<SingleModuleDecl>();
+
+        Debug.Assert(declNodes.Count > 0);
+        singleModuleDecls.Add(builder.VisitModuleDecl((BaseModuleDeclSyntax)declNodes[0]));
+        
+        foreach (var node in declNodes.Skip(1))
+        {
+            Debug.Assert(node is BaseModuleDeclSyntax);
+
+            if (node is FileScopedModuleDeclSyntax)
+            {
+                diagnosticBag.ReportError(new Diagnostic.InvalidFileScopedModuleDecl((FileScopedModuleDeclSyntax)node));
+            }
+            singleModuleDecls.Add(builder.VisitModuleDecl((BaseModuleDeclSyntax)node));
+        }
+        
+        return new FileDeclarations(IsScriptFile: false, singleModuleDecls.DrainToImmutable(), diagnosticBag.Drain());
     }
 
     private SingleModuleDecl VisitModuleDecl(BaseModuleDeclSyntax syntax)
     {
-        //TODO: Implement file-scoped decl rules
-        // - If invalid, don't emit a module decl. Add diagnostic to it's parent
-        // - Must be before any member or stmt. Can come after using.
-        // - Hint diagnostic at first decl
+        //TODO: Hint diagnostic at first decl
+        
+        // Report diagnostic for all file-scoped declarations.
+        // The parser closes them immediately, so they do not
+        // contain anything relevant. Do not add a declaration
+        // for them.
+        var diagnosticBag = new DiagnosticBag();
+        foreach (var fileScopedDeclSyntax in syntax.Members.OfType<FileScopedModuleDeclSyntax>())
+        {
+            diagnosticBag.ReportError(new Diagnostic.InvalidFileScopedModuleDecl(fileScopedDeclSyntax));
+        }
         
         // Visit all children module decls
         var childModuleDecls = syntax.Members
-            .OfType<BaseModuleDeclSyntax>()
+            .OfType<ModuleDeclSyntax>()
             .Select(VisitModuleDecl)
             .ToImmutableArray();
         
@@ -305,35 +365,35 @@ public sealed class DeclarationBuilder
             var decl = new SingleModuleDecl(SymbolName.From(pathNameParts[pathPart]), 
                 currentSyntax,
                 childModuleDecls, 
-                Diagnostics: []);
+                Diagnostics: diagnosticBag?.Drain() ?? []);
             
             childModuleDecls = [decl];
             currentSyntax = null;
+            diagnosticBag = null;
         }
         
         return new SingleModuleDecl(SymbolName.From(pathNameParts[0]), 
             currentSyntax, 
             childModuleDecls, 
-            Diagnostics: []);
+            Diagnostics: diagnosticBag?.Drain() ?? []);
     }
 }
 
 public sealed class DeclarationTable(ImmutableArray<SyntaxTree> trees)
 {
     private readonly ImmutableArray<SyntaxTree> _trees = trees;
-    private readonly Dictionary<SyntaxTree, ImmutableArray<SingleModuleDecl>> _rootDeclsPerTree = [];
+    private readonly Dictionary<SyntaxTree, FileDeclarations> _rootDeclsPerTree = [];
 
-    public ImmutableArray<MergedModuleDecl> MergedRootDecls
+    public MergedGlobalDecls GlobalDecls
     {
         get
         {
-            if (field.IsDefault)
-                field = MakeMergedRootDecls();
+            field ??= new MergedGlobalDecls([.. _trees.Select(GetRootModuleDecls)]);
             return field;
         }
     }
     
-    public ImmutableArray<SingleModuleDecl> GetRootModuleDecls(SyntaxTree tree)
+    public FileDeclarations GetRootModuleDecls(SyntaxTree tree)
     {
         if (_rootDeclsPerTree.TryGetValue(tree, out var root))
             return root;
@@ -341,19 +401,6 @@ public sealed class DeclarationTable(ImmutableArray<SyntaxTree> trees)
         root = DeclarationBuilder.Build(tree);
         _rootDeclsPerTree.Add(tree, root);
         return root;
-    }
-
-    private ImmutableArray<MergedModuleDecl> MakeMergedRootDecls()
-    {
-        return
-        [
-            .. _trees
-                .SelectMany(tree => GetRootModuleDecls(tree))
-                .GroupBy(decl => decl.Name)
-                .Select(group => new MergedModuleDecl(
-                    name: group.Key,
-                    singleModuleDecls: [.. group]))
-        ];
     }
 }
 

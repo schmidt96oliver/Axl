@@ -1,31 +1,46 @@
 # ------------------------------------ Axl Project ------------------------------------
                                        ≽(◕ ᴗ ◕)≼
 
+**Script vs Module**
+* Compilation: 
+  * Can have multiple scripts with the same global context for LSP convenience
+  * _One_ script is entry point for `.Compile`
+* Global Context
+  * Never sees anything a script file declares (no modules, types, fns, etc)
+  * Only sees module files
+* Module file = Only contains modules (using directives are allowed)
+* Script file has statements, fns, types
+  * Allow modules? => Probably not as they will not be seen in global context but suggest so
 
+* How to distinguish them??
 
 **Next**: *Ctd. DeclarationTable -> Symbol*
-- *No script/module files*
-    - Modules are visible everywhere
+- Script vs. Module files?
+
+- file-scoped declaration: Rules and parsing (adjust grammar)
+
+**Moving On**
+- Handle diagnostics, weave into their symbols
+
+- ModuleDecl and ModuleDeclFragment?
+- FileRootDecls, GlobalDecls root class for decls?
+- UniverseSymbol/GlobalSymbol?
+
+- Further symbols:
+    - GetDeclSymbol (=GetDeclSymbol(parent).Members.First(memberSyntax == syntax))
+    - memoize all decl syntaxes
+    - FnGroupSymbol (grouped by Symbol.GetMembers); lazily report "duplicate decl" diagnostic
+    - Compiler generated, Path for GlobalSymbol?
+
+- Scope tree:
+    - GetScopeAtDeclSymbol is same walk as GetDeclSymbol
+
 - rules for file-scoped:
     - Must be before any member or stmt. Can come after using.
     - Must be only one (falls out of the above)
     - rm: AxlFileKind
-- Handle diagnostics, weave into their symbols
 
 - SyntaxKind, AxlFileKind DisplayExtensions
-
-- Property naming: Property = cannot fail, always same result, no arguments. Can be lazy
-    Get* = needs arguments, different results, can fail
-
-**Moving On**
-
-- drop `HasError` from `DiagnosticList`
-
-- make `BinderFactory` per SyntaxTree
-- better name for `BinderFactory`? (ScopeManager, ... ?)
-- Compilation.GetMembers(syntax tree) -> only top-level members
-
-- Diagnostics: How do they weave through the query architecture?
 
 - LSP: Make Serial (see Omnisharp) and weave CancellationToken
 
@@ -39,6 +54,7 @@
 * Compilation cycle logic
 * Compilation.Fork; preserve ModuleDeclTable per SyntaxFile; Merge on demand by .GetMembers
 * Debug.MarkVisited, AssertAllVisitedOnce: All syntax nodes must be visited semantically
+* drop `HasError` from `DiagnosticList`
 
 * API: `SyntaxTree.ParseFrom`, `*Tree/Table.BuildFrom`
 

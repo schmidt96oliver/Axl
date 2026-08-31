@@ -34,4 +34,14 @@ public abstract partial record Diagnostic
         
         public override string Message => $"{Syntax.Kind} is not allowed in {Syntax.Tree.GetAxlFileKind()}." ;
     }
+
+    public sealed record InvalidFileScopedModuleDecl(FileScopedModuleDeclSyntax Syntax) : Error
+    {
+        public override ImmutableArray<SourceLocation> Locations 
+            => [Syntax.GetLocation()];
+
+        public override string Message => Syntax.Parent is FileSyntax
+            ? $"File-scoped module declarations must be the first declaration in the file."
+            : $"File-scoped module declarations are only allowed on the file scope.";
+    }
 }
