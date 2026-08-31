@@ -22,8 +22,7 @@ public abstract class Symbol(Compilation compilation, SymbolName name, Symbol? p
 
     
     /// <summary>
-    /// Collect the diagnostics this symbol produced into <paramref name="diagnosticBag"/>.
-    /// Does not collect member diagnostics.
+    /// Collect the diagnostics this symbol or it's children produced into <paramref name="diagnosticBag"/>.
     /// </summary>
     public virtual void CollectDiagnosticsInto(DiagnosticBag diagnosticBag)
     {

@@ -118,28 +118,12 @@ public class Compilation
     {
         var bag = new DiagnosticBag();
 
+        foreach (var tree in SyntaxTrees)
+            bag.AddRange(tree.Diagnostics);
         
-        CollectSyntaxDiagnostics(bag);
-        CollectSymbolDiagnostics(GlobalModule, bag);
+        GlobalModule.CollectDiagnosticsInto(bag);
 
         return bag.Drain();
-    }
-
-    private void CollectSyntaxDiagnostics(DiagnosticBag diagnosticBag)
-    {
-        foreach (var tree in SyntaxTrees)
-            diagnosticBag.AddRange(tree.Diagnostics);
-    }
-    
-    private void CollectSymbolDiagnostics(Symbol symbol, DiagnosticBag diagnosticBag)
-    {
-        symbol.CollectDiagnosticsInto(diagnosticBag);
-
-        if (symbol is ModuleSymbol moduleSymbol)
-        {
-            foreach (var member in moduleSymbol.Members)
-                CollectSymbolDiagnostics(member, diagnosticBag);
-        }
     }
 }
 

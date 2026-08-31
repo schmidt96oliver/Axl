@@ -62,5 +62,7 @@ public sealed class ModuleSymbol(
     public override void CollectDiagnosticsInto(DiagnosticBag diagnosticBag)
     {
         Decl.CollectDiagnosticsInto(diagnosticBag);
+        foreach (var member in Members)
+            member.CollectDiagnosticsInto(diagnosticBag);
     }
 }
