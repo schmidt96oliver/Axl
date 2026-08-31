@@ -316,7 +316,7 @@ public static class UiPlayground
             var syntaxTree = Parser.Parse(source);
             var compilation = Compilation.FromTrees(syntaxTree);
 
-            var diagnostics = compilation.GetDiagnostics();
+            var diagnostics = compilation.Diagnostics;
             
             var builder = new RowBuilder(syntaxTree, source);
 

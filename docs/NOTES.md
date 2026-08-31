@@ -13,10 +13,6 @@
 
 - adjust grammar to reflect file-scoped decl
 
-- `CollectDiagnosticsInto` instead of property
-
-- add cycle protection
-
 **Moving On**
 - Further symbols:
     - GetDeclSymbol (=GetDeclSymbol(parent).Members.First(memberSyntax == syntax))

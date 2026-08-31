@@ -1,5 +1,4 @@
 ﻿using System.Collections.Immutable;
-using System.Diagnostics;
 using Axl.Compiler.Diagnostics;
 using Axl.Compiler.Semantics.Declarations;
 using Axl.Compiler.Semantics.Symbols;
@@ -8,32 +7,8 @@ using Axl.Compiler.Syntax;
 
 namespace Axl.Compiler;
 
-//TODO: Cycle detection??
-public class Compilation
+public partial class Compilation
 {
-    public enum QueryKind
-    {
-        GetSymbolTable,
-        GetType,
-        GetBinderFactory
-    }
-    public readonly record struct QueryKey(QueryKind Kind, object? Data = null);
-
-    private readonly record struct QueryHandle(QueryKey Key, Compilation Compilation) : IDisposable
-    {
-        public void Dispose()
-        {
-            var poppedKey = Compilation._activeQueries.Pop();
-            Debug.Assert(poppedKey == Key);
-        }
-    }
-    
-    private sealed class SyntaxTreeTable<T> : Dictionary<SyntaxTree, T>;
-
-    
-    private Stack<QueryKey> _activeQueries = [];
-
-    
     public ImmutableArray<SyntaxTree> SyntaxTrees { get; }
 
     public DeclarationTable DeclarationTable
@@ -54,6 +29,17 @@ public class Compilation
             field ??= new ModuleSymbol(compilation: this,
                 DeclarationTable.GlobalDecl,
                 parent: null);
+            return field;
+        }
+    }
+
+
+    public ImmutableArray<Diagnostic> Diagnostics
+    {
+        get
+        {
+            if (field.IsDefault)
+                field = ProtectCycles(QueryKind.Compilation_Diagnostics, CollectDiagnostics);
             return field;
         }
     }
@@ -87,34 +73,8 @@ public class Compilation
     }
     
 
-    private QueryHandle ProtectedQuery(QueryKind query, object? data = null)
-    {
-        var key = new QueryKey(query, data);
-        if (_activeQueries.Contains(key))
-            throw new CyclicQueryException(_activeQueries, key);
-        
-        _activeQueries.Push(key);
-        return new QueryHandle(key, this);
-    }
-
-    private TResult Protect<TResult>(QueryKind query, object? data, Func<TResult> action)
-    {
-        var key = new QueryKey(query, data);
-        if (_activeQueries.Contains(key))
-            throw new CyclicQueryException(_activeQueries, key);
-        
-        _activeQueries.Push(key);
-        var result = action();
-        var poppedKey = _activeQueries.Pop();
-        Debug.Assert(poppedKey == key);
-        return result;
-    }
     
-    
-    
-    
-    
-    public ImmutableArray<Diagnostic> GetDiagnostics()
+    private ImmutableArray<Diagnostic> CollectDiagnostics()
     {
         var bag = new DiagnosticBag();
 
@@ -124,18 +84,5 @@ public class Compilation
         GlobalModule.CollectDiagnosticsInto(bag);
 
         return bag.Drain();
-    }
-}
-
-public class CyclicQueryException(Stack<Compilation.QueryKey> activeQuery, Compilation.QueryKey offendingQuery) 
-    : Exception(GetMessage(activeQuery, offendingQuery))
-{
-    private static string GetMessage(Stack<Compilation.QueryKey> queries, Compilation.QueryKey offendingQuery)
-    {
-        var stack = string.Join("\n", queries.Select(QueryToString));
-        return $"Compilation queries were cyclic at query \"{QueryToString(offendingQuery)}\". Active queries: \n{stack}";
-
-        string QueryToString(Compilation.QueryKey query)
-            => $"{query.Kind}" + (query.Data is not null ? $" {query.Data}" : "");
     }
 }

@@ -35,6 +35,8 @@ var trees = inputs.Select(text => Parser.Parse(SourceFileView.FromText(text))).T
 var compilation = Compilation.FromTrees(trees);
 var declTable = compilation.DeclarationTable;
 
+Console.WriteLine(compilation.Diagnostics);
+
 // Console.WriteLine("*** SINGLE");
 // foreach (var tree in trees)
 // {

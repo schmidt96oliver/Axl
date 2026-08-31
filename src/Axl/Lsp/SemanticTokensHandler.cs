@@ -36,7 +36,7 @@ public class SemanticTokensHandler(ILanguageServerFacade facade) : SemanticToken
         if (compilation is null)
             return Task.CompletedTask;
         
-        PushDiagnostics(identifier.TextDocument.Uri, compilation.GetDiagnostics());
+        PushDiagnostics(identifier.TextDocument.Uri, compilation.Diagnostics);
 
         foreach (var tree in compilation.SyntaxTrees)
         {
