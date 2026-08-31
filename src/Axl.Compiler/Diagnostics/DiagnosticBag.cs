@@ -33,4 +33,11 @@ public sealed class DiagnosticBag
         
         _diagnostics.Add(lint);
     }
+
+    public void AddRange(IEnumerable<Diagnostic> diagnostics)
+     => _diagnostics.AddRange(diagnostics);
+    
+    public void AddRange(ImmutableArray<Diagnostic> diagnostics)
+     => _diagnostics.AddRange(diagnostics);
+    
 }

@@ -26,7 +26,5 @@ public sealed class LocalSymbol(
         }
     }
 
-    public override ImmutableArray<Diagnostic> Diagnostics => [];
-
     public AxlType Type { get; } = type;
 }

@@ -65,10 +65,9 @@ void PrintSingleDecl(ModuleDeclFragment declFragment, string prefix)
 void PrintMergedDecl(ModuleDecl decl, string prefix)
 {
     var name = decl.Name.IsEmpty ? "ROOT" : decl.Name;
-    var diagText = decl.Diagnostics.Length > 0 ? $"[ERRORx{decl.Diagnostics.Length}]" : "";
     var memberText = string.Join(" | ", decl.Syntaxes.SelectMany(s => s.Members).Select(SelectName));
     
-    Console.WriteLine($"{prefix}{name} {diagText} ({memberText})");
+    Console.WriteLine($"{prefix}{name} ({memberText})");
     foreach (var child in decl.ChildModules) PrintMergedDecl(child, prefix + " ");
 
     

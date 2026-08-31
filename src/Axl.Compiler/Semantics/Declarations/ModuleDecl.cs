@@ -38,16 +38,6 @@ public sealed class ModuleDecl(SymbolName name, ImmutableArray<ModuleDeclFragmen
         }
     }
 
-    public ImmutableArray<Diagnostic> Diagnostics
-    {
-        get
-        {
-            if (field.IsDefault)
-                field = [.. fragments.SelectMany(decl => decl.Diagnostics)];
-            return field;
-        }
-    }
-
     /// <summary>
     /// Empty, if this is the global module.
     /// </summary>
@@ -67,5 +57,12 @@ public sealed class ModuleDecl(SymbolName name, ImmutableArray<ModuleDeclFragmen
 
             return field;
         }
+    }
+
+    
+    public void CollectDiagnosticsInto(DiagnosticBag diagnosticBag)
+    {
+        foreach (var fragment in fragments)
+            diagnosticBag.AddRange(fragment.Diagnostics);
     }
 }

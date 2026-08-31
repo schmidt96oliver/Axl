@@ -21,8 +21,6 @@ public sealed class FnSymbol(Compilation compilation, SymbolName name,
         }
     }
 
-    public override ImmutableArray<Diagnostic> Diagnostics => [];
-
 
     public ImmutableArray<LocalSymbol> GetParameters()
     {

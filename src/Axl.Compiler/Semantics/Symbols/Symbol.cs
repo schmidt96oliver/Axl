@@ -20,8 +20,13 @@ public abstract class Symbol(Compilation compilation, SymbolName name, Symbol? p
 
     public abstract ImmutableArray<SyntaxNode> DeclaringSyntaxes { get; }
 
+    
     /// <summary>
-    /// Diagnostics this symbol produces. Does not contain child diagnostics.
+    /// Collect the diagnostics this symbol produced into <paramref name="diagnosticBag"/>.
+    /// Does not collect member diagnostics.
     /// </summary>
-    public abstract ImmutableArray<Diagnostic> Diagnostics { get; }
+    public virtual void CollectDiagnosticsInto(DiagnosticBag diagnosticBag)
+    {
+        // Default is a no-op
+    }
 }

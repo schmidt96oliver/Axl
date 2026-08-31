@@ -25,9 +25,6 @@ public sealed class ModuleSymbol(
         }
     }
 
-    /// <inheritdoc />
-    public override ImmutableArray<Diagnostic> Diagnostics => Decl.Diagnostics;
-
 
     public ImmutableArray<Symbol> Members
     {
@@ -60,4 +57,10 @@ public sealed class ModuleSymbol(
             parent: this),
         _ => throw new UnreachableException()
     };
+
+
+    public override void CollectDiagnosticsInto(DiagnosticBag diagnosticBag)
+    {
+        Decl.CollectDiagnosticsInto(diagnosticBag);
+    }
 }

@@ -7,21 +7,10 @@ namespace Axl.Compiler.Semantics.Symbols;
 public sealed class ErrorSymbol(Compilation compilation, 
     SymbolName name, 
     SyntaxNode? syntax, 
-    Diagnostic.Error error,
     Symbol? parent = null)
     : Symbol(compilation, name, parent)
 {
     public SyntaxNode? Syntax { get; } = syntax;
-
-    public override ImmutableArray<Diagnostic> Diagnostics
-    {
-        get
-        {
-            if (field.IsDefault)
-                field = [error];
-            return field;
-        }
-    }
 
 
     public override ImmutableArray<SyntaxNode> DeclaringSyntaxes

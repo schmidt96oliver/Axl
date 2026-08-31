@@ -116,21 +116,29 @@ public class Compilation
     
     public ImmutableArray<Diagnostic> GetDiagnostics()
     {
-        return [..SyntaxTrees
-            .SelectMany(tree => tree.Diagnostics)
-            .Concat(CollectSymbolDiagnostics(GlobalModule))];
+        var bag = new DiagnosticBag();
+
+        
+        CollectSyntaxDiagnostics(bag);
+        CollectSymbolDiagnostics(GlobalModule, bag);
+
+        return bag.Drain();
     }
 
-    private IEnumerable<Diagnostic> CollectSymbolDiagnostics(Symbol symbol)
+    private void CollectSyntaxDiagnostics(DiagnosticBag diagnosticBag)
     {
-        foreach (var diag in symbol.Diagnostics)
-            yield return diag;
+        foreach (var tree in SyntaxTrees)
+            diagnosticBag.AddRange(tree.Diagnostics);
+    }
+    
+    private void CollectSymbolDiagnostics(Symbol symbol, DiagnosticBag diagnosticBag)
+    {
+        symbol.CollectDiagnosticsInto(diagnosticBag);
 
         if (symbol is ModuleSymbol moduleSymbol)
         {
             foreach (var member in moduleSymbol.Members)
-            foreach (var diag in CollectSymbolDiagnostics(member))
-                yield return diag;
+                CollectSymbolDiagnostics(member, diagnosticBag);
         }
     }
 }
