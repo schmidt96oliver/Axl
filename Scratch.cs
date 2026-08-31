@@ -5,6 +5,7 @@ using System.Collections.Immutable;
 using System.Diagnostics;
 using Axl.Compiler;
 using Axl.Compiler.Diagnostics;
+using Axl.Compiler.Semantics.Declarations;
 using Axl.Compiler.Semantics.Symbols;
 using Axl.Compiler.Syntax;
 using Axl.Compiler.Syntax.Tree;
@@ -32,7 +33,7 @@ string[] inputs = ["""
 
 var trees = inputs.Select(text => Parser.Parse(SourceFileView.FromText(text))).ToImmutableArray();
 var compilation = Compilation.FromTrees(trees);
-var declTable = new DeclarationTable(compilation.SyntaxTrees);
+var declTable = compilation.DeclarationTable;
 
 // Console.WriteLine("*** SINGLE");
 // foreach (var tree in trees)
@@ -47,7 +48,7 @@ Console.WriteLine("*** MERGED");
 PrintMergedDecl(declTable.GlobalDecl, "");
 
 Console.WriteLine("*** Global Symbols");
-var globalSymbol = new NewModuleSymbol(compilation, declTable.GlobalDecl, Parent: null);
+var globalSymbol = compilation.GlobalModule;
 PrintSymbol(globalSymbol, "");
 
 
@@ -81,33 +82,6 @@ string SelectName(MemberSyntax syntax) => syntax switch
 };
 return;
 
-
-foreach (var diagnostic in compilation.GetDiagnostics())
-{
-    Console.WriteLine($"{diagnostic.DefaultSeverity.ToString().ToUpper()} {diagnostic.Id}: {diagnostic.Message}");
-}
-
-var table = compilation.GetSymbolTable();
-
-// foreach (var symbol in table.AllSymbols)
-//     Console.WriteLine($"{symbol.Path}: {symbol.GetType().Name} {symbol.Name} Parent = {symbol.Parent?.Path.ToString() ?? "<null>"}");
-// return;
-foreach (var symbol in table.TopLevelSymbols)
-{
-    PrintSymbol(symbol, "");
-    // Console.WriteLine($"Module {symbol.Name}: Parent = {symbol.Parent?.Name ?? "<null>"}");
-    // foreach (var memberSymbol in symbol.GetMembers())
-    // {
-    //     Console.WriteLine($"   {memberSymbol.GetType().Name} {memberSymbol.Name}");
-    //     if (memberSymbol is FnSymbol fnSymbol)
-    //     {
-    //         Console.WriteLine(
-    //             $"     - (Binder: {GetBinderChainText(compilation.GetBinderFactory().GetBinderAt(fnSymbol.Syntax))})");
-    //         Console.WriteLine($"     - Locals: {string.Join(", ", fnSymbol.GetParameters().Select(param => $"{param.Name} : {param.Type}"))}");
-    //     }
-    // }
-}
-
 string MakeSyntaxText(SyntaxNode node)
 {
     var treeIndex = trees.IndexOf(node.Tree);
@@ -121,16 +95,16 @@ string MakeSyntaxText(SyntaxNode node)
 
 void PrintSymbol(Symbol symbol, string prefix)
 {
-    var syntaxText = symbol.GetDeclaringSyntaxes().Length > 0
-        ? string.Join(", ", symbol.GetDeclaringSyntaxes().Select(MakeSyntaxText))
+    var syntaxText = symbol.DeclaringSyntaxes.Length > 0
+        ? string.Join(", ", symbol.DeclaringSyntaxes.Select(MakeSyntaxText))
         : "<none>";
     
     switch (symbol)
     {
-        case NewModuleSymbol moduleSymbol:
+        case ModuleSymbol moduleSymbol:
             
-            Console.WriteLine($"{prefix}Module \"{moduleSymbol.Name}\", Path = \"{moduleSymbol.Path}\", Syntax = {syntaxText}");
-            foreach (var member in moduleSymbol.GetMembers())
+            Console.WriteLine($"{prefix}Module \"{moduleSymbol.Name}\", Syntax = {syntaxText}");
+            foreach (var member in moduleSymbol.Members)
             {
                 PrintSymbol(member, prefix + "  ");
             }
@@ -138,13 +112,7 @@ void PrintSymbol(Symbol symbol, string prefix)
             break;
 
         case FnSymbol fnSymbol:
-            Console.WriteLine($"{prefix}Fn \"{fnSymbol.Name}, Path = \"{fnSymbol.Path}\", Syntax = {syntaxText}");
-            // var fnPrefix = prefix + "   ";
-            // Console.WriteLine($"{fnPrefix}- Parameters:");
-            // foreach (var local in fnSymbol.GetParameters())
-            //     PrintSymbol(local, fnPrefix + "   ");
-            // Console.WriteLine($"{fnPrefix}- HIR:");
-            // PrintHir(fnSymbol.GetHir(), fnPrefix + "   ");
+            Console.WriteLine($"{prefix}Fn \"{fnSymbol.Name}, Syntax = {syntaxText}");
             
             break;
         
@@ -156,37 +124,4 @@ void PrintSymbol(Symbol symbol, string prefix)
             Console.WriteLine($"{prefix}ERROR \"{errorSymbol.Name}\", Syntax = {syntaxText}");
             break;
     }
-}
-
-void PrintHir(HirNode hirNode, string prefix)
-{
-    switch (hirNode)
-    {
-        case HirBody body:
-            foreach (var stmt in body.Stmts)
-                PrintHir(stmt, prefix);
-            break;
-
-        default:
-            Console.WriteLine($"{prefix}{hirNode}");
-
-            break;
-    }
-}
-
-string GetBinderChainText(_Binder binder)
-{
-    var parentText = binder.Parent is not null ? GetBinderChainText(binder.Parent) : "";
-
-    var symbolName = binder switch
-    {
-        CompilationBinder => "<compilation>",
-        FileBinder fileBinder => fileBinder.SyntaxTree.Source.File.Path ?? "<internal file>",
-        ModuleFragmentBinder moduleBinder => moduleBinder.ModuleSymbol.Name,
-        FnBinder fnBinder => fnBinder.FnSymbol.Name,
-
-        _ => "???"
-    };
-    
-    return parentText + $"->{binder.GetType().Name} \"{symbolName}\"";
 }

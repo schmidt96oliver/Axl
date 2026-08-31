@@ -11,6 +11,10 @@
      mark entire file
   - better message
 
+- adjust grammar to reflect file-scoped decl
+
+- `CollectDiagnosticsInto` instead of property
+
 - add cycle protection
 
 **Moving On**
