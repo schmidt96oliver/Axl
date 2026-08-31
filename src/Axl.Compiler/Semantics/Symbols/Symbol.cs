@@ -1,25 +1,26 @@
 ﻿using System.Collections.Immutable;
-using System.Diagnostics;
+using System.Runtime.InteropServices;
 using System.Security.Cryptography;
-using Axl.Compiler.Semantics.Binders;
-using Axl.Compiler.Semantics.Types;
+using Axl.Compiler.Diagnostics;
 using Axl.Compiler.Syntax;
-using Axl.Compiler.Syntax.Tree;
 
 namespace Axl.Compiler.Semantics.Symbols;
 
-/// <summary>
-/// Represents a declaration and executes lazy binding.
-/// </summary>
-/// <param name="Compilation"></param>
-/// <param name="Name"></param>
-public abstract record Symbol(Compilation Compilation, SymbolName Name, Symbol? Parent = null)
+public abstract class Symbol(Compilation compilation, SymbolName name, Symbol? parent = null)
 {
+    public Compilation Compilation { get; } = compilation;
+
+    public SymbolName Name { get; } = name;
+
+    public Symbol? Parent { get; } = parent;
+    
+    
     private SymbolPath? _lazyPath;
     public SymbolPath Path
     {
         get
         {
+            //TODO: Adjust path extraction
             _lazyPath ??= Parent is null
                 ? SymbolPath.From(Name)
                 : SymbolPath.Combine(Parent.Path, Name);
@@ -29,121 +30,10 @@ public abstract record Symbol(Compilation Compilation, SymbolName Name, Symbol? 
     }
 
 
-    public abstract ImmutableArray<SyntaxNode> GetDeclaringSyntaxes();
-}
-
-/// <summary>
-/// Eagerly built during local body binding by a LocalBinder.
-/// </summary>
-public sealed record LocalSymbol(
-    Compilation Compilation,
-    SymbolName Name,
-    AxlType Type,
-    VarDeclSyntax Syntax,
-    Symbol? Parent)
-    : Symbol(Compilation, Name, Parent)
-{
-    public override ImmutableArray<SyntaxNode> GetDeclaringSyntaxes()
-        => [Syntax];
-}
-
-public sealed record FnSymbol(Compilation Compilation, SymbolName Name, 
-    FnDeclSyntax Syntax, Symbol? Parent)
-    : Symbol(Compilation, Name, Parent)
-{
-    public ImmutableArray<LocalSymbol> GetParameters()
-    {
-        var paramSyntaxes = Syntax.Parameters.ToList();
-        
-        var array = ImmutableArray.CreateBuilder<LocalSymbol>(initialCapacity: paramSyntaxes.Count);
-        foreach (var paramSyntax in paramSyntaxes)
-        {
-            // Bind Type
-            var binder = Compilation.GetBinderFactory().GetBinderAt(Syntax);
-            var boundType = binder.BindType(paramSyntax.TypeAnnotation!);
-            array.Add(new LocalSymbol(Compilation, SymbolName.From(paramSyntax.Name), boundType, null, this));
-        }
-
-        return array.DrainToImmutable();
-    }
-
-    public HirBody GetHir()
-    {
-        var parentBinder = Compilation.GetBinderFactory().GetBinderAt(Syntax);
-        var fnBinder = new FnBinder(parentBinder, this);
-
-        return fnBinder.BindBody(Syntax.Body);
-    }
+    public abstract ImmutableArray<SyntaxNode> DeclaringSyntaxes { get; }
     
-    public override ImmutableArray<SyntaxNode> GetDeclaringSyntaxes()
-        => [Syntax];
-}
-
-public sealed record ModuleSymbol(
-    Compilation Compilation,
-    SymbolName Name,
-    ImmutableArray<BaseModuleDeclSyntax> Syntaxes,
-    Symbol? Parent)
-    : Symbol(Compilation, Name, Parent)
-{
     /// <summary>
-    /// Set eagerly during construction, because modules might not contain
-    /// syntax.
+    /// Diagnostics this symbol produces. Does not contain child diagnostics.
     /// </summary>
-    /// <example>
-    /// `module A.B.C` has module A and B without syntax.
-    /// </example>
-    internal ImmutableArray<ModuleSymbol> ModuleMembers
-    {
-        get
-        {
-            Debug.Assert(!field.IsDefault, "Not set during construction.");
-            return field; 
-        }
-        set
-        {
-            Debug.Assert(field.IsDefault, "Set multiple times during construction.");
-            field = value;
-        }
-    }
-
-    private ImmutableArray<Symbol> _members = default;
-    
-    public ImmutableArray<Symbol> GetMembers()
-    {
-        if (_members.IsDefault)
-        {
-            var nonModuleMembers = Syntaxes
-                .SelectMany(SelectMembers)
-                .Where(syntax => syntax is not ModuleDeclSyntax)
-                .Select(Compilation.GetSymbolTable().GetSymbol)
-                .Where(symbol => symbol.Parent == this);
-
-            _members = [.. ModuleMembers, .. nonModuleMembers];
-        }
-
-        return _members;
-
-        IEnumerable<MemberSyntax> SelectMembers(BaseModuleDeclSyntax syntax) => syntax switch
-        {
-            ModuleDeclSyntax normalDecl => normalDecl.Members,
-
-            // File-scoped declarations that are not on file syntax directly are
-            // rejected by symbol building pass.
-            FileScopedModuleDeclSyntax => ((FileSyntax)syntax.Parent!).Members,
-
-            _ => throw new UnreachableException()
-        };
-    }
-
-
-    public override ImmutableArray<SyntaxNode> GetDeclaringSyntaxes()
-        => [.. Syntaxes.Select(SyntaxNode (memberDeclSyntax) => memberDeclSyntax)];
-}
-
-public sealed record ErrorSymbol(Compilation Compilation, SymbolName Name, SyntaxNode? Syntax, Symbol? Parent = null)
-    : Symbol(Compilation, Name, Parent)
-{
-    public override ImmutableArray<SyntaxNode> GetDeclaringSyntaxes()
-        => Syntax is not null ? [Syntax] : [];
+    public abstract ImmutableArray<Diagnostic> Diagnostics { get; }
 }

@@ -1,7 +1,7 @@
 ﻿using System.Collections.Immutable;
 using System.Diagnostics;
 using Axl.Compiler.Diagnostics;
-using Axl.Compiler.Semantics.Binders;
+using Axl.Compiler.Semantics.Declarations;
 using Axl.Compiler.Semantics.Symbols;
 using Axl.Compiler.Semantics.Types;
 using Axl.Compiler.Syntax;
@@ -31,14 +31,33 @@ public class Compilation
     private sealed class SyntaxTreeTable<T> : Dictionary<SyntaxTree, T>;
 
     
-    private SymbolTable? _symbolTable = null;
-
     private Stack<QueryKey> _activeQueries = [];
-    private BinderFactory? _binderFactory;
 
+    
     public ImmutableArray<SyntaxTree> SyntaxTrees { get; }
+
+    public DeclarationTable DeclarationTable
+    {
+        get
+        {
+            field ??= new DeclarationTable(SyntaxTrees);
+            return field;
+        }
+    }
+    
     public TypeContext TypeContext { get; set; }
 
+    public ModuleSymbol GlobalModule
+    {
+        get
+        {
+            field ??= new ModuleSymbol(compilation: this,
+                DeclarationTable.GlobalDecl,
+                parent: null);
+            return field;
+        }
+    }
+    
     
     private Compilation(ImmutableArray<SyntaxTree> syntaxTrees)
     {
@@ -91,26 +110,28 @@ public class Compilation
         return result;
     }
     
-    public SymbolTable GetSymbolTable()
+    
+    
+    
+    
+    public ImmutableArray<Diagnostic> GetDiagnostics()
     {
-        _symbolTable ??= Protect(QueryKind.GetSymbolTable, null,
-            () => SymbolTableBuilder.Build(this));
-
-        return _symbolTable;
-    }
-
-    public BinderFactory GetBinderFactory()
-    {
-        _binderFactory ??= Protect(QueryKind.GetBinderFactory, null,
-            () => BinderFactory.Build(this));
-        return _binderFactory;
-    }
-
-    public IEnumerable<Diagnostic> GetDiagnostics()
-    {
-        return SyntaxTrees
+        return [..SyntaxTrees
             .SelectMany(tree => tree.Diagnostics)
-            .Concat(GetSymbolTable().Diagnostics);
+            .Concat(CollectSymbolDiagnostics(GlobalModule))];
+    }
+
+    private IEnumerable<Diagnostic> CollectSymbolDiagnostics(Symbol symbol)
+    {
+        foreach (var diag in symbol.Diagnostics)
+            yield return diag;
+
+        if (symbol is ModuleSymbol moduleSymbol)
+        {
+            foreach (var member in moduleSymbol.Members)
+            foreach (var diag in CollectSymbolDiagnostics(member))
+                yield return diag;
+        }
     }
 }
 

@@ -1,3 +1,4 @@
+using System.Collections.Immutable;
 using System.Diagnostics;
 using System.Reflection;
 using Axl.Compiler;
@@ -313,11 +314,15 @@ public static class UiPlayground
             _previousText = source.File.Text;
 
             var syntaxTree = Parser.Parse(source);
+            var compilation = Compilation.FromTrees(syntaxTree);
+
+            var diagnostics = compilation.GetDiagnostics();
+            
             var builder = new RowBuilder(syntaxTree, source);
 
-            var diagnosticRows = builder.BuildDiagnostics();
+            var diagnosticRows = builder.BuildDiagnostics(diagnostics);
             _diagnosticsView.SetRoots(diagnosticRows);
-            _diagnosticsFrame.Title = syntaxTree.Diagnostics.Length switch
+            _diagnosticsFrame.Title = diagnostics.Length switch
             {
                 0 => "Diagnostics",
                 var count => $"Diagnostics ({count})",
@@ -350,13 +355,13 @@ public static class UiPlayground
             return root;
         }
 
-        public List<Row> BuildDiagnostics()
+        public List<Row> BuildDiagnostics(ImmutableArray<Diagnostic> diagnostics)
         {
-            if (syntaxTree.Diagnostics.Length == 0)
+            if (diagnostics.Length == 0)
                 return [new Row([new Segment("No diagnostics.", OkAttribute)])];
 
             var rows = new List<Row>();
-            foreach (var diagnostic in syntaxTree.Diagnostics)
+            foreach (var diagnostic in diagnostics)
             {
                 var severityAttribute = diagnostic.DefaultSeverity switch
                 {

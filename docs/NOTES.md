@@ -1,23 +1,17 @@
 # ------------------------------------ Axl Project ------------------------------------
                                        ≽(◕ ᴗ ◕)≼
 
-**Script vs Module**
-* Compilation: 
-  * Can have multiple scripts with the same global context for LSP convenience
-  * _One_ script is entry point for `.Compile`
-* Global Context
-  * Never sees anything a script file declares (no modules, types, fns, etc)
-  * Only sees module files
-* Module file = Only contains modules (using directives are allowed)
-* Script file has statements, fns, types
-  * Allow modules? => Probably not as they will not be seen in global context but suggest so
-
-* How to distinguish them??
-
 **Next**: *Ctd. DeclarationTable -> Symbol*
-- Script vs. Module files?
+- InvalidFileScopedError:
+  - fix: module Global { }
 
-- file-scoped declaration: Rules and parsing (adjust grammar)
+        module Global2;
+        
+        module Global3 {
+     mark entire file
+  - better message
+
+- add cycle protection
 
 **Moving On**
 - Handle diagnostics, weave into their symbols
