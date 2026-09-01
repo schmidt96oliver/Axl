@@ -11,44 +11,27 @@ public partial class Compilation
 {
     public ImmutableArray<SyntaxTree> SyntaxTrees { get; }
 
-    public DeclarationTable DeclarationTable
-    {
-        get
-        {
-            field ??= new DeclarationTable(SyntaxTrees);
-            return field;
-        }
-    }
+    public DeclarationTable DeclarationTable { get; }
     
     public TypeContext TypeContext { get; set; }
 
-    public ModuleSymbol GlobalModule
-    {
-        get
-        {
-            field ??= new ModuleSymbol(compilation: this,
-                DeclarationTable.GlobalDecl,
-                parent: null);
-            return field;
-        }
-    }
+    private LazyField<ModuleSymbol> _lazyGlobalModule;
 
+    public ModuleSymbol GlobalModule
+        => _lazyGlobalModule.GetOrCreate(() =>
+            new ModuleSymbol(this, DeclarationTable.GlobalDecl, parent: null));
+
+    private LazyField<ImmutableArray<Diagnostic>> _lazyDiagnostics;
 
     public ImmutableArray<Diagnostic> Diagnostics
-    {
-        get
-        {
-            if (field.IsDefault)
-                field = ProtectCycles(QueryKind.Compilation_Diagnostics, CollectDiagnostics);
-            return field;
-        }
-    }
+        => _lazyDiagnostics.GetOrCreate(CollectDiagnostics);
     
     
     private Compilation(ImmutableArray<SyntaxTree> syntaxTrees)
     {
         SyntaxTrees = syntaxTrees;
         TypeContext = new TypeContext();
+        DeclarationTable = new DeclarationTable(syntaxTrees);
     }
 
     public static Compilation FromFile(string path)

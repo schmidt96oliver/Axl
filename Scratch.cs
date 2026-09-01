@@ -3,13 +3,14 @@
 
 using System.Collections.Immutable;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
+using System.Runtime.CompilerServices;
 using Axl.Compiler;
 using Axl.Compiler.Diagnostics;
 using Axl.Compiler.Semantics.Declarations;
 using Axl.Compiler.Semantics.Symbols;
 using Axl.Compiler.Syntax;
 using Axl.Compiler.Syntax.Tree;
-
 
 string[] inputs = ["""
                     var a = 2;
@@ -37,14 +38,16 @@ var declTable = compilation.DeclarationTable;
 
 Console.WriteLine(compilation.Diagnostics);
 
-// Console.WriteLine("*** SINGLE");
-// foreach (var tree in trees)
-// {
-//     var roots = declTable.GetRootModuleDecls(tree);
-//     Console.WriteLine("----");
-//     foreach (var singleRoot in roots)
-//         PrintSingleDecl(singleRoot, "");
-// }
+
+/*
+Console.WriteLine("*** SINGLE");
+foreach (var tree in trees)
+{
+    var roots = declTable.GetRootModuleDecls(tree);
+    Console.WriteLine("----");
+    foreach (var singleRoot in roots)
+        PrintSingleDecl(singleRoot, "");
+}
 
 Console.WriteLine("*** MERGED");
 PrintMergedDecl(declTable.GlobalDecl, "");
@@ -126,3 +129,5 @@ void PrintSymbol(Symbol symbol, string prefix)
             break;
     }
 }
+
+*/
