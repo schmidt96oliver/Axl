@@ -13,6 +13,8 @@ public sealed class ModuleSymbol(
     Symbol? parent)
     : Symbol(compilation, decl.Name, parent)
 {
+    private LazyField<ImmutableArray<Symbol>> _lazyMembers;
+    
     public ModuleDecl Decl { get; } = decl;
 
     public override ImmutableArray<SyntaxNode> DeclaringSyntaxes
@@ -25,18 +27,11 @@ public sealed class ModuleSymbol(
         }
     }
 
-
     public ImmutableArray<Symbol> Members
-    {
-        get
-        {
-            if (field.IsDefault)
-                field = MakeMembers();
-            return field;
-        }
-    }
+        => _lazyMembers.GetOrCreate(MakeMembers);
 
-    public ImmutableArray<Symbol> MakeMembers()
+    
+    private ImmutableArray<Symbol> MakeMembers()
     {
         // Create Module Symbols
         var moduleMembers =

@@ -39,15 +39,15 @@ var declTable = compilation.DeclarationTable;
 Console.WriteLine(compilation.Diagnostics);
 
 
-/*
-Console.WriteLine("*** SINGLE");
-foreach (var tree in trees)
-{
-    var roots = declTable.GetRootModuleDecls(tree);
-    Console.WriteLine("----");
-    foreach (var singleRoot in roots)
-        PrintSingleDecl(singleRoot, "");
-}
+
+// Console.WriteLine("*** SINGLE");
+// foreach (var tree in trees)
+// {
+//     var roots = declTable.GetRootModuleDecls(tree);
+//     Console.WriteLine("----");
+//     foreach (var singleRoot in roots)
+//         PrintSingleDecl(singleRoot, "");
+// }
 
 Console.WriteLine("*** MERGED");
 PrintMergedDecl(declTable.GlobalDecl, "");
@@ -129,5 +129,3 @@ void PrintSymbol(Symbol symbol, string prefix)
             break;
     }
 }
-
-*/

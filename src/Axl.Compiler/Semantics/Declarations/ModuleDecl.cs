@@ -10,55 +10,42 @@ namespace Axl.Compiler.Semantics.Declarations;
 /// </summary>
 public sealed class ModuleDecl(SymbolName name, ImmutableArray<ModuleDeclFragment> fragments)
 {
+    private LazyField<ImmutableArray<ModuleDecl>> _lazyChildModules;
+    private LazyField<ImmutableArray<BaseModuleDeclSyntax>> _lazySyntaxes;
+    
     /// <summary>
     /// Empty, if this is the global module.
     /// </summary>
     public SymbolName Name { get; } = name;
 
-    public bool IsGlobal => Name.IsEmpty;
-    
-    
     public ImmutableArray<ModuleDecl> ChildModules
-    {
-        get
-        {
-            if (field.IsDefault)
-            {
-                field =
-                [
-                    .. fragments
-                        .SelectMany(singleDecl => singleDecl.ChildFragments)
-                        .GroupBy(singleDecl => singleDecl.Name)
-                        .Select(grouping =>
-                            new ModuleDecl(grouping.Key, [.. grouping]))
-                ];
-            }
-            
-            return field;
-        }
-    }
+        => _lazyChildModules.GetOrCreate(MergeChildModules);
 
     /// <summary>
     /// Empty, if this is the global module.
     /// </summary>
     public ImmutableArray<BaseModuleDeclSyntax> Syntaxes
-    {
-        get
-        {
-            if (field.IsDefault)
-            {
-                field =
-                [
-                    .. fragments
-                        .Select(fragment => fragment.Syntax)
-                        .Where(syntax => syntax is not null)!
-                ];
-            }
+        => _lazySyntaxes.GetOrCreate(MergeSyntaxes); 
 
-            return field;
-        }
-    }
 
+    private ImmutableArray<ModuleDecl> MergeChildModules()
+        =>
+        [
+            .. fragments
+                .SelectMany(singleDecl => singleDecl.ChildFragments)
+                .GroupBy(singleDecl => singleDecl.Name)
+                .Select(grouping =>
+                    new ModuleDecl(grouping.Key, [.. grouping]))
+        ];
+    
+    private ImmutableArray<BaseModuleDeclSyntax> MergeSyntaxes()
+        => 
+        [
+            .. fragments
+                .Select(fragment => fragment.Syntax)
+                .Where(syntax => syntax is not null)!
+        ];
+    
     
     public void CollectDiagnosticsInto(DiagnosticBag diagnosticBag)
     {

@@ -7,26 +7,23 @@ using Axl.Compiler.Syntax;
 
 namespace Axl.Compiler;
 
-public partial class Compilation
+public class Compilation
 {
-    public ImmutableArray<SyntaxTree> SyntaxTrees { get; }
-
-    public DeclarationTable DeclarationTable { get; }
-    
-    public TypeContext TypeContext { get; set; }
-
     private LazyField<ModuleSymbol> _lazyGlobalModule;
+    private LazyField<ImmutableArray<Diagnostic>> _lazyDiagnostics;
+
+    public ImmutableArray<SyntaxTree> SyntaxTrees { get; }
+    public DeclarationTable DeclarationTable { get; }
+    public TypeContext TypeContext { get; }
 
     public ModuleSymbol GlobalModule
         => _lazyGlobalModule.GetOrCreate(() =>
             new ModuleSymbol(this, DeclarationTable.GlobalDecl, parent: null));
 
-    private LazyField<ImmutableArray<Diagnostic>> _lazyDiagnostics;
-
     public ImmutableArray<Diagnostic> Diagnostics
         => _lazyDiagnostics.GetOrCreate(CollectDiagnostics);
-    
-    
+
+
     private Compilation(ImmutableArray<SyntaxTree> syntaxTrees)
     {
         SyntaxTrees = syntaxTrees;
@@ -50,20 +47,21 @@ public partial class Compilation
     {
         return new Compilation([.. trees]);
     }
+
     public static Compilation FromTrees(IEnumerable<SyntaxTree> trees)
     {
         return new Compilation([.. trees]);
     }
-    
 
-    
+
+
     private ImmutableArray<Diagnostic> CollectDiagnostics()
     {
         var bag = new DiagnosticBag();
 
         foreach (var tree in SyntaxTrees)
             bag.AddRange(tree.Diagnostics);
-        
+
         GlobalModule.CollectDiagnosticsInto(bag);
 
         return bag.Drain();
