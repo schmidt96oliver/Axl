@@ -1,0 +1,13 @@
+﻿//@run-pass
+
+// Module files are visible globally from every other file.
+
+Test.Do();
+
+//--- Module.axl
+module Test;
+
+fn Do() => Standard.PrintLine("yip");
+
+//=== stdout
+// yip

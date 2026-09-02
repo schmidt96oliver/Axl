@@ -2,84 +2,45 @@
 #:project src/Axl.Compiler/Axl.Compiler.csproj
 
 using System.Collections.Immutable;
-using System.Diagnostics;
-using System.Diagnostics.CodeAnalysis;
-using System.Runtime.CompilerServices;
 using Axl.Compiler;
-using Axl.Compiler.Diagnostics;
-using Axl.Compiler.Semantics.Declarations;
 using Axl.Compiler.Semantics.Symbols;
 using Axl.Compiler.Syntax;
 using Axl.Compiler.Syntax.Tree;
 
 string[] inputs = ["""
-                    var a = 2;
-                    module A { fn NOPE() { } }
+                    module A.B;
+                    module C;
+                    
+                    fn InB() { }
                    ""","""
-                   module A { }
-                   module A.B;
-                   fn Fn2_B() { }
+                   var a = 2;
+                    module A;
+                    
+                    fn InA() { }
                    """,
     
                     """
-                    module A;
-                    module B;
-                    module C { }
+                    module A.B;
+                    var a = 2;
+                    fn InB_2() { }
                     """,
                     """
-                    module A;
-                    module B { module C; fn In_B() { } }
+                    module Other;
+                    
+                    fn InOther() { }
                     """
 ];
 
 var trees = inputs.Select(text => Parser.Parse(SourceFileView.FromText(text))).ToImmutableArray();
 var compilation = Compilation.FromTrees(trees);
-var declTable = compilation.DeclarationTable;
 
-Console.WriteLine(compilation.Diagnostics);
+foreach (var diag in compilation.Diagnostics)
+    Console.WriteLine($"[ERROR] {diag.Id}: {diag.Message}");
 
+PrintSymbol(compilation.GlobalSymbol, "");
 
-
-// Console.WriteLine("*** SINGLE");
-// foreach (var tree in trees)
-// {
-//     var roots = declTable.GetRootModuleDecls(tree);
-//     Console.WriteLine("----");
-//     foreach (var singleRoot in roots)
-//         PrintSingleDecl(singleRoot, "");
-// }
-
-Console.WriteLine("*** MERGED");
-PrintMergedDecl(declTable.GlobalDecl, "");
-
-Console.WriteLine("*** Global Symbols");
-var globalSymbol = compilation.GlobalModule;
-PrintSymbol(globalSymbol, "");
-
-
-void PrintSingleDecl(ModuleDeclFragment declFragment, string prefix)
-{
-    var name = declFragment.Name;
-    var diagText = declFragment.Diagnostics.Length > 0 ? $"[ERROR x{declFragment.Diagnostics.Length}]" : "";
-    var memberText = string.Join(" | ", declFragment.Syntax?.Members.Select(SelectName) ?? []);
-    
-    Console.WriteLine($"{prefix}{name} {diagText} ({memberText})");
-    foreach (var child in declFragment.ChildFragments) PrintSingleDecl(child, prefix + "  ");
-}
-
-void PrintMergedDecl(ModuleDecl decl, string prefix)
-{
-    var name = decl.Name.IsEmpty ? "ROOT" : decl.Name;
-    var memberText = string.Join(" | ", decl.Syntaxes.SelectMany(s => s.Members).Select(SelectName));
-    
-    Console.WriteLine($"{prefix}{name} ({memberText})");
-    foreach (var child in decl.ChildModules) PrintMergedDecl(child, prefix + " ");
-
-    
-}
 string SelectName(MemberSyntax syntax) => syntax switch
 {
-    BaseModuleDeclSyntax moduleDecl => $"module {string.Join(".", moduleDecl.Name.Parts.Select(t => t.Identifier))}",
     FnDeclSyntax fnDecl => $"fn {fnDecl.Name.Identifier}",
     NativeFnDeclSyntax nativeFnDecl => $"native fn {nativeFnDecl.Name.Identifier}",
     _ => "??"
@@ -97,6 +58,7 @@ string MakeSyntaxText(SyntaxNode node)
     return text;
 }
 
+
 void PrintSymbol(Symbol symbol, string prefix)
 {
     var syntaxText = symbol.DeclaringSyntaxes.Length > 0
@@ -105,6 +67,15 @@ void PrintSymbol(Symbol symbol, string prefix)
     
     switch (symbol)
     {
+        case GlobalSymbol globalSymbol:
+            Console.WriteLine($"{prefix}<global>, Syntax = {syntaxText}");
+            foreach (var member in globalSymbol.Members)
+            {
+                PrintSymbol(member, prefix + "  ");
+            }
+
+            break;
+        
         case ModuleSymbol moduleSymbol:
             
             Console.WriteLine($"{prefix}Module \"{moduleSymbol.Name}\", Syntax = {syntaxText}");

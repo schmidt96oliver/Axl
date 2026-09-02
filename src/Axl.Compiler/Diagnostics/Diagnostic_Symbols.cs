@@ -1,4 +1,5 @@
 ﻿using System.Collections.Immutable;
+using System.Diagnostics;
 using Axl.Compiler.Syntax;
 using Axl.Compiler.Syntax.Tree;
 
@@ -23,13 +24,29 @@ public abstract partial record Diagnostic
             };
     }
 
-    public sealed record InvalidFileScopedModuleDecl(FileScopedModuleDeclSyntax Syntax) : Error
+    public sealed record ModuleDeclAfterCode(ModuleDeclSyntax Syntax) : Error
     {
-        public override ImmutableArray<SourceLocation> Locations 
+        public override ImmutableArray<SourceLocation> Locations
             => [Syntax.GetLocation()];
 
-        public override string Message => Syntax.Parent is FileSyntax
-            ? $"File-scoped module declarations must be the first declaration in the file."
-            : $"File-scoped module declarations are only allowed on the file scope.";
+        public override string Message
+            => "Module declarations must come before members and code.";
+    }
+
+    public sealed record MultipleModuleDecls(ModuleDeclSyntax Syntax) : Error
+    {
+        public override ImmutableArray<SourceLocation> Locations
+            => [Syntax.GetLocation()];
+
+        public override string Message
+            => "There can only be one module declaration.";
+    }
+    public sealed record StmtInModuleFile(StmtSyntax Syntax) : Error
+    {
+        public override ImmutableArray<SourceLocation> Locations
+            => [Syntax.GetLocation()];
+
+        public override string Message
+            => "Modules cannot contain statements.";
     }
 }

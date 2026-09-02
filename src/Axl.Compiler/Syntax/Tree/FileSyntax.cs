@@ -30,4 +30,7 @@ public sealed class FileSyntax(ImmutableArray<SyntaxElement> children)
     
     public IEnumerable<StmtSyntax> Stmts 
         => Children.OfType<StmtSyntax>();
+    
+    public ModuleDeclSyntax? FirstModuleDecl
+        => Children.FirstOfTypeOrNull<ModuleDeclSyntax>();
 }

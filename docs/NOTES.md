@@ -1,19 +1,14 @@
 # ------------------------------------ Axl Project ------------------------------------
                                        ≽(◕ ᴗ ◕)≼
 
-**Next**: *Ctd. DeclarationTable -> Symbol*
-- InvalidFileScopedError:
-  - fix: module Global { }
-
-        module Global2;
-        
-        module Global3 {
-     mark entire file
-  - better message
-
-- adjust grammar to reflect file-scoped decl
+**Next:**
+- TODO: Handle script files (reject modules in there)
 
 **Moving On**
+- Diagnostics tightening:
+  - 'CollectDiagnosticsInto' needs to answer the same always: Force complete; freeze the bag; copy into bag
+    - make abstract to force symbols into deciding "no-op"
+
 - Further symbols:
     - GetDeclSymbol (=GetDeclSymbol(parent).Members.First(memberSyntax == syntax))
     - memoize all decl syntaxes
@@ -22,13 +17,6 @@
 
 - Scope tree:
     - GetScopeAtDeclSymbol is same walk as GetDeclSymbol
-
-- rules for file-scoped:
-    - Must be before any member or stmt. Can come after using.
-    - Must be only one (falls out of the above)
-    - rm: AxlFileKind
-
-- SyntaxKind, AxlFileKind DisplayExtensions
 
 - LSP: Make Serial (see Omnisharp) and weave CancellationToken
 

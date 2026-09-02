@@ -1,0 +1,28 @@
+﻿//@check
+
+// Module declarations must come before any members or code.
+// Only using directives can come before.
+
+// This is because it would be hard to reason about members before
+// the module decl: Do they belong in or out?
+
+fn Test() { }
+
+module A;   //~error
+
+//---
+var a = 2;
+
+module A;   //~error
+
+//---
+using Standard;
+
+PrintLine("1");
+
+module A;   //~error
+
+//---
+using Standard;     // usings are allowed before
+
+module A;

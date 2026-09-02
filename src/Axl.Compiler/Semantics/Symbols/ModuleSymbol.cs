@@ -1,7 +1,6 @@
 ﻿using System.Collections.Immutable;
 using System.Diagnostics;
 using Axl.Compiler.Diagnostics;
-using Axl.Compiler.Semantics.Declarations;
 using Axl.Compiler.Syntax;
 using Axl.Compiler.Syntax.Tree;
 
@@ -9,55 +8,97 @@ namespace Axl.Compiler.Semantics.Symbols;
 
 public sealed class ModuleSymbol(
     Compilation compilation,
-    ModuleDecl decl,
+    SymbolName name,
+    ImmutableArray<ModuleFragment> fragments,
     Symbol? parent)
-    : Symbol(compilation, decl.Name, parent)
+    : Symbol(compilation, name, parent)
 {
-    private LazyField<ImmutableArray<Symbol>> _lazyMembers;
+    private DiagnosticBag _diagnosticBag = new();
     
-    public ModuleDecl Decl { get; } = decl;
+    private LazyField<ImmutableArray<SyntaxNode>> _lazyDeclaringSyntaxes;
+    private LazyField<ImmutableArray<Symbol>> _lazyMembers;
+
 
     public override ImmutableArray<SyntaxNode> DeclaringSyntaxes
-    {
-        get
-        {
-            if (field.IsDefault)
-                field = Decl.Syntaxes.CastArray<SyntaxNode>();
-            return field;
-        }
-    }
+        => _lazyDeclaringSyntaxes.GetOrCreate(CreateDeclaringSyntaxes);
 
     public ImmutableArray<Symbol> Members
-        => _lazyMembers.GetOrCreate(MakeMembers);
+        => _lazyMembers.GetOrCreate(CreateMembers);
 
     
-    private ImmutableArray<Symbol> MakeMembers()
+    private ImmutableArray<Symbol> CreateMembers()
     {
-        // Create Module Symbols
-        var moduleMembers =
-            Decl.ChildModules.Select(mergedDecl => new ModuleSymbol(Compilation, mergedDecl, parent: this));
-        var otherMembers = Decl.Syntaxes
-            .SelectMany(syntax => syntax.Members)
-            .Where(syntax => syntax is not BaseModuleDeclSyntax)
-            .Select(MakeSymbol);
+        var members = ImmutableArray.CreateBuilder<Symbol>();
+        
+        // All prefix fragments create module symbols
+        var modules = fragments
+            .OfType<ModuleFragment.Prefix>()
+            .Select(fragment => fragment.Child)
+            .GroupBy(fragment => fragment.Name)
+            .Select(fragmentsWithSameName => new ModuleSymbol(
+                Compilation, 
+                name: fragmentsWithSameName.Key,
+                fragments: [.. fragmentsWithSameName], 
+                parent: this));
+        members.AddRange(modules);
+        
+        // All body fragments create members
+        foreach (var bodyFragment in fragments.OfType<ModuleFragment.Body>())
+        foreach (var node in bodyFragment.Nodes)
+        {
+            switch (node)
+            {
+                case MemberSyntax memberSyntax:
+                    members.Add(CreateSymbol(memberSyntax));
+                    break;
+                
+                case UsingDirectiveSyntax:
+                    // Usings are allowed everywhere.
+                    
+                    break;
+                
+                case ModuleDeclSyntax moduleDeclSyntax:
+                    // The declaring module declaration is already filtered, so
+                    // this must be another one which is invalid.
+                    
+                    _diagnosticBag.ReportError(new Diagnostic.MultipleModuleDecls(moduleDeclSyntax));
+                    break;
 
-        return [.. moduleMembers, .. otherMembers];
+                case StmtSyntax stmtSyntax:
+                    // Stmts are not allowed inside module files.
+                    
+                    _diagnosticBag.ReportError(new Diagnostic.StmtInModuleFile(stmtSyntax));
+                    break;
+                
+                default:
+                    throw new UnreachableException();
+            }
+        }
+
+        return members.DrainToImmutable();
     }
 
-    private Symbol MakeSymbol(MemberSyntax syntax) => syntax switch
+    private Symbol CreateSymbol(MemberSyntax syntax) => syntax switch
     {
         FnDeclSyntax fnDeclSyntax => new FnSymbol(Compilation, 
             SymbolName.From(fnDeclSyntax.Name),
             fnDeclSyntax, 
             parent: this),
+        
         _ => throw new UnreachableException()
     };
+
+    private ImmutableArray<SyntaxNode> CreateDeclaringSyntaxes()
+        => [.. fragments.OfType<ModuleFragment.Body>().Select(bodyFragment => bodyFragment.Syntax)];
 
 
     public override void CollectDiagnosticsInto(DiagnosticBag diagnosticBag)
     {
-        Decl.CollectDiagnosticsInto(diagnosticBag);
-        foreach (var member in Members)
+        // Make sure to evaluate members first.
+        var members = Members;
+        
+        _diagnosticBag.DrainInto(diagnosticBag);
+        foreach (var member in members)
             member.CollectDiagnosticsInto(diagnosticBag);
     }
 }

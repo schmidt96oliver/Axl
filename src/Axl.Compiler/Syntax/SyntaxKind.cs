@@ -25,7 +25,6 @@ public enum SyntaxKind
     
     // Declarations
     ModuleDecl,
-    FileScopedModuleDecl,
     FnDecl,
     NativeFnDecl,
     

@@ -1,24 +1,22 @@
 ﻿using System.Collections.Immutable;
 using Axl.Compiler.Diagnostics;
-using Axl.Compiler.Semantics.Declarations;
 using Axl.Compiler.Semantics.Symbols;
 using Axl.Compiler.Semantics.Types;
 using Axl.Compiler.Syntax;
+using Axl.Compiler.Syntax.Tree;
 
 namespace Axl.Compiler;
 
 public class Compilation
 {
-    private LazyField<ModuleSymbol> _lazyGlobalModule;
     private LazyField<ImmutableArray<Diagnostic>> _lazyDiagnostics;
+    private LazyField<GlobalSymbol> _lazyGlobalSymbol;
 
     public ImmutableArray<SyntaxTree> SyntaxTrees { get; }
-    public DeclarationTable DeclarationTable { get; }
     public TypeContext TypeContext { get; }
 
-    public ModuleSymbol GlobalModule
-        => _lazyGlobalModule.GetOrCreate(() =>
-            new ModuleSymbol(this, DeclarationTable.GlobalDecl, parent: null));
+    public GlobalSymbol GlobalSymbol
+        => _lazyGlobalSymbol.GetOrCreate(CreateGlobalSymbol);    
 
     public ImmutableArray<Diagnostic> Diagnostics
         => _lazyDiagnostics.GetOrCreate(CollectDiagnostics);
@@ -28,9 +26,9 @@ public class Compilation
     {
         SyntaxTrees = syntaxTrees;
         TypeContext = new TypeContext();
-        DeclarationTable = new DeclarationTable(syntaxTrees);
     }
 
+    
     public static Compilation FromFile(string path)
     {
         var tree = Parser.Parse(SourceFileView.FromFile(path));
@@ -54,6 +52,33 @@ public class Compilation
     }
 
 
+    private GlobalSymbol CreateGlobalSymbol()
+    {
+        var fragments = SyntaxTrees
+            .Select(GetModuleFragment)
+            .Where(fragment => fragment is not null)
+            .ToImmutableArray();
+        return new GlobalSymbol(compilation: this, moduleFragments: fragments!);
+    }
+    
+    private ModuleFragment? GetModuleFragment(SyntaxTree syntaxTree)
+    {
+        // The first syntax that is not `using` will determine the kind of
+        // file. Further module declarations are reported and then ignored.
+
+        var firstNonUsingSyntax = syntaxTree.FileSyntax
+            .SyntaxNodes()
+            .FirstOrDefault(node => node is not UsingDirectiveSyntax);
+        if (firstNonUsingSyntax is not ModuleDeclSyntax moduleDeclSyntax)
+        {
+            // It's not a module, which means we see it as a script file. It
+            // will not contribute to global modules.
+            return null;
+        }
+        
+        return ModuleFragment.FromDeclaration(moduleDeclSyntax);
+    }
+    
 
     private ImmutableArray<Diagnostic> CollectDiagnostics()
     {
@@ -62,7 +87,7 @@ public class Compilation
         foreach (var tree in SyntaxTrees)
             bag.AddRange(tree.Diagnostics);
 
-        GlobalModule.CollectDiagnosticsInto(bag);
+        GlobalSymbol.CollectDiagnosticsInto(bag);
 
         return bag.Drain();
     }

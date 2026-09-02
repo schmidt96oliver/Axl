@@ -1,0 +1,9 @@
+﻿//@check
+
+// Module declarations are allowed only once per file.
+// This is to avoid any confusion, because multiple flat
+// module declarations are hard to reason about.
+
+module A;
+module B;   //~error
+module C;   //~error

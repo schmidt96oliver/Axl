@@ -7,7 +7,7 @@ namespace Axl.Compiler.Syntax;
 
 public partial class Parser
 {
-    private MarkClose EatMember(Anchor anchor, bool onGlobalScope)
+    private MarkClose EatMember(Anchor anchor)
     {
         Debug.Assert(_scanner.IsAt(FirstSet.Member));
 
@@ -18,8 +18,6 @@ public partial class Parser
             _scanner.Eat();
         
         // --- Dispatch
-        if (_scanner.IsAt(FirstSet.ModuleDeclAfterModifiers))
-            return EatModuleDeclAfterModifiers(decl, anchor, onGlobalScope);
         if (_scanner.IsAt(TokenKind.FnKw))
             return EatFnDeclAfterModifiers(decl, anchor);
         if (_scanner.IsAt(TokenKind.NativeKw))
@@ -30,64 +28,18 @@ public partial class Parser
         return _scanner.Close(decl, SyntaxKind.Garbage);
     }
 
-    private MarkClose EatModuleDeclAfterModifiers(MarkOpen decl, Anchor anchor, bool onGlobalScope)
+    private MarkClose EatModuleDecl()
     {
-        Debug.Assert(_scanner.IsAt(FirstSet.ModuleDeclAfterModifiers));
+        Debug.Assert(_scanner.IsAt(TokenKind.ModuleKw));
 
+        var moduleDecl = _scanner.Open();
+        
         _scanner.EatKnown(TokenKind.ModuleKw);
-
         EnsurePath(ExpectedSyntax.ModuleName);
-
-        // --- ";" means it's a global declaration
-        if (_scanner.IsAt(TokenKind.Semicolon))
-        {
-            _scanner.EatKnown(TokenKind.Semicolon);
-
-            // Only the first file-scoped decl of the file can be valid,
-            // so only this one will eat members. All others will be invalid,
-            // and it's better for diagnostics not to eat any members then.
-            if (onGlobalScope)
-            {
-                // We are supposed to eat everything thereafter, since we're commited.
-                EatModuleMembersInsideBody(Anchor.Forced);
-            }
-            
-            return _scanner.Close(decl, SyntaxKind.FileScopedModuleDecl);
-        }
-
-        // --- "{" means it's a bodied declaration
-        if (_scanner.IsAt(TokenKind.OpenBrace))
-        {
-            _scanner.EatKnown(TokenKind.OpenBrace);
-
-            EatModuleMembersInsideBody(anchor | TokenKind.CloseBrace);
-
-            EnsureToken(TokenKind.CloseBrace);
-            return _scanner.Close(decl, SyntaxKind.ModuleDecl);
-        }
-
-        // --- Invalid
-        _scanner.MakeAndReport(TokenKind.OpenBrace);
-        _scanner.MakeAndReport(TokenKind.CloseBrace);
-        return _scanner.Close(decl, SyntaxKind.ModuleDecl);
+        EnsureToken(TokenKind.Semicolon);
+        
+        return _scanner.Close(moduleDecl, SyntaxKind.ModuleDecl);
     }
-
-    private void EatModuleMembersInsideBody(Anchor anchor)
-    {
-        var moduleBodyAnchor = anchor | TokenKind.UsingKw | FirstSet.Member;
-        foreach (var _ in _scanner.MustEatEachIteration())
-        {
-            RecoverToAndReport(moduleBodyAnchor, ExpectedSyntax.Member);
-
-            if (_scanner.IsAt(FirstSet.Member))
-                EatMember(moduleBodyAnchor, onGlobalScope: false);
-            else if (_scanner.IsAt(TokenKind.UsingKw))
-                EatUsingDirective();
-            else
-                break;
-        }
-    }
-
 
     private MarkClose EatFnDeclAfterModifiers(MarkOpen decl, Anchor anchor)
     {
