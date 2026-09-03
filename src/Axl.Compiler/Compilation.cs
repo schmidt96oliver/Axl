@@ -11,12 +11,16 @@ public class Compilation
 {
     private LazyField<ImmutableArray<Diagnostic>> _lazyDiagnostics;
     private LazyField<GlobalSymbol> _lazyGlobalSymbol;
+    private LazyField<ImmutableArray<ScriptSymbol>> _lazyScriptSymbols;
 
     public ImmutableArray<SyntaxTree> SyntaxTrees { get; }
     public TypeContext TypeContext { get; }
 
     public GlobalSymbol GlobalSymbol
-        => _lazyGlobalSymbol.GetOrCreate(CreateGlobalSymbol);    
+        => _lazyGlobalSymbol.GetOrCreate(CreateGlobalSymbol);
+
+    public ImmutableArray<ScriptSymbol> ScriptSymbols
+        => _lazyScriptSymbols.GetOrCreate(CreateScriptSymbols);
 
     public ImmutableArray<Diagnostic> Diagnostics
         => _lazyDiagnostics.GetOrCreate(CollectDiagnostics);
@@ -60,6 +64,14 @@ public class Compilation
             .ToImmutableArray();
         return new GlobalSymbol(compilation: this, moduleFragments: fragments!);
     }
+
+    private ImmutableArray<ScriptSymbol> CreateScriptSymbols()
+        =>
+        [
+            .. SyntaxTrees
+                .Where(tree => GetModuleFragment(tree) is null)
+                .Select(tree => new ScriptSymbol(compilation: this, syntax: tree.FileSyntax))
+        ];
     
     private ModuleFragment? GetModuleFragment(SyntaxTree syntaxTree)
     {
@@ -88,6 +100,9 @@ public class Compilation
             bag.AddRange(tree.Diagnostics);
 
         GlobalSymbol.CollectDiagnosticsInto(bag);
+        
+        foreach (var script in ScriptSymbols)
+            script.CollectDiagnosticsInto(bag);
 
         return bag.Drain();
     }

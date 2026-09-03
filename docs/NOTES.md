@@ -2,7 +2,6 @@
                                        ≽(◕ ᴗ ◕)≼
 
 **Next:**
-- TODO: Handle script files (reject modules in there)
 
 **Moving On**
 - Diagnostics tightening:
