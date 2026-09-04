@@ -1,6 +1,5 @@
 ﻿using System.Collections.Immutable;
 using System.Diagnostics;
-using System.Reflection;
 using Axl.Compiler.Diagnostics;
 using Axl.Compiler.Semantics.Symbols;
 using Axl.Compiler.Semantics.Types;
