@@ -48,9 +48,10 @@ public class Compilation
         return new Compilation([tree]);
     }
 
-    public static Compilation FromText(string sourceText)
+    public static Compilation FromText(string path, string sourceText)
     {
-        var tree = Parser.Parse(SourceFileView.FromText(sourceText));
+        var sourceFile = SourceFile.FromText(path, sourceText);
+        var tree = Parser.Parse(SourceFileView.Whole(sourceFile));
         return new Compilation([tree]);
     }
 
