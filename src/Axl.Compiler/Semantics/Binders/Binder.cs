@@ -87,57 +87,73 @@ public sealed class Binder
 
         var context = new BindingContext.Script(scriptSymbol);
         
-        var localFns = CreateLocalFns(fileSyntax.Members.OfType<FnDeclSyntax>(), context);
+        // Bind members
+        var members = BindMembers(fileSyntax.Members.OfType<FnDeclSyntax>(), context);
+        Debug.Assert(members.All(s => s is FnSymbol), "There are only fns currently.");
+
+        var localFns = members.OfType<FnSymbol>().ToImmutableArray();
         context.LocalFns.AddRange(localFns);
         
-        // Reject all non-fn members
-        foreach (var member in fileSyntax.Members)
-        {
-            if (member is FnDeclSyntax)
-                break;
-            
-            context.DiagnosticBag.ReportError(new Diagnostic.UnsupportedFeature(member));
-        }
-        
-        // Create local scope
+        // Create scope and binder
         var localScope = new LocalScope(localFns, parent: enclosingScope);
         var binder = new Binder(context, localScope, LoopContext.Outside);
         
         // Bind statements
         var stmts = binder.BindStmts(fileSyntax.Stmts);
         
-        // Return
+        // Create and return
         var body = new HirBody(stmts, armExpr: null, type: context.TypeContext.None);
         return new Hir.Hir(body, 
             context.LocalFns.DrainToImmutable(),
             context.DiagnosticBag.Drain());
     }
 
-    private static ImmutableArray<FnSymbol> CreateLocalFns(IEnumerable<FnDeclSyntax> syntaxes, BindingContext context)
-    {
-        var localFns = syntaxes.Select(syntax => new FnSymbol(context.Compilation,
-            SymbolName.From(syntax.Name),
-            syntax,
-            context.ParentSymbol)).ToImmutableArray();
+    
+    #region Member Binding
 
-        // Report duplicate declarations
-        var fnGroupsByName = localFns.GroupBy(symbol => symbol.Name);
-        foreach (var fnGroup in fnGroupsByName)
+    private static ImmutableArray<Symbol> BindMembers(IEnumerable<MemberSyntax> syntaxes, BindingContext context)
+    {
+        var members = ImmutableArray.CreateBuilder<Symbol>();
+
+        foreach (var memberSyntax in syntaxes)
+        {
+            switch (memberSyntax)
+            {
+                case FnDeclSyntax fnDeclSyntax:
+                    members.Add(new FnSymbol(context.Compilation,
+                        SymbolName.From(fnDeclSyntax.Name),
+                        fnDeclSyntax,
+                        context.ParentSymbol));
+                    break;
+
+                default:
+                    context.DiagnosticBag.ReportError(new Diagnostic.UnsupportedFeature(memberSyntax));
+                    break;
+            }
+        }
+
+        var memberArray = members.DrainToImmutable();
+        ReportDuplicateMembers(memberArray, context.DiagnosticBag);
+        
+        return memberArray;
+    }
+
+    private static void ReportDuplicateMembers(ImmutableArray<Symbol> memberSymbols, DiagnosticBag diagnosticBag)
+    {
+        Debug.Assert(memberSymbols.All(s => s is FnSymbol), "There are only fns currently.");
+        
+        var fnsByName = memberSymbols.OfType<FnSymbol>().GroupBy(symbol => symbol.Name);
+        foreach (var fnGroup in fnsByName)
         {
             var fnsInGroup = fnGroup.ToImmutableArray();
             if (fnsInGroup.Length > 1)
-                context.DiagnosticBag.ReportError(new Diagnostic.DuplicateFnDecls(fnsInGroup));
+                diagnosticBag.ReportError(new Diagnostic.DuplicateFnDecls(fnsInGroup));
         }
-        
-        // Drain symbol diagnostics
-        //TODO: This will backfire, when functions actually bind their HIR
-        foreach (var fnSymbol in localFns)
-            fnSymbol.CollectDiagnosticsInto(context.DiagnosticBag);
-
-        return localFns;
     }
-
-
+    
+    #endregion
+    
+    
     private ImmutableArray<HirStmt> BindStmts(IEnumerable<StmtSyntax> syntaxes)
     {
         return [];
