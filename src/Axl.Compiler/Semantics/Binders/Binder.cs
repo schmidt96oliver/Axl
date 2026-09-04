@@ -242,28 +242,78 @@ public sealed class Binder
         return new HirVarDecl(local, boundInitializer);
     }
 
-    private HirExpr BindVarDeclInitializer(VarDeclSyntax varDeclSyntax, AxlType? expectedType)
+    private HirExpr BindVarDeclInitializer(VarDeclSyntax syntax, AxlType? expectedType)
     {
-        if (varDeclSyntax.Initializer is null)
+        if (syntax.Initializer is null)
         {
-            _context.DiagnosticBag.ReportError(new Diagnostic.MissingInitializer(varDeclSyntax));
+            _context.DiagnosticBag.ReportError(new Diagnostic.MissingInitializer(syntax));
             return new HirErrorExpr(recoveredExprs: [],
                 _context.TypeContext.Error);
         }
 
-        return BindExpr(varDeclSyntax.Initializer, expectedType);
+        return BindExpr(syntax.Initializer, expectedType);
     }
 
     private HirExpr BindExpr(ExprSyntax syntax, AxlType? expectedType) => syntax switch
     {
+        // Strings
+        StringExprSyntax stringExprSyntax => BindString(stringExprSyntax),
+        
+        // Literals
         NumberLiteralSyntax numberLiteralSyntax => BindNumberLiteral(numberLiteralSyntax, expectedType),
+        TrueLiteralSyntax => new HirBoolLiteral(value: true, _context.TypeContext.Bool),
+        FalseLiteralSyntax => new HirBoolLiteral(value: false, _context.TypeContext.Bool),
         
         _ => new HirErrorExpr(recoveredExprs: [], _context.TypeContext.Error)
     };
 
-    private HirNumberLiteral BindNumberLiteral(NumberLiteralSyntax numberLiteralSyntax, AxlType? expectedType)
+    private HirStringExpr BindString(StringExprSyntax syntax)
     {
-        var type = numberLiteralSyntax.Token.Suffix switch
+        var parts = syntax.Parts.Select(BindStringPart).ToImmutableArray();
+
+        if (parts.Length == 0)
+            parts = [new StringPart.Text("")];
+        
+        return new HirStringExpr(parts, _context.TypeContext.String);
+    }
+
+    private StringPart BindStringPart(StringPartSyntax syntax)
+        => syntax switch
+        {
+            StringTextSyntax textSyntax => new StringPart.Text(textSyntax.Text.ProcessedText),
+            StringInterpolationSyntax interpolationSyntax => BindStringInterpolation(interpolationSyntax),
+            _ => throw new UnreachableException($"Unknown {nameof(StringPartSyntax)}")
+        };
+
+    private StringPart BindStringInterpolation(StringInterpolationSyntax syntax)
+    {
+        if (syntax.Expr is null)
+        {
+            // Empty interpolation means nothing will be added. Just
+            // return an empty text then.
+            return new StringPart.Text(ProcessedText: "");
+        }
+                
+        var boundExpr = BindExpr(syntax.Expr, expectedType: null);
+        
+        //TODO: Allow different types according to declared native conversion fns
+        
+        // For now, we can only accept string exprs
+        if (!_context.TypeContext.IsAssignableTo(boundExpr.Type, _context.TypeContext.String))
+        {
+            _context.DiagnosticBag.ReportError(
+                new Diagnostic.StringInterpolationTypeMismatch(syntax.Expr, boundExpr.Type));
+            
+            return new StringPart.Interpolation(
+                new HirErrorExpr(recoveredExprs: [boundExpr], type: _context.TypeContext.Error));
+        }
+
+        return new StringPart.Interpolation(boundExpr);
+    }
+
+    private HirNumberLiteral BindNumberLiteral(NumberLiteralSyntax syntax, AxlType? expectedType)
+    {
+        var type = syntax.Token.Suffix switch
         {
             NumberLiteralSuffix.I32 => _context.TypeContext.I32,
             NumberLiteralSuffix.I64 => _context.TypeContext.I64,
@@ -276,17 +326,17 @@ public sealed class Binder
         // Check the type against literal structure.
         // Literals with a decimal point can only become floating
         // point literals.
-        if (numberLiteralSyntax.Token.HasDecimalPoint &&
+        if (syntax.Token.HasDecimalPoint &&
             type is not (F32Type or F64Type))
         {
-            _context.DiagnosticBag.ReportError(new Diagnostic.NumberSuffixMismatch(numberLiteralSyntax, type));
+            _context.DiagnosticBag.ReportError(new Diagnostic.NumberSuffixMismatch(syntax, type));
         }
         
-        return new HirNumberLiteral(numberLiteralSyntax.Token, type);
+        return new HirNumberLiteral(syntax.Token, type);
 
         AxlType DetermineTypeWithoutSuffix()
         {
-            var hasDecimalPoint = numberLiteralSyntax.Token.HasDecimalPoint;
+            var hasDecimalPoint = syntax.Token.HasDecimalPoint;
 
             return (hasDecimalPoint, expectedType) switch
             {
