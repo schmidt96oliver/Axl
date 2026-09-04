@@ -14,6 +14,14 @@ public abstract class Symbol(Compilation compilation, SymbolName name, Symbol? p
     /// Can be empty.
     /// </summary>
     public SymbolName Name { get; } = name;
+    
+    /// <summary>
+    /// The name this symbol will be displayed in user-facing diagnostics.
+    /// </summary>
+    /// <example>
+    /// "fn Test" or "module Global"
+    /// </example>
+    public abstract string DisplayName { get; }
 
     public Symbol? Parent { get; } = parent;
 

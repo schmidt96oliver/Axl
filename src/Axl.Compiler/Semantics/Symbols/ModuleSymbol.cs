@@ -20,6 +20,9 @@ public sealed class ModuleSymbol(
     
     internal ImmutableArray<ModuleFragment> Fragments { get; } = fragments;
 
+    public override string DisplayName => $"module {Name}";
+    
+    
 
     public override ImmutableArray<SyntaxNode> DeclaringSyntaxes
         => _lazyDeclaringSyntaxes.GetOrCreate(CreateDeclaringSyntaxes);

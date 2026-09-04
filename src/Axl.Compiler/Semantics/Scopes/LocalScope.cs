@@ -18,9 +18,19 @@ public sealed class LocalScope : Scope
     }
 
     protected override ImmutableArray<Symbol> LookupOnThisScope(SymbolName name)
-        => _locals.LastOrDefault(local => local.Name == name) is { } matchedLocal
-            ? [matchedLocal]
-            : [];
+    {
+        var maybeLocal = _locals.LastOrDefault(local => local.Name == name);
+        if (maybeLocal is not null)
+            return [maybeLocal];
+
+        var localFns = _localFns
+            .Where(localFn => localFn.Name == name)
+            .ToImmutableArray();
+        if (localFns.Length > 0)
+            return localFns.CastArray<Symbol>();
+
+        return [];
+    }
 
     public void Declare(LocalSymbol local)
         => _locals.Add(local);

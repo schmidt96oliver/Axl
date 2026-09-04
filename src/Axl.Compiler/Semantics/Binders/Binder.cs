@@ -256,6 +256,9 @@ public sealed class Binder
 
     private HirExpr BindExpr(ExprSyntax syntax, AxlType? expectedType) => syntax switch
     {
+        // Names
+        IdNameSyntax idNameSyntax => BindPlainIdName(idNameSyntax),
+        
         // Strings
         StringExprSyntax stringExprSyntax => BindString(stringExprSyntax),
         
@@ -267,6 +270,47 @@ public sealed class Binder
         _ => new HirErrorExpr(recoveredExprs: [], _context.TypeContext.Error)
     };
 
+    
+    #region Variables
+
+    private HirExpr BindPlainIdName(IdNameSyntax syntax)
+    {
+        if (syntax.Token.IsMissing)
+        {
+            // The parser already reported a diagnostic, so be silent.
+            return new HirErrorExpr(recoveredExprs: [], _context.TypeContext.Error);
+        }
+        
+        var name = SymbolName.From(syntax);
+        var lookupResult = _scope.Lookup(name);
+
+        if (lookupResult.Length == 0)
+        {
+            _context.DiagnosticBag.ReportError(new Diagnostic.UndefinedName(syntax));
+            return new HirErrorExpr(recoveredExprs: [], _context.TypeContext.Error);
+        }
+
+        if (lookupResult.Length > 1)
+        {
+            _context.DiagnosticBag.ReportError(new Diagnostic.AmbiguousName(syntax, lookupResult));
+            return new HirErrorExpr(recoveredExprs: [], _context.TypeContext.Error);
+        }
+
+        var symbol = lookupResult[0];
+        if (symbol is not LocalSymbol localSymbol)
+        {
+            _context.DiagnosticBag.ReportError(new Diagnostic.InvalidLocalRef(syntax, symbol));
+            return new HirErrorExpr(recoveredExprs: [], _context.TypeContext.Error);
+        }
+
+        return new HirLocalRef(localSymbol);
+    }
+    
+    #endregion
+    
+    
+    #region Literal and String Exprs
+    
     private HirStringExpr BindString(StringExprSyntax syntax)
     {
         var parts = syntax.Parts.Select(BindStringPart).ToImmutableArray();
@@ -354,4 +398,6 @@ public sealed class Binder
             };
         }
     }
+    
+    #endregion
 }

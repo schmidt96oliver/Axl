@@ -1,5 +1,4 @@
 ﻿using System.Collections.Immutable;
-using Axl.Compiler.Diagnostics;
 using Axl.Compiler.Syntax;
 
 namespace Axl.Compiler.Semantics.Symbols;
@@ -11,6 +10,8 @@ public sealed class ErrorSymbol(Compilation compilation,
     : Symbol(compilation, name, parent)
 {
     public SyntaxNode? Syntax { get; } = syntax;
+
+    public override string DisplayName => Name.IsEmpty ? "???" : $"<error on '{Name}'>";
 
 
     public override ImmutableArray<SyntaxNode> DeclaringSyntaxes

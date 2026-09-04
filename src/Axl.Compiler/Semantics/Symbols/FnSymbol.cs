@@ -33,7 +33,9 @@ public sealed class FnSymbol(
     public ImmutableArray<LocalSymbol> ParameterSymbols
         => _lazyParameters.GetOrCreate(CreateParameterSymbols);
 
-    
+    public override string DisplayName => $"fn {Name}";
+
+
     public ImmutableArray<LocalSymbol> CreateParameterSymbols()
     {
         var parameterSymbols = Syntax.Parameters

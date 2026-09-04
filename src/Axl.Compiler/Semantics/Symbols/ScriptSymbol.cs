@@ -12,6 +12,9 @@ public sealed class ScriptSymbol(Compilation compilation, FileSyntax fileSyntax)
 
     public FileSyntax FileSyntax { get; } = fileSyntax;
     
+    public override string DisplayName => $"<script>";
+    
+    
     /// <summary>
     /// Scripts have no declaration syntax.
     /// </summary>

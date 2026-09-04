@@ -17,6 +17,9 @@ public sealed class GlobalSymbol(Compilation compilation,
     public ImmutableArray<Symbol> Members
         => _lazyMembers.GetOrCreate(CreateMembers);
     
+    public override string DisplayName => $"<global>";
+    
+    
     /// <summary>
     /// Global is compiler-generated and has no declaring syntax.
     /// </summary>

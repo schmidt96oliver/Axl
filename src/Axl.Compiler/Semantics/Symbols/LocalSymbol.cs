@@ -16,6 +16,9 @@ public sealed class LocalSymbol(
 {
     public SyntaxNode Syntax { get; } = syntax;
     
+    public override string DisplayName => $"var {Name}";
+    
+    
     public override ImmutableArray<SyntaxNode> DeclaringSyntaxes
     {
         get
