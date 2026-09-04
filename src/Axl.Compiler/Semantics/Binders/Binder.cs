@@ -263,10 +263,45 @@ public sealed class Binder
 
     private HirNumberLiteral BindNumberLiteral(NumberLiteralSyntax numberLiteralSyntax, AxlType? expectedType)
     {
-        //TODO: Take expected into account
-        AxlType type = numberLiteralSyntax.Token.HasDecimalPoint
-            ? _context.TypeContext.F64
-            : _context.TypeContext.I32;
+        var type = numberLiteralSyntax.Token.Suffix switch
+        {
+            NumberLiteralSuffix.I32 => _context.TypeContext.I32,
+            NumberLiteralSuffix.I64 => _context.TypeContext.I64,
+            NumberLiteralSuffix.F32 => _context.TypeContext.F32,
+            NumberLiteralSuffix.F64 => _context.TypeContext.F64,
+
+            _ => DetermineTypeWithoutSuffix()
+        };
+        
+        // Check the type against literal structure.
+        // Literals with a decimal point can only become floating
+        // point literals.
+        if (numberLiteralSyntax.Token.HasDecimalPoint &&
+            type is not (F32Type or F64Type))
+        {
+            _context.DiagnosticBag.ReportError(new Diagnostic.NumberSuffixMismatch(numberLiteralSyntax, type));
+        }
+        
         return new HirNumberLiteral(numberLiteralSyntax.Token, type);
+
+        AxlType DetermineTypeWithoutSuffix()
+        {
+            var hasDecimalPoint = numberLiteralSyntax.Token.HasDecimalPoint;
+
+            return (hasDecimalPoint, expectedType) switch
+            {
+                // Without decimal point, the literal can become i32, i64, f32, f64
+                (false, I32Type) => _context.TypeContext.I32,
+                (false, I64Type) => _context.TypeContext.I64,
+                (false, F32Type) => _context.TypeContext.F32,
+                (false, F64Type) => _context.TypeContext.F64,
+                (false, _) => _context.TypeContext.DefaultIntegralNumberType,
+                
+                // With decimal point, the literal can become f32, f64
+                (true, F32Type) => _context.TypeContext.F32,
+                (true, F64Type) => _context.TypeContext.F64,
+                (true, _) => _context.TypeContext.DefaultFloatingNumberType,
+            };
+        }
     }
 }

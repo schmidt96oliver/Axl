@@ -14,6 +14,11 @@ public sealed class TypeContext
     public ErrorType Error { get; } = new();
 
 
+    public AxlType DefaultIntegralNumberType => I32;
+
+    public AxlType DefaultFloatingNumberType => F64;
+
+
     /// <summary>
     /// Whether a value of type <paramref name="source"/> can be
     /// assigned to a target of type <paramref name="target"/>.

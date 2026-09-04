@@ -30,4 +30,13 @@ public partial record Diagnostic
         public override string Message
             => "Initializer must be specified.";
     }
+
+    public sealed record NumberSuffixMismatch(NumberLiteralSyntax NumberLiteralSyntax, AxlType TypeFromSuffix) : Error
+    {
+        public override ImmutableArray<SourceLocation> Locations 
+            => [NumberLiteralSyntax.GetLocation()];
+
+        public override string Message
+            => $"Decimal numbers can only have types 'f32' or 'f64'. Got '{TypeFromSuffix.DisplayName}'.";
+    }
 }
