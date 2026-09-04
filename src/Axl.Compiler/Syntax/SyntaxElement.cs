@@ -10,7 +10,7 @@ public abstract class SyntaxElement
     /// Set during construction of <see cref="SyntaxNode"/>. Will assert on
     /// access, if accessed on a token that is not part of a syntax tree.
     /// </summary>
-    public SyntaxElement? Parent
+    public SyntaxNode? Parent
     {
         get
         {

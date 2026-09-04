@@ -17,6 +17,8 @@ public sealed class ModuleSymbol(
     
     private LazyField<ImmutableArray<SyntaxNode>> _lazyDeclaringSyntaxes;
     private LazyField<ImmutableArray<Symbol>> _lazyMembers;
+    
+    internal ImmutableArray<ModuleFragment> Fragments { get; } = fragments;
 
 
     public override ImmutableArray<SyntaxNode> DeclaringSyntaxes
@@ -31,7 +33,7 @@ public sealed class ModuleSymbol(
         var members = ImmutableArray.CreateBuilder<Symbol>();
         
         // All prefix fragments create module symbols
-        var modules = fragments
+        var modules = Fragments
             .OfType<ModuleFragment.Prefix>()
             .Select(fragment => fragment.Child)
             .GroupBy(fragment => fragment.Name)
@@ -43,7 +45,7 @@ public sealed class ModuleSymbol(
         members.AddRange(modules);
         
         // All body fragments create members
-        foreach (var bodyFragment in fragments.OfType<ModuleFragment.Body>())
+        foreach (var bodyFragment in Fragments.OfType<ModuleFragment.Body>())
         foreach (var node in bodyFragment.Nodes)
         {
             switch (node)
@@ -89,7 +91,7 @@ public sealed class ModuleSymbol(
     };
 
     private ImmutableArray<SyntaxNode> CreateDeclaringSyntaxes()
-        => [.. fragments.OfType<ModuleFragment.Body>().Select(bodyFragment => bodyFragment.Syntax)];
+        => [.. Fragments.OfType<ModuleFragment.Body>().Select(bodyFragment => bodyFragment.Syntax)];
 
 
     public override void CollectDiagnosticsInto(DiagnosticBag diagnosticBag)

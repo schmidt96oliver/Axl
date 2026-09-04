@@ -57,4 +57,17 @@ public abstract record ModuleFragment(SymbolName Name)
 
         return fragment;
     }
+
+    /// <summary>
+    /// Gets the body that ends the fragment chain.
+    /// </summary>
+    public Body GetBody()
+    {
+        var fragment = this;
+        while (fragment is Prefix(_, var child))
+            fragment = child;
+        
+        Debug.Assert(fragment is Body);
+        return (Body)fragment;
+    }
 }
