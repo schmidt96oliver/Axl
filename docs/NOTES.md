@@ -1,23 +1,11 @@
 # ------------------------------------ Axl Project ------------------------------------
                                        ≽(◕ ᴗ ◕)≼
 
-**Next:**
-
-**Moving On**
-- Diagnostics tightening:
-  - 'CollectDiagnosticsInto' needs to answer the same always: Force complete; freeze the bag; copy into bag
-    - make abstract to force symbols into deciding "no-op"
-
-- Further symbols:
-    - GetDeclSymbol (=GetDeclSymbol(parent).Members.First(memberSyntax == syntax))
-    - memoize all decl syntaxes
-    - FnGroupSymbol (grouped by Symbol.GetMembers); lazily report "duplicate decl" diagnostic
-    - Compiler generated, Path for GlobalSymbol?
-
-- Scope tree:
-    - GetScopeAtDeclSymbol is same walk as GetDeclSymbol
-
-- LSP: Make Serial (see Omnisharp) and weave CancellationToken
+**Next:** _Binding_ :)
+* and, or
+* ==, !=
+* blocks
+* if, loop
 
 **Stashed small ones**:
 * Regressions: `1+[EOF]`, `-[EOF]`
@@ -32,6 +20,8 @@
 * drop `HasError` from `DiagnosticList`
 
 * API: `SyntaxTree.ParseFrom`, `*Tree/Table.BuildFrom`
+* 
+- LSP: Make Serial (see Omnisharp) and weave CancellationToken
 
 # Taxl
 **Requirements**

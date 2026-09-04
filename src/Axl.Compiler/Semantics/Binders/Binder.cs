@@ -204,6 +204,35 @@ public sealed class Binder
         _ => throw new UnreachableException($"Unknown {nameof(StmtSyntax)}")
     };
 
+    private HirExpr BindExpr(ExprSyntax syntax, AxlType? expectedType) => syntax switch
+    {
+        // Names
+        IdNameSyntax idNameSyntax => BindPlainIdName(idNameSyntax),
+        
+        // Binary, unary
+        BinaryExprSyntax binaryExprSyntax => BindBinary(binaryExprSyntax, expectedType),
+        UnaryExprSyntax unaryExprSyntax => BindUnary(unaryExprSyntax, expectedType),
+        
+        // Strings
+        StringExprSyntax stringExprSyntax => BindString(stringExprSyntax),
+        
+        // Literals
+        NumberLiteralSyntax numberLiteralSyntax => BindNumberLiteral(numberLiteralSyntax, expectedType),
+        TrueLiteralSyntax => new HirBoolLiteral(value: true, _context.TypeContext.Bool),
+        FalseLiteralSyntax => new HirBoolLiteral(value: false, _context.TypeContext.Bool),
+        
+        _ => BindUnsupported(syntax)
+    };
+
+    private HirExpr BindUnsupported(ExprSyntax syntax)
+    {
+        _context.DiagnosticBag.ReportError(new Diagnostic.UnsupportedFeature(syntax));
+        return new HirErrorExpr(recoveredExprs: [], _context.TypeContext.Error);
+    }
+
+    
+    #region Variables
+
     private HirVarDecl BindVarDecl(VarDeclSyntax syntax)
     {
         var boundTypeAnnotation = syntax.TypeAnnotation is not null
@@ -241,7 +270,7 @@ public sealed class Binder
 
         return new HirVarDecl(local, boundInitializer);
     }
-
+    
     private HirExpr BindVarDeclInitializer(VarDeclSyntax syntax, AxlType? expectedType)
     {
         if (syntax.Initializer is null)
@@ -253,26 +282,7 @@ public sealed class Binder
 
         return BindExpr(syntax.Initializer, expectedType);
     }
-
-    private HirExpr BindExpr(ExprSyntax syntax, AxlType? expectedType) => syntax switch
-    {
-        // Names
-        IdNameSyntax idNameSyntax => BindPlainIdName(idNameSyntax),
-        
-        // Strings
-        StringExprSyntax stringExprSyntax => BindString(stringExprSyntax),
-        
-        // Literals
-        NumberLiteralSyntax numberLiteralSyntax => BindNumberLiteral(numberLiteralSyntax, expectedType),
-        TrueLiteralSyntax => new HirBoolLiteral(value: true, _context.TypeContext.Bool),
-        FalseLiteralSyntax => new HirBoolLiteral(value: false, _context.TypeContext.Bool),
-        
-        _ => new HirErrorExpr(recoveredExprs: [], _context.TypeContext.Error)
-    };
-
     
-    #region Variables
-
     private HirExpr BindPlainIdName(IdNameSyntax syntax)
     {
         if (syntax.Token.IsMissing)
@@ -307,7 +317,6 @@ public sealed class Binder
     }
     
     #endregion
-    
     
     #region Literal and String Exprs
     
@@ -397,6 +406,52 @@ public sealed class Binder
                 (true, _) => _context.TypeContext.DefaultFloatingNumberType,
             };
         }
+    }
+    
+    #endregion
+    
+    #region Binary and Unary Exprs
+
+    public HirExpr BindBinary(BinaryExprSyntax syntax, AxlType? expectedType)
+    {
+        return BindOperator(syntax.Operator, syntax.Left, syntax.Right);
+    }
+    
+    public HirExpr BindUnary(UnaryExprSyntax syntax, AxlType? expectedType)
+    {
+        return BindOperator(syntax.Operator, syntax.Operand);
+    }
+
+    private HirExpr BindOperator(Token operatorToken, params IEnumerable<ExprSyntax> operands)
+    {
+        var boundOperands = operands
+            .Select(expr => BindExpr(expr, expectedType: null))
+            .ToImmutableArray();
+        
+        var operandTypes = boundOperands
+            .Select(hir => hir.Type)
+            .ToImmutableArray();
+        if (operandTypes.OfType<ErrorType>().Any())
+        {
+            // Some operands have an error. So don't type-check them
+            // be silent and wrap in an error expression.
+            return new HirErrorExpr(recoveredExprs: boundOperands,
+                _context.TypeContext.Error);
+        }
+
+        var nativeOperator = _context.TypeContext.FindNativeOperator(
+            operatorToken.Kind,
+            operandTypes);
+        
+        if (nativeOperator is null)
+        {
+            _context.DiagnosticBag.ReportError(
+                new Diagnostic.UndefinedOperator(operatorToken, boundOperands));
+            return new HirErrorExpr(recoveredExprs: [.. boundOperands],
+                _context.TypeContext.Error);
+        }
+
+        return new HirNativeOperator(nativeOperator, [.. boundOperands], nativeOperator.ReturnType);
     }
     
     #endregion

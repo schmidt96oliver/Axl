@@ -1,6 +1,8 @@
 ﻿using System.Collections.Immutable;
+using Axl.Compiler.Semantics.Hir;
 using Axl.Compiler.Semantics.Symbols;
 using Axl.Compiler.Semantics.Types;
+using Axl.Compiler.Syntax;
 using Axl.Compiler.Syntax.Tree;
 
 namespace Axl.Compiler.Diagnostics;
@@ -54,7 +56,7 @@ public partial record Diagnostic
     {
         public override ImmutableArray<SourceLocation> Locations
             => [Syntax.GetLocation()];
-
+    
         public override string Message
             => $"Undefined name '{Syntax.Token.Identifier}'.";
     }
@@ -84,5 +86,19 @@ public partial record Diagnostic
 
         public override string Message
             => $"Expected reference to a local variable. Got {ResolvedSymbol.DisplayName} instead.";
+    }
+
+    public sealed record UndefinedOperator(Token OperatorToken, ImmutableArray<HirExpr> BoundOperands) : Error
+    {
+        public override ImmutableArray<SourceLocation> Locations
+            => [OperatorToken.GetLocation()];
+
+        public override string Message
+            => $"Operator '{OperatorToken.Kind.DisplayName}' is not defined for {GetTypeString()}.";
+
+        private string GetTypeString()
+            => BoundOperands.Length == 1
+                ? $"type '{BoundOperands[0].Type.DisplayName}'"
+                : $"types {string.Join(", ", BoundOperands[..^1].Select(hir => $"'{hir.Type.DisplayName}'"))} and '{BoundOperands[^1].Type.DisplayName}'";
     }
 }
