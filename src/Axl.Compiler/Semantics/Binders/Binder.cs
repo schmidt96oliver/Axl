@@ -1,11 +1,13 @@
 ﻿using System.Collections.Immutable;
 using System.ComponentModel;
 using System.Diagnostics;
+using System.Linq.Expressions;
 using Axl.Compiler.Diagnostics;
 using Axl.Compiler.Semantics.Hir;
 using Axl.Compiler.Semantics.Scopes;
 using Axl.Compiler.Semantics.Symbols;
 using Axl.Compiler.Semantics.Types;
+using Axl.Compiler.Syntax;
 using Axl.Compiler.Syntax.Tree;
 
 namespace Axl.Compiler.Semantics.Binders;
@@ -154,10 +156,117 @@ public sealed class Binder
     #endregion
     
     
-    private ImmutableArray<HirStmt> BindStmts(IEnumerable<StmtSyntax> syntaxes)
+    #region Types
+
+    private AxlType BindType(TypeNameSyntax syntax) => syntax switch
     {
-        return [];
+        NativeTypeNameSyntax nativeTypeNameSyntax => BindNativeType(nativeTypeNameSyntax),
+        PathSyntax pathSyntax => BindPathType(pathSyntax),
+        _ => throw new UnreachableException($"Unknown {nameof(TypeNameSyntax)}")
+    };
+
+    private AxlType BindNativeType(NativeTypeNameSyntax syntax) => syntax.Token.Kind switch
+    {
+        TokenKind.I32Kw => _context.TypeContext.I32,
+        TokenKind.I64Kw => _context.TypeContext.I64,
+        TokenKind.F32Kw => _context.TypeContext.F32,
+        TokenKind.F64Kw => _context.TypeContext.F64,
+        TokenKind.BoolKw => _context.TypeContext.Bool,
+        TokenKind.StringKw => _context.TypeContext.String,
+        TokenKind.NoneKw => _context.TypeContext.None,
+        TokenKind.NeverKw => _context.TypeContext.Never,
+        _ => throw new UnreachableException($"Unknown {nameof(NativeTypeNameSyntax)}.")
+    };
+
+    private AxlType BindPathType(PathSyntax syntax)
+    {
+        if (syntax.Span?.IsEmpty == false)
+        {
+            _context.DiagnosticBag.ReportError(new Diagnostic.UnsupportedFeature(
+                syntax, "Only native types are supported for now."));
+        }
+
+        return _context.TypeContext.Error;
     }
     
+    #endregion
     
+    
+    private ImmutableArray<HirStmt> BindStmts(IEnumerable<StmtSyntax> syntaxes)
+    {
+        return [..syntaxes.Select(BindStmt)];
+    }
+    
+    private HirStmt BindStmt(StmtSyntax syntax) => syntax switch
+    {
+        VarDeclSyntax varDeclSyntax => BindVarDecl(varDeclSyntax),
+        ExprStmtSyntax exprStmt => BindExpr(exprStmt.Expr, expectedType: null),
+        _ => throw new UnreachableException($"Unknown {nameof(StmtSyntax)}")
+    };
+
+    private HirVarDecl BindVarDecl(VarDeclSyntax syntax)
+    {
+        var boundTypeAnnotation = syntax.TypeAnnotation is not null
+            ? BindType(syntax.TypeAnnotation)
+            : null;
+        
+        var boundInitializer = BindVarDeclInitializer(syntax, expectedType: boundTypeAnnotation);
+
+        if (boundTypeAnnotation is null)
+        {
+            // Infer type
+            boundTypeAnnotation = boundInitializer.Type;
+        }
+        else
+        {
+            // Check type
+            if (!_context.TypeContext.IsAssignableTo(source: boundInitializer.Type, target: boundTypeAnnotation))
+            {
+                Debug.Assert(syntax.Initializer is not null, "Initializer must be given, because error type never fails type checking.");
+                
+                _context.DiagnosticBag.ReportError(new Diagnostic.TypeMismatch(
+                    SourceType: boundInitializer.Type,
+                    TargetType: boundTypeAnnotation, 
+                    SourceSyntax: syntax.Initializer,
+                    TargetSyntax: syntax.TypeAnnotation!));
+            }
+        }
+
+        var local = new LocalSymbol(_context.Compilation,
+            SymbolName.From(syntax.Name),
+            boundTypeAnnotation,
+            syntax,
+            parent: _context.ParentSymbol);
+        _scope.Declare(local);
+
+        return new HirVarDecl(local, boundInitializer);
+    }
+
+    private HirExpr BindVarDeclInitializer(VarDeclSyntax varDeclSyntax, AxlType? expectedType)
+    {
+        if (varDeclSyntax.Initializer is null)
+        {
+            _context.DiagnosticBag.ReportError(new Diagnostic.MissingInitializer(varDeclSyntax));
+            return new HirErrorExpr(recoveredExprs: [],
+                _context.TypeContext.Error);
+        }
+
+        return BindExpr(varDeclSyntax.Initializer, expectedType);
+    }
+
+    private HirExpr BindExpr(ExprSyntax syntax, AxlType? expectedType) => syntax switch
+    {
+        NumberLiteralSyntax numberLiteralSyntax => BindNumberLiteral(numberLiteralSyntax, expectedType),
+        
+        _ => new HirErrorExpr(recoveredExprs: [], _context.TypeContext.Error)
+    };
+
+    private HirNumberLiteral BindNumberLiteral(NumberLiteralSyntax numberLiteralSyntax, AxlType? expectedType)
+    {
+        //TODO: Take expected into account
+        AxlType type = numberLiteralSyntax.Token.HasDecimalPoint
+            ? _context.TypeContext.F64
+            : _context.TypeContext.I32;
+        return new HirNumberLiteral(numberLiteralSyntax.Token, type);
+    }
 }
