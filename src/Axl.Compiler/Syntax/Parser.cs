@@ -19,13 +19,25 @@ public partial class Parser
     
     public static SyntaxTree Parse(SourceFileView source)
     {
-        var diagnosticBag = new DiagnosticBag();
-        var tokens = Lexer.Lex(source, diagnosticBag);
+        var lexerDiagnostics = new DiagnosticBag();
+        var tokens = Lexer.Lex(source, lexerDiagnostics);
 
         var scanner = new Scanner(source, tokens);
         var parser = new Parser(source, scanner);
         parser.EatRoot();
-        return parser.BuildTree(tokens, diagnosticBag);
+
+        var parserDiagnostics = new DiagnosticBag();
+        var rootNode = parser.BuildTree(tokens, parserDiagnostics);
+        
+        var tree = new SyntaxTree(
+            fileSyntax: rootNode,
+            source,
+            diagnostics: lexerDiagnostics.Drain(),
+            hasError: lexerDiagnostics.HasError);
+
+        rootNode.Tree = tree;
+        
+        return tree;
     }
 
     private void EatRoot()

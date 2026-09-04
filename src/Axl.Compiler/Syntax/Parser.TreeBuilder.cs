@@ -7,7 +7,7 @@ namespace Axl.Compiler.Syntax;
 
 public partial class Parser
 {
-    private SyntaxTree BuildTree(ImmutableArray<Token> tokens, DiagnosticBag diagnosticBag)
+    private FileSyntax BuildTree(ImmutableArray<Token> tokens, DiagnosticBag diagnosticBag)
     {
         Stack<ImmutableArray<SyntaxElement>.Builder> nodeBuilders = [];
         var nextToken = 0;
@@ -65,19 +65,11 @@ public partial class Parser
                     // to do it. Normally they are set in syntax node constructor.
                     rootNode.Parent = null;
                     
-                    var tree = new SyntaxTree(
-                        fileSyntax: rootNode,
-                        _source,
-                        diagnostics: diagnosticBag.Drain(),
-                        hasError: diagnosticBag.HasError);
-
-                    rootNode.Tree = tree;
-                    
                     Debug.Assert(sawErrorElement == diagnosticBag.HasError,
                         sawErrorElement
                             ? "Saw error element(s), but no diagnostics."
                             : "Saw no error element(s), but reported an error.");
-                    return tree;
+                    return rootNode;
                 }
 
                 case ParseEvent.Close(var kind):
