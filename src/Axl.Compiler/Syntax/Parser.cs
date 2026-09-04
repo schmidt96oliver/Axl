@@ -32,7 +32,7 @@ public partial class Parser
         var tree = new SyntaxTree(
             fileSyntax: rootNode,
             source,
-            diagnostics: lexerDiagnostics.Drain(),
+            diagnostics: [..lexerDiagnostics.Drain(), ..parserDiagnostics.Drain()],
             hasError: lexerDiagnostics.HasError);
 
         rootNode.Tree = tree;
