@@ -65,7 +65,7 @@ public partial record Diagnostic
             => [Syntax.GetLocation()];
 
         public override string Message 
-            => $"Ambiguous reference. Candidates are:\n{GetCandidatesText()}";
+            => "Ambiguous reference.";
 
         public override ImmutableArray<LabeledSourceLocation> Related
             =>
@@ -75,9 +75,6 @@ public partial record Diagnostic
                     .Select(candidate =>
                         new LabeledSourceLocation(candidate.DeclaringSyntaxes[0].GetLocation(), "This is a candidate."))
             ];
-        
-        private string GetCandidatesText()
-            => string.Join('\n', Candidates.Select(symbol => symbol.DisplayName));
     }
 
     public sealed record InvalidLocalRef(IdNameSyntax Syntax, Symbol ResolvedSymbol) : Error
