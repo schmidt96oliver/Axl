@@ -74,7 +74,7 @@ public class Compilation
         [
             .. SyntaxTrees
                 .Where(tree => GetModuleFragment(tree) is null)
-                .Select(tree => new ScriptSymbol(compilation: this, syntax: tree.FileSyntax))
+                .Select(tree => new ScriptSymbol(compilation: this, fileSyntax: tree.FileSyntax))
         ];
     
     

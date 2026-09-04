@@ -71,4 +71,19 @@ public abstract partial record Diagnostic
         public override string Message
             => "Type annotation is missing.";
     }
+
+    public sealed record DuplicateFnDecls(ImmutableArray<FnSymbol> FnsWithSameName) : Error
+    {
+        public override ImmutableArray<SourceLocation> Locations
+            => [.. FnsWithSameName.Select(fnSymbol => fnSymbol.Syntax.Name.GetLocation())];
+
+        public override string LocationLabel
+            => "Also declared here.";
+
+        public override string Message
+            => $"Duplicate fn declaration '{FnsWithSameName[0].Name}'.";
+
+        public override string? Hint
+            => "Overloads are not yet supported.";
+    }
 }
