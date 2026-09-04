@@ -10,11 +10,11 @@ public sealed class LocalSymbol(
     Compilation compilation,
     SymbolName name,
     AxlType type,
-    VarDeclSyntax syntax,
+    SyntaxNode syntax,
     Symbol? parent)
     : Symbol(compilation, name, parent)
 {
-    public VarDeclSyntax Syntax { get; } = syntax;
+    public SyntaxNode Syntax { get; } = syntax;
     
     public override ImmutableArray<SyntaxNode> DeclaringSyntaxes
     {

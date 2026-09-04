@@ -1,0 +1,15 @@
+﻿//@check
+
+// Duplicate parameter names are reported on script and
+// module files. 
+
+fn Test(a: string,   //~error
+        a: bool)     //~error
+{ }
+
+//---
+module A;
+
+fn Test(a: i32,     //~error
+        a: i32)     //~error
+{ }
