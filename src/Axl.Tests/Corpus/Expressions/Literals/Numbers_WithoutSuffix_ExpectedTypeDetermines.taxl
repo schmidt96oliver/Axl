@@ -1,0 +1,27 @@
+﻿//@check
+
+// When evaluating the type of number literals, the expected type
+// is used whenever there is no suffix.
+
+// Integral types can be any number types
+
+var a: i32 = 1;
+//~          ^ type i32
+var a: i64 = 1;
+//~          ^ type i64
+var a: f32 = 1;
+//~          ^ type f32
+var a: f64 = 1;
+//~          ^ type f64
+
+// Decimal literals can be floating number types
+
+var b: f32 = 1.1;
+//~          ^^^ type f32
+var b: f64 = 1.1;
+//~          ^^^ type f64
+
+// Decimal literals cannot be integral types
+
+var b: i32 = 1.1;   //~error
+var b: i64 = 1.1;   //~error

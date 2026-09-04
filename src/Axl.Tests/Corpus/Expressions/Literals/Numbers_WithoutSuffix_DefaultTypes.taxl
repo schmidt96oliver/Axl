@@ -1,0 +1,10 @@
+﻿//@check
+
+var a = 1;
+//~     ^ type i32
+
+var a = 1.1;
+//~     ^^^ type f64
+
+var a = .1;
+//~     ^^ type f64

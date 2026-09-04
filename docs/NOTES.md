@@ -33,6 +33,15 @@
 
 * API: `SyntaxTree.ParseFrom`, `*Tree/Table.BuildFrom`
 
+# Taxl
+**Requirements**
+- Split files "//---".
+- Allow empty file names (split tests inside same compilation)
+- Split expected outputs "//=== stdout"
+- Directives "//@run-pass", "//@run-panic", "//@check"
+- "//~error" and "//~lint" on this line
+- "//~  ^^^ type name" expression type checking
+
 # Semantics
 
 ## Phase 1 — Script HIR
