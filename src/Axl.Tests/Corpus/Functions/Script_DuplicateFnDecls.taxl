@@ -1,0 +1,18 @@
+﻿//@check
+
+// Local fns report duplicate errors.
+fn Test() { }   //~error
+fn Test() { }   //~error
+
+// Also inside blocks
+{
+    fn InBlock() { }    //~error
+    fn InBlock() { }    //~error
+}
+
+// And inside other functions
+fn Outer()
+{
+    fn InFn() { }   //~error
+    fn InFn() { }   //~error
+}
