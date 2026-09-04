@@ -1,6 +1,9 @@
 ﻿using System.Collections.Immutable;
 using System.Diagnostics;
 using Axl.Compiler.Diagnostics;
+using Axl.Compiler.Semantics.Binders;
+using Axl.Compiler.Semantics.Hir;
+using Axl.Compiler.Semantics.Scopes;
 using Axl.Compiler.Semantics.Symbols;
 using Axl.Compiler.Semantics.Types;
 using Axl.Compiler.Syntax;
@@ -16,6 +19,8 @@ public class Compilation
 
     private readonly Dictionary<SyntaxTree, ModuleFragment?> _moduleFragmentByTree = [];
     private readonly Dictionary<SyntaxNode, Symbol?> _globalSymbolsBySyntax = [];
+    private readonly Dictionary<ScriptSymbol, Hir> _hirByScript = [];
+    private readonly Dictionary<FnSymbol, Hir> _hirByFn = [];
     
     public ImmutableArray<SyntaxTree> SyntaxTrees { get; }
     public TypeContext TypeContext { get; }
@@ -176,18 +181,46 @@ public class Compilation
         }
     }
 
+
+    public Hir Bind(ScriptSymbol scriptSymbol)
+    {
+        if (_hirByScript.TryGetValue(scriptSymbol, out var hir))
+            return hir;
+        
+        var globalScope = new GlobalScope(GlobalSymbol);
+        var fileScope = new FileScope(scriptSymbol.FileSyntax, parent: globalScope);
+
+        hir = Binder.Bind(scriptSymbol, enclosingScope: fileScope);
+        _hirByScript.Add(scriptSymbol, hir);
+        return hir;
+    }
+
+    public Hir Bind(FnSymbol fnSymbol)
+    {
+        throw new NotImplementedException();
+    }
+    
     
     private ImmutableArray<Diagnostic> CollectDiagnostics()
     {
         var bag = new DiagnosticBag();
 
+        // --- Syntax
         foreach (var tree in SyntaxTrees)
             bag.AddRange(tree.Diagnostics);
 
+        // --- Declarations
         GlobalSymbol.CollectDiagnosticsInto(bag);
-        
         foreach (var script in ScriptSymbols)
             script.CollectDiagnosticsInto(bag);
+        
+        // --- HIR and local symbols
+        foreach (var hir in ScriptSymbols.Select(Bind))
+        {
+            bag.AddRange(hir.Diagnostics);
+            foreach (var localFn in hir.LocalFns)
+                localFn.CollectDiagnosticsInto(bag);
+        }
 
         return bag.Drain();
     }
