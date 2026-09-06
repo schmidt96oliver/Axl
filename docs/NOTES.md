@@ -2,10 +2,12 @@
                                        ≽(◕ ᴗ ◕)≼
 
 **Next:** _Binding_ :)
-* and, or
-* ==, !=
+* <=, <, >, >=
+* error exprs
 * blocks
 * if, loop
+
+* carry expected type into exprs
 
 **Stashed small ones**:
 * Regressions: `1+[EOF]`, `-[EOF]`

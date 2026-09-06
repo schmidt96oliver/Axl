@@ -412,18 +412,47 @@ public sealed class Binder
     
     #region Binary and Unary Exprs
 
-    public HirExpr BindBinary(BinaryExprSyntax syntax, AxlType? expectedType) => syntax.Operator.Kind switch
+    private HirExpr BindBinary(BinaryExprSyntax syntax, AxlType? expectedType) => syntax.Operator.Kind switch
     {
         TokenKind.AndKw or TokenKind.OrKw => BindBooleanOperator(syntax),
+        
+        TokenKind.DoubleEqual or TokenKind.BangEqual => BindEqualityComparison(syntax),
         
         _ => BindNativeOperator(syntax.Operator, syntax.Left, syntax.Right)
     };
     
-    public HirExpr BindUnary(UnaryExprSyntax syntax, AxlType? expectedType)
+    private HirExpr BindUnary(UnaryExprSyntax syntax, AxlType? expectedType)
     {
         return BindNativeOperator(syntax.Operator, syntax.Operand);
     }
 
+
+
+    private HirExpr BindEqualityComparison(BinaryExprSyntax syntax)
+    {
+        Debug.Assert(syntax.Operator.Kind is TokenKind.DoubleEqual or TokenKind.BangEqual);
+        
+        var boundLeft = BindExpr(syntax.Left, expectedType: null);
+        var boundRight = BindExpr(syntax.Right, expectedType: null);
+        if (boundLeft.Type is ErrorType || boundRight.Type is ErrorType)
+        {
+            // Some operands have an error. So don't type-check them
+            // be silent and wrap in an error expression.
+            return new HirErrorExpr(recoveredExprs: [boundLeft, boundRight],
+                _context.TypeContext.Error);
+        }
+        
+        // Equality type-checks everything
+        return new HirEqualityComparison(boundLeft, boundRight,
+            kind: syntax.Operator.Kind switch
+            {
+                TokenKind.DoubleEqual => EqualityComparisonKind.Equals,
+                TokenKind.BangEqual => EqualityComparisonKind.NotEquals,
+                _ => throw new UnreachableException()
+            },
+            _context.TypeContext.Bool);
+    }
+    
     private HirExpr BindBooleanOperator(BinaryExprSyntax syntax)
     {
         Debug.Assert(syntax.Operator.Kind is TokenKind.AndKw or TokenKind.OrKw);
