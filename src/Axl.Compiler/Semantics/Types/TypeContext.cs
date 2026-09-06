@@ -11,14 +11,17 @@ public enum NativeOperatorKind
     AddI64,
     AddF32,
     AddF64,
+    
     SubtractI32,
     SubtractI64,
     SubtractF32,
     SubtractF64,
+    
     MultiplyI32,
     MultiplyI64,
     MultiplyF32,
     MultiplyF64,
+    
     DivideI32,
     DivideI64,
     DivideF32,
@@ -28,7 +31,28 @@ public enum NativeOperatorKind
     NegateI64,
     NegateF32,
     NegateF64,
-    NotBool
+    
+    NotBool,
+    
+    LessThanI32,
+    LessThanI64,
+    LessThanF32,
+    LessThanF64,
+    
+    LessThanOrEqualI32,
+    LessThanOrEqualI64,
+    LessThanOrEqualF32,
+    LessThanOrEqualF64,
+    
+    GreaterThanI32,
+    GreaterThanI64,
+    GreaterThanF32,
+    GreaterThanF64,
+    
+    GreaterThanOrEqualI32,
+    GreaterThanOrEqualI64,
+    GreaterThanOrEqualF32,
+    GreaterThanOrEqualF64
 }
 
 public sealed class TypeContext
@@ -116,6 +140,27 @@ public sealed class TypeContext
         new(TokenKind.Slash, [I64, I64], I64, NativeOperatorKind.DivideI64),
         new(TokenKind.Slash, [F32, F32], F32, NativeOperatorKind.DivideF32),
         new(TokenKind.Slash, [F64, F64], F64, NativeOperatorKind.DivideF64),
+        
+        // Numeric comparison
+        new(TokenKind.LessThan, [I32, I32], Bool, NativeOperatorKind.LessThanI32),
+        new(TokenKind.LessThan, [I64, I64], Bool, NativeOperatorKind.LessThanI64),
+        new(TokenKind.LessThan, [F32, F32], Bool, NativeOperatorKind.LessThanF32),
+        new(TokenKind.LessThan, [F64, F64], Bool, NativeOperatorKind.LessThanF64),
+        
+        new(TokenKind.LessThanEqual, [I32, I32], Bool, NativeOperatorKind.LessThanOrEqualI32),
+        new(TokenKind.LessThanEqual, [I64, I64], Bool, NativeOperatorKind.LessThanOrEqualI64),
+        new(TokenKind.LessThanEqual, [F32, F32], Bool, NativeOperatorKind.LessThanOrEqualF32),
+        new(TokenKind.LessThanEqual, [F64, F64], Bool, NativeOperatorKind.LessThanOrEqualF64),
+        
+        new(TokenKind.GreaterThan, [I32, I32], Bool, NativeOperatorKind.GreaterThanI32),
+        new(TokenKind.GreaterThan, [I64, I64], Bool, NativeOperatorKind.GreaterThanI64),
+        new(TokenKind.GreaterThan, [F32, F32], Bool, NativeOperatorKind.GreaterThanF32),
+        new(TokenKind.GreaterThan, [F64, F64], Bool, NativeOperatorKind.GreaterThanF64),
+        
+        new(TokenKind.GreaterThanEqual, [I32, I32], Bool, NativeOperatorKind.GreaterThanOrEqualI32),
+        new(TokenKind.GreaterThanEqual, [I64, I64], Bool, NativeOperatorKind.GreaterThanOrEqualI64),
+        new(TokenKind.GreaterThanEqual, [F32, F32], Bool, NativeOperatorKind.GreaterThanOrEqualF32),
+        new(TokenKind.GreaterThanEqual, [F64, F64], Bool, NativeOperatorKind.GreaterThanOrEqualF64),
     ];
 
 }
