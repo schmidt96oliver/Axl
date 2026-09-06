@@ -1,8 +1,9 @@
 ﻿using Axl.Compiler.Semantics.Types;
+using Axl.Compiler.Syntax;
 
 namespace Axl.Compiler.Semantics.Hir;
 
-public sealed class HirBreak(HirExpr? expr, AxlType type) : HirExpr(type)
+public sealed class HirBreak(HirExpr? expr, AxlType type, SyntaxNode syntax) : HirExpr(type, syntax)
 {
     public HirExpr? Expr { get; } = expr;
 }

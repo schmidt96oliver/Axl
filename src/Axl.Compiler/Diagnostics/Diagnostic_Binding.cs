@@ -9,16 +9,13 @@ namespace Axl.Compiler.Diagnostics;
 
 public partial record Diagnostic
 {
-    public record TypeMismatch(
-        AxlType Expected,
-        AxlType Got,
-        ExprSyntax GotSyntax) : Error
+    public record TypeMismatch(HirExpr Expr, AxlType Expected) : Error
     {
         public override ImmutableArray<SourceLocation> Locations
-            => [GotSyntax.GetLocation()];
+            => [Expr.Syntax.GetLocation()];
 
         public override string Message
-            => $"Expected type '{Expected.DisplayName}' but got '{Got.DisplayName}'.";
+            => $"Expected type '{Expected.DisplayName}' but got '{Expr.Type.DisplayName}'.";
     }
 
     public sealed record MissingInitializer(VarDeclSyntax VarDeclSyntax) : Error

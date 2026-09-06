@@ -100,7 +100,11 @@ public sealed class Binder
         var stmts = binder.BindStmts(fileSyntax.Stmts);
         
         // Create and return
-        var body = new HirBody(stmts, armExpr: null, type: context.TypeContext.None);
+        var body = new HirBody(
+            stmts, 
+            armExpr: null, 
+            type: context.TypeContext.None,
+            syntax: fileSyntax);
         return new Hir.Hir(body, 
             context.LocalMembers.DrainToImmutable(),
             context.DiagnosticBag.Drain());
@@ -220,8 +224,8 @@ public sealed class Binder
         
         // Literals
         NumberLiteralSyntax numberLiteralSyntax => BindNumberLiteral(numberLiteralSyntax, expectedType),
-        TrueLiteralSyntax => new HirBoolLiteral(value: true, _context.TypeContext.Bool),
-        FalseLiteralSyntax => new HirBoolLiteral(value: false, _context.TypeContext.Bool),
+        TrueLiteralSyntax => new HirBoolLiteral(value: true, type: _context.TypeContext.Bool, syntax),
+        FalseLiteralSyntax => new HirBoolLiteral(value: false, type: _context.TypeContext.Bool, syntax),
         
         ErrorExprSyntax errorExprSyntax => BindError(errorExprSyntax),
         _ => BindUnsupported(syntax)
@@ -232,7 +236,7 @@ public sealed class Binder
     private HirExpr BindUnsupported(ExprSyntax syntax)
     {
         _context.DiagnosticBag.ReportError(new Diagnostic.UnsupportedFeature(syntax));
-        return new HirErrorExpr(recoveredExprs: [], _context.TypeContext.Error);
+        return new HirErrorExpr(recoveredExprs: [], type: _context.TypeContext.Error, syntax);
     }
 
     private HirErrorExpr BindError(ErrorExprSyntax syntax)
@@ -240,7 +244,7 @@ public sealed class Binder
         var recovered = syntax.RecoverableNodes
             .Select(node => BindExpr(node, expectedType: null))
             .ToImmutableArray();
-        return new HirErrorExpr(recovered, _context.TypeContext.Error);
+        return new HirErrorExpr(recovered, _context.TypeContext.Error, syntax);
     }
     
     #region Variables
@@ -266,9 +270,8 @@ public sealed class Binder
                 Debug.Assert(syntax.Initializer is not null, "Initializer must be given, because error type never fails type checking.");
                 
                 _context.DiagnosticBag.ReportError(new Diagnostic.TypeMismatch(
-                    Got: boundInitializer.Type,
-                    Expected: boundTypeAnnotation, 
-                    GotSyntax: syntax.Initializer));
+                    Expr: boundInitializer,
+                    Expected: boundTypeAnnotation));
             }
         }
 
@@ -279,7 +282,7 @@ public sealed class Binder
             parent: _context.ParentSymbol);
         _scope.Declare(local);
 
-        return new HirVarDecl(local, boundInitializer);
+        return new HirVarDecl(local, boundInitializer, syntax);
     }
     
     private HirExpr BindVarDeclInitializer(VarDeclSyntax syntax, AxlType? expectedType)
@@ -287,8 +290,13 @@ public sealed class Binder
         if (syntax.Initializer is null)
         {
             _context.DiagnosticBag.ReportError(new Diagnostic.MissingInitializer(syntax));
+            
+            // LIE and add the entire var decl syntax. This is the only (probably) case,
+            // where a null syntax would be nice. But practically, syntax shouldn't be
+            // touched on an error expr, si it should be fine. Mark my words in case of
+            // oddities :D.
             return new HirErrorExpr(recoveredExprs: [],
-                _context.TypeContext.Error);
+                _context.TypeContext.Error, syntax);    
         }
 
         return BindExpr(syntax.Initializer, expectedType);
@@ -299,7 +307,7 @@ public sealed class Binder
         if (syntax.Token.IsMissing)
         {
             // The parser already reported a diagnostic, so be silent.
-            return new HirErrorExpr(recoveredExprs: [], _context.TypeContext.Error);
+            return new HirErrorExpr(recoveredExprs: [], type: _context.TypeContext.Error, syntax);
         }
         
         var name = SymbolName.From(syntax);
@@ -308,23 +316,23 @@ public sealed class Binder
         if (lookupResult.Length == 0)
         {
             _context.DiagnosticBag.ReportError(new Diagnostic.UndefinedName(syntax));
-            return new HirErrorExpr(recoveredExprs: [], _context.TypeContext.Error);
+            return new HirErrorExpr(recoveredExprs: [], type: _context.TypeContext.Error, syntax);
         }
 
         if (lookupResult.Length > 1)
         {
             _context.DiagnosticBag.ReportError(new Diagnostic.AmbiguousName(syntax, lookupResult));
-            return new HirErrorExpr(recoveredExprs: [], _context.TypeContext.Error);
+            return new HirErrorExpr(recoveredExprs: [], type: _context.TypeContext.Error, syntax);
         }
 
         var symbol = lookupResult[0];
         if (symbol is not LocalSymbol localSymbol)
         {
             _context.DiagnosticBag.ReportError(new Diagnostic.InvalidLocalRef(syntax, symbol));
-            return new HirErrorExpr(recoveredExprs: [], _context.TypeContext.Error);
+            return new HirErrorExpr(recoveredExprs: [], type: _context.TypeContext.Error, syntax);
         }
 
-        return new HirLocalRef(localSymbol);
+        return new HirLocalRef(localSymbol, syntax);
     }
     
     #endregion
@@ -338,7 +346,7 @@ public sealed class Binder
         if (parts.Length == 0)
             parts = [new StringPart.Text("")];
         
-        return new HirStringExpr(parts, _context.TypeContext.String);
+        return new HirStringExpr(parts, _context.TypeContext.String, syntax);
     }
 
     private StringPart BindStringPart(StringPartSyntax syntax)
@@ -369,7 +377,7 @@ public sealed class Binder
                 new Diagnostic.StringInterpolationTypeMismatch(syntax.Expr, boundExpr.Type));
             
             return new StringPart.Interpolation(
-                new HirErrorExpr(recoveredExprs: [boundExpr], type: _context.TypeContext.Error));
+                new HirErrorExpr(recoveredExprs: [boundExpr], type: _context.TypeContext.Error, syntax));
         }
 
         return new StringPart.Interpolation(boundExpr);
@@ -396,7 +404,7 @@ public sealed class Binder
             _context.DiagnosticBag.ReportError(new Diagnostic.NumberSuffixMismatch(syntax, type));
         }
         
-        return new HirNumberLiteral(syntax.Token, type);
+        return new HirNumberLiteral(syntax.Token, type, syntax);
 
         AxlType DetermineTypeWithoutSuffix()
         {
@@ -429,12 +437,12 @@ public sealed class Binder
         
         TokenKind.DoubleEqual or TokenKind.BangEqual => BindEqualityComparison(syntax),
         
-        _ => BindNativeOperator(syntax.Operator, syntax.Left, syntax.Right)
+        _ => BindNativeOperator(syntax.Operator, syntax, syntax.Left, syntax.Right)
     };
     
     private HirExpr BindUnary(UnaryExprSyntax syntax, AxlType? expectedType)
     {
-        return BindNativeOperator(syntax.Operator, syntax.Operand);
+        return BindNativeOperator(syntax.Operator, syntax, syntax.Operand);
     }
 
 
@@ -450,7 +458,7 @@ public sealed class Binder
             // Some operands have an error. So don't type-check them
             // be silent and wrap in an error expression.
             return new HirErrorExpr(recoveredExprs: [boundLeft, boundRight],
-                _context.TypeContext.Error);
+                type: _context.TypeContext.Error, syntax);
         }
         
         // Equality type-checks everything
@@ -461,7 +469,8 @@ public sealed class Binder
                 TokenKind.BangEqual => EqualityComparisonKind.NotEquals,
                 _ => throw new UnreachableException()
             },
-            _context.TypeContext.Bool);
+            type: _context.TypeContext.Bool, 
+            syntax);
     }
     
     private HirExpr BindBooleanOperator(BinaryExprSyntax syntax)
@@ -475,7 +484,7 @@ public sealed class Binder
             // Some operands have an error. So don't type-check them
             // be silent and wrap in an error expression.
             return new HirErrorExpr(recoveredExprs: [boundLeft, boundRight],
-                _context.TypeContext.Error);
+                type: _context.TypeContext.Error, syntax);
         }
 
         // Type-check against bool
@@ -485,18 +494,18 @@ public sealed class Binder
             _context.DiagnosticBag.ReportError(new Diagnostic.UndefinedOperator(syntax.Operator,
                 BoundOperands: [boundLeft, boundRight]));
             return new HirErrorExpr(recoveredExprs: [boundLeft, boundRight],
-                _context.TypeContext.Error);
+                type: _context.TypeContext.Error, syntax);
         }
 
         if (syntax.Operator.Kind is TokenKind.AndKw)
-            return new HirAnd(boundLeft, boundRight, _context.TypeContext.Bool);
+            return new HirAnd(boundLeft, boundRight, _context.TypeContext.Bool, syntax);
         if (syntax.Operator.Kind is TokenKind.OrKw)
-            return new HirOr(boundLeft, boundRight, _context.TypeContext.Bool);
+            return new HirOr(boundLeft, boundRight, _context.TypeContext.Bool, syntax);
 
         throw new UnreachableException();
     }
 
-    private HirExpr BindNativeOperator(Token operatorToken, params IEnumerable<ExprSyntax> operands)
+    private HirExpr BindNativeOperator(Token operatorToken, SyntaxNode syntax, params IEnumerable<ExprSyntax> operands)
     {
         var boundOperands = operands
             .Select(expr => BindExpr(expr, expectedType: null))
@@ -510,7 +519,7 @@ public sealed class Binder
             // Some operands have an error. So don't type-check them
             // be silent and wrap in an error expression.
             return new HirErrorExpr(recoveredExprs: boundOperands,
-                _context.TypeContext.Error);
+                type: _context.TypeContext.Error, syntax);
         }
 
         var nativeOperator = _context.TypeContext.FindNativeOperator(
@@ -522,10 +531,10 @@ public sealed class Binder
             _context.DiagnosticBag.ReportError(
                 new Diagnostic.UndefinedOperator(operatorToken, boundOperands));
             return new HirErrorExpr(recoveredExprs: [.. boundOperands],
-                _context.TypeContext.Error);
+                type: _context.TypeContext.Error, syntax);
         }
 
-        return new HirNativeOperator(nativeOperator, [.. boundOperands], nativeOperator.ReturnType);
+        return new HirNativeOperator(nativeOperator, [.. boundOperands], nativeOperator.ReturnType, syntax);
     }
     
     #endregion
@@ -550,7 +559,8 @@ public sealed class Binder
 
         return new HirBody(stmts, 
             boundArm, 
-            type: boundArm?.Type ?? _context.TypeContext.None);
+            type: boundArm?.Type ?? _context.TypeContext.None,
+            syntax);
     }
 
     private HirExpr BindIf(IfExprSyntax syntax)
@@ -561,7 +571,7 @@ public sealed class Binder
         
         // Type-check predicate
         if (!CheckTypeAndReport(boundPredicate, syntax.Predicate, expected: _context.TypeContext.Bool))
-            boundPredicate = new HirErrorExpr(recoveredExprs: [boundPredicate], _context.TypeContext.Error);
+            boundPredicate = new HirErrorExpr(recoveredExprs: [boundPredicate], type: _context.TypeContext.Error, syntax.Predicate);
         
         // Type-check body and else body
         // They must have the same type.
@@ -569,7 +579,7 @@ public sealed class Binder
         if (boundElse is not null)
             CheckTypeAndReport(boundElse, syntax.ElseBody!, expected: ifExprType);
 
-        return new HirIf(boundPredicate, boundBody, boundElse, ifExprType);
+        return new HirIf(boundPredicate, boundBody, boundElse, ifExprType, syntax);
     }
 
     /// <summary>
@@ -581,9 +591,8 @@ public sealed class Binder
         if (!_context.TypeContext.IsAssignableTo(expr.Type, expected))
         {
             _context.DiagnosticBag.ReportError(new Diagnostic.TypeMismatch(
-                Expected: expected,
-                Got: expr.Type,
-                GotSyntax: syntax));
+                Expr: expr,
+                Expected: expected));
             return false;
         }
 

@@ -11,6 +11,7 @@
   * They can see other local fns transitively
 
 * carry expected type into exprs
+* allow any type in string interpolation (that's a lowering problem)
 
 * Taxl and @check files
 

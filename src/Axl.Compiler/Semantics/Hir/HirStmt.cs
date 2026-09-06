@@ -1,3 +1,8 @@
-﻿namespace Axl.Compiler.Semantics.Hir;
+﻿using Axl.Compiler.Syntax;
 
-public abstract class HirStmt;
+namespace Axl.Compiler.Semantics.Hir;
+
+public abstract class HirStmt(SyntaxNode syntax)
+{
+    public SyntaxNode Syntax { get; } = syntax;
+}

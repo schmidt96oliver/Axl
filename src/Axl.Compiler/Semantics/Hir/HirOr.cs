@@ -1,8 +1,9 @@
 ﻿using Axl.Compiler.Semantics.Types;
+using Axl.Compiler.Syntax;
 
 namespace Axl.Compiler.Semantics.Hir;
 
-public sealed class HirOr(HirExpr left, HirExpr right, AxlType type) : HirExpr(type)
+public sealed class HirOr(HirExpr left, HirExpr right, AxlType type, SyntaxNode syntax) : HirExpr(type, syntax)
 {
     public HirExpr Left { get; } = left;
     public HirExpr Right { get; } = right;

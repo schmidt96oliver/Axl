@@ -1,6 +1,7 @@
 ﻿using System.Collections.Immutable;
 using Axl.Compiler.Semantics.Symbols;
 using Axl.Compiler.Semantics.Types;
+using Axl.Compiler.Syntax;
 
 namespace Axl.Compiler.Semantics.Hir;
 
@@ -10,7 +11,8 @@ namespace Axl.Compiler.Semantics.Hir;
 public sealed class HirBody(
     ImmutableArray<HirStmt> stmts,
     HirExpr? armExpr,
-    AxlType type) : HirExpr(type)
+    AxlType type,
+    SyntaxNode syntax) : HirExpr(type, syntax)
 {
     public ImmutableArray<HirStmt> Stmts { get; } = stmts;
     public HirExpr? ArmExpr { get; } = armExpr;
