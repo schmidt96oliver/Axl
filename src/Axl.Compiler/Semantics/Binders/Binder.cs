@@ -213,6 +213,7 @@ public sealed class Binder
         
         // Block, If, Loop
         BlockExprSyntax blockExprSyntax => BindBlock(blockExprSyntax),
+        IfExprSyntax ifExprSyntax => BindIf(ifExprSyntax),
         
         // Strings
         StringExprSyntax stringExprSyntax => BindString(stringExprSyntax),
@@ -265,10 +266,9 @@ public sealed class Binder
                 Debug.Assert(syntax.Initializer is not null, "Initializer must be given, because error type never fails type checking.");
                 
                 _context.DiagnosticBag.ReportError(new Diagnostic.TypeMismatch(
-                    SourceType: boundInitializer.Type,
-                    TargetType: boundTypeAnnotation, 
-                    SourceSyntax: syntax.Initializer,
-                    TargetSyntax: syntax.TypeAnnotation!));
+                    Got: boundInitializer.Type,
+                    Expected: boundTypeAnnotation, 
+                    GotSyntax: syntax.Initializer));
             }
         }
 
@@ -532,25 +532,62 @@ public sealed class Binder
     
     #region Blocks, If, Loop
 
-    private HirBody BindBlock(BlockExprSyntax blockExprSyntax)
+    private HirBody BindBlock(BlockExprSyntax syntax)
     {
         // Binding context and loop context stays the same
         
         // Bind block members
-        var members = BindMembers(blockExprSyntax.Members, _context);
+        var members = BindMembers(syntax.Members, _context);
         var newScope = new LocalScope(members, parent: _scope);
 
         var blockBinder = new Binder(_context, newScope, _loopContext);
 
-        var stmts = blockBinder.BindStmts(blockExprSyntax.Stmts);
+        var stmts = blockBinder.BindStmts(syntax.Stmts);
 
-        var boundArm = blockExprSyntax.Arm is not null
-            ? blockBinder.BindExpr(blockExprSyntax.Arm.Expr, expectedType: null)
+        var boundArm = syntax.Arm is not null
+            ? blockBinder.BindExpr(syntax.Arm.Expr, expectedType: null)
             : null;
 
         return new HirBody(stmts, 
             boundArm, 
             type: boundArm?.Type ?? _context.TypeContext.None);
+    }
+
+    private HirExpr BindIf(IfExprSyntax syntax)
+    {
+        var boundPredicate = BindExpr(syntax.Predicate, null);
+        var boundBody = BindExpr(syntax.Body, null);
+        var boundElse = syntax.ElseBody is not null ? BindExpr(syntax.ElseBody, null) : null;
+        
+        // Type-check predicate
+        if (!CheckTypeAndReport(boundPredicate, syntax.Predicate, expected: _context.TypeContext.Bool))
+            boundPredicate = new HirErrorExpr(recoveredExprs: [boundPredicate], _context.TypeContext.Error);
+        
+        // Type-check body and else body
+        // They must have the same type.
+        var ifExprType = boundBody.Type;
+        if (boundElse is not null)
+            CheckTypeAndReport(boundElse, syntax.ElseBody!, expected: ifExprType);
+
+        return new HirIf(boundPredicate, boundBody, boundElse, ifExprType);
+    }
+
+    /// <summary>
+    /// Checks, whether <paramref name="expr"/> is assignable to
+    /// <paramref name="expected"/>. If not, reports a <see cref="Diagnostic.TypeMismatch"/>.
+    /// </summary>
+    private bool CheckTypeAndReport(HirExpr expr, ExprSyntax syntax, AxlType expected)
+    {
+        if (!_context.TypeContext.IsAssignableTo(expr.Type, expected))
+        {
+            _context.DiagnosticBag.ReportError(new Diagnostic.TypeMismatch(
+                Expected: expected,
+                Got: expr.Type,
+                GotSyntax: syntax));
+            return false;
+        }
+
+        return true;
     }
     
     #endregion

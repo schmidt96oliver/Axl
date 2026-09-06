@@ -2,7 +2,9 @@
                                        ≽(◕ ᴗ ◕)≼
 
 **Next:** _Binding_ :)
-* blocks
+* SYNTAX refs in HIR!
+* use CheckTypeAndReport
+
 * if, loop
 * return, break, continue
 * local fn bodies with "cannot capture" warning.
@@ -30,6 +32,7 @@
 
 **Regressions**
 * `1_i32 == 1_i64`
+* `if true => 1 else => "A";` diagnostic message
 
 # Taxl
 **Requirements**

@@ -10,19 +10,15 @@ namespace Axl.Compiler.Diagnostics;
 public partial record Diagnostic
 {
     public record TypeMismatch(
-        AxlType SourceType,
-        AxlType TargetType,
-        ExprSyntax SourceSyntax,
-        TypeNameSyntax TargetSyntax) : Error
+        AxlType Expected,
+        AxlType Got,
+        ExprSyntax GotSyntax) : Error
     {
         public override ImmutableArray<SourceLocation> Locations
-            => [SourceSyntax.GetLocation()];
+            => [GotSyntax.GetLocation()];
 
         public override string Message
-            => $"Expression of type '{SourceType.DisplayName}' is not assignable to '{TargetType.DisplayName}'.";
-
-        public override ImmutableArray<LabeledSourceLocation> Related
-            => [new(TargetSyntax.GetLocation(), "Target type declared here.")];
+            => $"Expected type '{Expected.DisplayName}' but got '{Got.DisplayName}'.";
     }
 
     public sealed record MissingInitializer(VarDeclSyntax VarDeclSyntax) : Error
