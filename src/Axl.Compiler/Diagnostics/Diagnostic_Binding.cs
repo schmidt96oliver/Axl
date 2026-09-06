@@ -36,15 +36,6 @@ public partial record Diagnostic
             => $"Decimal numbers can only have types 'f32' or 'f64'. Got '{TypeFromSuffix.DisplayName}'.";
     }
 
-    public sealed record StringInterpolationTypeMismatch(ExprSyntax InterpolationExpr, AxlType ActualType) : Error
-    {
-        public override ImmutableArray<SourceLocation> Locations
-            => [InterpolationExpr.GetLocation()];
-
-        public override string Message
-            => $"For now, string interpolations must have type 'string'. Got '{ActualType.DisplayName}'.";
-    }
-
     public sealed record UndefinedName(IdNameSyntax Syntax) : Error
     {
         public override ImmutableArray<SourceLocation> Locations

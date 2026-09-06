@@ -111,6 +111,24 @@ public sealed class Binder
     }
 
     
+    /// <summary>
+    /// Checks, whether <paramref name="expr"/> is assignable to
+    /// <paramref name="expected"/>. If not, reports a <see cref="Diagnostic.TypeMismatch"/>.
+    /// </summary>
+    private bool CheckTypeAndReport(HirExpr expr, AxlType expected)
+    {
+        if (!_context.TypeContext.IsAssignableTo(expr.Type, expected))
+        {
+            _context.DiagnosticBag.ReportError(new Diagnostic.TypeMismatch(
+                Expr: expr,
+                Expected: expected));
+            return false;
+        }
+
+        return true;
+    }
+    
+    
     #region Member Binding
 
     private static ImmutableArray<Symbol> BindMembers(IEnumerable<MemberSyntax> syntaxes, BindingContext context)
@@ -251,33 +269,26 @@ public sealed class Binder
 
     private HirVarDecl BindVarDecl(VarDeclSyntax syntax)
     {
-        var boundTypeAnnotation = syntax.TypeAnnotation is not null
+        var variableType = syntax.TypeAnnotation is not null
             ? BindType(syntax.TypeAnnotation)
             : null;
         
-        var boundInitializer = BindVarDeclInitializer(syntax, expectedType: boundTypeAnnotation);
+        var boundInitializer = BindVarDeclInitializer(syntax, expectedType: variableType);
 
-        if (boundTypeAnnotation is null)
+        if (variableType is null)
         {
             // Infer type
-            boundTypeAnnotation = boundInitializer.Type;
+            variableType = boundInitializer.Type;
         }
         else
         {
             // Check type
-            if (!_context.TypeContext.IsAssignableTo(source: boundInitializer.Type, target: boundTypeAnnotation))
-            {
-                Debug.Assert(syntax.Initializer is not null, "Initializer must be given, because error type never fails type checking.");
-                
-                _context.DiagnosticBag.ReportError(new Diagnostic.TypeMismatch(
-                    Expr: boundInitializer,
-                    Expected: boundTypeAnnotation));
-            }
+            CheckTypeAndReport(boundInitializer, variableType);
         }
 
         var local = new LocalSymbol(_context.Compilation,
             SymbolName.From(syntax.Name),
-            boundTypeAnnotation,
+            variableType,
             syntax,
             parent: _context.ParentSymbol);
         _scope.Declare(local);
@@ -371,11 +382,8 @@ public sealed class Binder
         //TODO: Allow different types according to declared native conversion fns
         
         // For now, we can only accept string exprs
-        if (!_context.TypeContext.IsAssignableTo(boundExpr.Type, _context.TypeContext.String))
+        if (!CheckTypeAndReport(boundExpr, _context.TypeContext.String))
         {
-            _context.DiagnosticBag.ReportError(
-                new Diagnostic.StringInterpolationTypeMismatch(syntax.Expr, boundExpr.Type));
-            
             return new StringPart.Interpolation(
                 new HirErrorExpr(recoveredExprs: [boundExpr], type: _context.TypeContext.Error, syntax));
         }
@@ -488,11 +496,9 @@ public sealed class Binder
         }
 
         // Type-check against bool
-        if (!_context.TypeContext.IsAssignableTo(boundLeft.Type, _context.TypeContext.Bool) ||
-            !_context.TypeContext.IsAssignableTo(boundRight.Type, _context.TypeContext.Bool))
+        if (!CheckTypeAndReport(boundLeft, _context.TypeContext.Bool) ||
+            !CheckTypeAndReport(boundRight, _context.TypeContext.Bool))
         {
-            _context.DiagnosticBag.ReportError(new Diagnostic.UndefinedOperator(syntax.Operator,
-                BoundOperands: [boundLeft, boundRight]));
             return new HirErrorExpr(recoveredExprs: [boundLeft, boundRight],
                 type: _context.TypeContext.Error, syntax);
         }
@@ -570,34 +576,19 @@ public sealed class Binder
         var boundElse = syntax.ElseBody is not null ? BindExpr(syntax.ElseBody, null) : null;
         
         // Type-check predicate
-        if (!CheckTypeAndReport(boundPredicate, syntax.Predicate, expected: _context.TypeContext.Bool))
+        if (!CheckTypeAndReport(boundPredicate, expected: _context.TypeContext.Bool))
             boundPredicate = new HirErrorExpr(recoveredExprs: [boundPredicate], type: _context.TypeContext.Error, syntax.Predicate);
         
         // Type-check body and else body
         // They must have the same type.
         var ifExprType = boundBody.Type;
         if (boundElse is not null)
-            CheckTypeAndReport(boundElse, syntax.ElseBody!, expected: ifExprType);
+            CheckTypeAndReport(boundElse, expected: ifExprType);
 
         return new HirIf(boundPredicate, boundBody, boundElse, ifExprType, syntax);
     }
 
-    /// <summary>
-    /// Checks, whether <paramref name="expr"/> is assignable to
-    /// <paramref name="expected"/>. If not, reports a <see cref="Diagnostic.TypeMismatch"/>.
-    /// </summary>
-    private bool CheckTypeAndReport(HirExpr expr, ExprSyntax syntax, AxlType expected)
-    {
-        if (!_context.TypeContext.IsAssignableTo(expr.Type, expected))
-        {
-            _context.DiagnosticBag.ReportError(new Diagnostic.TypeMismatch(
-                Expr: expr,
-                Expected: expected));
-            return false;
-        }
-
-        return true;
-    }
+    
     
     #endregion
 }
