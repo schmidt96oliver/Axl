@@ -42,7 +42,7 @@ public sealed class Binder
     private abstract record BindingContext
     {
         public DiagnosticBag DiagnosticBag { get; } = new();
-        public ImmutableArray<FnSymbol>.Builder LocalFns { get; } = ImmutableArray.CreateBuilder<FnSymbol>();
+        public ImmutableArray<Symbol>.Builder LocalMembers { get; } = ImmutableArray.CreateBuilder<Symbol>();
 
         public Compilation Compilation
             => this switch
@@ -90,14 +90,10 @@ public sealed class Binder
         var context = new BindingContext.Script(scriptSymbol);
         
         // Bind members
-        var members = BindMembers(fileSyntax.Members.OfType<FnDeclSyntax>(), context);
-        Debug.Assert(members.All(s => s is FnSymbol), "There are only fns currently.");
-
-        var localFns = members.OfType<FnSymbol>().ToImmutableArray();
-        context.LocalFns.AddRange(localFns);
+        var members = BindMembers(fileSyntax.Members, context);
         
         // Create scope and binder
-        var localScope = new LocalScope(localFns, parent: enclosingScope);
+        var localScope = new LocalScope(members, parent: enclosingScope);
         var binder = new Binder(context, localScope, LoopContext.Outside);
         
         // Bind statements
@@ -106,7 +102,7 @@ public sealed class Binder
         // Create and return
         var body = new HirBody(stmts, armExpr: null, type: context.TypeContext.None);
         return new Hir.Hir(body, 
-            context.LocalFns.DrainToImmutable(),
+            context.LocalMembers.DrainToImmutable(),
             context.DiagnosticBag.Drain());
     }
 
@@ -136,6 +132,8 @@ public sealed class Binder
 
         var memberArray = members.DrainToImmutable();
         ReportDuplicateMembers(memberArray, context.DiagnosticBag);
+        
+        context.LocalMembers.AddRange(memberArray);
         
         return memberArray;
     }
@@ -213,6 +211,9 @@ public sealed class Binder
         BinaryExprSyntax binaryExprSyntax => BindBinary(binaryExprSyntax, expectedType),
         UnaryExprSyntax unaryExprSyntax => BindUnary(unaryExprSyntax, expectedType),
         
+        // Block, If, Loop
+        BlockExprSyntax blockExprSyntax => BindBlock(blockExprSyntax),
+        
         // Strings
         StringExprSyntax stringExprSyntax => BindString(stringExprSyntax),
         
@@ -221,8 +222,11 @@ public sealed class Binder
         TrueLiteralSyntax => new HirBoolLiteral(value: true, _context.TypeContext.Bool),
         FalseLiteralSyntax => new HirBoolLiteral(value: false, _context.TypeContext.Bool),
         
+        ErrorExprSyntax errorExprSyntax => BindError(errorExprSyntax),
         _ => BindUnsupported(syntax)
     };
+
+    
 
     private HirExpr BindUnsupported(ExprSyntax syntax)
     {
@@ -230,6 +234,13 @@ public sealed class Binder
         return new HirErrorExpr(recoveredExprs: [], _context.TypeContext.Error);
     }
 
+    private HirErrorExpr BindError(ErrorExprSyntax syntax)
+    {
+        var recovered = syntax.RecoverableNodes
+            .Select(node => BindExpr(node, expectedType: null))
+            .ToImmutableArray();
+        return new HirErrorExpr(recovered, _context.TypeContext.Error);
+    }
     
     #region Variables
 
@@ -515,6 +526,31 @@ public sealed class Binder
         }
 
         return new HirNativeOperator(nativeOperator, [.. boundOperands], nativeOperator.ReturnType);
+    }
+    
+    #endregion
+    
+    #region Blocks, If, Loop
+
+    private HirBody BindBlock(BlockExprSyntax blockExprSyntax)
+    {
+        // Binding context and loop context stays the same
+        
+        // Bind block members
+        var members = BindMembers(blockExprSyntax.Members, _context);
+        var newScope = new LocalScope(members, parent: _scope);
+
+        var blockBinder = new Binder(_context, newScope, _loopContext);
+
+        var stmts = blockBinder.BindStmts(blockExprSyntax.Stmts);
+
+        var boundArm = blockExprSyntax.Arm is not null
+            ? blockBinder.BindExpr(blockExprSyntax.Arm.Expr, expectedType: null)
+            : null;
+
+        return new HirBody(stmts, 
+            boundArm, 
+            type: boundArm?.Type ?? _context.TypeContext.None);
     }
     
     #endregion

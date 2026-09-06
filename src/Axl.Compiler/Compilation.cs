@@ -219,7 +219,7 @@ public class Compilation
         foreach (var hir in ScriptSymbols.Select(Bind))
         {
             bag.AddRange(hir.Diagnostics);
-            foreach (var localFn in hir.LocalFns)
+            foreach (var localFn in hir.LocalMembers)
                 localFn.CollectDiagnosticsInto(bag);
         }
 

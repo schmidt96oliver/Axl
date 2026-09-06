@@ -9,12 +9,12 @@ namespace Axl.Compiler.Semantics.Scopes;
 public sealed class LocalScope : Scope
 {
     private readonly List<LocalSymbol> _locals = [];
-    private readonly ImmutableArray<FnSymbol> _localFns;
+    private readonly ImmutableArray<Symbol> _localMembers;
 
-    public LocalScope(ImmutableArray<FnSymbol> localFns, Scope? parent) :
+    public LocalScope(ImmutableArray<Symbol> localMembers, Scope? parent) :
         base(parent)
     {
-        _localFns = localFns;
+        _localMembers = localMembers;
     }
 
     protected override ImmutableArray<Symbol> LookupOnThisScope(SymbolName name)
@@ -23,11 +23,11 @@ public sealed class LocalScope : Scope
         if (maybeLocal is not null)
             return [maybeLocal];
 
-        var localFns = _localFns
+        var localMembers = _localMembers
             .Where(localFn => localFn.Name == name)
             .ToImmutableArray();
-        if (localFns.Length > 0)
-            return localFns.CastArray<Symbol>();
+        if (localMembers.Length > 0)
+            return localMembers.CastArray<Symbol>();
 
         return [];
     }

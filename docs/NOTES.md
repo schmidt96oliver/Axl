@@ -2,12 +2,15 @@
                                        ≽(◕ ᴗ ◕)≼
 
 **Next:** _Binding_ :)
-* <=, <, >, >=
-* error exprs
 * blocks
 * if, loop
+* return, break, continue
+* local fn bodies with "cannot capture" warning.
+  * They can see other local fns transitively
 
 * carry expected type into exprs
+
+* Taxl and @check files
 
 **Stashed small ones**:
 * Regressions: `1+[EOF]`, `-[EOF]`
@@ -24,6 +27,9 @@
 * API: `SyntaxTree.ParseFrom`, `*Tree/Table.BuildFrom`
 * 
 - LSP: Make Serial (see Omnisharp) and weave CancellationToken
+
+**Regressions**
+* `1_i32 == 1_i64`
 
 # Taxl
 **Requirements**
