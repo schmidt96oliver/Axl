@@ -412,17 +412,51 @@ public sealed class Binder
     
     #region Binary and Unary Exprs
 
-    public HirExpr BindBinary(BinaryExprSyntax syntax, AxlType? expectedType)
+    public HirExpr BindBinary(BinaryExprSyntax syntax, AxlType? expectedType) => syntax.Operator.Kind switch
     {
-        return BindOperator(syntax.Operator, syntax.Left, syntax.Right);
-    }
+        TokenKind.AndKw or TokenKind.OrKw => BindBooleanOperator(syntax),
+        
+        _ => BindNativeOperator(syntax.Operator, syntax.Left, syntax.Right)
+    };
     
     public HirExpr BindUnary(UnaryExprSyntax syntax, AxlType? expectedType)
     {
-        return BindOperator(syntax.Operator, syntax.Operand);
+        return BindNativeOperator(syntax.Operator, syntax.Operand);
     }
 
-    private HirExpr BindOperator(Token operatorToken, params IEnumerable<ExprSyntax> operands)
+    private HirExpr BindBooleanOperator(BinaryExprSyntax syntax)
+    {
+        Debug.Assert(syntax.Operator.Kind is TokenKind.AndKw or TokenKind.OrKw);
+
+        var boundLeft = BindExpr(syntax.Left, expectedType: null);
+        var boundRight = BindExpr(syntax.Right, expectedType: null);
+        if (boundLeft.Type is ErrorType || boundRight.Type is ErrorType)
+        {
+            // Some operands have an error. So don't type-check them
+            // be silent and wrap in an error expression.
+            return new HirErrorExpr(recoveredExprs: [boundLeft, boundRight],
+                _context.TypeContext.Error);
+        }
+
+        // Type-check against bool
+        if (!_context.TypeContext.IsAssignableTo(boundLeft.Type, _context.TypeContext.Bool) ||
+            !_context.TypeContext.IsAssignableTo(boundRight.Type, _context.TypeContext.Bool))
+        {
+            _context.DiagnosticBag.ReportError(new Diagnostic.UndefinedOperator(syntax.Operator,
+                BoundOperands: [boundLeft, boundRight]));
+            return new HirErrorExpr(recoveredExprs: [boundLeft, boundRight],
+                _context.TypeContext.Error);
+        }
+
+        if (syntax.Operator.Kind is TokenKind.AndKw)
+            return new HirAnd(boundLeft, boundRight, _context.TypeContext.Bool);
+        if (syntax.Operator.Kind is TokenKind.OrKw)
+            return new HirOr(boundLeft, boundRight, _context.TypeContext.Bool);
+
+        throw new UnreachableException();
+    }
+
+    private HirExpr BindNativeOperator(Token operatorToken, params IEnumerable<ExprSyntax> operands)
     {
         var boundOperands = operands
             .Select(expr => BindExpr(expr, expectedType: null))
