@@ -2,6 +2,7 @@
 using Axl.Compiler;
 using Axl.Compiler.Diagnostics;
 using Axl.Compiler.Syntax;
+using Axl.Compiler.Taxl;
 
 namespace Axl.Tests;
 
@@ -206,8 +207,43 @@ public class Dump(SourceFileView source)
 
         }
     }
-    
-    
+
+
+    public Dump Add(TaxlFile taxlFile)
+    {
+        _builder.AppendLine($"--> Directives: {string.Join(", ", taxlFile.Directives.Select(dir => dir.Kind))}");
+        
+        foreach (var part in taxlFile.Fragments)
+        {
+            _builder.AppendLine($"--- {part.GetType().Name} \"{part.Name}\" ---");
+            if (part is TaxlFragment.Code codePart)
+            {
+                foreach (var annotation in codePart.Annotations)
+                {
+                    _builder.Append("--> //~ ");
+                    switch (annotation)
+                    {
+                        case TaxlAnnotation.Diagnostic diagnostic:
+                            _builder.AppendLine($"{diagnostic.Kind}@l.{diagnostic.LineNumber}: \"{diagnostic.Id}\"");
+                            break;
+                        
+                        case TaxlAnnotation.Type type:
+                            var refText = source.GetText(type.ExprSpan);
+                            _builder.AppendLine($"type \"{type.TypeName}\" on \"{refText}\"");
+                            break;
+                        
+                        case TaxlAnnotation.Invalid invalidAnnotation:
+                            _builder.AppendLine($"INVALID: {invalidAnnotation.ErrorMessage}");
+                            break;
+                    }
+                }
+            }
+
+            _builder.AppendLine(part.View.TextSpan.ToString());
+        }
+
+        return this;
+    }
     
     
     private void AddLiteralString(ReadOnlySpan<char> text)
