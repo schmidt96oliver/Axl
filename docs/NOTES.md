@@ -3,6 +3,7 @@
 
 **Next:** _Binding_ :)
 * assign
+* introduce Types helper; CheckAndReportTypeMismatch
 * make local fn bodies unsupported
 
 * ?? carry expected type into exprs -- or -- delete that feature

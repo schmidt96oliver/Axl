@@ -85,4 +85,15 @@ public partial record Diagnostic
                 ? $"type '{BoundOperands[0].Type.DisplayName}'"
                 : $"types {string.Join(", ", BoundOperands[..^1].Select(hir => $"'{hir.Type.DisplayName}'"))} and '{BoundOperands[^1].Type.DisplayName}'";
     }
+
+    public sealed record InvalidAssignTarget(ExprSyntax Syntax, Symbol? ResolvedSymbol = null) : Error
+    {
+        public override ImmutableArray<SourceLocation> Locations
+            => [Syntax.GetLocation()];
+
+        public override string Message
+            => ResolvedSymbol is null
+                ? "Invalid assignment target."
+                : $"Cannot assign to {ResolvedSymbol.DisplayName}";
+    }
 }

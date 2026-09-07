@@ -128,6 +128,31 @@ public sealed class Binder
         return true;
     }
     
+    /// <summary>
+    /// Looks up a name expecting a single symbol. Reports <see cref="Diagnostic.UndefinedName"/>
+    /// or <see cref="Diagnostic.AmbiguousName"/> accordingly.
+    /// </summary>
+    private Symbol? LookupSingleAndReport(IdNameSyntax nameSyntax)
+    {
+        if (nameSyntax.Token.IsMissing)
+            return null;
+        
+        var name = SymbolName.From(nameSyntax);
+        var lookupResult = _scope.Lookup(name);
+
+        switch (lookupResult.Length)
+        {
+            case 0:
+                _context.DiagnosticBag.ReportError(new Diagnostic.UndefinedName(nameSyntax));
+                return null;
+            case > 1:
+                _context.DiagnosticBag.ReportError(new Diagnostic.AmbiguousName(nameSyntax, lookupResult));
+                return null;
+            default:
+                return lookupResult[0];
+        }
+    }
+    
     
     #region Member Binding
 
@@ -226,8 +251,9 @@ public sealed class Binder
 
     private HirExpr BindExpr(ExprSyntax syntax, AxlType? expectedType) => syntax switch
     {
-        // Names
+        // Symbol references
         IdNameSyntax idNameSyntax => BindPlainIdName(idNameSyntax),
+        AssignExprSyntax assignExprSyntax => BindAssign(assignExprSyntax),
         
         // Operators
         BinaryExprSyntax binaryExprSyntax => BindBinary(binaryExprSyntax, expectedType),
@@ -312,38 +338,66 @@ public sealed class Binder
 
         return BindExpr(syntax.Initializer, expectedType);
     }
-    
+
     private HirExpr BindPlainIdName(IdNameSyntax syntax)
     {
-        if (syntax.Token.IsMissing)
+        var symbol = LookupSingleAndReport(syntax);
+
+        switch (symbol)
         {
-            // The parser already reported a diagnostic, so be silent.
-            return new HirErrorExpr(recoveredExprs: [], type: _context.TypeContext.Error, syntax);
+            case LocalSymbol localSymbol:
+                return new HirLocalRef(localSymbol, syntax);
+            
+            case null:
+                return new HirErrorExpr(recoveredExprs: [], type: _context.TypeContext.Error, syntax);
+            
+            default:
+                _context.DiagnosticBag.ReportError(new Diagnostic.InvalidLocalRef(syntax, symbol));
+                return new HirErrorExpr(recoveredExprs: [], type: _context.TypeContext.Error, syntax);
         }
+    }
+
+    private HirExpr BindAssign(AssignExprSyntax syntax)
+    {
+        var boundValue = BindExpr(syntax.Value, null);
+        var target = BindAssignTarget(syntax.Target);
         
-        var name = SymbolName.From(syntax);
-        var lookupResult = _scope.Lookup(name);
-
-        if (lookupResult.Length == 0)
+        // Reject compound assignment
+        if (syntax.Operator.Kind is not TokenKind.Equal)
         {
-            _context.DiagnosticBag.ReportError(new Diagnostic.UndefinedName(syntax));
-            return new HirErrorExpr(recoveredExprs: [], type: _context.TypeContext.Error, syntax);
+            _context.DiagnosticBag.ReportError(
+                new Diagnostic.UnsupportedFeature(syntax, "Compound assignment not supported yet."));
+            return new HirErrorExpr(recoveredExprs: [boundValue], _context.TypeContext.Error, syntax);
         }
 
-        if (lookupResult.Length > 1)
+        if (target is null)
+            return new HirErrorExpr(recoveredExprs: [boundValue], _context.TypeContext.Error, syntax);
+        
+        CheckTypeAndReport(boundValue, target.Type);
+        return new HirAssign(target, boundValue, _context.TypeContext.None, syntax);
+    }
+
+    private LocalSymbol? BindAssignTarget(ExprSyntax syntax)
+    {
+        if (syntax is not IdNameSyntax idNameSyntax)
         {
-            _context.DiagnosticBag.ReportError(new Diagnostic.AmbiguousName(syntax, lookupResult));
-            return new HirErrorExpr(recoveredExprs: [], type: _context.TypeContext.Error, syntax);
+            _context.DiagnosticBag.ReportError(new Diagnostic.InvalidAssignTarget(syntax));
+            return null;
         }
 
-        var symbol = lookupResult[0];
-        if (symbol is not LocalSymbol localSymbol)
+        var symbol = LookupSingleAndReport(idNameSyntax);
+        switch (symbol)
         {
-            _context.DiagnosticBag.ReportError(new Diagnostic.InvalidLocalRef(syntax, symbol));
-            return new HirErrorExpr(recoveredExprs: [], type: _context.TypeContext.Error, syntax);
+            case LocalSymbol localSymbol:
+                return localSymbol;
+            
+            case null:
+                return null;
+            
+            default:
+                _context.DiagnosticBag.ReportError(new Diagnostic.InvalidAssignTarget(syntax, symbol));
+                return null;
         }
-
-        return new HirLocalRef(localSymbol, syntax);
     }
     
     #endregion
