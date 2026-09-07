@@ -149,12 +149,13 @@ public sealed class TaxlFile
             .. Lexer.Lex(source, new DiagnosticBag())
                 .Where(t => t.Kind is TokenKind.Comment)
                 .Where(t => source.GetText(t.FullSpan).StartsWith(AnnotationStart))
-                .Select(t => ParseAnnotation(source.GetText(t.FullSpan), source.GetLocation(t.FullSpan)))
+                .Select(t => ParseAnnotation(source.GetLocation(t.FullSpan)))
         ];
     
 
-    private static TaxlAnnotation ParseAnnotation(ReadOnlySpan<char> text, SourceLocation textLocation)
+    private static TaxlAnnotation ParseAnnotation(SourceLocation location)
     {
+        var text = location.GetText();
         Debug.Assert(text.StartsWith(AnnotationStart));
 
         var index = AnnotationStart.Length;
@@ -172,36 +173,38 @@ public sealed class TaxlFile
             index += ErrorAnnotation.Length;
             return new TaxlAnnotation.Diagnostic(DiagnosticKind.Error, 
                 Id: index < text.Length ? text[index..].Trim().ToString() : "", 
-                textLocation.StartLinePosition.Line,
-                textLocation.Span);
+                location.StartLinePosition.Line,
+                location.Span,
+                PrefixAndLocatorSpan: SourceSpan.InsideSourceFile(location.Span.First, length: index));
         }
         if (text[index..].StartsWith(LintAnnotation))
         {
             index += ErrorAnnotation.Length;
             return new TaxlAnnotation.Diagnostic(DiagnosticKind.Lint, 
                 Id: index < text.Length ? text[index..].Trim().ToString() : "", 
-                textLocation.StartLinePosition.Line,
-                textLocation.Span);
+                location.StartLinePosition.Line,
+                location.Span,
+                PrefixAndLocatorSpan: SourceSpan.InsideSourceFile(location.Span.First, length: index));
         }
 
         if (text[index..].StartsWith(TypeAnnotation))
         {
             index += TypeAnnotation.Length;
 
-            return ParseTypeAnnotation(text, afterAnnotationNameIndex: index, textLocation);
+            return ParseTypeAnnotation(location, afterAnnotationNameIndex: index);
         }
 
-        return new TaxlAnnotation.Invalid("Unknown annotation.", textLocation.Span);
+        return new TaxlAnnotation.Invalid("Unknown annotation.", location.Span);
     }
 
-    private static TaxlAnnotation ParseTypeAnnotation(ReadOnlySpan<char> text, int afterAnnotationNameIndex, SourceLocation textLocation)
+    private static TaxlAnnotation ParseTypeAnnotation(SourceLocation location, int afterAnnotationNameIndex)
     {
-        Debug.Assert(text.Length == textLocation.Span.Length, $"{nameof(text)} must represent {nameof(textLocation)}");
+        var text = location.GetText();
         
         // Carets relative to text
         var caretStartInText = text[afterAnnotationNameIndex..].IndexOf('^') + afterAnnotationNameIndex;
         if (caretStartInText < afterAnnotationNameIndex)
-            return new TaxlAnnotation.Invalid("Type annotation must use '^' to point at an expression.", textLocation.Span);
+            return new TaxlAnnotation.Invalid("Type annotation must use '^' to point at an expression.", location.Span);
         var caretLength = 1;
         
         for (; caretStartInText + caretLength < text.Length; caretLength++)
@@ -212,11 +215,11 @@ public sealed class TaxlFile
         
         // Make relative to file
         var caretSpan = SourceSpan.InsideSourceFile(
-            first: textLocation.Span.First + caretStartInText,
+            first: location.Span.First + caretStartInText,
             caretLength);
         
         // Make relative to line
-        var caretLine = textLocation.File.GetLineAt(caretSpan.First);
+        var caretLine = location.File.GetLineAt(caretSpan.First);
         Debug.Assert(caretLength <= caretLine.Span.Length, "One annotation is one line.");
 
         var inCaretLineStart = caretSpan.First - caretLine.Span.First;
@@ -226,18 +229,18 @@ public sealed class TaxlFile
         if (caretLine.LineNumber <= 0)
         {
             return new TaxlAnnotation.Invalid(
-                "Type annotation with carets on first line. It cannot point to line above.", textLocation.Span);
+                "Type annotation with carets on first line. It cannot point to line above.", location.Span);
         }
 
         // Make relative to line above
-        var lineAbove = textLocation.File.Lines[caretLine.LineNumber - 1];
+        var lineAbove = location.File.Lines[caretLine.LineNumber - 1];
         var referencedSpan = SourceSpan.InsideSourceFile(
             first: lineAbove.Span.First + inCaretLineStart,
             caretLength);
         if (!lineAbove.Span.Contains(referencedSpan))
         {
             return new TaxlAnnotation.Invalid(
-                "Type annotation does not reference a valid position in line above.", textLocation.Span);
+                "Type annotation does not reference a valid position in line above.", location.Span);
         }
         
         // Get type name
@@ -248,10 +251,12 @@ public sealed class TaxlFile
         if (typeName.Contains('^'))
         {
             return new TaxlAnnotation.Invalid("Type annotation can only contain one block of carets.",
-                textLocation.Span);
+                location.Span);
         }
         
-        return new TaxlAnnotation.Type(referencedSpan, typeName, textLocation.Span);
+        return new TaxlAnnotation.Type(referencedSpan, typeName, location.Span,
+            PrefixAndLocatorSpan: SourceSpan.InsideSourceFile(location.Span.First, 
+                length: caretSpan.End - location.Span.First));
     }
     
 

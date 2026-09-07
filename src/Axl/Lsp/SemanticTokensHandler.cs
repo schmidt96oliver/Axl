@@ -1,4 +1,6 @@
+using Axl.Compiler;
 using Axl.Compiler.Syntax;
+using Axl.Compiler.Taxl;
 using OmniSharp.Extensions.LanguageServer.Protocol;
 using OmniSharp.Extensions.LanguageServer.Protocol.Client.Capabilities;
 using OmniSharp.Extensions.LanguageServer.Protocol.Document;
@@ -38,9 +40,11 @@ public class SemanticTokensHandler(ILanguageServerFacade facade) : SemanticToken
         
         PushDiagnostics(identifier.TextDocument.Uri, compilation.Diagnostics);
 
+        //TODO: Add taxl diagnostics
+        
         foreach (var tree in compilation.SyntaxTrees)
         {
-            TokenizeTree(builder, tree);
+            TokenizeTree(builder, tree, DocumentStore.TryGetTaxlFile(identifier.TextDocument.Uri));
         }
 
         return Task.CompletedTask;
@@ -55,9 +59,8 @@ public class SemanticTokensHandler(ILanguageServerFacade facade) : SemanticToken
         });
     }
     
-    private void TokenizeTree(SemanticTokensBuilder builder, SyntaxTree tree)
+    private void TokenizeTree(SemanticTokensBuilder builder, SyntaxTree tree, TaxlFile? taxlFile)
     {
-        var isInOutput = false;
         foreach (var token in EnumerateTokens(tree.FileSyntax))
         {
             if (token.FullSpan.Length == 0)
@@ -70,57 +73,12 @@ public class SemanticTokensHandler(ILanguageServerFacade facade) : SemanticToken
             {
                 case TokenKind.Comment:
                 {
-                    var text = tree.Source.File.GetText(token.FullSpan);
-                    if (text.StartsWith("//@") || text.StartsWith("//~"))
+                    if (taxlFile is not null)
+                        TokenizeTaxlComment(token, taxlFile, startLinePos, builder);
+                    else
                     {
-                        var length = 3;
-                        while (length < text.Length &&
-                               (char.IsAsciiLetterOrDigit(text[length]) || text[length] is '_' or '-'))
-                        {
-                            length++;
-                        }
-
-                        builder.Push(startLinePos.Line, startLinePos.Column, length,
-                            (SemanticTokenType?)SemanticTokenType.Decorator);
-
-                        // See if there is a comment
-                        var commentStart = text[2..].IndexOf("//") + 2;
-                        if (commentStart > 2)
-                        {
-                            builder.Push(startLinePos.Line, startLinePos.Column + commentStart,
-                                text.Length - commentStart,
-                                (SemanticTokenType?)SemanticTokenType.Comment);
-                        }
-                    }
-                    else if (text.StartsWith("//---") || text.StartsWith("//==="))
-                    {
-                        var length = 5;
-                        while (length < text.Length && text[length] is '-' or '=')
-                            length++;
-
-                        builder.Push(startLinePos.Line, startLinePos.Column, length,
-                            (SemanticTokenType?)SemanticTokenType.Decorator);
-
-                        isInOutput = text.StartsWith("//===");
-                    }
-                    else if (!isInOutput)
-                    {
-                        // Entire line is a comment
                         builder.Push(startLinePos.Line, startLinePos.Column, token.FullSpan.Length,
                             (SemanticTokenType?)SemanticTokenType.Comment);
-                    }
-                    else if (isInOutput)
-                    {
-                        // `//` is now a decorator
-                        builder.Push(startLinePos.Line, startLinePos.Column, 2,
-                            (SemanticTokenType?)SemanticTokenType.Decorator);
-
-                        // Everything thereafter is string
-                        if (text.Length > 2)
-                        {
-                            builder.Push(startLinePos.Line, startLinePos.Column + 2, text.Length - 2,
-                                (SemanticTokenType?)SemanticTokenType.String);
-                        }
                     }
 
                     break;
@@ -208,6 +166,69 @@ public class SemanticTokensHandler(ILanguageServerFacade facade) : SemanticToken
         }
     }
 
+    private void TokenizeTaxlComment(Token commentToken, TaxlFile taxlFile, LinePosition startLinePos, SemanticTokensBuilder builder)
+    {
+        var isHeadLine = taxlFile.Fragments.Any(fragment => fragment.View.Span.First == commentToken.FullSpan.First);
+        if (isHeadLine)
+        {
+            builder.Push(startLinePos.Line, startLinePos.Column, length: Math.Min(5, commentToken.FullSpan.Length),
+                (SemanticTokenType?)SemanticTokenType.Decorator);
+            return;
+        }
+        
+        var isInOutput = taxlFile.Fragments
+                .FirstOrDefault(fragment => fragment.View.Span.Contains(commentToken.FullSpan))
+            is TaxlFragment.Output;
+        
+        if (isInOutput)
+        {
+            // `//` is now a decorator
+            builder.Push(startLinePos.Line, startLinePos.Column, 2,
+                (SemanticTokenType?)SemanticTokenType.Decorator);
+
+            // Everything thereafter is string
+            if (commentToken.FullSpan.Length > 2)
+            {
+                builder.Push(startLinePos.Line, startLinePos.Column + 2, commentToken.FullSpan.Length - 2,
+                    (SemanticTokenType?)SemanticTokenType.String);
+            }
+
+            return;
+        }
+        
+        var decoratorLength = GetTaxlDecoratorLength(commentToken.FullSpan, taxlFile);
+        if (decoratorLength <= 0)
+        {
+            // Entire length is just a comment
+            builder.Push(startLinePos.Line, startLinePos.Column, commentToken.FullSpan.Length,
+                (SemanticTokenType?)SemanticTokenType.Comment);
+        }
+        
+        builder.Push(startLinePos.Line, startLinePos.Column, decoratorLength,
+            (SemanticTokenType?)SemanticTokenType.Decorator);
+    }
+    
+    private int GetTaxlDecoratorLength(SourceSpan commentSpan, TaxlFile taxlFile)
+    {
+        // Search directives
+        if (taxlFile.Directives.FirstOrDefault(dir => dir.Span == commentSpan)
+            is { } directive)
+        {
+            return directive.Span.Length;
+        }
+
+        var annotation = taxlFile.Fragments
+            .OfType<TaxlFragment.Code>()
+            .SelectMany(codeFragment => codeFragment.Annotations)
+            .FirstOrDefault(annotation => annotation.AnnotationSpan == commentSpan);
+        if (annotation is not null)
+        {
+            return annotation.PrefixAndLocatorSpan.Length;
+        }
+
+        return 0;
+    }
+    
     private IEnumerable<Token> EnumerateTokens(SyntaxElement element)
     {
         if (element is Token token)
