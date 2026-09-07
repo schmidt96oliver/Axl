@@ -19,8 +19,8 @@ namespace Axl.Lsp;
 /// </remarks>
 public static class DiagnosticConverter
 {
-    public static Container<LspDiagnostic> Convert(IEnumerable<AxlDiagnostic> diagnostics)
-        => new(diagnostics.SelectMany(Convert));
+    public static IEnumerable<LspDiagnostic> Convert(IEnumerable<AxlDiagnostic> diagnostics)
+        => diagnostics.SelectMany(Convert);
 
     // Every underline carries the full message.
     private static IEnumerable<LspDiagnostic> Convert(AxlDiagnostic diagnostic)

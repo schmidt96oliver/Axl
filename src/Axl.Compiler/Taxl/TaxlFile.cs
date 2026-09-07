@@ -20,10 +20,12 @@ public sealed class TaxlFile
     
     public ImmutableArray<TaxlFragment> Fragments { get; }
     public ImmutableArray<TaxlDirective> Directives { get; }
+    public SourceFileView Source { get; }
 
 
-    private TaxlFile(ImmutableArray<TaxlFragment> fragments, ImmutableArray<TaxlDirective> directives)
+    private TaxlFile(SourceFileView source, ImmutableArray<TaxlFragment> fragments, ImmutableArray<TaxlDirective> directives)
     {
+        Source = source;
         Fragments = fragments;
         Directives = directives;
     }
@@ -54,10 +56,10 @@ public sealed class TaxlFile
         if (fragments.Count > 0)
         {
             var directives = ParseDirectives(fragments[0].View);
-            return new TaxlFile(fragments.DrainToImmutable(), directives);
+            return new TaxlFile(source, fragments.DrainToImmutable(), directives);
         }
 
-        return new TaxlFile([new TaxlFragment.Code(source, "", Annotations: [])], directives: []);
+        return new TaxlFile(source, [new TaxlFragment.Code(source, "", Annotations: [])], directives: []);
     }
 
     private static TaxlFragment ParseFragment(SourceFileView source)

@@ -38,9 +38,13 @@ public class SemanticTokensHandler(ILanguageServerFacade facade) : SemanticToken
         if (compilation is null)
             return Task.CompletedTask;
         
-        PushDiagnostics(identifier.TextDocument.Uri, compilation.Diagnostics);
-
-        //TODO: Add taxl diagnostics
+        // Push diagnostics
+        facade.TextDocument.PublishDiagnostics(new PublishDiagnosticsParams
+        {
+            Uri = identifier.TextDocument.Uri,
+            Diagnostics = new(DiagnosticConverter.Convert(compilation.Diagnostics)
+                .Concat(GetTaxlDiagnostics(DocumentStore.TryGetTaxlFile(identifier.TextDocument.Uri))))
+        });
         
         foreach (var tree in compilation.SyntaxTrees)
         {
@@ -50,13 +54,37 @@ public class SemanticTokensHandler(ILanguageServerFacade facade) : SemanticToken
         return Task.CompletedTask;
     }
 
-    private void PushDiagnostics(DocumentUri uri, IEnumerable<Axl.Compiler.Diagnostics.Diagnostic> diagnostics)
+    private IEnumerable<Diagnostic> GetTaxlDiagnostics(TaxlFile? taxlFile)
     {
-        facade.TextDocument.PublishDiagnostics(new PublishDiagnosticsParams
+        if (taxlFile is null)
+            yield break;
+        
+        // --- Unknown directives
+        foreach (var directive in taxlFile.Directives.Where(directive => directive.Kind is TaxlDirectiveKind.Unknown))
         {
-            Uri = uri,
-            Diagnostics = DiagnosticConverter.Convert(diagnostics)
-        });
+            yield return new Diagnostic
+            {
+                Severity = DiagnosticSeverity.Error,
+                Message = "Unknown directive.",
+                Source = "Taxl",
+                Range = taxlFile.Source.GetLocation(directive.Span).ToLsp()
+            };
+        }
+        
+        // --- Invalid annotations
+        foreach (var annotation in taxlFile.Fragments
+                     .OfType<TaxlFragment.Code>()
+                     .SelectMany(codeFrag => codeFrag.Annotations)
+                     .OfType<TaxlAnnotation.Invalid>())
+        {
+            yield return new Diagnostic
+            {
+                Severity = DiagnosticSeverity.Error,
+                Message = annotation.ErrorMessage,
+                Source = "Taxl",
+                Range = taxlFile.Source.GetLocation(annotation.AnnotationSpan).ToLsp()
+            };
+        }
     }
     
     private void TokenizeTree(SemanticTokensBuilder builder, SyntaxTree tree, TaxlFile? taxlFile)
