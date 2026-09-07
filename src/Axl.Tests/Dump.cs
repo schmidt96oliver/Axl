@@ -215,7 +215,7 @@ public class Dump(SourceFileView source)
         
         foreach (var part in taxlFile.Fragments)
         {
-            _builder.AppendLine($"--- {part.GetType().Name} \"{part.Name}\" ---");
+            _builder.AppendLine($"--- {part.GetType().Name} \"{part.Argument}\" ---");
             if (part is TaxlFragment.Code codePart)
             {
                 foreach (var annotation in codePart.Annotations)
@@ -240,7 +240,7 @@ public class Dump(SourceFileView source)
             }
 
             if (!onlyStructure)
-                _builder.AppendLine(part.View.TextSpan.ToString());
+                _builder.AppendLine(part.SourceView.TextSpan.ToString());
         }
 
         return this;

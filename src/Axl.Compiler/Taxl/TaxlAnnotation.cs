@@ -6,23 +6,23 @@ public enum DiagnosticKind
     Lint
 }
 
-public abstract record TaxlAnnotation(SourceSpan AnnotationSpan, SourceSpan PrefixAndLocatorSpan)
+public abstract record TaxlAnnotation(SourceSpan AnnotationSpan, SourceSpan ArgumentSpan)
 {
     public sealed record Diagnostic(
         DiagnosticKind Kind,
         string Id,
         int LineNumber,
         SourceSpan AnnotationSpan,
-        SourceSpan PrefixAndLocatorSpan)
-        : TaxlAnnotation(AnnotationSpan, PrefixAndLocatorSpan);
+        SourceSpan ArgumentSpan)
+        : TaxlAnnotation(AnnotationSpan, ArgumentSpan);
 
     public sealed record Type(
         SourceSpan ExprSpan,
         string TypeName,
         SourceSpan AnnotationSpan,
-        SourceSpan PrefixAndLocatorSpan)
-        : TaxlAnnotation(AnnotationSpan, PrefixAndLocatorSpan);
+        SourceSpan ArgumentSpan)
+        : TaxlAnnotation(AnnotationSpan, ArgumentSpan);
 
     public sealed record Invalid(string ErrorMessage, SourceSpan AnnotationSpan)
-        : TaxlAnnotation(AnnotationSpan, PrefixAndLocatorSpan: AnnotationSpan);
+        : TaxlAnnotation(AnnotationSpan, ArgumentSpan: SourceSpan.EmptyAfter(AnnotationSpan));
 }

@@ -67,7 +67,7 @@ public class Compilation
     }
 
     public static Compilation From(TaxlFile taxlFile)
-        => FromTrees(taxlFile.Fragments.Select(fragment => Parser.Parse(fragment.View)));
+        => FromTrees(taxlFile.Fragments.Select(fragment => Parser.Parse(fragment.SourceView)));
 
 
     private GlobalSymbol CreateGlobalSymbol()

@@ -8,4 +8,4 @@ public enum TaxlDirectiveKind
     Unknown
 }
 
-public sealed record TaxlDirective(SourceSpan Span, TaxlDirectiveKind Kind);
+public sealed record TaxlDirective(TaxlDirectiveKind Kind, SourceSpan Span);

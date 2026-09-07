@@ -197,8 +197,8 @@ public class SemanticTokensHandler(ILanguageServerFacade facade) : SemanticToken
     private void TokenizeTaxlComment(Token commentToken, TaxlFile taxlFile, LinePosition startLinePos, SemanticTokensBuilder builder)
     {
         var isHeadLine = taxlFile.Fragments
-            .Any(fragment => fragment.View.Span.First == commentToken.FullSpan.First &&
-                             (fragment.View.TextSpan.StartsWith("//---") || fragment.View.TextSpan.StartsWith("//===")));
+            .Any(fragment => fragment.SourceView.Span.First == commentToken.FullSpan.First &&
+                             (fragment.SourceView.TextSpan.StartsWith("//---") || fragment.SourceView.TextSpan.StartsWith("//===")));
         if (isHeadLine)
         {
             builder.Push(startLinePos.Line, startLinePos.Column, length: Math.Min(5, commentToken.FullSpan.Length),
@@ -207,7 +207,7 @@ public class SemanticTokensHandler(ILanguageServerFacade facade) : SemanticToken
         }
         
         var isInOutput = taxlFile.Fragments
-                .FirstOrDefault(fragment => fragment.View.Span.Contains(commentToken.FullSpan))
+                .FirstOrDefault(fragment => fragment.SourceView.Span.Contains(commentToken.FullSpan))
             is TaxlFragment.Output;
         
         if (isInOutput)
@@ -253,7 +253,7 @@ public class SemanticTokensHandler(ILanguageServerFacade facade) : SemanticToken
             .FirstOrDefault(annotation => annotation.AnnotationSpan == commentSpan);
         if (annotation is not null)
         {
-            return annotation.PrefixAndLocatorSpan.Length;
+            return annotation.ArgumentSpan.First - annotation.AnnotationSpan.First;
         }
 
         return 0;

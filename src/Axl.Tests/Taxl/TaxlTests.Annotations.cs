@@ -84,7 +84,7 @@ public sealed partial class TaxlTests
                                             """), """
                 --> Directives: 
                 --- Code "" ---
-                --> //~ INVALID: Type annotation with carets on first line. It cannot point to line above.
+                --> //~ INVALID: Caret points to invalid location.
                 """);
         
         [Fact]
@@ -95,7 +95,7 @@ public sealed partial class TaxlTests
                                             """), """
                 --> Directives: 
                 --- Code "" ---
-                --> //~ INVALID: Type annotation does not reference a valid position in line above.
+                --> //~ INVALID: Caret points to invalid location.
                 """);
         [Fact]
         public void Type_DoubledCarets()
