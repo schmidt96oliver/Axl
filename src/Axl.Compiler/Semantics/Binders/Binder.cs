@@ -1,7 +1,5 @@
 ﻿using System.Collections.Immutable;
-using System.ComponentModel;
 using System.Diagnostics;
-using System.Linq.Expressions;
 using Axl.Compiler.Diagnostics;
 using Axl.Compiler.Semantics.Hir;
 using Axl.Compiler.Semantics.Scopes;
@@ -75,7 +73,7 @@ public sealed class Binder
     private readonly LocalScope _scope;
     private readonly LoopContext _loopContext;
 
-
+    
     private Binder(BindingContext context, LocalScope localScope, LoopContext loopContext)
     {
         _context = context;
@@ -111,13 +109,17 @@ public sealed class Binder
     }
 
     
+    #region Helpers
+    
+    private TypeContext Types => _context.TypeContext;
+    
     /// <summary>
     /// Checks, whether <paramref name="expr"/> is assignable to
     /// <paramref name="expected"/>. If not, reports a <see cref="Diagnostic.TypeMismatch"/>.
     /// </summary>
     private bool CheckTypeAndReport(HirExpr expr, AxlType expected)
     {
-        if (!_context.TypeContext.IsAssignableTo(expr.Type, expected))
+        if (!Types.IsAssignableTo(expr.Type, expected))
         {
             _context.DiagnosticBag.ReportError(new Diagnostic.TypeMismatch(
                 Expr: expr,
@@ -152,6 +154,8 @@ public sealed class Binder
                 return lookupResult[0];
         }
     }
+    
+    #endregion
     
     
     #region Member Binding
@@ -212,14 +216,14 @@ public sealed class Binder
 
     private AxlType BindNativeType(NativeTypeNameSyntax syntax) => syntax.Token.Kind switch
     {
-        TokenKind.I32Kw => _context.TypeContext.I32,
-        TokenKind.I64Kw => _context.TypeContext.I64,
-        TokenKind.F32Kw => _context.TypeContext.F32,
-        TokenKind.F64Kw => _context.TypeContext.F64,
-        TokenKind.BoolKw => _context.TypeContext.Bool,
-        TokenKind.StringKw => _context.TypeContext.String,
-        TokenKind.NoneKw => _context.TypeContext.None,
-        TokenKind.NeverKw => _context.TypeContext.Never,
+        TokenKind.I32Kw => Types.I32,
+        TokenKind.I64Kw => Types.I64,
+        TokenKind.F32Kw => Types.F32,
+        TokenKind.F64Kw => Types.F64,
+        TokenKind.BoolKw => Types.Bool,
+        TokenKind.StringKw => Types.String,
+        TokenKind.NoneKw => Types.None,
+        TokenKind.NeverKw => Types.Never,
         _ => throw new UnreachableException($"Unknown {nameof(NativeTypeNameSyntax)}.")
     };
 
@@ -231,7 +235,7 @@ public sealed class Binder
                 syntax, "Only native types are supported for now."));
         }
 
-        return _context.TypeContext.Error;
+        return Types.Error;
     }
     
     #endregion
@@ -266,8 +270,8 @@ public sealed class Binder
         
         // Strings and Literals
         NumberLiteralSyntax numberLiteralSyntax => BindNumberLiteral(numberLiteralSyntax, expectedType),
-        TrueLiteralSyntax => new HirBoolLiteral(value: true, type: _context.TypeContext.Bool, syntax),
-        FalseLiteralSyntax => new HirBoolLiteral(value: false, type: _context.TypeContext.Bool, syntax),
+        TrueLiteralSyntax => new HirBoolLiteral(value: true, type: Types.Bool, syntax),
+        FalseLiteralSyntax => new HirBoolLiteral(value: false, type: Types.Bool, syntax),
         StringExprSyntax stringExprSyntax => BindString(stringExprSyntax),
         
         // Error and unsupported
@@ -280,7 +284,7 @@ public sealed class Binder
     private HirExpr BindUnsupported(ExprSyntax syntax)
     {
         _context.DiagnosticBag.ReportError(new Diagnostic.UnsupportedFeature(syntax));
-        return new HirErrorExpr(recoveredExprs: [], type: _context.TypeContext.Error, syntax);
+        return new HirErrorExpr(recoveredExprs: [], type: Types.Error, syntax);
     }
 
     private HirErrorExpr BindError(ErrorExprSyntax syntax)
@@ -288,7 +292,7 @@ public sealed class Binder
         var recovered = syntax.RecoverableNodes
             .Select(node => BindExpr(node, expectedType: null))
             .ToImmutableArray();
-        return new HirErrorExpr(recovered, _context.TypeContext.Error, syntax);
+        return new HirErrorExpr(recovered, Types.Error, syntax);
     }
     
     #region Variables
@@ -333,7 +337,7 @@ public sealed class Binder
             // touched on an error expr, si it should be fine. Mark my words in case of
             // oddities :D.
             return new HirErrorExpr(recoveredExprs: [],
-                _context.TypeContext.Error, syntax);    
+                Types.Error, syntax);    
         }
 
         return BindExpr(syntax.Initializer, expectedType);
@@ -349,11 +353,11 @@ public sealed class Binder
                 return new HirLocalRef(localSymbol, syntax);
             
             case null:
-                return new HirErrorExpr(recoveredExprs: [], type: _context.TypeContext.Error, syntax);
+                return new HirErrorExpr(recoveredExprs: [], type: Types.Error, syntax);
             
             default:
                 _context.DiagnosticBag.ReportError(new Diagnostic.InvalidLocalRef(syntax, symbol));
-                return new HirErrorExpr(recoveredExprs: [], type: _context.TypeContext.Error, syntax);
+                return new HirErrorExpr(recoveredExprs: [], type: Types.Error, syntax);
         }
     }
 
@@ -367,14 +371,14 @@ public sealed class Binder
         {
             _context.DiagnosticBag.ReportError(
                 new Diagnostic.UnsupportedFeature(syntax, "Compound assignment not supported yet."));
-            return new HirErrorExpr(recoveredExprs: [boundValue], _context.TypeContext.Error, syntax);
+            return new HirErrorExpr(recoveredExprs: [boundValue], Types.Error, syntax);
         }
 
         if (target is null)
-            return new HirErrorExpr(recoveredExprs: [boundValue], _context.TypeContext.Error, syntax);
+            return new HirErrorExpr(recoveredExprs: [boundValue], Types.Error, syntax);
         
         CheckTypeAndReport(boundValue, target.Type);
-        return new HirAssign(target, boundValue, _context.TypeContext.None, syntax);
+        return new HirAssign(target, boundValue, Types.None, syntax);
     }
 
     private LocalSymbol? BindAssignTarget(ExprSyntax syntax)
@@ -411,7 +415,7 @@ public sealed class Binder
         if (parts.Length == 0)
             parts = [new StringPart.Text("")];
         
-        return new HirStringExpr(parts, _context.TypeContext.String, syntax);
+        return new HirStringExpr(parts, Types.String, syntax);
     }
 
     private StringPart BindStringPart(StringPartSyntax syntax)
@@ -436,10 +440,10 @@ public sealed class Binder
         //TODO: Allow different types according to declared native conversion fns
         
         // For now, we can only accept string exprs
-        if (!CheckTypeAndReport(boundExpr, _context.TypeContext.String))
+        if (!CheckTypeAndReport(boundExpr, Types.String))
         {
             return new StringPart.Interpolation(
-                new HirErrorExpr(recoveredExprs: [boundExpr], type: _context.TypeContext.Error, syntax));
+                new HirErrorExpr(recoveredExprs: [boundExpr], type: Types.Error, syntax));
         }
 
         return new StringPart.Interpolation(boundExpr);
@@ -449,10 +453,10 @@ public sealed class Binder
     {
         var type = syntax.Token.Suffix switch
         {
-            NumberLiteralSuffix.I32 => _context.TypeContext.I32,
-            NumberLiteralSuffix.I64 => _context.TypeContext.I64,
-            NumberLiteralSuffix.F32 => _context.TypeContext.F32,
-            NumberLiteralSuffix.F64 => _context.TypeContext.F64,
+            NumberLiteralSuffix.I32 => Types.I32,
+            NumberLiteralSuffix.I64 => Types.I64,
+            NumberLiteralSuffix.F32 => Types.F32,
+            NumberLiteralSuffix.F64 => Types.F64,
 
             _ => DetermineTypeWithoutSuffix()
         };
@@ -475,16 +479,16 @@ public sealed class Binder
             return (hasDecimalPoint, expectedType) switch
             {
                 // Without decimal point, the literal can become i32, i64, f32, f64
-                (false, I32Type) => _context.TypeContext.I32,
-                (false, I64Type) => _context.TypeContext.I64,
-                (false, F32Type) => _context.TypeContext.F32,
-                (false, F64Type) => _context.TypeContext.F64,
-                (false, _) => _context.TypeContext.DefaultIntegralNumberType,
+                (false, I32Type) => Types.I32,
+                (false, I64Type) => Types.I64,
+                (false, F32Type) => Types.F32,
+                (false, F64Type) => Types.F64,
+                (false, _) => Types.DefaultIntegralNumberType,
                 
                 // With decimal point, the literal can become f32, f64
-                (true, F32Type) => _context.TypeContext.F32,
-                (true, F64Type) => _context.TypeContext.F64,
-                (true, _) => _context.TypeContext.DefaultFloatingNumberType,
+                (true, F32Type) => Types.F32,
+                (true, F64Type) => Types.F64,
+                (true, _) => Types.DefaultFloatingNumberType,
             };
         }
     }
@@ -520,7 +524,7 @@ public sealed class Binder
             // Some operands have an error. So don't type-check them
             // be silent and wrap in an error expression.
             return new HirErrorExpr(recoveredExprs: [boundLeft, boundRight],
-                type: _context.TypeContext.Error, syntax);
+                type: Types.Error, syntax);
         }
         
         // Equality type-checks everything
@@ -531,7 +535,7 @@ public sealed class Binder
                 TokenKind.BangEqual => EqualityComparisonKind.NotEquals,
                 _ => throw new UnreachableException()
             },
-            type: _context.TypeContext.Bool, 
+            type: Types.Bool, 
             syntax);
     }
     
@@ -546,21 +550,21 @@ public sealed class Binder
             // Some operands have an error. So don't type-check them
             // be silent and wrap in an error expression.
             return new HirErrorExpr(recoveredExprs: [boundLeft, boundRight],
-                type: _context.TypeContext.Error, syntax);
+                type: Types.Error, syntax);
         }
 
         // Type-check against bool
-        if (!CheckTypeAndReport(boundLeft, _context.TypeContext.Bool) ||
-            !CheckTypeAndReport(boundRight, _context.TypeContext.Bool))
+        if (!CheckTypeAndReport(boundLeft, Types.Bool) ||
+            !CheckTypeAndReport(boundRight, Types.Bool))
         {
             return new HirErrorExpr(recoveredExprs: [boundLeft, boundRight],
-                type: _context.TypeContext.Error, syntax);
+                type: Types.Error, syntax);
         }
 
         if (syntax.Operator.Kind is TokenKind.AndKw)
-            return new HirAnd(boundLeft, boundRight, _context.TypeContext.Bool, syntax);
+            return new HirAnd(boundLeft, boundRight, Types.Bool, syntax);
         if (syntax.Operator.Kind is TokenKind.OrKw)
-            return new HirOr(boundLeft, boundRight, _context.TypeContext.Bool, syntax);
+            return new HirOr(boundLeft, boundRight, Types.Bool, syntax);
 
         throw new UnreachableException();
     }
@@ -579,10 +583,10 @@ public sealed class Binder
             // Some operands have an error. So don't type-check them
             // be silent and wrap in an error expression.
             return new HirErrorExpr(recoveredExprs: boundOperands,
-                type: _context.TypeContext.Error, syntax);
+                type: Types.Error, syntax);
         }
 
-        var nativeOperator = _context.TypeContext.FindNativeOperator(
+        var nativeOperator = Types.FindNativeOperator(
             operatorToken.Kind,
             operandTypes);
         
@@ -591,7 +595,7 @@ public sealed class Binder
             _context.DiagnosticBag.ReportError(
                 new Diagnostic.UndefinedOperator(operatorToken, boundOperands));
             return new HirErrorExpr(recoveredExprs: [.. boundOperands],
-                type: _context.TypeContext.Error, syntax);
+                type: Types.Error, syntax);
         }
 
         return new HirNativeOperator(nativeOperator, [.. boundOperands], nativeOperator.ReturnType, syntax);
@@ -619,7 +623,7 @@ public sealed class Binder
 
         return new HirBody(stmts, 
             boundArm, 
-            type: boundArm?.Type ?? _context.TypeContext.None,
+            type: boundArm?.Type ?? Types.None,
             syntax);
     }
 
@@ -630,8 +634,8 @@ public sealed class Binder
         var boundElse = syntax.ElseBody is not null ? BindExpr(syntax.ElseBody, null) : null;
         
         // Type-check predicate
-        if (!CheckTypeAndReport(boundPredicate, expected: _context.TypeContext.Bool))
-            boundPredicate = new HirErrorExpr(recoveredExprs: [boundPredicate], type: _context.TypeContext.Error, syntax.Predicate);
+        if (!CheckTypeAndReport(boundPredicate, expected: Types.Bool))
+            boundPredicate = new HirErrorExpr(recoveredExprs: [boundPredicate], type: Types.Error, syntax.Predicate);
         
         // Type-check body and else body
         // They must have the same type.
