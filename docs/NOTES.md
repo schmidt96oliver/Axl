@@ -2,7 +2,8 @@
                                        ≽(◕ ᴗ ◕)≼
 
 **Next:** _Binding_ :)
-* Taxl and @check files
+* Cleanup TaxlFile a little
+* test runner
 
 **Moving On**
 * ?? carry expected type into exprs -- or -- delete that feature

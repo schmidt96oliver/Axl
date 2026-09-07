@@ -26,10 +26,12 @@ public static class DocumentStore
             {
                 var taxlFile = TaxlFile.Parse(SourceFileView.Whole(sourceFile));
                 TaxlFiles[uri] = taxlFile;
+                Compilations[uri] = Compilation.From(taxlFile);
             }
-
-            var compilation = Compilation.FromTrees(Parser.Parse(SourceFileView.Whole(sourceFile)));
-            Compilations[uri] = compilation;
+            else
+            {
+                Compilations[uri] = Compilation.FromTrees(Parser.Parse(SourceFileView.Whole(sourceFile)));
+            }
         }
         catch
         {

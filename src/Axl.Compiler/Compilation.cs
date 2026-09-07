@@ -8,6 +8,7 @@ using Axl.Compiler.Semantics.Symbols;
 using Axl.Compiler.Semantics.Types;
 using Axl.Compiler.Syntax;
 using Axl.Compiler.Syntax.Tree;
+using Axl.Compiler.Taxl;
 
 namespace Axl.Compiler;
 
@@ -64,6 +65,9 @@ public class Compilation
     {
         return new Compilation([.. trees]);
     }
+
+    public static Compilation From(TaxlFile taxlFile)
+        => FromTrees(taxlFile.Fragments.Select(fragment => Parser.Parse(fragment.View)));
 
 
     private GlobalSymbol CreateGlobalSymbol()
