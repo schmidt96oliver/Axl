@@ -119,6 +119,12 @@ public sealed partial class TaxlTests
             => InlineSnapshot.Validate(Taxl("""
                                                     1  +  2  +  3;
                                             //~type ^^ ^^ ^^ ^^ i32
-                                            """));
+                                            """), """
+                --> Directives: 
+                --- Code "" ---
+                --> //~ INVALID: Type annotation can only contain one block of carets.
+                        1  +  2  +  3;
+                //~type ^^ ^^ ^^ ^^ i32
+                """);
     }
 }

@@ -245,7 +245,12 @@ public sealed class TaxlFile
         var typeName = typeNameIndex < text.Length
             ? text[typeNameIndex..].Trim().ToString()
             : "";
-
+        if (typeName.Contains('^'))
+        {
+            return new TaxlAnnotation.Invalid("Type annotation can only contain one block of carets.",
+                textLocation.Span);
+        }
+        
         return new TaxlAnnotation.Type(referencedSpan, typeName, textLocation.Span);
     }
     
