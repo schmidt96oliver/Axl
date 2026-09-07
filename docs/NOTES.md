@@ -2,15 +2,20 @@
                                        ≽(◕ ᴗ ◕)≼
 
 **Next:** _Binding_ :)
-* if, loop
-* return, break, continue
-* local fn bodies with "cannot capture" warning.
-  * They can see other local fns transitively
+* assign
+* make local fn bodies unsupported
 
-* carry expected type into exprs
+* ?? carry expected type into exprs -- or -- delete that feature
 * allow any type in string interpolation (that's a lowering problem)
 
 * Taxl and @check files
+
+**Moving On**
+* compound assign
+* loop (how to handle arms?)
+* return, break, continue
+* local fn bodies with "cannot capture" warning.
+    * They can see other local fns transitively
 
 **Stashed small ones**:
 * Regressions: `1+[EOF]`, `-[EOF]`

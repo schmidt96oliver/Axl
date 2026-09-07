@@ -229,22 +229,22 @@ public sealed class Binder
         // Names
         IdNameSyntax idNameSyntax => BindPlainIdName(idNameSyntax),
         
-        // Binary, unary
+        // Operators
         BinaryExprSyntax binaryExprSyntax => BindBinary(binaryExprSyntax, expectedType),
         UnaryExprSyntax unaryExprSyntax => BindUnary(unaryExprSyntax, expectedType),
         
-        // Block, If, Loop
+        // Bodies / Control Flow
         BlockExprSyntax blockExprSyntax => BindBlock(blockExprSyntax),
         IfExprSyntax ifExprSyntax => BindIf(ifExprSyntax),
+        ArmSyntax armSyntax => BindExpr(armSyntax.Expr, expectedType: null),
         
-        // Strings
-        StringExprSyntax stringExprSyntax => BindString(stringExprSyntax),
-        
-        // Literals
+        // Strings and Literals
         NumberLiteralSyntax numberLiteralSyntax => BindNumberLiteral(numberLiteralSyntax, expectedType),
         TrueLiteralSyntax => new HirBoolLiteral(value: true, type: _context.TypeContext.Bool, syntax),
         FalseLiteralSyntax => new HirBoolLiteral(value: false, type: _context.TypeContext.Bool, syntax),
+        StringExprSyntax stringExprSyntax => BindString(stringExprSyntax),
         
+        // Error and unsupported
         ErrorExprSyntax errorExprSyntax => BindError(errorExprSyntax),
         _ => BindUnsupported(syntax)
     };
