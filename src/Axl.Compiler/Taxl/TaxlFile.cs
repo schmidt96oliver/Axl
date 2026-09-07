@@ -27,8 +27,8 @@ public sealed class TaxlFile
         Fragments = fragments;
         Directives = directives;
     }
-    
-    
+
+
     public static TaxlFile Parse(SourceFileView source)
     {
         // Split into Fragments
@@ -51,9 +51,13 @@ public sealed class TaxlFile
             start = end;
         }
 
-        var directives = ParseDirectives(fragments[0].View);
+        if (fragments.Count > 0)
+        {
+            var directives = ParseDirectives(fragments[0].View);
+            return new TaxlFile(fragments.DrainToImmutable(), directives);
+        }
 
-        return new TaxlFile(fragments.DrainToImmutable(), directives);
+        return new TaxlFile([new TaxlFragment.Code(source, "", Annotations: [])], directives: []);
     }
 
     private static TaxlFragment ParseFragment(SourceFileView source)
