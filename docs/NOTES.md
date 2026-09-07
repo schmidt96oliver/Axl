@@ -2,8 +2,6 @@
                                        ≽(◕ ᴗ ◕)≼
 
 **Next:** _Binding_ :)
-* make local fn bodies unsupported
-
 * ?? carry expected type into exprs -- or -- delete that feature
 * allow any type in string interpolation (that's a lowering problem)
 

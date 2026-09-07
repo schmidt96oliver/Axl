@@ -173,6 +173,11 @@ public sealed class Binder
                         SymbolName.From(fnDeclSyntax.Name),
                         fnDeclSyntax,
                         context.ParentSymbol));
+                    
+                    // Report fn body as unsupported, because they are not bound yet.
+                    context.DiagnosticBag.ReportError(new Diagnostic.UnsupportedFeature(fnDeclSyntax.Body,
+                        "Local fn bodies are not supported yet."));
+                    
                     break;
 
                 default:
