@@ -117,7 +117,7 @@ public sealed class Binder
     /// Checks, whether <paramref name="expr"/> is assignable to
     /// <paramref name="expected"/>. If not, reports a <see cref="Diagnostic.TypeMismatch"/>.
     /// </summary>
-    private bool CheckTypeAndReport(HirExpr expr, AxlType expected)
+    private bool CheckTypeAndReportMismatch(HirExpr expr, AxlType expected)
     {
         if (!Types.IsAssignableTo(expr.Type, expected))
         {
@@ -134,7 +134,7 @@ public sealed class Binder
     /// Looks up a name expecting a single symbol. Reports <see cref="Diagnostic.UndefinedName"/>
     /// or <see cref="Diagnostic.AmbiguousName"/> accordingly.
     /// </summary>
-    private Symbol? LookupSingleAndReport(IdNameSyntax nameSyntax)
+    private Symbol? LookupSingleAndReportUndefinedOrAmbiguous(IdNameSyntax nameSyntax)
     {
         if (nameSyntax.Token.IsMissing)
             return null;
@@ -313,7 +313,7 @@ public sealed class Binder
         else
         {
             // Check type
-            CheckTypeAndReport(boundInitializer, variableType);
+            CheckTypeAndReportMismatch(boundInitializer, variableType);
         }
 
         var local = new LocalSymbol(_context.Compilation,
@@ -345,7 +345,7 @@ public sealed class Binder
 
     private HirExpr BindPlainIdName(IdNameSyntax syntax)
     {
-        var symbol = LookupSingleAndReport(syntax);
+        var symbol = LookupSingleAndReportUndefinedOrAmbiguous(syntax);
 
         switch (symbol)
         {
@@ -377,7 +377,7 @@ public sealed class Binder
         if (target is null)
             return new HirErrorExpr(recoveredExprs: [boundValue], Types.Error, syntax);
         
-        CheckTypeAndReport(boundValue, target.Type);
+        CheckTypeAndReportMismatch(boundValue, target.Type);
         return new HirAssign(target, boundValue, Types.None, syntax);
     }
 
@@ -389,7 +389,7 @@ public sealed class Binder
             return null;
         }
 
-        var symbol = LookupSingleAndReport(idNameSyntax);
+        var symbol = LookupSingleAndReportUndefinedOrAmbiguous(idNameSyntax);
         switch (symbol)
         {
             case LocalSymbol localSymbol:
@@ -440,7 +440,7 @@ public sealed class Binder
         //TODO: Allow different types according to declared native conversion fns
         
         // For now, we can only accept string exprs
-        if (!CheckTypeAndReport(boundExpr, Types.String))
+        if (!CheckTypeAndReportMismatch(boundExpr, Types.String))
         {
             return new StringPart.Interpolation(
                 new HirErrorExpr(recoveredExprs: [boundExpr], type: Types.Error, syntax));
@@ -554,8 +554,8 @@ public sealed class Binder
         }
 
         // Type-check against bool
-        if (!CheckTypeAndReport(boundLeft, Types.Bool) ||
-            !CheckTypeAndReport(boundRight, Types.Bool))
+        if (!CheckTypeAndReportMismatch(boundLeft, Types.Bool) ||
+            !CheckTypeAndReportMismatch(boundRight, Types.Bool))
         {
             return new HirErrorExpr(recoveredExprs: [boundLeft, boundRight],
                 type: Types.Error, syntax);
@@ -634,14 +634,14 @@ public sealed class Binder
         var boundElse = syntax.ElseBody is not null ? BindExpr(syntax.ElseBody, null) : null;
         
         // Type-check predicate
-        if (!CheckTypeAndReport(boundPredicate, expected: Types.Bool))
+        if (!CheckTypeAndReportMismatch(boundPredicate, expected: Types.Bool))
             boundPredicate = new HirErrorExpr(recoveredExprs: [boundPredicate], type: Types.Error, syntax.Predicate);
         
         // Type-check body and else body
         // They must have the same type.
         var ifExprType = boundBody.Type;
         if (boundElse is not null)
-            CheckTypeAndReport(boundElse, expected: ifExprType);
+            CheckTypeAndReportMismatch(boundElse, expected: ifExprType);
 
         return new HirIf(boundPredicate, boundBody, boundElse, ifExprType, syntax);
     }
