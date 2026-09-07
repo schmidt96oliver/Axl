@@ -20,7 +20,7 @@ namespace Axl;
 /// </summary>
 public static class UiPlayground
 {
-    private static readonly string TestFilePath = Path.Combine("..", "..", "..", "..", "src", "Axl", "test.axl");
+    private static readonly string TestFilePath = Path.Combine("..", "..", "..", "..", "src", "Axl", "test.taxl");
 
     private static readonly TimeSpan PollInterval = TimeSpan.FromMilliseconds(250);
 
