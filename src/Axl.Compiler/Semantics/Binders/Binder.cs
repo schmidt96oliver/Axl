@@ -112,6 +112,9 @@ public sealed class Binder
     #region Helpers
     
     private TypeContext Types => _context.TypeContext;
+
+    private void ReportError(Diagnostic.Error error)
+        => _context.DiagnosticBag.ReportError(error);
     
     /// <summary>
     /// Checks, whether <paramref name="expr"/> is assignable to
@@ -121,7 +124,7 @@ public sealed class Binder
     {
         if (!Types.IsAssignableTo(expr.Type, expected))
         {
-            _context.DiagnosticBag.ReportError(new Diagnostic.TypeMismatch(
+            ReportError(new Diagnostic.TypeMismatch(
                 Expr: expr,
                 Expected: expected));
             return false;
@@ -145,10 +148,10 @@ public sealed class Binder
         switch (lookupResult.Length)
         {
             case 0:
-                _context.DiagnosticBag.ReportError(new Diagnostic.UndefinedName(nameSyntax));
+                ReportError(new Diagnostic.UndefinedName(nameSyntax));
                 return null;
             case > 1:
-                _context.DiagnosticBag.ReportError(new Diagnostic.AmbiguousName(nameSyntax, lookupResult));
+                ReportError(new Diagnostic.AmbiguousName(nameSyntax, lookupResult));
                 return null;
             default:
                 return lookupResult[0];
@@ -236,7 +239,7 @@ public sealed class Binder
     {
         if (syntax.Span?.IsEmpty == false)
         {
-            _context.DiagnosticBag.ReportError(new Diagnostic.UnsupportedFeature(
+            ReportError(new Diagnostic.UnsupportedFeature(
                 syntax, "Only native types are supported for now."));
         }
 
@@ -288,7 +291,7 @@ public sealed class Binder
 
     private HirExpr BindUnsupported(ExprSyntax syntax)
     {
-        _context.DiagnosticBag.ReportError(new Diagnostic.UnsupportedFeature(syntax));
+        ReportError(new Diagnostic.UnsupportedFeature(syntax));
         return new HirErrorExpr(recoveredExprs: [], type: Types.Error, syntax);
     }
 
@@ -335,7 +338,7 @@ public sealed class Binder
     {
         if (syntax.Initializer is null)
         {
-            _context.DiagnosticBag.ReportError(new Diagnostic.MissingInitializer(syntax));
+            ReportError(new Diagnostic.MissingInitializer(syntax));
             
             // LIE and add the entire var decl syntax. This is the only (probably) case,
             // where a null syntax would be nice. But practically, syntax shouldn't be
@@ -361,7 +364,7 @@ public sealed class Binder
                 return new HirErrorExpr(recoveredExprs: [], type: Types.Error, syntax);
             
             default:
-                _context.DiagnosticBag.ReportError(new Diagnostic.InvalidLocalRef(syntax, symbol));
+                ReportError(new Diagnostic.InvalidLocalRef(syntax, symbol));
                 return new HirErrorExpr(recoveredExprs: [], type: Types.Error, syntax);
         }
     }
@@ -374,7 +377,7 @@ public sealed class Binder
         // Reject compound assignment
         if (syntax.Operator.Kind is not TokenKind.Equal)
         {
-            _context.DiagnosticBag.ReportError(
+            ReportError(
                 new Diagnostic.UnsupportedFeature(syntax, "Compound assignment not supported yet."));
             return new HirErrorExpr(recoveredExprs: [boundValue], Types.Error, syntax);
         }
@@ -390,7 +393,7 @@ public sealed class Binder
     {
         if (syntax is not IdNameSyntax idNameSyntax)
         {
-            _context.DiagnosticBag.ReportError(new Diagnostic.InvalidAssignTarget(syntax));
+            ReportError(new Diagnostic.InvalidAssignTarget(syntax));
             return null;
         }
 
@@ -404,7 +407,7 @@ public sealed class Binder
                 return null;
             
             default:
-                _context.DiagnosticBag.ReportError(new Diagnostic.InvalidAssignTarget(syntax, symbol));
+                ReportError(new Diagnostic.InvalidAssignTarget(syntax, symbol));
                 return null;
         }
     }
@@ -472,7 +475,7 @@ public sealed class Binder
         if (syntax.Token.HasDecimalPoint &&
             type is not (F32Type or F64Type))
         {
-            _context.DiagnosticBag.ReportError(new Diagnostic.NumberSuffixMismatch(syntax, type));
+            ReportError(new Diagnostic.NumberSuffixMismatch(syntax, type));
         }
         
         return new HirNumberLiteral(syntax.Token, type, syntax);
@@ -597,7 +600,7 @@ public sealed class Binder
         
         if (nativeOperator is null)
         {
-            _context.DiagnosticBag.ReportError(
+            ReportError(
                 new Diagnostic.UndefinedOperator(operatorToken, boundOperands));
             return new HirErrorExpr(recoveredExprs: [.. boundOperands],
                 type: Types.Error, syntax);
