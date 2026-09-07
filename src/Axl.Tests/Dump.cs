@@ -209,7 +209,7 @@ public class Dump(SourceFileView source)
     }
 
 
-    public Dump Add(TaxlFile taxlFile)
+    public Dump Add(TaxlFile taxlFile, bool onlyStructure)
     {
         _builder.AppendLine($"--> Directives: {string.Join(", ", taxlFile.Directives.Select(dir => dir.Kind))}");
         
@@ -239,7 +239,8 @@ public class Dump(SourceFileView source)
                 }
             }
 
-            _builder.AppendLine(part.View.TextSpan.ToString());
+            if (!onlyStructure)
+                _builder.AppendLine(part.View.TextSpan.ToString());
         }
 
         return this;

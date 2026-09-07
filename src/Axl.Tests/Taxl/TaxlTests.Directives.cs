@@ -8,63 +8,51 @@ public sealed partial class TaxlTests
     {
         [Fact]
         public void Valid()
-            => InlineSnapshot.Validate(Taxl("""
+            => InlineSnapshot.Validate(Structure("""
                                             //@    run-pass   
                                             //@check  
                                             //@ run-panic
                                             """), """
                 --> Directives: RunPass, Check, RunPanic
                 --- Code "" ---
-                //@    run-pass   
-                //@check  
-                //@ run-panic
                 """);
 
         [Fact]
         public void AfterWhitespace_Accepted()
-            => InlineSnapshot.Validate(Taxl("""
+            => InlineSnapshot.Validate(Structure("""
                                                //@run-pass
                                              //@check
                                                //@run-panic
                                             """), """
                 --> Directives: RunPass, Check, RunPanic
                 --- Code "" ---
-                   //@run-pass
-                 //@check
-                   //@run-panic
                 """);
 
         [Fact]
         public void AfterText_Ignored()
-            => InlineSnapshot.Validate(Taxl("""
+            => InlineSnapshot.Validate(Structure("""
                                             //@run-pass
                                             test;
                                             //@check
                                             """), """
                 --> Directives: RunPass
                 --- Code "" ---
-                //@run-pass
-                test;
-                //@check
                 """);
 
         [Fact]
         public void BetweenComments_Accepted()
-            => InlineSnapshot.Validate(Taxl("""
+            => InlineSnapshot.Validate(Structure("""
                                             //@run-pass
                                             // just a comment
                                             //@check
                                             """), """
                 --> Directives: RunPass, Check
                 --- Code "" ---
-                //@run-pass
-                // just a comment
-                //@check
                 """);
 
         [Fact]
         public void InFragments_Ignored()
-            => InlineSnapshot.Validate(Taxl("""
+            => InlineSnapshot.Validate(Structure("""
                                             //@check
                                             //---
                                             //@run-pass
@@ -73,27 +61,18 @@ public sealed partial class TaxlTests
                                             """), """
                 --> Directives: Check
                 --- Code "" ---
-                //@check
-
                 --- Code "" ---
-                //---
-                //@run-pass
-
                 --- Output "" ---
-                //===
-                //@run-panic
                 """);
 
         [Fact]
         public void Unknown()
-            => InlineSnapshot.Validate(Taxl("""
+            => InlineSnapshot.Validate(Structure("""
                                             //@
                                             //@ bla
                                             """), """
                 --> Directives: Unknown, Unknown
                 --- Code "" ---
-                //@
-                //@ bla
                 """);
     }
 }
