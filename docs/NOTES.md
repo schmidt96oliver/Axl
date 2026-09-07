@@ -2,12 +2,11 @@
                                        ≽(◕ ᴗ ◕)≼
 
 **Next:** _Binding_ :)
-* ?? carry expected type into exprs -- or -- delete that feature
-* allow any type in string interpolation (that's a lowering problem)
-
 * Taxl and @check files
 
 **Moving On**
+* ?? carry expected type into exprs -- or -- delete that feature
+* allow any type in string interpolation (that's a lowering problem)
 * compound assign
 * loop (how to handle arms?)
 * return, break, continue
@@ -43,6 +42,13 @@
 - Directives "//@run-pass", "//@run-panic", "//@check"
 - "//~error" and "//~lint" on this line
 - "//~  ^^^ type name" expression type checking
+
+- Error resilient for LSP
+- No need for proper diagnostics
+- Test runner can fail with "Invalid taxl".
+- API for rewriting in bless mode
+  - entire output block
+  - inline annotations
 
 # Semantics
 

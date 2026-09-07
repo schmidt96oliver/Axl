@@ -54,4 +54,7 @@ public abstract class SyntaxElement
 
     public SourceLocation GetLocation()
         => Tree.Source.GetLocation(Span ?? FullSpan);
+
+    public ReadOnlySpan<char> GetText()
+        => GetLocation().GetText();
 }

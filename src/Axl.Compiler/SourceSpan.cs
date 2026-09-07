@@ -30,7 +30,7 @@ public readonly record struct SourceSpan
         Length = length;
     }
 
-    internal static SourceSpan InsideSourceFile(int first, int length)
+    public static SourceSpan InsideSourceFile(int first, int length)
     {
         Guard.InRange(first >= 0);
         Guard.InRange(length >= 0);

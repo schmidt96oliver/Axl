@@ -1,162 +1,72 @@
 ﻿#!/usr/bin/env dotnet
 #:project src/Axl.Compiler/Axl.Compiler.csproj
 
+using System.Buffers;
 using System.Collections.Immutable;
+using System.Data.Common;
 using System.Diagnostics;
-using System.Text;
+using System.IO.Compression;
 using Axl.Compiler;
 using Axl.Compiler.Diagnostics;
-using Axl.Compiler.Semantics.Symbols;
-using Axl.Compiler.Semantics.Types;
 using Axl.Compiler.Syntax;
-using Axl.Compiler.Syntax.Tree;
+using Axl.Compiler.Taxl;
 
-string[] inputs = ["""
-                    module A.B;
-                    
-                    fn InB(: i32, a: string) { }
-                   ""","""
-                   module A;
-                    fn InA() { }
-                    fn InA_2() { }
-                   """,
-    
-                    """
-                    module A.B;
-                    fn InB_2() { }
-                    """,
-                    """
-                    module Other;
-                    
-                    fn InOther() { }
-                    fn InOther2() { }
-                    """
-];
 
-var trees = inputs.Select(text => Parser.Parse(SourceFileView.FromText(text))).ToImmutableArray();
-var compilation = Compilation.FromTrees(trees);
+var input = """
+            //@run-pass
+               //@check
+             // This is an in-between comment
+             //@run-panic
+            //@bla
 
-foreach (var diag in compilation.Diagnostics)
-    Console.WriteLine($"[ERROR] {diag.Id}: {diag.Message}");
+            Bla; // Hello
+            //@blupp
+                //--- Axl.test
+            var a = 2 + 3; //~ error TypeMismatch
+            //~lint
+            //~type ^^^^^ i32
+            //~type i32
+            //~type   ^^^^^^^^^^^^ i32
+            //~type ^
 
-PrintSymbol(compilation.GlobalSymbol, "");
+             //===stdout
+            // Hello
+            // World
+            """;
 
-string SelectName(MemberSyntax syntax) => syntax switch
+var source = SourceFileView.FromText(input);
+var file = TaxlFile.Parse(source);
+Console.WriteLine($"Directives: {string.Join(", ", file.Directives.Select(dir => dir.Kind))}");
+foreach (var part in file.Fragments)
 {
-    FnDeclSyntax fnDecl => $"fn {fnDecl.Name.Identifier}",
-    NativeFnDeclSyntax nativeFnDecl => $"native fn {nativeFnDecl.Name.Identifier}",
-    _ => "??"
-};
-return;
-
-string MakeSyntaxText(SyntaxNode node)
-{
-    var treeIndex = trees.IndexOf(node.Tree);
-    var startLinePos = node.GetLocation().StartLinePosition;
-    var endLinePos = node.GetLocation().EndLinePosition;
-    var text = startLinePos.Line != endLinePos.Line
-        ? $"[{treeIndex}] l.{startLinePos.Line} - l.{endLinePos.Line}"
-        : $"[{treeIndex}] l.{startLinePos.Line}";
-    return text;
-}
-
-
-void PrintSymbol(Symbol symbol, string prefix)
-{
-    var syntaxText = symbol.DeclaringSyntaxes.Length > 0
-        ? string.Join(", ", symbol.DeclaringSyntaxes.Select(MakeSyntaxText))
-        : "<none>";
-    
-    switch (symbol)
+    Console.WriteLine($"--- {part.GetType().Name} \"{part.Name}\"");
+    if (part is TaxlFragment.Code codePart)
     {
-        case GlobalSymbol globalSymbol:
-            Console.WriteLine($"{prefix}<global>, Syntax = {syntaxText}");
-            foreach (var member in globalSymbol.Members)
+        foreach (var annotation in codePart.Annotations)
+        {
+            Console.Write("--- ");
+            switch (annotation)
             {
-                PrintSymbol(member, prefix + "  ");
+                case TaxlAnnotation.Diagnostic diagAnnotation:
+                    Console.WriteLine($"{diagAnnotation.Kind}@l.{diagAnnotation.LineNumber}: {diagAnnotation.Id}");
+                    break;
+                case TaxlAnnotation.Type typeAnnotation:
+                    var refText = source.GetText(typeAnnotation.ExprSpan);
+                    Console.WriteLine($"type {typeAnnotation.TypeName} on \"{refText}\"");
+                    break;
+                case TaxlAnnotation.Invalid invalidAnnotation:
+                    Console.WriteLine($"invalid: {invalidAnnotation.ErrorMessage}");
+                    break;
             }
-
-            break;
-        
-        case ModuleSymbol moduleSymbol:
-            
-            Console.WriteLine($"{prefix}Module \"{moduleSymbol.Name}\", Syntax = {syntaxText}");
-            foreach (var member in moduleSymbol.Members)
-            {
-                PrintSymbol(member, prefix + "  ");
-            }
-
-            break;
-
-        case FnSymbol fnSymbol:
-            // var scope = GetScope(fnSymbol.DeclaringSyntaxes[0]);
-            // var scopeTextBuilder = new StringBuilder();
-            // while (scope is not null)
-            // {
-            //     if (scope is FileScope fileScope)
-            //         scopeTextBuilder.Append($"<file [{compilation.SyntaxTrees.IndexOf(
-            //             fileScope.FileSyntax.Tree)}]>");
-            //     else
-            //         scopeTextBuilder.Append(scope);
-            //     if (scope.Parent is not null)
-            //         scopeTextBuilder.Append(" -> ");
-            //     scope = scope.Parent;
-            // }
-            
-            Console.WriteLine($"{prefix}Fn \"{fnSymbol.Name}, Syntax = {syntaxText}");
-            
-            break;
-        
-        case LocalSymbol localSymbol:
-            Console.WriteLine($"{prefix}\"{localSymbol.Name}\" : {localSymbol.Type}, Syntax = {syntaxText}");
-            break;
-        
-        case ErrorSymbol errorSymbol:
-            Console.WriteLine($"{prefix}ERROR \"{errorSymbol.Name}\", Syntax = {syntaxText}");
-            break;
+        }
     }
+
+    Console.WriteLine(part.View.TextSpan);
 }
 
-// Scope GetScope(SyntaxNode syntax)
-// {
-//     switch (syntax)
-//     {
-//         case FileSyntax fileSyntax:
-//         {
-//             var parentScope = compilation.GetGloballyDeclaredSymbol(fileSyntax) is ModuleSymbol module
-//                 ? GetModuleScope(module)
-//                 : new GlobalScope(compilation.GlobalSymbol);
-//             return new FileScope(fileSyntax, parentScope);
-//         }
-//         
-//         case FnDeclSyntax fnDeclSyntax:
-//         {
-//             var parent = GetScope(fnDeclSyntax.Parent!);
-//             return new FnScope((FnSymbol)compilation.GetGloballyDeclaredSymbol(fnDeclSyntax)!, parent);
-//         }
-//         
-//         default:
-//             throw new UnreachableException();
-//     }
-// }
-//  
-// Scope GetModuleScope(ModuleSymbol symbol)
-// {
-//     var parent = symbol.Parent is ModuleSymbol moduleSymbol
-//         ? GetModuleScope(moduleSymbol)
-//         : new GlobalScope(compilation.GlobalSymbol);
-//     return new ModuleScope(symbol, parent);
-// }
-//
-//
-//
-//
-//
-// public record HirNode;
-//
-// public record HirExpr(AxlType Type) : HirNode;
-//
-// public record HirBody(ImmutableArray<Diagnostic> Diagnostics) : HirNode;
-//
-// public record HirBreak(HirExpr? Expr, AxlType Type) : HirExpr(Type);
-//
+
+
+
+
+
+
