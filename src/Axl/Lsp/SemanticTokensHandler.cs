@@ -196,7 +196,9 @@ public class SemanticTokensHandler(ILanguageServerFacade facade) : SemanticToken
 
     private void TokenizeTaxlComment(Token commentToken, TaxlFile taxlFile, LinePosition startLinePos, SemanticTokensBuilder builder)
     {
-        var isHeadLine = taxlFile.Fragments.Any(fragment => fragment.View.Span.First == commentToken.FullSpan.First);
+        var isHeadLine = taxlFile.Fragments
+            .Any(fragment => fragment.View.Span.First == commentToken.FullSpan.First &&
+                             (fragment.View.TextSpan.StartsWith("//---") || fragment.View.TextSpan.StartsWith("//===")));
         if (isHeadLine)
         {
             builder.Push(startLinePos.Line, startLinePos.Column, length: Math.Min(5, commentToken.FullSpan.Length),
