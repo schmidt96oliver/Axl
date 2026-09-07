@@ -5,19 +5,19 @@
 
 // Integral numbers
 var a = 1_i32;
-//~     ^^^^^ type i32
+//~type ^^^^^ i32
 var a = 1_i64;
-//~     ^^^^^ type i64
+//~type ^^^^^ i64
 var a = 1_f32;
-//~     ^^^^^ type f32
+//~type ^^^^^ f32
 var a = 1_f64;
-//~     ^^^^^ type f64
+//~type ^^^^^ f64
 
 // Decimal numbers
 var a = 1.1_f32;
-//~     ^^^^^^^ type f32
+//~type ^^^^^^^ f32
 var a = 1.1_f64;
-//~     ^^^^^^^ type f64
+//~type ^^^^^^^ f64
 
 var a = 1.1_i32;    //~error
 var a = 1.1_i64;    //~error
