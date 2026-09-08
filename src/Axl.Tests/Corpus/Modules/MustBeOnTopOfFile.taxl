@@ -8,19 +8,19 @@
 
 fn Test() { }
 
-module A;   //~error
+module A;   //~error ModuleDeclAfterCode
 
 //---
 var a = 2;
 
-module A;   //~error
+module A;   //~error ModuleDeclAfterCode
 
 //---
 using Standard;
 
 PrintLine("1");
 
-module A;   //~error
+module A;   //~error ModuleDeclAfterCode
 
 //---
 using Standard;     // usings are allowed before

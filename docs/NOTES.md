@@ -1,9 +1,12 @@
 # ------------------------------------ Axl Project ------------------------------------
                                        ≽(◕ ᴗ ◕)≼
 
-**Next:** _Binding_ :)
-* Cleanup TaxlFile a little
-* test runner
+**Next:** Test runner
+* ship taxl with only diagnostics (no type)
+
+* *Query structure*
+
+* find a way to get HirExpr from ExprSyntax. Currently errors!
 
 **Moving On**
 * ?? carry expected type into exprs -- or -- delete that feature

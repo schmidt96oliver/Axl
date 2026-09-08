@@ -5,5 +5,5 @@
 // module declarations are hard to reason about.
 
 module A;
-module B;   //~error
-module C;   //~error
+module B;   //~error MultipleModuleDecls
+module C;   //~error MultipleModuleDecls

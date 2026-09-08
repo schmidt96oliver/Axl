@@ -3,13 +3,13 @@
 // Duplicate parameter names are reported on script and
 // module files. 
 
-fn Test(a: string,   //~error
-        a: bool)     //~error
+fn Test(a: string,   //~error DuplicateParameters
+        a: bool)     //~error DuplicateParameters
 { }
 
 //---
 module A;
 
-fn Test(a: i32,     //~error
-        a: i32)     //~error
+fn Test(a: i32,     //~error DuplicateParameters
+        a: i32)     //~error DuplicateParameters
 { }
