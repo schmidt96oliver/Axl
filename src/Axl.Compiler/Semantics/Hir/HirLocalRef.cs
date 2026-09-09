@@ -1,4 +1,5 @@
-﻿using Axl.Compiler.Semantics.Symbols;
+﻿using System.Collections.Immutable;
+using Axl.Compiler.Semantics.Symbols;
 using Axl.Compiler.Syntax;
 
 namespace Axl.Compiler.Semantics.Hir;
@@ -10,4 +11,7 @@ namespace Axl.Compiler.Semantics.Hir;
 public sealed class HirLocalRef(LocalSymbol localSymbol, SyntaxNode syntax) : HirExpr(localSymbol.Type, syntax)
 {
     public LocalSymbol LocalSymbol { get; } = localSymbol;
+    
+    protected override ImmutableArray<HirStmt> GetChildren() => [];
+    
 }

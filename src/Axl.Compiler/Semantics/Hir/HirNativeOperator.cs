@@ -13,4 +13,7 @@ public sealed class HirNativeOperator(
 {
     public NativeOperatorInfo OperatorInfo { get; } = operatorInfo;
     public ImmutableArray<HirExpr> Operands { get; } = operands;
+
+    protected override ImmutableArray<HirStmt> GetChildren() => Operands.CastArray<HirStmt>();
+
 }

@@ -16,4 +16,8 @@ public sealed class HirBody(
 {
     public ImmutableArray<HirStmt> Stmts { get; } = stmts;
     public HirExpr? ArmExpr { get; } = armExpr;
+
+    protected override ImmutableArray<HirStmt> GetChildren()
+        => ArmExpr is not null ? [.. Stmts, ArmExpr] : Stmts;
+
 }

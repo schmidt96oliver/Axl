@@ -1,4 +1,5 @@
-﻿using Axl.Compiler.Semantics.Types;
+﻿using System.Collections.Immutable;
+using Axl.Compiler.Semantics.Types;
 using Axl.Compiler.Syntax;
 
 namespace Axl.Compiler.Semantics.Hir;
@@ -9,4 +10,8 @@ public sealed class HirIf(HirExpr predicate, HirExpr then, HirExpr? @else, AxlTy
     public HirExpr Predicate { get; } = predicate;
     public HirExpr Then { get; } = then;
     public HirExpr? Else { get; } = @else;
+    
+    protected override ImmutableArray<HirStmt> GetChildren() 
+        => Else is not null ? [Predicate, Then, Else] : [Predicate, Then];
+    
 }

@@ -1,4 +1,5 @@
-﻿using Axl.Compiler.Semantics.Types;
+﻿using System.Collections.Immutable;
+using Axl.Compiler.Semantics.Types;
 using Axl.Compiler.Syntax;
 
 namespace Axl.Compiler.Semantics.Hir;
@@ -20,4 +21,7 @@ public sealed class HirEqualityComparison(
     public HirExpr Left { get; } = left;
     public HirExpr Right { get; } = right;
     public EqualityComparisonKind Kind { get; } = kind;
+
+    protected override ImmutableArray<HirStmt> GetChildren() => [Left, Right];
+
 }

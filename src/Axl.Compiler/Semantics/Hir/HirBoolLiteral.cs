@@ -1,4 +1,5 @@
-﻿using Axl.Compiler.Semantics.Types;
+﻿using System.Collections.Immutable;
+using Axl.Compiler.Semantics.Types;
 using Axl.Compiler.Syntax;
 
 namespace Axl.Compiler.Semantics.Hir;
@@ -6,4 +7,7 @@ namespace Axl.Compiler.Semantics.Hir;
 public sealed class HirBoolLiteral(bool value, AxlType type, SyntaxNode syntax) : HirExpr(type, syntax)
 {
     public bool Value { get; } = value;
+
+    protected override ImmutableArray<HirStmt> GetChildren() => [];
+
 }

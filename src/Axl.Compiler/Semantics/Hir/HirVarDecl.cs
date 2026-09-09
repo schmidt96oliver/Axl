@@ -1,4 +1,5 @@
-﻿using Axl.Compiler.Semantics.Symbols;
+﻿using System.Collections.Immutable;
+using Axl.Compiler.Semantics.Symbols;
 using Axl.Compiler.Syntax;
 
 namespace Axl.Compiler.Semantics.Hir;
@@ -7,4 +8,7 @@ public sealed class HirVarDecl(LocalSymbol variableSymbol, HirExpr initializer, 
 {
     public LocalSymbol VariableSymbol { get; } = variableSymbol;
     public HirExpr Initializer { get; } = initializer;
+    
+    protected override ImmutableArray<HirStmt> GetChildren() => [Initializer];
+    
 }

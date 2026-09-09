@@ -1,4 +1,5 @@
-﻿using Axl.Compiler.Semantics.Symbols;
+﻿using System.Collections.Immutable;
+using Axl.Compiler.Semantics.Symbols;
 using Axl.Compiler.Semantics.Types;
 using Axl.Compiler.Syntax;
 
@@ -9,4 +10,7 @@ public sealed class HirAssign(LocalSymbol target, HirExpr value, AxlType type, S
 {
     public LocalSymbol Target { get; } = target;
     public HirExpr Value { get; } = value;
+    
+    protected override ImmutableArray<HirStmt> GetChildren() => [Value];
+    
 }
