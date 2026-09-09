@@ -1,5 +1,7 @@
 ﻿using System.Diagnostics;
+using Axl.Compiler.Semantics.Hir;
 using Axl.Compiler.Semantics.Symbols;
+using Axl.Compiler.Semantics.Types;
 using Axl.Compiler.Syntax;
 using Axl.Compiler.Syntax.Tree;
 
@@ -117,5 +119,25 @@ public sealed class Analysis
                     return null;
             }
         }
+    }
+
+
+    public Hir HirFor(SyntaxNode syntax)
+    {
+        var script = _compilation.ScriptSymbols.SingleOrDefault(script => script.FileSyntax == syntax.Tree.FileSyntax);
+        if (script is null)
+            //TODO: Implement fns and local fns
+            throw new NotImplementedException("Cannot search on fn bodies yet.");
+
+        return _compilation.Bind(script);
+    }
+
+    public AxlType? TypeOf(ExprSyntax syntax)
+    {
+        var hir = HirFor(syntax);
+        
+        // Descend into hir tree to find expr syntax
+        
+        throw new NotImplementedException();
     }
 }
