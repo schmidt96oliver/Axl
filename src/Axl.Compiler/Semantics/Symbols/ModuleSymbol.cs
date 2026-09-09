@@ -53,8 +53,12 @@ public sealed class ModuleSymbol(
         {
             switch (node)
             {
+                case FnDeclSyntax fnDeclSyntax:
+                    members.Add(CreateSymbol(fnDeclSyntax));
+                    break;
+                
                 case MemberSyntax memberSyntax:
-                    members.Add(CreateSymbol(memberSyntax));
+                    _diagnosticBag.ReportError(new Diagnostic.UnsupportedFeature(memberSyntax));
                     break;
                 
                 case UsingDirectiveSyntax:
