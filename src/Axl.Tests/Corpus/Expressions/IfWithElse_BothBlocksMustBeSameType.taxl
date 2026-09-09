@@ -1,0 +1,12 @@
+﻿//@check
+
+// If and else blocks must have the same type
+
+if true => 1
+else => "Hello";     //~error TypeMismatch
+
+if false { }
+else { => 1 }       //~error TypeMismatch
+
+if false => .1f32
+else { }       //~error TypeMismatch
