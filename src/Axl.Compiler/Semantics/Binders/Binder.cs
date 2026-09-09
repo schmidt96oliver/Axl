@@ -648,9 +648,18 @@ public sealed class Binder
         
         // Type-check body and else body
         // They must have the same type.
-        var ifExprType = boundBody.Type;
+        AxlType ifExprType;
         if (boundElse is not null)
+        {
+            ifExprType = boundBody.Type;
             CheckTypeAndReportMismatch(boundElse, expected: ifExprType);
+        }
+        else
+        {
+            // If without else always has type none.
+            
+            ifExprType = Types.None;
+        }
 
         return new HirIf(boundPredicate, boundBody, boundElse, ifExprType, syntax);
     }
