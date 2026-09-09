@@ -275,6 +275,7 @@ public sealed class Binder
         BlockExprSyntax blockExprSyntax => BindBlock(blockExprSyntax),
         IfExprSyntax ifExprSyntax => BindIf(ifExprSyntax),
         ArmSyntax armSyntax => BindExpr(armSyntax.Expr, expectedType: null),
+        GroupExprSyntax groupExprSyntax => BindExpr(groupExprSyntax.Inner, expectedType: null),
         
         // Strings and Literals
         NumberLiteralSyntax numberLiteralSyntax => BindNumberLiteral(numberLiteralSyntax, expectedType),
