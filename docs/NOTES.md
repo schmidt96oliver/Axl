@@ -2,8 +2,6 @@
                                        ≽(◕ ᴗ ◕)≼
 
 **Next:** Test runner
-* ship taxl with only diagnostics (no type)
-
 * *Query structure*
 
 * find a way to get HirExpr from ExprSyntax. Currently errors!

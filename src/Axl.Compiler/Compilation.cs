@@ -19,7 +19,6 @@ public class Compilation
     private LazyField<ImmutableArray<ScriptSymbol>> _lazyScriptSymbols;
 
     private readonly Dictionary<SyntaxTree, ModuleFragment?> _moduleFragmentByTree = [];
-    private readonly Dictionary<SyntaxNode, Symbol?> _globalSymbolsBySyntax = [];
     private readonly Dictionary<ScriptSymbol, Hir> _hirByScript = [];
     private readonly Dictionary<FnSymbol, Hir> _hirByFn = [];
     
@@ -34,6 +33,15 @@ public class Compilation
 
     public ImmutableArray<Diagnostic> Diagnostics
         => _lazyDiagnostics.GetOrCreate(CollectDiagnostics);
+
+    public Analysis Analysis
+    {
+        get
+        {
+            field ??= new Analysis(this);
+            return field;
+        }
+    }
 
 
     private Compilation(ImmutableArray<SyntaxTree> syntaxTrees)
@@ -88,7 +96,7 @@ public class Compilation
         ];
     
     
-    private ModuleFragment? GetModuleFragment(SyntaxTree syntaxTree)
+    public ModuleFragment? GetModuleFragment(SyntaxTree syntaxTree)
     {
         if (_moduleFragmentByTree.TryGetValue(syntaxTree, out var fragment))
             return fragment;
@@ -111,7 +119,7 @@ public class Compilation
         return fragment;
     }
 
-    private ModuleSymbol GetModuleSymbol(ModuleFragment fragment, ModuleSymbol? parent)
+    public ModuleSymbol GetModuleSymbol(ModuleFragment fragment, ModuleSymbol? parent)
     {
         var symbol = parent?.Members.OfType<ModuleSymbol>().Single(module => module.Fragments.Contains(fragment))
                      ?? GlobalSymbol.Members.OfType<ModuleSymbol>().Single(module => module.Fragments.Contains(fragment));
@@ -121,70 +129,7 @@ public class Compilation
             : symbol;
     }
 
-    /// <summary>
-    /// Finds the <see cref="Symbol"/> which is globally visible and declared
-    /// by <paramref name="syntax"/>. Can only find symbols, which are part of
-    /// a module file. Returns <c>null</c>, if the <paramref name="syntax"/> does
-    /// not declare a globally visible symbol.
-    /// <para>
-    /// For <see cref="FileSyntax"/>, returns the <see cref="ModuleSymbol"/> declared
-    /// by that file or <c>null</c>, if it doesn't declare a module.
-    /// </para>
-    /// </summary>
-    public Symbol? GetGloballyDeclaredSymbol(SyntaxNode syntax)
-    {
-        if (_globalSymbolsBySyntax.TryGetValue(syntax, out var symbol))
-            return symbol;
-
-        symbol = Find(syntax);
-        _globalSymbolsBySyntax.Add(syntax, symbol);
-        return symbol;
-        
-        Symbol? Find(SyntaxNode syntax)
-        {
-            switch (syntax)
-            {
-                // A file declares it's module or nothing, when it
-                // is a script file.
-                case FileSyntax fileSyntax:
-                {
-                    var fragment = GetModuleFragment(fileSyntax.Tree);
-                    if (fragment is null)
-                        return null;
-
-                    return GetModuleSymbol(fragment, parent: null);
-                }
-
-                // A module declares it's files module -or- nothing
-                // if it was in an invalid position.
-                case ModuleDeclSyntax:
-                {
-                    var fragment = GetModuleFragment(syntax.Tree);
-                    if (fragment is null)
-                        return null;
-
-                    if (fragment.GetBody().Syntax == syntax)
-                        return GetModuleSymbol(fragment, parent: null);
-
-                    return null;
-                }
-            
-                case MemberSyntax:
-                {
-                    Debug.Assert(syntax.Parent is not null, "Members always have a parent.");
-                
-                    var parentSymbol = GetGloballyDeclaredSymbol(syntax.Parent!);
-                    if (parentSymbol is ModuleSymbol parentModule)
-                        return parentModule.Members.Single(member => member.DeclaringSyntaxes.Contains(syntax));
-
-                    return null;
-                }
-                
-                default:
-                    return null;
-            }
-        }
-    }
+    
 
 
     public Hir Bind(ScriptSymbol scriptSymbol)
