@@ -2,9 +2,6 @@
                                        ≽(◕ ᴗ ◕)≼
 
 **Next:** Test runner
-* *Query structure*
-
-* find a way to get HirExpr from ExprSyntax. Currently errors!
 
 **Moving On**
 * ?? carry expected type into exprs -- or -- delete that feature

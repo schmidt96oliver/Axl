@@ -16,7 +16,8 @@ using Axl.Tests;
 
 var input = """
             //@check
-            var a: i32 = "Hello"; 
+            var a: i32 = "Hello";   //~error TypeMismatch
+            //~type      ^^^^ float
             """;
 
 var source = SourceFileView.FromText(input);

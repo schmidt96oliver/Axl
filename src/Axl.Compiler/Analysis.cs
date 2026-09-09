@@ -134,10 +134,25 @@ public sealed class Analysis
 
     public AxlType? TypeOf(ExprSyntax syntax)
     {
+        Debug.Assert(syntax.Span is not null);
+        
         var hir = HirFor(syntax);
         
         // Descend into hir tree to find expr syntax
-        
-        throw new NotImplementedException();
+        HirStmt current = hir.Body;
+        Debug.Assert(current.Syntax.Span?.Contains(syntax.Span.Value) == true);
+
+        while (true)
+        {
+            var next = current.Children.FirstOrDefault(child => child.Syntax.Span?.Contains(syntax.Span.Value) == true);
+            if (next is null) return null;
+            if (next.Syntax == syntax)
+            {
+                Debug.Assert(next is HirExpr);
+                return ((HirExpr)next).Type;
+            }
+
+            current = next;
+        }
     }
 }

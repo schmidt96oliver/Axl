@@ -12,6 +12,13 @@ namespace Axl.Tests;
 
 public static class TaxlRunner
 {
+    private readonly record struct FailedCheck(int LineNumber, string Message)
+    {
+        public override string ToString()
+            => $"l.{LineNumber}: {Message}";
+    }
+    
+    
     public static void Test(TaxlFile taxlFile)
     {
         var kind = taxlFile.Directives
@@ -50,12 +57,18 @@ public static class TaxlRunner
                 $"Invalid annotation at l.{taxlFile.Source.GetLocation(invalidAnnotation.AnnotationSpan).StartLinePosition.Line}");
         }
 
-        // Skip type annotation
-        if (annotations.OfType<TaxlAnnotation.Type>().Any())
-            Assert.Skip("Type annotations not supported yet.");
-        
         // Check diagnostics
-        CheckDiagnostics(annotations.OfType<TaxlAnnotation.Diagnostic>(), compilation.Diagnostics);
+        var failedResults = CheckDiagnostics(annotations.OfType<TaxlAnnotation.Diagnostic>(), compilation.Diagnostics)
+            .Concat(CheckTypes(taxlFile, compilation, annotations.OfType<TaxlAnnotation.Type>()))
+            .ToList();
+
+        if (failedResults.Count > 0)
+        {
+            var message = string.Join('\n', failedResults);
+            TestContext.Current.TestOutputHelper?.WriteLine(message);
+            Console.WriteLine(message);
+            Assert.Fail("Taxl failed");
+        }
     }
 
     #region Check Diagnostics
@@ -68,46 +81,32 @@ public static class TaxlRunner
 
     private sealed class DiagnosticsByLine : Dictionary<int, DiagnosticId>;
     
-    private static void CheckDiagnostics(IEnumerable<TaxlAnnotation.Diagnostic> annotations,
+    private static IEnumerable<FailedCheck> CheckDiagnostics(IEnumerable<TaxlAnnotation.Diagnostic> annotations,
         ImmutableArray<Diagnostic> diagnostics)
     {
         var expected = GetDiagnosticsByLine(annotations);
         var actual = GetDiagnosticsByLine(diagnostics);
         HashSet<int> lines = [.. expected.Keys, .. actual.Keys];
         
-        var comparisons = new Dictionary<int, string?>(expected.Count);
-        var fail = false;
         foreach (var line in lines)
         {
             DiagnosticId? expectedId = expected.TryGetValue(line, out var eId) ? eId : null;
             DiagnosticId? actualId = actual.TryGetValue(line, out var aId) ? aId : null;
 
-            var comparisonText = CheckSingleLineDiagnostic(line, expected: expectedId, got: actualId);
-            comparisons[line] = comparisonText;
-            if (comparisonText is not null)
-                fail = true;
+            if (CheckSingleLineDiagnostic(line, expected: expectedId, got: actualId) is FailedCheck failedCheck)
+                yield return failedCheck;
         }
-        
-        var failText = string.Join('\n', comparisons
-            .Where(kvp => kvp.Value is not null)
-            .OrderBy(kvp => kvp.Key)
-            .Select(kvp => kvp.Value));
-        TestContext.Current.TestOutputHelper?.WriteLine(failText);
-        Console.WriteLine(failText);
-        
-        if (fail)
-            Assert.Fail("Diagnostics do not match.");
     }
 
-    private static string? CheckSingleLineDiagnostic(int line, DiagnosticId? expected, DiagnosticId? got)
+    private static FailedCheck? CheckSingleLineDiagnostic(int line, DiagnosticId? expected, DiagnosticId? got)
         => (expected, got) switch
         {
             (null, null) => null,
-            (var actualExpected, null) => $"l.{line} expected {actualExpected}, but not reported.",
-            (null, var actualGot) => $"l.{line} got {actualGot}, but not expected.",
+            (var actualExpected, null) => new(line, $"Expected {actualExpected}, but not reported."),
+            (null, var actualGot) => new(line, $"Got {actualGot}, but not expected."),
             var (actualExpected, actualGot) => actualExpected == actualGot
                 ? null
-                : $"l.{line} reported {actualGot} differs from expected {actualExpected}"
+                : new(line, $"Reported {actualGot} differs from expected {actualExpected}")
         };
 
     private static DiagnosticsByLine GetDiagnosticsByLine(IEnumerable<TaxlAnnotation.Diagnostic> annotations)
@@ -155,4 +154,39 @@ public static class TaxlRunner
     
     #endregion
     
+    #region Types
+
+    private static IEnumerable<FailedCheck> CheckTypes(TaxlFile file, Compilation compilation, IEnumerable<TaxlAnnotation.Type> annotations)
+    {
+        var sourceFile = file.Source.File;
+        foreach (var annotation in annotations)
+        {
+            var lineNumber = sourceFile.GetLineAt(annotation.AnnotationSpan.First).LineNumber;
+
+            if (annotation.TypeName.Length == 0)
+            {
+                Assert.Fail($"Type annotation at l.{lineNumber} is empty.");
+                throw new UnreachableException();
+            }
+            
+            if (compilation.Analysis.SyntaxNodeAt(new SourceLocation(sourceFile, annotation.ExprSpan)) is not ExprSyntax syntax)
+            {
+                Assert.Fail($"Type annotation at l.{lineNumber} does not point at {nameof(ExprSyntax)}.");
+                throw new UnreachableException();
+            }
+
+            if (compilation.Analysis.TypeOf(syntax) is not { } type)
+            {
+                Assert.Fail($"Type annotation at l.{lineNumber} could not resolve type.");
+                throw new UnreachableException();
+            }
+
+            if (type.DisplayName != annotation.TypeName)
+            {
+                yield return new FailedCheck(lineNumber, $"Expected type '{annotation.TypeName}', got '{type.DisplayName}'.");
+            }
+        }
+    }
+    
+    #endregion
 }
