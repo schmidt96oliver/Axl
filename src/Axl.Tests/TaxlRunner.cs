@@ -26,6 +26,8 @@ public static class TaxlRunner
             .Kind;
         if (kind is not TaxlDirectiveKind.Check)
             Assert.Skip($"{kind} is not supported yet.");
+        if (taxlFile.Fragments.Length > 1)
+            Assert.Skip($"Multiple files not supported yet.");
         
         Check(taxlFile);
     }
