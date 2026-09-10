@@ -52,10 +52,10 @@ public class Compilation
 
     public static Compilation From(TaxlFile taxlFile)
     {
-        if (taxlFile.Fragments.Length > 1)
+        if (taxlFile.Fragments.OfType<TaxlFragment.Code>().ToList() is not [var codeFragment])
             throw new NotImplementedException("Multiple files not supported yet.");
 
-        return From(Parser.Parse(taxlFile.Fragments[0].SourceView));
+        return From(Parser.Parse(codeFragment.SourceView));
     }
 
     public static Compilation From(SyntaxTree syntaxTree)

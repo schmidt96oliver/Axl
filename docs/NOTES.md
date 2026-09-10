@@ -2,7 +2,14 @@
                                        ≽(◕ ᴗ ◕)≼
 
 **Next:** 
-* API: SyntaxTree.From does parsing
+* SyntaxTree API
+  * SyntaxTree.From/Parse, ParseTokens
+  * Pass SyntaxTree into SyntaxNode
+* Text API
+  * Rethink SourceFile, SourceFileView. Really necessary?
+* Cleanup native operator info/kind + FindNativeOperator
+* diagnostic name: NumberSuffixMismatch
+  * rm: suffix determines type
 
 **Moving On**
 * ?? carry expected type into exprs -- or -- delete that feature
@@ -14,29 +21,12 @@
     * They can see other local fns transitively
 
 **Stashed small ones**:
-* API: `SyntaxTree.ParseFrom`, `*Tree/Table.BuildFrom`
 - LSP: Make Serial (see Omnisharp) and weave CancellationToken
 
 **Regressions**
 * `1_i32 == 1_i64`
 * `if true => 1 else => "A";` diagnostic message
 * `1 + true` squiggle all?
-
-# Taxl
-**Requirements**
-- Split files "//---".
-- Allow empty file names (split tests inside same compilation)
-- Split expected outputs "//=== stdout"
-- Directives "//@run-pass", "//@run-panic", "//@check"
-- "//~error" and "//~lint" on this line
-- "//~  ^^^ type name" expression type checking
-
-- Error resilient for LSP
-- No need for proper diagnostics
-- Test runner can fail with "Invalid taxl".
-- API for rewriting in bless mode
-  - entire output block
-  - inline annotations
 
 # First features
 * i32, i64, f32, f64, bool, string
