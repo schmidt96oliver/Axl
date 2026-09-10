@@ -1,7 +1,6 @@
 ﻿using System.Diagnostics;
 using Axl.Compiler.Semantics.Hir;
 using Axl.Compiler.Semantics.Symbols;
-using Axl.Compiler.Semantics.Types;
 using Axl.Compiler.Syntax;
 using Axl.Compiler.Syntax.Tree;
 
@@ -45,7 +44,7 @@ public sealed class Analysis
     }
     
     
-    public AxlType? TypeOf(ExprSyntax syntax)
+    public TypeSymbol? TypeOf(ExprSyntax syntax)
     {
         Debug.Assert(syntax.Span is not null);
         

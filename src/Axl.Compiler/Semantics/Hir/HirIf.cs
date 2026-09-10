@@ -1,10 +1,10 @@
 ﻿using System.Collections.Immutable;
-using Axl.Compiler.Semantics.Types;
+using Axl.Compiler.Semantics.Symbols;
 using Axl.Compiler.Syntax;
 
 namespace Axl.Compiler.Semantics.Hir;
 
-public sealed class HirIf(HirExpr predicate, HirExpr then, HirExpr? @else, AxlType type, SyntaxNode syntax)
+public sealed class HirIf(HirExpr predicate, HirExpr then, HirExpr? @else, TypeSymbol type, SyntaxNode syntax)
     : HirExpr(type, syntax)
 {
     public HirExpr Predicate { get; } = predicate;

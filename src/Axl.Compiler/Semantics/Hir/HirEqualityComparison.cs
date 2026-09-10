@@ -1,5 +1,5 @@
 ﻿using System.Collections.Immutable;
-using Axl.Compiler.Semantics.Types;
+using Axl.Compiler.Semantics.Symbols;
 using Axl.Compiler.Syntax;
 
 namespace Axl.Compiler.Semantics.Hir;
@@ -14,7 +14,7 @@ public sealed class HirEqualityComparison(
     HirExpr left,
     HirExpr right,
     EqualityComparisonKind kind,
-    AxlType type,
+    TypeSymbol type,
     SyntaxNode syntax) 
     : HirExpr(type, syntax)
 {

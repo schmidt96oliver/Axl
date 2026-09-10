@@ -1,9 +1,10 @@
 ﻿using System.Collections.Immutable;
+using Axl.Compiler.Semantics.Symbols;
 using Axl.Compiler.Syntax;
 
-namespace Axl.Compiler.Semantics.Types;
+namespace Axl.Compiler.Semantics;
 
-public record NativeOperatorInfo(TokenKind OpTokenKind, ImmutableArray<AxlType> OperandTypes, AxlType ReturnType, NativeOperatorKind NativeOperatorKind);
+public record NativeOperatorInfo(TokenKind OpTokenKind, ImmutableArray<TypeSymbol> OperandTypes, TypeSymbol ReturnType, NativeOperatorKind NativeOperatorKind);
 
 public enum NativeOperatorKind
 {
@@ -59,48 +60,46 @@ public sealed class TypeContext
 {
     private ImmutableArray<NativeOperatorInfo> _nativeOperatorInfos;
     
-    public I32Type I32 { get; } = new();
-    public I64Type I64 { get; } = new();
-    public F32Type F32 { get; } = new();
-    public F64Type F64 { get; } = new();
-    public BoolType Bool { get; } = new();
-    public StringType String { get; } = new();
+    public TypeSymbol I32 { get; } = new("i32");
+    public TypeSymbol I64 { get; } = new("i64");
+    public TypeSymbol F32 { get; } = new("f32");
+    public TypeSymbol F64 { get; } = new("f64");
+    public TypeSymbol Bool { get; } = new("bool");
+    public TypeSymbol String { get; } = new("string");
 
-    public NoneType None { get; } = new();
-    public NeverType Never { get; } = new();
-    public ErrorType Error { get; } = new();
+    public TypeSymbol None { get; } = new("none");
+    public TypeSymbol Never { get; } = new("never");
+    public TypeSymbol Error { get; } = new("???");
 
 
-    public AxlType DefaultIntegralNumberType => I32;
+    public TypeSymbol DefaultIntegralNumberType => I32;
 
-    public AxlType DefaultFloatingNumberType => F64;
+    public TypeSymbol DefaultFloatingNumberType => F64;
 
 
     public TypeContext()
     {
         _nativeOperatorInfos = MakeNativeOperatorInfos();
     }
-    
+
 
     /// <summary>
     /// Whether a value of type <paramref name="source"/> can be
     /// assigned to a target of type <paramref name="target"/>.
     /// </summary>
-    public bool IsAssignableTo(AxlType source, AxlType target)
-        => (source, target) switch
-        {
-            // Errors are silent
-            (ErrorType, _) or (_, ErrorType) => true,
+    public bool IsAssignableTo(TypeSymbol source, TypeSymbol target)
+    {
+        // Errors are silent
+        if (source == Error || target == Error) return true;
+        
+        // Never assigns to anything
+        if (source == Never) return true;
 
-            // Never assigns to anything
-            (NeverType, _) => true,
-
-            // All other combination are exact match only
-            _ => source == target
-        };
+        return source == target;
+    }
 
     public NativeOperatorInfo? FindNativeOperator(TokenKind operatorTokenKind,
-        params ImmutableArray<AxlType> operandTypes)
+        params ImmutableArray<TypeSymbol> operandTypes)
     {
         if (operandTypes.Length is < 1 or > 2)
             return null;

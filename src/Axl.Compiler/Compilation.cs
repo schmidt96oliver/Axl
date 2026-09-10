@@ -1,8 +1,8 @@
 ﻿using System.Collections.Immutable;
 using System.Reflection;
 using Axl.Compiler.Diagnostics;
+using Axl.Compiler.Semantics;
 using Axl.Compiler.Semantics.Hir;
-using Axl.Compiler.Semantics.Types;
 using Axl.Compiler.Syntax;
 using Axl.Compiler.Taxl;
 using Binder = Axl.Compiler.Semantics.Binder;

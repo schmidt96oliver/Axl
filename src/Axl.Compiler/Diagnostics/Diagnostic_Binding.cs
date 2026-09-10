@@ -1,7 +1,6 @@
 ﻿using System.Collections.Immutable;
 using Axl.Compiler.Semantics.Hir;
 using Axl.Compiler.Semantics.Symbols;
-using Axl.Compiler.Semantics.Types;
 using Axl.Compiler.Syntax;
 using Axl.Compiler.Syntax.Tree;
 
@@ -9,7 +8,7 @@ namespace Axl.Compiler.Diagnostics;
 
 public partial record Diagnostic
 {
-    public record TypeMismatch(HirExpr Expr, AxlType Expected) : Error
+    public record TypeMismatch(HirExpr Expr, TypeSymbol Expected) : Error
     {
         public override ImmutableArray<SourceLocation> Locations
             => [Expr.Syntax.GetLocation()];
@@ -27,7 +26,7 @@ public partial record Diagnostic
             => "Initializer must be specified.";
     }
 
-    public sealed record NumberSuffixMismatch(NumberLiteralSyntax NumberLiteralSyntax, AxlType TypeFromSuffix) : Error
+    public sealed record NumberSuffixMismatch(NumberLiteralSyntax NumberLiteralSyntax, TypeSymbol TypeFromSuffix) : Error
     {
         public override ImmutableArray<SourceLocation> Locations 
             => [NumberLiteralSyntax.GetLocation()];

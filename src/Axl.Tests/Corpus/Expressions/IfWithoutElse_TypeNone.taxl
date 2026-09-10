@@ -1,5 +1,5 @@
 ﻿//@check
-
+ 
 // If without else always has type none.
 
         if true => 1;

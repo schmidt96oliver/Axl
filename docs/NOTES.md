@@ -3,6 +3,8 @@
 
 **Next:** 
 * API: SyntaxTree.From does parsing
+* move things to Text namespace
+* TaxlRunner: Catch NotImplementedException
 
 **Moving On**
 * ?? carry expected type into exprs -- or -- delete that feature

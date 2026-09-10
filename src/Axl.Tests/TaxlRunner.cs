@@ -181,7 +181,7 @@ public static class TaxlRunner
                 throw new UnreachableException();
             }
 
-            if (type.DisplayName != annotation.TypeName)
+            if (type.Name != annotation.TypeName)
             {
                 yield return new FailedCheck(lineNumber, $"Expected type '{annotation.TypeName}', got '{type.DisplayName}'.");
             }

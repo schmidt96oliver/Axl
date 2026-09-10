@@ -3,7 +3,6 @@ using System.Diagnostics;
 using Axl.Compiler.Diagnostics;
 using Axl.Compiler.Semantics.Hir;
 using Axl.Compiler.Semantics.Symbols;
-using Axl.Compiler.Semantics.Types;
 using Axl.Compiler.Syntax;
 using Axl.Compiler.Syntax.Tree;
 
@@ -44,7 +43,7 @@ public sealed class Binder
     /// Checks, whether <paramref name="expr"/> is assignable to
     /// <paramref name="expected"/>. If not, reports a <see cref="Diagnostic.TypeMismatch"/>.
     /// </summary>
-    private bool CheckTypeAndReportMismatch(HirExpr expr, AxlType expected)
+    private bool CheckTypeAndReportMismatch(HirExpr expr, TypeSymbol expected)
     {
         if (!_types.IsAssignableTo(expr.Type, expected))
         {
@@ -68,13 +67,13 @@ public sealed class Binder
     
     #region Type names
 
-    private AxlType BindType(TypeNameSyntax syntax) => syntax switch
+    private TypeSymbol BindType(TypeNameSyntax syntax) => syntax switch
     {
         NativeTypeNameSyntax nativeTypeNameSyntax => BindNativeType(nativeTypeNameSyntax),
         _ => BindUnsupportedType(syntax)
     };
 
-    private AxlType BindNativeType(NativeTypeNameSyntax syntax) => syntax.Token.Kind switch
+    private TypeSymbol BindNativeType(NativeTypeNameSyntax syntax) => syntax.Token.Kind switch
     {
         TokenKind.I32Kw => _types.I32,
         TokenKind.I64Kw => _types.I64,
@@ -87,7 +86,7 @@ public sealed class Binder
         _ => throw new UnreachableException($"Unknown {nameof(NativeTypeNameSyntax)}.")
     };
 
-    private AxlType BindUnsupportedType(TypeNameSyntax syntax)
+    private TypeSymbol BindUnsupportedType(TypeNameSyntax syntax)
     {
         _diagnostics.ReportError(new Diagnostic.UnsupportedFeature(syntax));
         return _types.Error;
@@ -298,21 +297,21 @@ public sealed class Binder
 
     private HirNumberLiteral BindNumberLiteral(NumberLiteralSyntax syntax)
     {
-        AxlType type = syntax.Token.Suffix switch
+        TypeSymbol type = syntax.Token.Suffix switch
         {
             NumberLiteralSuffix.I32 => _types.I32,
             NumberLiteralSuffix.I64 => _types.I64,
             NumberLiteralSuffix.F32 => _types.F32,
             NumberLiteralSuffix.F64 => _types.F64,
 
-            _ => syntax.Token.HasDecimalPoint ? _types.F64 : _types.I32
+            _ => syntax.Token.HasDecimalPoint ? _types.DefaultFloatingNumberType : _types.DefaultIntegralNumberType
         };
         
         // Check the type against literal structure.
         // Literals with a decimal point can only become floating
         // point literals.
         if (syntax.Token.HasDecimalPoint &&
-            type is not (F32Type or F64Type))
+            type != _types.F32 && type != _types.F64)
         {
             _diagnostics.ReportError(new Diagnostic.NumberSuffixMismatch(syntax, type));
         }
@@ -346,7 +345,7 @@ public sealed class Binder
         
         var boundLeft = BindExpr(syntax.Left);
         var boundRight = BindExpr(syntax.Right);
-        if (boundLeft.Type is ErrorType || boundRight.Type is ErrorType)
+        if (boundLeft.Type == _types.Error || boundRight.Type == _types.Error)
         {
             // Some operands have an error. So don't type-check them
             // be silent and wrap in an error expression.
@@ -372,7 +371,7 @@ public sealed class Binder
 
         var boundLeft = BindExpr(syntax.Left);
         var boundRight = BindExpr(syntax.Right);
-        if (boundLeft.Type is ErrorType || boundRight.Type is ErrorType)
+        if (boundLeft.Type == _types.Error || boundRight.Type == _types.Error)
         {
             // Some operands have an error. So don't type-check them
             // be silent and wrap in an error expression.
@@ -405,7 +404,7 @@ public sealed class Binder
         var operandTypes = boundOperands
             .Select(hir => hir.Type)
             .ToImmutableArray();
-        if (operandTypes.OfType<ErrorType>().Any())
+        if (operandTypes.Any(type => type == _types.Error))
         {
             // Some operands have an error. So don't type-check them
             // be silent and wrap in an error expression.
@@ -459,7 +458,7 @@ public sealed class Binder
         
         // Type-check body and else body
         // They must have the same type.
-        AxlType ifExprType;
+        TypeSymbol ifExprType;
         if (boundElse is not null)
         {
             ifExprType = boundBody.Type;
