@@ -313,7 +313,7 @@ public sealed class Binder
         if (syntax.Token.HasDecimalPoint &&
             type != _types.F32 && type != _types.F64)
         {
-            _diagnostics.ReportError(new Diagnostic.NumberSuffixMismatch(syntax, type));
+            _diagnostics.ReportError(new Diagnostic.SuffixInvalidForDecimalNumber(syntax));
         }
         
         return new HirNumberLiteral(syntax.Token, type, syntax);

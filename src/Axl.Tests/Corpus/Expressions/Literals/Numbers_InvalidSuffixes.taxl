@@ -1,0 +1,10 @@
+﻿//@check
+
+// Integral suffixes cannot be used on number literals with decimal point.
+
+var a = 1.1_i32;   //~error SuffixInvalidForDecimalNumber
+var a = .1_i32;    //~error SuffixInvalidForDecimalNumber
+var a = 1.1_i64;   //~error SuffixInvalidForDecimalNumber
+var a = .1_i64;    //~error SuffixInvalidForDecimalNumber
+
+var a = 1.0_i64;   //~error SuffixInvalidForDecimalNumber

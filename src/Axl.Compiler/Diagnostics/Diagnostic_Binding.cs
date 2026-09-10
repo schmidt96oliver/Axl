@@ -27,13 +27,13 @@ public partial record Diagnostic
             => "Initializer must be specified.";
     }
 
-    public sealed record NumberSuffixMismatch(NumberLiteralSyntax NumberLiteralSyntax, TypeSymbol TypeFromSuffix) : Error
+    public sealed record SuffixInvalidForDecimalNumber(NumberLiteralSyntax NumberLiteralSyntax) : Error
     {
         public override ImmutableArray<SourceLocation> Locations 
             => [NumberLiteralSyntax.GetLocation()];
 
         public override string Message
-            => $"Decimal numbers can only have types 'f32' or 'f64'. Got '{TypeFromSuffix.DisplayName}'.";
+            => $"Suffix '{NumberLiteralSyntax.Token.Suffix}' is not valid for number with a decimal point.";
     }
 
     public sealed record UndefinedName(IdNameSyntax Syntax) : Error

@@ -2,14 +2,24 @@
                                        ≽(◕ ᴗ ◕)≼
 
 **Next:** 
+* Cleanup native operator info/kind + FindNativeOperator
+* diagnostic name: NumberSuffixMismatch
+  * rm: suffix determines type
+
+* Cleanup test corpus
+* Cleanup rest of binder
+* Cleanup TaxlFile
+  * Extract into TaxlParser
+
+* Reset soft, make good commits into master
+
+**Simplifications**
 * SyntaxTree API
   * SyntaxTree.From/Parse, ParseTokens
   * Pass SyntaxTree into SyntaxNode
 * Text API
   * Rethink SourceFile, SourceFileView. Really necessary?
-* Cleanup native operator info/kind + FindNativeOperator
-* diagnostic name: NumberSuffixMismatch
-  * rm: suffix determines type
+* DiagnosticBag.Report*** instead of data structure
 
 **Moving On**
 * ?? carry expected type into exprs -- or -- delete that feature

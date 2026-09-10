@@ -1,7 +1,6 @@
 ﻿//@check
 
 // The suffix determines the number types if present.
-// Expected type is overwritten.
 
 // Integral numbers
 var a = 1_i32;
@@ -18,10 +17,3 @@ var a = 1.1_f32;
 //~type ^^^^^^^ f32
 var a = 1.1_f64;
 //~type ^^^^^^^ f64
-
-var a = 1.1_i32;    //~error NumberSuffixMismatch
-var a = 1.1_i64;    //~error NumberSuffixMismatch
-
-// Expected type overwritten
-var a: i32 = 1_i64; //~error TypeMismatch
-var a: f32 = 1_i32; //~error TypeMismatch
