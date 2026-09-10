@@ -10,7 +10,7 @@ public sealed partial class TaxlTests
     private static string Structure(string input)
     {
         var source = SourceFileView.FromText(input);
-        var taxlFile = TaxlFile.Parse(source);
+        var taxlFile = TaxlFile.From(source);
 
         return new Dump(source).Add(taxlFile, onlyStructure: true).ToString();
     }
@@ -18,7 +18,7 @@ public sealed partial class TaxlTests
     private static string StructureAndCode(string input)
     {
         var source = SourceFileView.FromText(input);
-        var taxlFile = TaxlFile.Parse(source);
+        var taxlFile = TaxlFile.From(source);
 
         return new Dump(source).Add(taxlFile, onlyStructure: false).ToString();
     }

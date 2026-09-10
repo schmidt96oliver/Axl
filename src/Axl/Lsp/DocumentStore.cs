@@ -25,7 +25,7 @@ public static class DocumentStore
             var isTaxlFile = Path.GetExtension(uri.GetFileSystemPath()) is ".taxl";
             if (isTaxlFile)
             {
-                var taxlFile = TaxlFile.Parse(SourceFileView.Whole(sourceFile));
+                var taxlFile = TaxlFile.From(SourceFileView.Whole(sourceFile));
                 TaxlFiles[uri] = taxlFile;
                 Compilations[uri] = Compilation.From(taxlFile);
             }

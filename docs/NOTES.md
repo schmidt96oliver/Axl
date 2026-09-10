@@ -6,11 +6,7 @@
 * diagnostic name: NumberSuffixMismatch
   * rm: suffix determines type
 
-* Cleanup test corpus
 * Cleanup rest of binder
-* Cleanup TaxlFile
-  * Extract into TaxlParser
-
 * Reset soft, make good commits into master
 
 **Simplifications**
