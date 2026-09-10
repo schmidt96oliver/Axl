@@ -1,11 +1,10 @@
-﻿using System.IO.Compression;
-using Axl.Compiler.Syntax;
+﻿using Axl.Compiler.Syntax;
 using Axl.Compiler.Syntax.Tree;
 
 namespace Axl.Compiler.Semantics.Symbols;
 
 /// <summary>
-/// The name of a <see cref="Symbol"/>. It is never a path and does not
+/// The name of a symbol. It is never a path and does not
 /// contain dots.
 /// </summary>
 public readonly record struct SymbolName

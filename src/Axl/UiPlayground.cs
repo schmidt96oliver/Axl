@@ -314,7 +314,7 @@ public static class UiPlayground
             _previousText = source.File.Text;
 
             var syntaxTree = Parser.Parse(source);
-            var compilation = Compilation.FromTrees(syntaxTree);
+            var compilation = Compilation.From(syntaxTree);
 
             var diagnostics = compilation.Diagnostics;
             

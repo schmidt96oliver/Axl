@@ -11,7 +11,7 @@ public native("Print") fn Print(input: string) -> none;
 
 public native("Panic") fn Panic(msg: string) -> never;
 public fn Panic() -> never
-    => Panic("");
+    => Panic("");  
 
 public fn Print(i: i32)
     => Print(I32ToString(i));

@@ -37,7 +37,7 @@ public class SemanticTokensHandler(ILanguageServerFacade facade) : SemanticToken
         var compilation = DocumentStore.GetCompilation(identifier.TextDocument.Uri);
         if (compilation is null)
             return Task.CompletedTask;
-        
+
         // Push diagnostics
         facade.TextDocument.PublishDiagnostics(new PublishDiagnosticsParams
         {
@@ -45,11 +45,9 @@ public class SemanticTokensHandler(ILanguageServerFacade facade) : SemanticToken
             Diagnostics = new(DiagnosticConverter.Convert(compilation.Diagnostics)
                 .Concat(GetTaxlDiagnostics(DocumentStore.TryGetTaxlFile(identifier.TextDocument.Uri))))
         });
-        
-        foreach (var tree in compilation.SyntaxTrees)
-        {
-            TokenizeTree(builder, tree, DocumentStore.TryGetTaxlFile(identifier.TextDocument.Uri));
-        }
+
+        TokenizeTree(builder, compilation.SyntaxTree, DocumentStore.TryGetTaxlFile(identifier.TextDocument.Uri));
+
 
         return Task.CompletedTask;
     }

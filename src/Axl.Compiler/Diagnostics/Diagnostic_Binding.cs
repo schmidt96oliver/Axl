@@ -45,33 +45,6 @@ public partial record Diagnostic
             => $"Undefined name '{Syntax.Token.Identifier}'.";
     }
 
-    public sealed record AmbiguousName(IdNameSyntax Syntax, ImmutableArray<Symbol> Candidates) : Error
-    {
-        public override ImmutableArray<SourceLocation> Locations 
-            => [Syntax.GetLocation()];
-
-        public override string Message 
-            => "Ambiguous reference.";
-
-        public override ImmutableArray<LabeledSourceLocation> Related
-            =>
-            [
-                .. Candidates
-                    .Where(candidate => candidate.DeclaringSyntaxes.Length > 0)
-                    .Select(candidate =>
-                        new LabeledSourceLocation(candidate.DeclaringSyntaxes[0].GetLocation(), "This is a candidate."))
-            ];
-    }
-
-    public sealed record InvalidLocalRef(IdNameSyntax Syntax, Symbol ResolvedSymbol) : Error
-    {
-        public override ImmutableArray<SourceLocation> Locations
-            => [Syntax.GetLocation()];
-
-        public override string Message
-            => $"Expected reference to a local variable. Got {ResolvedSymbol.DisplayName} instead.";
-    }
-
     public sealed record UndefinedOperator(Token OperatorToken, ImmutableArray<HirExpr> BoundOperands) : Error
     {
         public override ImmutableArray<SourceLocation> Locations

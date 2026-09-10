@@ -4,9 +4,9 @@ using Axl.Compiler.Syntax;
 
 namespace Axl.Compiler.Semantics.Hir;
 
-public sealed class HirVarDecl(LocalSymbol variableSymbol, HirExpr initializer, SyntaxNode syntax) : HirStmt(syntax)
+public sealed class HirVarDecl(VariableSymbol variable, HirExpr initializer, SyntaxNode syntax) : HirStmt(syntax)
 {
-    public LocalSymbol VariableSymbol { get; } = variableSymbol;
+    public VariableSymbol Variable { get; } = variable;
     public HirExpr Initializer { get; } = initializer;
     
     protected override ImmutableArray<HirStmt> GetChildren() => [Initializer];

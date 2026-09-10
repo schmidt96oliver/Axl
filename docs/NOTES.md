@@ -1,7 +1,8 @@
 # ------------------------------------ Axl Project ------------------------------------
                                        ≽(◕ ᴗ ◕)≼
 
-**Next:** Test runner
+**Next:** 
+* API: SyntaxTree.From does parsing
 
 **Moving On**
 * ?? carry expected type into exprs -- or -- delete that feature
@@ -13,19 +14,7 @@
     * They can see other local fns transitively
 
 **Stashed small ones**:
-* Regressions: `1+[EOF]`, `-[EOF]`
-* SyntaxNode enumerator (all nodes, BFS/DFS, all tokens in sequence)
-* Tests:
-  * `MangledCorpus`
-  * 1 invariant = 1 test
-
-* Compilation cycle logic
-* Compilation.Fork; preserve ModuleDeclTable per SyntaxFile; Merge on demand by .GetMembers
-* Debug.MarkVisited, AssertAllVisitedOnce: All syntax nodes must be visited semantically
-* drop `HasError` from `DiagnosticList`
-
 * API: `SyntaxTree.ParseFrom`, `*Tree/Table.BuildFrom`
-* 
 - LSP: Make Serial (see Omnisharp) and weave CancellationToken
 
 **Regressions**
@@ -48,53 +37,6 @@
 - API for rewriting in bless mode
   - entire output block
   - inline annotations
-
-# Semantics
-
-## Phase 1 — Script HIR
-Script files only. 
-Bind expressions and `VarDecl`. 
-Build the HIR interpreter. 
-`UnsupportedDiagnostic` marks corpus files to skip.
-Taxl (Splitter, @check, @runpass)
-Folding Ranges for segments
-
-* Types are not symbols; TypeContext on Compilation
-  * ErrorType, NeverType (not different)
-* `LocalSymbol` belong to Hir body
-* Immutable, fixed, nested scopes
-  * Shadowing/new declaration creates new scope
-* Binder is owned by `Compilation`; no SemanticModel (yet)
-* Special case `Standard.PrintLine` until fns
-* expected-type propagation; `loop`/`break` type checks
-* `SyntaxKind.ErrorExpr` → bind children, wrap in `HirError`.
-
-## Phase 2 — Script functions
-
-Local fns and script fns handled identically. 
-Signature binding separate from body binding.
-native fns and their validation
-return-type checking.
-divergence tracking, definite return, never return type
-overloads and overload resolution
-
-* Each overload is it's own `FunctionSymbol`; Lookup returns `OneOrMany<Symbol>`
-
-
-## Phase 3 — Module files
-
-Compilation carries everything, `.Compile` picks entry script
-* Lsp uses one Compilation for all *.axl
-* And separate Compilation for each *.taxl
-Script files invisible to other files
-ModuleScope, FileScope
-Multi-file module merging
-visibility and modifier binding — lint for wrong order, error for duplicates.
-
-## Phase 4 — Using
-
-Parser work to allow `using` at every position
-insert aliases into the relevant scope
 
 # First features
 * i32, i64, f32, f64, bool, string

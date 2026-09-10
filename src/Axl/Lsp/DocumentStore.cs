@@ -30,7 +30,7 @@ public static class DocumentStore
             }
             else
             {
-                Compilations[uri] = Compilation.FromTrees(Parser.Parse(SourceFileView.Whole(sourceFile)));
+                Compilations[uri] = Compilation.From(Parser.Parse(SourceFileView.Whole(sourceFile)));
             }
         }
         catch

@@ -1,6 +1,6 @@
 ﻿//@check
 
-// Only local variables can be assigned to.
+// Only variables can be assigned to.
 
 1 + 1 = true;   //~error InvalidAssignTarget
 1 = 1; //~error InvalidAssignTarget
