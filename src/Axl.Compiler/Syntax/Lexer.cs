@@ -3,6 +3,7 @@ using System.Diagnostics;
 using System.Text;
 using System.Text.RegularExpressions;
 using Axl.Compiler.Diagnostics;
+using Axl.Compiler.Text;
 
 namespace Axl.Compiler.Syntax;
 

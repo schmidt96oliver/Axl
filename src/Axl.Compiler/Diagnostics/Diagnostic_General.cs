@@ -1,5 +1,6 @@
 ﻿using System.Collections.Immutable;
 using Axl.Compiler.Syntax;
+using Axl.Compiler.Text;
 
 namespace Axl.Compiler.Diagnostics;
 

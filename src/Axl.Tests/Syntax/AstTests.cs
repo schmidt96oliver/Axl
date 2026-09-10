@@ -3,6 +3,7 @@ using System.Collections.Concurrent;
 using System.Reflection;
 using Axl.Compiler;
 using Axl.Compiler.Syntax;
+using Axl.Compiler.Text;
 
 namespace Axl.Tests.Syntax;
 

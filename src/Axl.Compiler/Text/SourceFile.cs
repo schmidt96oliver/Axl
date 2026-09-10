@@ -1,7 +1,7 @@
 ﻿using System.Collections.Immutable;
 using System.Diagnostics;
 
-namespace Axl.Compiler;
+namespace Axl.Compiler.Text;
 
 /// <param name="EndingLength">Length of the line-ending. 0 (no ending), 1 (\n) or 2 (\r\n).</param>
 public readonly record struct LineInfo(int LineNumber, SourceSpan Span, int EndingLength)

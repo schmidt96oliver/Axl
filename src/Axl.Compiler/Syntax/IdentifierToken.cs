@@ -1,3 +1,5 @@
+using Axl.Compiler.Text;
+
 namespace Axl.Compiler.Syntax;
 
 public sealed class IdentifierToken(SourceSpan span, string identifier)

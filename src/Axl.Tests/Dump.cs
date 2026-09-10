@@ -3,6 +3,7 @@ using Axl.Compiler;
 using Axl.Compiler.Diagnostics;
 using Axl.Compiler.Syntax;
 using Axl.Compiler.Taxl;
+using Axl.Compiler.Text;
 
 namespace Axl.Tests;
 

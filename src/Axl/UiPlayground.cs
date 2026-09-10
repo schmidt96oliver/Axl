@@ -5,6 +5,7 @@ using Axl.Compiler;
 using Axl.Compiler.Diagnostics;
 using Axl.Compiler.Syntax;
 using Axl.Compiler.Syntax.Tree;
+using Axl.Compiler.Text;
 using Terminal.Gui.App;
 using Terminal.Gui.Drawing;
 using Terminal.Gui.Input;

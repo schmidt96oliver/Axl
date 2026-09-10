@@ -1,4 +1,4 @@
-﻿namespace Axl.Compiler;
+﻿namespace Axl.Compiler.Text;
 
 /// <summary>
 /// A view into one part of a <see cref="SourceFile"/>.

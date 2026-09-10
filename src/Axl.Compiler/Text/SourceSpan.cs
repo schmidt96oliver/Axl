@@ -1,4 +1,4 @@
-﻿namespace Axl.Compiler;
+﻿namespace Axl.Compiler.Text;
 
 /// <summary>
 /// Span of text inside <see cref="SourceFile"/>.

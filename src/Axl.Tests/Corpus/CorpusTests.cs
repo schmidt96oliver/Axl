@@ -1,5 +1,6 @@
 ﻿using Axl.Compiler;
 using Axl.Compiler.Taxl;
+using Axl.Compiler.Text;
 
 namespace Axl.Tests.Corpus;
 

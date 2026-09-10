@@ -3,13 +3,13 @@ using Axl.Compiler.Semantics.Hir;
 using Axl.Compiler.Semantics.Symbols;
 using Axl.Compiler.Syntax;
 using Axl.Compiler.Syntax.Tree;
+using Axl.Compiler.Text;
 
 namespace Axl.Compiler;
 
 /// <summary>
 /// Provides a query interface over the data structures provided
-/// by a single <see cref="Compilation"/>. Answers to queries are
-/// cached.
+/// by a single <see cref="Compilation"/>. 
 /// </summary>
 public sealed class Analysis
 {

@@ -1,4 +1,6 @@
-﻿namespace Axl.Compiler.Taxl;
+﻿using Axl.Compiler.Text;
+
+namespace Axl.Compiler.Taxl;
 
 public enum DiagnosticKind
 {

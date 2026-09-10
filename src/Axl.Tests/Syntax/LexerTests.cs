@@ -2,6 +2,7 @@
 using Axl.Compiler;
 using Axl.Compiler.Diagnostics;
 using Axl.Compiler.Syntax;
+using Axl.Compiler.Text;
 using Meziantou.Framework.InlineSnapshotTesting;
 using Shouldly;
 

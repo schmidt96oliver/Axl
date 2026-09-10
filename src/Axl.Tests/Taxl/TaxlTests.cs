@@ -1,5 +1,6 @@
 ﻿using Axl.Compiler;
 using Axl.Compiler.Taxl;
+using Axl.Compiler.Text;
 using Meziantou.Framework.InlineSnapshotTesting;
 
 namespace Axl.Tests.Taxl;

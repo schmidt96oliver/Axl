@@ -1,4 +1,5 @@
 ﻿using System.Runtime.CompilerServices;
+using Axl.Compiler.Text;
 
 namespace Axl.Compiler.UnitTests;
 

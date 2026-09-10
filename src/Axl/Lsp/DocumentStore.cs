@@ -3,6 +3,7 @@ using System.Collections.Immutable;
 using Axl.Compiler;
 using Axl.Compiler.Syntax;
 using Axl.Compiler.Taxl;
+using Axl.Compiler.Text;
 using OmniSharp.Extensions.LanguageServer.Protocol;
 
 namespace Axl.Lsp;

@@ -2,6 +2,7 @@
 using System.Diagnostics;
 using Axl.Compiler.Diagnostics;
 using Axl.Compiler.Syntax;
+using Axl.Compiler.Text;
 
 namespace Axl.Compiler.Taxl;
 

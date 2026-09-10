@@ -6,6 +6,7 @@ using Axl.Compiler.Semantics.Hir;
 using Axl.Compiler.Syntax;
 using Axl.Compiler.Syntax.Tree;
 using Axl.Compiler.Taxl;
+using Axl.Compiler.Text;
 using Shouldly;
 
 namespace Axl.Tests;

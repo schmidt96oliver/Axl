@@ -1,5 +1,7 @@
 using System.Diagnostics;
 using Axl.Compiler.Diagnostics;
+using Axl.Compiler.Text;
+
 // ReSharper disable UnusedMethodReturnValue.Local
 
 namespace Axl.Compiler.Syntax;

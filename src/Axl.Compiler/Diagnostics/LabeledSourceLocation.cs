@@ -1,3 +1,5 @@
+using Axl.Compiler.Text;
+
 namespace Axl.Compiler.Diagnostics;
 
 /// <summary>
