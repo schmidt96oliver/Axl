@@ -412,7 +412,7 @@ public sealed class Binder
                 type: _types.Error, syntax);
         }
 
-        var nativeOperator = _types.FindNativeOperator(
+        var nativeOperator = _types.TryGetNativeOperator(
             operatorToken.Kind,
             operandTypes);
         

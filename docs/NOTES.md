@@ -3,8 +3,6 @@
 
 **Next:** 
 * Cleanup native operator info/kind + FindNativeOperator
-* diagnostic name: NumberSuffixMismatch
-  * rm: suffix determines type
 
 * Cleanup rest of binder
 * Reset soft, make good commits into master
