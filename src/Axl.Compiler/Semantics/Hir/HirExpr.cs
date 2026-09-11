@@ -1,4 +1,4 @@
-﻿using Axl.Compiler.Semantics.Symbols;
+﻿using Axl.Compiler.Symbols;
 using Axl.Compiler.Syntax;
 
 namespace Axl.Compiler.Semantics.Hir;

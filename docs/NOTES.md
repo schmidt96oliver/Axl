@@ -2,18 +2,30 @@
                                        ≽(◕ ᴗ ◕)≼
 
 **Next:** 
-* Cleanup native operator info/kind + FindNativeOperator
-
+* Hir -> Bound
+* 
 * Cleanup rest of binder
 * Reset soft, make good commits into master
+
 
 **Simplifications**
 * SyntaxTree API
   * SyntaxTree.From/Parse, ParseTokens
   * Pass SyntaxTree into SyntaxNode
+  * Span not nullable
+  * AST: Members, Usings, etc necessary or just walk completely over it?
 * Text API
   * Rethink SourceFile, SourceFileView. Really necessary?
-* DiagnosticBag.Report*** instead of data structure
+* Diagnostics
+  * Move to DiagnosticBag.Report***
+  * Think about Parser deduping
+* Testing API
+  * Splitter by .Lines
+  * Annotation.TryFrom
+  * Diagnostics exposed
+  * .Evaluate on TaxlFile
+  * Parser allows only one directive
+  * Fragment has offset
 
 **Moving On**
 * ?? carry expected type into exprs -- or -- delete that feature

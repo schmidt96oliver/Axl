@@ -1,4 +1,4 @@
-﻿namespace Axl.Compiler.Semantics.Symbols;
+﻿namespace Axl.Compiler.Symbols;
 
 public abstract class Symbol(SymbolName name)
 {

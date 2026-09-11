@@ -1,6 +1,6 @@
 ﻿using System.Collections.Immutable;
 
-namespace Axl.Compiler.Semantics.Symbols;
+namespace Axl.Compiler.Symbols;
 
 /// <summary>
 /// Represents a full or partial path consisting of <see cref="SymbolName"/>s

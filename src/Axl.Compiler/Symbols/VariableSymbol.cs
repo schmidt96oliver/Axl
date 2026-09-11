@@ -1,4 +1,4 @@
-﻿namespace Axl.Compiler.Semantics.Symbols;
+﻿namespace Axl.Compiler.Symbols;
 
 public sealed class VariableSymbol(SymbolName name, TypeSymbol type) : Symbol(name)
 {

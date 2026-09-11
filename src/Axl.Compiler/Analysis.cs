@@ -1,6 +1,6 @@
 ﻿using System.Diagnostics;
 using Axl.Compiler.Semantics.Hir;
-using Axl.Compiler.Semantics.Symbols;
+using Axl.Compiler.Symbols;
 using Axl.Compiler.Syntax;
 using Axl.Compiler.Syntax.Tree;
 using Axl.Compiler.Text;

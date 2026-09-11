@@ -1,7 +1,7 @@
 ﻿using Axl.Compiler.Syntax;
 using Axl.Compiler.Syntax.Tree;
 
-namespace Axl.Compiler.Semantics.Symbols;
+namespace Axl.Compiler.Symbols;
 
 /// <summary>
 /// The name of a symbol. It is never a path and does not
