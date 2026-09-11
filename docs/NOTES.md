@@ -3,7 +3,7 @@
 
 **Next:** 
 * Hir -> Bound
-* 
+* Look at PROJECT.md
 * Cleanup rest of binder
 * Reset soft, make good commits into master
 

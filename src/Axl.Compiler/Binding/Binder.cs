@@ -1,12 +1,12 @@
 ﻿using System.Collections.Immutable;
 using System.Diagnostics;
+using Axl.Compiler.Binding.BoundTree;
 using Axl.Compiler.Diagnostics;
-using Axl.Compiler.Semantics.Hir;
 using Axl.Compiler.Symbols;
 using Axl.Compiler.Syntax;
 using Axl.Compiler.Syntax.Tree;
 
-namespace Axl.Compiler.Semantics;
+namespace Axl.Compiler.Binding;
 
 public sealed class Binder
 {
@@ -23,7 +23,7 @@ public sealed class Binder
         _scope = scope;
     }
 
-    public static HirFile BindFile(FileSyntax syntax, TypeContext typeContext)
+    public static BoundFile BindFile(FileSyntax syntax, TypeContext typeContext)
     {
         var scope = new Scope();
         var binder = new Binder(scope, typeContext);
@@ -33,9 +33,9 @@ public sealed class Binder
             binder._diagnostics.ReportError(new Diagnostic.UnsupportedFeature(node));
 
         var stmts = syntax.Stmts.Select(binder.BindStmt).ToImmutableArray();
-        var body = new HirBody(stmts, armExpr: null, type: typeContext.None, syntax);
+        var body = new BoundBody(stmts, armExpr: null, type: typeContext.None, syntax);
 
-        return new HirFile(body, binder._diagnostics.Drain());
+        return new BoundFile(body, binder._diagnostics.Drain());
     }
     
     
@@ -43,7 +43,7 @@ public sealed class Binder
     /// Checks, whether <paramref name="expr"/> is assignable to
     /// <paramref name="expected"/>. If not, reports a <see cref="Diagnostic.TypeMismatch"/>.
     /// </summary>
-    private bool CheckTypeAndReportMismatch(HirExpr expr, TypeSymbol expected)
+    private bool CheckTypeAndReportMismatch(BoundExpr expr, TypeSymbol expected)
     {
         if (!_types.IsAssignableTo(expr.Type, expected))
         {
@@ -95,14 +95,14 @@ public sealed class Binder
     #endregion
     
     
-    private HirStmt BindStmt(StmtSyntax syntax) => syntax switch
+    private BoundStmt BindStmt(StmtSyntax syntax) => syntax switch
     {
         VarDeclSyntax varDeclSyntax => BindVarDecl(varDeclSyntax),
         ExprStmtSyntax exprStmt => BindExpr(exprStmt.Expr),
         _ => throw new UnreachableException($"Unknown {nameof(StmtSyntax)}")
     };
 
-    private HirExpr BindExpr(ExprSyntax syntax) => syntax switch
+    private BoundExpr BindExpr(ExprSyntax syntax) => syntax switch
     {
         // Symbol references
         IdNameSyntax idNameSyntax => BindPlainIdName(idNameSyntax),
@@ -120,8 +120,8 @@ public sealed class Binder
         
         // Strings and Literals
         NumberLiteralSyntax numberLiteralSyntax => BindNumberLiteral(numberLiteralSyntax),
-        TrueLiteralSyntax => new HirBoolLiteral(value: true, type: _types.Bool, syntax),
-        FalseLiteralSyntax => new HirBoolLiteral(value: false, type: _types.Bool, syntax),
+        TrueLiteralSyntax => new BoundBoolLiteral(value: true, type: _types.Bool, syntax),
+        FalseLiteralSyntax => new BoundBoolLiteral(value: false, type: _types.Bool, syntax),
         StringExprSyntax stringExprSyntax => BindString(stringExprSyntax),
         
         // Error and unsupported
@@ -131,24 +131,24 @@ public sealed class Binder
 
     
 
-    private HirExpr BindUnsupported(ExprSyntax syntax)
+    private BoundExpr BindUnsupported(ExprSyntax syntax)
     {
         _diagnostics.ReportError(new Diagnostic.UnsupportedFeature(syntax));
-        return new HirErrorExpr(recoveredExprs: [], type: _types.Error, syntax);
+        return new BoundError(recoveredExprs: [], type: _types.Error, syntax);
     }
 
-    private HirErrorExpr BindError(ErrorExprSyntax syntax)
+    private BoundError BindError(ErrorExprSyntax syntax)
     {
         var recovered = syntax.RecoverableNodes
             .Select(node => BindExpr(node))
             .ToImmutableArray();
-        return new HirErrorExpr(recovered, _types.Error, syntax);
+        return new BoundError(recovered, _types.Error, syntax);
     }
     
     
     #region Variables
 
-    private HirVarDecl BindVarDecl(VarDeclSyntax syntax)
+    private BoundVarDecl BindVarDecl(VarDeclSyntax syntax)
     {
         var variableType = syntax.TypeAnnotation is not null
             ? BindType(syntax.TypeAnnotation)
@@ -170,10 +170,10 @@ public sealed class Binder
         var variable = new VariableSymbol(SymbolName.From(syntax.Name), variableType);
         _scope.Declare(variable);
 
-        return new HirVarDecl(variable, boundInitializer, syntax);
+        return new BoundVarDecl(variable, boundInitializer, syntax);
     }
     
-    private HirExpr BindVarDeclInitializer(VarDeclSyntax syntax)
+    private BoundExpr BindVarDeclInitializer(VarDeclSyntax syntax)
     {
         if (syntax.Initializer is null)
         {
@@ -183,31 +183,31 @@ public sealed class Binder
             // where a null syntax would be nice. But practically, syntax shouldn't be
             // touched on an error expr, si it should be fine. Mark my words in case of
             // oddities :D.
-            return new HirErrorExpr(recoveredExprs: [],
+            return new BoundError(recoveredExprs: [],
                 _types.Error, syntax);    
         }
 
         return BindExpr(syntax.Initializer);
     }
 
-    private HirExpr BindPlainIdName(IdNameSyntax syntax)
+    private BoundExpr BindPlainIdName(IdNameSyntax syntax)
     {
         var symbol = LookupAndReportUndefined(syntax);
 
         switch (symbol)
         {
             case VariableSymbol variable:
-                return new HirVariableRef(variable, syntax);
+                return new BoundVariableRef(variable, syntax);
             
             case null:
-                return new HirErrorExpr(recoveredExprs: [], type: _types.Error, syntax);
+                return new BoundError(recoveredExprs: [], type: _types.Error, syntax);
             
             default:
                 throw new UnreachableException($"Unknown symbol kind {symbol.GetType().Name}.");
         }
     }
 
-    private HirExpr BindAssign(AssignExprSyntax syntax)
+    private BoundExpr BindAssign(AssignExprSyntax syntax)
     {
         var boundValue = BindExpr(syntax.Value);
         var target = BindAssignTarget(syntax.Target);
@@ -217,14 +217,14 @@ public sealed class Binder
         {
             _diagnostics.ReportError(
                 new Diagnostic.UnsupportedFeature(syntax, "Compound assignment not supported yet."));
-            return new HirErrorExpr(recoveredExprs: [boundValue], _types.Error, syntax);
+            return new BoundError(recoveredExprs: [boundValue], _types.Error, syntax);
         }
 
         if (target is null)
-            return new HirErrorExpr(recoveredExprs: [boundValue], _types.Error, syntax);
+            return new BoundError(recoveredExprs: [boundValue], _types.Error, syntax);
         
         CheckTypeAndReportMismatch(boundValue, target.Type);
-        return new HirAssign(target, boundValue, _types.None, syntax);
+        return new BoundAssign(target, boundValue, _types.None, syntax);
     }
 
     private VariableSymbol? BindAssignTarget(ExprSyntax syntax)
@@ -254,14 +254,14 @@ public sealed class Binder
     
     #region Literal and String Exprs
     
-    private HirStringExpr BindString(StringExprSyntax syntax)
+    private BoundStringExpr BindString(StringExprSyntax syntax)
     {
         var parts = syntax.Parts.Select(BindStringPart).ToImmutableArray();
 
         if (parts.Length == 0)
             parts = [new StringPart.Text("")];
         
-        return new HirStringExpr(parts, _types.String, syntax);
+        return new BoundStringExpr(parts, _types.String, syntax);
     }
 
     private StringPart BindStringPart(StringPartSyntax syntax)
@@ -289,13 +289,13 @@ public sealed class Binder
         if (!CheckTypeAndReportMismatch(boundExpr, _types.String))
         {
             return new StringPart.Interpolation(
-                new HirErrorExpr(recoveredExprs: [boundExpr], type: _types.Error, syntax));
+                new BoundError(recoveredExprs: [boundExpr], type: _types.Error, syntax));
         }
 
         return new StringPart.Interpolation(boundExpr);
     }
 
-    private HirNumberLiteral BindNumberLiteral(NumberLiteralSyntax syntax)
+    private BoundNumberLiteral BindNumberLiteral(NumberLiteralSyntax syntax)
     {
         TypeSymbol type = syntax.Token.Suffix switch
         {
@@ -316,14 +316,14 @@ public sealed class Binder
             _diagnostics.ReportError(new Diagnostic.SuffixInvalidForDecimalNumber(syntax));
         }
         
-        return new HirNumberLiteral(syntax.Token, type, syntax);
+        return new BoundNumberLiteral(syntax.Token, type, syntax);
     }
     
     #endregion
     
     #region Binary and Unary Exprs
 
-    private HirExpr BindBinary(BinaryExprSyntax syntax) => syntax.Operator.Kind switch
+    private BoundExpr BindBinary(BinaryExprSyntax syntax) => syntax.Operator.Kind switch
     {
         TokenKind.AndKw or TokenKind.OrKw => BindBooleanOperator(syntax),
         
@@ -332,14 +332,14 @@ public sealed class Binder
         _ => BindNativeOperator(syntax.Operator, syntax, syntax.Left, syntax.Right)
     };
     
-    private HirExpr BindUnary(UnaryExprSyntax syntax)
+    private BoundExpr BindUnary(UnaryExprSyntax syntax)
     {
         return BindNativeOperator(syntax.Operator, syntax, syntax.Operand);
     }
 
 
 
-    private HirExpr BindEqualityComparison(BinaryExprSyntax syntax)
+    private BoundExpr BindEqualityComparison(BinaryExprSyntax syntax)
     {
         Debug.Assert(syntax.Operator.Kind is TokenKind.DoubleEqual or TokenKind.BangEqual);
         
@@ -349,12 +349,12 @@ public sealed class Binder
         {
             // Some operands have an error. So don't type-check them
             // be silent and wrap in an error expression.
-            return new HirErrorExpr(recoveredExprs: [boundLeft, boundRight],
+            return new BoundError(recoveredExprs: [boundLeft, boundRight],
                 type: _types.Error, syntax);
         }
         
         // Equality type-checks everything
-        return new HirEqualityComparison(boundLeft, boundRight,
+        return new BoundEqualityComparison(boundLeft, boundRight,
             kind: syntax.Operator.Kind switch
             {
                 TokenKind.DoubleEqual => EqualityComparisonKind.Equals,
@@ -365,7 +365,7 @@ public sealed class Binder
             syntax);
     }
     
-    private HirExpr BindBooleanOperator(BinaryExprSyntax syntax)
+    private BoundExpr BindBooleanOperator(BinaryExprSyntax syntax)
     {
         Debug.Assert(syntax.Operator.Kind is TokenKind.AndKw or TokenKind.OrKw);
 
@@ -375,7 +375,7 @@ public sealed class Binder
         {
             // Some operands have an error. So don't type-check them
             // be silent and wrap in an error expression.
-            return new HirErrorExpr(recoveredExprs: [boundLeft, boundRight],
+            return new BoundError(recoveredExprs: [boundLeft, boundRight],
                 type: _types.Error, syntax);
         }
 
@@ -383,32 +383,32 @@ public sealed class Binder
         if (!CheckTypeAndReportMismatch(boundLeft, _types.Bool) ||
             !CheckTypeAndReportMismatch(boundRight, _types.Bool))
         {
-            return new HirErrorExpr(recoveredExprs: [boundLeft, boundRight],
+            return new BoundError(recoveredExprs: [boundLeft, boundRight],
                 type: _types.Error, syntax);
         }
 
         if (syntax.Operator.Kind is TokenKind.AndKw)
-            return new HirAnd(boundLeft, boundRight, _types.Bool, syntax);
+            return new BoundAnd(boundLeft, boundRight, _types.Bool, syntax);
         if (syntax.Operator.Kind is TokenKind.OrKw)
-            return new HirOr(boundLeft, boundRight, _types.Bool, syntax);
+            return new BoundOr(boundLeft, boundRight, _types.Bool, syntax);
 
         throw new UnreachableException();
     }
 
-    private HirExpr BindNativeOperator(Token operatorToken, SyntaxNode syntax, params IEnumerable<ExprSyntax> operands)
+    private BoundExpr BindNativeOperator(Token operatorToken, SyntaxNode syntax, params IEnumerable<ExprSyntax> operands)
     {
         var boundOperands = operands
             .Select(expr => BindExpr(expr))
             .ToImmutableArray();
         
         var operandTypes = boundOperands
-            .Select(hir => hir.Type)
+            .Select(expr => expr.Type)
             .ToImmutableArray();
         if (operandTypes.Any(type => type == _types.Error))
         {
             // Some operands have an error. So don't type-check them
             // be silent and wrap in an error expression.
-            return new HirErrorExpr(recoveredExprs: boundOperands,
+            return new BoundError(recoveredExprs: boundOperands,
                 type: _types.Error, syntax);
         }
 
@@ -420,18 +420,18 @@ public sealed class Binder
         {
             _diagnostics.ReportError(
                 new Diagnostic.UndefinedOperator(operatorToken, boundOperands));
-            return new HirErrorExpr(recoveredExprs: [.. boundOperands],
+            return new BoundError(recoveredExprs: [.. boundOperands],
                 type: _types.Error, syntax);
         }
 
-        return new HirNativeOperator(nativeOperator, [.. boundOperands], nativeOperator.ReturnType, syntax);
+        return new BoundNativeOperator(nativeOperator, [.. boundOperands], nativeOperator.ReturnType, syntax);
     }
     
     #endregion
     
     #region Blocks, If, Loop
 
-    private HirBody BindBlock(BlockExprSyntax syntax)
+    private BoundBody BindBlock(BlockExprSyntax syntax)
     {
         _scope = new Scope(parent: _scope);
 
@@ -443,10 +443,10 @@ public sealed class Binder
 
         var blockType = arm?.Type ?? _types.None;
 
-        return new HirBody(stmts, arm, blockType, syntax);
+        return new BoundBody(stmts, arm, blockType, syntax);
     }
 
-    private HirExpr BindIf(IfExprSyntax syntax)
+    private BoundExpr BindIf(IfExprSyntax syntax)
     {
         var boundPredicate = BindExpr(syntax.Predicate);
         var boundBody = BindExpr(syntax.Body);
@@ -454,7 +454,7 @@ public sealed class Binder
         
         // Type-check predicate
         if (!CheckTypeAndReportMismatch(boundPredicate, expected: _types.Bool))
-            boundPredicate = new HirErrorExpr(recoveredExprs: [boundPredicate], type: _types.Error, syntax.Predicate);
+            boundPredicate = new BoundError(recoveredExprs: [boundPredicate], type: _types.Error, syntax.Predicate);
         
         // Type-check body and else body
         // They must have the same type.
@@ -471,7 +471,7 @@ public sealed class Binder
             ifExprType = _types.None;
         }
 
-        return new HirIf(boundPredicate, boundBody, boundElse, ifExprType, syntax);
+        return new BoundIf(boundPredicate, boundBody, boundElse, ifExprType, syntax);
     }
 
     #endregion

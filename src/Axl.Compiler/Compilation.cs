@@ -1,11 +1,11 @@
 ﻿using System.Collections.Immutable;
 using System.Reflection;
+using Axl.Compiler.Binding;
+using Axl.Compiler.Binding.BoundTree;
 using Axl.Compiler.Diagnostics;
-using Axl.Compiler.Semantics;
-using Axl.Compiler.Semantics.Hir;
 using Axl.Compiler.Syntax;
 using Axl.Compiler.Taxl;
-using Binder = Axl.Compiler.Semantics.Binder;
+using Binder = Axl.Compiler.Binding.Binder;
 
 namespace Axl.Compiler;
 
@@ -14,7 +14,7 @@ public class Compilation
     public SyntaxTree SyntaxTree { get; }
     public TypeContext TypeContext { get; }
 
-    public HirFile HirFile
+    public BoundFile BoundFile
     {
         get
         {
@@ -37,7 +37,7 @@ public class Compilation
         get
         {
             if (field.IsDefault)
-                field = [.. SyntaxTree.Diagnostics, .. HirFile.Diagnostics];
+                field = [.. SyntaxTree.Diagnostics, .. BoundFile.Diagnostics];
             return field;
         }
     }

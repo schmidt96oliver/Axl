@@ -1,6 +1,6 @@
 ﻿using Axl.Compiler.Symbols;
 
-namespace Axl.Compiler.Semantics;
+namespace Axl.Compiler.Binding;
 
 public sealed class Scope(Scope? parent = null)
 {

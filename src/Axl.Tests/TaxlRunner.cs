@@ -2,7 +2,6 @@
 using System.Diagnostics;
 using Axl.Compiler;
 using Axl.Compiler.Diagnostics;
-using Axl.Compiler.Semantics.Hir;
 using Axl.Compiler.Syntax;
 using Axl.Compiler.Syntax.Tree;
 using Axl.Compiler.Taxl;

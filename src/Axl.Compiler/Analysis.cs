@@ -1,5 +1,5 @@
 ﻿using System.Diagnostics;
-using Axl.Compiler.Semantics.Hir;
+using Axl.Compiler.Binding.BoundTree;
 using Axl.Compiler.Symbols;
 using Axl.Compiler.Syntax;
 using Axl.Compiler.Syntax.Tree;
@@ -48,8 +48,8 @@ public sealed class Analysis
     {
         Debug.Assert(syntax.Span is not null);
         
-        // Descend into hir tree to find expr syntax
-        HirStmt current = _compilation.HirFile.Body;
+        // Descend into bound tree to find expr syntax
+        BoundStmt current = _compilation.BoundFile.Body;
         Debug.Assert(current.Syntax.Span?.Contains(syntax.Span.Value) == true);
         
         while (true)
@@ -58,8 +58,8 @@ public sealed class Analysis
             if (next is null) return null;
             if (next.Syntax == syntax)
             {
-                Debug.Assert(next is HirExpr);
-                return ((HirExpr)next).Type;
+                Debug.Assert(next is BoundExpr);
+                return ((BoundExpr)next).Type;
             }
         
             current = next;

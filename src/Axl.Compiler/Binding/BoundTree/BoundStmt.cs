@@ -1,13 +1,13 @@
 ﻿using System.Collections.Immutable;
 using Axl.Compiler.Syntax;
 
-namespace Axl.Compiler.Semantics.Hir;
+namespace Axl.Compiler.Binding.BoundTree;
 
-public abstract class HirStmt(SyntaxNode syntax)
+public abstract class BoundStmt(SyntaxNode syntax)
 {
     public SyntaxNode Syntax { get; } = syntax;
 
-    public ImmutableArray<HirStmt> Children
+    public ImmutableArray<BoundStmt> Children
     {
         get
         {
@@ -17,5 +17,5 @@ public abstract class HirStmt(SyntaxNode syntax)
         }
     }
 
-    protected abstract ImmutableArray<HirStmt> GetChildren();
+    protected abstract ImmutableArray<BoundStmt> GetChildren();
 }

@@ -2,7 +2,7 @@
 using Axl.Compiler.Symbols;
 using Axl.Compiler.Syntax;
 
-namespace Axl.Compiler.Semantics;
+namespace Axl.Compiler.Binding;
 
 public enum NativeOperatorKind
 {
