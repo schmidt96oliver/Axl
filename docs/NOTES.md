@@ -1,77 +1,61 @@
 # ------------------------------------ Axl Project ------------------------------------
                                        ≽(◕ ᴗ ◕)≼
 
-**Next**: 
-* see Claude for AST tightening
-
-* Regressions: `1+[EOF]`, `-[EOF]`
-
-* Tests:
-  * `MangledCorpus`
-  * 1 invariant = 1 test
-
-**Small points**:
-* SyntaxNode enumerator (all nodes, BFS/DFS, all tokens in sequence)
-* rename `FileId` to `UnitId` (because it's not a _file_ per se. Several `FileId` could point to the same file on disc)
-
-# Semantics
-
-## Phase 1 — Script HIR
-Script files only. 
-Bind expressions and `VarDecl`. 
-Build the HIR interpreter. 
-`UnsupportedDiagnostic` marks corpus files to skip.
-Taxl (Splitter, @check, @runpass)
-Folding Ranges for segments
-
-* Types are not symbols; TypeContext on Compilation
-  * ErrorType, NeverType (not different)
-* `LocalSymbol` belong to Hir body
-* Immutable, fixed, nested scopes
-  * Shadowing/new declaration creates new scope
-* Binder is owned by `Compilation`; no SemanticModel (yet)
-* Special case `Standard.PrintLine` until fns
-* expected-type propagation; `loop`/`break` type checks
-* `SyntaxKind.ErrorExpr` → bind children, wrap in `HirError`.
-
-## Phase 2 — Script functions
-
-Local fns and script fns handled identically. 
-Signature binding separate from body binding.
-native fns and their validation
-return-type checking.
-divergence tracking, definite return, never return type
-overloads and overload resolution
-
-* Each overload is it's own `FunctionSymbol`; Lookup returns `OneOrMany<Symbol>`
+**Next:** 
+* Cleanup rest of binder
+* Reset soft, make good commits into master
 
 
-## Phase 3 — Module files
+**Simplifications**
+* SyntaxTree API
+  * SyntaxTree.From/Parse, ParseTokens
+  * Pass SyntaxTree into SyntaxNode
+  * Span not nullable
+  * AST: Members, Usings, etc necessary or just walk completely over it?
+* Text API
+  * Rethink SourceFile, SourceFileView. Really necessary?
+* Diagnostics
+  * Move to DiagnosticBag.Report***
+  * Think about Parser deduping
+* Testing API
+  * Splitter by .Lines
+  * Annotation.TryFrom
+  * Diagnostics exposed
+  * .Evaluate on TaxlFile
+  * Parser allows only one directive
+  * Fragment has offset
 
-Compilation carries everything, `.Compile` picks entry script
-* Lsp uses one Compilation for all *.axl
-* And separate Compilation for each *.taxl
-Script files invisible to other files
-ModuleScope, FileScope
-Multi-file module merging
-visibility and modifier binding — lint for wrong order, error for duplicates.
+**Moving On**
+* allow any type in string interpolation (that's a lowering problem)
+* compound assign
+* loop (how to handle arms?)
+* return, break, continue
+* local fn bodies with "cannot capture" warning.
+    * They can see other local fns transitively
 
-## Phase 4 — Using
+**Stashed small ones**:
+- LSP: Make Serial (see Omnisharp) and weave CancellationToken
 
-Parser work to allow `using` at every position
-insert aliases into the relevant scope
+**Regressions**
+* `1_i32 == 1_i64`
+* `if true => 1 else => "A";` diagnostic message
+* `1 + true` squiggle all?
 
 # First features
 * i32, i64, f32, f64, bool, string
-* literals integral, float
 * expressions: numeric, comparison, boolean
 * variables
-* blocks, if, loop (with break expression, continue), return
-* none, never
 * string interpolation, escaped
+* blocks, if, loop (with break expression, continue)
+
+* fns
+  * none, never type
+  * return expr
+  * forward-declared, overloaded
 * native functions: Print, PrintLine, ToString
-* hoisted, overloaded functions
+
 * multi-file modules
+  * `using` directive
 
 
 # Possible Refactors

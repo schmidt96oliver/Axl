@@ -18,6 +18,16 @@ public sealed class DiagnosticBag
         return _diagnostics.DrainToImmutable();
     }
     
+    public void DrainInto(DiagnosticBag bag)
+    {
+        Guard.IsState(!_isDrained);
+        
+        _isDrained = true;
+        
+        bag.AddRange(_diagnostics);
+        _diagnostics.Clear();
+    }
+    
 
     public void ReportError(Diagnostic.Error error)
     {
@@ -33,4 +43,13 @@ public sealed class DiagnosticBag
         
         _diagnostics.Add(lint);
     }
+
+    public void AddRange(IEnumerable<Diagnostic> diagnostics)
+     => _diagnostics.AddRange(diagnostics);
+    
+    public void AddRange(ImmutableArray<Diagnostic> diagnostics)
+     => _diagnostics.AddRange(diagnostics);
+
+    
+    
 }

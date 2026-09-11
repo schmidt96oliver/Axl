@@ -1,5 +1,7 @@
 using System.Diagnostics;
 using Axl.Compiler.Diagnostics;
+using Axl.Compiler.Text;
+
 // ReSharper disable UnusedMethodReturnValue.Local
 
 namespace Axl.Compiler.Syntax;
@@ -19,13 +21,25 @@ public partial class Parser
     
     public static SyntaxTree Parse(SourceFileView source)
     {
-        var diagnosticBag = new DiagnosticBag();
-        var tokens = Lexer.Lex(source, diagnosticBag);
+        var lexerDiagnostics = new DiagnosticBag();
+        var tokens = Lexer.Lex(source, lexerDiagnostics);
 
         var scanner = new Scanner(source, tokens);
         var parser = new Parser(source, scanner);
         parser.EatRoot();
-        return parser.BuildTree(tokens, diagnosticBag);
+
+        var parserDiagnostics = new DiagnosticBag();
+        var rootNode = parser.BuildTree(tokens, parserDiagnostics);
+        
+        var tree = new SyntaxTree(
+            fileSyntax: rootNode,
+            source,
+            diagnostics: [..lexerDiagnostics.Drain(), ..parserDiagnostics.Drain()],
+            hasError: lexerDiagnostics.HasError);
+
+        rootNode.Tree = tree;
+        
+        return tree;
     }
 
     private void EatRoot()
@@ -41,7 +55,9 @@ public partial class Parser
             if (_scanner.IsAt(FirstSet.Stmt))
                 EatStmt(fileAnchor | TokenKind.Semicolon);
             else if (_scanner.IsAt(FirstSet.Member))
-                EatMember(fileAnchor, onGlobalScope: true);
+                EatMember(fileAnchor);
+            else if (_scanner.IsAt(TokenKind.ModuleKw))
+                EatModuleDecl();
             else if (_scanner.IsAt(TokenKind.UsingKw))
                 EatUsingDirective();
             else

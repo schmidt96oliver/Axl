@@ -1,6 +1,7 @@
 using System.Collections.Immutable;
 using Axl.Compiler.Diagnostics;
 using Axl.Compiler.Syntax.Tree;
+using Axl.Compiler.Text;
 
 namespace Axl.Compiler.Syntax;
 
@@ -17,6 +18,7 @@ public sealed class SyntaxTree
 
     public bool HasError { get; }
 
+    
     internal SyntaxTree(FileSyntax fileSyntax, SourceFileView source, ImmutableArray<Diagnostic> diagnostics, bool hasError)
     {
         Guard.MustBe(fileSyntax.Kind is SyntaxKind.File);

@@ -1,5 +1,6 @@
 ﻿using Axl.Compiler;
 using Axl.Compiler.Syntax;
+using Axl.Compiler.Text;
 using OmniSharp.Extensions.LanguageServer.Protocol.Client.Capabilities;
 using OmniSharp.Extensions.LanguageServer.Protocol.Document;
 using OmniSharp.Extensions.LanguageServer.Protocol.Models;
@@ -22,9 +23,7 @@ public class FoldingRangeHandler : FoldingRangeHandlerBase
         if (compilation is null)
             return Task.FromResult<Container<FoldingRange>?>(null);
 
-        var container = Container.From(DocumentStore.GetFileIds(request.TextDocument.Uri)
-            .Select(compilation.GetSyntaxTree)
-            .SelectMany(GetFoldingRanges));
+        var container = Container.From(GetFoldingRanges(compilation.SyntaxTree));
             
         return Task.FromResult(container)!;
     }

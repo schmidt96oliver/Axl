@@ -1,6 +1,7 @@
 ﻿using System.Text;
 using Axl.Compiler;
 using Axl.Compiler.Syntax;
+using Axl.Compiler.Text;
 using Shouldly;
 
 namespace Axl.Tests.Syntax;

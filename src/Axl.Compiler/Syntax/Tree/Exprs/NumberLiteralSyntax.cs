@@ -5,5 +5,7 @@ namespace Axl.Compiler.Syntax.Tree;
 public sealed class NumberLiteralSyntax(ImmutableArray<SyntaxElement> children)
     : ExprSyntax(SyntaxKind.NumberLiteral, children)
 {
-    public Token Token => Children.FirstNonTriviaToken();
+    public NumberLiteralToken Token => Children.FirstNonTriviaToken() as NumberLiteralToken
+                                       ?? throw new InvalidOperationException();
+
 }

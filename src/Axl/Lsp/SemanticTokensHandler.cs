@@ -1,4 +1,7 @@
+using Axl.Compiler;
 using Axl.Compiler.Syntax;
+using Axl.Compiler.Taxl;
+using Axl.Compiler.Text;
 using OmniSharp.Extensions.LanguageServer.Protocol;
 using OmniSharp.Extensions.LanguageServer.Protocol.Client.Capabilities;
 using OmniSharp.Extensions.LanguageServer.Protocol.Document;
@@ -36,25 +39,55 @@ public class SemanticTokensHandler(ILanguageServerFacade facade) : SemanticToken
         if (compilation is null)
             return Task.CompletedTask;
 
-        foreach (var tree in DocumentStore.GetFileIds(identifier.TextDocument.Uri).Select(compilation.GetSyntaxTree))
+        // Push diagnostics
+        facade.TextDocument.PublishDiagnostics(new PublishDiagnosticsParams
         {
-            TokenizeTree(identifier.TextDocument.Uri, builder, tree);
-        }
+            Uri = identifier.TextDocument.Uri,
+            Diagnostics = new(DiagnosticConverter.Convert(compilation.Diagnostics)
+                .Concat(GetTaxlDiagnostics(DocumentStore.TryGetTaxlFile(identifier.TextDocument.Uri))))
+        });
+
+        TokenizeTree(builder, compilation.SyntaxTree, DocumentStore.TryGetTaxlFile(identifier.TextDocument.Uri));
+
 
         return Task.CompletedTask;
     }
 
-    private void TokenizeTree(DocumentUri uri, SemanticTokensBuilder builder, SyntaxTree tree)
+    private IEnumerable<Diagnostic> GetTaxlDiagnostics(TaxlFile? taxlFile)
     {
-        // --- Push diagnostics
-        facade.TextDocument.PublishDiagnostics(new PublishDiagnosticsParams()
+        if (taxlFile is null)
+            yield break;
+        
+        // --- Unknown directives
+        foreach (var directive in taxlFile.Directives.Where(directive => directive.Kind is TaxlDirectiveKind.Unknown))
         {
-            Uri = uri,
-            Diagnostics = DiagnosticConverter.Convert(tree.Diagnostics)
-        });
-
-        // --- Build semantic tokens
-        var isInOutput = false;
+            yield return new Diagnostic
+            {
+                Severity = DiagnosticSeverity.Error,
+                Message = "Unknown directive.",
+                Source = "Taxl",
+                Range = taxlFile.Source.GetLocation(directive.Span).ToLsp()
+            };
+        }
+        
+        // --- Invalid annotations
+        foreach (var annotation in taxlFile.Fragments
+                     .OfType<TaxlFragment.Code>()
+                     .SelectMany(codeFrag => codeFrag.Annotations)
+                     .OfType<TaxlAnnotation.Invalid>())
+        {
+            yield return new Diagnostic
+            {
+                Severity = DiagnosticSeverity.Error,
+                Message = annotation.ErrorMessage,
+                Source = "Taxl",
+                Range = taxlFile.Source.GetLocation(annotation.AnnotationSpan).ToLsp()
+            };
+        }
+    }
+    
+    private void TokenizeTree(SemanticTokensBuilder builder, SyntaxTree tree, TaxlFile? taxlFile)
+    {
         foreach (var token in EnumerateTokens(tree.FileSyntax))
         {
             if (token.FullSpan.Length == 0)
@@ -67,57 +100,12 @@ public class SemanticTokensHandler(ILanguageServerFacade facade) : SemanticToken
             {
                 case TokenKind.Comment:
                 {
-                    var text = tree.Source.File.GetText(token.FullSpan);
-                    if (text.StartsWith("//@") || text.StartsWith("//~"))
+                    if (taxlFile is not null)
+                        TokenizeTaxlComment(token, taxlFile, startLinePos, builder);
+                    else
                     {
-                        var length = 3;
-                        while (length < text.Length &&
-                               (char.IsAsciiLetterOrDigit(text[length]) || text[length] is '_' or '-'))
-                        {
-                            length++;
-                        }
-
-                        builder.Push(startLinePos.Line, startLinePos.Column, length,
-                            (SemanticTokenType?)SemanticTokenType.Decorator);
-
-                        // See if there is a comment
-                        var commentStart = text[2..].IndexOf("//") + 2;
-                        if (commentStart > 2)
-                        {
-                            builder.Push(startLinePos.Line, startLinePos.Column + commentStart,
-                                text.Length - commentStart,
-                                (SemanticTokenType?)SemanticTokenType.Comment);
-                        }
-                    }
-                    else if (text.StartsWith("//---") || text.StartsWith("//==="))
-                    {
-                        var length = 5;
-                        while (length < text.Length && text[length] is '-' or '=')
-                            length++;
-
-                        builder.Push(startLinePos.Line, startLinePos.Column, length,
-                            (SemanticTokenType?)SemanticTokenType.Decorator);
-
-                        isInOutput = text.StartsWith("//===");
-                    }
-                    else if (!isInOutput)
-                    {
-                        // Entire line is a comment
                         builder.Push(startLinePos.Line, startLinePos.Column, token.FullSpan.Length,
                             (SemanticTokenType?)SemanticTokenType.Comment);
-                    }
-                    else if (isInOutput)
-                    {
-                        // `//` is now a decorator
-                        builder.Push(startLinePos.Line, startLinePos.Column, 2,
-                            (SemanticTokenType?)SemanticTokenType.Decorator);
-
-                        // Everything thereafter is string
-                        if (text.Length > 2)
-                        {
-                            builder.Push(startLinePos.Line, startLinePos.Column + 2, text.Length - 2,
-                                (SemanticTokenType?)SemanticTokenType.String);
-                        }
                     }
 
                     break;
@@ -205,6 +193,71 @@ public class SemanticTokensHandler(ILanguageServerFacade facade) : SemanticToken
         }
     }
 
+    private void TokenizeTaxlComment(Token commentToken, TaxlFile taxlFile, LinePosition startLinePos, SemanticTokensBuilder builder)
+    {
+        var isHeadLine = taxlFile.Fragments
+            .Any(fragment => fragment.SourceView.Span.First == commentToken.FullSpan.First &&
+                             (fragment.SourceView.TextSpan.StartsWith("//---") || fragment.SourceView.TextSpan.StartsWith("//===")));
+        if (isHeadLine)
+        {
+            builder.Push(startLinePos.Line, startLinePos.Column, length: Math.Min(5, commentToken.FullSpan.Length),
+                (SemanticTokenType?)SemanticTokenType.Decorator);
+            return;
+        }
+        
+        var isInOutput = taxlFile.Fragments
+                .FirstOrDefault(fragment => fragment.SourceView.Span.Contains(commentToken.FullSpan))
+            is TaxlFragment.Output;
+        
+        if (isInOutput)
+        {
+            // `//` is now a decorator
+            builder.Push(startLinePos.Line, startLinePos.Column, 2,
+                (SemanticTokenType?)SemanticTokenType.Decorator);
+
+            // Everything thereafter is string
+            if (commentToken.FullSpan.Length > 2)
+            {
+                builder.Push(startLinePos.Line, startLinePos.Column + 2, commentToken.FullSpan.Length - 2,
+                    (SemanticTokenType?)SemanticTokenType.String);
+            }
+
+            return;
+        }
+        
+        var decoratorLength = GetTaxlDecoratorLength(commentToken.FullSpan, taxlFile);
+        if (decoratorLength <= 0)
+        {
+            // Entire length is just a comment
+            builder.Push(startLinePos.Line, startLinePos.Column, commentToken.FullSpan.Length,
+                (SemanticTokenType?)SemanticTokenType.Comment);
+        }
+        
+        builder.Push(startLinePos.Line, startLinePos.Column, decoratorLength,
+            (SemanticTokenType?)SemanticTokenType.Decorator);
+    }
+    
+    private int GetTaxlDecoratorLength(SourceSpan commentSpan, TaxlFile taxlFile)
+    {
+        // Search directives
+        if (taxlFile.Directives.FirstOrDefault(dir => dir.Span == commentSpan)
+            is { } directive)
+        {
+            return directive.Span.Length;
+        }
+
+        var annotation = taxlFile.Fragments
+            .OfType<TaxlFragment.Code>()
+            .SelectMany(codeFragment => codeFragment.Annotations)
+            .FirstOrDefault(annotation => annotation.AnnotationSpan == commentSpan);
+        if (annotation is not null)
+        {
+            return annotation.ArgumentSpan.First - annotation.AnnotationSpan.First;
+        }
+
+        return 0;
+    }
+    
     private IEnumerable<Token> EnumerateTokens(SyntaxElement element)
     {
         if (element is Token token)

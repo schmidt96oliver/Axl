@@ -1,4 +1,5 @@
 ﻿using Axl.Compiler;
+using Axl.Compiler.Text;
 using Range = OmniSharp.Extensions.LanguageServer.Protocol.Models.Range;
 
 namespace Axl.Lsp;

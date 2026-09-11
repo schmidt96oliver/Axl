@@ -1,0 +1,72 @@
+﻿using System.Collections.Immutable;
+using Axl.Compiler.Binding.BoundTree;
+using Axl.Compiler.Symbols;
+using Axl.Compiler.Syntax;
+using Axl.Compiler.Syntax.Tree;
+using Axl.Compiler.Text;
+
+namespace Axl.Compiler.Diagnostics;
+
+public partial record Diagnostic
+{
+    public record TypeMismatch(BoundExpr Expr, TypeSymbol Expected) : Error
+    {
+        public override ImmutableArray<SourceLocation> Locations
+            => [Expr.Syntax.GetLocation()];
+
+        public override string Message
+            => $"Expected type '{Expected.DisplayName}' but got '{Expr.Type.DisplayName}'.";
+    }
+
+    public sealed record MissingInitializer(VarDeclSyntax VarDeclSyntax) : Error
+    {
+        public override ImmutableArray<SourceLocation> Locations
+            => [VarDeclSyntax.GetLocation()];
+
+        public override string Message
+            => "Initializer must be specified.";
+    }
+
+    public sealed record SuffixInvalidForDecimalNumber(NumberLiteralSyntax NumberLiteralSyntax) : Error
+    {
+        public override ImmutableArray<SourceLocation> Locations 
+            => [NumberLiteralSyntax.GetLocation()];
+
+        public override string Message
+            => $"Suffix '{NumberLiteralSyntax.Token.Suffix}' is not valid for number with a decimal point.";
+    }
+
+    public sealed record UndefinedName(IdNameSyntax Syntax) : Error
+    {
+        public override ImmutableArray<SourceLocation> Locations
+            => [Syntax.GetLocation()];
+    
+        public override string Message
+            => $"Undefined name '{Syntax.Token.Identifier}'.";
+    }
+
+    public sealed record UndefinedOperator(Token OperatorToken, ImmutableArray<BoundExpr> BoundOperands) : Error
+    {
+        public override ImmutableArray<SourceLocation> Locations
+            => [OperatorToken.GetLocation()];
+
+        public override string Message
+            => $"Operator '{OperatorToken.Kind.DisplayName}' is not defined for {GetTypeString()}.";
+
+        private string GetTypeString()
+            => BoundOperands.Length == 1
+                ? $"type '{BoundOperands[0].Type.DisplayName}'"
+                : $"types {string.Join(", ", BoundOperands[..^1].Select(expr => $"'{expr.Type.DisplayName}'"))} and '{BoundOperands[^1].Type.DisplayName}'";
+    }
+
+    public sealed record InvalidAssignTarget(ExprSyntax Syntax, Symbol? ResolvedSymbol = null) : Error
+    {
+        public override ImmutableArray<SourceLocation> Locations
+            => [Syntax.GetLocation()];
+
+        public override string Message
+            => ResolvedSymbol is null
+                ? "Invalid assignment target."
+                : $"Cannot assign to {ResolvedSymbol.DisplayName}";
+    }
+}

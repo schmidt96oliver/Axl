@@ -1,0 +1,13 @@
+﻿//@check
+
+// Only variables can be assigned to.
+
+1 + 1 = true;   //~error InvalidAssignTarget
+1 = 1; //~error InvalidAssignTarget
+
+var a = 1;
+(a) = 1; //~error InvalidAssignTarget
+a and a = 1;  //~error InvalidAssignTarget
+
+fn Test() { }
+Test = true; //~error InvalidAssignTarget

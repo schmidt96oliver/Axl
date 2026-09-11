@@ -1,29 +1,38 @@
 ﻿using System.Collections.Concurrent;
 using System.Collections.Immutable;
 using Axl.Compiler;
+using Axl.Compiler.Syntax;
+using Axl.Compiler.Taxl;
+using Axl.Compiler.Text;
 using OmniSharp.Extensions.LanguageServer.Protocol;
 
 namespace Axl.Lsp;
 
 public static class DocumentStore
 {
-    private static readonly ConcurrentDictionary<DocumentUri, SourceFile> Documents = new();
-    
-    private static readonly ConcurrentDictionary<DocumentUri, ImmutableArray<FileId>> FileIds = new();
     private static readonly ConcurrentDictionary<DocumentUri, Compilation> Compilations = new();
-
+    private static readonly ConcurrentDictionary<DocumentUri, TaxlFile> TaxlFiles = new();
+    
 
     public static void Load(DocumentUri uri, string? text = null)
     {
         try
         {
-            var compilation = text is null
-                ? Compilation.FromFile(uri.GetFileSystemPath())
-                : Compilation.FromSource(SourceFileView.FromText(text));
-            var fileId = compilation.FileIds.First();
-
-            FileIds[uri] = [fileId];
-            Compilations[uri] = compilation;
+            var sourceFile = text is null
+                ? SourceFile.FromFile(uri.GetFileSystemPath())
+                : SourceFile.FromText(uri.GetFileSystemPath(), text);
+            
+            var isTaxlFile = Path.GetExtension(uri.GetFileSystemPath()) is ".taxl";
+            if (isTaxlFile)
+            {
+                var taxlFile = TaxlFile.From(SourceFileView.Whole(sourceFile));
+                TaxlFiles[uri] = taxlFile;
+                Compilations[uri] = Compilation.From(taxlFile);
+            }
+            else
+            {
+                Compilations[uri] = Compilation.From(Parser.Parse(SourceFileView.Whole(sourceFile)));
+            }
         }
         catch
         {
@@ -34,27 +43,23 @@ public static class DocumentStore
     
     public static void Remove(DocumentUri uri)
     {
-        FileIds.TryRemove(uri, out _);
         Compilations.TryRemove(uri, out _);
     }
 
-
-    public static ImmutableArray<FileId> GetFileIds(DocumentUri uri)
-    {
-        if (!FileIds.ContainsKey(uri))
-            Load(uri);
-
-        if (FileIds.TryGetValue(uri, out var fileIds))
-            return fileIds;
-
-        return [];
-    }
-
+    
     public static Compilation? GetCompilation(DocumentUri uri)
     {
         if (!Compilations.ContainsKey(uri))
             Load(uri);
         
         return Compilations.GetValueOrDefault(uri);
+    }
+
+    public static TaxlFile? TryGetTaxlFile(DocumentUri uri)
+    {
+        if (!Compilations.ContainsKey(uri))
+            Load(uri);
+
+        return TaxlFiles.GetValueOrDefault(uri);
     }
 }

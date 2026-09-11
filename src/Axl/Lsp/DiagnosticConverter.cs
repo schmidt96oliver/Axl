@@ -19,8 +19,8 @@ namespace Axl.Lsp;
 /// </remarks>
 public static class DiagnosticConverter
 {
-    public static Container<LspDiagnostic> Convert(ImmutableArray<AxlDiagnostic> diagnostics)
-        => new(diagnostics.SelectMany(Convert));
+    public static IEnumerable<LspDiagnostic> Convert(IEnumerable<AxlDiagnostic> diagnostics)
+        => diagnostics.SelectMany(Convert);
 
     // Every underline carries the full message.
     private static IEnumerable<LspDiagnostic> Convert(AxlDiagnostic diagnostic)
@@ -54,7 +54,7 @@ public static class DiagnosticConverter
         AxlDiagnostic diagnostic, int exceptLocation)
         => new(diagnostic.Locations
             .Where((_, i) => i != exceptLocation)
-            .Select(location => new Compiler.Diagnostics.LabeledSourceLocation(location, diagnostic.Message))
+            .Select(location => new Compiler.Diagnostics.LabeledSourceLocation(location, diagnostic.LocationLabel))
             .Concat(diagnostic.Related)
             // Only publish related infos, if the SourceFile has a file system
             // path. Otherwise, we don't know where to point.
@@ -66,6 +66,6 @@ public static class DiagnosticConverter
                     Range = label.Location.ToLsp(),
                     Uri = DocumentUri.FromFileSystemPath(label.Location.File.Path!)
                 },
-                Message = diagnostic.LocationLabel
+                Message = label.Label
             }));
 }

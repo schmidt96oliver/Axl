@@ -163,7 +163,7 @@ public partial class Parser
             else if (_scanner.IsAt(TokenKind.UsingKw))
                 EatUsingDirective();
             else if (_scanner.IsAt(FirstSet.Member))
-                EatMember(blockAnchor, onGlobalScope: false);
+                EatMember(blockAnchor);
             
             // --- lone ";" special case
             else if (_scanner.IsAt(TokenKind.Semicolon))

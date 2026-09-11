@@ -2,12 +2,13 @@
 using System.Diagnostics;
 using Axl.Compiler.Diagnostics;
 using Axl.Compiler.Syntax.Tree;
+using Axl.Compiler.Text;
 
 namespace Axl.Compiler.Syntax;
 
 public partial class Parser
 {
-    private SyntaxTree BuildTree(ImmutableArray<Token> tokens, DiagnosticBag diagnosticBag)
+    private FileSyntax BuildTree(ImmutableArray<Token> tokens, DiagnosticBag diagnosticBag)
     {
         Stack<ImmutableArray<SyntaxElement>.Builder> nodeBuilders = [];
         var nextToken = 0;
@@ -61,15 +62,15 @@ public partial class Parser
 
                     var rootNode = new FileSyntax(nodeBuilders.Pop().DrainToImmutable());
                     
+                    // Explicitly set its parent, because there is no parent node
+                    // to do it. Normally they are set in syntax node constructor.
+                    rootNode.Parent = null;
+                    
                     Debug.Assert(sawErrorElement == diagnosticBag.HasError,
                         sawErrorElement
                             ? "Saw error element(s), but no diagnostics."
                             : "Saw no error element(s), but reported an error.");
-                    return new SyntaxTree(
-                        fileSyntax: rootNode,
-                        _source,
-                        diagnostics: diagnosticBag.Drain(),
-                        hasError: diagnosticBag.HasError);
+                    return rootNode;
                 }
 
                 case ParseEvent.Close(var kind):

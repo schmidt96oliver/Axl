@@ -1,0 +1,18 @@
+﻿//@check
+
+// Assignment expressions have type 'none'.
+
+var a = 1;
+var b = 1;
+
+        a = 2;
+//~type ^^^^^ none
+
+// They do not type-check in chained assignments.
+a = b = 2;  //~error TypeMismatch
+a = (b = 2);  //~error TypeMismatch 
+
+
+// What is - technically - possible:
+var c: none = { };
+c = c = { };

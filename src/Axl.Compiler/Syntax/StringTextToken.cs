@@ -1,3 +1,5 @@
+using Axl.Compiler.Text;
+
 namespace Axl.Compiler.Syntax;
 
 public sealed class StringTextToken(SourceSpan span, string processedText, bool isMissing = false) 

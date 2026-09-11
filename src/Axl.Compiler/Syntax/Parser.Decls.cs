@@ -7,7 +7,7 @@ namespace Axl.Compiler.Syntax;
 
 public partial class Parser
 {
-    private MarkClose EatMember(Anchor anchor, bool onGlobalScope)
+    private MarkClose EatMember(Anchor anchor)
     {
         Debug.Assert(_scanner.IsAt(FirstSet.Member));
 
@@ -18,8 +18,6 @@ public partial class Parser
             _scanner.Eat();
         
         // --- Dispatch
-        if (_scanner.IsAt(FirstSet.ModuleDeclAfterModifiers))
-            return EatModuleDeclAfterModifiers(decl, onGlobalScope);
         if (_scanner.IsAt(TokenKind.FnKw))
             return EatFnDeclAfterModifiers(decl, anchor);
         if (_scanner.IsAt(TokenKind.NativeKw))
@@ -29,67 +27,19 @@ public partial class Parser
         _scanner.ReportMissingTokenHere(ExpectedSyntax.Member);
         return _scanner.Close(decl, SyntaxKind.Garbage);
     }
-    
-    private MarkClose EatModuleDeclAfterModifiers(MarkOpen decl, bool onGlobalScope)
+
+    private MarkClose EatModuleDecl()
     {
-        Debug.Assert(_scanner.IsAt(FirstSet.ModuleDeclAfterModifiers));
+        Debug.Assert(_scanner.IsAt(TokenKind.ModuleKw));
 
-        _scanner.EatKnown(TokenKind.ModuleKw);
-
-        EnsurePath(ExpectedSyntax.ModuleName);
-
-        // --- ";" means it's a global declaration
-        if (_scanner.IsAt(TokenKind.Semicolon))
-        {
-            _scanner.EatKnown(TokenKind.Semicolon);
-            return _scanner.Close(decl, SyntaxKind.FileScopedModuleDecl);
-        }
-
-        // --- Missing { }?
-        if (!_scanner.IsAt(TokenKind.OpenBrace))
-        {
-            // Input looks like 'module A' and could be meant to be a global
-            // module decl or a bodied module. If we're inside another module
-            // it surely will be bodied, since global is only allowed on global
-            // scope. On global scope, it could be both, but we just default to
-            // completing it as a global declaration as a heuristic.
-            
-            if (onGlobalScope)
-            {
-                EnsureToken(TokenKind.Semicolon);
-                return _scanner.Close(decl, SyntaxKind.FileScopedModuleDecl);
-            }
-            else
-            {
-                _scanner.MakeAndReport(TokenKind.OpenBrace);
-                _scanner.MakeAndReport(TokenKind.CloseBrace);
-                return _scanner.Close(decl, SyntaxKind.ModuleDecl);
-            }
-        }
+        var moduleDecl = _scanner.Open();
         
-        // --- Eat members
-        _scanner.EatKnown(TokenKind.OpenBrace);
-        var moduleBodyAnchor = Anchor.Forced | TokenKind.UsingKw | FirstSet.Member | TokenKind.CloseBrace;
-        foreach (var _ in _scanner.MustEatEachIteration())
-        {
-            RecoverToAndReport(moduleBodyAnchor, ExpectedSyntax.Member);
-
-            if (_scanner.IsAt(FirstSet.Member))
-                EatMember(moduleBodyAnchor, onGlobalScope: false);
-            else if (_scanner.IsAt(TokenKind.UsingKw))
-                EatUsingDirective();
-            else
-            {
-                // Could be `}` or Eof
-                break;
-            }
-        }
-
-        EnsureToken(TokenKind.CloseBrace);
-        return _scanner.Close(decl, SyntaxKind.ModuleDecl);
+        _scanner.EatKnown(TokenKind.ModuleKw);
+        EnsurePath(ExpectedSyntax.ModuleName);
+        EnsureToken(TokenKind.Semicolon);
+        
+        return _scanner.Close(moduleDecl, SyntaxKind.ModuleDecl);
     }
-
-
 
     private MarkClose EatFnDeclAfterModifiers(MarkOpen decl, Anchor anchor)
     {

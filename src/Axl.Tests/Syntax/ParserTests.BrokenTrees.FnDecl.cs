@@ -783,10 +783,7 @@ public partial class ParserTests
             public void NativeNotDelimited_LeavesRestAlone_1()
                 => InlineSnapshot.Validate(Tree("""
                                                 native
-                                                module AB
-                                                {
-                                                    
-                                                }
+                                                module AB;
                                                 """), """
                     ERROR MissingToken@[6, 6): Expected '('.
 
@@ -803,8 +800,7 @@ public partial class ParserTests
                     · 'module'
                     · Path
                     · · IdName 'AB'
-                    · '{'
-                    · '}'
+                    · ';'
                     """);
             [Fact]
             public void NativeNotDelimited_LeavesRestAlone_2()

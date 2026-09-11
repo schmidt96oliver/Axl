@@ -1,4 +1,6 @@
-﻿namespace Axl.Compiler.Syntax;
+﻿using Axl.Compiler.Text;
+
+namespace Axl.Compiler.Syntax;
 
 public enum NumberLiteralSuffix
 {

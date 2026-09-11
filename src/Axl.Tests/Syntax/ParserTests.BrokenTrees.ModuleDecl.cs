@@ -9,12 +9,12 @@ public partial class ParserTests
         public sealed class ModuleDecl
         {
             [Fact]
-            public void MissingBodyAndSemicolon_FileScoped()
+            public void MissingSemicolon()
                 => InlineSnapshot.Validate(Tree("module A"), """
                     ERROR MissingToken@[8, 8): Expected ';'.
 
 
-                    FileScopedModuleDecl
+                    ModuleDecl
                     · 'module'
                     · Path
                     · · IdName 'A'
@@ -22,54 +22,46 @@ public partial class ParserTests
                     """);
             
             [Fact]
-            public void MissingBodyAndSemicolon_InModule()                          
-                => InlineSnapshot.Validate(Tree("module A { module B }"), """
-                    ERROR MissingToken@[19, 19): Expected '{'.
-
-
-                    ModuleDecl
-                    · 'module'
-                    · Path
-                    · · IdName 'A'
-                    · '{'
-                    · ModuleDecl
-                    · · 'module'
-                    · · Path
-                    · · · IdName 'B'
-                    · · ??'{'
-                    · · ??'}'
-                    · '}'
-                    """);
-
-            [Fact]
-            public void ErrorWithBracesInsideBody()
+            public void InFnBody()
                 => InlineSnapshot.Validate(Tree("""
-                                                module A
-                                                {
-                                                  {}
-                                                  
-                                                  fn Survives() => 1;
-                                                } 
-                                                """
-                ), """
-                    ERROR UnexpectedToken@[15, 16): Expected a member ('fn' or 'module'), got '{'.
+                                                fn A()
+                                                { module Global; 1; }
+                                                """), """
+                    ERROR UnexpectedToken@[10, 16): Expected a statement, got 'module'.
 
 
-                    ModuleDecl
-                    · 'module'
-                    · Path
-                    · · IdName 'A'
-                    · '{'
-                    · Garbage '{' '}'
-                    · FnDecl
-                    · · 'fn'
-                    · · IdName 'Survives'
-                    · · ParamList '(' ')'
+                    FnDecl
+                    · 'fn'
+                    · IdName 'A'
+                    · ParamList '(' ')'
+                    · BlockExpr
+                    · · '{'
+                    · · Garbage 'module'
+                    · · ExprStmt
+                    · · · IdName 'Global'
+                    · · · ';'
+                    · · ExprStmt
+                    · · · NumberLiteral '1'
+                    · · · ';'
+                    · · '}'
+                    """);
+            [Fact]
+            public void InBlock()
+                => InlineSnapshot.Validate(Tree("{ module Global; => 1 }"), """
+                    ERROR UnexpectedToken@[2, 8): Expected a statement, got 'module'.
+
+
+                    ExprStmt
+                    · BlockExpr
+                    · · '{'
+                    · · Garbage 'module'
+                    · · ExprStmt
+                    · · · IdName 'Global'
+                    · · · ';'
                     · · Arm
                     · · · '=>'
                     · · · NumberLiteral '1'
-                    · · ';'
-                    · '}'
+                    · · '}'
                     """);
         }
     }

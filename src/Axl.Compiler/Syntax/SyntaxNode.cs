@@ -1,4 +1,5 @@
 ﻿using System.Collections.Immutable;
+using Axl.Compiler.Text;
 
 namespace Axl.Compiler.Syntax;
 
@@ -28,6 +29,10 @@ public abstract class SyntaxNode : SyntaxElement
         
         FullSpan = SourceSpan.FromTo(children[0].FullSpan, children[^1].FullSpan);
         
+        // Set parents
+        foreach (var child in children)
+            child.Parent = this;
+        
         // Calculate Span
         if (children.FirstOrDefault(element => element.Span is not null) is SyntaxElement firstNonTrivia)
         {
@@ -39,4 +44,20 @@ public abstract class SyntaxNode : SyntaxElement
         else
             Span = null;
     }
+
+
+    /// <summary>
+    /// Enumerates all elements relevant for syntax. That excludes trivia,
+    /// garbage nodes and unknown character tokens.
+    /// </summary>
+    public IEnumerable<SyntaxElement> SyntaxElements()
+        => Children.Where(element =>
+            element is not (Token { Kind.IsTrivia: true } or Token { Kind: TokenKind.UnknownCharacters }
+                or SyntaxNode { Kind: SyntaxKind.Garbage }));
+    
+    /// <summary>
+    /// Enumerates all nodes relevant for syntax. That excludes gargabe nodes.
+    /// </summary>
+    public IEnumerable<SyntaxNode> SyntaxNodes()
+        => Children.OfType<SyntaxNode>().Where(node => node.Kind is not SyntaxKind.Garbage);
 }

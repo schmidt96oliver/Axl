@@ -1,0 +1,42 @@
+﻿using Axl.Compiler.Syntax;
+using Axl.Compiler.Syntax.Tree;
+
+namespace Axl.Compiler.Symbols;
+
+/// <summary>
+/// The name of a symbol. It is never a path and does not
+/// contain dots.
+/// </summary>
+public readonly record struct SymbolName
+{
+    public static readonly SymbolName Empty = From(string.Empty);
+    
+    public string Text { get; }
+
+    public bool IsEmpty => Text.Length == 0;
+    
+
+    private SymbolName(string text)
+    {
+        Text = text;
+    }
+
+    public static SymbolName From(ReadOnlySpan<char> text)
+    {
+        Guard.MustBe(!text.Contains('.'));
+        return new SymbolName(text.Trim().ToString());
+    }
+
+    public static SymbolName From(IdentifierToken token)
+        => From(token.Identifier);
+    
+    public static SymbolName From(IdNameSyntax idNameSyntax)
+        => From(idNameSyntax.Token.Identifier);
+
+
+    public static implicit operator string(SymbolName symbolName)
+        => symbolName.Text;
+
+    public override string ToString()
+        => Text;
+}

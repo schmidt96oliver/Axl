@@ -1,14 +1,9 @@
 ﻿
 # Top-Level
 
-File            = (Stmt | UsingDirective | Member)*
+File            = (Stmt | UsingDirective | ModuleDecl | Member)*
 
-> The distinction between script and module files is not made in the parser
-> or AST, but by declaration binding later in the pipeline.
-
-ModuleFile      = (UsingDirective | Member)*
-ScriptFile      = (Stmt | UsingDirective | Member)*
-
+ModuleDecl      = "module" Path ";"
 
 ## Directives
 > Directive: Tells the compiler how to process code.
@@ -18,12 +13,9 @@ UsingDirective  = "using" Path ";"
 ## Member Declarations
 > Declaration: Introduces a name.
 
-Member           = Modifier* (FnDecl | NativeFnDecl | ModuleDecl | FileScopedModuleDecl)
+Member           = Modifier* (FnDecl | NativeFnDecl)
                 
 Modifier         = "public" | "private"
-
-ModuleDecl       = "module" Path "{" (UsingDirective | Member)* "}"
-FileScopedModuleDecl = "module" Path ";"
 
 FnDecl           = "fn" IdName ParamList ReturnTypeAnnotation? Body ";"§
 > Identifier "never" is promoted to SyntaxKind.NativeTypeName with TokenKind.NeverKw

@@ -1,65 +1,64 @@
-﻿using System.Diagnostics;
+﻿using System.Collections.Immutable;
+using System.Reflection;
+using Axl.Compiler.Binding;
+using Axl.Compiler.Binding.BoundTree;
+using Axl.Compiler.Diagnostics;
 using Axl.Compiler.Syntax;
+using Axl.Compiler.Taxl;
+using Binder = Axl.Compiler.Binding.Binder;
 
 namespace Axl.Compiler;
 
 public class Compilation
 {
-    private sealed class FileIdTable<T> : Dictionary<FileId, T>
+    public SyntaxTree SyntaxTree { get; }
+    public TypeContext TypeContext { get; }
+
+    public BoundFile BoundFile
     {
-    }
-
-    
-    private readonly FileIdTable<SourceFileView> _sourceFileViews = [];
-    private readonly FileIdTable<SyntaxTree> _syntaxTrees = [];
-
-
-    public IReadOnlyCollection<FileId> FileIds => _sourceFileViews.Keys;
-    
-
-    private Compilation()
-    {
-    }
-    
-    public static Compilation FromFile(string path)
-    {
-        var compilation = new Compilation();
-        compilation._sourceFileViews.Add(compilation.NewFileId(),
-            SourceFileView.FromFile(path));
-        return compilation;
-    }
-
-    public static Compilation FromSource(SourceFileView source)
-    {
-        var compilation = new Compilation();
-        compilation._sourceFileViews.Add(compilation.NewFileId(), source);
-        return compilation;
-    }
-
-
-    private FileId NewFileId()
-    {
-        var id = new FileId(_sourceFileViews.Count);
-        Debug.Assert(!_sourceFileViews.ContainsKey(id));
-        return id;
-    }
-
-    public FileId GetFileId(SourceFileView source)
-        => _sourceFileViews.First(kvp => kvp.Value == source).Key;
-    
-
-    public SourceFileView GetSource(FileId fileId)
-        => _sourceFileViews[fileId];
-    
-    public SyntaxTree GetSyntaxTree(FileId fileId)
-    {
-        if (!_syntaxTrees.TryGetValue(fileId, out var syntaxTree))
+        get
         {
-            var tree = Parser.Parse(GetSource(fileId));
-            _syntaxTrees.Add(fileId, tree);
-            return tree;
+            field ??= Binder.BindFile(SyntaxTree.FileSyntax, TypeContext);
+            return field;
         }
-
-        return syntaxTree;
     }
+    
+    public Analysis Analysis
+    {
+        get
+        {
+            field ??= new Analysis(this);
+            return field;
+        }
+    }
+
+    public ImmutableArray<Diagnostic> Diagnostics
+    {
+        get
+        {
+            if (field.IsDefault)
+                field = [.. SyntaxTree.Diagnostics, .. BoundFile.Diagnostics];
+            return field;
+        }
+    }
+
+    
+    private Compilation(SyntaxTree syntaxTree)
+    {
+        SyntaxTree = syntaxTree;
+        TypeContext = new TypeContext();
+    }
+
+
+    public static Compilation From(TaxlFile taxlFile)
+    {
+        if (taxlFile.Fragments.OfType<TaxlFragment.Code>().ToList() is not [var codeFragment])
+            throw new NotImplementedException("Multiple files not supported yet.");
+
+        return From(Parser.Parse(codeFragment.SourceView));
+    }
+
+    public static Compilation From(SyntaxTree syntaxTree)
+        => new(syntaxTree);
+
 }

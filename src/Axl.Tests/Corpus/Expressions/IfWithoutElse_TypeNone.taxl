@@ -1,0 +1,12 @@
+﻿//@check
+ 
+// If without else always has type none.
+
+        if true => 1;
+//~type ^^^^^^^^^^^^ none
+
+        if 1 == 2 { }
+//~type ^^^^^^^^^^^^^ none
+
+        if true and false => "Hello";
+//~type ^^^^^^^^^^^^^^^^^^^^^^^^^^^^ none
