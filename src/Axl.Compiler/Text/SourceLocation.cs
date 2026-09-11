@@ -9,6 +9,12 @@ public readonly record struct SourceLocation(SourceFile File, SourceSpan Span)
     public LinePosition StartLinePosition => File.GetLinePositionOrEof(Span.First);
 
     public LinePosition EndLinePosition => File.GetLinePositionOrEof(Span.End);
+
+    public int First => Span.First;
+
+    public int End => Span.End;
+    
+    public int Length => Span.Length;
     
     public ReadOnlySpan<char> GetText()
         => File.GetText(Span);

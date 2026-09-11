@@ -2,24 +2,19 @@
 #:project src/Axl.Compiler/Axl.Compiler.csproj
 #:project src/Axl.Tests/Axl.Tests.csproj
 
-using System.Buffers;
-using System.Collections.Immutable;
-using System.Data.Common;
-using System.Diagnostics;
-using System.IO.Compression;
-using Axl.Compiler;
-using Axl.Compiler.Diagnostics;
-using Axl.Compiler.Syntax;
-using Axl.Compiler.Taxl;
-using Axl.Tests;
+using Axl.Compiler.Testing;
+using Axl.Compiler.Text;
 
 
 var input = """
             //@check
-            var a: i32 = "Hello";   //~error TypeMismatch
-            //~type      ^^^^ float
+            var a: i32 = 1.1;
+            //~type       ^^ i32
             """;
 
-var source = SourceFileView.FromText(input);
-var file = TaxlFile.Parse(source);
-TaxlRunner.Test(file);
+var source = SourceFile.FromText(input);
+var file = TestFile.From(source);
+var eval = file.Evaluate();
+
+Console.WriteLine(eval.HasUnsupportedFeatures ? "Unsupported" : eval.HasFailed ? "Failed" : "Pass");
+Console.WriteLine(eval.Message);

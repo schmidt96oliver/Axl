@@ -1,8 +1,7 @@
 ﻿using System.Text;
-using Axl.Compiler;
 using Axl.Compiler.Diagnostics;
 using Axl.Compiler.Syntax;
-using Axl.Compiler.Taxl;
+using Axl.Compiler.Testing;
 using Axl.Compiler.Text;
 
 namespace Axl.Tests;
@@ -210,38 +209,31 @@ public class Dump(SourceFileView source)
     }
 
 
-    public Dump Add(TaxlFile taxlFile, bool onlyStructure)
+    public Dump Add(TestFile testFile, bool onlyStructure)
     {
-        _builder.AppendLine($"--> Directives: {string.Join(", ", taxlFile.Directives.Select(dir => dir.Kind))}");
-        
-        foreach (var part in taxlFile.Fragments)
+        _builder.AppendLine($"--> Directive: {testFile.Directive?.Kind.ToString() ?? "???"}");
+
+        foreach (var fragment in testFile.Fragments)
         {
-            _builder.AppendLine($"--- {part.GetType().Name} \"{part.Argument}\" ---");
-            if (part is TaxlFragment.Code codePart)
+            var fragmentText = fragment.IsOutput ? "Output" : "Code";
+            _builder.AppendLine($"--- {fragmentText} \"{fragment.Name}\" ---");
+            foreach (var annotation in fragment.Annotations)
             {
-                foreach (var annotation in codePart.Annotations)
+                _builder.Append("--> //~ ");
+                switch (annotation)
                 {
-                    _builder.Append("--> //~ ");
-                    switch (annotation)
-                    {
-                        case TaxlAnnotation.Diagnostic diagnostic:
-                            _builder.AppendLine($"{diagnostic.Kind}@l.{diagnostic.LineNumber}: \"{diagnostic.Id}\"");
-                            break;
-                        
-                        case TaxlAnnotation.Type type:
-                            var refText = source.GetText(type.ExprSpan);
-                            _builder.AppendLine($"type \"{type.TypeName}\" on \"{refText}\"");
-                            break;
-                        
-                        case TaxlAnnotation.Invalid invalidAnnotation:
-                            _builder.AppendLine($"INVALID: {invalidAnnotation.ErrorMessage}");
-                            break;
-                    }
+                    case DiagnosticAnnotation diagnostic:
+                        _builder.AppendLine($"{diagnostic.Kind}@l.{diagnostic.LineNumber}: \"{diagnostic.Id}\"");
+                        break;
+
+                    case TypeAnnotation type:
+                        _builder.AppendLine($"type \"{type.TypeName}\" on \"{type.ReferencedLocation.GetText()}\"");
+                        break;
                 }
             }
 
             if (!onlyStructure)
-                _builder.AppendLine(part.SourceView.TextSpan.ToString());
+                _builder.AppendLine(fragment.Source.TextSpan.ToString());
         }
 
         return this;

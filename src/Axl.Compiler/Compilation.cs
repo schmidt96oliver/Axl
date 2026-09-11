@@ -1,10 +1,8 @@
 ﻿using System.Collections.Immutable;
-using System.Reflection;
 using Axl.Compiler.Binding;
 using Axl.Compiler.Binding.BoundTree;
 using Axl.Compiler.Diagnostics;
 using Axl.Compiler.Syntax;
-using Axl.Compiler.Taxl;
 using Binder = Axl.Compiler.Binding.Binder;
 
 namespace Axl.Compiler;
@@ -49,16 +47,6 @@ public class Compilation
         TypeContext = new TypeContext();
     }
 
-
-    public static Compilation From(TaxlFile taxlFile)
-    {
-        if (taxlFile.Fragments.OfType<TaxlFragment.Code>().ToList() is not [var codeFragment])
-            throw new NotImplementedException("Multiple files not supported yet.");
-
-        return From(Parser.Parse(codeFragment.SourceView));
-    }
-
     public static Compilation From(SyntaxTree syntaxTree)
         => new(syntaxTree);
-
 }

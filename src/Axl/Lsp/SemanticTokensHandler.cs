@@ -1,8 +1,6 @@
-using Axl.Compiler;
 using Axl.Compiler.Syntax;
-using Axl.Compiler.Taxl;
+using Axl.Compiler.Testing;
 using Axl.Compiler.Text;
-using OmniSharp.Extensions.LanguageServer.Protocol;
 using OmniSharp.Extensions.LanguageServer.Protocol.Client.Capabilities;
 using OmniSharp.Extensions.LanguageServer.Protocol.Document;
 using OmniSharp.Extensions.LanguageServer.Protocol.Models;
@@ -44,49 +42,17 @@ public class SemanticTokensHandler(ILanguageServerFacade facade) : SemanticToken
         {
             Uri = identifier.TextDocument.Uri,
             Diagnostics = new(DiagnosticConverter.Convert(compilation.Diagnostics)
-                .Concat(GetTaxlDiagnostics(DocumentStore.TryGetTaxlFile(identifier.TextDocument.Uri))))
+                .Concat(DocumentStore.TryGetTestFile(identifier.TextDocument.Uri) is {} testFile ?
+                    DiagnosticConverter.Convert(testFile.Diagnostics) : []))
         });
 
-        TokenizeTree(builder, compilation.SyntaxTree, DocumentStore.TryGetTaxlFile(identifier.TextDocument.Uri));
+        TokenizeTree(builder, compilation.SyntaxTree, DocumentStore.TryGetTestFile(identifier.TextDocument.Uri));
 
 
         return Task.CompletedTask;
     }
 
-    private IEnumerable<Diagnostic> GetTaxlDiagnostics(TaxlFile? taxlFile)
-    {
-        if (taxlFile is null)
-            yield break;
-        
-        // --- Unknown directives
-        foreach (var directive in taxlFile.Directives.Where(directive => directive.Kind is TaxlDirectiveKind.Unknown))
-        {
-            yield return new Diagnostic
-            {
-                Severity = DiagnosticSeverity.Error,
-                Message = "Unknown directive.",
-                Source = "Taxl",
-                Range = taxlFile.Source.GetLocation(directive.Span).ToLsp()
-            };
-        }
-        
-        // --- Invalid annotations
-        foreach (var annotation in taxlFile.Fragments
-                     .OfType<TaxlFragment.Code>()
-                     .SelectMany(codeFrag => codeFrag.Annotations)
-                     .OfType<TaxlAnnotation.Invalid>())
-        {
-            yield return new Diagnostic
-            {
-                Severity = DiagnosticSeverity.Error,
-                Message = annotation.ErrorMessage,
-                Source = "Taxl",
-                Range = taxlFile.Source.GetLocation(annotation.AnnotationSpan).ToLsp()
-            };
-        }
-    }
-    
-    private void TokenizeTree(SemanticTokensBuilder builder, SyntaxTree tree, TaxlFile? taxlFile)
+    private void TokenizeTree(SemanticTokensBuilder builder, SyntaxTree tree, TestFile? testFile)
     {
         foreach (var token in EnumerateTokens(tree.FileSyntax))
         {
@@ -100,8 +66,8 @@ public class SemanticTokensHandler(ILanguageServerFacade facade) : SemanticToken
             {
                 case TokenKind.Comment:
                 {
-                    if (taxlFile is not null)
-                        TokenizeTaxlComment(token, taxlFile, startLinePos, builder);
+                    if (testFile is not null)
+                        TokenizeTaxlComment(token, testFile, startLinePos, builder);
                     else
                     {
                         builder.Push(startLinePos.Line, startLinePos.Column, token.FullSpan.Length,
@@ -193,22 +159,20 @@ public class SemanticTokensHandler(ILanguageServerFacade facade) : SemanticToken
         }
     }
 
-    private void TokenizeTaxlComment(Token commentToken, TaxlFile taxlFile, LinePosition startLinePos, SemanticTokensBuilder builder)
+    private void TokenizeTaxlComment(Token commentToken, TestFile testFile, LinePosition startLinePos, SemanticTokensBuilder builder)
     {
-        var isHeadLine = taxlFile.Fragments
-            .Any(fragment => fragment.SourceView.Span.First == commentToken.FullSpan.First &&
-                             (fragment.SourceView.TextSpan.StartsWith("//---") || fragment.SourceView.TextSpan.StartsWith("//===")));
-        if (isHeadLine)
+        var text = commentToken.GetText();
+        
+        // --- Fragment headlines
+        if (text.StartsWith("//---") || text.StartsWith("//==="))
         {
             builder.Push(startLinePos.Line, startLinePos.Column, length: Math.Min(5, commentToken.FullSpan.Length),
                 (SemanticTokenType?)SemanticTokenType.Decorator);
             return;
         }
-        
-        var isInOutput = taxlFile.Fragments
-                .FirstOrDefault(fragment => fragment.SourceView.Span.Contains(commentToken.FullSpan))
-            is TaxlFragment.Output;
-        
+
+        // --- Output fragments
+        var isInOutput = testFile.GetFragmentAt(commentToken.GetLocation()).IsOutput;
         if (isInOutput)
         {
             // `//` is now a decorator
@@ -225,7 +189,8 @@ public class SemanticTokensHandler(ILanguageServerFacade facade) : SemanticToken
             return;
         }
         
-        var decoratorLength = GetTaxlDecoratorLength(commentToken.FullSpan, taxlFile);
+        // Directives and annotations
+        var decoratorLength = GetTaxlCommentDecoratorLength(commentToken.FullSpan, testFile);
         if (decoratorLength <= 0)
         {
             // Entire length is just a comment
@@ -237,24 +202,20 @@ public class SemanticTokensHandler(ILanguageServerFacade facade) : SemanticToken
             (SemanticTokenType?)SemanticTokenType.Decorator);
     }
     
-    private int GetTaxlDecoratorLength(SourceSpan commentSpan, TaxlFile taxlFile)
+    private int GetTaxlCommentDecoratorLength(SourceSpan commentSpan, TestFile testFile)
     {
-        // Search directives
-        if (taxlFile.Directives.FirstOrDefault(dir => dir.Span == commentSpan)
-            is { } directive)
-        {
-            return directive.Span.Length;
-        }
+        // Directive?
+        if (testFile.Directive?.Location.Span == commentSpan)
+            return commentSpan.Length;
 
-        var annotation = taxlFile.Fragments
-            .OfType<TaxlFragment.Code>()
-            .SelectMany(codeFragment => codeFragment.Annotations)
-            .FirstOrDefault(annotation => annotation.AnnotationSpan == commentSpan);
+        // An annotation?
+        var annotation = testFile.Fragments
+            .SelectMany(fragment => fragment.Annotations)
+            .FirstOrDefault(annotation => annotation.FullLocation.Span == commentSpan);
         if (annotation is not null)
-        {
-            return annotation.ArgumentSpan.First - annotation.AnnotationSpan.First;
-        }
-
+            return annotation.PrefixLocation.Length;
+        
+        // Nothing
         return 0;
     }
     

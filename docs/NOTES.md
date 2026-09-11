@@ -2,9 +2,6 @@
                                        ≽(◕ ᴗ ◕)≼
 
 **Next:** 
-* Cleanup rest of binder
-* Reset soft, make good commits into master
-
 
 **Simplifications**
 * SyntaxTree API
@@ -17,13 +14,6 @@
 * Diagnostics
   * Move to DiagnosticBag.Report***
   * Think about Parser deduping
-* Testing API
-  * Splitter by .Lines
-  * Annotation.TryFrom
-  * Diagnostics exposed
-  * .Evaluate on TaxlFile
-  * Parser allows only one directive
-  * Fragment has offset
 
 **Moving On**
 * allow any type in string interpolation (that's a lowering problem)
