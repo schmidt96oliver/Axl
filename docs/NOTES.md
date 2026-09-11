@@ -2,8 +2,6 @@
                                        ≽(◕ ᴗ ◕)≼
 
 **Next:** 
-* Hir -> Bound
-* Look at PROJECT.md
 * Cleanup rest of binder
 * Reset soft, make good commits into master
 
@@ -28,7 +26,6 @@
   * Fragment has offset
 
 **Moving On**
-* ?? carry expected type into exprs -- or -- delete that feature
 * allow any type in string interpolation (that's a lowering problem)
 * compound assign
 * loop (how to handle arms?)
@@ -46,15 +43,19 @@
 
 # First features
 * i32, i64, f32, f64, bool, string
-* literals integral, float
 * expressions: numeric, comparison, boolean
 * variables
-* blocks, if, loop (with break expression, continue), return
-* none, never
 * string interpolation, escaped
+* blocks, if, loop (with break expression, continue)
+
+* fns
+  * none, never type
+  * return expr
+  * forward-declared, overloaded
 * native functions: Print, PrintLine, ToString
-* hoisted, overloaded functions
+
 * multi-file modules
+  * `using` directive
 
 
 # Possible Refactors

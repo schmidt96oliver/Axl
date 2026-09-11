@@ -15,7 +15,7 @@ Statement   = VariableDeclaration ";"
 ExpressionBody  = Block | Arm
 Block = "{" Statement* Arm? "}"
 Arm = Block | ("=>" Expression)
-
+ 
 // e.g.
 IfExpression = "if" Expression ExpressionBody ("else" (IfExpression | ExpressionBody))?
 Loop = "loop" ExpressionBody
