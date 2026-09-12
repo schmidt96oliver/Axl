@@ -12,8 +12,8 @@ var input = """
             //~type       ^^ i32
             """;
 
-var source = SourceFile.FromText(input);
-var file = TestFile.From(source);
+var sourceText = SourceText.From(input);
+var file = TestFile.From(sourceText);
 var eval = file.Evaluate();
 
 Console.WriteLine(eval.HasUnsupportedFeatures ? "Unsupported" : eval.HasFailed ? "Failed" : "Pass");

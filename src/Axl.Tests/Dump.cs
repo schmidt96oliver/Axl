@@ -6,7 +6,7 @@ using Axl.Compiler.Text;
 
 namespace Axl.Tests;
 
-public class Dump(SourceText source)
+public class Dump(SourceText sourceText)
 {
     private readonly StringBuilder _builder = new();
     
@@ -44,7 +44,7 @@ public class Dump(SourceText source)
             }
             
             _builder.Append($"- {token.Kind}: \"");
-            AddLiteralString(source.GetText(token.FullRange));
+            AddLiteralString(sourceText.GetText(token.FullRange));
             _builder.Append('"');
 
             switch (token)
@@ -88,7 +88,7 @@ public class Dump(SourceText source)
                 _builder.Append(prefix);
                 _builder.AppendLine(token.IsMissing
                     ? $"{GetMissingDisplayText(token)}"
-                    : $"\'{source.GetText(token.FullRange)}\'");
+                    : $"\'{sourceText.GetText(token.FullRange)}\'");
                 break;
 
                 string GetMissingDisplayText(Token tkn)
@@ -112,7 +112,7 @@ public class Dump(SourceText source)
                     foreach (var child in children.OfType<Token>())
                     {
                         _builder.Append(" \'");
-                        AddLiteralString(source.GetText(child.FullRange));
+                        AddLiteralString(sourceText.GetText(child.FullRange));
                         _builder.Append("\'");
                     }
 
@@ -168,7 +168,7 @@ public class Dump(SourceText source)
                 return;
 
             case Token token:
-                AddLiteralString(source.GetText(token.FullRange));
+                AddLiteralString(sourceText.GetText(token.FullRange));
                 _builder.Append(' ');
                 break;
 

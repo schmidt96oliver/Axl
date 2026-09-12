@@ -8,8 +8,8 @@ public sealed class CorpusTests
     [Theory, Corpus]
     public void T(string path)
     {
-        var source = SourceText.LoadFile(path);
-        var evaluation = TestFile.From(source).Evaluation;
+        var sourceText = SourceText.LoadFile(path);
+        var evaluation = TestFile.From(sourceText).Evaluation;
 
         if (evaluation.HasUnsupportedFeatures)
         {

@@ -2,9 +2,7 @@
                                        ≽(◕ ᴗ ◕)≼
 
 **Next:** 
-* rename "Source" to "SourceText" consistently
 * Update fragment logic (the hardest part :D)
-* ? rename SourceRange.First to .Start
 
 * move unit tests to Axl.Tests
 * rename "CorpusTests" to "LanguageTests"

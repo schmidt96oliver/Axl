@@ -9,19 +9,19 @@ namespace Axl.Compiler.Syntax;
 
 public sealed class Lexer
 {
-    private ref struct Scanner(SourceText source, DiagnosticBag diagnosticBag)
+    private ref struct Scanner(SourceText sourceText, DiagnosticBag diagnosticBag)
     {
         public readonly DiagnosticBag DiagnosticBag = diagnosticBag;
-        public readonly SourceText Source = source;
+        public readonly SourceText SourceText = sourceText;
         
         private int _start = 0, _next = 0;
         private ImmutableArray<Token>.Builder _tokens = ImmutableArray.CreateBuilder<Token>();
 
         public bool IsAtEnd
-            => _next >= Source.Length;
+            => _next >= SourceText.Length;
 
         public ReadOnlySpan<char> CurrentText
-            => Source[_start.._next];
+            => SourceText[_start.._next];
 
         public int StartIndex => _start;
 
@@ -31,13 +31,13 @@ public sealed class Lexer
         public char Peek(int skip = 0)
         {
             Debug.Assert(skip >= 0);
-            return _next + skip < Source.Length ? Source[_next + skip] : '\0';
+            return _next + skip < SourceText.Length ? SourceText[_next + skip] : '\0';
         }
 
         public char Advance()
         {
-            Debug.Assert(_next < Source.Length);
-            return Source[_next++];
+            Debug.Assert(_next < SourceText.Length);
+            return SourceText[_next++];
         }
 
         public void AdvanceWhile(Func<char, bool> predicate)
@@ -101,7 +101,7 @@ public sealed class Lexer
         {
             Debug.Assert(_next > _start);
             _tokens.Add(Token.MakeIdentifier(SourceRange.FromBounds(_start, _next),
-                Source[_start.._next].ToString()));
+                SourceText[_start.._next].ToString()));
             _start = _next;
         }
 
@@ -126,9 +126,9 @@ public sealed class Lexer
     }
     
     
-    public static ImmutableArray<Token> Lex(SourceText source, DiagnosticBag diagnosticBag)
+    public static ImmutableArray<Token> Lex(SourceText sourceText, DiagnosticBag diagnosticBag)
     {
-        var scanner = new Scanner(source, diagnosticBag);
+        var scanner = new Scanner(sourceText, diagnosticBag);
         while (!scanner.IsAtEnd)
             LexSingle(ref scanner);
         scanner.AddEof();
@@ -363,7 +363,7 @@ public sealed class Lexer
                 // this will never be read. The body is still valid.
                 
                 scanner.DiagnosticBag.ReportError(new Diagnostic.UnknownNumberSuffix(
-                    SourceLocation.FromBounds(scanner.Source, scanner.StartIndex + suffixStart, scanner.NextIndex)));
+                    SourceLocation.FromBounds(scanner.SourceText, scanner.StartIndex + suffixStart, scanner.NextIndex)));
             }
         }
         
@@ -435,7 +435,7 @@ public sealed class Lexer
                         // Eof and newline will end the entire string, so we need to stop here.
                         // '\' will be discarded (not included in ProcessedText).
                         scanner.DiagnosticBag.ReportError(new Diagnostic.UnknownEscapeSequence(
-                            SourceLocation.FromLength(scanner.Source, scanner.NextIndex - 1, 1)));
+                            SourceLocation.FromLength(scanner.SourceText, scanner.NextIndex - 1, 1)));
                         goto case '\0';
                     }
 
@@ -468,7 +468,7 @@ public sealed class Lexer
                             // Report error. The escaped sequence will not be part of the
                             // processed text.
                             scanner.DiagnosticBag.ReportError(new Diagnostic.UnknownEscapeSequence(
-                                SourceLocation.FromLength(scanner.Source, scanner.NextIndex - 2, 2)));
+                                SourceLocation.FromLength(scanner.SourceText, scanner.NextIndex - 2, 2)));
                             break;
                     }
 

@@ -6,15 +6,15 @@ namespace Axl.Compiler.Diagnostics;
 
 public abstract partial record Diagnostic
 {
-    public sealed record UnexpectedToken(SourceText Source, Token Actual, ExpectedSyntax Expected) : Error
+    public sealed record UnexpectedToken(SourceText SourceText, Token Actual, ExpectedSyntax Expected) : Error
     {
-        public override ImmutableArray<SourceLocation> Locations => [SourceLocation.From(Source, Actual.FullRange)];
+        public override ImmutableArray<SourceLocation> Locations => [SourceLocation.From(SourceText, Actual.FullRange)];
 
         public override string Message
             => $"Expected {Expected.DisplayName}, got {Actual.Kind.DisplayName}.";
     }
 
-    public sealed record MissingToken(SourceText Source, Token? Previous, Token Next, ExpectedSyntax Expected) : Error
+    public sealed record MissingToken(SourceText SourceText, Token? Previous, Token Next, ExpectedSyntax Expected) : Error
     {
         public override ImmutableArray<SourceLocation> Locations
         {
@@ -23,9 +23,9 @@ public abstract partial record Diagnostic
                 // If it's missing at the start of file, place it
                 // before the next token.
                 if (Previous is null)
-                    return [SourceLocation.From(Source, SourceRange.EmptyBefore(Next.FullRange))];
+                    return [SourceLocation.From(SourceText, SourceRange.EmptyBefore(Next.FullRange))];
 
-                return [SourceLocation.From(Source, SourceRange.EmptyAfter(Previous.FullRange))];
+                return [SourceLocation.From(SourceText, SourceRange.EmptyAfter(Previous.FullRange))];
             }
         }
 
@@ -33,10 +33,10 @@ public abstract partial record Diagnostic
             => $"Expected {Expected.DisplayName}.";
     }
 
-    public sealed record InvalidOperatorChaining(SourceText Source, ImmutableArray<Token> OffendingOperators) : Error
+    public sealed record InvalidOperatorChaining(SourceText SourceText, ImmutableArray<Token> OffendingOperators) : Error
     {
         public override ImmutableArray<SourceLocation> Locations =>
-            [.. OffendingOperators.Select(offendingOp => SourceLocation.From(Source, offendingOp.FullRange))];
+            [.. OffendingOperators.Select(offendingOp => SourceLocation.From(SourceText, offendingOp.FullRange))];
 
         public override string LocationLabel => "Conflicts with this operator.";
 

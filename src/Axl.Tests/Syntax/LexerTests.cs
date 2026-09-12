@@ -10,20 +10,20 @@ namespace Axl.Tests.Syntax;
 
 public sealed class LexerTests
 {
-    private ImmutableArray<Token> LexTokens(string input, out ImmutableArray<Diagnostic> diagnostics, out SourceText source)
+    private ImmutableArray<Token> LexTokens(string input, out ImmutableArray<Diagnostic> diagnostics, out SourceText sourceText)
     {
         var diagnosticBag = new DiagnosticBag();
-        source = SourceText.From(input);
+        sourceText = SourceText.From(input);
         
-        var tokens = Lexer.Lex(source, diagnosticBag);
+        var tokens = Lexer.Lex(sourceText, diagnosticBag);
         diagnostics = diagnosticBag.Drain();
         return tokens;
     }
     
     private string All(string input)
     {
-        var tokens = LexTokens(input, out var diagnostics, out var source);
-        return new Dump(source)
+        var tokens = LexTokens(input, out var diagnostics, out var sourceText);
+        return new Dump(sourceText)
             .Add(diagnostics)
             .Add(tokens, filterTrivia: false)
             .ToString();
@@ -31,8 +31,8 @@ public sealed class LexerTests
 
     private string NoWhitespace(string input)
     {
-        var tokens = LexTokens(input, out var diagnostics, out var source);
-        return new Dump(source)
+        var tokens = LexTokens(input, out var diagnostics, out var sourceText);
+        return new Dump(sourceText)
             .Add(diagnostics)
             .Add(tokens.Where(t => t.Kind is not TokenKind.Whitespace), filterTrivia: false)
             .ToString();

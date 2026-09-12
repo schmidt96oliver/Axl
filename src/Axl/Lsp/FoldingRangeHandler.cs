@@ -74,7 +74,7 @@ public class FoldingRangeHandler : FoldingRangeHandlerBase
             return FoldingRangeFromTo(start.FullRange.Start, end.FullRange.End);
         }
 
-        IEnumerable<FoldingRange> GetCommentFoldingRanges(SyntaxNode node, SourceText source)
+        IEnumerable<FoldingRange> GetCommentFoldingRanges(SyntaxNode node, SourceText sourceText)
         {
             for (var i = 0; i < node.Children.Length; i++)
             {
@@ -93,7 +93,7 @@ public class FoldingRangeHandler : FoldingRangeHandlerBase
                     { 
                         // More than one newline breaks the group.
                         // One newline is expected after each comment.
-                        if (source.GetText(range).Count('\n') > 1)
+                        if (sourceText.GetText(range).Count('\n') > 1)
                             break;
                     }
                     
@@ -110,7 +110,7 @@ public class FoldingRangeHandler : FoldingRangeHandlerBase
                     // by one at the end. Looks a little weird, but it does the job.
                     yield return FoldingRangeFromTo(
                         start: node.Children[firstComment].FullRange.End,
-                        end: lastPos == source.Length
+                        end: lastPos == sourceText.Length
                             ? lastPos - 1
                             : lastPos,
                         kind: FoldingRangeKind.Comment);

@@ -8,20 +8,20 @@ public sealed partial class TestFileTests
 {
     private static string Structure(string input)
     {
-        var source = SourceText.From(input);
-        var testFile = TestFile.From(source);
+        var sourceText = SourceText.From(input);
+        var testFile = TestFile.From(sourceText);
 
-        return new Dump(source)
+        return new Dump(sourceText)
             .Add(testFile.Diagnostics)
             .Add(testFile, onlyStructure: true).ToString();
     }
 
     private static string StructureAndCode(string input)
     {
-        var source = SourceText.From(input);
-        var testFile = TestFile.From(source);
+        var sourceText = SourceText.From(input);
+        var testFile = TestFile.From(sourceText);
 
-        return new Dump(source)
+        return new Dump(sourceText)
             .Add(testFile.Diagnostics)
             .Add(testFile, onlyStructure: false).ToString();
     }

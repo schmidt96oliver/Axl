@@ -103,7 +103,7 @@ public partial class Parser
         /// </summary>
         private readonly List<Token> _tokens;
         private readonly List<ParseEvent> _events;
-        private readonly SourceText _source;
+        private readonly SourceText _sourceText;
 
         
         /// <summary>
@@ -117,9 +117,9 @@ public partial class Parser
         public bool IsAtEnd => IsAt(TokenKind.Eof);
         
 
-        public Scanner(SourceText source, ImmutableArray<Token> tokens)
+        public Scanner(SourceText sourceText, ImmutableArray<Token> tokens)
         {
-            _source = source;
+            _sourceText = sourceText;
 
             // This list will be oversized by exactly the amount of trivia tokens.
             // If that every shows up, we could count non-trivia tokens before.
@@ -262,7 +262,7 @@ public partial class Parser
         public void ReportMissingTokenHere(ExpectedSyntax expectedSyntax)
         {
             var error = new Diagnostic.MissingToken(
-                _source,
+                _sourceText,
                 Previous: Last,
                 Next: Peek(),
                 expectedSyntax);
@@ -288,7 +288,7 @@ public partial class Parser
             // that appear directly before.
             
             var errorToken = _tokens[first];
-            var error = new Diagnostic.UnexpectedToken(_source, errorToken, expectedSyntax);
+            var error = new Diagnostic.UnexpectedToken(_sourceText, errorToken, expectedSyntax);
             Report(error,
                 new ClaimedRange(first + 1, Position),
                 isSuppressible: true);
