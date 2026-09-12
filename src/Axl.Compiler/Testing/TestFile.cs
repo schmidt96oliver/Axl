@@ -8,7 +8,7 @@ namespace Axl.Compiler.Testing;
 
 public sealed class TestFile
 {
-    public SourceFile Source { get; }
+    public SourceText SourceText { get; }
     
     public Directive? Directive { get; }
     
@@ -27,7 +27,7 @@ public sealed class TestFile
             if (field is null)
             {
                 var fragment = Fragments.First(fragment => !fragment.IsOutput);
-                var tree = Parser.Parse(fragment.Source);
+                var tree = Parser.Parse(fragment.Text);
                 field = Compilation.From(tree);
             }
             return field;
@@ -46,26 +46,26 @@ public sealed class TestFile
     }
 
 
-    private TestFile(SourceFile source, Directive? directive, 
+    private TestFile(SourceText sourceText, Directive? directive, 
         ImmutableArray<Fragment> fragments, ImmutableArray<Diagnostic> diagnostics)
     {
-        Source = source;
+        SourceText = sourceText;
         Directive = directive;
         Fragments = fragments;
         Diagnostics = diagnostics;
     }
     
 
-    public static TestFile From(SourceFile source)
+    public static TestFile From(SourceText sourceText)
     {
         var diagnostics = new DiagnosticBag();
-        var parser = new TaxlParser(source, diagnostics);
+        var parser = new TaxlParser(sourceText, diagnostics);
         
         var fragments = parser.ParseFragments();
         Debug.Assert(fragments.Length > 0, "There must be at least one fragment.");
 
         var directive = parser.ParseDirective();
-        return new TestFile(source, directive, fragments, diagnostics.Drain());
+        return new TestFile(sourceText, directive, fragments, diagnostics.Drain());
     }
 
     

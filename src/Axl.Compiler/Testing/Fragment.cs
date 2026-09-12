@@ -3,4 +3,5 @@ using Axl.Compiler.Text;
 
 namespace Axl.Compiler.Testing;
 
-public sealed record Fragment(SourceFileView Source, string Name, bool IsOutput, ImmutableArray<Annotation> Annotations);
+/// <param name="Text">The <see cref="SourceText"/> that this fragment defines.</param>
+public sealed record Fragment(SourceText Text, string Name, bool IsOutput, ImmutableArray<Annotation> Annotations);

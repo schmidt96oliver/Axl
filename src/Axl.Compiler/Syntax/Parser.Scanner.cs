@@ -103,7 +103,7 @@ public partial class Parser
         /// </summary>
         private readonly List<Token> _tokens;
         private readonly List<ParseEvent> _events;
-        private readonly SourceFileView _source;
+        private readonly SourceText _source;
 
         
         /// <summary>
@@ -117,7 +117,7 @@ public partial class Parser
         public bool IsAtEnd => IsAt(TokenKind.Eof);
         
 
-        public Scanner(SourceFileView source, ImmutableArray<Token> tokens)
+        public Scanner(SourceText source, ImmutableArray<Token> tokens)
         {
             _source = source;
 

@@ -10,7 +10,7 @@ public partial class ParserTests
 {
     private static string Tree(string text)
     {
-        var source = SourceFileView.FromText(text);
+        var source = SourceText.From(text);
         var tree = Parser.Parse(source);
 
         return new Dump(source)
@@ -21,7 +21,7 @@ public partial class ParserTests
 
     private static string SExpr(string text)
     {
-        var source = SourceFileView.FromText(text);
+        var source = SourceText.From(text);
         var tree = Parser.Parse(source);
 
         var exprStmt = tree.FileSyntax.Children[..^1]
@@ -41,7 +41,7 @@ public partial class ParserTests
     [Theory, Corpus]
     public void Corpus_ParsesWithoutDiagnostics(string path)
     {
-        var source = SourceFileView.FromFile(path);
+        var source = SourceText.LoadFile(path);
         var tree = Parser.Parse(source);
 
         foreach (var diagnostic in tree.Diagnostics)
@@ -49,7 +49,7 @@ public partial class ParserTests
             TestContext.Current.TestOutputHelper?.WriteLine(
                 $"[{diagnostic.DefaultSeverity}] {diagnostic.Id}: {diagnostic.Message}");
             TestContext.Current.TestOutputHelper?.WriteLine(
-                $"    at {path}:line {source.File.GetLineAt(diagnostic.Locations[0].Range.First).LineNumber + 1}");
+                $"    at {path}:line {source.GetLineIndex(diagnostic.Locations[0].Range.First) + 1}");
         }
         
         tree.HasError.ShouldBeFalse();
@@ -59,7 +59,7 @@ public partial class ParserTests
     [Theory, Corpus]
     public void Corpus_ChildrenPartitionTheirParent(string path)
     {
-        var source = SourceFileView.FromFile(path);
+        var source = SourceText.LoadFile(path);
         var tree = Parser.Parse(source);
 
         SyntaxWalk.AllNodesRecursive(tree.FileSyntax).ShouldAllBe(node => node.FullRange.IsPartitionedBy(node.Children.Select(child => child.FullRange)));
@@ -68,7 +68,7 @@ public partial class ParserTests
     [Theory, Corpus]
     public void Corpus_TokensPartitionSource(string path)
     {
-        var source = SourceFileView.FromFile(path);
+        var source = SourceText.LoadFile(path);
         var tree = Parser.Parse(source);
 
         source.Range.IsPartitionedBy(SyntaxWalk.AllTokenSpansRecursive(tree.FileSyntax)).ShouldBeTrue();
@@ -133,8 +133,8 @@ public partial class ParserTests
         var tokenRanges = SyntaxWalk.AllTokenSpansRecursive(tree.FileSyntax).ToList();
         if (!source.Range.IsPartitionedBy(tokenRanges))
         {
-            yield return new Finding("(3) Source is not partitioned by its tokens",
-                $"Source@{source.Range} is not partitioned by its {tokenRanges.Count} tokens.");
+            yield return new Finding("(3) Text is not partitioned by its tokens",
+                $"SourceText@{source.Range} is not partitioned by its {tokenRanges.Count} tokens.");
             yield break;
         }
 

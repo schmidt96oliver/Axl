@@ -12,19 +12,19 @@ public sealed class SyntaxTree
     /// </summary>
     public FileSyntax FileSyntax { get; }
     
-    public SourceFileView Source { get; }
+    public SourceText SourceText { get; }
 
     public ImmutableArray<Diagnostic> Diagnostics { get; }
 
     public bool HasError { get; }
 
     
-    internal SyntaxTree(FileSyntax fileSyntax, SourceFileView source, ImmutableArray<Diagnostic> diagnostics, bool hasError)
+    internal SyntaxTree(FileSyntax fileSyntax, SourceText sourceText, ImmutableArray<Diagnostic> diagnostics, bool hasError)
     {
         Guard.MustBe(fileSyntax.Kind is SyntaxKind.File);
 
         FileSyntax = fileSyntax;
-        Source = source;
+        SourceText = sourceText;
         Diagnostics = diagnostics;
         HasError = hasError;
     }

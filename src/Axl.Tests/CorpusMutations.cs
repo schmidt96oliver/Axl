@@ -61,7 +61,7 @@ public static class CorpusMutations
     /// </summary>
     public static IEnumerable<(string Label, string Text)> TokenDeletions(string text)
     {
-        var tokens = Lexer.Lex(SourceFileView.FromText(text), new DiagnosticBag());
+        var tokens = Lexer.Lex(SourceText.From(text), new DiagnosticBag());
 
         foreach (var token in tokens)
         {

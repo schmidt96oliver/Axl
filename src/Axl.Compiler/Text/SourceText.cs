@@ -18,8 +18,10 @@ public class SourceText
             return field;
         }
     }
-    
-    
+
+    public SourceRange Range => SourceRange.FromLength(0, Length);
+
+
     private SourceText(string text)
     {
         Text = text;
@@ -27,7 +29,20 @@ public class SourceText
 
     public static SourceText From(string text)
         => new(text);
+    
+    public static SourceText LoadFile(string path)
+    {
+        var text = File.ReadAllText(path);
+        return new SourceText(text);
+    }
 
+
+    public char this[int index]
+        => Text[index];
+
+    public ReadOnlySpan<char> this[Range range]
+        => Text[range];
+    
     
     public ReadOnlySpan<char> GetText(SourceRange range)
     {
@@ -111,4 +126,11 @@ public class SourceText
             };
         }
     }
+
+    public bool Contains(SourceRange range)
+        => range.First >= 0 && range.End <= Length;
+
+
+    public override string ToString()
+        => Text;
 }

@@ -58,10 +58,10 @@ public class SemanticTokensHandler(ILanguageServerFacade facade) : SemanticToken
         {
             if (token.FullRange.Length == 0)
                 continue;
-            if (token.FullRange.First >= tree.Source.File.Text.Length)
+            if (token.FullRange.First >= tree.SourceText.File.Text.Length)
                 continue;
 
-            var startLinePos = tree.Source.File.GetLinePosition(token.FullRange.First);
+            var startLinePos = tree.SourceText.File.GetLinePosition(token.FullRange.First);
             switch (token.Kind)
             {
                 case TokenKind.Comment:
@@ -86,7 +86,7 @@ public class SemanticTokensHandler(ILanguageServerFacade facade) : SemanticToken
                 case TokenKind.StringText:
                 {
                     // Partition the string text into escape and non-escape
-                    var text = tree.Source.File.GetText(token.FullRange);
+                    var text = tree.SourceText.File.GetText(token.FullRange);
 
                     var stringTokenStart = 0;
                     for (var i = 0; i < text.Length; i++)

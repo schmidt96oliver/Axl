@@ -10,10 +10,10 @@ namespace Axl.Tests.Syntax;
 
 public sealed class LexerTests
 {
-    private ImmutableArray<Token> LexTokens(string input, out ImmutableArray<Diagnostic> diagnostics, out SourceFileView source)
+    private ImmutableArray<Token> LexTokens(string input, out ImmutableArray<Diagnostic> diagnostics, out SourceText source)
     {
         var diagnosticBag = new DiagnosticBag();
-        source = SourceFileView.FromText(input);
+        source = SourceText.From(input);
         
         var tokens = Lexer.Lex(source, diagnosticBag);
         diagnostics = diagnosticBag.Drain();

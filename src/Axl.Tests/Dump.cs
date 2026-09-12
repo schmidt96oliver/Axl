@@ -6,7 +6,7 @@ using Axl.Compiler.Text;
 
 namespace Axl.Tests;
 
-public class Dump(SourceFileView source)
+public class Dump(SourceText source)
 {
     private readonly StringBuilder _builder = new();
     
@@ -233,7 +233,7 @@ public class Dump(SourceFileView source)
             }
 
             if (!onlyStructure)
-                _builder.AppendLine(fragment.Source.TextSpan.ToString());
+                _builder.AppendLine(fragment.Text.Text);
         }
 
         return this;

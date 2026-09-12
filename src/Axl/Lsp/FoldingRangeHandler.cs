@@ -30,7 +30,7 @@ public class FoldingRangeHandler : FoldingRangeHandlerBase
 
     private IEnumerable<FoldingRange> GetFoldingRanges(SyntaxTree tree)
     {
-        foreach (var range in GetCommentFoldingRanges(tree.FileSyntax, tree.Source))
+        foreach (var range in GetCommentFoldingRanges(tree.FileSyntax, tree.SourceText))
             yield return range;
         
         foreach (var node in EnumerateAllChildNodes(tree.FileSyntax))
@@ -38,7 +38,7 @@ public class FoldingRangeHandler : FoldingRangeHandlerBase
             if (GetFnOrModuleFoldingRange(node) is FoldingRange foldingRange)
                 yield return foldingRange;
 
-            foreach (var range in GetCommentFoldingRanges(node, tree.Source))
+            foreach (var range in GetCommentFoldingRanges(node, tree.SourceText))
                 yield return range;
         }
         
@@ -120,8 +120,8 @@ public class FoldingRangeHandler : FoldingRangeHandlerBase
 
         FoldingRange FoldingRangeFromTo(int start, int end, FoldingRangeKind? kind = null)
         {
-            var startLinePos = tree.Source.File.GetLinePositionOrEof(start);
-            var endLinePos = tree.Source.File.GetLinePositionOrEof(end);
+            var startLinePos = tree.SourceText.File.GetLinePositionOrEof(start);
+            var endLinePos = tree.SourceText.File.GetLinePositionOrEof(end);
             return new FoldingRange
             {
                 StartLine = startLinePos.Line,

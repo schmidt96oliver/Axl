@@ -2,6 +2,10 @@
                                        ≽(◕ ᴗ ◕)≼
 
 **Next:** 
+* add FileName property (and assign consistently) for LSP
+* rename "Source" to "SourceText" consistently
+* Update fragment logic (the hardest part :D)
+* move unit tests to Axl.Tests
 
 **Simplifications**
 * SyntaxTree API

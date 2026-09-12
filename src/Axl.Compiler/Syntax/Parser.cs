@@ -8,18 +8,18 @@ namespace Axl.Compiler.Syntax;
 
 public partial class Parser
 {
-    private readonly SourceFileView _source;
+    private readonly SourceText _source;
     private readonly Scanner _scanner;
 
 
-    private Parser(SourceFileView source, Scanner scanner)
+    private Parser(SourceText source, Scanner scanner)
     {
         _source = source;
         _scanner = scanner;
     }
 
     
-    public static SyntaxTree Parse(SourceFileView source)
+    public static SyntaxTree Parse(SourceText source)
     {
         var lexerDiagnostics = new DiagnosticBag();
         var tokens = Lexer.Lex(source, lexerDiagnostics);
@@ -147,7 +147,7 @@ public partial class Parser
     private bool HasNewlineBeforeNextToken()
     {
         var spanToNextToken = _scanner.Last is null
-            ? _source.SpanFromTo(0, _scanner.Peek().FullRange.End)
+            ? SourceRange.FromBounds(0, _scanner.Peek().FullRange.End)
             : SourceRange.Between(_scanner.Last.FullRange, _scanner.Peek().FullRange);
         return _source.GetText(spanToNextToken).Contains('\n');
     }
