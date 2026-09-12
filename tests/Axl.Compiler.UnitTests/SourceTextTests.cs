@@ -36,7 +36,7 @@ public class SourceTextTests
         var sourceText = SourceText.From(input);
         var lines = sourceText.Lines;
         
-        lines.Select(line => sourceText.GetText(line.Span).ToString())
+        lines.Select(line => sourceText.GetText(line.Range).ToString())
             .ShouldBe(expectedLines);
     }
     
@@ -62,7 +62,7 @@ public class SourceTextTests
         var sourceText = SourceText.From(input);
         var lines = sourceText.Lines;
         
-        lines.Select(line => sourceText.GetText(line.SpanWithLineBreak).ToString())
+        lines.Select(line => sourceText.GetText(line.RangeWithLineBreak).ToString())
             .ShouldBe(expectedLines);
     }
 

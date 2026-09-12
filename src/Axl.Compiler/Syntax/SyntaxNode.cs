@@ -10,10 +10,10 @@ public abstract class SyntaxNode : SyntaxElement
     public ImmutableArray<SyntaxElement> Children { get; }
     
     /// <inheritdoc/>
-    public override SourceSpan FullSpan { get; }
+    public override SourceRange FullRange { get; }
     
     /// <inheritdoc/>
-    public override SourceSpan? Span { get; }
+    public override SourceRange? Range { get; }
 
 
     /// <param name="children">
@@ -27,22 +27,22 @@ public abstract class SyntaxNode : SyntaxElement
         Kind = kind;
         Children = children;
         
-        FullSpan = SourceSpan.FromTo(children[0].FullSpan, children[^1].FullSpan);
+        FullRange = SourceRange.FromTo(children[0].FullRange, children[^1].FullRange);
         
         // Set parents
         foreach (var child in children)
             child.Parent = this;
         
-        // Calculate Span
-        if (children.FirstOrDefault(element => element.Span is not null) is SyntaxElement firstNonTrivia)
+        // Calculate Range
+        if (children.FirstOrDefault(element => element.Range is not null) is SyntaxElement firstNonTrivia)
         {
             // Since there was a first element, Last will always find something.
-            var lastNonTrivia = children.Last(element => element.Span is not null);
-            Span = SourceSpan.FromTo(firstNonTrivia.Span!.Value,
-                lastNonTrivia.Span!.Value);
+            var lastNonTrivia = children.Last(element => element.Range is not null);
+            Range = SourceRange.FromTo(firstNonTrivia.Range!.Value,
+                lastNonTrivia.Range!.Value);
         }
         else
-            Span = null;
+            Range = null;
     }
 
 

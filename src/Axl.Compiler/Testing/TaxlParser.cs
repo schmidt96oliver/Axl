@@ -8,9 +8,9 @@ namespace Axl.Compiler.Testing;
 
 public sealed class TaxlParser(SourceFile source, DiagnosticBag diagnostics)
 {
-    private SourceSpan TrimSpan(SourceSpan span)
+    private SourceRange TrimSpan(SourceRange range)
     {
-        var text = source.GetText(span);
+        var text = source.GetText(range);
         
         var start = 0;
         for (; start < text.Length; start++)
@@ -25,7 +25,7 @@ public sealed class TaxlParser(SourceFile source, DiagnosticBag diagnostics)
             if (!char.IsWhiteSpace(text[end]))
                 break;
         }
-        return SourceSpan.InsideSourceFile(span.First + start, end - start + 1);
+        return SourceRange.InsideSourceFile(range.First + start, end - start + 1);
     }
     
     
@@ -35,7 +35,7 @@ public sealed class TaxlParser(SourceFile source, DiagnosticBag diagnostics)
             return [new Fragment(SourceFileView.Whole(source), "", false, [])];
         
         var delimiterIndices = source.Lines
-            .Where(line => source.GetText(line.Span).TrimStart() is
+            .Where(line => source.GetText(line.Range).TrimStart() is
                 ['/', '/', '-', '-', '-', ..] or ['/', '/', '=', '=', '=', ..])
             .Select(line => line.LineNumber)
             .ToList();
@@ -68,11 +68,11 @@ public sealed class TaxlParser(SourceFile source, DiagnosticBag diagnostics)
 
     public Directive? ParseDirective()
     {
-        var trimmedLineLocations = source.Lines.Select(line => new SourceLocation(source, TrimSpan(line.Span)));
+        var trimmedLineLocations = source.Lines.Select(line => new SourceLocation(source, TrimSpan(line.Range)));
         
         foreach (var trimmedLineLocation in trimmedLineLocations)
         {
-            var text = trimmedLineLocation.GetText();
+            var text = trimmedLineLocation.Text;
             if (text.StartsWith("//@"))
             {
                 var directive = text switch
@@ -95,8 +95,8 @@ public sealed class TaxlParser(SourceFile source, DiagnosticBag diagnostics)
 
         missing:
         diagnostics.ReportError(new Diagnostic.MissingTaxlDirective(new SourceLocation(source, source.Lines.Length == 0
-            ? SourceSpan.InsideSourceFile(0, 0)
-            : source.Lines[0].Span)));
+            ? SourceRange.InsideSourceFile(0, 0)
+            : source.Lines[0].Range)));
         return null;
     }
     
@@ -106,14 +106,14 @@ public sealed class TaxlParser(SourceFile source, DiagnosticBag diagnostics)
         Debug.Assert(firstLine <= lastLine && firstLine >= 0 && lastLine < source.Lines.Length);
 
         // Get source view
-        var firstIndex = source.Lines[firstLine].Span.First;
-        var endIndex = source.Lines[lastLine].Span.End;
+        var firstIndex = source.Lines[firstLine].Range.First;
+        var endIndex = source.Lines[lastLine].Range.End;
 
-        var span = SourceSpan.InsideSourceFile(firstIndex, length: endIndex - firstIndex);
-        var sourceView = new SourceFileView(source, span);
+        var range = SourceRange.FromBounds(firstIndex, endIndex);
+        var sourceView = new SourceFileView(source, range);
         
         // Read headline
-        var headlineText = source.GetText(source.Lines[firstLine].Span).TrimStart();
+        var headlineText = source.GetText(source.Lines[firstLine].Range).TrimStart();
         var name = headlineText.StartsWith("//===") || headlineText.StartsWith("//---")
             ? headlineText[5..].Trim().ToString()
             : "";
@@ -135,8 +135,8 @@ public sealed class TaxlParser(SourceFile source, DiagnosticBag diagnostics)
         var annotations = ImmutableArray.CreateBuilder<Annotation>();
         var annotationLocations = Lexer.Lex(fragmentView, new DiagnosticBag())
             .Where(t => t.Kind is TokenKind.Comment)
-            .Where(t => fragmentView.GetText(t.FullSpan).StartsWith("//~"))
-            .Select(t => fragmentView.GetLocation(t.FullSpan));
+            .Where(t => fragmentView.GetText(t.FullRange).StartsWith("//~"))
+            .Select(t => fragmentView.GetLocation(t.FullRange));
 
         foreach (var location in annotationLocations)
         {
@@ -153,7 +153,7 @@ public sealed class TaxlParser(SourceFile source, DiagnosticBag diagnostics)
     
     private DiagnosticAnnotation? ParseDiagnosticAnnotation(SourceLocation location)
     {
-        var text = location.GetText();
+        var text = location.Text;
 
         DiagnosticKind kind;
         int prefixLength;
@@ -179,26 +179,26 @@ public sealed class TaxlParser(SourceFile source, DiagnosticBag diagnostics)
         if (string.IsNullOrEmpty(id))
             return null;
 
-        var prefixSpan = SourceSpan.InsideSourceFile(location.Span.First, prefixLength);
+        var prefixSpan = SourceRange.InsideSourceFile(location.Range.First, prefixLength);
         return new DiagnosticAnnotation(
             FullLocation: location,
-            PrefixLocation: new SourceLocation(location.File, prefixSpan),
+            PrefixLocation: new SourceLocation(location.SourceText, prefixSpan),
             Kind: kind,
             id);
     }
 
     private TypeAnnotation? ParseTypeAnnotation(SourceLocation location)
     {
-        var text = location.GetText();
+        var text = location.Text;
         if (!text.StartsWith("//~type"))
             return null;
         
-        // --- Caret span
+        // --- Caret range
         var caretStart = text.IndexOf('^');
         if (caretStart < 0)
             return null;
         var caretLast = text.LastIndexOf('^');
-        var caretSpan = SourceSpan.InsideSourceFile(location.Span.First + caretStart,
+        var caretSpan = SourceRange.InsideSourceFile(location.Range.First + caretStart,
             length: caretLast - caretStart + 1);
         
         // Allow only contiguous caret blocks
@@ -206,14 +206,14 @@ public sealed class TaxlParser(SourceFile source, DiagnosticBag diagnostics)
             return null;
         
         // --- Location reference
-        var lineStart = source.GetLineAt(location.Span.First).Span.First;
+        var lineStart = source.GetLineAt(location.Range.First).Range.First;
         var lineAbove = location.StartLinePosition.Line - 1;
         if (lineAbove < 0)
             return null;
-        var referencedSpan = SourceSpan.InsideSourceFile(
-            first: source.Lines[lineAbove].Span.First + caretSpan.First - lineStart,
+        var referencedSpan = SourceRange.InsideSourceFile(
+            first: source.Lines[lineAbove].Range.First + caretSpan.First - lineStart,
             length: caretSpan.Length);
-        if (!source.Lines[lineAbove].Span.Contains(referencedSpan))
+        if (!source.Lines[lineAbove].Range.Contains(referencedSpan))
             return null;
         
         var referencedLocation = new SourceLocation(source, referencedSpan);
@@ -223,7 +223,7 @@ public sealed class TaxlParser(SourceFile source, DiagnosticBag diagnostics)
         if (string.IsNullOrEmpty(typeName))
             return null;
 
-        var prefixSpan = SourceSpan.InsideSourceFile(location.Span.First, 
+        var prefixSpan = SourceRange.InsideSourceFile(location.Range.First, 
             length: caretLast + 1);
         return new TypeAnnotation(
             FullLocation: location,

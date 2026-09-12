@@ -46,7 +46,7 @@ public class FoldingRangeHandler : FoldingRangeHandlerBase
         {
             if (node.Kind is not (SyntaxKind.ModuleDecl or SyntaxKind.BlockExpr))
                 return null;
-            if (node.Span?.IsEmpty != false)
+            if (node.Range?.IsEmpty != false)
                 return null;
 
             // Folding range starts one token after `{` and ends
@@ -71,7 +71,7 @@ public class FoldingRangeHandler : FoldingRangeHandlerBase
                 return null;
             }
             
-            return FoldingRangeFromTo(start.FullSpan.First, end.FullSpan.End);
+            return FoldingRangeFromTo(start.FullRange.First, end.FullRange.End);
         }
 
         IEnumerable<FoldingRange> GetCommentFoldingRanges(SyntaxNode node, SourceFileView source)
@@ -89,11 +89,11 @@ public class FoldingRangeHandler : FoldingRangeHandlerBase
                     if (node.Children[i] is Token { Kind: TokenKind.Comment })
                         lastComment = i;
 
-                    else if (node.Children[i] is Token { Kind: TokenKind.Whitespace, FullSpan: var span })
+                    else if (node.Children[i] is Token { Kind: TokenKind.Whitespace, FullRange: var range })
                     { 
                         // More than one newline breaks the group.
                         // One newline is expected after each comment.
-                        if (source.GetText(span).Count('\n') > 1)
+                        if (source.GetText(range).Count('\n') > 1)
                             break;
                     }
                     
@@ -103,13 +103,13 @@ public class FoldingRangeHandler : FoldingRangeHandlerBase
 
                 if (lastComment > firstComment)
                 {
-                    var lastPos = node.Children[lastComment].FullSpan.End;
+                    var lastPos = node.Children[lastComment].FullRange.End;
                     
                     // If last position is at EOF, the editor will discard the
                     // folding range. Weirdly enough. So we just crop the range
                     // by one at the end. Looks a little weird, but it does the job.
                     yield return FoldingRangeFromTo(
-                        start: node.Children[firstComment].FullSpan.End,
+                        start: node.Children[firstComment].FullRange.End,
                         end: lastPos == source.File.Text.Length
                             ? lastPos - 1
                             : lastPos,

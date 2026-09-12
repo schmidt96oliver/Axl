@@ -58,13 +58,13 @@ public static class DiagnosticConverter
             .Concat(diagnostic.Related)
             // Only publish related infos, if the SourceFile has a file system
             // path. Otherwise, we don't know where to point.
-            .Where(label => label.Location.File.Path is not null)
+            .Where(label => label.Location.SourceText.Path is not null)
             .Select(label => new DiagnosticRelatedInformation
             {
                 Location = new Location
                 {
                     Range = label.Location.ToLsp(),
-                    Uri = DocumentUri.FromFileSystemPath(label.Location.File.Path!)
+                    Uri = DocumentUri.FromFileSystemPath(label.Location.SourceText.Path!)
                 },
                 Message = label.Label
             }));

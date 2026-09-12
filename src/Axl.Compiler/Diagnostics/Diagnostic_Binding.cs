@@ -12,7 +12,7 @@ public partial record Diagnostic
     public record TypeMismatch(BoundExpr Expr, TypeSymbol Expected) : Error
     {
         public override ImmutableArray<SourceLocation> Locations
-            => [Expr.Syntax.GetLocation()];
+            => [Expr.Syntax.Location];
 
         public override string Message
             => $"Expected type '{Expected.DisplayName}' but got '{Expr.Type.DisplayName}'.";
@@ -21,7 +21,7 @@ public partial record Diagnostic
     public sealed record MissingInitializer(VarDeclSyntax VarDeclSyntax) : Error
     {
         public override ImmutableArray<SourceLocation> Locations
-            => [VarDeclSyntax.GetLocation()];
+            => [VarDeclSyntax.Location];
 
         public override string Message
             => "Initializer must be specified.";
@@ -30,7 +30,7 @@ public partial record Diagnostic
     public sealed record SuffixInvalidForDecimalNumber(NumberLiteralSyntax NumberLiteralSyntax) : Error
     {
         public override ImmutableArray<SourceLocation> Locations 
-            => [NumberLiteralSyntax.GetLocation()];
+            => [NumberLiteralSyntax.Location];
 
         public override string Message
             => $"Suffix '{NumberLiteralSyntax.Token.Suffix}' is not valid for number with a decimal point.";
@@ -39,7 +39,7 @@ public partial record Diagnostic
     public sealed record UndefinedName(IdNameSyntax Syntax) : Error
     {
         public override ImmutableArray<SourceLocation> Locations
-            => [Syntax.GetLocation()];
+            => [Syntax.Location];
     
         public override string Message
             => $"Undefined name '{Syntax.Token.Identifier}'.";
@@ -48,7 +48,7 @@ public partial record Diagnostic
     public sealed record UndefinedOperator(Token OperatorToken, ImmutableArray<BoundExpr> BoundOperands) : Error
     {
         public override ImmutableArray<SourceLocation> Locations
-            => [OperatorToken.GetLocation()];
+            => [OperatorToken.Location];
 
         public override string Message
             => $"Operator '{OperatorToken.Kind.DisplayName}' is not defined for {GetTypeString()}.";
@@ -62,7 +62,7 @@ public partial record Diagnostic
     public sealed record InvalidAssignTarget(ExprSyntax Syntax, Symbol? ResolvedSymbol = null) : Error
     {
         public override ImmutableArray<SourceLocation> Locations
-            => [Syntax.GetLocation()];
+            => [Syntax.Location];
 
         public override string Message
             => ResolvedSymbol is null

@@ -600,8 +600,8 @@ public static class UiPlayground
         {
             const int maxLength = 10;
 
-            // Trivia at the edges is not what the node is about, so the tighter span reads better.
-            var text = Escape(source.GetText(node.Span ?? node.FullSpan));
+            // Trivia at the edges is not what the node is about, so the tighter range reads better.
+            var text = Escape(source.GetText(node.Range ?? node.FullRange));
             if (text.Length > maxLength)
                 text = $"{text[..maxLength]}…";
 
@@ -614,7 +614,7 @@ public static class UiPlayground
                 onErrorNode ? InErrorTokenAttribute : TokenAttribute;
             var text = token.IsMissing
                 ? $"{token.Kind.DisplayName}?"
-                : $"'{Escape(source.GetText(token.FullSpan))}'";
+                : $"'{Escape(source.GetText(token.FullRange))}'";
 
             var segments = new List<Segment> { new(text, attribute) };
             // if (token.IsMissing)
@@ -626,8 +626,8 @@ public static class UiPlayground
 
         private string GetLocationText(SourceLocation location)
         {
-            var startLinePos = location.File.GetLinePositionOrEof(location.Span.First);
-            var endLinePos = location.File.GetLinePositionOrEof(location.Span.End);
+            var startLinePos = location.SourceText.GetLinePositionOrEof(location.Range.First);
+            var endLinePos = location.SourceText.GetLinePositionOrEof(location.Range.End);
 
             if (startLinePos.Line == endLinePos.Line)
                 return $"l.{startLinePos.Line} @ {startLinePos.Column}-{endLinePos.Column}";

@@ -68,8 +68,8 @@ public static class CorpusMutations
             if (token.Kind.IsTrivia || token.Kind is TokenKind.Eof)
                 continue;
 
-            yield return ($"without {token.Kind}@{token.FullSpan}",
-                text[..token.FullSpan.First] + text[token.FullSpan.End..]);
+            yield return ($"without {token.Kind}@{token.FullRange}",
+                text[..token.FullRange.First] + text[token.FullRange.End..]);
         }
     }
 

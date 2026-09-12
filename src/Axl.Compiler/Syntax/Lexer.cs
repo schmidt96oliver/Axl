@@ -78,15 +78,15 @@ public sealed class Lexer
             // report the appropriate diagnostic.
             
             // Combine, if previous token was error as well
-            var span = Source.SpanFromLength(_start, 1);
+            var range = SourceRange.FromLength(_start, 1);
             if (_tokens.Count > 0 && _tokens[^1].Kind is TokenKind.UnknownCharacters)
             {
                 _tokens[^1] = Token.MakeSimple(
-                    SourceSpan.FromTo(_tokens[^1].FullSpan, span),
+                    SourceRange.FromTo(_tokens[^1].FullRange, range),
                     TokenKind.UnknownCharacters);
             }
             else
-                _tokens.Add(Token.MakeSimple(span, TokenKind.UnknownCharacters));
+                _tokens.Add(Token.MakeSimple(range, TokenKind.UnknownCharacters));
 
             _start = _next;
         }

@@ -10,21 +10,21 @@ public static class SourceLocationConversion
     {
         public Range ToLsp()
         {
-            var (startLine, startCol) = location.File.GetLinePositionOrEof(location.Span.First);
+            var (startLine, startCol) = location.SourceText.GetLinePositionOrEof(location.Range.First);
 
-            var isEndAtEof = location.Span.End >= location.File.Text.Length;
+            var isEndAtEof = location.Range.End >= location.SourceText.Text.Length;
             
-            LineInfo? endLineInfo = !isEndAtEof ? location.File.GetLineAt(location.Span.End) : null;
+            LineInfo? endLineInfo = !isEndAtEof ? location.SourceText.GetLineAt(location.Range.End) : null;
             var (endLine, endCol) = endLineInfo is LineInfo info
-                ? (info.LineNumber, location.Span.End - info.Span.First)
-                : (location.File.EofLinePosition.Line, location.File.EofLinePosition.Column);
+                ? (info.LineNumber, location.Range.End - info.Range.First)
+                : (location.SourceText.EofLinePosition.Line, location.SourceText.EofLinePosition.Column);
 
             // --- Special-case empty spans
             // To prevent the editor snapping back to the previous word, we need to
             // extend the range by one character. If that is out of the line range,
             // snap back one character. If that is also not possible, report the 
-            // empty span and leave it to the editor.
-            if (location.Span.Length == 0)
+            // empty range and leave it to the editor.
+            if (location.Range.Length == 0)
             {
                 if (isEndAtEof && startCol > 0)
                         startCol--;

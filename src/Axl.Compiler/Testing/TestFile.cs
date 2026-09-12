@@ -71,7 +71,7 @@ public sealed class TestFile
     
     
     public Fragment GetFragmentAt(SourceLocation location)
-        => Fragments.FirstOrDefault(fragment => fragment.Source.File == location.File &&
-                                                fragment.Source.Span.Contains(location.Span))
+        => Fragments.FirstOrDefault(fragment => fragment.Source.File == location.SourceText &&
+                                                fragment.Source.Range.Contains(location.Range))
            ?? throw new ArgumentException($"{nameof(location)} is not contained in this {nameof(TestFile)}.");
 }

@@ -17,11 +17,11 @@ public class Dump(SourceFileView source)
         
         foreach (var diag in diagnostics)
         {
-            var spans = string.Join(", ", diag.Locations.Select(location => location.Span));
+            var spans = string.Join(", ", diag.Locations.Select(location => location.Range));
             _builder.AppendLine(
                 $"{diag.DefaultSeverity.ToString().ToUpper()} {diag.Id}@{spans}: {diag.Message.ToLiteralString()}");
             foreach (var related in diag.Related)
-                _builder.AppendLine($"   related@{related.Location.Span}: {related.Label}");
+                _builder.AppendLine($"   related@{related.Location.Range}: {related.Label}");
         }
 
         return this;
@@ -44,7 +44,7 @@ public class Dump(SourceFileView source)
             }
             
             _builder.Append($"- {token.Kind}: \"");
-            AddLiteralString(source.GetText(token.FullSpan));
+            AddLiteralString(source.GetText(token.FullRange));
             _builder.Append('"');
 
             switch (token)
@@ -88,7 +88,7 @@ public class Dump(SourceFileView source)
                 _builder.Append(prefix);
                 _builder.AppendLine(token.IsMissing
                     ? $"{GetMissingDisplayText(token)}"
-                    : $"\'{source.GetText(token.FullSpan)}\'");
+                    : $"\'{source.GetText(token.FullRange)}\'");
                 break;
 
                 string GetMissingDisplayText(Token tkn)
@@ -112,7 +112,7 @@ public class Dump(SourceFileView source)
                     foreach (var child in children.OfType<Token>())
                     {
                         _builder.Append(" \'");
-                        AddLiteralString(source.GetText(child.FullSpan));
+                        AddLiteralString(source.GetText(child.FullRange));
                         _builder.Append("\'");
                     }
 
@@ -168,7 +168,7 @@ public class Dump(SourceFileView source)
                 return;
 
             case Token token:
-                AddLiteralString(source.GetText(token.FullSpan));
+                AddLiteralString(source.GetText(token.FullRange));
                 _builder.Append(' ');
                 break;
 
@@ -227,7 +227,7 @@ public class Dump(SourceFileView source)
                         break;
 
                     case TypeAnnotation type:
-                        _builder.AppendLine($"type \"{type.TypeName}\" on \"{type.ReferencedLocation.GetText()}\"");
+                        _builder.AppendLine($"type \"{type.TypeName}\" on \"{type.ReferencedLocation.Text}\"");
                         break;
                 }
             }

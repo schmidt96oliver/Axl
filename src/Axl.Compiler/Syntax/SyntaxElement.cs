@@ -33,29 +33,26 @@ public abstract class SyntaxElement
             Debug.Assert(Parent is not null, "Tree must be overriden on root node.");
             return Parent.Tree;
         }
+        // ReSharper disable once ValueParameterNotUsed
         internal set => Debug.Fail("Must be overriden.");
     }
     
     
     /// <summary>
-    /// The span this element covers in source text, including trivia.
-    /// Full spans tile the source without gaps, which is what makes the
+    /// Including trivia.
+    /// Full ranges tile the source without gaps, which is what makes the
     /// tree lossless. Use it to reproduce source text.
     /// </summary>
-    public abstract SourceSpan FullSpan { get; }
+    public abstract SourceRange FullRange { get; }
     
     /// <summary>
-    /// The span this element covers in source text, excluding leading and
-    /// trailing trivia. This is the span to show a user, e.g. in diagnostics
-    /// or LSP ranges.
+    /// Excluding leading and trailing trivia.
     /// <c>null</c> if this element consists only of trivia.
     /// </summary>
-    public abstract SourceSpan? Span { get; }
+    public abstract SourceRange? Range { get; }
 
 
-    public SourceLocation GetLocation()
-        => Tree.Source.GetLocation(Span ?? FullSpan);
+    public SourceLocation Location => Tree.Source.GetLocation(Range ?? FullRange);
 
-    public ReadOnlySpan<char> GetText()
-        => GetLocation().GetText();
+    public ReadOnlySpan<char> Text => Location.Text;
 }

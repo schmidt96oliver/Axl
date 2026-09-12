@@ -147,8 +147,8 @@ public partial class Parser
     private bool HasNewlineBeforeNextToken()
     {
         var spanToNextToken = _scanner.Last is null
-            ? _source.SpanFromTo(0, _scanner.Peek().FullSpan.End)
-            : SourceSpan.Between(_scanner.Last.FullSpan, _scanner.Peek().FullSpan);
+            ? _source.SpanFromTo(0, _scanner.Peek().FullRange.End)
+            : SourceRange.Between(_scanner.Last.FullRange, _scanner.Peek().FullRange);
         return _source.GetText(spanToNextToken).Contains('\n');
     }
 

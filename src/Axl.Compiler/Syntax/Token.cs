@@ -6,8 +6,8 @@ namespace Axl.Compiler.Syntax;
 public class Token : SyntaxElement
 {
     public TokenKind Kind { get; }
-    public sealed override SourceSpan FullSpan { get; }
-    public sealed override SourceSpan? Span => Kind.IsTrivia ? null : FullSpan;
+    public sealed override SourceRange FullRange { get; }
+    public sealed override SourceRange? Range => Kind.IsTrivia ? null : FullRange;
     public bool IsMissing { get; }
 
     /// <summary>
@@ -16,12 +16,12 @@ public class Token : SyntaxElement
     /// Thus, construction must go through dedicated static methods below, so that
     /// <see cref="TokenKind.Identifier"/> always is a <see cref="IdentifierToken"/> and so on.
     /// </summary>
-    protected Token(SourceSpan span, TokenKind kind, bool isMissing = false)
+    protected Token(SourceRange range, TokenKind kind, bool isMissing = false)
     {
-        if (isMissing) Guard.MustBe(span.IsEmpty);
+        if (isMissing) Guard.MustBe(range.IsEmpty);
 
         Kind = kind;
-        FullSpan = span;
+        FullRange = range;
         IsMissing = isMissing;
     }
 
@@ -33,7 +33,7 @@ public class Token : SyntaxElement
     public Token WithKind(TokenKind kind)
     {
         Guard.MustBe(!kind.HasValue);
-        return new Token(FullSpan, kind);
+        return new Token(FullRange, kind);
     }
     
     
@@ -41,12 +41,12 @@ public class Token : SyntaxElement
     /// Creates a token that carries no value.
     /// </summary>
     /// <exception cref="ArgumentException">If <paramref name="kind"/> carries a value. It must be constructed through special constructors.</exception>
-    public static Token MakeSimple(SourceSpan span, TokenKind kind)
+    public static Token MakeSimple(SourceRange range, TokenKind kind)
     {
         Guard.MustBe(!kind.HasValue,
             "Construct through specialized static methods.");
         
-        return new Token(span, kind);
+        return new Token(range, kind);
     }
 
     /// <summary>
@@ -54,30 +54,30 @@ public class Token : SyntaxElement
     /// <paramref name="kind"/> can carry a value. In this case, a token of
     /// the specific type with empty value is returned.
     /// </summary>
-    public static Token MakeMissing(SourceSpan span, TokenKind kind)
+    public static Token MakeMissing(SourceRange range, TokenKind kind)
     {
-        Guard.MustBe(span.IsEmpty);
+        Guard.MustBe(range.IsEmpty);
         
         switch (kind)
         {
             case TokenKind.Identifier:
-                return new IdentifierToken(span, string.Empty);
+                return new IdentifierToken(range, string.Empty);
             case TokenKind.NumberLiteral:
-                return new NumberLiteralToken(span, body: string.Empty, NumberLiteralSuffix.None);
+                return new NumberLiteralToken(range, body: string.Empty, NumberLiteralSuffix.None);
             case TokenKind.StringText:
-                return new StringTextToken(span, processedText: string.Empty, isMissing: true);
+                return new StringTextToken(range, processedText: string.Empty, isMissing: true);
             
             default:
-                return new Token(span, kind, isMissing: true);
+                return new Token(range, kind, isMissing: true);
         }
     }
     
-    public static IdentifierToken MakeIdentifier(SourceSpan span, string identifier)
-        => new(span, identifier);
+    public static IdentifierToken MakeIdentifier(SourceRange range, string identifier)
+        => new(range, identifier);
 
-    public static NumberLiteralToken MakeNumberLiteral(SourceSpan span, string body, NumberLiteralSuffix suffix)
-        => new(span, body, suffix);
+    public static NumberLiteralToken MakeNumberLiteral(SourceRange range, string body, NumberLiteralSuffix suffix)
+        => new(range, body, suffix);
 
-    public static StringTextToken MakeStringText(SourceSpan span, string processedText)
-        => new(span, processedText);
+    public static StringTextToken MakeStringText(SourceRange range, string processedText)
+        => new(range, processedText);
 }

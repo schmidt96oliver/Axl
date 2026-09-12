@@ -29,12 +29,12 @@ public class SourceText
         => new(text);
 
     
-    public ReadOnlySpan<char> GetText(SourceSpan span)
+    public ReadOnlySpan<char> GetText(SourceRange range)
     {
-        Guard.MustBe(span.First >= 0);
-        Guard.MustBe(span.End <= Length);
+        Guard.MustBe(range.First >= 0);
+        Guard.MustBe(range.End <= Length);
 
-        return Text.AsSpan(span.First, span.Length);
+        return Text.AsSpan(range.First, range.Length);
     }
 
     public int GetLineIndex(int position)
