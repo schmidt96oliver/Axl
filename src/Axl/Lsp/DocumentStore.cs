@@ -17,20 +17,20 @@ public static class DocumentStore
     {
         try
         {
-            var sourceFile = text is null
-                ? SourceFile.FromFile(uri.GetFileSystemPath())
-                : SourceFile.FromText(uri.GetFileSystemPath(), text);
+            var sourceText = text is null
+                ? SourceText.LoadFile(uri.GetFileSystemPath())
+                : SourceText.From(text, fileName: uri.GetFileSystemPath());
             
             var isTaxlFile = Path.GetExtension(uri.GetFileSystemPath()) is ".taxl";
             if (isTaxlFile)
             {
-                var testFile = TestFile.From(sourceFile);
+                var testFile = TestFile.From(sourceText);
                 TestFiles[uri] = testFile;
                 Compilations[uri] = testFile.Compilation;
             }
             else
             {
-                Compilations[uri] = Compilation.From(Parser.Parse(SourceFileView.Whole(sourceFile)));
+                Compilations[uri] = Compilation.From(Parser.Parse(sourceText));
             }
         }
         catch

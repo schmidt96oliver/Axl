@@ -299,10 +299,10 @@ public static class UiPlayground
 
         private void Reload()
         {
-            SourceFileView source;
+            SourceText source;
             try
             {
-                source = SourceFileView.FromFile(_path);
+                source = SourceText.LoadFile(_path);
             }
             catch (IOException)
             {
@@ -310,9 +310,9 @@ public static class UiPlayground
                 return;
             }
 
-            if (source.File.Text == _previousText)
+            if (source.Text == _previousText)
                 return;
-            _previousText = source.File.Text;
+            _previousText = source.Text;
 
             var syntaxTree = Parser.Parse(source);
             var compilation = Compilation.From(syntaxTree);
@@ -346,7 +346,7 @@ public static class UiPlayground
     /// <summary>
     /// Turns a <see cref="SyntaxTree"/> into colored <see cref="Row"/>s.
     /// </summary>
-    private sealed class RowBuilder(SyntaxTree syntaxTree, SourceFileView source)
+    private sealed class RowBuilder(SyntaxTree syntaxTree, SourceText source)
     {
         public Row BuildCstTree()
         {
@@ -626,13 +626,10 @@ public static class UiPlayground
 
         private string GetLocationText(SourceLocation location)
         {
-            var startLinePos = location.SourceText.GetLinePositionOrEof(location.Range.First);
-            var endLinePos = location.SourceText.GetLinePositionOrEof(location.Range.End);
+            if (location.FirstLine == location.EndLine)
+                return $"l.{location.FirstLine} @ {location.FirstColumn}-{location.EndColumn}";
 
-            if (startLinePos.Line == endLinePos.Line)
-                return $"l.{startLinePos.Line} @ {startLinePos.Column}-{endLinePos.Column}";
-
-            return $"l.{startLinePos.Line}@{startLinePos.Column} - l.{endLinePos.Line}@{endLinePos.Column}";
+            return $"l.{location.FirstLine}@{location.FirstColumn} - l.{location.EndLine}@{location.EndColumn}";
         }
 
         /// <summary>Every row is a single line, so line breaks and tabs must become visible escapes.</summary>

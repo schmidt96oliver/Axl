@@ -74,7 +74,7 @@ public class FoldingRangeHandler : FoldingRangeHandlerBase
             return FoldingRangeFromTo(start.FullRange.First, end.FullRange.End);
         }
 
-        IEnumerable<FoldingRange> GetCommentFoldingRanges(SyntaxNode node, SourceFileView source)
+        IEnumerable<FoldingRange> GetCommentFoldingRanges(SyntaxNode node, SourceText source)
         {
             for (var i = 0; i < node.Children.Length; i++)
             {
@@ -110,7 +110,7 @@ public class FoldingRangeHandler : FoldingRangeHandlerBase
                     // by one at the end. Looks a little weird, but it does the job.
                     yield return FoldingRangeFromTo(
                         start: node.Children[firstComment].FullRange.End,
-                        end: lastPos == source.File.Text.Length
+                        end: lastPos == source.Length
                             ? lastPos - 1
                             : lastPos,
                         kind: FoldingRangeKind.Comment);
@@ -120,14 +120,13 @@ public class FoldingRangeHandler : FoldingRangeHandlerBase
 
         FoldingRange FoldingRangeFromTo(int start, int end, FoldingRangeKind? kind = null)
         {
-            var startLinePos = tree.SourceText.File.GetLinePositionOrEof(start);
-            var endLinePos = tree.SourceText.File.GetLinePositionOrEof(end);
+            var location = SourceLocation.FromBounds(tree.SourceText, start, end);
             return new FoldingRange
             {
-                StartLine = startLinePos.Line,
-                StartCharacter = startLinePos.Column,
-                EndLine = endLinePos.Line,
-                EndCharacter = endLinePos.Column,
+                StartLine = location.FirstLine,
+                StartCharacter = location.FirstColumn,
+                EndLine = location.EndLine,
+                EndCharacter = location.EndColumn,
                 Kind = kind,
             };
         }

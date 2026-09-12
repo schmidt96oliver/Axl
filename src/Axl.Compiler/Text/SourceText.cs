@@ -6,6 +6,12 @@ namespace Axl.Compiler.Text;
 public class SourceText
 {
     public string Text { get; }
+    
+    /// <summary>
+    /// The filename, this text was loaded from.
+    /// <c>null</c>, if it was initialized from pure text.
+    /// </summary>
+    public string? FileName { get; }
 
     public int Length => Text.Length;
 
@@ -22,18 +28,19 @@ public class SourceText
     public SourceRange Range => SourceRange.FromLength(0, Length);
 
 
-    private SourceText(string text)
+    private SourceText(string text, string? fileName)
     {
         Text = text;
+        FileName = fileName;
     }
 
-    public static SourceText From(string text)
-        => new(text);
+    public static SourceText From(string text, string? fileName = null)
+        => new(text, fileName);
     
     public static SourceText LoadFile(string path)
     {
         var text = File.ReadAllText(path);
-        return new SourceText(text);
+        return new SourceText(text, path);
     }
 
 

@@ -2,10 +2,13 @@
                                        ≽(◕ ᴗ ◕)≼
 
 **Next:** 
-* add FileName property (and assign consistently) for LSP
 * rename "Source" to "SourceText" consistently
 * Update fragment logic (the hardest part :D)
+* ? rename SourceRange.First to .Start
+
 * move unit tests to Axl.Tests
+* rename "CorpusTests" to "LanguageTests"
+* add Testing/Taxl fragment association and mapping tests
 
 **Simplifications**
 * SyntaxTree API
@@ -13,11 +16,10 @@
   * Pass SyntaxTree into SyntaxNode
   * Span not nullable
   * AST: Members, Usings, etc necessary or just walk completely over it?
-* Text API
-  * Rethink SourceFile, SourceFileView. Really necessary?
 * Diagnostics
   * Move to DiagnosticBag.Report***
   * Think about Parser deduping
+* Fuzz/AI written Tests for Parser, Lexer. Necessary?
 
 **Moving On**
 * allow any type in string interpolation (that's a lowering problem)
