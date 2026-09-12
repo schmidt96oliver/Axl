@@ -69,7 +69,7 @@ public static class CorpusMutations
                 continue;
 
             yield return ($"without {token.Kind}@{token.FullRange}",
-                text[..token.FullRange.First] + text[token.FullRange.End..]);
+                text[..token.FullRange.Start] + text[token.FullRange.End..]);
         }
     }
 

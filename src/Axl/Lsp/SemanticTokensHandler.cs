@@ -58,7 +58,7 @@ public class SemanticTokensHandler(ILanguageServerFacade facade) : SemanticToken
         {
             if (token.FullRange.Length == 0)
                 continue;
-            if (token.FullRange.First >= tree.SourceText.Length)
+            if (token.FullRange.Start >= tree.SourceText.Length)
                 continue;
 
             var location = SourceLocation.From(tree.SourceText, token.FullRange);
@@ -67,10 +67,10 @@ public class SemanticTokensHandler(ILanguageServerFacade facade) : SemanticToken
                 case TokenKind.Comment:
                 {
                     if (testFile is not null)
-                        TokenizeTaxlComment(token, testFile, location.FirstLine, location.FirstColumn, builder);
+                        TokenizeTaxlComment(token, testFile, location.StartLine, location.StartColumn, builder);
                     else
                     {
-                        builder.Push(location.FirstLine, location.FirstColumn, token.FullRange.Length,
+                        builder.Push(location.StartLine, location.StartColumn, token.FullRange.Length,
                             (SemanticTokenType?)SemanticTokenType.Comment);
                     }
 
@@ -79,7 +79,7 @@ public class SemanticTokensHandler(ILanguageServerFacade facade) : SemanticToken
 
                 case TokenKind.StringStart:
                 case TokenKind.StringEnd:
-                    builder.Push(location.FirstLine, location.FirstColumn, token.FullRange.Length,
+                    builder.Push(location.StartLine, location.StartColumn, token.FullRange.Length,
                         (SemanticTokenType?)SemanticTokenType.String);
                     break;
 
@@ -97,15 +97,15 @@ public class SemanticTokensHandler(ILanguageServerFacade facade) : SemanticToken
                         // Push string text before
                         if (i > stringTokenStart)
                         {
-                            builder.Push(location.FirstLine,
-                                @char: location.FirstColumn + stringTokenStart,
+                            builder.Push(location.StartLine,
+                                @char: location.StartColumn + stringTokenStart,
                                 length: i - stringTokenStart,
                                 (SemanticTokenType?)SemanticTokenType.String);
                         }
 
                         // Push escape
-                        builder.Push(location.FirstLine,
-                            @char: location.FirstColumn + i,
+                        builder.Push(location.StartLine,
+                            @char: location.StartColumn + i,
                             length: i + 1 < text.Length ? 2 : 1,
                             (SemanticTokenType?)SemanticTokenType.Regexp);
 
@@ -117,8 +117,8 @@ public class SemanticTokensHandler(ILanguageServerFacade facade) : SemanticToken
                     // Push rest string
                     if (text.Length > stringTokenStart)
                     {
-                        builder.Push(location.FirstLine,
-                            @char: location.FirstColumn + stringTokenStart,
+                        builder.Push(location.StartLine,
+                            @char: location.StartColumn + stringTokenStart,
                             length: text.Length - stringTokenStart,
                             (SemanticTokenType?)SemanticTokenType.String);
                     }
@@ -152,7 +152,7 @@ public class SemanticTokensHandler(ILanguageServerFacade facade) : SemanticToken
                 case TokenKind.F64Kw:
                 case TokenKind.I32Kw:
                 case TokenKind.I64Kw:
-                    builder.Push(location.FirstLine, location.FirstColumn, token.FullRange.Length,
+                    builder.Push(location.StartLine, location.StartColumn, token.FullRange.Length,
                         (SemanticTokenType?)SemanticTokenType.Keyword);
                     break;
             }

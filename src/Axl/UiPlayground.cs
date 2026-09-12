@@ -626,10 +626,10 @@ public static class UiPlayground
 
         private string GetLocationText(SourceLocation location)
         {
-            if (location.FirstLine == location.EndLine)
-                return $"l.{location.FirstLine} @ {location.FirstColumn}-{location.EndColumn}";
+            if (location.StartLine == location.EndLine)
+                return $"l.{location.StartLine} @ {location.StartColumn}-{location.EndColumn}";
 
-            return $"l.{location.FirstLine}@{location.FirstColumn} - l.{location.EndLine}@{location.EndColumn}";
+            return $"l.{location.StartLine}@{location.StartColumn} - l.{location.EndLine}@{location.EndColumn}";
         }
 
         /// <summary>Every row is a single line, so line breaks and tabs must become visible escapes.</summary>

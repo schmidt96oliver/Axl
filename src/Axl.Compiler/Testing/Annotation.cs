@@ -4,5 +4,5 @@ namespace Axl.Compiler.Testing;
 
 public abstract record Annotation(SourceLocation FullLocation, SourceLocation PrefixLocation)
 {
-    public int LineNumber => FullLocation.FirstLine;
+    public int LineNumber => FullLocation.StartLine;
 }

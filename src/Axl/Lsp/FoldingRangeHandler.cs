@@ -71,7 +71,7 @@ public class FoldingRangeHandler : FoldingRangeHandlerBase
                 return null;
             }
             
-            return FoldingRangeFromTo(start.FullRange.First, end.FullRange.End);
+            return FoldingRangeFromTo(start.FullRange.Start, end.FullRange.End);
         }
 
         IEnumerable<FoldingRange> GetCommentFoldingRanges(SyntaxNode node, SourceText source)
@@ -123,8 +123,8 @@ public class FoldingRangeHandler : FoldingRangeHandlerBase
             var location = SourceLocation.FromBounds(tree.SourceText, start, end);
             return new FoldingRange
             {
-                StartLine = location.FirstLine,
-                StartCharacter = location.FirstColumn,
+                StartLine = location.StartLine,
+                StartCharacter = location.StartColumn,
                 EndLine = location.EndLine,
                 EndCharacter = location.EndColumn,
                 Kind = kind,

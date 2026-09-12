@@ -49,7 +49,7 @@ public partial class ParserTests
             TestContext.Current.TestOutputHelper?.WriteLine(
                 $"[{diagnostic.DefaultSeverity}] {diagnostic.Id}: {diagnostic.Message}");
             TestContext.Current.TestOutputHelper?.WriteLine(
-                $"    at {path}:line {source.GetLineIndex(diagnostic.Locations[0].Range.First) + 1}");
+                $"    at {path}:line {source.GetLineIndex(diagnostic.Locations[0].Range.Start) + 1}");
         }
         
         tree.HasError.ShouldBeFalse();

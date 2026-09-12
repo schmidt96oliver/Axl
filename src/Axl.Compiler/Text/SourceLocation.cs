@@ -6,17 +6,17 @@
 /// </summary>
 public readonly record struct SourceLocation
 {
-    public int First => Range.First;
+    public int Start => Range.Start;
 
     public int End => Range.End;
     
     public int Length => Range.Length;
     
-    public int FirstLine => SourceText.GetLineIndex(First);
-    public int FirstColumn => First - SourceText.Lines[FirstLine].First;
+    public int StartLine => SourceText.GetLineIndex(Start);
+    public int StartColumn => Start - SourceText.Lines[StartLine].First;
 
     public int EndLine => SourceText.GetLineIndex(End);
-    public int EndColumn => End - SourceText.Lines[FirstLine].First;
+    public int EndColumn => End - SourceText.Lines[StartLine].First;
 
 
     public ReadOnlySpan<char> Text => SourceText.GetText(Range);
@@ -36,23 +36,17 @@ public readonly record struct SourceLocation
         return new SourceLocation(sourceText, range);
     }
     
-    public static SourceLocation FromBounds(SourceText sourceText, int first, int end)
+    public static SourceLocation FromBounds(SourceText sourceText, int start, int end)
     {
-        var range = SourceRange.FromBounds(first, end);
+        var range = SourceRange.FromBounds(start, end);
         Guard.MustBe(sourceText.Contains(range));
         return new SourceLocation(sourceText, range);
     }
 
-    public static SourceLocation FromLength(SourceText sourceText, int first, int length)
+    public static SourceLocation FromLength(SourceText sourceText, int start, int length)
     {
-        var range = SourceRange.FromLength(first, length);
+        var range = SourceRange.FromLength(start, length);
         Guard.MustBe(sourceText.Contains(range));
         return new SourceLocation(sourceText, range);
-    }
-
-    public void Deconstruct(out SourceText SourceText, out SourceRange Range)
-    {
-        SourceText = this.SourceText;
-        Range = this.Range;
     }
 }

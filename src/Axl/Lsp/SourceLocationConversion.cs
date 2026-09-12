@@ -12,7 +12,7 @@ public static class SourceLocationConversion
         {
             var isEndAtEof = location.End >= location.SourceText.Length;
             
-            var firstColumn = location.FirstColumn;
+            var firstColumn = location.StartColumn;
             var endLine = location.SourceText.Lines[location.EndLine];
             var endColumn = location.EndColumn;
             
@@ -34,7 +34,7 @@ public static class SourceLocationConversion
                 }
             }
             
-            return new Range(location.FirstLine, firstColumn, location.EndLine, endColumn);
+            return new Range(location.StartLine, firstColumn, location.EndLine, endColumn);
         }
     }
 }

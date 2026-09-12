@@ -53,10 +53,10 @@ public class SourceText
     
     public ReadOnlySpan<char> GetText(SourceRange range)
     {
-        Guard.MustBe(range.First >= 0);
+        Guard.MustBe(range.Start >= 0);
         Guard.MustBe(range.End <= Length);
 
-        return Text.AsSpan(range.First, range.Length);
+        return Text.AsSpan(range.Start, range.Length);
     }
 
     public int GetLineIndex(int position)
@@ -135,7 +135,7 @@ public class SourceText
     }
 
     public bool Contains(SourceRange range)
-        => range.First >= 0 && range.End <= Length;
+        => range.Start >= 0 && range.End <= Length;
 
 
     public override string ToString()

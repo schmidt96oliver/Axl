@@ -25,7 +25,7 @@ public sealed class TaxlParser(SourceFile source, DiagnosticBag diagnostics)
             if (!char.IsWhiteSpace(text[end]))
                 break;
         }
-        return SourceRange.InsideSourceFile(range.First + start, end - start + 1);
+        return SourceRange.InsideSourceFile(range.Start + start, end - start + 1);
     }
     
     
@@ -179,7 +179,7 @@ public sealed class TaxlParser(SourceFile source, DiagnosticBag diagnostics)
         if (string.IsNullOrEmpty(id))
             return null;
 
-        var prefixSpan = SourceRange.InsideSourceFile(location.Range.First, prefixLength);
+        var prefixSpan = SourceRange.InsideSourceFile(location.Range.Start, prefixLength);
         return new DiagnosticAnnotation(
             FullLocation: location,
             PrefixLocation: new SourceLocation(location.SourceText, prefixSpan),
@@ -198,7 +198,7 @@ public sealed class TaxlParser(SourceFile source, DiagnosticBag diagnostics)
         if (caretStart < 0)
             return null;
         var caretLast = text.LastIndexOf('^');
-        var caretSpan = SourceRange.InsideSourceFile(location.Range.First + caretStart,
+        var caretSpan = SourceRange.InsideSourceFile(location.Range.Start + caretStart,
             length: caretLast - caretStart + 1);
         
         // Allow only contiguous caret blocks
@@ -206,7 +206,7 @@ public sealed class TaxlParser(SourceFile source, DiagnosticBag diagnostics)
             return null;
         
         // --- Location reference
-        var lineStart = source.GetLineAt(location.Range.First).Range.First;
+        var lineStart = source.GetLineAt(location.Range.Start).Range.First;
         var lineAbove = location.StartLinePosition.Line - 1;
         if (lineAbove < 0)
             return null;
@@ -223,7 +223,7 @@ public sealed class TaxlParser(SourceFile source, DiagnosticBag diagnostics)
         if (string.IsNullOrEmpty(typeName))
             return null;
 
-        var prefixSpan = SourceRange.InsideSourceFile(location.Range.First, 
+        var prefixSpan = SourceRange.InsideSourceFile(location.Range.Start, 
             length: caretLast + 1);
         return new TypeAnnotation(
             FullLocation: location,
