@@ -13,8 +13,7 @@ public sealed partial class TestFileTests
                                                  //~
                                                  """), """
                 ERROR InvalidTaxlAnnotation@[10, 13): Annotation '//~' is invalid.
-                --> Directive: Check
-                --- Code "" ---
+                Directive: Check
                 """);
         [Fact]
         public void Error_AtEof()
@@ -23,8 +22,7 @@ public sealed partial class TestFileTests
                                                  a; //~error
                                                  """), """
                 ERROR InvalidTaxlAnnotation@[13, 21): Annotation '//~error' is invalid.
-                --> Directive: Check
-                --- Code "" ---
+                Directive: Check
                 """);
         [Fact]
         public void Lint_AtEof()
@@ -33,8 +31,7 @@ public sealed partial class TestFileTests
                                                  a; //~lint
                                                  """), """
                 ERROR InvalidTaxlAnnotation@[13, 20): Annotation '//~lint' is invalid.
-                --> Directive: Check
-                --- Code "" ---
+                Directive: Check
                 """);
         [Fact]
         public void Type_AtEof()
@@ -43,8 +40,7 @@ public sealed partial class TestFileTests
                                                  //~type
                                                  """), """
                 ERROR InvalidTaxlAnnotation@[10, 17): Annotation '//~type' is invalid.
-                --> Directive: Check
-                --- Code "" ---
+                Directive: Check
                 """);
         
         [Fact]
@@ -54,10 +50,9 @@ public sealed partial class TestFileTests
                                             a; //~error ID
                                             b; //~lint ID
                                             """), """
-                --> Directive: Check
-                --- Code "" ---
-                --> //~ Error@l.1: "ID"
-                --> //~ Lint@l.2: "ID"
+                Directive: Check
+                //~ error@l.1: "ID"
+                //~ lint@l.2: "ID"
                 """);
         
         [Fact]
@@ -69,8 +64,7 @@ public sealed partial class TestFileTests
                                             """), """
                 ERROR InvalidTaxlAnnotation@[13, 21): Annotation '//~error' is invalid.
                 ERROR InvalidTaxlAnnotation@[26, 33): Annotation '//~lint' is invalid.
-                --> Directive: Check
-                --- Code "" ---
+                Directive: Check
                 """);
         
         [Fact]
@@ -81,8 +75,7 @@ public sealed partial class TestFileTests
                                                  //~type ^
                                                  """), """
                 ERROR InvalidTaxlAnnotation@[22, 31): Annotation '//~type ^' is invalid.
-                --> Directive: Check
-                --- Code "" ---
+                Directive: Check
                 """);
         
         [Fact]
@@ -92,9 +85,8 @@ public sealed partial class TestFileTests
                                             var a = 2;
                                             //~type ^ i32
                                             """), """
-                --> Directive: RunPass
-                --- Code "" ---
-                --> //~ type "i32" on "2"
+                Directive: RunPass
+                //~ type "i32" on "2"
                 """);
         
         [Fact]
@@ -104,9 +96,8 @@ public sealed partial class TestFileTests
                                             var a = 2;
                                              //~type^ i32
                                             """), """
-                --> Directive: RunPass
-                --- Code "" ---
-                --> //~ type "i32" on "2"
+                Directive: RunPass
+                //~ type "i32" on "2"
                 """);
         
         [Fact]
@@ -117,8 +108,7 @@ public sealed partial class TestFileTests
                                             //~type i32
                                             """), """
                 ERROR InvalidTaxlAnnotation@[26, 37): Annotation '//~type i32' is invalid.
-                --> Directive: RunPanic
-                --- Code "" ---
+                Directive: RunPanic
                 """);
         [Fact]
         public void Type_FirstLine()
@@ -127,8 +117,7 @@ public sealed partial class TestFileTests
                                             //@check
                                             """), """
                 ERROR InvalidTaxlAnnotation@[0, 14): Annotation '//~type ^^ i32' is invalid.
-                --> Directive: Check
-                --- Code "" ---
+                Directive: Check
                 """);
         
         [Fact]
@@ -139,8 +128,7 @@ public sealed partial class TestFileTests
                                             //~type ^^ i32
                                             """), """
                 ERROR InvalidTaxlAnnotation@[14, 28): Annotation '//~type ^^ i32' is invalid.
-                --> Directive: Check
-                --- Code "" ---
+                Directive: Check
                 """);
         [Fact]
         public void Type_DoubledCarets()
@@ -150,8 +138,7 @@ public sealed partial class TestFileTests
                                             //~type ^^ ^^ ^^ ^^ i32
                                             """), """
                 ERROR InvalidTaxlAnnotation@[34, 57): Annotation '//~type ^^ ^^ ^^ ^^ i32' is invalid.
-                --> Directive: Check
-                --- Code "" ---
+                Directive: Check
                 """);
     }
 }

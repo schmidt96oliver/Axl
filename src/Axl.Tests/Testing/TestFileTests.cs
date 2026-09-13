@@ -19,16 +19,14 @@ public sealed partial class TestFileTests
     [Fact]
     public void Empty()
         => InlineSnapshot.Validate(Structure(""), """
-                                                  ERROR MissingTaxlDirective@[0, 0): Test directive missing.
-                                                  --> Directive: ???
-                                                  --- Code "" ---
-                                                  """);
+            ERROR MissingTaxlDirective@[0, 0): Test directive missing.
+            Directive: ???
+            """);
 
     [Fact]
     public void Whitespace()
         => InlineSnapshot.Validate(Structure("   "), """
-                                                     ERROR MissingTaxlDirective@[0, 3): Test directive missing.
-                                                     --> Directive: ???
-                                                     --- Code "" ---
-                                                     """);
+            ERROR MissingTaxlDirective@[0, 3): Test directive missing.
+            Directive: ???
+            """);
 }
