@@ -52,7 +52,7 @@ public abstract class SyntaxElement
     public abstract SourceRange? Range { get; }
 
 
-    public SourceLocation Location => SourceLocation.From(Tree.SourceText, Range ?? FullRange);
+    public SourceLocation Location => Tree.SourceText.GetLocation(Range ?? FullRange);
 
     public ReadOnlySpan<char> Text => Location.Text;
 }

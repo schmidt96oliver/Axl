@@ -1,5 +1,6 @@
 ﻿using System.Collections.Immutable;
 using System.Diagnostics;
+using System.Runtime.CompilerServices;
 
 namespace Axl.Compiler.Text;
 
@@ -59,6 +60,18 @@ public class SourceText
         return Text.AsSpan(range.Start, range.Length);
     }
 
+    public SourceLocation GetLocation(SourceRange range)
+    {
+        Guard.MustBe(Contains(range));
+        return new SourceLocation(this, range);
+    }
+
+    public SourceLocation GetLocationFromBounds(int start, int end)
+        => GetLocation(SourceRange.FromBounds(start, end));
+    
+    public SourceLocation GetLocationFromLength(int start, int length)
+        => GetLocation(SourceRange.FromLength(start, length));
+    
     public int GetLineIndex(int position)
     {
         // 012\n

@@ -120,7 +120,7 @@ public class FoldingRangeHandler : FoldingRangeHandlerBase
 
         FoldingRange FoldingRangeFromTo(int start, int end, FoldingRangeKind? kind = null)
         {
-            var location = SourceLocation.FromBounds(tree.SourceText, start, end);
+            var location = tree.SourceText.GetLocationFromBounds(start, end);
             return new FoldingRange
             {
                 StartLine = location.StartLine,

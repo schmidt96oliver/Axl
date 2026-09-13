@@ -5,7 +5,6 @@
 * Update fragment logic (the hardest part :D)
 
 * move unit tests to Axl.Tests
-* rename "CorpusTests" to "LanguageTests"
 * add Testing/Taxl fragment association and mapping tests
 
 **Simplifications**

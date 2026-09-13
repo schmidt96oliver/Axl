@@ -61,7 +61,7 @@ public class SemanticTokensHandler(ILanguageServerFacade facade) : SemanticToken
             if (token.FullRange.Start >= tree.SourceText.Length)
                 continue;
 
-            var location = SourceLocation.From(tree.SourceText, token.FullRange);
+            var location = tree.SourceText.GetLocation(token.FullRange);
             switch (token.Kind)
             {
                 case TokenKind.Comment:

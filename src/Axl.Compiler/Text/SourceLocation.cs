@@ -24,29 +24,12 @@ public readonly record struct SourceLocation
     public SourceRange Range { get; }
     
     
-    private SourceLocation(SourceText sourceText, SourceRange range)
+    /// <summary>
+    /// Only constructed through <see cref="SourceText.GetLocation"/>.
+    /// </summary>
+    internal SourceLocation(SourceText sourceText, SourceRange range)
     {
         SourceText = sourceText;
         Range = range;
-    }
-
-    public static SourceLocation From(SourceText sourceText, SourceRange range)
-    {
-        Guard.MustBe(sourceText.Contains(range));
-        return new SourceLocation(sourceText, range);
-    }
-    
-    public static SourceLocation FromBounds(SourceText sourceText, int start, int end)
-    {
-        var range = SourceRange.FromBounds(start, end);
-        Guard.MustBe(sourceText.Contains(range));
-        return new SourceLocation(sourceText, range);
-    }
-
-    public static SourceLocation FromLength(SourceText sourceText, int start, int length)
-    {
-        var range = SourceRange.FromLength(start, length);
-        Guard.MustBe(sourceText.Contains(range));
-        return new SourceLocation(sourceText, range);
     }
 }
