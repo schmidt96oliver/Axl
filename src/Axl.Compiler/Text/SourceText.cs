@@ -88,7 +88,7 @@ public class SourceText
         while (lower <= upper)
         {
             var index = lower + (upper - lower) / 2;
-            var lineStart = Lines[index].First;
+            var lineStart = Lines[index].Start;
 
             if (position == lineStart) 
                 return index;

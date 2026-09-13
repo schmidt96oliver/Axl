@@ -123,7 +123,7 @@ public sealed class TaxlParser(SourceText sourceText, DiagnosticBag diagnostics)
         if (lineAbove < 0)
             return null;
         var referencedRange = SourceRange.FromLength(
-            start: sourceText.Lines[lineAbove].First + caretRange.Start - sourceText.Lines[location.StartLine].First,
+            start: sourceText.Lines[lineAbove].Start + caretRange.Start - sourceText.Lines[location.StartLine].Start,
             length: caretRange.Length);
         if (!sourceText.Lines[lineAbove].Range.Contains(referencedRange))
             return null;

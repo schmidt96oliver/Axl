@@ -80,7 +80,7 @@ public class SourceTextTests
         for (var lineIndex = 0; lineIndex < sourceText.Lines.Length; lineIndex++)
         {
             var line = sourceText.Lines[lineIndex];
-            Enumerable.Range(line.First, line.LengthWithLineBreak)
+            Enumerable.Range(line.Start, line.LengthWithLineBreak)
                 .Select(sourceText.GetLineIndex)
                 .ShouldAllBe(actualLineIndex => actualLineIndex == lineIndex);
         }

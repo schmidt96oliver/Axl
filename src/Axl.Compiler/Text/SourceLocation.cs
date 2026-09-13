@@ -13,10 +13,10 @@ public readonly record struct SourceLocation
     public int Length => Range.Length;
     
     public int StartLine => SourceText.GetLineIndex(Start);
-    public int StartColumn => Start - SourceText.Lines[StartLine].First;
+    public int StartColumn => Start - SourceText.Lines[StartLine].Start;
 
     public int EndLine => SourceText.GetLineIndex(End);
-    public int EndColumn => End - SourceText.Lines[StartLine].First;
+    public int EndColumn => End - SourceText.Lines[StartLine].Start;
 
 
     public ReadOnlySpan<char> Text => SourceText.GetText(Range);
