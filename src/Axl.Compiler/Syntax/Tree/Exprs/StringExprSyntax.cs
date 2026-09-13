@@ -8,7 +8,7 @@ public abstract class StringPartSyntax(SyntaxKind kind, ImmutableArray<SyntaxEle
 public sealed class StringTextSyntax(ImmutableArray<SyntaxElement> children)
     : StringPartSyntax(SyntaxKind.StringText, children)
 {
-    public StringTextToken Text => Children.FirstNonTriviaToken() as StringTextToken
+    public StringTextToken TextToken => Children.FirstNonTriviaToken() as StringTextToken
                                    ?? throw new ArgumentException(
                                        $"Token on {nameof(StringTextSyntax)} was not {nameof(StringTextToken)}",
                                        nameof(children));

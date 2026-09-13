@@ -171,24 +171,6 @@ public class SemanticTokensHandler(ILanguageServerFacade facade) : SemanticToken
             return;
         }
 
-        // --- Output fragments
-        var isInOutput = testFile.GetFragmentAt(commentToken.Location).IsOutput;
-        if (isInOutput)
-        {
-            // `//` is now a decorator
-            builder.Push(startLine, startColumn, 2,
-                (SemanticTokenType?)SemanticTokenType.Decorator);
-
-            // Everything thereafter is string
-            if (commentToken.FullRange.Length > 2)
-            {
-                builder.Push(startLine, startColumn + 2, commentToken.FullRange.Length - 2,
-                    (SemanticTokenType?)SemanticTokenType.String);
-            }
-
-            return;
-        }
-        
         // Directives and annotations
         var decoratorLength = GetTaxlCommentDecoratorLength(commentToken.FullRange, testFile);
         if (decoratorLength <= 0)
@@ -209,8 +191,7 @@ public class SemanticTokensHandler(ILanguageServerFacade facade) : SemanticToken
             return commentRange.Length;
 
         // An annotation?
-        var annotation = testFile.Fragments
-            .SelectMany(fragment => fragment.Annotations)
+        var annotation = testFile.Annotations
             .FirstOrDefault(annotation => annotation.FullLocation.Range == commentRange);
         if (annotation is not null)
             return annotation.PrefixLocation.Length;
