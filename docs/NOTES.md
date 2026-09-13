@@ -2,12 +2,7 @@
                                        ≽(◕ ᴗ ◕)≼
 
 **Next:** 
-* rename Line.First to Start
-
-* Update fragment logic (the hardest part :D)
-
 * move unit tests to Axl.Tests
-* add Testing/Taxl fragment association and mapping tests
 
 **Simplifications**
 * SyntaxTree API
