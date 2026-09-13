@@ -7,11 +7,6 @@ public static class TokenKindDisplayExtensions
 {
     extension(TokenKind kind)
     {
-        /// <summary>
-        /// How this kind is named in diagnostic messages. A complete noun phrase,
-        /// including quoting: <c>"';'"</c>, <c>"an identifier"</c>. Kinds with a fixed
-        /// spelling are quoted, the others are described in prose.
-        /// </summary>
         public string DisplayName => kind switch
         {
             TokenKind.Identifier => "an identifier",
@@ -87,8 +82,6 @@ public static class TokenKindDisplayExtensions
             TokenKind.GreaterThan => "'>'",
             TokenKind.GreaterThanEqual => "'>='",
 
-            // The switch cannot be exhaustive over an enum, so TokenKindTests
-            // walks every declared kind to catch a missing one.
             _ => throw new UnreachableException($"No DisplayName for TokenKind '{kind}'."),
         };
     }

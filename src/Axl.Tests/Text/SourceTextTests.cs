@@ -1,7 +1,7 @@
 ﻿using Axl.Compiler.Text;
 using Shouldly;
 
-namespace Axl.Compiler.UnitTests;
+namespace Axl.Tests.Text;
 
 public class SourceTextTests
 {

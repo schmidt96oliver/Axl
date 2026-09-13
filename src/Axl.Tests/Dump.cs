@@ -10,6 +10,29 @@ public class Dump(SourceText sourceText)
 {
     private readonly StringBuilder _builder = new();
     
+    private string ToLiteralString(string str)
+    {
+        var sb = new StringBuilder(str.Length);
+        foreach (var c in str)
+        {
+            switch (c)
+            {
+                case '\0': sb.Append(@"\0");  break;
+                case '\n': sb.Append(@"\n");  break;
+                case '\r': sb.Append(@"\r");  break;
+                case '\t': sb.Append(@"\t");  break;
+                default:
+                    if (c is < ' ' or > '~')
+                        sb.Append("\\u").Append(((int)c).ToString("X4"));
+                    else
+                        sb.Append(c);
+                    break;
+            }
+        }
+        return sb.ToString();
+    }
+
+    
     public Dump Add(IEnumerable<Diagnostic> diagnostics)
     {
         if (_builder.Length > 0)
@@ -19,7 +42,7 @@ public class Dump(SourceText sourceText)
         {
             var spans = string.Join(", ", diag.Locations.Select(location => location.Range));
             _builder.AppendLine(
-                $"{diag.DefaultSeverity.ToString().ToUpper()} {diag.Id}@{spans}: {diag.Message.ToLiteralString()}");
+                $"{diag.DefaultSeverity.ToString().ToUpper()} {diag.Id}@{spans}: {ToLiteralString(diag.Message)}");
             foreach (var related in diag.Related)
                 _builder.AppendLine($"   related@{related.Location.Range}: {related.Label}");
         }

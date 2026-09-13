@@ -2,7 +2,6 @@
                                        ≽(◕ ᴗ ◕)≼
 
 **Next:** 
-* move unit tests to Axl.Tests
 
 **Simplifications**
 * SyntaxTree API
@@ -14,7 +13,6 @@
 * Diagnostics
   * Move to DiagnosticBag.Report***
   * Think about Parser deduping
-* Fuzz/AI written Tests for Parser, Lexer. Necessary?
 
 **Moving On**
 * allow any type in string interpolation (that's a lowering problem)

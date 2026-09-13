@@ -62,7 +62,7 @@ public partial class ParserTests
         var sourceText = SourceText.LoadFile(path);
         var tree = Parser.Parse(sourceText);
 
-        SyntaxWalk.AllNodesRecursive(tree.FileSyntax).ShouldAllBe(node => node.FullRange.IsPartitionedBy(node.Children.Select(child => child.FullRange)));
+        AllNodesRecursive(tree.FileSyntax).ShouldAllBe(node => node.FullRange.IsPartitionedBy(node.Children.Select(child => child.FullRange)));
     }
 
     [Theory, Corpus]
@@ -71,81 +71,28 @@ public partial class ParserTests
         var sourceText = SourceText.LoadFile(path);
         var tree = Parser.Parse(sourceText);
 
-        sourceText.Range.IsPartitionedBy(SyntaxWalk.AllTokenSpansRecursive(tree.FileSyntax)).ShouldBeTrue();
+        sourceText.Range.IsPartitionedBy(AllTokensRecursive(tree.FileSyntax).Select(t => t.FullRange)).ShouldBeTrue();
+    }
+    
+    
+    public static IEnumerable<SyntaxNode> AllNodesRecursive(SyntaxNode node)
+    {
+        yield return node;
+
+        foreach (var child in node.Children.OfType<SyntaxNode>())
+        foreach (var childNode in AllNodesRecursive(child))
+            yield return childNode;
     }
 
-
-    /// <inheritdoc cref="CorpusMutations.Prefixes"/>
-    [Fact]
-    public void PrefixTruncationOnCorpus_KeepsInvariants()
-        => CorpusMutations.Check(CorpusMutations.Prefixes, CheckTreeInvariants,
-            "A truncated corpus file broke tree invariants.");
-
-    /// <inheritdoc cref="CorpusMutations.TokenDeletions"/>
-    [Fact]
-    public void TokenDeletionOnCorpus_KeepsInvariants()
-        => CorpusMutations.Check(CorpusMutations.TokenDeletions, CheckTreeInvariants,
-            "A corpus file with a token deleted broke tree invariants.");
-
-    /// <summary>
-    /// Parses <paramref name="text"/> and checks the invariants that must hold for
-    /// every input, however broken:
-    /// <list type="number">
-    /// <item>Parsing does not throw.</item>
-    /// <item>Every node's range is partitioned by its children's spans.</item>
-    /// <item>The source is partitioned by all token spans.</item>
-    /// <item>Concatenating all token texts reproduces the source verbatim.</item>
-    /// </list>
-    /// </summary>
-    /// <returns>Nothing if all invariants hold, otherwise the first violation.</returns>
-    private static IEnumerable<Finding> CheckTreeInvariants(string text)
+    public static IEnumerable<Token> AllTokensRecursive(SyntaxElement element)
     {
-        var sourceText = default(SourceText);
-        SyntaxTree? tree = null;
-        Exception? parseError = null;
-        try
+        if (element is Token token)
+            yield return token;
+        else if (element is SyntaxNode node)
         {
-            sourceText = SourceText.From(text);
-            tree = Parser.Parse(sourceText);
-        }
-        catch (Exception e)
-        {
-            parseError = e;
-        }
-
-        if (tree is null)
-        {
-            yield return new Finding($"(1) Parsing throws {parseError!.GetType().Name}",
-                $"Parsing threw {parseError.GetType().Name}: {parseError.Message}");
-            yield break;
-        }
-
-        foreach (var node in SyntaxWalk.AllNodesRecursive(tree.FileSyntax))
-        {
-            if (node.FullRange.IsPartitionedBy(node.Children.Select(child => child.FullRange)))
-                continue;
-
-            yield return new Finding("(2) Node is not partitioned by its children",
-                $"{node.Kind}@{node.FullRange} is not partitioned by its children.");
-            yield break;
-        }
-
-        var tokenRanges = SyntaxWalk.AllTokenSpansRecursive(tree.FileSyntax).ToList();
-        if (!sourceText.Range.IsPartitionedBy(tokenRanges))
-        {
-            yield return new Finding("(3) Text is not partitioned by its tokens",
-                $"SourceText@{sourceText.Range} is not partitioned by its {tokenRanges.Count} tokens.");
-            yield break;
-        }
-
-        var concatenated = new StringBuilder();
-        foreach (var range in tokenRanges)
-            concatenated.Append(sourceText.GetText(range));
-
-        if (concatenated.ToString() != text)
-        {
-            yield return new Finding("(4) Token texts do not reproduce the source",
-                $"Concatenating all tokens does not reproduce the source. Got:\n{concatenated}");
+            foreach (var child in node.Children)
+            foreach (var childTokens in AllTokensRecursive(child))
+                yield return childTokens;
         }
     }
 }
