@@ -1,6 +1,6 @@
 ﻿using Meziantou.Framework.InlineSnapshotTesting;
 
-namespace Axl.Tests.Taxl;
+namespace Axl.Tests.Testing;
 
 public sealed partial class TestFileTests
 {
