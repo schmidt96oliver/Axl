@@ -36,7 +36,7 @@ public sealed class Evaluator
         if (unsupportedFeatures.Count > 0)
         {
             var message = string.Join('\n', unsupportedFeatures.Select(diagnostic =>
-                $"l.{diagnostic.Locations[0].StartLinePosition.Line}: {diagnostic.Message}"));
+                $"l.{diagnostic.Locations[0].StartLine}: {diagnostic.Message}"));
             return Evaluation.Unsupported(message);
         }
         
@@ -45,17 +45,14 @@ public sealed class Evaluator
         {
             var message = "Invalid test file!\n" + string.Join('\n',
                 testFile.Diagnostics.Select(diagnostic =>
-                    $"l.{diagnostic.Locations[0].StartLinePosition.Line}: {diagnostic.Message}"));
+                    $"l.{diagnostic.Locations[0].StartLine}: {diagnostic.Message}"));
             return Evaluation.Failed(message);
         }
         
-        // Unsupported features
+        // Unsupported test directives
         Debug.Assert(testFile.Directive is not null, "Without diagnostics, the test file must have a directive.");
         if (testFile.Directive.Kind is not DirectiveKind.Check)
             return Evaluation.Unsupported($"Test directive {testFile.Directive.Kind} is not supported.");
-
-        if (testFile.Fragments.Count(fragment => !fragment.IsOutput) > 1)
-            return Evaluation.Unsupported("Multiple code files are not supported.");
 
         // Evaluate
         var evaluator = new Evaluator(testFile);
@@ -101,8 +98,7 @@ public sealed class Evaluator
 
     private Dictionary<int, DiagnosticId> GetExpectedDiagnostics()
     {
-        var diagnosticAnnotations = _testFile.Fragments
-            .SelectMany(fragment => fragment.Annotations)
+        var diagnosticAnnotations = _testFile.Annotations
             .OfType<DiagnosticAnnotation>();
         
         var table = new Dictionary<int, DiagnosticId>();
@@ -118,10 +114,10 @@ public sealed class Evaluator
         foreach (var diagnostic in _testFile.Compilation.Diagnostics)
         foreach (var location in diagnostic.Locations)
         {
-            var line = location.StartLinePosition.Line;
-            if (line != location.EndLinePosition.Line)
+            var line = location.StartLine;
+            if (line != location.EndLine)
             {
-                _failedChecks.Add(new FailedCheck(line, $"Unsupported multi-line diagnostic \'{diagnostic.Id}\'"));
+                _failedChecks.Add(new FailedCheck(line, $"Multi-line diagnostic \'{diagnostic.Id}\'"));
                 continue;
             }
 
@@ -138,8 +134,7 @@ public sealed class Evaluator
     
     private void CheckTypes()
     {
-        var typeAnnotations = _testFile.Fragments
-            .SelectMany(fragment => fragment.Annotations)
+        var typeAnnotations = _testFile.Annotations
             .OfType<TypeAnnotation>();
         
         foreach (var annotation in typeAnnotations)

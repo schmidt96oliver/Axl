@@ -71,21 +71,6 @@ public sealed partial class TestFileTests
                 """);
 
         [Fact]
-        public void InFragments_Ignored()
-            => InlineSnapshot.Validate(Structure("""
-                                            //@check
-                                            //---
-                                            //@run-pass
-                                            //===
-                                            //@run-panic
-                                            """), """
-                --> Directive: Check
-                --- Code "" ---
-                --- Code "" ---
-                --- Output "" ---
-                """);
-
-        [Fact]
         public void Empty()
             => InlineSnapshot.Validate(Structure("//@"), """
                 ERROR UnknownTaxlDirective@[0, 3): Directive '//@' is not known.

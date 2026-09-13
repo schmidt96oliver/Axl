@@ -2,6 +2,8 @@
                                        ≽(◕ ᴗ ◕)≼
 
 **Next:** 
+* rename Line.First to Start
+
 * Update fragment logic (the hardest part :D)
 
 * move unit tests to Axl.Tests
@@ -13,6 +15,7 @@
   * Pass SyntaxTree into SyntaxNode
   * Span not nullable
   * AST: Members, Usings, etc necessary or just walk completely over it?
+  * Tokens coming from Lexer should also have .Text, .Location, etc...
 * Diagnostics
   * Move to DiagnosticBag.Report***
   * Think about Parser deduping
@@ -33,6 +36,13 @@
 * `1_i32 == 1_i64`
 * `if true => 1 else => "A";` diagnostic message
 * `1 + true` squiggle all?
+
+# Taxl: Multiple files
+* SourceText gets Origin (SourceText, Offset); construction by SourceText.Subtext
+* SourceLocation always refers to root source text
+* .GetLocation walks origins
+* SourceText.Contains checks for origin as well
+* Compilation.GetSyntaxTreeAt(location) just checks text.Contains(location)
 
 # First features
 * i32, i64, f32, f64, bool, string

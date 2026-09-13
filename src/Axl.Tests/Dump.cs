@@ -209,37 +209,29 @@ public class Dump(SourceText sourceText)
     }
 
 
-    public Dump Add(TestFile testFile, bool onlyStructure)
+    public Dump Add(TestFile testFile)
     {
-        _builder.AppendLine($"--> Directive: {testFile.Directive?.Kind.ToString() ?? "???"}");
+        _builder.AppendLine($"Directive: {testFile.Directive?.Kind.ToString() ?? "???"}");
 
-        foreach (var fragment in testFile.Fragments)
+        foreach (var annotation in testFile.Annotations)
         {
-            var fragmentText = fragment.IsOutput ? "Output" : "Code";
-            _builder.AppendLine($"--- {fragmentText} \"{fragment.Name}\" ---");
-            foreach (var annotation in fragment.Annotations)
+            _builder.Append("//~ ");
+            switch (annotation)
             {
-                _builder.Append("--> //~ ");
-                switch (annotation)
-                {
-                    case DiagnosticAnnotation diagnostic:
-                        _builder.AppendLine($"{diagnostic.Kind}@l.{diagnostic.LineNumber}: \"{diagnostic.Id}\"");
-                        break;
+                case DiagnosticAnnotation diagnostic:
+                    _builder.AppendLine($"{diagnostic.Kind.ToString().ToLower()}@l.{diagnostic.LineNumber}: \"{diagnostic.Id}\"");
+                    break;
 
-                    case TypeAnnotation type:
-                        _builder.AppendLine($"type \"{type.TypeName}\" on \"{type.ReferencedLocation.Text}\"");
-                        break;
-                }
+                case TypeAnnotation type:
+                    _builder.AppendLine($"type \"{type.TypeName}\" on \"{type.ReferencedLocation.Text}\"");
+                    break;
             }
-
-            if (!onlyStructure)
-                _builder.AppendLine(fragment.Text.Text);
         }
 
         return this;
     }
-    
-    
+
+
     private void AddLiteralString(ReadOnlySpan<char> text)
     {
         foreach (var c in text)

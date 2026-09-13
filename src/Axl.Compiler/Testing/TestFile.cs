@@ -12,8 +12,8 @@ public sealed class TestFile
     
     public Directive? Directive { get; }
     
-    public ImmutableArray<Fragment> Fragments { get; }
-    
+    public ImmutableArray<Annotation> Annotations { get; }
+
     /// <summary>
     /// Diagnostics emitted during parsing of this test file.
     /// </summary>
@@ -26,8 +26,7 @@ public sealed class TestFile
         {
             if (field is null)
             {
-                var fragment = Fragments.First(fragment => !fragment.IsOutput);
-                var tree = Parser.Parse(fragment.Text);
+                var tree = Parser.Parse(SourceText);
                 field = Compilation.From(tree);
             }
             return field;
@@ -46,32 +45,26 @@ public sealed class TestFile
     }
 
 
-    private TestFile(SourceText sourceText, Directive? directive, 
-        ImmutableArray<Fragment> fragments, ImmutableArray<Diagnostic> diagnostics)
+    private TestFile(SourceText sourceText, 
+        Directive? directive,
+        ImmutableArray<Annotation> annotations,
+        ImmutableArray<Diagnostic> diagnostics)
     {
         SourceText = sourceText;
         Directive = directive;
-        Fragments = fragments;
+        Annotations = annotations;
         Diagnostics = diagnostics;
     }
-    
+
 
     public static TestFile From(SourceText sourceText)
     {
         var diagnostics = new DiagnosticBag();
         var parser = new TaxlParser(sourceText, diagnostics);
         
-        var fragments = parser.ParseFragments();
-        Debug.Assert(fragments.Length > 0, "There must be at least one fragment.");
-
         var directive = parser.ParseDirective();
-        return new TestFile(sourceText, directive, fragments, diagnostics.Drain());
+        var annotations = parser.ParseAnnotations();
+        
+        return new TestFile(sourceText, directive, annotations, diagnostics.Drain());
     }
-
-    
-    
-    public Fragment GetFragmentAt(SourceLocation location)
-        => Fragments.FirstOrDefault(fragment => fragment.Source.File == location.SourceText &&
-                                                fragment.Source.Range.Contains(location.Range))
-           ?? throw new ArgumentException($"{nameof(location)} is not contained in this {nameof(TestFile)}.");
 }
