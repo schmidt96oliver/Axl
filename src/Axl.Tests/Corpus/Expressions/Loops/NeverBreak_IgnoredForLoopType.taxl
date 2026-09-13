@@ -1,0 +1,23 @@
+﻿//@check
+
+// Breaks with expressions of type 'never' are not
+// used for evaluating the type of the loop expr.
+// That is because that break will not ever be executed
+// and will never return a value from the loop.
+
+var a = loop { break break; };
+//~type ^^^^^^^^^^^^^^^^^^^^^ none
+
+var a = loop { break break 1; };
+//~type ^^^^^^^^^^^^^^^^^^^^^^^ i32
+
+var a = loop { break continue; };
+//~type ^^^^^^^^^^^^^^^^^^^^^^^^ never
+  
+var a = loop
+{
+    break continue;
+    break 1;
+};
+       a;
+//~type^ i32

@@ -11,7 +11,7 @@ var str: string =
                if i >= 3 
                { 
                    str = "{str}{i}";   // i == 3
-                   break str;
+                   break str; 
                }
                 
                str = "{str}{i}\n";

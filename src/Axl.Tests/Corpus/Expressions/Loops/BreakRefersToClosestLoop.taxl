@@ -1,0 +1,17 @@
+﻿//@check
+
+// A break always refers to its closest nested loop.
+
+var outside = loop 
+    {
+        var inside = loop 
+            {
+                break 1;
+            };
+        inside;
+//~type ^^^^^^ i32
+        break "Hello";
+    };
+  
+        outside;
+//~type ^^^^^^^ string

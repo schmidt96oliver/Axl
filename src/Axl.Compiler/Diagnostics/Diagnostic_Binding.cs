@@ -69,4 +69,13 @@ public partial record Diagnostic
                 ? "Invalid assignment target."
                 : $"Cannot assign to {ResolvedSymbol.DisplayName}";
     }
+
+    public sealed record BreakOrContinueOutsideLoop(ExprSyntax Syntax) : Error
+    {
+        public override ImmutableArray<SourceLocation> Locations => [Syntax.SyntaxElements().First().Location];
+
+        public override string Message => Syntax is BreakExprSyntax
+            ? "Break can only be used inside loops."
+            : "Continue can only be used inside loops.";
+    }
 }

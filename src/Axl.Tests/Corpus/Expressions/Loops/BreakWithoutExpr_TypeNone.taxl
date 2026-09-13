@@ -1,0 +1,4 @@
+﻿//@check
+
+var a = loop { break; };
+//~type ^^^^^^^^^^^^^^^ none

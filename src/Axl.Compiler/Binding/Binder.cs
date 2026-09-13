@@ -14,6 +14,7 @@ public sealed class Binder
     private readonly TypeContext _types;
     
     private Scope _scope;
+    private List<BoundBreak>? _loopBreaks = null;
     
     
     private Binder(Scope scope, TypeContext typeContext)
@@ -117,6 +118,9 @@ public sealed class Binder
         IfExprSyntax ifExprSyntax => BindIf(ifExprSyntax),
         ArmSyntax armSyntax => BindExpr(armSyntax.Expr),
         GroupExprSyntax groupExprSyntax => BindExpr(groupExprSyntax.Inner),
+        LoopExprSyntax loopExprSyntax => BindLoop(loopExprSyntax),
+        BreakExprSyntax breakExprSyntax => BindBreak(breakExprSyntax),
+        ContinueExprSyntax continueExprSyntax => BindContinue(continueExprSyntax),
         
         // Strings and Literals
         NumberLiteralSyntax numberLiteralSyntax => BindNumberLiteral(numberLiteralSyntax),
@@ -474,5 +478,67 @@ public sealed class Binder
         return new BoundIf(boundPredicate, boundBody, boundElse, ifExprType, syntax);
     }
 
+    private BoundExpr BindLoop(LoopExprSyntax syntax)
+    {
+        var previousLoopBreaks = _loopBreaks;
+        
+        _loopBreaks = new List<BoundBreak>();
+        var body = BindExpr(syntax.Body);
+        var nonNeverBreaks = _loopBreaks.Where(b => b.Expr?.Type != _types.Never).ToList();
+        _loopBreaks = previousLoopBreaks;
+        
+        TypeSymbol type;
+        if (nonNeverBreaks.Count > 0)
+        {
+            type = nonNeverBreaks[0].Expr?.Type ?? _types.None;
+            for (var i = 1; i < nonNeverBreaks.Count; i++)
+            {
+                var expr = nonNeverBreaks[i].Expr;
+                if (expr is not null)
+                    CheckTypeAndReportMismatch(expr, type);
+                else if (type != _types.None)
+                {
+                    _diagnostics.ReportError(new Diagnostic.TypeMismatch(
+                        nonNeverBreaks[i], type));
+                }
+            }
+        }
+        else
+            type = _types.Never;
+        
+        
+        
+        // Loop body must have type none
+        CheckTypeAndReportMismatch(body, _types.None);
+
+        return new BoundLoop(body, type, syntax);
+    }
+
+    private BoundExpr BindBreak(BreakExprSyntax syntax)
+    {
+        var expr = syntax.Expr is not null ? BindExpr(syntax.Expr) : null;
+
+        if (_loopBreaks is null)
+        {
+            _diagnostics.ReportError(new Diagnostic.BreakOrContinueOutsideLoop(syntax));
+            return new BoundError(recoveredExprs: expr is not null ? [expr] : [], _types.Error, syntax);
+        }
+
+        var breakExpr = new BoundBreak(expr, _types.Never, syntax);
+        _loopBreaks!.Add(breakExpr);
+        return breakExpr;
+    }
+
+    private BoundExpr BindContinue(ContinueExprSyntax syntax)
+    {
+        if (_loopBreaks is null)
+        {
+            _diagnostics.ReportError(new Diagnostic.BreakOrContinueOutsideLoop(syntax));
+            return new BoundError(recoveredExprs: [], _types.Error, syntax);
+        }
+
+        return new BoundContinue(_types.Never, syntax);
+    }
+    
     #endregion
 }
