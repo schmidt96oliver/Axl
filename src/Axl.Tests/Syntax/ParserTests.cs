@@ -10,10 +10,10 @@ public partial class ParserTests
 {
     private static string Tree(string text)
     {
-        var source = SourceFileView.FromText(text);
-        var tree = Parser.Parse(source);
+        var sourceText = SourceText.From(text);
+        var tree = Parser.Parse(sourceText);
 
-        return new Dump(source)
+        return new Dump(sourceText)
             .Add(tree.Diagnostics)
             .AddChildren(tree.FileSyntax, filterTrivia: true, filterEof: true)
             .ToString();
@@ -21,8 +21,8 @@ public partial class ParserTests
 
     private static string SExpr(string text)
     {
-        var source = SourceFileView.FromText(text);
-        var tree = Parser.Parse(source);
+        var sourceText = SourceText.From(text);
+        var tree = Parser.Parse(sourceText);
 
         var exprStmt = tree.FileSyntax.Children[..^1]
             .ShouldHaveSingleItem()
@@ -31,7 +31,7 @@ public partial class ParserTests
         exprStmt.Children.Length.ShouldBeGreaterThan(0);
         var inner = exprStmt.Children[0].ShouldBeAssignableTo<SyntaxNode>();
         
-        return new Dump(source)
+        return new Dump(sourceText)
             .Add(tree.Diagnostics)
             .AddSExpr(inner)
             .ToString();
@@ -41,15 +41,15 @@ public partial class ParserTests
     [Theory, Corpus]
     public void Corpus_ParsesWithoutDiagnostics(string path)
     {
-        var source = SourceFileView.FromFile(path);
-        var tree = Parser.Parse(source);
+        var sourceText = SourceText.LoadFile(path);
+        var tree = Parser.Parse(sourceText);
 
         foreach (var diagnostic in tree.Diagnostics)
         {
             TestContext.Current.TestOutputHelper?.WriteLine(
                 $"[{diagnostic.DefaultSeverity}] {diagnostic.Id}: {diagnostic.Message}");
             TestContext.Current.TestOutputHelper?.WriteLine(
-                $"    at {path}:line {source.File.GetLineAt(diagnostic.Locations[0].Span.First).LineNumber + 1}");
+                $"    at {path}:line {sourceText.GetLineIndex(diagnostic.Locations[0].Range.Start) + 1}");
         }
         
         tree.HasError.ShouldBeFalse();
@@ -59,19 +59,19 @@ public partial class ParserTests
     [Theory, Corpus]
     public void Corpus_ChildrenPartitionTheirParent(string path)
     {
-        var source = SourceFileView.FromFile(path);
-        var tree = Parser.Parse(source);
+        var sourceText = SourceText.LoadFile(path);
+        var tree = Parser.Parse(sourceText);
 
-        SyntaxWalk.AllNodesRecursive(tree.FileSyntax).ShouldAllBe(node => node.FullSpan.IsPartitionedBy(node.Children.Select(child => child.FullSpan)));
+        SyntaxWalk.AllNodesRecursive(tree.FileSyntax).ShouldAllBe(node => node.FullRange.IsPartitionedBy(node.Children.Select(child => child.FullRange)));
     }
 
     [Theory, Corpus]
     public void Corpus_TokensPartitionSource(string path)
     {
-        var source = SourceFileView.FromFile(path);
-        var tree = Parser.Parse(source);
+        var sourceText = SourceText.LoadFile(path);
+        var tree = Parser.Parse(sourceText);
 
-        source.Span.IsPartitionedBy(SyntaxWalk.AllTokenSpansRecursive(tree.FileSyntax)).ShouldBeTrue();
+        sourceText.Range.IsPartitionedBy(SyntaxWalk.AllTokenSpansRecursive(tree.FileSyntax)).ShouldBeTrue();
     }
 
 
@@ -92,7 +92,7 @@ public partial class ParserTests
     /// every input, however broken:
     /// <list type="number">
     /// <item>Parsing does not throw.</item>
-    /// <item>Every node's span is partitioned by its children's spans.</item>
+    /// <item>Every node's range is partitioned by its children's spans.</item>
     /// <item>The source is partitioned by all token spans.</item>
     /// <item>Concatenating all token texts reproduces the source verbatim.</item>
     /// </list>
@@ -100,13 +100,13 @@ public partial class ParserTests
     /// <returns>Nothing if all invariants hold, otherwise the first violation.</returns>
     private static IEnumerable<Finding> CheckTreeInvariants(string text)
     {
-        var source = default(SourceFileView);
+        var sourceText = default(SourceText);
         SyntaxTree? tree = null;
         Exception? parseError = null;
         try
         {
-            source = SourceFileView.FromText(text);
-            tree = Parser.Parse(source);
+            sourceText = SourceText.From(text);
+            tree = Parser.Parse(sourceText);
         }
         catch (Exception e)
         {
@@ -122,25 +122,25 @@ public partial class ParserTests
 
         foreach (var node in SyntaxWalk.AllNodesRecursive(tree.FileSyntax))
         {
-            if (node.FullSpan.IsPartitionedBy(node.Children.Select(child => child.FullSpan)))
+            if (node.FullRange.IsPartitionedBy(node.Children.Select(child => child.FullRange)))
                 continue;
 
             yield return new Finding("(2) Node is not partitioned by its children",
-                $"{node.Kind}@{node.FullSpan} is not partitioned by its children.");
+                $"{node.Kind}@{node.FullRange} is not partitioned by its children.");
             yield break;
         }
 
-        var tokenSpans = SyntaxWalk.AllTokenSpansRecursive(tree.FileSyntax).ToList();
-        if (!source.Span.IsPartitionedBy(tokenSpans))
+        var tokenRanges = SyntaxWalk.AllTokenSpansRecursive(tree.FileSyntax).ToList();
+        if (!sourceText.Range.IsPartitionedBy(tokenRanges))
         {
-            yield return new Finding("(3) Source is not partitioned by its tokens",
-                $"Source@{source.Span} is not partitioned by its {tokenSpans.Count} tokens.");
+            yield return new Finding("(3) Text is not partitioned by its tokens",
+                $"SourceText@{sourceText.Range} is not partitioned by its {tokenRanges.Count} tokens.");
             yield break;
         }
 
         var concatenated = new StringBuilder();
-        foreach (var span in tokenSpans)
-            concatenated.Append(source.GetText(span));
+        foreach (var range in tokenRanges)
+            concatenated.Append(sourceText.GetText(range));
 
         if (concatenated.ToString() != text)
         {

@@ -45,20 +45,22 @@ public partial class Parser
                     break;
 
                 case ParseEvent.Make(var kind):
-                    var span = nextToken == 0
-                        ? SourceSpan.EmptyBefore(tokens[0].FullSpan)
-                        : SourceSpan.EmptyAfter(tokens[nextToken - 1].FullSpan);
+                {
+                    var range = nextToken == 0
+                        ? SourceRange.EmptyBefore(tokens[0].FullRange)
+                        : SourceRange.EmptyAfter(tokens[nextToken - 1].FullRange);
 
-                    nodeBuilders.Peek().Add(Token.MakeMissing(span, kind));
+                    nodeBuilders.Peek().Add(Token.MakeMissing(range, kind));
 
                     sawErrorElement = true;
                     break;
+                }
 
 
                 case ParseEvent.Close { Kind: SyntaxKind.File }:
                 {
-                    Debug.Assert(nodeBuilders.Count == 1, "File was not the root.");
-                    Debug.Assert(nextToken == tokens.Length, "File did not eat all tokens.");
+                    Debug.Assert(nodeBuilders.Count == 1, "SourceText was not the root.");
+                    Debug.Assert(nextToken == tokens.Length, "SourceText did not eat all tokens.");
 
                     var rootNode = new FileSyntax(nodeBuilders.Pop().DrainToImmutable());
                     
@@ -104,6 +106,6 @@ public partial class Parser
             }
         }
 
-        throw new UnreachableException("Event stream ended without closing File.");
+        throw new UnreachableException("Event stream ended without closing SourceText.");
     }
 }

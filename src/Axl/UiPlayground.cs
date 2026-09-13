@@ -299,10 +299,10 @@ public static class UiPlayground
 
         private void Reload()
         {
-            SourceFileView source;
+            SourceText sourceText;
             try
             {
-                source = SourceFileView.FromFile(_path);
+                sourceText = SourceText.LoadFile(_path);
             }
             catch (IOException)
             {
@@ -310,16 +310,16 @@ public static class UiPlayground
                 return;
             }
 
-            if (source.File.Text == _previousText)
+            if (sourceText.Text == _previousText)
                 return;
-            _previousText = source.File.Text;
+            _previousText = sourceText.Text;
 
-            var syntaxTree = Parser.Parse(source);
+            var syntaxTree = Parser.Parse(sourceText);
             var compilation = Compilation.From(syntaxTree);
 
             var diagnostics = compilation.Diagnostics;
             
-            var builder = new RowBuilder(syntaxTree, source);
+            var builder = new RowBuilder(syntaxTree, sourceText);
 
             var diagnosticRows = builder.BuildDiagnostics(diagnostics);
             _diagnosticsView.SetRoots(diagnosticRows);
@@ -346,7 +346,7 @@ public static class UiPlayground
     /// <summary>
     /// Turns a <see cref="SyntaxTree"/> into colored <see cref="Row"/>s.
     /// </summary>
-    private sealed class RowBuilder(SyntaxTree syntaxTree, SourceFileView source)
+    private sealed class RowBuilder(SyntaxTree syntaxTree, SourceText sourceText)
     {
         public Row BuildCstTree()
         {
@@ -421,7 +421,7 @@ public static class UiPlayground
 
                     var segments = new List<Segment> { new($"{childNode.Kind}", kindAttribute) };
 
-                    // A node that only holds tokens fits on one line. It spells its source out in
+                    // A node that only holds tokens fits on one line. It spells its sourceText out in
                     // full there, so a shortened preview next to the kind would only repeat it.
                     if (nonTrivia.All(el => el is Token))
                     {
@@ -593,15 +593,15 @@ public static class UiPlayground
         }
 
         /// <summary>
-        /// The source a node covers, kept short so that it stays a hint next to the kind instead of
+        /// The sourceText a node covers, kept short so that it stays a hint next to the kind instead of
         /// turning into a second view of the file.
         /// </summary>
         private Segment CoveredTextSegment(SyntaxNode node)
         {
             const int maxLength = 10;
 
-            // Trivia at the edges is not what the node is about, so the tighter span reads better.
-            var text = Escape(source.GetText(node.Span ?? node.FullSpan));
+            // Trivia at the edges is not what the node is about, so the tighter range reads better.
+            var text = Escape(sourceText.GetText(node.Range ?? node.FullRange));
             if (text.Length > maxLength)
                 text = $"{text[..maxLength]}…";
 
@@ -614,7 +614,7 @@ public static class UiPlayground
                 onErrorNode ? InErrorTokenAttribute : TokenAttribute;
             var text = token.IsMissing
                 ? $"{token.Kind.DisplayName}?"
-                : $"'{Escape(source.GetText(token.FullSpan))}'";
+                : $"'{Escape(sourceText.GetText(token.FullRange))}'";
 
             var segments = new List<Segment> { new(text, attribute) };
             // if (token.IsMissing)
@@ -626,13 +626,10 @@ public static class UiPlayground
 
         private string GetLocationText(SourceLocation location)
         {
-            var startLinePos = location.File.GetLinePositionOrEof(location.Span.First);
-            var endLinePos = location.File.GetLinePositionOrEof(location.Span.End);
+            if (location.StartLine == location.EndLine)
+                return $"l.{location.StartLine} @ {location.StartColumn}-{location.EndColumn}";
 
-            if (startLinePos.Line == endLinePos.Line)
-                return $"l.{startLinePos.Line} @ {startLinePos.Column}-{endLinePos.Column}";
-
-            return $"l.{startLinePos.Line}@{startLinePos.Column} - l.{endLinePos.Line}@{endLinePos.Column}";
+            return $"l.{location.StartLine}@{location.StartColumn} - l.{location.EndLine}@{location.EndColumn}";
         }
 
         /// <summary>Every row is a single line, so line breaks and tabs must become visible escapes.</summary>

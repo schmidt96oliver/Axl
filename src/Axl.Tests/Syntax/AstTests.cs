@@ -56,7 +56,7 @@ public class AstTests
     {
         var produced = new HashSet<Type>();
         foreach (var (_, text) in CorpusMutations.Files())
-        foreach (var node in SyntaxWalk.AllNodesRecursive(Parser.Parse(SourceFileView.FromText(text)).FileSyntax))
+        foreach (var node in SyntaxWalk.AllNodesRecursive(Parser.Parse(SourceText.From(text)).FileSyntax))
             produced.Add(node.GetType());
 
         var missing = typeof(SyntaxNode).Assembly.GetTypes()
@@ -89,7 +89,7 @@ public class AstTests
         Exception? parseError = null;
         try
         {
-            tree = Parser.Parse(SourceFileView.FromText(text));
+            tree = Parser.Parse(SourceText.From(text));
         }
         catch (Exception e)
         {
@@ -166,8 +166,8 @@ public class AstTests
 
                     yield return new Finding(
                         $"{node.GetType().Name}: .{first} and .{second} return the same element",
-                        $"On {node.Kind}@{node.FullSpan}, both accessors returned the same " +
-                        $"{element.GetType().Name}@{element.FullSpan}. One of them is reading " +
+                        $"On {node.Kind}@{node.FullRange}, both accessors returned the same " +
+                        $"{element.GetType().Name}@{element.FullRange}. One of them is reading " +
                         "the wrong slot.");
                 }
                 else
@@ -178,8 +178,8 @@ public class AstTests
                 {
                     yield return new Finding(
                         $"{accessor.Name} escapes its node",
-                        $"On {node.Kind}@{node.FullSpan}, the accessor returned " +
-                        $"{element.GetType().Name}@{element.FullSpan}, which is not a descendant.");
+                        $"On {node.Kind}@{node.FullRange}, the accessor returned " +
+                        $"{element.GetType().Name}@{element.FullRange}, which is not a descendant.");
                 }
             }
         }

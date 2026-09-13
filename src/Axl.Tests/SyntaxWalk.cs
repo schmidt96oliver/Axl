@@ -25,10 +25,10 @@ public static class SyntaxWalk
     /// Spans of all tokens under <paramref name="element"/>, in document order.
     /// Includes trivia and missing (empty) tokens.
     /// </summary>
-    public static IEnumerable<SourceSpan> AllTokenSpansRecursive(SyntaxElement element)
+    public static IEnumerable<SourceRange> AllTokenSpansRecursive(SyntaxElement element)
     {
         if (element is Token token)
-            yield return token.FullSpan;
+            yield return token.FullRange;
         else if (element is SyntaxNode node)
         {
             var childTokenSpans = node.Children.SelectMany(AllTokenSpansRecursive);

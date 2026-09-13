@@ -61,15 +61,15 @@ public static class CorpusMutations
     /// </summary>
     public static IEnumerable<(string Label, string Text)> TokenDeletions(string text)
     {
-        var tokens = Lexer.Lex(SourceFileView.FromText(text), new DiagnosticBag());
+        var tokens = Lexer.Lex(SourceText.From(text), new DiagnosticBag());
 
         foreach (var token in tokens)
         {
             if (token.Kind.IsTrivia || token.Kind is TokenKind.Eof)
                 continue;
 
-            yield return ($"without {token.Kind}@{token.FullSpan}",
-                text[..token.FullSpan.First] + text[token.FullSpan.End..]);
+            yield return ($"without {token.Kind}@{token.FullRange}",
+                text[..token.FullRange.Start] + text[token.FullRange.End..]);
         }
     }
 

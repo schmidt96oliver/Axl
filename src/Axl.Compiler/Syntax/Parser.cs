@@ -8,24 +8,24 @@ namespace Axl.Compiler.Syntax;
 
 public partial class Parser
 {
-    private readonly SourceFileView _source;
+    private readonly SourceText _sourceText;
     private readonly Scanner _scanner;
 
 
-    private Parser(SourceFileView source, Scanner scanner)
+    private Parser(SourceText sourceText, Scanner scanner)
     {
-        _source = source;
+        _sourceText = sourceText;
         _scanner = scanner;
     }
 
     
-    public static SyntaxTree Parse(SourceFileView source)
+    public static SyntaxTree Parse(SourceText sourceText)
     {
         var lexerDiagnostics = new DiagnosticBag();
-        var tokens = Lexer.Lex(source, lexerDiagnostics);
+        var tokens = Lexer.Lex(sourceText, lexerDiagnostics);
 
-        var scanner = new Scanner(source, tokens);
-        var parser = new Parser(source, scanner);
+        var scanner = new Scanner(sourceText, tokens);
+        var parser = new Parser(sourceText, scanner);
         parser.EatRoot();
 
         var parserDiagnostics = new DiagnosticBag();
@@ -33,7 +33,7 @@ public partial class Parser
         
         var tree = new SyntaxTree(
             fileSyntax: rootNode,
-            source,
+            sourceText,
             diagnostics: [..lexerDiagnostics.Drain(), ..parserDiagnostics.Drain()],
             hasError: lexerDiagnostics.HasError);
 
@@ -147,9 +147,9 @@ public partial class Parser
     private bool HasNewlineBeforeNextToken()
     {
         var spanToNextToken = _scanner.Last is null
-            ? _source.SpanFromTo(0, _scanner.Peek().FullSpan.End)
-            : SourceSpan.Between(_scanner.Last.FullSpan, _scanner.Peek().FullSpan);
-        return _source.GetText(spanToNextToken).Contains('\n');
+            ? SourceRange.FromBounds(0, _scanner.Peek().FullRange.End)
+            : SourceRange.Between(_scanner.Last.FullRange, _scanner.Peek().FullRange);
+        return _sourceText.GetText(spanToNextToken).Contains('\n');
     }
 
     

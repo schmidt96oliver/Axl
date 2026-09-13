@@ -206,7 +206,7 @@ public partial class Parser
         wasAmbiguous = ambiguousOperators is not null;
         if (ambiguousOperators is not null)
         {
-            _scanner.ReportHere(new Diagnostic.InvalidOperatorChaining(_source,
+            _scanner.ReportHere(new Diagnostic.InvalidOperatorChaining(_sourceText,
                 ambiguousOperators.DrainToImmutable()));
         }
     }

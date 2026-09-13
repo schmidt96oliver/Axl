@@ -30,7 +30,7 @@ public class FoldingRangeHandler : FoldingRangeHandlerBase
 
     private IEnumerable<FoldingRange> GetFoldingRanges(SyntaxTree tree)
     {
-        foreach (var range in GetCommentFoldingRanges(tree.FileSyntax, tree.Source))
+        foreach (var range in GetCommentFoldingRanges(tree.FileSyntax, tree.SourceText))
             yield return range;
         
         foreach (var node in EnumerateAllChildNodes(tree.FileSyntax))
@@ -38,7 +38,7 @@ public class FoldingRangeHandler : FoldingRangeHandlerBase
             if (GetFnOrModuleFoldingRange(node) is FoldingRange foldingRange)
                 yield return foldingRange;
 
-            foreach (var range in GetCommentFoldingRanges(node, tree.Source))
+            foreach (var range in GetCommentFoldingRanges(node, tree.SourceText))
                 yield return range;
         }
         
@@ -46,7 +46,7 @@ public class FoldingRangeHandler : FoldingRangeHandlerBase
         {
             if (node.Kind is not (SyntaxKind.ModuleDecl or SyntaxKind.BlockExpr))
                 return null;
-            if (node.Span?.IsEmpty != false)
+            if (node.Range?.IsEmpty != false)
                 return null;
 
             // Folding range starts one token after `{` and ends
@@ -71,10 +71,10 @@ public class FoldingRangeHandler : FoldingRangeHandlerBase
                 return null;
             }
             
-            return FoldingRangeFromTo(start.FullSpan.First, end.FullSpan.End);
+            return FoldingRangeFromTo(start.FullRange.Start, end.FullRange.End);
         }
 
-        IEnumerable<FoldingRange> GetCommentFoldingRanges(SyntaxNode node, SourceFileView source)
+        IEnumerable<FoldingRange> GetCommentFoldingRanges(SyntaxNode node, SourceText sourceText)
         {
             for (var i = 0; i < node.Children.Length; i++)
             {
@@ -89,11 +89,11 @@ public class FoldingRangeHandler : FoldingRangeHandlerBase
                     if (node.Children[i] is Token { Kind: TokenKind.Comment })
                         lastComment = i;
 
-                    else if (node.Children[i] is Token { Kind: TokenKind.Whitespace, FullSpan: var span })
+                    else if (node.Children[i] is Token { Kind: TokenKind.Whitespace, FullRange: var range })
                     { 
                         // More than one newline breaks the group.
                         // One newline is expected after each comment.
-                        if (source.GetText(span).Count('\n') > 1)
+                        if (sourceText.GetText(range).Count('\n') > 1)
                             break;
                     }
                     
@@ -103,14 +103,14 @@ public class FoldingRangeHandler : FoldingRangeHandlerBase
 
                 if (lastComment > firstComment)
                 {
-                    var lastPos = node.Children[lastComment].FullSpan.End;
+                    var lastPos = node.Children[lastComment].FullRange.End;
                     
                     // If last position is at EOF, the editor will discard the
                     // folding range. Weirdly enough. So we just crop the range
                     // by one at the end. Looks a little weird, but it does the job.
                     yield return FoldingRangeFromTo(
-                        start: node.Children[firstComment].FullSpan.End,
-                        end: lastPos == source.File.Text.Length
+                        start: node.Children[firstComment].FullRange.End,
+                        end: lastPos == sourceText.Length
                             ? lastPos - 1
                             : lastPos,
                         kind: FoldingRangeKind.Comment);
@@ -120,14 +120,13 @@ public class FoldingRangeHandler : FoldingRangeHandlerBase
 
         FoldingRange FoldingRangeFromTo(int start, int end, FoldingRangeKind? kind = null)
         {
-            var startLinePos = tree.Source.File.GetLinePositionOrEof(start);
-            var endLinePos = tree.Source.File.GetLinePositionOrEof(end);
+            var location = tree.SourceText.GetLocationFromBounds(start, end);
             return new FoldingRange
             {
-                StartLine = startLinePos.Line,
-                StartCharacter = startLinePos.Column,
-                EndLine = endLinePos.Line,
-                EndCharacter = endLinePos.Column,
+                StartLine = location.StartLine,
+                StartCharacter = location.StartColumn,
+                EndLine = location.EndLine,
+                EndCharacter = location.EndColumn,
                 Kind = kind,
             };
         }

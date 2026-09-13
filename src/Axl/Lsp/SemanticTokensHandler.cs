@@ -56,21 +56,21 @@ public class SemanticTokensHandler(ILanguageServerFacade facade) : SemanticToken
     {
         foreach (var token in EnumerateTokens(tree.FileSyntax))
         {
-            if (token.FullSpan.Length == 0)
+            if (token.FullRange.Length == 0)
                 continue;
-            if (token.FullSpan.First >= tree.Source.File.Text.Length)
+            if (token.FullRange.Start >= tree.SourceText.Length)
                 continue;
 
-            var startLinePos = tree.Source.File.GetLinePosition(token.FullSpan.First);
+            var location = tree.SourceText.GetLocation(token.FullRange);
             switch (token.Kind)
             {
                 case TokenKind.Comment:
                 {
                     if (testFile is not null)
-                        TokenizeTaxlComment(token, testFile, startLinePos, builder);
+                        TokenizeTaxlComment(token, testFile, location.StartLine, location.StartColumn, builder);
                     else
                     {
-                        builder.Push(startLinePos.Line, startLinePos.Column, token.FullSpan.Length,
+                        builder.Push(location.StartLine, location.StartColumn, token.FullRange.Length,
                             (SemanticTokenType?)SemanticTokenType.Comment);
                     }
 
@@ -79,14 +79,14 @@ public class SemanticTokensHandler(ILanguageServerFacade facade) : SemanticToken
 
                 case TokenKind.StringStart:
                 case TokenKind.StringEnd:
-                    builder.Push(startLinePos.Line, startLinePos.Column, token.FullSpan.Length,
+                    builder.Push(location.StartLine, location.StartColumn, token.FullRange.Length,
                         (SemanticTokenType?)SemanticTokenType.String);
                     break;
 
                 case TokenKind.StringText:
                 {
                     // Partition the string text into escape and non-escape
-                    var text = tree.Source.File.GetText(token.FullSpan);
+                    var text = tree.SourceText.GetText(token.FullRange);
 
                     var stringTokenStart = 0;
                     for (var i = 0; i < text.Length; i++)
@@ -97,15 +97,15 @@ public class SemanticTokensHandler(ILanguageServerFacade facade) : SemanticToken
                         // Push string text before
                         if (i > stringTokenStart)
                         {
-                            builder.Push(startLinePos.Line,
-                                @char: startLinePos.Column + stringTokenStart,
+                            builder.Push(location.StartLine,
+                                @char: location.StartColumn + stringTokenStart,
                                 length: i - stringTokenStart,
                                 (SemanticTokenType?)SemanticTokenType.String);
                         }
 
                         // Push escape
-                        builder.Push(startLinePos.Line,
-                            @char: startLinePos.Column + i,
+                        builder.Push(location.StartLine,
+                            @char: location.StartColumn + i,
                             length: i + 1 < text.Length ? 2 : 1,
                             (SemanticTokenType?)SemanticTokenType.Regexp);
 
@@ -117,8 +117,8 @@ public class SemanticTokensHandler(ILanguageServerFacade facade) : SemanticToken
                     // Push rest string
                     if (text.Length > stringTokenStart)
                     {
-                        builder.Push(startLinePos.Line,
-                            @char: startLinePos.Column + stringTokenStart,
+                        builder.Push(location.StartLine,
+                            @char: location.StartColumn + stringTokenStart,
                             length: text.Length - stringTokenStart,
                             (SemanticTokenType?)SemanticTokenType.String);
                     }
@@ -152,66 +152,47 @@ public class SemanticTokensHandler(ILanguageServerFacade facade) : SemanticToken
                 case TokenKind.F64Kw:
                 case TokenKind.I32Kw:
                 case TokenKind.I64Kw:
-                    builder.Push(startLinePos.Line, startLinePos.Column, token.FullSpan.Length,
+                    builder.Push(location.StartLine, location.StartColumn, token.FullRange.Length,
                         (SemanticTokenType?)SemanticTokenType.Keyword);
                     break;
             }
         }
     }
 
-    private void TokenizeTaxlComment(Token commentToken, TestFile testFile, LinePosition startLinePos, SemanticTokensBuilder builder)
+    private void TokenizeTaxlComment(Token commentToken, TestFile testFile, int startLine, int startColumn, SemanticTokensBuilder builder)
     {
-        var text = commentToken.GetText();
+        var text = commentToken.Text;
         
         // --- Fragment headlines
         if (text.StartsWith("//---") || text.StartsWith("//==="))
         {
-            builder.Push(startLinePos.Line, startLinePos.Column, length: Math.Min(5, commentToken.FullSpan.Length),
+            builder.Push(startLine, startColumn, length: Math.Min(5, commentToken.FullRange.Length),
                 (SemanticTokenType?)SemanticTokenType.Decorator);
             return;
         }
 
-        // --- Output fragments
-        var isInOutput = testFile.GetFragmentAt(commentToken.GetLocation()).IsOutput;
-        if (isInOutput)
-        {
-            // `//` is now a decorator
-            builder.Push(startLinePos.Line, startLinePos.Column, 2,
-                (SemanticTokenType?)SemanticTokenType.Decorator);
-
-            // Everything thereafter is string
-            if (commentToken.FullSpan.Length > 2)
-            {
-                builder.Push(startLinePos.Line, startLinePos.Column + 2, commentToken.FullSpan.Length - 2,
-                    (SemanticTokenType?)SemanticTokenType.String);
-            }
-
-            return;
-        }
-        
         // Directives and annotations
-        var decoratorLength = GetTaxlCommentDecoratorLength(commentToken.FullSpan, testFile);
+        var decoratorLength = GetTaxlCommentDecoratorLength(commentToken.FullRange, testFile);
         if (decoratorLength <= 0)
         {
             // Entire length is just a comment
-            builder.Push(startLinePos.Line, startLinePos.Column, commentToken.FullSpan.Length,
+            builder.Push(startLine, startColumn, commentToken.FullRange.Length,
                 (SemanticTokenType?)SemanticTokenType.Comment);
         }
         
-        builder.Push(startLinePos.Line, startLinePos.Column, decoratorLength,
+        builder.Push(startLine, startColumn, decoratorLength,
             (SemanticTokenType?)SemanticTokenType.Decorator);
     }
     
-    private int GetTaxlCommentDecoratorLength(SourceSpan commentSpan, TestFile testFile)
+    private int GetTaxlCommentDecoratorLength(SourceRange commentRange, TestFile testFile)
     {
         // Directive?
-        if (testFile.Directive?.Location.Span == commentSpan)
-            return commentSpan.Length;
+        if (testFile.Directive?.Location.Range == commentRange)
+            return commentRange.Length;
 
         // An annotation?
-        var annotation = testFile.Fragments
-            .SelectMany(fragment => fragment.Annotations)
-            .FirstOrDefault(annotation => annotation.FullLocation.Span == commentSpan);
+        var annotation = testFile.Annotations
+            .FirstOrDefault(annotation => annotation.FullLocation.Range == commentRange);
         if (annotation is not null)
             return annotation.PrefixLocation.Length;
         

@@ -267,7 +267,7 @@ public sealed class Binder
     private StringPart BindStringPart(StringPartSyntax syntax)
         => syntax switch
         {
-            StringTextSyntax textSyntax => new StringPart.Text(textSyntax.Text.ProcessedText),
+            StringTextSyntax textSyntax => new StringPart.Text(textSyntax.TextToken.ProcessedText),
             StringInterpolationSyntax interpolationSyntax => BindStringInterpolation(interpolationSyntax),
             _ => throw new UnreachableException($"Unknown {nameof(StringPartSyntax)}")
         };

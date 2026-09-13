@@ -11,8 +11,8 @@ public enum NumberLiteralSuffix
     F64,
 }
 
-public sealed class NumberLiteralToken(SourceSpan span, string body, NumberLiteralSuffix suffix) 
-    : Token(span, TokenKind.NumberLiteral, isMissing: body.Length == 0)
+public sealed class NumberLiteralToken(SourceRange range, string body, NumberLiteralSuffix suffix) 
+    : Token(range, TokenKind.NumberLiteral, isMissing: body.Length == 0)
 {
     /// <summary>
     /// Empty, if <see cref="Token.IsMissing"/> is <c>true</c>.

@@ -2,6 +2,7 @@
                                        ≽(◕ ᴗ ◕)≼
 
 **Next:** 
+* move unit tests to Axl.Tests
 
 **Simplifications**
 * SyntaxTree API
@@ -9,11 +10,11 @@
   * Pass SyntaxTree into SyntaxNode
   * Span not nullable
   * AST: Members, Usings, etc necessary or just walk completely over it?
-* Text API
-  * Rethink SourceFile, SourceFileView. Really necessary?
+  * Tokens coming from Lexer should also have .Text, .Location, etc...
 * Diagnostics
   * Move to DiagnosticBag.Report***
   * Think about Parser deduping
+* Fuzz/AI written Tests for Parser, Lexer. Necessary?
 
 **Moving On**
 * allow any type in string interpolation (that's a lowering problem)
@@ -30,6 +31,13 @@
 * `1_i32 == 1_i64`
 * `if true => 1 else => "A";` diagnostic message
 * `1 + true` squiggle all?
+
+# Taxl: Multiple files
+* SourceText gets Origin (SourceText, Offset); construction by SourceText.Subtext
+* SourceLocation always refers to root source text
+* .GetLocation walks origins
+* SourceText.Contains checks for origin as well
+* Compilation.GetSyntaxTreeAt(location) just checks text.Contains(location)
 
 # First features
 * i32, i64, f32, f64, bool, string

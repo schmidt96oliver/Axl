@@ -1,22 +1,35 @@
 ﻿namespace Axl.Compiler.Text;
 
 /// <summary>
-/// Span of text inside <see cref="SourceFile"/> which
-/// carries the reference to its <see cref="SourceFile"/>.
+/// Range of text inside <see cref="Text.SourceText"/> including
+/// a reference to it.
 /// </summary>
-public readonly record struct SourceLocation(SourceFile File, SourceSpan Span)
+public readonly record struct SourceLocation
 {
-    public LinePosition StartLinePosition => File.GetLinePositionOrEof(Span.First);
+    public int Start => Range.Start;
 
-    public LinePosition EndLinePosition => File.GetLinePositionOrEof(Span.End);
+    public int End => Range.End;
+    
+    public int Length => Range.Length;
+    
+    public int StartLine => SourceText.GetLineIndex(Start);
+    public int StartColumn => Start - SourceText.Lines[StartLine].Start;
 
-    public int First => Span.First;
+    public int EndLine => SourceText.GetLineIndex(End);
+    public int EndColumn => End - SourceText.Lines[StartLine].Start;
 
-    public int End => Span.End;
+
+    public ReadOnlySpan<char> Text => SourceText.GetText(Range);
+    public SourceText SourceText { get; }
+    public SourceRange Range { get; }
     
-    public int Length => Span.Length;
     
-    public ReadOnlySpan<char> GetText()
-        => File.GetText(Span);
-    
+    /// <summary>
+    /// Only constructed through <see cref="SourceText.GetLocation"/>.
+    /// </summary>
+    internal SourceLocation(SourceText sourceText, SourceRange range)
+    {
+        SourceText = sourceText;
+        Range = range;
+    }
 }

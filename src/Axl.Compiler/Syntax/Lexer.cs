@@ -9,20 +9,19 @@ namespace Axl.Compiler.Syntax;
 
 public sealed class Lexer
 {
-    private ref struct Scanner(SourceFileView source, DiagnosticBag diagnosticBag)
+    private ref struct Scanner(SourceText sourceText, DiagnosticBag diagnosticBag)
     {
         public readonly DiagnosticBag DiagnosticBag = diagnosticBag;
-        public readonly SourceFileView Source = source;
+        public readonly SourceText SourceText = sourceText;
         
-        private ReadOnlySpan<char> _text = source.TextSpan;
         private int _start = 0, _next = 0;
         private ImmutableArray<Token>.Builder _tokens = ImmutableArray.CreateBuilder<Token>();
 
         public bool IsAtEnd
-            => _next >= _text.Length;
+            => _next >= SourceText.Length;
 
         public ReadOnlySpan<char> CurrentText
-            => _text[_start.._next];
+            => SourceText[_start.._next];
 
         public int StartIndex => _start;
 
@@ -32,13 +31,13 @@ public sealed class Lexer
         public char Peek(int skip = 0)
         {
             Debug.Assert(skip >= 0);
-            return _next + skip < _text.Length ? _text[_next + skip] : '\0';
+            return _next + skip < SourceText.Length ? SourceText[_next + skip] : '\0';
         }
 
         public char Advance()
         {
-            Debug.Assert(_next < _text.Length);
-            return _text[_next++];
+            Debug.Assert(_next < SourceText.Length);
+            return SourceText[_next++];
         }
 
         public void AdvanceWhile(Func<char, bool> predicate)
@@ -65,7 +64,7 @@ public sealed class Lexer
         {
             Debug.Assert(_next > _start);
             
-            _tokens.Add(Token.MakeSimple(Source.SpanFromTo(_start, _next), kind));
+            _tokens.Add(Token.MakeSimple(SourceRange.FromBounds(_start, _next), kind));
             _start = _next;
         }
 
@@ -78,15 +77,15 @@ public sealed class Lexer
             // report the appropriate diagnostic.
             
             // Combine, if previous token was error as well
-            var span = Source.SpanFromLength(_start, 1);
+            var range = SourceRange.FromLength(_start, 1);
             if (_tokens.Count > 0 && _tokens[^1].Kind is TokenKind.UnknownCharacters)
             {
                 _tokens[^1] = Token.MakeSimple(
-                    SourceSpan.FromTo(_tokens[^1].FullSpan, span),
+                    SourceRange.FromTo(_tokens[^1].FullRange, range),
                     TokenKind.UnknownCharacters);
             }
             else
-                _tokens.Add(Token.MakeSimple(span, TokenKind.UnknownCharacters));
+                _tokens.Add(Token.MakeSimple(range, TokenKind.UnknownCharacters));
 
             _start = _next;
         }
@@ -94,22 +93,22 @@ public sealed class Lexer
         public void AddStringText(string processedText)
         {
             Debug.Assert(_next > _start);
-            _tokens.Add(Token.MakeStringText(Source.SpanFromTo(_start, _next), processedText));
+            _tokens.Add(Token.MakeStringText(SourceRange.FromBounds(_start, _next), processedText));
             _start = _next;
         }
 
         public void AddIdentifier()
         {
             Debug.Assert(_next > _start);
-            _tokens.Add(Token.MakeIdentifier(Source.SpanFromTo(_start, _next),
-                _text[_start.._next].ToString()));
+            _tokens.Add(Token.MakeIdentifier(SourceRange.FromBounds(_start, _next),
+                SourceText[_start.._next].ToString()));
             _start = _next;
         }
 
         public void AddNumberLiteral(string body, NumberLiteralSuffix suffix)
         {
             Debug.Assert(_next > _start);
-            _tokens.Add(Token.MakeNumberLiteral(Source.SpanFromTo(_start, _next), body, suffix));
+            _tokens.Add(Token.MakeNumberLiteral(SourceRange.FromBounds(_start, _next), body, suffix));
             _start = _next;
         }
 
@@ -118,7 +117,7 @@ public sealed class Lexer
             Debug.Assert(IsAtEnd);
             Debug.Assert(_start == _next, "Every token must have been added before Eof.");
 
-            _tokens.Add(Token.MakeSimple(Source.SpanFromTo(_start, _next), TokenKind.Eof));
+            _tokens.Add(Token.MakeSimple(SourceRange.FromBounds(_start, _next), TokenKind.Eof));
         }
 
 
@@ -127,9 +126,9 @@ public sealed class Lexer
     }
     
     
-    public static ImmutableArray<Token> Lex(SourceFileView source, DiagnosticBag diagnosticBag)
+    public static ImmutableArray<Token> Lex(SourceText sourceText, DiagnosticBag diagnosticBag)
     {
-        var scanner = new Scanner(source, diagnosticBag);
+        var scanner = new Scanner(sourceText, diagnosticBag);
         while (!scanner.IsAtEnd)
             LexSingle(ref scanner);
         scanner.AddEof();
@@ -364,7 +363,7 @@ public sealed class Lexer
                 // this will never be read. The body is still valid.
                 
                 scanner.DiagnosticBag.ReportError(new Diagnostic.UnknownNumberSuffix(
-                    scanner.Source.LocationFromTo(scanner.StartIndex + suffixStart, scanner.NextIndex)));
+                    scanner.SourceText.GetLocationFromBounds(scanner.StartIndex + suffixStart, scanner.NextIndex)));
             }
         }
         
@@ -436,7 +435,7 @@ public sealed class Lexer
                         // Eof and newline will end the entire string, so we need to stop here.
                         // '\' will be discarded (not included in ProcessedText).
                         scanner.DiagnosticBag.ReportError(new Diagnostic.UnknownEscapeSequence(
-                            scanner.Source.LocationFromLength(scanner.NextIndex - 1, 1)));
+                            scanner.SourceText.GetLocationFromLength(scanner.NextIndex - 1, 1)));
                         goto case '\0';
                     }
 
@@ -469,7 +468,7 @@ public sealed class Lexer
                             // Report error. The escaped sequence will not be part of the
                             // processed text.
                             scanner.DiagnosticBag.ReportError(new Diagnostic.UnknownEscapeSequence(
-                                scanner.Source.LocationFromLength(scanner.NextIndex - 2, 2)));
+                                scanner.SourceText.GetLocationFromLength(scanner.NextIndex - 2, 2)));
                             break;
                     }
 

@@ -6,7 +6,7 @@ using Axl.Compiler.Text;
 
 namespace Axl.Tests;
 
-public class Dump(SourceFileView source)
+public class Dump(SourceText sourceText)
 {
     private readonly StringBuilder _builder = new();
     
@@ -17,11 +17,11 @@ public class Dump(SourceFileView source)
         
         foreach (var diag in diagnostics)
         {
-            var spans = string.Join(", ", diag.Locations.Select(location => location.Span));
+            var spans = string.Join(", ", diag.Locations.Select(location => location.Range));
             _builder.AppendLine(
                 $"{diag.DefaultSeverity.ToString().ToUpper()} {diag.Id}@{spans}: {diag.Message.ToLiteralString()}");
             foreach (var related in diag.Related)
-                _builder.AppendLine($"   related@{related.Location.Span}: {related.Label}");
+                _builder.AppendLine($"   related@{related.Location.Range}: {related.Label}");
         }
 
         return this;
@@ -44,7 +44,7 @@ public class Dump(SourceFileView source)
             }
             
             _builder.Append($"- {token.Kind}: \"");
-            AddLiteralString(source.GetText(token.FullSpan));
+            AddLiteralString(sourceText.GetText(token.FullRange));
             _builder.Append('"');
 
             switch (token)
@@ -88,7 +88,7 @@ public class Dump(SourceFileView source)
                 _builder.Append(prefix);
                 _builder.AppendLine(token.IsMissing
                     ? $"{GetMissingDisplayText(token)}"
-                    : $"\'{source.GetText(token.FullSpan)}\'");
+                    : $"\'{sourceText.GetText(token.FullRange)}\'");
                 break;
 
                 string GetMissingDisplayText(Token tkn)
@@ -112,7 +112,7 @@ public class Dump(SourceFileView source)
                     foreach (var child in children.OfType<Token>())
                     {
                         _builder.Append(" \'");
-                        AddLiteralString(source.GetText(child.FullSpan));
+                        AddLiteralString(sourceText.GetText(child.FullRange));
                         _builder.Append("\'");
                     }
 
@@ -168,7 +168,7 @@ public class Dump(SourceFileView source)
                 return;
 
             case Token token:
-                AddLiteralString(source.GetText(token.FullSpan));
+                AddLiteralString(sourceText.GetText(token.FullRange));
                 _builder.Append(' ');
                 break;
 
@@ -209,37 +209,29 @@ public class Dump(SourceFileView source)
     }
 
 
-    public Dump Add(TestFile testFile, bool onlyStructure)
+    public Dump Add(TestFile testFile)
     {
-        _builder.AppendLine($"--> Directive: {testFile.Directive?.Kind.ToString() ?? "???"}");
+        _builder.AppendLine($"Directive: {testFile.Directive?.Kind.ToString() ?? "???"}");
 
-        foreach (var fragment in testFile.Fragments)
+        foreach (var annotation in testFile.Annotations)
         {
-            var fragmentText = fragment.IsOutput ? "Output" : "Code";
-            _builder.AppendLine($"--- {fragmentText} \"{fragment.Name}\" ---");
-            foreach (var annotation in fragment.Annotations)
+            _builder.Append("//~ ");
+            switch (annotation)
             {
-                _builder.Append("--> //~ ");
-                switch (annotation)
-                {
-                    case DiagnosticAnnotation diagnostic:
-                        _builder.AppendLine($"{diagnostic.Kind}@l.{diagnostic.LineNumber}: \"{diagnostic.Id}\"");
-                        break;
+                case DiagnosticAnnotation diagnostic:
+                    _builder.AppendLine($"{diagnostic.Kind.ToString().ToLower()}@l.{diagnostic.LineNumber}: \"{diagnostic.Id}\"");
+                    break;
 
-                    case TypeAnnotation type:
-                        _builder.AppendLine($"type \"{type.TypeName}\" on \"{type.ReferencedLocation.GetText()}\"");
-                        break;
-                }
+                case TypeAnnotation type:
+                    _builder.AppendLine($"type \"{type.TypeName}\" on \"{type.ReferencedLocation.Text}\"");
+                    break;
             }
-
-            if (!onlyStructure)
-                _builder.AppendLine(fragment.Source.TextSpan.ToString());
         }
 
         return this;
     }
-    
-    
+
+
     private void AddLiteralString(ReadOnlySpan<char> text)
     {
         foreach (var c in text)

@@ -28,13 +28,13 @@ public sealed class Analysis
     public SyntaxNode SyntaxNodeAt(SourceLocation location)
     {
         SyntaxNode currentNode = _compilation.SyntaxTree.FileSyntax;
-        Debug.Assert(currentNode.Span?.Contains(location.Span) == true);
+        Debug.Assert(currentNode.Range?.Contains(location.Range) == true);
 
         while (true)
         {
             var nextNode = currentNode
                 .SyntaxNodes()
-                .SingleOrDefault(child => child.Span?.Contains(location.Span) == true);
+                .SingleOrDefault(child => child.Range?.Contains(location.Range) == true);
 
             if (nextNode is null)
                 return currentNode;
@@ -46,15 +46,15 @@ public sealed class Analysis
     
     public TypeSymbol? TypeOf(ExprSyntax syntax)
     {
-        Debug.Assert(syntax.Span is not null);
+        Debug.Assert(syntax.Range is not null);
         
         // Descend into bound tree to find expr syntax
         BoundStmt current = _compilation.BoundFile.Body;
-        Debug.Assert(current.Syntax.Span?.Contains(syntax.Span.Value) == true);
+        Debug.Assert(current.Syntax.Range?.Contains(syntax.Range.Value) == true);
         
         while (true)
         {
-            var next = current.Children.FirstOrDefault(child => child.Syntax.Span?.Contains(syntax.Span.Value) == true);
+            var next = current.Children.FirstOrDefault(child => child.Syntax.Range?.Contains(syntax.Range.Value) == true);
             if (next is null) return null;
             if (next.Syntax == syntax)
             {

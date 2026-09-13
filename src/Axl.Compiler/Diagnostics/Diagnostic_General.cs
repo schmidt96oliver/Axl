@@ -9,7 +9,7 @@ public abstract partial record Diagnostic
     public sealed record UnsupportedFeature(SyntaxElement Element, string? CustomMessage = null) : Error
     {
         public override ImmutableArray<SourceLocation> Locations
-            => [Element.GetLocation()];
+            => [Element.Location];
 
         public override string Message
             => CustomMessage ?? $"{GetElementText(Element)} is not (yet) supported.";
