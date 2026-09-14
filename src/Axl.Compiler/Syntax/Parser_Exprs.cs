@@ -23,15 +23,8 @@ public partial class Parser
     private MarkClose EnsureParenthesizedExpr(Anchor anchor, SyntaxKind kind)
     {
         var parenExpr = _scanner.Open();
-        
-        if (!_scanner.IsAt(TokenKind.OpenParen))
-        {
-            EnsureToken(TokenKind.OpenParen);
-            EnsureToken(TokenKind.OpenParen);
-            return _scanner.Close(parenExpr, kind);
-        }
-        
-        _scanner.EatKnown(TokenKind.OpenParen);
+
+        EnsureToken(TokenKind.OpenParen);
 
         var insideAnchor = anchor | TokenKind.CloseParen;
         var expr = EnsureExpr(insideAnchor);
@@ -63,8 +56,8 @@ public partial class Parser
         EnsureToken(TokenKind.CloseParen);
         return _scanner.Close(parenExpr, kind);
     }
-    
-    
+
+
     private MarkClose ContinueExpr(MarkClose lhs, LeftOperator? left, Anchor anchor)
     {
         // --- Pratt loop
