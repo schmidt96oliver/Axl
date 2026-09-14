@@ -134,15 +134,13 @@ public class SemanticTokensHandler(ILanguageServerFacade facade) : SemanticToken
                 case TokenKind.FalseKw:
                 case TokenKind.FnKw:
                 case TokenKind.IfKw:
-                case TokenKind.LoopKw:
+                case TokenKind.WhileKw:
                 case TokenKind.ModuleKw:
                 case TokenKind.NativeKw:
                 case TokenKind.NeverKw:
-                case TokenKind.NoneKw:
+                case TokenKind.UnitKw:
                 case TokenKind.NotKw:
                 case TokenKind.OrKw:
-                case TokenKind.PrivateKw:
-                case TokenKind.PublicKw:
                 case TokenKind.ReturnKw:
                 case TokenKind.StringKw:
                 case TokenKind.TrueKw:

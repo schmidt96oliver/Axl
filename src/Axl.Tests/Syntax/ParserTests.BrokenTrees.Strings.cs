@@ -23,15 +23,16 @@ public partial class ParserTests
                     · 'fn'
                     · IdName 'a'
                     · ParamList '(' ')'
-                    · BlockExpr
-                    · · '{'
-                    · · ExprStmt
-                    · · · StringExpr
-                    · · · · '"'
-                    · · · · StringText 'Hello'
-                    · · · · ??'"'
-                    · · · ??';'
-                    · · '}'
+                    · FnBody
+                    · · BlockExpr
+                    · · · '{'
+                    · · · ExprStmt
+                    · · · · StringExpr
+                    · · · · · '"'
+                    · · · · · StringText 'Hello'
+                    · · · · · ??'"'
+                    · · · · ??';'
+                    · · · '}'
                     """);
 
             [Fact]
@@ -49,18 +50,19 @@ public partial class ParserTests
                     · 'fn'
                     · IdName 'a'
                     · ParamList '(' ')'
-                    · BlockExpr
-                    · · '{'
-                    · · ExprStmt
-                    · · · StringExpr
-                    · · · · '"'
-                    · · · · StringText 'Hello '
-                    · · · · StringInterpolation
-                    · · · · · '{'
-                    · · · · · ??'}'
-                    · · · · ??'"'
-                    · · · ??';'
-                    · · '}'
+                    · FnBody
+                    · · BlockExpr
+                    · · · '{'
+                    · · · ExprStmt
+                    · · · · StringExpr
+                    · · · · · '"'
+                    · · · · · StringText 'Hello '
+                    · · · · · StringInterpolation
+                    · · · · · · '{'
+                    · · · · · · ??'}'
+                    · · · · · ??'"'
+                    · · · · ??';'
+                    · · · '}'
                     """);
 
             [Fact]
@@ -78,19 +80,20 @@ public partial class ParserTests
                     · 'fn'
                     · IdName 'a'
                     · ParamList '(' ')'
-                    · BlockExpr
-                    · · '{'
-                    · · ExprStmt
-                    · · · StringExpr
-                    · · · · '"'
-                    · · · · StringText 'Hello '
-                    · · · · StringInterpolation
-                    · · · · · '{'
-                    · · · · · NumberLiteral '1'
-                    · · · · · ??'}'
-                    · · · · ??'"'
-                    · · · ??';'
-                    · · '}'
+                    · FnBody
+                    · · BlockExpr
+                    · · · '{'
+                    · · · ExprStmt
+                    · · · · StringExpr
+                    · · · · · '"'
+                    · · · · · StringText 'Hello '
+                    · · · · · StringInterpolation
+                    · · · · · · '{'
+                    · · · · · · NumberLiteral '1'
+                    · · · · · · ??'}'
+                    · · · · · ??'"'
+                    · · · · ??';'
+                    · · · '}'
                     """);
 
             [Fact]
@@ -108,23 +111,24 @@ public partial class ParserTests
                     · 'fn'
                     · IdName 'a'
                     · ParamList '(' ')'
-                    · BlockExpr
-                    · · '{'
-                    · · ExprStmt
-                    · · · StringExpr
-                    · · · · '"'
-                    · · · · StringText 'Hello '
-                    · · · · StringInterpolation
-                    · · · · · '{'
-                    · · · · · BinaryExpr
-                    · · · · · · NumberLiteral '1'
-                    · · · · · · '+'
-                    · · · · · · IdName
-                    · · · · · · · ??ID
-                    · · · · · ??'}'
-                    · · · · ??'"'
-                    · · · ??';'
-                    · · '}'
+                    · FnBody
+                    · · BlockExpr
+                    · · · '{'
+                    · · · ExprStmt
+                    · · · · StringExpr
+                    · · · · · '"'
+                    · · · · · StringText 'Hello '
+                    · · · · · StringInterpolation
+                    · · · · · · '{'
+                    · · · · · · BinaryExpr
+                    · · · · · · · NumberLiteral '1'
+                    · · · · · · · '+'
+                    · · · · · · · IdName
+                    · · · · · · · · ??ID
+                    · · · · · · ??'}'
+                    · · · · · ??'"'
+                    · · · · ??';'
+                    · · · '}'
                     """);
 
             [Fact]
@@ -142,22 +146,23 @@ public partial class ParserTests
                     · 'fn'
                     · IdName 'a'
                     · ParamList '(' ')'
-                    · BlockExpr
-                    · · '{'
-                    · · ExprStmt
-                    · · · StringExpr
-                    · · · · '"'
-                    · · · · StringText 'Hello '
-                    · · · · StringInterpolation
-                    · · · · · '{'
-                    · · · · · BinaryExpr
-                    · · · · · · NumberLiteral '1'
-                    · · · · · · '+'
-                    · · · · · · NumberLiteral '6'
-                    · · · · · ??'}'
-                    · · · · ??'"'
-                    · · · ??';'
-                    · · '}'
+                    · FnBody
+                    · · BlockExpr
+                    · · · '{'
+                    · · · ExprStmt
+                    · · · · StringExpr
+                    · · · · · '"'
+                    · · · · · StringText 'Hello '
+                    · · · · · StringInterpolation
+                    · · · · · · '{'
+                    · · · · · · BinaryExpr
+                    · · · · · · · NumberLiteral '1'
+                    · · · · · · · '+'
+                    · · · · · · · NumberLiteral '6'
+                    · · · · · · ??'}'
+                    · · · · · ??'"'
+                    · · · · ??';'
+                    · · · '}'
                     """);
 
             [Fact]
@@ -175,22 +180,23 @@ public partial class ParserTests
                     · 'fn'
                     · IdName 'a'
                     · ParamList '(' ')'
-                    · BlockExpr
-                    · · '{'
-                    · · ExprStmt
-                    · · · StringExpr
-                    · · · · '"'
-                    · · · · StringText 'Hello '
-                    · · · · StringInterpolation
-                    · · · · · '{'
-                    · · · · · BinaryExpr
-                    · · · · · · NumberLiteral '1'
-                    · · · · · · '+'
-                    · · · · · · NumberLiteral '6'
-                    · · · · · '}'
-                    · · · · ??'"'
-                    · · · ??';'
-                    · · '}'
+                    · FnBody
+                    · · BlockExpr
+                    · · · '{'
+                    · · · ExprStmt
+                    · · · · StringExpr
+                    · · · · · '"'
+                    · · · · · StringText 'Hello '
+                    · · · · · StringInterpolation
+                    · · · · · · '{'
+                    · · · · · · BinaryExpr
+                    · · · · · · · NumberLiteral '1'
+                    · · · · · · · '+'
+                    · · · · · · · NumberLiteral '6'
+                    · · · · · · '}'
+                    · · · · · ??'"'
+                    · · · · ??';'
+                    · · · '}'
                     """);
 
             [Fact]
@@ -209,21 +215,22 @@ public partial class ParserTests
                     · 'fn'
                     · IdName 'a'
                     · ParamList '(' ')'
-                    · BlockExpr
-                    · · '{'
-                    · · ExprStmt
-                    · · · StringExpr
-                    · · · · '"'
-                    · · · · StringText 'Hello'
-                    · · · · ??'"'
-                    · · · ??';'
-                    · · ExprStmt
-                    · · · BinaryExpr
-                    · · · · NumberLiteral '1'
-                    · · · · '+'
-                    · · · · NumberLiteral '2'
-                    · · · ';'
-                    · · '}'
+                    · FnBody
+                    · · BlockExpr
+                    · · · '{'
+                    · · · ExprStmt
+                    · · · · StringExpr
+                    · · · · · '"'
+                    · · · · · StringText 'Hello'
+                    · · · · · ??'"'
+                    · · · · ??';'
+                    · · · ExprStmt
+                    · · · · BinaryExpr
+                    · · · · · NumberLiteral '1'
+                    · · · · · '+'
+                    · · · · · NumberLiteral '2'
+                    · · · · ';'
+                    · · · '}'
                     """);
 
             [Fact]
@@ -242,25 +249,26 @@ public partial class ParserTests
                     · 'fn'
                     · IdName 'a'
                     · ParamList '(' ')'
-                    · BlockExpr
-                    · · '{'
-                    · · ExprStmt
-                    · · · StringExpr
-                    · · · · '"'
-                    · · · · StringText 'Hello '
-                    · · · · StringInterpolation
-                    · · · · · '{'
+                    · FnBody
+                    · · BlockExpr
+                    · · · '{'
+                    · · · ExprStmt
+                    · · · · StringExpr
+                    · · · · · '"'
+                    · · · · · StringText 'Hello '
+                    · · · · · StringInterpolation
+                    · · · · · · '{'
+                    · · · · · · NumberLiteral '1'
+                    · · · · · · ??'}'
+                    · · · · · ??'"'
+                    · · · · ??';'
+                    · · · ExprStmt
+                    · · · · BinaryExpr
                     · · · · · NumberLiteral '1'
-                    · · · · · ??'}'
-                    · · · · ??'"'
-                    · · · ??';'
-                    · · ExprStmt
-                    · · · BinaryExpr
-                    · · · · NumberLiteral '1'
-                    · · · · '+'
-                    · · · · NumberLiteral '2'
-                    · · · ';'
-                    · · '}'
+                    · · · · · '+'
+                    · · · · · NumberLiteral '2'
+                    · · · · ';'
+                    · · · '}'
                     """);
 
             [Fact]
@@ -279,29 +287,30 @@ public partial class ParserTests
                     · 'fn'
                     · IdName 'a'
                     · ParamList '(' ')'
-                    · BlockExpr
-                    · · '{'
-                    · · ExprStmt
-                    · · · StringExpr
-                    · · · · '"'
-                    · · · · StringText 'Hello '
-                    · · · · StringInterpolation
-                    · · · · · '{'
-                    · · · · · BinaryExpr
-                    · · · · · · NumberLiteral '1'
-                    · · · · · · '+'
-                    · · · · · · NumberLiteral '6'
-                    · · · · · '}'
-                    · · · · StringText ' World'
-                    · · · · ??'"'
-                    · · · ??';'
-                    · · ExprStmt
-                    · · · BinaryExpr
-                    · · · · NumberLiteral '1'
-                    · · · · '+'
-                    · · · · NumberLiteral '2'
-                    · · · ';'
-                    · · '}'
+                    · FnBody
+                    · · BlockExpr
+                    · · · '{'
+                    · · · ExprStmt
+                    · · · · StringExpr
+                    · · · · · '"'
+                    · · · · · StringText 'Hello '
+                    · · · · · StringInterpolation
+                    · · · · · · '{'
+                    · · · · · · BinaryExpr
+                    · · · · · · · NumberLiteral '1'
+                    · · · · · · · '+'
+                    · · · · · · · NumberLiteral '6'
+                    · · · · · · '}'
+                    · · · · · StringText ' World'
+                    · · · · · ??'"'
+                    · · · · ??';'
+                    · · · ExprStmt
+                    · · · · BinaryExpr
+                    · · · · · NumberLiteral '1'
+                    · · · · · '+'
+                    · · · · · NumberLiteral '2'
+                    · · · · ';'
+                    · · · '}'
                     """);
 
 

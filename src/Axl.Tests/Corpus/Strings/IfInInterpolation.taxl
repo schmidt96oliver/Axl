@@ -3,8 +3,8 @@
 using Standard;
 
 var predicate: bool = true;
-PrintLine("It is { if predicate => "A"
-                   else => "B" }");
+PrintLine("It is { if (predicate) "A"
+                   else "B" }");
                    
 //=== stdout
 // It is A

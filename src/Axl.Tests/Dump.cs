@@ -73,7 +73,7 @@ public class Dump(SourceText sourceText)
             switch (token)
             {
                 case NumberLiteralToken numberLiteral:
-                    _builder.Append($" body=\"{numberLiteral.Body}\" suffix={numberLiteral.Suffix}");
+                    _builder.Append($" block=\"{numberLiteral.Body}\" suffix={numberLiteral.Suffix}");
                     break;
                 case StringTextToken stringText:
                     _builder.Append($" processed=\"{stringText.ProcessedText}\"");

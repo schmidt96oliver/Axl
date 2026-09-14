@@ -2,8 +2,8 @@
 
 namespace Axl.Compiler.Syntax.Tree;
 
-public sealed class AssignExprSyntax(ImmutableArray<SyntaxElement> children)
-    : ExprSyntax(SyntaxKind.AssignExpr, children)
+public sealed class AssignStmtSyntax(ImmutableArray<SyntaxElement> children)
+    : StmtSyntax(SyntaxKind.AssignStmt, children)
 {
     public ExprSyntax Target => Children.FirstOfType<ExprSyntax>();
     public Token Operator => Children.FirstNonTriviaToken();

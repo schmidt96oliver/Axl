@@ -17,11 +17,13 @@ public enum SyntaxKind
     
     // Top-Level
     File,
-    
-    // Directives, Statements
-    ExprStmt,
     UsingDirective,
+    
+    // Statements
+    ExprStmt,
     VarDecl,
+    WhileStmt,
+    AssignStmt,
     
     // Declarations
     ModuleDecl,
@@ -43,26 +45,19 @@ public enum SyntaxKind
     StringInterpolation,
     StringText,
     
-    // Operand Expressions
+    // Expressions
     GroupExpr,
     BinaryExpr,
     UnaryExpr,
     CallExpr,
     GetMemberExpr,
     
-    // Tail Expressions
     BreakExpr,
     ContinueExpr,
     ReturnExpr,
-    AssignExpr,
     
-    // Bodied Expressions
     BlockExpr,
     IfExpr,
-    LoopExpr,
-    
-    // Arm
-    Arm,
     
     // Clauses
     Arg,
@@ -73,4 +68,6 @@ public enum SyntaxKind
     ElseClause,
     TypeAnnotationClause,
     InitializerClause,
+    FnBody,
+    ConditionClause
 }

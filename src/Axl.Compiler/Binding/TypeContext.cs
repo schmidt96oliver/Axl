@@ -15,7 +15,7 @@ public sealed class TypeContext
     public TypeSymbol Bool { get; } = new("bool");
     public TypeSymbol String { get; } = new("string");
 
-    public TypeSymbol None { get; } = new("none");
+    public TypeSymbol Unit { get; } = new("unit");
     public TypeSymbol Never { get; } = new("never");
     public TypeSymbol Error { get; } = new("???");
 

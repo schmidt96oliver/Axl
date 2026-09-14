@@ -4,14 +4,13 @@ using Axl.Compiler.Syntax;
 
 namespace Axl.Compiler.Binding.BoundTree;
 
-public sealed class BoundIf(BoundExpr condition, BoundExpr then, BoundExpr? @else, TypeSymbol type, SyntaxNode syntax)
+public sealed class BoundWhile(BoundExpr condition, BoundExpr body, TypeSymbol type, SyntaxNode syntax)
     : BoundExpr(type, syntax)
 {
     public BoundExpr Condition { get; } = condition;
-    public BoundExpr Then { get; } = then;
-    public BoundExpr? Else { get; } = @else;
+    public BoundExpr Body { get; } = body;
     
     protected override ImmutableArray<BoundStmt> GetChildren() 
-        => Else is not null ? [Condition, Then, Else] : [Condition, Then];
+        => [Condition, Body];
     
 }

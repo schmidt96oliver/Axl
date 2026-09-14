@@ -11,21 +11,13 @@ public partial class Parser
     {
         Debug.Assert(_scanner.IsAt(FirstSet.Member));
 
-        var decl = _scanner.Open();
-        
-        // --- Modifier List
-        while (_scanner.IsAt(FirstSet.Modifier))
-            _scanner.Eat();
-        
         // --- Dispatch
         if (_scanner.IsAt(TokenKind.FnKw))
-            return EatFnDeclAfterModifiers(decl, anchor);
+            return EatFnDecl(anchor);
         if (_scanner.IsAt(TokenKind.NativeKw))
-            return EatNativeFnDeclAfterModifiers(decl, anchor);
-        
-        // --- Nothing valid
-        _scanner.ReportMissingTokenHere(ExpectedSyntax.Member);
-        return _scanner.Close(decl, SyntaxKind.Garbage);
+            return EatNativeFnDecl(anchor);
+
+        throw new UnreachableException($"{nameof(FirstSet.Member)} too large");
     }
 
     private MarkClose EatModuleDecl()
@@ -41,29 +33,66 @@ public partial class Parser
         return _scanner.Close(moduleDecl, SyntaxKind.ModuleDecl);
     }
 
-    private MarkClose EatFnDeclAfterModifiers(MarkOpen decl, Anchor anchor)
+    private MarkClose EatFnDecl(Anchor anchor)
     {
         Debug.Assert(_scanner.IsAt(TokenKind.FnKw));
 
+        var fnDecl = _scanner.Open();
+        
         _scanner.EatKnown(TokenKind.FnKw);
         EnsureIdName();
 
-        // Inside ParamList, we can continue from "{" or "->"
-        EnsureParamList(anchor | FirstSet.Body | TokenKind.RightArrow | TokenKind.Semicolon);
+        // Add "=" as well, because there is an error production that turns it into
+        // "=>" and it has no place being inside a parameter list anyway.
+        EnsureParamList(anchor | TokenKind.OpenBrace | TokenKind.RightDoubleArrow
+                        | TokenKind.RightArrow | TokenKind.Semicolon | TokenKind.Equal);
 
         if (_scanner.IsAt(TokenKind.RightArrow))
             EatReturnTypeAnnotation();
 
-        EnsureBody(anchor);
-        EnsureSemicolonIfRequired(ownsBody: true);
-
-        return _scanner.Close(decl, SyntaxKind.FnDecl);
+        EnsureFnBody(anchor);
+        
+        return _scanner.Close(fnDecl, SyntaxKind.FnDecl);
     }
 
-    private MarkClose EatNativeFnDeclAfterModifiers(MarkOpen decl, Anchor anchor)
+    private MarkClose EnsureFnBody(Anchor anchor)
+    {
+        var fnBody = _scanner.Open();
+        
+        if (_scanner.IsAt(TokenKind.RightDoubleArrow))
+        {
+            _scanner.EatKnown(TokenKind.RightDoubleArrow);
+            EnsureExpr(anchor);
+            EnsureToken(TokenKind.Semicolon);
+        }
+        else if (_scanner.IsAt(TokenKind.Equal))
+        {
+            // This is an error production. The user probably meant
+            // to write "=>" instead of "=".
+            _scanner.EatIntoGarbageAndReport(TokenKind.RightDoubleArrow);
+            _scanner.MakeAndReport(TokenKind.RightDoubleArrow);
+            
+            EnsureExpr(anchor);
+            EnsureToken(TokenKind.Semicolon);
+        }
+        else
+        {
+            EnsureBlock(anchor, ExpectedSyntax.FnBody);
+
+            // Allow a semicolon if it's there for resilience.
+            if (_scanner.IsAt(TokenKind.Semicolon))
+                _scanner.Eat();
+        }
+
+        return _scanner.Close(fnBody, SyntaxKind.FnBody);
+    }
+
+    private MarkClose EatNativeFnDecl(Anchor anchor)
     {
         Debug.Assert(_scanner.IsAt(TokenKind.NativeKw));
 
+        var fnDecl = _scanner.Open();
+        
         EatNativeClause(anchor | TokenKind.FnKw | TokenKind.Semicolon);
 
         if (!_scanner.IsAt(TokenKind.FnKw))
@@ -76,7 +105,7 @@ public partial class Parser
             if (_scanner.IsAt(TokenKind.Semicolon))
                 _scanner.EatKnown(TokenKind.Semicolon);
 
-            return _scanner.Close(decl, SyntaxKind.Garbage);
+            return _scanner.Close(fnDecl, SyntaxKind.Garbage);
         }
 
         _scanner.EatKnown(TokenKind.FnKw);
@@ -89,7 +118,7 @@ public partial class Parser
 
         EnsureToken(TokenKind.Semicolon);
 
-        return _scanner.Close(decl, SyntaxKind.NativeFnDecl);
+        return _scanner.Close(fnDecl, SyntaxKind.NativeFnDecl);
     }
 
     private MarkClose EatNativeClause(Anchor anchor)

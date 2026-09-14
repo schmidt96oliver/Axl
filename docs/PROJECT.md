@@ -27,6 +27,16 @@ Just like the Axolotl, Axl's animal.
 
 # Decisions
 
+14.09 *Spike*: Simpler syntax rework.
+  * Rename `none` to `unit` ('none' is a name collision with 'never')
+  * Remove `public` and `private` (will not be part of the language for a while)
+  * Remove arm expressions. 
+  * Blocks: No arm; always type unit.
+  * If: condition needs parentheses; missing else has type unit
+  * Loops: a statement. Break has no value.
+  * Fn: Either block or "=> Expr" as a short-hand
+  * Usings only allowed on file-level
+  * Assign is stmt
 
 # Adventures to go on
 

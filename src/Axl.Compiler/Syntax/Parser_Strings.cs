@@ -92,7 +92,7 @@ public partial class Parser
         //    {
         //       "Hello {
         //    }
-        // We want the last `}` to close the function body instead of this
+        // We want the last `}` to close the function block instead of this
         // interpolation.
 
         // Closing brace can only be a valid interpolation close,

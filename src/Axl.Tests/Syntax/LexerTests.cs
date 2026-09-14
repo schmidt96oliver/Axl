@@ -80,17 +80,15 @@ public sealed class LexerTests
 
     [Fact]
     public void Keywords()
-        => InlineSnapshot.Validate(NoWhitespace("fn var module public private native return if else loop break continue and or not true false i32 f32 i64 f64 bool string char none using"), """
+        => InlineSnapshot.Validate(NoWhitespace("fn var module native return if else while break continue and or not true false i32 f32 i64 f64 bool string char unit using"), """
             - FnKw: "fn"
             - VarKw: "var"
             - ModuleKw: "module"
-            - PublicKw: "public"
-            - PrivateKw: "private"
             - NativeKw: "native"
             - ReturnKw: "return"
             - IfKw: "if"
             - ElseKw: "else"
-            - LoopKw: "loop"
+            - WhileKw: "while"
             - BreakKw: "break"
             - ContinueKw: "continue"
             - AndKw: "and"
@@ -105,18 +103,18 @@ public sealed class LexerTests
             - BoolKw: "bool"
             - StringKw: "string"
             - Identifier: "char"
-            - NoneKw: "none"
+            - UnitKw: "unit"
             - UsingKw: "using"
             - Eof
             """);
 
     [Fact]
     public void IdentifierVsKeyword()
-        => InlineSnapshot.Validate(NoWhitespace("fn vara aif _private else_ false0 False I32"), """
+        => InlineSnapshot.Validate(NoWhitespace("fn vara aif _while else_ false0 False I32"), """
             - FnKw: "fn"
             - Identifier: "vara"
             - Identifier: "aif"
-            - Identifier: "_private"
+            - Identifier: "_while"
             - Identifier: "else_"
             - Identifier: "false0"
             - Identifier: "False"
@@ -174,35 +172,35 @@ public sealed class LexerTests
     [Fact]
     public void Numbers_Integral()
         => InlineSnapshot.Validate(NoWhitespace("1234 1_2_3_4 12_ 12_i32 1i64 1_2_f32 1f64"), """
-            - NumberLiteral: "1234" body="1234" suffix=None
-            - NumberLiteral: "1_2_3_4" body="1234" suffix=None
-            - NumberLiteral: "12_" body="12" suffix=None
-            - NumberLiteral: "12_i32" body="12" suffix=I32
-            - NumberLiteral: "1i64" body="1" suffix=I64
-            - NumberLiteral: "1_2_f32" body="12" suffix=F32
-            - NumberLiteral: "1f64" body="1" suffix=F64
+            - NumberLiteral: "1234" block="1234" suffix=None
+            - NumberLiteral: "1_2_3_4" block="1234" suffix=None
+            - NumberLiteral: "12_" block="12" suffix=None
+            - NumberLiteral: "12_i32" block="12" suffix=I32
+            - NumberLiteral: "1i64" block="1" suffix=I64
+            - NumberLiteral: "1_2_f32" block="12" suffix=F32
+            - NumberLiteral: "1f64" block="1" suffix=F64
             - Eof
             """);
 
     [Fact]
     public void Numbers_WithDot()
         => InlineSnapshot.Validate(NoWhitespace("11.11 .111 1_1_.1_123 1.1_f32 .1_f64 1.1i32 .1111i64"), """
-            - NumberLiteral: "11.11" body="11.11" suffix=None
-            - NumberLiteral: ".111" body=".111" suffix=None
-            - NumberLiteral: "1_1_.1_123" body="11.1123" suffix=None
-            - NumberLiteral: "1.1_f32" body="1.1" suffix=F32
-            - NumberLiteral: ".1_f64" body=".1" suffix=F64
-            - NumberLiteral: "1.1i32" body="1.1" suffix=I32
-            - NumberLiteral: ".1111i64" body=".1111" suffix=I64
+            - NumberLiteral: "11.11" block="11.11" suffix=None
+            - NumberLiteral: ".111" block=".111" suffix=None
+            - NumberLiteral: "1_1_.1_123" block="11.1123" suffix=None
+            - NumberLiteral: "1.1_f32" block="1.1" suffix=F32
+            - NumberLiteral: ".1_f64" block=".1" suffix=F64
+            - NumberLiteral: "1.1i32" block="1.1" suffix=I32
+            - NumberLiteral: ".1111i64" block=".1111" suffix=I64
             - Eof
             """);
 
     [Fact]
     public void Numbers_BinaryForm()
         => InlineSnapshot.Validate(NoWhitespace("0b1100 0b1_0_1 0b01_"), """
-            - NumberLiteral: "0b1100" body="0b1100" suffix=None
-            - NumberLiteral: "0b1_0_1" body="0b101" suffix=None
-            - NumberLiteral: "0b01_" body="0b01" suffix=None
+            - NumberLiteral: "0b1100" block="0b1100" suffix=None
+            - NumberLiteral: "0b1_0_1" block="0b101" suffix=None
+            - NumberLiteral: "0b01_" block="0b01" suffix=None
             - Eof
             """);
     
@@ -212,23 +210,23 @@ public sealed class LexerTests
             ERROR UnknownNumberSuffix@[18, 19): Only 'i32', 'i64', 'f32' or 'f64' are valid number suffixes. Got 'b'.
             ERROR UnknownNumberSuffix@[21, 24): Only 'i32', 'i64', 'f32' or 'f64' are valid number suffixes. Got 'b_1'.
 
-            - NumberLiteral: "0b1100" body="0b1100" suffix=None
+            - NumberLiteral: "0b1100" block="0b1100" suffix=None
             - F32Kw: "f32"
-            - NumberLiteral: "0b01" body="0b01" suffix=None
-            - NumberLiteral: "23" body="23" suffix=None
-            - NumberLiteral: "0b" body="0" suffix=None
-            - NumberLiteral: "0b_1" body="0" suffix=None
+            - NumberLiteral: "0b01" block="0b01" suffix=None
+            - NumberLiteral: "23" block="23" suffix=None
+            - NumberLiteral: "0b" block="0" suffix=None
+            - NumberLiteral: "0b_1" block="0" suffix=None
             - Eof
             """);
 
     [Fact]
     public void Numbers_HexForm()
         => InlineSnapshot.Validate(NoWhitespace("0x0123456789ABCDEFabcdef 0x0_F_F 0x0F_ 0x0Ff32 0x0F_f32"), """
-            - NumberLiteral: "0x0123456789ABCDEFabcdef" body="0x0123456789ABCDEFabcdef" suffix=None
-            - NumberLiteral: "0x0_F_F" body="0x0FF" suffix=None
-            - NumberLiteral: "0x0F_" body="0x0F" suffix=None
-            - NumberLiteral: "0x0Ff32" body="0x0Ff32" suffix=None
-            - NumberLiteral: "0x0F_f32" body="0x0Ff32" suffix=None
+            - NumberLiteral: "0x0123456789ABCDEFabcdef" block="0x0123456789ABCDEFabcdef" suffix=None
+            - NumberLiteral: "0x0_F_F" block="0x0FF" suffix=None
+            - NumberLiteral: "0x0F_" block="0x0F" suffix=None
+            - NumberLiteral: "0x0Ff32" block="0x0Ff32" suffix=None
+            - NumberLiteral: "0x0F_f32" block="0x0Ff32" suffix=None
             - Eof
             """);
     
@@ -242,28 +240,28 @@ public sealed class LexerTests
             ERROR UnknownNumberSuffix@[27, 28): Only 'i32', 'i64', 'f32' or 'f64' are valid number suffixes. Got 'x'.
             ERROR UnknownNumberSuffix@[30, 33): Only 'i32', 'i64', 'f32' or 'f64' are valid number suffixes. Got 'x_1'.
 
-            - NumberLiteral: "0x0F" body="0x0F" suffix=None
+            - NumberLiteral: "0x0F" block="0x0F" suffix=None
             - I32Kw: "i32"
-            - NumberLiteral: "0xG" body="0" suffix=None
-            - NumberLiteral: "0xh" body="0" suffix=None
-            - NumberLiteral: "0xXYZ" body="0" suffix=None
-            - NumberLiteral: "0xg" body="0" suffix=None
-            - NumberLiteral: "0x" body="0" suffix=None
-            - NumberLiteral: "0x_1" body="0" suffix=None
+            - NumberLiteral: "0xG" block="0" suffix=None
+            - NumberLiteral: "0xh" block="0" suffix=None
+            - NumberLiteral: "0xXYZ" block="0" suffix=None
+            - NumberLiteral: "0xg" block="0" suffix=None
+            - NumberLiteral: "0x" block="0" suffix=None
+            - NumberLiteral: "0x_1" block="0" suffix=None
             - Eof
             """);
     
     [Fact]
     public void NumberDotIdentifier()
         => InlineSnapshot.Validate(NoWhitespace("1. 1.f32 1.1. 1.1.f32 ._1_1"), """
-            - NumberLiteral: "1" body="1" suffix=None
+            - NumberLiteral: "1" block="1" suffix=None
             - Dot: "."
-            - NumberLiteral: "1" body="1" suffix=None
+            - NumberLiteral: "1" block="1" suffix=None
             - Dot: "."
             - F32Kw: "f32"
-            - NumberLiteral: "1.1" body="1.1" suffix=None
+            - NumberLiteral: "1.1" block="1.1" suffix=None
             - Dot: "."
-            - NumberLiteral: "1.1" body="1.1" suffix=None
+            - NumberLiteral: "1.1" block="1.1" suffix=None
             - Dot: "."
             - F32Kw: "f32"
             - Dot: "."
@@ -280,11 +278,11 @@ public sealed class LexerTests
             ERROR UnknownNumberSuffix@[25, 29): Only 'i32', 'i64', 'f32' or 'f64' are valid number suffixes. Got 'f64a'.
             ERROR UnknownNumberSuffix@[31, 35): Only 'i32', 'i64', 'f32' or 'f64' are valid number suffixes. Got 'f644'.
 
-            - NumberLiteral: "1f3245" body="1" suffix=None
-            - NumberLiteral: "4ghr" body="4" suffix=None
-            - NumberLiteral: "1g_445df_12" body="1" suffix=None
-            - NumberLiteral: "1f64a" body="1" suffix=None
-            - NumberLiteral: "1f644" body="1" suffix=None
+            - NumberLiteral: "1f3245" block="1" suffix=None
+            - NumberLiteral: "4ghr" block="4" suffix=None
+            - NumberLiteral: "1g_445df_12" block="1" suffix=None
+            - NumberLiteral: "1f64a" block="1" suffix=None
+            - NumberLiteral: "1f644" block="1" suffix=None
             - Eof
             """);
 
@@ -407,7 +405,7 @@ public sealed class LexerTests
             - StringEnd: """
             - StringStart: """
             - OpenBrace: "{"
-            - NumberLiteral: "1.1" body="1.1" suffix=None
+            - NumberLiteral: "1.1" block="1.1" suffix=None
             - Identifier: "a"
             - Identifier: "b"
             - CloseBrace: "}"

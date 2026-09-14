@@ -4,21 +4,16 @@
 File            = (Stmt | UsingDirective | ModuleDecl | Member)*
 
 ModuleDecl      = "module" Path ";"
-
-## Directives
-> Directive: Tells the compiler how to process code.
-
 UsingDirective  = "using" Path ";"
 
 ## Member Declarations
-> Declaration: Introduces a name.
-
-Member           = Modifier* (FnDecl | NativeFnDecl)
+MemberDecl       = FnDecl | NativeFnDecl
                 
-Modifier         = "public" | "private"
-
-FnDecl           = "fn" IdName ParamList ReturnTypeAnnotation? Body ";"§
+FnDecl           = "fn" IdName ParamList ReturnTypeAnnotation? FnBody
 > Identifier "never" is promoted to SyntaxKind.NativeTypeName with TokenKind.NeverKw
+
+FnBody          = "=>" Expr ";"
+                | BlockExpr
 
 ParamList       = "(" ")"
                 | "(" Param ("," Param)* ")"
@@ -30,58 +25,33 @@ NativeClause    = "native" "(" StringExpr ")"
 > Binder rejects interpolations inside StringExpr
 
 ## Statements
-> Semicolon rule (";"§): ";" is omissible, iff the last token is "}"
-
 Stmt        = ExprStmt
             | VarDecl
+            | WhileStmt
+            | AssignStmt
 
-ExprStmt    = BodiedExpr ";"§             
-            | (OperandExpr | TailExpr) ";"
-
+ExprStmt    = Expr ";"
 
 VarDecl             = "var" IdName TypeAnnotation? InitializerClause? ";"
 InitializerClause   = "=" Expr
 
+WhileStmt   = "while" "(" Expr ")" Block
+
+AssignStmt  = IdName ("="|"+="|"-=") Expr
+
 # Expressions
-There needs to be a division between 3 different types of expressions:
-    1. BodiedExpr  - They _own_ a body
-        * In statement position (as ExprStmt), ";" can be omitted, if it ends in `}`.
-    2. TailExpr    - They might _end_ in a body, they don't own
-        * ";" always required.
-        * They might leak bodies into Exprs where bodies are not allowed, so they need to be their own category.
-    3. OperandExpr - Contains bodies only in _clearly delimited_ cases
-This is to avoid certain syntax footgun and ambiguities. Also the semicolon
-rule is stated more clearly in this framing.
-
-Expr        = BodiedExpr | OperandExpr | TailExpr
-
-## Body, BodiedExpr, Arm
-Body        = BlockExpr
-            | Arm
-Arm         = "=>" Expr
-            | "=" Expr      > ERROR PRODUCTION
-> In AST, Body and Arm are Expr as well, to allow it being named in expression positions.
-> However, the grammar does not allow Arm in expression position.
-
-BodiedExpr  = Block | If | Loop
-
-BlockExpr   = "{" (Stmt | UsingDirective | Member)* Arm? "}"
-
-If          = "if" OperandExpr Body ElseClause?     
-> Condition is OperandExpr to disallow any unparenthesized body inside it.
-> ERROR PRODUCTION: "=" accepted after OperandExpr
-
-ElseClause  = "else" (Body | If)
-Loop        = "loop" Body
-
-## Operand Expressions
-
-OperandExpr = Literal | IdName | StringExpr
-            | Group
-            | Binary
-            | Unary
+Expr        = BlockExpr
+            | IfExpr
+            | Break | Continue | Return
+            | Literal | IdName | StringExpr
+            | Group | Binary | Unary
             | Call
             | GetMember
+
+BlockExpr   = "{" (Stmt | Member)* "}"
+
+IfExpr      = "if" (Expr) Expr ("else" Expr)
+> ERROR PRODUCTION: "=" accepted inside (Expr)
 
 Group       = "(" Expr ")"
 
@@ -89,11 +59,11 @@ Literal     = "true" | "false"
             | NumberLiteral
             | NativeTypeName
 
-Binary      = OperandExpr ("+"|"-"|"*"|"/"|"<"|"<="|">"|">="  |"=="|"!=" |"and"|"or") OperandExpr
-Unary       = ("-" | "not") OperandExpr
+Binary      = Expr ("+"|"-"|"*"|"/"|"<"|"<="|">"|">="  |"=="|"!=" |"and"|"or") Expr
+Unary       = ("-" | "not") Expr
 
-GetMember   = OperandExpr "." IdName
-Call        = OperandExpr ArgList
+GetMember   = Expr "." IdName
+Call        = Expr ArgList
 
 ArgList     = "(" ")"
             | "(" Arg ("," Arg)* ")"
@@ -103,13 +73,7 @@ StringExpr            = StringStart (StringText | StringInterpolation)* StringEn
 StringInterpolation   = "{" Expr? "}"
 > Can be empty to allow multi-line breaks.
 
-## Tail Expressions
-
-TailExpr    = Break | Continue | Return | Assign
-
-Assign      = OperandExpr ("="|"+="|"-=") Expr
-
-Break       = "break" Expr?
+Break       = "break"
 Continue    = "continue"
 Return      = "return" Expr?
 
@@ -121,7 +85,7 @@ TypeName        = NativeTypeName
 > same syntax but in expression position. In AST, they both collapse
 > into Expr to be better nameable.
 
-NativeTypeName  = "i32" | "i64" | "f32" | "f64" | "string" | "bool" | "none"
+NativeTypeName  = "i32" | "i64" | "f32" | "f64" | "string" | "bool" | "unit"
 > SyntaxKind.NativeTypeName can also hold TokenKind.NeverKw. NeverKw is promoted
 > from TokenKind.Identifier if FnDecl return type and only there.
 
@@ -138,3 +102,4 @@ TypeAnnotation  = ":" TypeName
 not                 (prefix)
 and                 (left-assoc, ambig with or)
 or                  (left-assoc, ambig with and)
+if

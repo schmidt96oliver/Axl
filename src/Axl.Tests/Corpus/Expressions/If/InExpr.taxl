@@ -1,0 +1,11 @@
+﻿//@run-pass
+
+using Standard;
+
+var a: i32 = 1;
+var predicate: bool = false;
+
+PrintLine(1 + if (predicate) a else 0);
+
+//=== stdout
+// 1

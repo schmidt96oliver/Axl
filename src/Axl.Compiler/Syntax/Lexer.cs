@@ -273,14 +273,12 @@ public sealed class Lexer
             "i32" => TokenKind.I32Kw,
             "i64" => TokenKind.I64Kw,
             "if" => TokenKind.IfKw,
-            "loop" => TokenKind.LoopKw,
+            "while" => TokenKind.WhileKw,
             "module" => TokenKind.ModuleKw,
             "not" => TokenKind.NotKw,
             "native" => TokenKind.NativeKw,
-            "none" => TokenKind.NoneKw,
+            "unit" => TokenKind.UnitKw,
             "or" => TokenKind.OrKw,
-            "public" => TokenKind.PublicKw,
-            "private" => TokenKind.PrivateKw,
             "return" => TokenKind.ReturnKw,
             "string" => TokenKind.StringKw,
             "true" => TokenKind.TrueKw,
@@ -358,9 +356,9 @@ public sealed class Lexer
             // Invalid?
             if (suffix is NumberLiteralSuffix.None)
             {
-                // Suffix is invalid. Report an error and let suffix be None.
+                // Suffix is invalid. Report an error and let suffix be Unit.
                 // The invalid suffix text will be part of the token, but practically,
-                // this will never be read. The body is still valid.
+                // this will never be read. The block is still valid.
                 
                 scanner.DiagnosticBag.ReportError(new Diagnostic.UnknownNumberSuffix(
                     scanner.SourceText.GetLocationFromBounds(scanner.StartIndex + suffixStart, scanner.NextIndex)));
@@ -388,7 +386,7 @@ public sealed class Lexer
         // --- StringStart
         scanner.AddToken(TokenKind.StringStart);
 
-        // --- Body with text and expressions
+        // --- Block with text and expressions
         // Eof or Newline just end the string and the Lexer goes back into
         // normal mode. No StringEnd/StringText is created empty.
         while (scanner.Peek() is var c && c is not ('\0' or '\n' or '\r'))

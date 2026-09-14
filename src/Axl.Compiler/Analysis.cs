@@ -49,7 +49,7 @@ public sealed class Analysis
         Debug.Assert(syntax.Range is not null);
         
         // Descend into bound tree to find expr syntax
-        BoundStmt current = _compilation.BoundFile.Body;
+        BoundStmt current = _compilation.BoundFile.Block;
         Debug.Assert(current.Syntax.Range?.Contains(syntax.Range.Value) == true);
         
         while (true)

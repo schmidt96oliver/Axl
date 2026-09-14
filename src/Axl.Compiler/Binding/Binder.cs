@@ -14,7 +14,7 @@ public sealed class Binder
     private readonly TypeContext _types;
     
     private Scope _scope;
-    private List<BoundBreak>? _loopBreaks = null;
+    private bool _inLoop = false;
     
     
     private Binder(Scope scope, TypeContext typeContext)
@@ -34,9 +34,9 @@ public sealed class Binder
             binder._diagnostics.ReportError(new Diagnostic.UnsupportedFeature(node));
 
         var stmts = syntax.Stmts.Select(binder.BindStmt).ToImmutableArray();
-        var body = new BoundBody(stmts, armExpr: null, type: typeContext.None, syntax);
+        var block = new BoundBlock(stmts, type: typeContext.Unit, syntax);
 
-        return new BoundFile(body, binder._diagnostics.Drain());
+        return new BoundFile(block, binder._diagnostics.Drain());
     }
     
     
@@ -82,7 +82,7 @@ public sealed class Binder
         TokenKind.F64Kw => _types.F64,
         TokenKind.BoolKw => _types.Bool,
         TokenKind.StringKw => _types.String,
-        TokenKind.NoneKw => _types.None,
+        TokenKind.UnitKw => _types.Unit,
         TokenKind.NeverKw => _types.Never,
         _ => throw new UnreachableException($"Unknown {nameof(NativeTypeNameSyntax)}.")
     };
@@ -96,62 +96,17 @@ public sealed class Binder
     #endregion
     
     
+    #region Stmts
+    
     private BoundStmt BindStmt(StmtSyntax syntax) => syntax switch
     {
         VarDeclSyntax varDeclSyntax => BindVarDecl(varDeclSyntax),
         ExprStmtSyntax exprStmt => BindExpr(exprStmt.Expr),
+        AssignStmtSyntax assignStmtSyntax => BindAssign(assignStmtSyntax),
+        WhileStmtSyntax whileStmtSyntax => BindWhile(whileStmtSyntax),
         _ => throw new UnreachableException($"Unknown {nameof(StmtSyntax)}")
     };
-
-    private BoundExpr BindExpr(ExprSyntax syntax) => syntax switch
-    {
-        // Symbol references
-        IdNameSyntax idNameSyntax => BindPlainIdName(idNameSyntax),
-        AssignExprSyntax assignExprSyntax => BindAssign(assignExprSyntax),
-        
-        // Operators
-        BinaryExprSyntax binaryExprSyntax => BindBinary(binaryExprSyntax),
-        UnaryExprSyntax unaryExprSyntax => BindUnary(unaryExprSyntax),
-        
-        // Bodies / Control Flow
-        BlockExprSyntax blockExprSyntax => BindBlock(blockExprSyntax),
-        IfExprSyntax ifExprSyntax => BindIf(ifExprSyntax),
-        ArmSyntax armSyntax => BindExpr(armSyntax.Expr),
-        GroupExprSyntax groupExprSyntax => BindExpr(groupExprSyntax.Inner),
-        LoopExprSyntax loopExprSyntax => BindLoop(loopExprSyntax),
-        BreakExprSyntax breakExprSyntax => BindBreak(breakExprSyntax),
-        ContinueExprSyntax continueExprSyntax => BindContinue(continueExprSyntax),
-        
-        // Strings and Literals
-        NumberLiteralSyntax numberLiteralSyntax => BindNumberLiteral(numberLiteralSyntax),
-        TrueLiteralSyntax => new BoundBoolLiteral(value: true, type: _types.Bool, syntax),
-        FalseLiteralSyntax => new BoundBoolLiteral(value: false, type: _types.Bool, syntax),
-        StringExprSyntax stringExprSyntax => BindString(stringExprSyntax),
-        
-        // Error and unsupported
-        ErrorExprSyntax errorExprSyntax => BindError(errorExprSyntax),
-        _ => BindUnsupported(syntax)
-    };
-
     
-
-    private BoundExpr BindUnsupported(ExprSyntax syntax)
-    {
-        _diagnostics.ReportError(new Diagnostic.UnsupportedFeature(syntax));
-        return new BoundError(recoveredExprs: [], type: _types.Error, syntax);
-    }
-
-    private BoundError BindError(ErrorExprSyntax syntax)
-    {
-        var recovered = syntax.RecoverableNodes
-            .Select(node => BindExpr(node))
-            .ToImmutableArray();
-        return new BoundError(recovered, _types.Error, syntax);
-    }
-    
-    
-    #region Variables
-
     private BoundVarDecl BindVarDecl(VarDeclSyntax syntax)
     {
         var variableType = syntax.TypeAnnotation is not null
@@ -159,7 +114,7 @@ public sealed class Binder
             : null;
         
         var boundInitializer = BindVarDeclInitializer(syntax);
-
+    
         if (variableType is null)
         {
             // Infer type
@@ -170,10 +125,10 @@ public sealed class Binder
             // Check type
             CheckTypeAndReportMismatch(boundInitializer, variableType);
         }
-
+    
         var variable = new VariableSymbol(SymbolName.From(syntax.Name), variableType);
         _scope.Declare(variable);
-
+    
         return new BoundVarDecl(variable, boundInitializer, syntax);
     }
     
@@ -190,28 +145,11 @@ public sealed class Binder
             return new BoundError(recoveredExprs: [],
                 _types.Error, syntax);    
         }
-
+    
         return BindExpr(syntax.Initializer);
     }
-
-    private BoundExpr BindPlainIdName(IdNameSyntax syntax)
-    {
-        var symbol = LookupAndReportUndefined(syntax);
-
-        switch (symbol)
-        {
-            case VariableSymbol variable:
-                return new BoundVariableRef(variable, syntax);
-            
-            case null:
-                return new BoundError(recoveredExprs: [], type: _types.Error, syntax);
-            
-            default:
-                throw new UnreachableException($"Unknown symbol kind {symbol.GetType().Name}.");
-        }
-    }
-
-    private BoundExpr BindAssign(AssignExprSyntax syntax)
+    
+    private BoundExpr BindAssign(AssignStmtSyntax syntax)
     {
         var boundValue = BindExpr(syntax.Value);
         var target = BindAssignTarget(syntax.Target);
@@ -223,14 +161,14 @@ public sealed class Binder
                 new Diagnostic.UnsupportedFeature(syntax, "Compound assignment not supported yet."));
             return new BoundError(recoveredExprs: [boundValue], _types.Error, syntax);
         }
-
+    
         if (target is null)
             return new BoundError(recoveredExprs: [boundValue], _types.Error, syntax);
         
         CheckTypeAndReportMismatch(boundValue, target.Type);
-        return new BoundAssign(target, boundValue, _types.None, syntax);
+        return new BoundAssign(target, boundValue, _types.Unit, syntax);
     }
-
+    
     private VariableSymbol? BindAssignTarget(ExprSyntax syntax)
     {
         if (syntax is not IdNameSyntax idNameSyntax)
@@ -238,7 +176,7 @@ public sealed class Binder
             _diagnostics.ReportError(new Diagnostic.InvalidAssignTarget(syntax));
             return null;
         }
-
+    
         var symbol = LookupAndReportUndefined(idNameSyntax);
         switch (symbol)
         {
@@ -253,21 +191,95 @@ public sealed class Binder
                 return null;
         }
     }
+
+    private BoundExpr BindWhile(WhileStmtSyntax syntax)
+    {
+        var condition = BindExpr(syntax.Condition);
+
+        var previousInLoop = _inLoop;
+        _inLoop = true;
+        var body = BindExpr(syntax.Body);
+        _inLoop = previousInLoop;
+        
+        if (!CheckTypeAndReportMismatch(condition, expected: _types.Bool))
+            condition = new BoundError(recoveredExprs: [condition], type: _types.Error, syntax.Condition);
+
+        return new BoundWhile(condition, body, _types.Unit, syntax);
+    }
     
     #endregion
     
-    #region Literal and String Exprs
+    private BoundExpr BindExpr(ExprSyntax syntax) => syntax switch
+    {
+        // Strings and Literals
+        IdNameSyntax idNameSyntax => BindVariableRef(idNameSyntax),
+        NumberLiteralSyntax numberLiteralSyntax => BindNumberLiteral(numberLiteralSyntax),
+        TrueLiteralSyntax => new BoundBoolLiteral(value: true, type: _types.Bool, syntax),
+        FalseLiteralSyntax => new BoundBoolLiteral(value: false, type: _types.Bool, syntax),
+        StringExprSyntax stringExprSyntax => BindString(stringExprSyntax),
+        
+        // Operators
+        BinaryExprSyntax binaryExprSyntax => BindBinary(binaryExprSyntax),
+        UnaryExprSyntax unaryExprSyntax => BindUnary(unaryExprSyntax),
+        
+        // Blocks and Control Flow
+        BlockExprSyntax blockExprSyntax => BindBlock(blockExprSyntax),
+        IfExprSyntax ifExprSyntax => BindIf(ifExprSyntax),
+        GroupExprSyntax groupExprSyntax => BindExpr(groupExprSyntax.Inner),
+        BreakExprSyntax breakExprSyntax => BindBreakOrContinue(breakExprSyntax),
+        ContinueExprSyntax or BreakExprSyntax => BindBreakOrContinue(syntax),
+        
+        // Error and unsupported
+        ErrorExprSyntax errorExprSyntax => BindError(errorExprSyntax),
+        _ => BindUnsupported(syntax)
+    };
+    
+    
+
+    private BoundError BindUnsupported(SyntaxNode syntax)
+    {
+        _diagnostics.ReportError(new Diagnostic.UnsupportedFeature(syntax));
+        return new BoundError(recoveredExprs: [], type: _types.Error, syntax);
+    }
+
+    private BoundError BindError(ErrorExprSyntax syntax)
+    {
+        var recovered = syntax.RecoverableNodes
+            .Select(BindExpr)
+            .ToImmutableArray();
+        return new BoundError(recovered, _types.Error, syntax);
+    }
+    
+    
+    #region Literals and Strings
+    
+    private BoundExpr BindVariableRef(IdNameSyntax syntax)
+    {
+        var symbol = LookupAndReportUndefined(syntax);
+    
+        switch (symbol)
+        {
+            case VariableSymbol variable:
+                return new BoundVariableRef(variable, syntax);
+            
+            case null:
+                return new BoundError(recoveredExprs: [], type: _types.Error, syntax);
+            
+            default:
+                throw new UnreachableException($"Unknown symbol kind {symbol.GetType().Name}.");
+        }
+    }
     
     private BoundStringExpr BindString(StringExprSyntax syntax)
     {
         var parts = syntax.Parts.Select(BindStringPart).ToImmutableArray();
-
+    
         if (parts.Length == 0)
             parts = [new StringPart.Text("")];
         
         return new BoundStringExpr(parts, _types.String, syntax);
     }
-
+    
     private StringPart BindStringPart(StringPartSyntax syntax)
         => syntax switch
         {
@@ -275,7 +287,7 @@ public sealed class Binder
             StringInterpolationSyntax interpolationSyntax => BindStringInterpolation(interpolationSyntax),
             _ => throw new UnreachableException($"Unknown {nameof(StringPartSyntax)}")
         };
-
+    
     private StringPart BindStringInterpolation(StringInterpolationSyntax syntax)
     {
         if (syntax.Expr is null)
@@ -295,10 +307,10 @@ public sealed class Binder
             return new StringPart.Interpolation(
                 new BoundError(recoveredExprs: [boundExpr], type: _types.Error, syntax));
         }
-
+    
         return new StringPart.Interpolation(boundExpr);
     }
-
+    
     private BoundNumberLiteral BindNumberLiteral(NumberLiteralSyntax syntax)
     {
         TypeSymbol type = syntax.Token.Suffix switch
@@ -307,7 +319,7 @@ public sealed class Binder
             NumberLiteralSuffix.I64 => _types.I64,
             NumberLiteralSuffix.F32 => _types.F32,
             NumberLiteralSuffix.F64 => _types.F64,
-
+    
             _ => syntax.Token.HasDecimalPoint ? _types.DefaultFloatingNumberType : _types.DefaultIntegralNumberType
         };
         
@@ -326,7 +338,7 @@ public sealed class Binder
     #endregion
     
     #region Binary and Unary Exprs
-
+    
     private BoundExpr BindBinary(BinaryExprSyntax syntax) => syntax.Operator.Kind switch
     {
         TokenKind.AndKw or TokenKind.OrKw => BindBooleanOperator(syntax),
@@ -340,9 +352,9 @@ public sealed class Binder
     {
         return BindNativeOperator(syntax.Operator, syntax, syntax.Operand);
     }
-
-
-
+    
+    
+    
     private BoundExpr BindEqualityComparison(BinaryExprSyntax syntax)
     {
         Debug.Assert(syntax.Operator.Kind is TokenKind.DoubleEqual or TokenKind.BangEqual);
@@ -372,7 +384,7 @@ public sealed class Binder
     private BoundExpr BindBooleanOperator(BinaryExprSyntax syntax)
     {
         Debug.Assert(syntax.Operator.Kind is TokenKind.AndKw or TokenKind.OrKw);
-
+    
         var boundLeft = BindExpr(syntax.Left);
         var boundRight = BindExpr(syntax.Right);
         if (boundLeft.Type == _types.Error || boundRight.Type == _types.Error)
@@ -382,7 +394,7 @@ public sealed class Binder
             return new BoundError(recoveredExprs: [boundLeft, boundRight],
                 type: _types.Error, syntax);
         }
-
+    
         // Type-check against bool
         if (!CheckTypeAndReportMismatch(boundLeft, _types.Bool) ||
             !CheckTypeAndReportMismatch(boundRight, _types.Bool))
@@ -390,15 +402,15 @@ public sealed class Binder
             return new BoundError(recoveredExprs: [boundLeft, boundRight],
                 type: _types.Error, syntax);
         }
-
+    
         if (syntax.Operator.Kind is TokenKind.AndKw)
             return new BoundAnd(boundLeft, boundRight, _types.Bool, syntax);
         if (syntax.Operator.Kind is TokenKind.OrKw)
             return new BoundOr(boundLeft, boundRight, _types.Bool, syntax);
-
+    
         throw new UnreachableException();
     }
-
+    
     private BoundExpr BindNativeOperator(Token operatorToken, SyntaxNode syntax, params IEnumerable<ExprSyntax> operands)
     {
         var boundOperands = operands
@@ -415,7 +427,7 @@ public sealed class Binder
             return new BoundError(recoveredExprs: boundOperands,
                 type: _types.Error, syntax);
         }
-
+    
         var nativeOperator = _types.TryGetNativeOperator(
             operatorToken.Kind,
             operandTypes);
@@ -427,117 +439,64 @@ public sealed class Binder
             return new BoundError(recoveredExprs: [.. boundOperands],
                 type: _types.Error, syntax);
         }
-
+    
         return new BoundNativeOperator(nativeOperator, [.. boundOperands], nativeOperator.ReturnType, syntax);
     }
     
     #endregion
     
-    #region Blocks, If, Loop
-
-    private BoundBody BindBlock(BlockExprSyntax syntax)
+    #region Blocks, Control Flow
+    
+    private BoundBlock BindBlock(BlockExprSyntax syntax)
     {
         _scope = new Scope(parent: _scope);
-
         var stmts = syntax.Stmts.Select(BindStmt).ToImmutableArray();
-
-        var arm = syntax.Arm is not null
-            ? BindExpr(syntax.Arm.Expr)
-            : null;
-
-        var blockType = arm?.Type ?? _types.None;
-
-        return new BoundBody(stmts, arm, blockType, syntax);
+        _scope = _scope.Parent!;
+    
+        return new BoundBlock(stmts, type: _types.Unit, syntax);
     }
-
+    
     private BoundExpr BindIf(IfExprSyntax syntax)
     {
-        var boundPredicate = BindExpr(syntax.Predicate);
-        var boundBody = BindExpr(syntax.Body);
-        var boundElse = syntax.ElseBody is not null ? BindExpr(syntax.ElseBody) : null;
+        var condition = BindExpr(syntax.Condition);
+        var body = BindExpr(syntax.Body);
+        var @else = syntax.ElseBody is not null ? BindExpr(syntax.ElseBody) : null;
         
         // Type-check predicate
-        if (!CheckTypeAndReportMismatch(boundPredicate, expected: _types.Bool))
-            boundPredicate = new BoundError(recoveredExprs: [boundPredicate], type: _types.Error, syntax.Predicate);
+        if (!CheckTypeAndReportMismatch(condition, expected: _types.Bool))
+            condition = new BoundError(recoveredExprs: [condition], type: _types.Error, syntax.Condition);
         
-        // Type-check body and else body
+        // Type-check block and else block
         // They must have the same type.
         TypeSymbol ifExprType;
-        if (boundElse is not null)
+        if (@else is not null)
         {
-            ifExprType = boundBody.Type;
-            CheckTypeAndReportMismatch(boundElse, expected: ifExprType);
+            ifExprType = body.Type;
+            CheckTypeAndReportMismatch(@else, expected: ifExprType);
         }
         else
         {
-            // If without else always has type none.
-            
-            ifExprType = _types.None;
+            // If without else always has type unit.
+            CheckTypeAndReportMismatch(body, _types.Unit);
+            ifExprType = _types.Unit;
         }
-
-        return new BoundIf(boundPredicate, boundBody, boundElse, ifExprType, syntax);
+    
+        return new BoundIf(condition, body, @else, ifExprType, syntax);
     }
-
-    private BoundExpr BindLoop(LoopExprSyntax syntax)
+    
+    private BoundExpr BindBreakOrContinue(ExprSyntax syntax)
     {
-        var previousLoopBreaks = _loopBreaks;
+        Debug.Assert(syntax is BreakExprSyntax or ContinueExprSyntax);
         
-        _loopBreaks = new List<BoundBreak>();
-        var body = BindExpr(syntax.Body);
-        var nonNeverBreaks = _loopBreaks.Where(b => b.Expr?.Type != _types.Never).ToList();
-        _loopBreaks = previousLoopBreaks;
-        
-        TypeSymbol type;
-        if (nonNeverBreaks.Count > 0)
-        {
-            type = nonNeverBreaks[0].Expr?.Type ?? _types.None;
-            for (var i = 1; i < nonNeverBreaks.Count; i++)
-            {
-                var expr = nonNeverBreaks[i].Expr;
-                if (expr is not null)
-                    CheckTypeAndReportMismatch(expr, type);
-                else if (type != _types.None)
-                {
-                    _diagnostics.ReportError(new Diagnostic.TypeMismatch(
-                        nonNeverBreaks[i], type));
-                }
-            }
-        }
-        else
-            type = _types.Never;
-        
-        
-        
-        // Loop body must have type none
-        CheckTypeAndReportMismatch(body, _types.None);
-
-        return new BoundLoop(body, type, syntax);
-    }
-
-    private BoundExpr BindBreak(BreakExprSyntax syntax)
-    {
-        var expr = syntax.Expr is not null ? BindExpr(syntax.Expr) : null;
-
-        if (_loopBreaks is null)
-        {
-            _diagnostics.ReportError(new Diagnostic.BreakOrContinueOutsideLoop(syntax));
-            return new BoundError(recoveredExprs: expr is not null ? [expr] : [], _types.Error, syntax);
-        }
-
-        var breakExpr = new BoundBreak(expr, _types.Never, syntax);
-        _loopBreaks!.Add(breakExpr);
-        return breakExpr;
-    }
-
-    private BoundExpr BindContinue(ContinueExprSyntax syntax)
-    {
-        if (_loopBreaks is null)
+        if (!_inLoop)
         {
             _diagnostics.ReportError(new Diagnostic.BreakOrContinueOutsideLoop(syntax));
             return new BoundError(recoveredExprs: [], _types.Error, syntax);
         }
-
-        return new BoundContinue(_types.Never, syntax);
+    
+        return syntax is BreakExprSyntax
+            ? new BoundBreak(_types.Never, syntax)
+            : new BoundContinue(_types.Never, syntax);
     }
     
     #endregion

@@ -31,22 +31,6 @@ public partial class ParserTests
                     """);
             
             [Fact]
-            public void StraySemicolon_AfterBlockArm()
-                => InlineSnapshot.Validate(Tree("{ => 1; }"), """
-                    ERROR UnexpectedToken@[6, 7): Expected '}', got ';'.
-
-
-                    ExprStmt
-                    · BlockExpr
-                    · · '{'
-                    · · Arm
-                    · · · '=>'
-                    · · · NumberLiteral '1'
-                    · · Garbage ';'
-                    · · '}'
-                    """);
-
-            [Fact]
             public void SemicolonAfterError_Global()
                 => InlineSnapshot.Validate(Tree("@@ ;"), """
                     ERROR UnexpectedToken@[0, 2): Expected a statement, got unknown characters.

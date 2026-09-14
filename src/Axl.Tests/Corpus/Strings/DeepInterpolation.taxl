@@ -4,8 +4,8 @@ using Standard;
 
 PrintLine("{ "{ "{ "1" }" }" }");
 PrintLine("{ "{ "{ 
-        if true => "y"
-        else => "n"
+        if (true) "y"
+        else "n"
     }" }" }");
     
 //=== stdout

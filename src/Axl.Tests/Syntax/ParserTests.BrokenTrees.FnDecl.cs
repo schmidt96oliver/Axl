@@ -9,27 +9,20 @@ public partial class ParserTests
         public sealed class FnDecl
         {
             [Fact]
-            public void BracedGarbageInsideBody()
-                => InlineSnapshot.Validate(Tree("fn F() { (@@ {}); }"), """
-                    ERROR MissingToken@[10, 10): Expected an expression.
-                    ERROR UnexpectedToken@[10, 12): Expected ')', got unknown characters.
+            public void EqualAsArm()
+                => InlineSnapshot.Validate(Tree("fn A() = 1;"), """
+                    ERROR UnexpectedToken@[7, 8): Expected '=>', got '='.
 
 
                     FnDecl
                     · 'fn'
-                    · IdName 'F'
+                    · IdName 'A'
                     · ParamList '(' ')'
-                    · BlockExpr
-                    · · '{'
-                    · · ExprStmt
-                    · · · GroupExpr
-                    · · · · '('
-                    · · · · IdName
-                    · · · · · ??ID
-                    · · · · Garbage '@@' '{' '}'
-                    · · · · ')'
-                    · · · ';'
-                    · · '}'
+                    · FnBody
+                    · · Garbage '='
+                    · · ??'=>'
+                    · · NumberLiteral '1'
+                    · · ';'
                     """);
             
             
@@ -45,7 +38,8 @@ public partial class ParserTests
                     · ParamList
                     · · '('
                     · · ??')'
-                    · BlockExpr '{' '}'
+                    · FnBody
+                    · · BlockExpr '{' '}'
                     """);
             [Fact]
             public void UnclosedParamList_2()
@@ -59,10 +53,11 @@ public partial class ParserTests
                     · ParamList
                     · · '('
                     · · ??')'
-                    · BlockExpr
-                    · · ??'{'
-                    · · ??'}'
-                    · ';'
+                    · FnBody
+                    · · BlockExpr
+                    · · · ??'{'
+                    · · · ??'}'
+                    · · ';'
                     """);
             [Fact]
             public void UnclosedParamList_3()
@@ -76,8 +71,9 @@ public partial class ParserTests
                     · ParamList
                     · · '('
                     · · ??')'
-                    · BlockExpr '{' '}'
-                    · ';'
+                    · FnBody
+                    · · BlockExpr '{' '}'
+                    · · ';'
                     """);
             [Fact]
             public void UnclosedParamList_4()
@@ -94,7 +90,8 @@ public partial class ParserTests
                     · TypeAnnotationClause
                     · · '->'
                     · · NativeTypeName 'i32'
-                    · BlockExpr '{' '}'
+                    · FnBody
+                    · · BlockExpr '{' '}'
                     """);
             [Fact]
             public void UnclosedParamList_5()
@@ -117,7 +114,8 @@ public partial class ParserTests
                     · · · IdName
                     · · · · ??ID
                     · · ??')'
-                    · BlockExpr '{' '}'
+                    · FnBody
+                    · · BlockExpr '{' '}'
                     """);
             [Fact]
             public void UnclosedParamList_6()
@@ -143,7 +141,8 @@ public partial class ParserTests
                     · TypeAnnotationClause
                     · · '->'
                     · · NativeTypeName 'i32'
-                    · BlockExpr '{' '}'
+                    · FnBody
+                    · · BlockExpr '{' '}'
                     """);
             [Fact]
             public void UnclosedParamList_7()
@@ -167,7 +166,8 @@ public partial class ParserTests
                     · · · IdName
                     · · · · ??ID
                     · · ??')'
-                    · BlockExpr '{' '}'
+                    · FnBody
+                    · · BlockExpr '{' '}'
                     """);
             [Fact]
             public void UnclosedParamList_8()
@@ -194,7 +194,8 @@ public partial class ParserTests
                     · TypeAnnotationClause
                     · · '->'
                     · · NativeTypeName 'string'
-                    · BlockExpr '{' '}'
+                    · FnBody
+                    · · BlockExpr '{' '}'
                     """);
             
             [Fact]
@@ -218,10 +219,10 @@ public partial class ParserTests
                     · · · IdName
                     · · · · ??ID
                     · · ??')'
-                    · Arm
+                    · FnBody
                     · · '=>'
                     · · NumberLiteral '1'
-                    · ';'
+                    · · ';'
                     """);
             
             [Fact]
@@ -246,11 +247,11 @@ public partial class ParserTests
                     · · · IdName
                     · · · · ??ID
                     · · ??')'
-                    · Arm
+                    · FnBody
                     · · Garbage '='
                     · · ??'=>'
                     · · NumberLiteral '1'
-                    · ';'
+                    · · ';'
                     """);
             
             
@@ -271,7 +272,8 @@ public partial class ParserTests
                     · · Param
                     · · · IdName 'b'
                     · · ')'
-                    · BlockExpr '{' '}'
+                    · FnBody
+                    · · BlockExpr '{' '}'
                     """);
             
             [Fact]
@@ -297,7 +299,8 @@ public partial class ParserTests
                     · · · · ':'
                     · · · · NativeTypeName 'string'
                     · · ')'
-                    · BlockExpr '{' '}'
+                    · FnBody
+                    · · BlockExpr '{' '}'
                     """);
             
             [Fact]
@@ -330,7 +333,8 @@ public partial class ParserTests
                     · · Param
                     · · · IdName 'd'
                     · · ')'
-                    · BlockExpr '{' '}'
+                    · FnBody
+                    · · BlockExpr '{' '}'
                     """);
 
             
@@ -352,7 +356,8 @@ public partial class ParserTests
                     · · · · ':'
                     · · · · NativeTypeName 'i32'
                     · · ')'
-                    · BlockExpr '{' '}'
+                    · FnBody
+                    · · BlockExpr '{' '}'
                     """);
             
             [Fact]
@@ -374,7 +379,8 @@ public partial class ParserTests
                     · · · · · IdName
                     · · · · · · ??ID
                     · · ')'
-                    · BlockExpr '{' '}'
+                    · FnBody
+                    · · BlockExpr '{' '}'
                     """);
             
             [Fact]
@@ -394,7 +400,8 @@ public partial class ParserTests
                     · · · · ??':'
                     · · · · NativeTypeName 'i32'
                     · · ')'
-                    · BlockExpr '{' '}'
+                    · FnBody
+                    · · BlockExpr '{' '}'
                     """);
             
             [Fact]
@@ -417,7 +424,8 @@ public partial class ParserTests
                     · · · · · '.'
                     · · · · · IdName 'b'
                     · · ')'
-                    · BlockExpr '{' '}'
+                    · FnBody
+                    · · BlockExpr '{' '}'
                     """);
             
             [Fact]
@@ -442,7 +450,8 @@ public partial class ParserTests
                     · · · · · IdName
                     · · · · · · ??ID
                     · · ')'
-                    · BlockExpr '{' '}'
+                    · FnBody
+                    · · BlockExpr '{' '}'
                     """);
             
             [Fact]
@@ -463,7 +472,8 @@ public partial class ParserTests
                     · · · · ??':'
                     · · · · NativeTypeName 'f32'
                     · · ')'
-                    · BlockExpr '{' '}'
+                    · FnBody
+                    · · BlockExpr '{' '}'
                     """);
             
             
@@ -487,7 +497,8 @@ public partial class ParserTests
                     · · · IdName
                     · · · · ??ID
                     · · ')'
-                    · BlockExpr '{' '}'
+                    · FnBody
+                    · · BlockExpr '{' '}'
                     """);
 
             [Fact]
@@ -515,7 +526,8 @@ public partial class ParserTests
                     · · · IdName
                     · · · · ??ID
                     · · ')'
-                    · BlockExpr '{' '}'
+                    · FnBody
+                    · · BlockExpr '{' '}'
                     """);
 
             [Fact]
@@ -536,7 +548,8 @@ public partial class ParserTests
                     · · · IdName
                     · · · · ??ID
                     · · ')'
-                    · BlockExpr '{' '}'
+                    · FnBody
+                    · · BlockExpr '{' '}'
                     """);
 
             [Fact]
@@ -551,7 +564,8 @@ public partial class ParserTests
                     · ParamList
                     · · ??'('
                     · · ??')'
-                    · BlockExpr '{' '}'
+                    · FnBody
+                    · · BlockExpr '{' '}'
                     """);
             
             [Fact]
@@ -566,10 +580,10 @@ public partial class ParserTests
                     · ParamList
                     · · ??'('
                     · · ??')'
-                    · Arm
+                    · FnBody
                     · · '=>'
                     · · NumberLiteral '1'
-                    · ';'
+                    · · ';'
                     """);
             
             [Fact]
@@ -587,7 +601,8 @@ public partial class ParserTests
                     · TypeAnnotationClause
                     · · '->'
                     · · NativeTypeName 'i32'
-                    · BlockExpr '{' '}'
+                    · FnBody
+                    · · BlockExpr '{' '}'
                     """);
             
             
@@ -610,7 +625,8 @@ public partial class ParserTests
                     · · Param
                     · · · IdName 'b'
                     · · ')'
-                    · BlockExpr '{' '}'
+                    · FnBody
+                    · · BlockExpr '{' '}'
                     """);
             
             [Fact]
@@ -631,7 +647,8 @@ public partial class ParserTests
                     · · Param
                     · · · IdName 'b'
                     · · ')'
-                    · BlockExpr '{' '}'
+                    · FnBody
+                    · · BlockExpr '{' '}'
                     """);
             
             [Fact]
@@ -656,7 +673,8 @@ public partial class ParserTests
                     · · Param
                     · · · IdName 'b'
                     · · ')'
-                    · BlockExpr '{' '}'
+                    · FnBody
+                    · · BlockExpr '{' '}'
                     """);
             
             [Fact]
@@ -675,7 +693,8 @@ public partial class ParserTests
                     · · · IdName
                     · · · · ??ID
                     · · ')'
-                    · BlockExpr '{' '}'
+                    · FnBody
+                    · · BlockExpr '{' '}'
                     """);
             
             [Fact]
@@ -699,7 +718,8 @@ public partial class ParserTests
                     · · · IdName
                     · · · · ??ID
                     · · ')'
-                    · BlockExpr '{' '}'
+                    · FnBody
+                    · · BlockExpr '{' '}'
                     """);
             
             [Fact]
@@ -723,7 +743,8 @@ public partial class ParserTests
                     · · · IdName
                     · · · · ??ID
                     · · ')'
-                    · BlockExpr '{' '}'
+                    · FnBody
+                    · · BlockExpr '{' '}'
                     """);
             
             [Fact]
@@ -750,7 +771,8 @@ public partial class ParserTests
                     · · · IdName 'b'
                     · · Garbage '@@'
                     · · ')'
-                    · BlockExpr '{' '}'
+                    · FnBody
+                    · · BlockExpr '{' '}'
                     """);
             
             [Fact]
@@ -775,7 +797,8 @@ public partial class ParserTests
                     · · · IdName
                     · · · · ??ID
                     · · ')'
-                    · BlockExpr '{' '}'
+                    · FnBody
+                    · · BlockExpr '{' '}'
                     """);
 
             
@@ -853,34 +876,6 @@ public partial class ParserTests
                     """);
             
             [Fact]
-            public void NativeNotDelimited_LeavesRestAlone_4()
-                => InlineSnapshot.Validate(Tree("""
-                                                public native
-                                                var a = 2;
-                                                """), """
-                    ERROR MissingToken@[13, 13): Expected '('.
-
-
-                    Garbage
-                    · 'public'
-                    · NativeClause
-                    · · 'native'
-                    · · ??'('
-                    · · StringExpr
-                    · · · ??'"'
-                    · · · ??'"'
-                    · · ??')'
-                    VarDecl
-                    · 'var'
-                    · IdName 'a'
-                    · InitializerClause
-                    · · '='
-                    · · NumberLiteral '2'
-                    · ';'
-                    """);
-            
-            
-            [Fact]
             public void Native_1()
                 => InlineSnapshot.Validate(Tree("""
                                                 native;
@@ -902,7 +897,8 @@ public partial class ParserTests
                     · 'fn'
                     · IdName 'A'
                     · ParamList '(' ')'
-                    · BlockExpr '{' '}'
+                    · FnBody
+                    · · BlockExpr '{' '}'
                     """);
             
             [Fact]
@@ -934,7 +930,8 @@ public partial class ParserTests
                     · 'fn'
                     · IdName 'A'
                     · ParamList '(' ')'
-                    · BlockExpr '{' '}'
+                    · FnBody
+                    · · BlockExpr '{' '}'
                     """);
             [Fact]
             public void Native_3()
@@ -1014,49 +1011,7 @@ public partial class ParserTests
                     · ParamList '(' ')'
                     · ';'
                     """);
-            [Fact]
-            public void Native_7()
-                => InlineSnapshot.Validate(Tree("public native ;"), """
-                    ERROR MissingToken@[13, 13): Expected '('.
-
-
-                    Garbage
-                    · 'public'
-                    · NativeClause
-                    · · 'native'
-                    · · ??'('
-                    · · StringExpr
-                    · · · ??'"'
-                    · · · ??'"'
-                    · · ??')'
-                    · ';'
-                    """);
-            [Fact]
-            public void Native_8()
-                => InlineSnapshot.Validate(Tree("public public private native fn;"), """
-                    ERROR MissingToken@[28, 28): Expected '('.
-                    ERROR MissingToken@[31, 31): Expected an identifier.
-
-
-                    NativeFnDecl
-                    · 'public'
-                    · 'public'
-                    · 'private'
-                    · NativeClause
-                    · · 'native'
-                    · · ??'('
-                    · · StringExpr
-                    · · · ??'"'
-                    · · · ??'"'
-                    · · ??')'
-                    · 'fn'
-                    · IdName
-                    · · ??ID
-                    · ParamList
-                    · · ??'('
-                    · · ??')'
-                    · ';'
-                    """);
+            
         }
     }
 }

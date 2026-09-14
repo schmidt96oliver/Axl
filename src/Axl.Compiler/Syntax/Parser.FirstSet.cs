@@ -16,17 +16,10 @@ public partial class Parser
     /// </remarks>
     private static class FirstSet
     {
-        static FirstSet()
-        {
-            Debug.Assert(Enum.GetValues<TokenKind>().All(
-                kind => FirstSet.Modifier.Contains(kind) == kind.IsModifier),
-                $"{nameof(FirstSet.Modifier)} and {nameof(TokenKindExtensions.get_IsModifier)} out of sync.");    
-        }
-        
         public static readonly TokenSet NativeTypeName = TokenSet.Of(
             TokenKind.I32Kw, TokenKind.I64Kw, TokenKind.F32Kw, TokenKind.F64Kw, TokenKind.StringKw,
             TokenKind.BoolKw,
-            TokenKind.NoneKw
+            TokenKind.UnitKw
         );
 
         public static readonly TokenSet Path = TokenSet.Of(TokenKind.Identifier);
@@ -34,55 +27,36 @@ public partial class Parser
         public static readonly TokenSet TypeName = NativeTypeName | Path;
 
 
-        public static readonly TokenSet OperandExpr = NativeTypeName | TokenSet.Of(
+        public static readonly TokenSet Expr = NativeTypeName | TokenSet.Of(
             TokenKind.TrueKw, TokenKind.FalseKw,
             TokenKind.NumberLiteral,
             TokenKind.Identifier,
             TokenKind.StringStart,
             TokenKind.OpenParen,
-            TokenKind.Minus, TokenKind.NotKw
+            TokenKind.Minus, TokenKind.NotKw,
+            
+            TokenKind.IfKw, TokenKind.OpenBrace,
+            TokenKind.BreakKw, TokenKind.ContinueKw, TokenKind.ReturnKw
         );
 
-        public static readonly TokenSet TailExpr = OperandExpr | TokenSet.Of(
-            TokenKind.BreakKw, TokenKind.ContinueKw, TokenKind.ReturnKw);
-
-        public static readonly TokenSet BodiedExpr = TokenSet.Of(
-                TokenKind.IfKw, TokenKind.LoopKw, TokenKind.OpenBrace
-        );
-
-        public static readonly TokenSet Expr = TailExpr | BodiedExpr;
-
-        public static readonly TokenSet NonExprStmt = TokenSet.Of(TokenKind.VarKw);
+        public static readonly TokenSet NonExprStmt = TokenSet.Of(TokenKind.VarKw, TokenKind.WhileKw);
         
         public static readonly TokenSet Stmt = Expr | NonExprStmt;
 
-        /// <summary>
-        /// `=` as error production.
-        /// </summary>
-        public static readonly TokenSet Arm = TokenSet.Of(TokenKind.RightDoubleArrow, TokenKind.Equal);
-
-        public static readonly TokenSet Body = Arm | TokenKind.OpenBrace;
-
-        public static readonly TokenSet Modifier = TokenSet.Of(TokenKind.PublicKw, TokenKind.PrivateKw);
-
         
-        public static readonly TokenSet FnDecl = Modifier | TokenSet.Of(TokenKind.FnKw);
-        public static readonly TokenSet NativeFnDecl = Modifier | TokenSet.Of(TokenKind.NativeKw);
+        public static readonly TokenSet FnDecl = TokenSet.Of(TokenKind.FnKw);
+        public static readonly TokenSet NativeFnDecl = TokenSet.Of(TokenKind.NativeKw);
 
         public static readonly TokenSet Member = FnDecl | NativeFnDecl;
 
-        // --- Not FIRST sets, but alternations the ungrammar spells out.
-
+        
         public static readonly TokenSet AssignOperator = TokenSet.Of(
             TokenKind.Equal, TokenKind.PlusEqual, TokenKind.MinusEqual);
 
         public static readonly TokenSet StringPart = TokenSet.Of(
             TokenKind.StringStart, TokenKind.StringText, TokenKind.StringEnd);
 
-        /// <summary>
-        /// What the Lexer can produce directly after a StringInterpolation while it still
-        /// thinks it is inside a string. Anything else means the string is unclosed.
-        /// </summary>
+        
         public static readonly TokenSet StringContinuation = TokenSet.Of(
             TokenKind.StringText, TokenKind.StringEnd, TokenKind.OpenBrace);
     }

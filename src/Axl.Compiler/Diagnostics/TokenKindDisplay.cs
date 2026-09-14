@@ -19,13 +19,11 @@ public static class TokenKindDisplayExtensions
             TokenKind.FnKw => "'fn'",
             TokenKind.VarKw => "'var'",
             TokenKind.ModuleKw => "'module'",
-            TokenKind.PublicKw => "'public'",
-            TokenKind.PrivateKw => "'private'",
             TokenKind.NativeKw => "'native'",
             TokenKind.ReturnKw => "'return'",
             TokenKind.IfKw => "'if'",
             TokenKind.ElseKw => "'else'",
-            TokenKind.LoopKw => "'loop'",
+            TokenKind.WhileKw => "'while'",
             TokenKind.BreakKw => "'break'",
             TokenKind.ContinueKw => "'continue'",
             TokenKind.AndKw => "'and'",
@@ -40,7 +38,7 @@ public static class TokenKindDisplayExtensions
             TokenKind.F64Kw => "'f64'",
             TokenKind.BoolKw => "'bool'",
             TokenKind.StringKw => "'string'",
-            TokenKind.NoneKw => "'none'",
+            TokenKind.UnitKw => "'unit'",
             TokenKind.NeverKw => "'never'",
 
             // --- Literals

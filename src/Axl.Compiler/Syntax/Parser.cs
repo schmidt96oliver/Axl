@@ -46,9 +46,10 @@ public partial class Parser
     {
         var file = _scanner.Open();
 
-        // Stmt can start from Expr or Decl. Recover only from
-        // Decl, because Expr would be too permissive.
-        var fileAnchor = Anchor.From(FirstSet.Member) | TokenKind.UsingKw | FirstSet.NonExprStmt;
+        // Don't anchor on module or using, because these are expected at
+        // the start of a file, and it makes sense to eat them as garbage
+        // inside each grammar.
+        var fileAnchor = Anchor.From(FirstSet.Member) | FirstSet.NonExprStmt;
 
         foreach (var _ in _scanner.MustEatEachIteration())
         {
@@ -66,8 +67,12 @@ public partial class Parser
                 // This is deliberately different from the anchor for EatStmt above.
                 // If the parser is already confused, we recover to any position that
                 // can start a new statement.
-                var recovered = RecoverToAndReport(Anchor.From(FirstSet.Stmt) | fileAnchor | TokenKind.Semicolon, 
-                    ExpectedSyntax.Stmt);
+                var recoverAnchor = Anchor.From(FirstSet.Stmt)
+                                    | TokenKind.ModuleKw
+                                    | TokenKind.UsingKw
+                                    | FirstSet.Member 
+                                    | TokenKind.Semicolon;
+                var recovered = RecoverToAndReport(recoverAnchor, ExpectedSyntax.Stmt);
 
                 if (_scanner.IsAt(TokenKind.Semicolon))
                 {
@@ -86,6 +91,18 @@ public partial class Parser
         _scanner.Close(file, SyntaxKind.File);
     }
 
+    private MarkClose EatUsingDirective()
+    {
+        Debug.Assert(_scanner.IsAt(TokenKind.UsingKw));
+
+        var usingDirective = _scanner.Open();
+        
+        _scanner.EatKnown(TokenKind.UsingKw);
+        EnsurePath(ExpectedSyntax.ModuleName);
+        EnsureToken(TokenKind.Semicolon);
+        
+        return _scanner.Close(usingDirective, SyntaxKind.UsingDirective);
+    }
 
     /// <summary>
     /// If scanner is not at <paramref name="anchor"/>, collects garbage into
@@ -173,34 +190,6 @@ public partial class Parser
         return true;
     }
     
-    /// <summary>
-    /// Applies the semicolon rule. Ensures ";" if required, otherwise eats it
-    /// only if it's there.
-    /// <para>
-    /// Semicolon rule: ";" is omissible iff the statements owns its body and last
-    /// token is "}".
-    /// </para>
-    /// </summary>
-    /// <param name="ownsBody">Whether the consuming nodes owns its body.</param>
-    private void EnsureSemicolonIfRequired(bool ownsBody)
-    {
-        var omissible = ownsBody && _scanner.Last?.Kind is TokenKind.CloseBrace;
-        
-        if (omissible && _scanner.IsAt(TokenKind.Semicolon))
-            _scanner.EatKnown(TokenKind.Semicolon);
-        else if (!omissible)
-            EnsureToken(TokenKind.Semicolon);
-    }
-    
-    
-    private MarkClose EnsureBody(Anchor anchor)
-    {
-        if (_scanner.IsAt(FirstSet.Arm))
-            return EatArm(anchor);
-        
-        return EnsureBlock(anchor, ExpectedSyntax.Body);
-    }
-
     /// <summary>
     /// Eats or makes a comma-delimited list of form <c>open (item ("," item)*)? close</c>
     /// into a node of kind <paramref name="listKind"/>.

@@ -12,13 +12,11 @@ public enum TokenKind
     FnKw,
     VarKw,
     ModuleKw,
-    PublicKw,
-    PrivateKw,
     NativeKw,
     ReturnKw,
     IfKw,
     ElseKw,
-    LoopKw,
+    WhileKw,
     BreakKw,
     ContinueKw,
     AndKw,
@@ -33,7 +31,7 @@ public enum TokenKind
     F64Kw,
     BoolKw,
     StringKw,
-    NoneKw,
+    UnitKw,
     NeverKw,
     
     // --- Literals
@@ -85,8 +83,5 @@ public static class TokenKindExtensions
 
         public bool HasValue =>
             kind is TokenKind.Identifier or TokenKind.NumberLiteral or TokenKind.StringText;
-
-        public bool IsModifier =>
-            kind is TokenKind.PublicKw or TokenKind.PrivateKw;
     }
 }

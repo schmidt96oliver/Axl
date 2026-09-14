@@ -6,7 +6,7 @@ fn Outer()
 {
     InBlock();      //~error
     
-    if true
+    if (true)
     {
         InBlock();          // valid
         fn InBlock()

@@ -9,7 +9,7 @@ public partial class ParserTests
         public sealed class Exprs
         {
             [Fact]
-            public void If_UnclosedGroupPredicate_1()
+            public void If_UnclosedCondition_1()
                 => InlineSnapshot.Validate(Tree("""
                                                 if (a > b 
                                                 { inner; }
@@ -21,7 +21,7 @@ public partial class ParserTests
                     ExprStmt
                     · IfExpr
                     · · 'if'
-                    · · GroupExpr
+                    · · ConditionClause
                     · · · '('
                     · · · BinaryExpr
                     · · · · IdName 'a'
@@ -37,10 +37,10 @@ public partial class ParserTests
                     """);
             
             [Fact]
-            public void If_UnclosedGroupPredicate_2()
+            public void If_UnclosedCondition_2()
                 => InlineSnapshot.Validate(Tree("""
                                                 if (a > b 
-                                                    => inner;
+                                                    inner;
                                                 """
                 ), """
                     ERROR MissingToken@[9, 9): Expected ')'.
@@ -49,24 +49,22 @@ public partial class ParserTests
                     ExprStmt
                     · IfExpr
                     · · 'if'
-                    · · GroupExpr
+                    · · ConditionClause
                     · · · '('
                     · · · BinaryExpr
                     · · · · IdName 'a'
                     · · · · '>'
                     · · · · IdName 'b'
                     · · · ??')'
-                    · · Arm
-                    · · · '=>'
-                    · · · IdName 'inner'
+                    · · IdName 'inner'
                     · ';'
                     """);
             
             [Fact]
-            public void If_UnclosedGroupPredicate_3()
+            public void If_UnclosedCondition_3()
                 => InlineSnapshot.Validate(Tree("""
                                                 if (a > b 
-                                                else => inner;  
+                                                else inner;  
                                                 """
                 ), """
                     ERROR MissingToken@[9, 9): Expected ')'.
@@ -75,279 +73,161 @@ public partial class ParserTests
                     ExprStmt
                     · IfExpr
                     · · 'if'
-                    · · GroupExpr
+                    · · ConditionClause
                     · · · '('
                     · · · BinaryExpr
                     · · · · IdName 'a'
                     · · · · '>'
                     · · · · IdName 'b'
                     · · · ??')'
-                    · · BlockExpr
-                    · · · ??'{'
-                    · · · ??'}'
+                    · · IdName
+                    · · · ??ID
                     · · ElseClause
                     · · · 'else'
-                    · · · Arm
-                    · · · · '=>'
-                    · · · · IdName 'inner'
+                    · · · IdName 'inner'
                     · ';'
                     """);
 
 
             [Fact]
             public void If_EqualInsteadOfDoubleEqual_1()
-            // Expect `=` as `=>`
-                => InlineSnapshot.Validate(Tree("if true = break;"), """
-                    ERROR UnexpectedToken@[8, 9): Expected '=>', got '='.
+                => InlineSnapshot.Validate(Tree("if (a = 1) { }"), """
+                    ERROR UnexpectedToken@[6, 7): Expected '==', got '='.
 
 
                     ExprStmt
                     · IfExpr
                     · · 'if'
-                    · · TrueLiteral 'true'
-                    · · Arm
-                    · · · Garbage '='
-                    · · · ??'=>'
-                    · · · BreakExpr 'break'
-                    · ';'
-                    """);
-
-            [Fact]
-            public void If_EqualInsteadOfDoubleEqual_2()
-            // Expect `=` as `==`
-                => InlineSnapshot.Validate(Tree("if a = 1;"), """
-                    ERROR UnexpectedToken@[5, 6): Expected '==', got '='.
-                    ERROR MissingToken@[8, 8): Expected a body.
-
-
-                    ExprStmt
-                    · IfExpr
-                    · · 'if'
-                    · · BinaryExpr
-                    · · · IdName 'a'
-                    · · · Garbage '='
-                    · · · ??'=='
-                    · · · NumberLiteral '1'
-                    · · BlockExpr
-                    · · · ??'{'
-                    · · · ??'}'
-                    · ';'
-                    """);
-                    
-            [Fact]
-            public void If_EqualInsteadOfDoubleEqual_3()
-            // Expect `=` as `==`
-                => InlineSnapshot.Validate(Tree("if a = 1 => 1;"), """
-                    ERROR UnexpectedToken@[5, 6): Expected '==', got '='.
-
-
-                    ExprStmt
-                    · IfExpr
-                    · · 'if'
-                    · · BinaryExpr
-                    · · · IdName 'a'
-                    · · · Garbage '='
-                    · · · ??'=='
-                    · · · NumberLiteral '1'
-                    · · Arm
-                    · · · '=>'
-                    · · · NumberLiteral '1'
-                    · ';'
-                    """);
-                    
-            [Fact]
-            public void If_EqualInsteadOfDoubleEqual_4()
-            // Expect 1. `=` as `==`, 2. `=` as `=>`
-                => InlineSnapshot.Validate(Tree("if a = 1 = true;"), """
-                    ERROR UnexpectedToken@[5, 6): Expected '==', got '='.
-                    ERROR UnexpectedToken@[9, 10): Expected '=>', got '='.
-
-
-                    ExprStmt
-                    · IfExpr
-                    · · 'if'
-                    · · BinaryExpr
-                    · · · IdName 'a'
-                    · · · Garbage '='
-                    · · · ??'=='
-                    · · · NumberLiteral '1'
-                    · · Arm
-                    · · · Garbage '='
-                    · · · ??'=>'
-                    · · · TrueLiteral 'true'
-                    · ';'
-                    """);
-                    
-            [Fact]
-            public void If_EqualInsteadOfDoubleEqual_5()
-            // Expect `=` as `=>`
-                => InlineSnapshot.Validate(Tree("if a = { 1; }"), """
-                    ERROR UnexpectedToken@[5, 6): Expected '=>', got '='.
-
-
-                    ExprStmt
-                    · IfExpr
-                    · · 'if'
-                    · · IdName 'a'
-                    · · Arm
-                    · · · Garbage '='
-                    · · · ??'=>'
-                    · · · BlockExpr
-                    · · · · '{'
-                    · · · · ExprStmt
-                    · · · · · NumberLiteral '1'
-                    · · · · · ';'
-                    · · · · '}'
-                    """);
-            
-            [Fact]
-            public void If_EqualInsteadOfDoubleEqual_6()
-            // Expect `=` as `==`
-                => InlineSnapshot.Validate(Tree("if a = 1 == 2 => true;"), """
-                    ERROR UnexpectedToken@[5, 6): Expected '==', got '='.
-                    ERROR InvalidOperatorChaining@[5, 6), [9, 11): Cannot chain '=' and '=='.
-
-
-                    ExprStmt
-                    · IfExpr
-                    · · 'if'
-                    · · ErrorExpr
-                    · · · IdName 'a'
-                    · · · Garbage '='
-                    · · · ??'=='
-                    · · · NumberLiteral '1'
-                    · · · '=='
-                    · · · NumberLiteral '2'
-                    · · Arm
-                    · · · '=>'
-                    · · · TrueLiteral 'true'
-                    · ';'
-                    """);
-            
-            [Fact]
-            public void If_EqualInsteadOfDoubleEqual_7()
-            // Expect `=` as `==`
-                => InlineSnapshot.Validate(Tree("if a = 1 and b == 2 => true;"), """
-                    ERROR UnexpectedToken@[5, 6): Expected '==', got '='.
-
-
-                    ExprStmt
-                    · IfExpr
-                    · · 'if'
-                    · · BinaryExpr
+                    · · ConditionClause
+                    · · · '('
                     · · · BinaryExpr
                     · · · · IdName 'a'
                     · · · · Garbage '='
                     · · · · ??'=='
                     · · · · NumberLiteral '1'
-                    · · · 'and'
-                    · · · BinaryExpr
-                    · · · · IdName 'b'
-                    · · · · '=='
-                    · · · · NumberLiteral '2'
-                    · · Arm
-                    · · · '=>'
-                    · · · TrueLiteral 'true'
-                    · ';'
+                    · · · ')'
+                    · · BlockExpr '{' '}'
                     """);
-            
+                    
             [Fact]
-            public void If_EqualInsteadOfDoubleEqual_8()
-            // Expect `=` as `==`
-                => InlineSnapshot.Validate(Tree("if a = 1 + 2 * 3 => true;"), """
-                    ERROR UnexpectedToken@[5, 6): Expected '==', got '='.
+            public void If_EqualInsteadOfDoubleEqual_2()
+                => InlineSnapshot.Validate(Tree("if (a = 1) 1;"), """
+                    ERROR UnexpectedToken@[6, 7): Expected '==', got '='.
 
 
                     ExprStmt
                     · IfExpr
                     · · 'if'
-                    · · BinaryExpr
-                    · · · IdName 'a'
-                    · · · Garbage '='
-                    · · · ??'=='
+                    · · ConditionClause
+                    · · · '('
                     · · · BinaryExpr
+                    · · · · IdName 'a'
+                    · · · · Garbage '='
+                    · · · · ??'=='
                     · · · · NumberLiteral '1'
-                    · · · · '+'
-                    · · · · BinaryExpr
-                    · · · · · NumberLiteral '2'
-                    · · · · · '*'
-                    · · · · · NumberLiteral '3'
-                    · · Arm
-                    · · · '=>'
-                    · · · TrueLiteral 'true'
-                    · ';'
-                    """);
-            
-            
-            [Fact]
-            public void EqualAsArm_1()
-                => InlineSnapshot.Validate(Tree("fn A() = 1;"), """
-                    ERROR UnexpectedToken@[7, 8): Expected '=>', got '='.
-
-
-                    FnDecl
-                    · 'fn'
-                    · IdName 'A'
-                    · ParamList '(' ')'
-                    · Arm
-                    · · Garbage '='
-                    · · ??'=>'
+                    · · · ')'
                     · · NumberLiteral '1'
                     · ';'
                     """);
+                    
             
             [Fact]
-            public void EqualAsArm_2()
-                => InlineSnapshot.Validate(Tree("loop = 1;"), """
-                    ERROR UnexpectedToken@[5, 6): Expected '=>', got '='.
-
-
-                    ExprStmt
-                    · LoopExpr
-                    · · 'loop'
-                    · · Arm
-                    · · · Garbage '='
-                    · · · ??'=>'
-                    · · · NumberLiteral '1'
-                    · ';'
-                    """);
-            
-            [Fact]
-            public void EqualAsArm_3()
-                => InlineSnapshot.Validate(Tree("if true => 1 else = 2;"), """
-                    ERROR UnexpectedToken@[18, 19): Expected '=>', got '='.
+            public void If_EqualInsteadOfDoubleEqual_3()
+                => InlineSnapshot.Validate(Tree("if (a = ) { }"), """
+                    ERROR UnexpectedToken@[6, 7): Expected '==', got '='.
 
 
                     ExprStmt
                     · IfExpr
                     · · 'if'
-                    · · TrueLiteral 'true'
-                    · · Arm
-                    · · · '=>'
-                    · · · NumberLiteral '1'
-                    · · ElseClause
-                    · · · 'else'
-                    · · · Arm
+                    · · ConditionClause
+                    · · · '('
+                    · · · BinaryExpr
+                    · · · · IdName 'a'
                     · · · · Garbage '='
-                    · · · · ??'=>'
+                    · · · · ??'=='
+                    · · · · IdName
+                    · · · · · ??ID
+                    · · · ')'
+                    · · BlockExpr '{' '}'
+                    """);
+            
+            [Fact]
+            public void If_EqualInsteadOfDoubleEqual_4()
+                => InlineSnapshot.Validate(Tree("if (a = 1 == 2) true;"), """
+                    ERROR UnexpectedToken@[6, 7): Expected '==', got '='.
+                    ERROR InvalidOperatorChaining@[6, 7), [10, 12): Cannot chain '=' and '=='.
+
+
+                    ExprStmt
+                    · IfExpr
+                    · · 'if'
+                    · · ConditionClause
+                    · · · '('
+                    · · · ErrorExpr
+                    · · · · IdName 'a'
+                    · · · · Garbage '='
+                    · · · · ??'=='
+                    · · · · NumberLiteral '1'
+                    · · · · '=='
                     · · · · NumberLiteral '2'
+                    · · · ')'
+                    · · TrueLiteral 'true'
                     · ';'
                     """);
             
             [Fact]
-            public void EqualAsArm_4()
-                => InlineSnapshot.Validate(Tree("{ = 1 }"), """
-                    ERROR UnexpectedToken@[2, 3): Expected '=>', got '='.
+            public void If_EqualInsteadOfDoubleEqual_5()
+                => InlineSnapshot.Validate(Tree("if (a = 1 and b == 2) true;"), """
+                    ERROR UnexpectedToken@[6, 7): Expected '==', got '='.
 
 
                     ExprStmt
-                    · BlockExpr
-                    · · '{'
-                    · · Arm
-                    · · · Garbage '='
-                    · · · ??'=>'
-                    · · · NumberLiteral '1'
-                    · · '}'
+                    · IfExpr
+                    · · 'if'
+                    · · ConditionClause
+                    · · · '('
+                    · · · BinaryExpr
+                    · · · · BinaryExpr
+                    · · · · · IdName 'a'
+                    · · · · · Garbage '='
+                    · · · · · ??'=='
+                    · · · · · NumberLiteral '1'
+                    · · · · 'and'
+                    · · · · BinaryExpr
+                    · · · · · IdName 'b'
+                    · · · · · '=='
+                    · · · · · NumberLiteral '2'
+                    · · · ')'
+                    · · TrueLiteral 'true'
+                    · ';'
+                    """);
+            
+            [Fact]
+            public void If_EqualInsteadOfDoubleEqual_6()
+                => InlineSnapshot.Validate(Tree("if (a = 1 + 2 * 3) true;"), """
+                    ERROR UnexpectedToken@[6, 7): Expected '==', got '='.
+
+
+                    ExprStmt
+                    · IfExpr
+                    · · 'if'
+                    · · ConditionClause
+                    · · · '('
+                    · · · BinaryExpr
+                    · · · · IdName 'a'
+                    · · · · Garbage '='
+                    · · · · ??'=='
+                    · · · · BinaryExpr
+                    · · · · · NumberLiteral '1'
+                    · · · · · '+'
+                    · · · · · BinaryExpr
+                    · · · · · · NumberLiteral '2'
+                    · · · · · · '*'
+                    · · · · · · NumberLiteral '3'
+                    · · · ')'
+                    · · TrueLiteral 'true'
+                    · ';'
                     """);
         }
     }

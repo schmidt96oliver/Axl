@@ -13,5 +13,11 @@ public sealed class FnDeclSyntax(ImmutableArray<SyntaxElement> children)
     public TypeNameSyntax? ReturnTypeAnnotation
         => Children.FirstOfTypeOrNull<TypeAnnotationClauseSyntax>()?.TypeName;
     
-    public BodySyntax Body => Children.FirstOfType<BodySyntax>();
+    public FnBodySyntax Body => Children.FirstOfType<FnBodySyntax>();
+}
+public sealed class FnBodySyntax(ImmutableArray<SyntaxElement> children)
+    : MemberSyntax(SyntaxKind.FnBody, children)
+{
+    public bool IsArm => Children.Any(child => child is Token { Kind: TokenKind.RightDoubleArrow });
+    public ExprSyntax? Expr => Children.FirstOfTypeOrNull<ExprSyntax>();
 }

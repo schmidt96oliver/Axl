@@ -34,20 +34,21 @@ public partial class ParserTests
                     · 'fn'
                     · IdName 'A'
                     · ParamList '(' ')'
-                    · BlockExpr
-                    · · '{'
-                    · · Garbage 'module'
-                    · · ExprStmt
-                    · · · IdName 'Global'
-                    · · · ';'
-                    · · ExprStmt
-                    · · · NumberLiteral '1'
-                    · · · ';'
-                    · · '}'
+                    · FnBody
+                    · · BlockExpr
+                    · · · '{'
+                    · · · Garbage 'module'
+                    · · · ExprStmt
+                    · · · · IdName 'Global'
+                    · · · · ';'
+                    · · · ExprStmt
+                    · · · · NumberLiteral '1'
+                    · · · · ';'
+                    · · · '}'
                     """);
             [Fact]
             public void InBlock()
-                => InlineSnapshot.Validate(Tree("{ module Global; => 1 }"), """
+                => InlineSnapshot.Validate(Tree("{ module Global; }"), """
                     ERROR UnexpectedToken@[2, 8): Expected a statement, got 'module'.
 
 
@@ -58,9 +59,6 @@ public partial class ParserTests
                     · · ExprStmt
                     · · · IdName 'Global'
                     · · · ';'
-                    · · Arm
-                    · · · '=>'
-                    · · · NumberLiteral '1'
                     · · '}'
                     """);
         }
