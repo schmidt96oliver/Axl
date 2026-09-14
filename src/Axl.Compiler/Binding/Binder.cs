@@ -228,6 +228,7 @@ public sealed class Binder
         GroupExprSyntax groupExprSyntax => BindExpr(groupExprSyntax.Inner),
         BreakExprSyntax breakExprSyntax => BindBreakOrContinue(breakExprSyntax),
         ContinueExprSyntax or BreakExprSyntax => BindBreakOrContinue(syntax),
+        ReturnExprSyntax returnExprSyntax => BindReturn(returnExprSyntax),
         
         // Error and unsupported
         ErrorExprSyntax errorExprSyntax => BindError(errorExprSyntax),
@@ -497,6 +498,18 @@ public sealed class Binder
         return syntax is BreakExprSyntax
             ? new BoundBreak(_types.Never, syntax)
             : new BoundContinue(_types.Never, syntax);
+    }
+
+    private BoundExpr BindReturn(ReturnExprSyntax syntax)
+    {
+        var expr = syntax.Expr is not null ? BindExpr(syntax.Expr) : null;
+
+        // For now, we are on script scope. Thus, only allow
+        // unit expressions or none.
+        if (expr is not null)
+            CheckTypeAndReportMismatch(expr, _types.Unit);
+
+        return new BoundReturn(expr, _types.Never, syntax);
     }
     
     #endregion
