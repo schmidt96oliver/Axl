@@ -157,7 +157,7 @@ public sealed class Evaluator
             if (type.Name != annotation.TypeName)
             {
                 _failedChecks.Add(new FailedCheck(line,
-                    $"Expected type '{annotation.TypeName}', got '{type.DisplayName}'."));
+                    $"Expected type '{annotation.TypeName}', got '{type.Name}'."));
             }
         }
     }

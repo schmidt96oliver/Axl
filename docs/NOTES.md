@@ -2,22 +2,24 @@
                                        ≽(◕ ᴗ ◕)≼
 
 **Next:** 
+* error message for non-matching if arms
 
-**Simplifications**
-* SyntaxTree API
-  * SyntaxTree.From/Parse, ParseTokens
-  * Pass SyntaxTree into SyntaxNode
-  * Span not nullable
-  * AST: Members, Usings, etc necessary or just walk completely over it?
-  * Tokens coming from Lexer should also have .Text, .Location, etc...
-* Diagnostics
-  * Move to DiagnosticBag.Report***
-  * Think about Parser deduping
 
 **Moving On**
 * allow any type in string interpolation (that's a lowering problem)
 * local fn bodies with "cannot capture" warning.
     * They can see other local fns transitively
+
+**Simplifications**
+* SyntaxTree API
+    * SyntaxTree.From/Parse, ParseTokens
+    * Pass SyntaxTree into SyntaxNode
+    * Span not nullable
+    * AST: Members, Usings, etc necessary or just walk completely over it?
+    * Tokens coming from Lexer should also have .Text, .Location, etc...
+* Diagnostics
+    * Move to DiagnosticBag.Report***
+    * Think about Parser deduping
 
 **Stashed small ones**:
 - LSP: Make Serial (see Omnisharp) and weave CancellationToken
@@ -25,7 +27,6 @@
 **Regressions**
 * `1_i32 == 1_i64`
 * `if true => 1 else => "A";` diagnostic message
-* `1 + true` squiggle all?
 
 # Taxl: Multiple files
 * SourceText gets Origin (SourceText, Offset); construction by SourceText.Subtext

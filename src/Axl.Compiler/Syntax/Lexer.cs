@@ -105,10 +105,23 @@ public sealed class Lexer
             _start = _next;
         }
 
-        public void AddNumberLiteral(string body, NumberLiteralSuffix suffix)
+        public void AddNumberLiteralWithoutSuffix(string body)
         {
             Debug.Assert(_next > _start);
-            _tokens.Add(Token.MakeNumberLiteral(SourceRange.FromBounds(_start, _next), body, suffix));
+            var range = SourceRange.FromBounds(_start, _next);
+            var suffixRange = SourceRange.EmptyAfter(range);
+            _tokens.Add(Token.MakeNumberLiteral(range, body, NumberLiteralSuffix.None, suffixRange));
+            _start = _next;
+        }
+        
+        public void AddNumberLiteralWithSuffix(string body, NumberLiteralSuffix suffix, SourceRange suffixRange)
+        {
+            Debug.Assert(_next > _start);
+            
+            var range = SourceRange.FromBounds(_start, _next);
+            Debug.Assert(range.Contains(suffixRange));
+            
+            _tokens.Add(Token.MakeNumberLiteral(range, body, suffix, suffixRange));
             _start = _next;
         }
 
@@ -308,7 +321,7 @@ public sealed class Lexer
             bodyBuilder.Append(scanner.CurrentText);  // 0x
             
             AdvanceBody(ref scanner, char.IsAsciiHexDigit);
-            scanner.AddNumberLiteral(bodyBuilder.ToString(), NumberLiteralSuffix.None);
+            scanner.AddNumberLiteralWithoutSuffix(bodyBuilder.ToString());
             return;
         }
         
@@ -319,7 +332,7 @@ public sealed class Lexer
             bodyBuilder.Append(scanner.CurrentText); // 0b
             
             AdvanceBody(ref scanner, c => c is '0' or '1');
-            scanner.AddNumberLiteral(bodyBuilder.ToString(), NumberLiteralSuffix.None);
+            scanner.AddNumberLiteralWithoutSuffix(bodyBuilder.ToString());
             return;
         }
 
@@ -336,7 +349,6 @@ public sealed class Lexer
         }
 
         // --- Suffix
-        var suffix = NumberLiteralSuffix.None;
         if (char.IsAsciiLetter(scanner.Peek()))
         {
             // Advance an entire identifier
@@ -344,7 +356,7 @@ public sealed class Lexer
             scanner.AdvanceWhile(c => char.IsAsciiLetterOrDigit(c) || c is '_');
             
             // Parse it as a suffix
-            suffix = scanner.CurrentText[suffixStart..] switch
+            var suffix = scanner.CurrentText[suffixStart..] switch
             {
                 "i32" => NumberLiteralSuffix.I32,
                 "i64" => NumberLiteralSuffix.I64,
@@ -352,6 +364,8 @@ public sealed class Lexer
                 "f64" => NumberLiteralSuffix.F64,
                 _ => NumberLiteralSuffix.None
             };
+
+            var suffixRange = SourceRange.FromBounds(scanner.StartIndex + suffixStart, scanner.NextIndex);
             
             // Invalid?
             if (suffix is NumberLiteralSuffix.None)
@@ -361,11 +375,14 @@ public sealed class Lexer
                 // this will never be read. The block is still valid.
                 
                 scanner.DiagnosticBag.ReportError(new Diagnostic.UnknownNumberSuffix(
-                    scanner.SourceText.GetLocationFromBounds(scanner.StartIndex + suffixStart, scanner.NextIndex)));
+                    scanner.SourceText.GetLocation(suffixRange)));
             }
+            
+            scanner.AddNumberLiteralWithSuffix(bodyBuilder.ToString(), suffix, suffixRange);
+            return;
         }
         
-        scanner.AddNumberLiteral(bodyBuilder.ToString(), suffix);
+        scanner.AddNumberLiteralWithoutSuffix(bodyBuilder.ToString());
         return;
 
         void AdvanceBody(ref Scanner scanner, Func<char, bool> isDigit)

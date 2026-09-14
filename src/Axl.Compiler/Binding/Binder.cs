@@ -170,12 +170,10 @@ public sealed class Binder
 
     private BoundStmt BindCompoundAssign(VariableSymbol target, BoundExpr value, AssignStmtSyntax syntax)
     {
-        var boundLeft = new BoundVariableRef(target, syntax.Target);
-        
         if (_types.TryGetCompoundAssignNativeOperator(syntax.Operator.Kind, target.Type, value.Type)
             is not { } nativeOperator)
         {
-            _diagnostics.ReportError(new Diagnostic.UndefinedOperator(syntax.Operator, [boundLeft, value]));
+            _diagnostics.ReportError(new Diagnostic.UndefinedOperator(syntax.Operator, [target.Type, value.Type], syntax));
             return new BoundErrorStmt([value], syntax);
         }
         
@@ -454,7 +452,7 @@ public sealed class Binder
         if (nativeOperator is null)
         {
             _diagnostics.ReportError(
-                new Diagnostic.UndefinedOperator(operatorToken, boundOperands));
+                new Diagnostic.UndefinedOperator(operatorToken, [.. boundOperands.Select(expr => expr.Type)], syntax));
             return new BoundErrorExpr(recoveredExprs: [.. boundOperands],
                 type: _types.Error, syntax);
         }

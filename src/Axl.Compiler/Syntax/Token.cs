@@ -63,7 +63,7 @@ public class Token : SyntaxElement
             case TokenKind.Identifier:
                 return new IdentifierToken(range, string.Empty);
             case TokenKind.NumberLiteral:
-                return new NumberLiteralToken(range, body: string.Empty, NumberLiteralSuffix.None);
+                return new NumberLiteralToken(range, body: string.Empty, NumberLiteralSuffix.None, suffixRange: SourceRange.EmptyAfter(range));
             case TokenKind.StringText:
                 return new StringTextToken(range, processedText: string.Empty, isMissing: true);
             
@@ -75,8 +75,8 @@ public class Token : SyntaxElement
     public static IdentifierToken MakeIdentifier(SourceRange range, string identifier)
         => new(range, identifier);
 
-    public static NumberLiteralToken MakeNumberLiteral(SourceRange range, string body, NumberLiteralSuffix suffix)
-        => new(range, body, suffix);
+    public static NumberLiteralToken MakeNumberLiteral(SourceRange range, string body, NumberLiteralSuffix suffix, SourceRange suffixRange)
+        => new(range, body, suffix, suffixRange);
 
     public static StringTextToken MakeStringText(SourceRange range, string processedText)
         => new(range, processedText);

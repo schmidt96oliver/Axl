@@ -11,7 +11,7 @@ public enum NumberLiteralSuffix
     F64,
 }
 
-public sealed class NumberLiteralToken(SourceRange range, string body, NumberLiteralSuffix suffix) 
+public sealed class NumberLiteralToken(SourceRange range, string body, NumberLiteralSuffix suffix, SourceRange suffixRange) 
     : Token(range, TokenKind.NumberLiteral, isMissing: body.Length == 0)
 {
     /// <summary>
@@ -28,6 +28,8 @@ public sealed class NumberLiteralToken(SourceRange range, string body, NumberLit
     public string Body { get; } = body;
 
     public NumberLiteralSuffix Suffix { get; } = suffix;
-    
+
+    public SourceRange SuffixRange { get; } = suffixRange;
+
     public bool HasDecimalPoint => Body.Contains('.');
 }
