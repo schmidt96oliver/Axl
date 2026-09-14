@@ -16,8 +16,6 @@
 
 **Moving On**
 * allow any type in string interpolation (that's a lowering problem)
-* compound assign
-* global return
 * local fn bodies with "cannot capture" warning.
     * They can see other local fns transitively
 

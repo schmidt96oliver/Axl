@@ -1,0 +1,23 @@
+﻿//@check
+
+var a: i32 = 1;
+
+a = 1;      
+a = "";     //~error TypeMismatch
+a = 1.1;    //~error TypeMismatch
+a = true;   //~error TypeMismatch
+a = { };    //~error TypeMismatch
+
+var b: string = "";
+b = 1;      //~error TypeMismatch
+b = "";
+b = 1.1;    //~error TypeMismatch
+b = true;   //~error TypeMismatch
+b = { };    //~error TypeMismatch
+
+var c: unit = { };
+c = 1;      //~error TypeMismatch
+c = "";     //~error TypeMismatch
+c = 1.1;    //~error TypeMismatch
+c = true;   //~error TypeMismatch
+c = { };

@@ -6,7 +6,7 @@ namespace Axl.Compiler.Binding.BoundTree;
 
 /// <summary>
 /// A reference to a <see cref="VariableSymbol"/>. Note that failed lookups
-/// are represented as <see cref="BoundError"/>.
+/// are represented as <see cref="BoundErrorExpr"/>.
 /// </summary>
 public sealed class BoundVariableRef(VariableSymbol variable, SyntaxNode syntax) : BoundExpr(variable.Type, syntax)
 {

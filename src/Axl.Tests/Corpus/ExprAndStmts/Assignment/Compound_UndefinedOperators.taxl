@@ -1,0 +1,41 @@
+﻿//@check
+
+var a: i32 = 1;
+
+a += 1;      
+a += "";     //~error UndefinedOperator
+a += 1.1;    //~error UndefinedOperator
+a += true;   //~error UndefinedOperator
+a += { };    //~error UndefinedOperator
+
+a -= 1;      
+a -= "";     //~error UndefinedOperator
+a -= 1.1;    //~error UndefinedOperator
+a -= true;   //~error UndefinedOperator
+a -= { };    //~error UndefinedOperator
+
+var b: string = "";
+b += 1;      //~error UndefinedOperator
+b += "";     //~error UndefinedOperator
+b += 1.1;    //~error UndefinedOperator
+b += true;   //~error UndefinedOperator
+b += { };    //~error UndefinedOperator
+
+b -= 1;      //~error UndefinedOperator
+b -= "";     //~error UndefinedOperator
+b -= 1.1;    //~error UndefinedOperator
+b -= true;   //~error UndefinedOperator
+b -= { };    //~error UndefinedOperator
+
+var c: unit = { };
+c += 1;      //~error UndefinedOperator
+c += "";     //~error UndefinedOperator
+c += 1.1;    //~error UndefinedOperator
+c += true;   //~error UndefinedOperator
+c += { };    //~error UndefinedOperator
+
+c -= 1;      //~error UndefinedOperator
+c -= "";     //~error UndefinedOperator
+c -= 1.1;    //~error UndefinedOperator
+c -= true;   //~error UndefinedOperator
+c -= { };    //~error UndefinedOperator

@@ -4,8 +4,8 @@ using Axl.Compiler.Syntax;
 
 namespace Axl.Compiler.Binding.BoundTree;
 
-public sealed class BoundAssign(VariableSymbol target, BoundExpr value, TypeSymbol type, SyntaxNode syntax)
-    : BoundExpr(type, syntax)
+public sealed class BoundAssign(VariableSymbol target, BoundExpr value, SyntaxNode syntax)
+    : BoundStmt(syntax)
 {
     public VariableSymbol Target { get; } = target;
     public BoundExpr Value { get; } = value;
