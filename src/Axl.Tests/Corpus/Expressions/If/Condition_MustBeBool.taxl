@@ -1,0 +1,11 @@
+﻿//@check
+
+// The condition of an if expr must be of type bool.
+
+if ({}) {}  //~error TypeMismatch
+if (1) {}  //~error TypeMismatch
+if (1.1) {}  //~error TypeMismatch
+if ("string") {}  //~error TypeMismatch
+
+if ("string" == 1) {}  
+if ("string" == 1 and true) {} 

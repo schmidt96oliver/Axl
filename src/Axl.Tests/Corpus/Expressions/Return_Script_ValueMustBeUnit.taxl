@@ -1,0 +1,23 @@
+﻿//@check
+
+// On a script, return exprs must have no value or unit type.
+
+return;     
+return { };
+return return;
+return return return { };
+
+return 1;       //~error TypeMismatch
+return "";      //~error TypeMismatch
+return return return 1; //~error TypeMismatch
+
+while (true)
+{
+    return;     
+    return { };
+    
+    return 1.1;       //~error TypeMismatch
+    return true;      //~error TypeMismatch
+    
+    return break;
+}

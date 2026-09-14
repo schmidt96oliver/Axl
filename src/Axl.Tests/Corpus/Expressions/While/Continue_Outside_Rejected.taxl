@@ -1,0 +1,11 @@
+//@check
+
+// Continue outside of loops are not valid.
+
+continue;  //~error BreakOrContinueOutsideLoop
+
+{
+    continue;  //~error BreakOrContinueOutsideLoop
+}
+
+if (true) continue;    //~error BreakOrContinueOutsideLoop

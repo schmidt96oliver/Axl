@@ -1,0 +1,11 @@
+﻿//@check
+
+// The condition of a while expr must be of type bool.
+
+while ({}) {}  //~error TypeMismatch
+while (1) {}  //~error TypeMismatch
+while (1.1) {}  //~error TypeMismatch
+while ("string") {}  //~error TypeMismatch
+
+while ("string" == 1) {}  
+while ("string" == 1 and true) {} 

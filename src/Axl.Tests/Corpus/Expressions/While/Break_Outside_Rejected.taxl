@@ -1,0 +1,11 @@
+﻿//@check
+
+// Break outside of loops are not valid.
+
+break;  //~error BreakOrContinueOutsideLoop
+
+{
+    break;  //~error BreakOrContinueOutsideLoop
+}
+
+if (true) break;    //~error BreakOrContinueOutsideLoop
