@@ -18,7 +18,10 @@ public partial class ParserTests
         [Fact]
         public void Assign_Lowest()
             => InlineSnapshot.Validate(SExpr("a.b() = not c and d;"), "(((a . b) (( ))) = ((not c) and d))");
-        
+
+        [Fact]
+        public void Assign_RightAssociative()
+            => InlineSnapshot.Validate(SExpr("a = b = c = d;"), "(a = (b = (c = d)))");
         
         [Fact]
         public void Group_1()

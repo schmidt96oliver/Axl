@@ -83,6 +83,10 @@ public partial class Parser
                     return PrecedenceComparison.Ambiguous;
             }
             
+            // --- Right-associative pairs
+            if (left == right && left is Precedence.Assign)
+                return PrecedenceComparison.RightBindsTighter;
+            
             // --- Compare
             // If they are equal, LeftBindsTighter is returned.
             // That means, they will be left-associative.
