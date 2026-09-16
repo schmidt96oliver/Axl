@@ -27,9 +27,11 @@ Just like the Axolotl, Axl's animal.
 
 # Decisions
 
-16.09.26 Assignment is an *expression* and type-checks as it's value type
+16.09.26 Assignment is an *expression* with type unit
+  * Expression parsing is the natural place, since it's an infix operator
   * `if (true) a = 2;` - If only accepts expressions and this must parse correctly.
-  * `a = b = 2` - Chained assignment is useful and simplifies parsing. It does allow the `if (a = 2) ...` pitfall.
+  * Chained assign is commonly treated unnecessary and not possible in Kotlin, Rust, ...
+  * `if (a = 1) { }` errors instead of being a pitfall
     
 14.09.26 *Spike*: Simpler syntax rework.
   * Rename `none` to `unit` ('none' is a name collision with 'never')

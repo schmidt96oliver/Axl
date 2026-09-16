@@ -165,7 +165,7 @@ public sealed class Binder
             return BindCompoundAssign(target, value, syntax);
 
         var type = CheckTypeAndReportMismatch(value, target.Type)
-            ? value.Type
+            ? _types.Unit
             : _types.Error;
         return new BoundAssign(target, value, type, syntax);
     }
@@ -183,7 +183,7 @@ public sealed class Binder
             operands: [new BoundVariableRef(target, syntax.Left), value],
             type: nativeOperator.ReturnType,
             syntax: syntax);
-        var assign = new BoundAssign(target, binary, binary.Type, syntax);
+        var assign = new BoundAssign(target, binary, _types.Unit, syntax);
         return assign;
     }
     
