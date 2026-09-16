@@ -147,9 +147,6 @@ public partial class ParserTests
             [Fact]
             public void If_EqualInsteadOfDoubleEqual_1()
                 => InlineSnapshot.Validate(Tree("if (a = 1) { }"), """
-                    ERROR UnexpectedToken@[6, 7): Expected '==', got '='.
-
-
                     ExprStmt
                     · IfExpr
                     · · 'if'
@@ -157,8 +154,7 @@ public partial class ParserTests
                     · · · '('
                     · · · BinaryExpr
                     · · · · IdName 'a'
-                    · · · · Garbage '='
-                    · · · · ??'=='
+                    · · · · '='
                     · · · · NumberLiteral '1'
                     · · · ')'
                     · · BlockExpr '{' '}'
@@ -167,9 +163,6 @@ public partial class ParserTests
             [Fact]
             public void If_EqualInsteadOfDoubleEqual_2()
                 => InlineSnapshot.Validate(Tree("if (a = 1) 1;"), """
-                    ERROR UnexpectedToken@[6, 7): Expected '==', got '='.
-
-
                     ExprStmt
                     · IfExpr
                     · · 'if'
@@ -177,8 +170,7 @@ public partial class ParserTests
                     · · · '('
                     · · · BinaryExpr
                     · · · · IdName 'a'
-                    · · · · Garbage '='
-                    · · · · ??'=='
+                    · · · · '='
                     · · · · NumberLiteral '1'
                     · · · ')'
                     · · NumberLiteral '1'
@@ -189,7 +181,7 @@ public partial class ParserTests
             [Fact]
             public void If_EqualInsteadOfDoubleEqual_3()
                 => InlineSnapshot.Validate(Tree("if (a = ) { }"), """
-                    ERROR UnexpectedToken@[6, 7): Expected '==', got '='.
+                    ERROR MissingToken@[7, 7): Expected an expression.
 
 
                     ExprStmt
@@ -199,8 +191,7 @@ public partial class ParserTests
                     · · · '('
                     · · · BinaryExpr
                     · · · · IdName 'a'
-                    · · · · Garbage '='
-                    · · · · ??'=='
+                    · · · · '='
                     · · · · IdName
                     · · · · · ??ID
                     · · · ')'
@@ -210,47 +201,16 @@ public partial class ParserTests
             [Fact]
             public void If_EqualInsteadOfDoubleEqual_4()
                 => InlineSnapshot.Validate(Tree("if (a = 1 == 2) true;"), """
-                    ERROR UnexpectedToken@[6, 7): Expected '==', got '='.
-                    ERROR InvalidOperatorChaining@[6, 7), [10, 12): Cannot chain '=' and '=='.
-
-
-                    ExprStmt
-                    · IfExpr
-                    · · 'if'
-                    · · ConditionClause
-                    · · · '('
-                    · · · ErrorExpr
-                    · · · · IdName 'a'
-                    · · · · Garbage '='
-                    · · · · ??'=='
-                    · · · · NumberLiteral '1'
-                    · · · · '=='
-                    · · · · NumberLiteral '2'
-                    · · · ')'
-                    · · TrueLiteral 'true'
-                    · ';'
-                    """);
-            
-            [Fact]
-            public void If_EqualInsteadOfDoubleEqual_5()
-                => InlineSnapshot.Validate(Tree("if (a = 1 and b == 2) true;"), """
-                    ERROR UnexpectedToken@[6, 7): Expected '==', got '='.
-
-
                     ExprStmt
                     · IfExpr
                     · · 'if'
                     · · ConditionClause
                     · · · '('
                     · · · BinaryExpr
+                    · · · · IdName 'a'
+                    · · · · '='
                     · · · · BinaryExpr
-                    · · · · · IdName 'a'
-                    · · · · · Garbage '='
-                    · · · · · ??'=='
                     · · · · · NumberLiteral '1'
-                    · · · · 'and'
-                    · · · · BinaryExpr
-                    · · · · · IdName 'b'
                     · · · · · '=='
                     · · · · · NumberLiteral '2'
                     · · · ')'
@@ -259,11 +219,8 @@ public partial class ParserTests
                     """);
             
             [Fact]
-            public void If_EqualInsteadOfDoubleEqual_6()
-                => InlineSnapshot.Validate(Tree("if (a = 1 + 2 * 3) true;"), """
-                    ERROR UnexpectedToken@[6, 7): Expected '==', got '='.
-
-
+            public void If_EqualInsteadOfDoubleEqual_5()
+                => InlineSnapshot.Validate(Tree("if (a = 1 and b == 2) true;"), """
                     ExprStmt
                     · IfExpr
                     · · 'if'
@@ -271,8 +228,30 @@ public partial class ParserTests
                     · · · '('
                     · · · BinaryExpr
                     · · · · IdName 'a'
-                    · · · · Garbage '='
-                    · · · · ??'=='
+                    · · · · '='
+                    · · · · BinaryExpr
+                    · · · · · NumberLiteral '1'
+                    · · · · · 'and'
+                    · · · · · BinaryExpr
+                    · · · · · · IdName 'b'
+                    · · · · · · '=='
+                    · · · · · · NumberLiteral '2'
+                    · · · ')'
+                    · · TrueLiteral 'true'
+                    · ';'
+                    """);
+            
+            [Fact]
+            public void If_EqualInsteadOfDoubleEqual_6()
+                => InlineSnapshot.Validate(Tree("if (a = 1 + 2 * 3) true;"), """
+                    ExprStmt
+                    · IfExpr
+                    · · 'if'
+                    · · ConditionClause
+                    · · · '('
+                    · · · BinaryExpr
+                    · · · · IdName 'a'
+                    · · · · '='
                     · · · · BinaryExpr
                     · · · · · NumberLiteral '1'
                     · · · · · '+'

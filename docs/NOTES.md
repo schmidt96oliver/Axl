@@ -2,6 +2,8 @@
                                        ≽(◕ ᴗ ◕)≼
 
 **Next:** 
+* assignment as expression
+  * `if (true) a = 2;` should parse correctly
 * error message for non-matching if arms
 
 
@@ -27,6 +29,8 @@
 **Regressions**
 * `1_i32 == 1_i64`
 * `if true => 1 else => "A";` diagnostic message
+* `if (true) else 1;` generates UndefinedName
+* `if (true) a(); else b();` allow the semicolon is stmt position?
 
 # Taxl: Multiple files
 * SourceText gets Origin (SourceText, Offset); construction by SourceText.Subtext

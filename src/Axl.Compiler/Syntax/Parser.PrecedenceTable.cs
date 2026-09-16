@@ -6,7 +6,8 @@ public partial class Parser
     {
         // Ordered from lowest to highest, so the int value can be used 
         // for comparison.
-            
+        Assign,    
+        
         LogicOr,
         LogicAnd,
         LogicNot,
@@ -58,6 +59,8 @@ public partial class Parser
 
             TokenKind.AndKw => Precedence.LogicAnd,
             TokenKind.OrKw => Precedence.LogicOr,
+            
+            TokenKind.Equal => Precedence.Assign,
 
             _ => null
         };

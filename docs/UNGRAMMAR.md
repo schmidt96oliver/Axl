@@ -28,7 +28,6 @@ NativeClause    = "native" "(" StringExpr ")"
 Stmt        = ExprStmt
             | VarDecl
             | WhileStmt
-            | AssignStmt
 
 ExprStmt    = Expr ";"
 
@@ -37,7 +36,7 @@ InitializerClause   = "=" Expr
 
 WhileStmt   = "while" "(" Expr ")" Block
 
-AssignStmt  = IdName ("="|"+="|"-=") Expr
+
 
 # Expressions
 Expr        = BlockExpr
@@ -47,11 +46,14 @@ Expr        = BlockExpr
             | Group | Binary | Unary
             | Call
             | GetMember
+            | AssignExpr
 
 BlockExpr   = "{" (Stmt | Member)* "}"
 
 IfExpr      = "if" (Expr) Expr ("else" Expr)
 > ERROR PRODUCTION: "=" accepted inside (Expr)
+
+AssignExpr  = Expr ("="|"+="|"-=") Expr
 
 Group       = "(" Expr ")"
 
@@ -102,4 +104,4 @@ TypeAnnotation  = ":" TypeName
 not                 (prefix)
 and                 (left-assoc, ambig with or)
 or                  (left-assoc, ambig with and)
-if
+=                   (right-assoc)
