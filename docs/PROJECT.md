@@ -27,6 +27,10 @@ Just like the Axolotl, Axl's animal.
 
 # Decisions
 
+16.09.26 If is bound separately as stmt or expr
+  * In stmt position, any branch types should type-check correctly
+  * Esp. for fn calls with differing return type
+
 16.09.26 If accepts optional intermediate semicolon
   * To allow familar syntax `if (true) a(); else b();`
   * It's used by Kotlin in a similar fashion

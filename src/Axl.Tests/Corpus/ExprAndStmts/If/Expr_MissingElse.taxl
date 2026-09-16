@@ -1,0 +1,6 @@
+﻿//@check
+
+// If in expression position must always have an else branch.
+
+var a = if (true) 1;    //~error MissingElse
+var a = if (true) { };  //~error MissingElse

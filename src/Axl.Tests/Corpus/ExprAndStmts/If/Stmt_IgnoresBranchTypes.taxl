@@ -1,0 +1,39 @@
+﻿//@check
+
+// If in statement position will not check compatible branch types.
+// This is to allow calls with different return types and is sound,
+// because the value will be discarded.
+
+if (true) 1
+else "Hello";
+
+if (false) { }
+else 1;      
+
+if (false) .1f32
+else { }    
+
+// Else can be missing with any main-branch value
+
+if (true) 1; 
+if (true) ""; 
+if (true) { } 
+
+// Stmt position nests into if stmts
+if (true)
+    if (true) 1 else "";
+else
+    if (true) 1.1 else 1_i64;
+    
+if (true)
+    if (true) 
+        if (false) false else true 
+    else ""
+else if (true) 1.1 
+else 1_i64;
+ 
+// If inside blocks are in stmt position
+{
+    if (true) 1
+    else "Hello";
+}

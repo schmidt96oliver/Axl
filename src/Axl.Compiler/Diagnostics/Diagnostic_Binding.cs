@@ -93,4 +93,22 @@ public partial record Diagnostic
             ? "Break is only valid inside loops."
             : "Continue is only valid inside loops.";
     }
+
+    public sealed record MissingElse(IfExprSyntax Syntax) : Error
+    {
+        public override ImmutableArray<SourceLocation> Locations
+            => [Syntax.SyntaxElements().First().Location];
+
+        public override string Message
+            => "'if' must have an 'else' branch if used as an expression.";
+    }
+
+    public sealed record IncompatibleBranches(BoundExpr First, BoundExpr Second) : Error
+    {
+        public override ImmutableArray<SourceLocation> Locations
+            => [First.Syntax.Location, Second.Syntax.Location];
+
+        public override string Message
+            => $"Both 'if' and 'else' branches must have the same type. Got '{First.Type.Name}' and '{Second.Type.Name}'.";
+    }
 }

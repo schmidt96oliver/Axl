@@ -102,10 +102,18 @@ public sealed class Binder
     private BoundStmt BindStmt(StmtSyntax syntax) => syntax switch
     {
         VarDeclSyntax varDeclSyntax => BindVarDecl(varDeclSyntax),
-        ExprStmtSyntax exprStmt => BindExpr(exprStmt.Expr),
+        ExprStmtSyntax exprStmt => BindExprStmt(exprStmt.Expr),
         WhileStmtSyntax whileStmtSyntax => BindWhile(whileStmtSyntax),
         _ => throw new UnreachableException($"Unknown {nameof(StmtSyntax)}")
     };
+
+    private BoundStmt BindExprStmt(ExprSyntax exprSyntax)
+    {
+        if (exprSyntax is IfExprSyntax ifExprSyntax)
+            return BindIfStmt(ifExprSyntax);
+
+        return BindExpr(exprSyntax);
+    }
     
     private BoundVarDecl BindVarDecl(VarDeclSyntax syntax)
     {
@@ -212,16 +220,13 @@ public sealed class Binder
 
     private BoundExpr BindWhile(WhileStmtSyntax syntax)
     {
-        var condition = BindExpr(syntax.Condition);
+        var condition = BindCondition(syntax.Condition);
 
         var previousInLoop = _inLoop;
         _inLoop = true;
         var body = BindExpr(syntax.Body);
         _inLoop = previousInLoop;
         
-        if (!CheckTypeAndReportMismatch(condition, expected: _types.Bool))
-            condition = new BoundErrorExpr(recoveredExprs: [condition], type: _types.Error, syntax.Condition);
-
         return new BoundWhile(condition, body, _types.Unit, syntax);
     }
     
@@ -242,7 +247,7 @@ public sealed class Binder
         
         // Blocks and Control Flow
         BlockExprSyntax blockExprSyntax => BindBlock(blockExprSyntax),
-        IfExprSyntax ifExprSyntax => BindIf(ifExprSyntax),
+        IfExprSyntax ifExprSyntax => BindIfExpr(ifExprSyntax),
         GroupExprSyntax groupExprSyntax => BindExpr(groupExprSyntax.Inner),
         BreakExprSyntax breakExprSyntax => BindBreakOrContinue(breakExprSyntax),
         ContinueExprSyntax or BreakExprSyntax => BindBreakOrContinue(syntax),
@@ -477,33 +482,54 @@ public sealed class Binder
     
         return new BoundBlock(stmts, type: _types.Unit, syntax);
     }
-    
-    private BoundExpr BindIf(IfExprSyntax syntax)
+
+    private BoundExpr BindCondition(ExprSyntax syntax)
     {
-        var condition = BindExpr(syntax.Condition);
-        var body = BindExpr(syntax.Body);
-        var @else = syntax.ElseBody is not null ? BindExpr(syntax.ElseBody) : null;
-        
-        // Type-check predicate
+        var condition = BindExpr(syntax);
         if (!CheckTypeAndReportMismatch(condition, expected: _types.Bool))
-            condition = new BoundErrorExpr(recoveredExprs: [condition], type: _types.Error, syntax.Condition);
-        
-        // Type-check block and else block
-        // They must have the same type.
-        TypeSymbol ifExprType;
-        if (@else is not null)
-        {
-            ifExprType = body.Type;
-            CheckTypeAndReportMismatch(@else, expected: ifExprType);
-        }
-        else
-        {
-            // If without else always has type unit.
-            CheckTypeAndReportMismatch(body, _types.Unit);
-            ifExprType = _types.Unit;
-        }
+            condition = new BoundErrorExpr(recoveredExprs: [condition], type: _types.Error, syntax);
+
+        return condition;
+    }
     
-        return new BoundIf(condition, body, @else, ifExprType, syntax);
+    private BoundExpr BindIfExpr(IfExprSyntax syntax)
+    {
+        var condition = BindCondition(syntax.Condition);
+        var body = BindExpr(syntax.Body);
+        var @else = BindElseExpr(syntax);
+
+        var type = body.Type;
+        if (!_types.IsAssignableTo(source: @else.Type, target: body.Type))
+        {
+            _diagnostics.ReportError(new Diagnostic.IncompatibleBranches(body, @else));
+            type = _types.Error;
+        }
+        
+        return new BoundIfExpr(condition, body, @else, type, syntax);
+    }
+
+    private BoundExpr BindElseExpr(IfExprSyntax ifSyntax)
+    {
+        var elseSyntax = ifSyntax.ElseBody;
+        if (elseSyntax is null)
+        {
+            _diagnostics.ReportError(new Diagnostic.MissingElse(ifSyntax));
+            return new BoundErrorExpr([], _types.Error, ifSyntax);
+        }
+
+        return BindExpr(elseSyntax);
+    }
+
+    private BoundStmt BindIfStmt(IfExprSyntax syntax)
+    {
+        // If in stmt position does not require matching arm types
+        // and always evaluates to unit.
+        
+        var condition = BindCondition(syntax.Condition);
+        var body = BindExprStmt(syntax.Body);
+        var @else = syntax.ElseBody is not null ? BindExprStmt(syntax.ElseBody) : null;
+        
+        return new BoundIfStmt(condition, body, @else, syntax);
     }
     
     private BoundExpr BindBreakOrContinue(ExprSyntax syntax)
