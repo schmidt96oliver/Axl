@@ -1,0 +1,9 @@
+﻿//@check
+
+// Assignment produces the error type for failed type checks.
+// This is to avoid multiple errors in chained assignment.
+
+var a = 2;
+
+        a = true;   //~error TypeMismatch
+//~type ^^^^^^^^ ???

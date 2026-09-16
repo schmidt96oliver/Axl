@@ -1,0 +1,18 @@
+﻿//@run-pass
+
+// Assignment can be chained.
+
+var a = 0;
+var b = 0;
+var c = 0;
+
+a = b = c = 2;
+
+PrintLine(a);
+PrintLine(b);
+PrintLine(c);
+
+//=== stdout
+// 2
+// 2
+// 2

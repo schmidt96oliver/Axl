@@ -1,0 +1,9 @@
+﻿//@check
+
+// Assign expressions have the type of their value. This is to
+// enable chained assignment.
+
+var a: i32 = 2;
+
+        a = 3;
+//~type ^^^^^ i32

@@ -3,9 +3,7 @@
 
 **Next:** 
 * assignment as expression
-  * `if (true) a = 2;` should parse correctly
-  * [ ] add compound assignment
-  * [ ] remove '=' error production in condition parsing
+  * `if (true) a = 3;` produces TypeMismatch?
 * error message for non-matching if arms
 
 
@@ -30,7 +28,7 @@
 
 **Regressions**
 * `1_i32 == 1_i64`
-* `if true => 1 else => "A";` diagnostic message
+* `if true 1 else "A";` diagnostic message
 * `if (true) else 1;` generates UndefinedName
 * `if (true) a(); else b();` allow the semicolon is stmt position?
 
