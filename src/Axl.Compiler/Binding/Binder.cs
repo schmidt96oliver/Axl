@@ -102,7 +102,6 @@ public sealed class Binder
     {
         VarDeclSyntax varDeclSyntax => BindVarDecl(varDeclSyntax),
         ExprStmtSyntax exprStmt => BindExpr(exprStmt.Expr),
-        AssignStmtSyntax assignStmtSyntax => BindAssign(assignStmtSyntax),
         WhileStmtSyntax whileStmtSyntax => BindWhile(whileStmtSyntax),
         _ => throw new UnreachableException($"Unknown {nameof(StmtSyntax)}")
     };
@@ -149,39 +148,39 @@ public sealed class Binder
         return BindExpr(syntax.Initializer);
     }
     
-    private BoundStmt BindAssign(AssignStmtSyntax syntax)
+    private BoundExpr BindAssign(BinaryExprSyntax syntax)
     {
-        var value = BindExpr(syntax.Value);
-        var target = BindAssignTarget(syntax.Target);
+        var value = BindExpr(syntax.Right);
+        var target = BindAssignTarget(syntax.Left);
         
         if (target is null)
-            return new BoundErrorStmt(recoveredExprs: [value], syntax);
+            return new BoundErrorExpr(recoveredExprs: [value], _types.Error, syntax);
         
         if (target.Type == _types.Error || value.Type == _types.Error)
-            return new BoundAssign(target, value, syntax);
+            return new BoundAssign(target, value, value.Type, syntax);
         
         // Handle compound assignment
         if (syntax.Operator.Kind is not TokenKind.Equal)
             return BindCompoundAssign(target, value, syntax);
     
         CheckTypeAndReportMismatch(value, target.Type);
-        return new BoundAssign(target, value, syntax);
+        return new BoundAssign(target, value, value.Type, syntax);
     }
 
-    private BoundStmt BindCompoundAssign(VariableSymbol target, BoundExpr value, AssignStmtSyntax syntax)
+    private BoundExpr BindCompoundAssign(VariableSymbol target, BoundExpr value, BinaryExprSyntax syntax)
     {
         if (_types.TryGetCompoundAssignNativeOperator(syntax.Operator.Kind, target.Type, value.Type)
             is not { } nativeOperator)
         {
             _diagnostics.ReportError(new Diagnostic.UndefinedOperator(syntax.Operator, [target.Type, value.Type], syntax));
-            return new BoundErrorStmt([value], syntax);
+            return new BoundErrorExpr([value], _types.Error, syntax);
         }
         
         var binary = new BoundNativeOperator(nativeOperator,
-            operands: [new BoundVariableRef(target, syntax.Target), value],
+            operands: [new BoundVariableRef(target, syntax.Left), value],
             type: nativeOperator.ReturnType,
             syntax: syntax);
-        var assign = new BoundAssign(target, binary, syntax);
+        var assign = new BoundAssign(target, binary, binary.Type, syntax);
         return assign;
     }
     
@@ -361,6 +360,9 @@ public sealed class Binder
         TokenKind.AndKw or TokenKind.OrKw => BindBooleanOperator(syntax),
         
         TokenKind.DoubleEqual or TokenKind.BangEqual => BindEqualityComparison(syntax),
+        
+        TokenKind.Equal or TokenKind.PlusEqual or TokenKind.MinusEqual 
+            => BindAssign(syntax),
         
         _ => BindNativeOperator(syntax.Operator, syntax, syntax.Left, syntax.Right)
     };
