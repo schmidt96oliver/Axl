@@ -27,7 +27,13 @@ Just like the Axolotl, Axl's animal.
 
 # Decisions
 
-14.09 *Spike*: Simpler syntax rework.
+16.09.26 Assignment is an *expression* with type unit
+  * Expression parsing is the natural place, since it's an infix operator
+  * `if (true) a = 2;` - If only accepts expressions and this must parse correctly.
+  * Chained assign is commonly treated unnecessary and not possible in Kotlin, Rust, ...
+  * `if (a = 1) { }` errors instead of being a pitfall
+    
+14.09.26 *Spike*: Simpler syntax rework.
   * Rename `none` to `unit` ('none' is a name collision with 'never')
   * Remove `public` and `private` (will not be part of the language for a while)
   * Remove arm expressions. 

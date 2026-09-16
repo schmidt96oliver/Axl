@@ -23,7 +23,6 @@ public enum SyntaxKind
     ExprStmt,
     VarDecl,
     WhileStmt,
-    AssignStmt,
     
     // Declarations
     ModuleDecl,

@@ -1,0 +1,14 @@
+﻿//@check
+
+// Since assign has type unit, they cannot be chained.
+// Kotlin, Rust, ... use the same approach and argue that
+// chained assignment is hard to reason about, which is fair.
+
+// Importantly, chaining only produces _one_ error.
+
+var a = 0;
+var b = 0;
+var c = 0;
+
+a = b = 2;      //~error TypeMismatch
+a = b = c = 2;  //~error TypeMismatch

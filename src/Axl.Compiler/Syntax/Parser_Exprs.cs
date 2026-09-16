@@ -17,49 +17,7 @@ public partial class Parser
             return EnsureIdName(ExpectedSyntax.Expr);
 
         var lhs = EatExprHead(anchor);
-        return ContinueExpr(lhs, left, anchor);
-    }
-
-    private MarkClose EnsureParenthesizedExpr(Anchor anchor, SyntaxKind kind)
-    {
-        var parenExpr = _scanner.Open();
-
-        EnsureToken(TokenKind.OpenParen);
-
-        var insideAnchor = anchor | TokenKind.CloseParen;
-        var expr = EnsureExpr(insideAnchor);
-
-        // --- "=" instead of "==" error production
-        if (_scanner.IsAt(TokenKind.Equal))
-        {
-            var equalsCondition = _scanner.OpenBefore(expr);
-
-            // Eat `=` as error and insert missing `==`
-            var equalToken = _scanner.Peek();
-            _scanner.EatIntoGarbageAndReport(TokenKind.DoubleEqual);
-            _scanner.MakeAndReport(TokenKind.DoubleEqual);
-
-            // Eat rhs
-            var leftOperator = new LeftOperator(PrecedenceTable.TryGetInfixPrecedence(TokenKind.DoubleEqual)!.Value,
-                equalToken);
-            EnsureExprRhs(leftOperator, anchor, out var wasAmbiguous);
-
-            expr = _scanner.Close(equalsCondition, wasAmbiguous ? SyntaxKind.ErrorExpr : SyntaxKind.BinaryExpr);
-
-            // Continue pratt loop to consume operator of lower precedence.
-            // Pass in null as left operator, because that is what we passed
-            // in originally.
-            expr = ContinueExpr(expr, left: null, anchor);
-
-        }
-
-        EnsureToken(TokenKind.CloseParen);
-        return _scanner.Close(parenExpr, kind);
-    }
-
-
-    private MarkClose ContinueExpr(MarkClose lhs, LeftOperator? left, Anchor anchor)
-    {
+        
         // --- Pratt loop
         foreach (var _ in _scanner.MustEatEachIteration())
         {
@@ -114,6 +72,20 @@ public partial class Parser
 
         return lhs;
     }
+
+    private MarkClose EnsureParenthesizedExpr(Anchor anchor, SyntaxKind kind)
+    {
+        var parenExpr = _scanner.Open();
+
+        EnsureToken(TokenKind.OpenParen);
+
+        var insideAnchor = anchor | TokenKind.CloseParen;
+        EnsureExpr(insideAnchor);
+
+        EnsureToken(TokenKind.CloseParen);
+        return _scanner.Close(parenExpr, kind);
+    }
+
 
     private MarkClose EatExprHead(Anchor anchor)
     {

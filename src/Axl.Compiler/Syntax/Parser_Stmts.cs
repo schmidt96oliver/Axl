@@ -12,7 +12,7 @@ public partial class Parser
         Debug.Assert(_scanner.IsAt(FirstSet.Stmt));
 
         if (_scanner.IsAt(FirstSet.Expr))
-            return EatExprStmtOrAssign(anchor);
+            return EatExprStmt(anchor);
 
         if (_scanner.IsAt(TokenKind.VarKw))
             return EatVarDecl(anchor);
@@ -23,21 +23,13 @@ public partial class Parser
         throw new UnreachableException($"{nameof(FirstSet.Stmt)} too large.");
     }
 
-    private MarkClose EatExprStmtOrAssign(Anchor anchor)
+    private MarkClose EatExprStmt(Anchor anchor)
     {
         var stmt = _scanner.Open();
 
         var exprHasBody = _scanner.IsAt(TokenKind.IfKw) || _scanner.IsAt(TokenKind.OpenBrace);
             
         EnsureExpr(anchor | TokenKind.Semicolon);
-            
-        if (_scanner.IsAt(FirstSet.AssignOperator))
-        {
-            _scanner.Eat();
-            EnsureExpr(anchor);
-            EnsureToken(TokenKind.Semicolon);
-            return _scanner.Close(stmt, SyntaxKind.AssignStmt);
-        }
             
         var semicolonOmissible = exprHasBody && _scanner.Last?.Kind is TokenKind.CloseBrace;
         if (semicolonOmissible && _scanner.IsAt(TokenKind.Semicolon))

@@ -51,7 +51,7 @@ public partial record Diagnostic
         {
             get
             {
-                if (Syntax is AssignStmtSyntax)
+                if (Syntax is ExprStmtSyntax)
                 {
                     // Do not mark the semicolon at the end.
                     var nonSemicolonElements = Syntax.SyntaxElements()

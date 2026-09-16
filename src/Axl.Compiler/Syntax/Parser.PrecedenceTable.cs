@@ -6,7 +6,8 @@ public partial class Parser
     {
         // Ordered from lowest to highest, so the int value can be used 
         // for comparison.
-            
+        Assign,    
+        
         LogicOr,
         LogicAnd,
         LogicNot,
@@ -58,6 +59,8 @@ public partial class Parser
 
             TokenKind.AndKw => Precedence.LogicAnd,
             TokenKind.OrKw => Precedence.LogicOr,
+            
+            TokenKind.Equal or TokenKind.PlusEqual or TokenKind.MinusEqual => Precedence.Assign,
 
             _ => null
         };
@@ -79,6 +82,10 @@ public partial class Parser
                 case (Precedence.LogicOr, Precedence.LogicAnd):
                     return PrecedenceComparison.Ambiguous;
             }
+            
+            // --- Right-associative pairs
+            if (left == right && left is Precedence.Assign)
+                return PrecedenceComparison.RightBindsTighter;
             
             // --- Compare
             // If they are equal, LeftBindsTighter is returned.

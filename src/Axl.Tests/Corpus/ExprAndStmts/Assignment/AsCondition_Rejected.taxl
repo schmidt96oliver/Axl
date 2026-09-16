@@ -1,0 +1,9 @@
+﻿//@check
+
+// Because assign has type unit, it is naturally rejected as 
+// condition in if or while. This prevents the common C-style
+// pitfall.
+
+var a = 2;
+if (a = 3)    { }  //~error TypeMismatch
+while (a = 3) { }  //~error TypeMismatch
