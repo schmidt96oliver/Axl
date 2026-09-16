@@ -44,6 +44,7 @@ public sealed class Binder
     /// Checks, whether <paramref name="expr"/> is assignable to
     /// <paramref name="expected"/>. If not, reports a <see cref="Diagnostic.TypeMismatch"/>.
     /// </summary>
+    /// <returns><c>true</c>, if types matched. <c>false</c>, otherwise.</returns>
     private bool CheckTypeAndReportMismatch(BoundExpr expr, TypeSymbol expected)
     {
         if (!_types.IsAssignableTo(expr.Type, expected))
@@ -162,9 +163,11 @@ public sealed class Binder
         // Handle compound assignment
         if (syntax.Operator.Kind is not TokenKind.Equal)
             return BindCompoundAssign(target, value, syntax);
-    
-        CheckTypeAndReportMismatch(value, target.Type);
-        return new BoundAssign(target, value, value.Type, syntax);
+
+        var type = CheckTypeAndReportMismatch(value, target.Type)
+            ? value.Type
+            : _types.Error;
+        return new BoundAssign(target, value, type, syntax);
     }
 
     private BoundExpr BindCompoundAssign(VariableSymbol target, BoundExpr value, BinaryExprSyntax syntax)

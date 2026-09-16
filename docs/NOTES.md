@@ -5,6 +5,7 @@
 * assignment as expression
   * `if (true) a = 2;` should parse correctly
   * [ ] add compound assignment
+  * [ ] remove '=' error production in condition parsing
 * error message for non-matching if arms
 
 
