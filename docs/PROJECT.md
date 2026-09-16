@@ -21,11 +21,15 @@ Just like the Axolotl, Axl's animal.
                     ⠀⠀⠀⠀⠀⠀⠀⠀⣈⠻⣦⡀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠈⣿⠿⠋⠀⠀⠀⠀⠀⠀
                     ⠀⠀⠀⠀⢀⣴⠶⢶⠟⢻⡇⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⢸⡇⠀⠀⠀⠀⠀⠀⠀
                     ⠀⠀⠀⢠⡾⡟⠀⠀⠀⠸⣧⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⣾⠃⠀⠀⠀⠀⠀⠀⠀
-                    ⠀⠀⠀⠘⠷⣦⣀⣰⡀⢠⡿⠂⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⢀⣼⠷⣦⠀⠀⠀⠀⠀⠀⠀
+                    ⠀⠀⠀⠘⠷⣦⣀⣰⡀⢠⡿⠂⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⢀⣼⠷⣦⠀⠀⠀⠀⠀⠀⠀,
                     ⠀⠀⠀⠀⠀⠈⠉⠉⠛⠛⢷⣤⣀⣠⣦⣄⡀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⣀⣠⣴⣟⣁⣴⠟⠀⠀⠀⠀⠀⠀⠀
                     ⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠁⠀⠀⠉⠉⠛⠛⠓⠶⠶⠶⠶⠖⠛⠛⠉⠁⠀⠉⠁⠀⠀⠀⠀⠀⠀⠀⠀⠀
 
 # Decisions
+
+16.09.26 If accepts optional intermediate semicolon
+  * To allow familar syntax `if (true) a(); else b();`
+  * It's used by Kotlin in a similar fashion
 
 16.09.26 Assignment is an *expression* with type unit
   * Expression parsing is the natural place, since it's an infix operator

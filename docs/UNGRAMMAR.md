@@ -50,8 +50,7 @@ Expr        = BlockExpr
 
 BlockExpr   = "{" (Stmt | Member)* "}"
 
-IfExpr      = "if" (Expr) Expr ("else" Expr)
-> ERROR PRODUCTION: "=" accepted inside (Expr)
+IfExpr      = "if" (Expr) Expr (";"? "else" Expr)
 
 AssignExpr  = Expr ("="|"+="|"-=") Expr
 

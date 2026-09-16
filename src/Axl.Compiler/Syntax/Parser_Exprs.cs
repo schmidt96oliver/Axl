@@ -266,10 +266,13 @@ public partial class Parser
         var ifExpr = _scanner.Open();
         _scanner.EatKnown(TokenKind.IfKw);
 
-        var ifAnchor = anchor | TokenKind.OpenBrace | TokenKind.ElseKw;
+        var ifAnchor = anchor | TokenKind.OpenBrace | TokenKind.ElseKw | TokenKind.Semicolon;
         
         EnsureParenthesizedExpr(ifAnchor, SyntaxKind.ConditionClause);
         EnsureExpr(ifAnchor);
+
+        if (_scanner.IsAt(TokenKind.Semicolon) && _scanner.Peek(1).Kind is TokenKind.ElseKw)
+            _scanner.Eat();
         
         // --- Else
         // Note, that we don't anchor on else anymore here, since
