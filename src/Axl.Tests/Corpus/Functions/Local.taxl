@@ -6,8 +6,8 @@ fn Outer()
     Inner();
     
     fn Inner()
-        => Standard.Print("Inner");
+        = Standard.Print("Inner");
 }
 
 //=== stdout
-// Inner
+// Inner 

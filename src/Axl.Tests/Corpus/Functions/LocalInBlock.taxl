@@ -10,7 +10,7 @@ fn Outer()
     {
         InBlock();          // valid
         fn InBlock()
-            => Standard.Print("");
+            = Standard.Print(""); 
     }
     
     InBlock();      //~error

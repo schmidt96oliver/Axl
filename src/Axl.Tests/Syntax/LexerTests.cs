@@ -132,7 +132,7 @@ public sealed class LexerTests
 
     [Fact]
     public void Symbols_Equals()
-        => InlineSnapshot.Validate(NoWhitespace("=== != <<=>>= =>= ++=--="), """
+        => InlineSnapshot.Validate(NoWhitespace("=== != <<=>>= = ++=--="), """
             - DoubleEqual: "=="
             - Equal: "="
             - BangEqual: "!="
@@ -140,7 +140,6 @@ public sealed class LexerTests
             - LessThanEqual: "<="
             - GreaterThan: ">"
             - GreaterThanEqual: ">="
-            - RightDoubleArrow: "=>"
             - Equal: "="
             - Plus: "+"
             - PlusEqual: "+="

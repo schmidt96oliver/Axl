@@ -210,9 +210,7 @@ public sealed class Lexer
                 break;
 
             case '=':
-                if (scanner.Match('>'))
-                    scanner.AddToken(TokenKind.RightDoubleArrow);
-                else if (scanner.Match('='))
+                if (scanner.Match('='))
                     scanner.AddToken(TokenKind.DoubleEqual);
                 else
                     scanner.AddToken(TokenKind.Equal);

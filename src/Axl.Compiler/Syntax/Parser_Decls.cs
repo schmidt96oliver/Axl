@@ -42,10 +42,8 @@ public partial class Parser
         _scanner.EatKnown(TokenKind.FnKw);
         EnsureIdName();
 
-        // Add "=" as well, because there is an error production that turns it into
-        // "=>" and it has no place being inside a parameter list anyway.
-        EnsureParamList(anchor | TokenKind.OpenBrace | TokenKind.RightDoubleArrow
-                        | TokenKind.Colon | TokenKind.Semicolon | TokenKind.Equal);
+        EnsureParamList(anchor | TokenKind.OpenBrace | TokenKind.Colon |
+                        TokenKind.Semicolon | TokenKind.Equal);
 
         if (_scanner.IsAt(TokenKind.Colon))
             EatReturnTypeAnnotation();
@@ -59,18 +57,9 @@ public partial class Parser
     {
         var fnBody = _scanner.Open();
         
-        if (_scanner.IsAt(TokenKind.RightDoubleArrow))
+        if (_scanner.IsAt(TokenKind.Equal))
         {
-            _scanner.EatKnown(TokenKind.RightDoubleArrow);
-            EnsureExpr(anchor);
-            EnsureToken(TokenKind.Semicolon);
-        }
-        else if (_scanner.IsAt(TokenKind.Equal))
-        {
-            // This is an error production. The user probably meant
-            // to write "=>" instead of "=".
-            _scanner.EatIntoGarbageAndReport(TokenKind.RightDoubleArrow);
-            _scanner.MakeAndReport(TokenKind.RightDoubleArrow);
+            _scanner.EatKnown(TokenKind.Equal);
             
             EnsureExpr(anchor);
             EnsureToken(TokenKind.Semicolon);

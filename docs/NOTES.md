@@ -15,7 +15,7 @@
 >     [] encloses types
 
 * [x] replace `->` with `:` (gets rid of `->`; unifies TypeAnnotationClause)
-* [ ] replace `=>` with `=` (get rid of `=>` and the production is already there)
+* [x] replace `=>` with `=` (get rid of `=>` and the production is already there)
 * [ ] drop compound assign (for now)
 
 * ?? replace `fn` with `fun` 

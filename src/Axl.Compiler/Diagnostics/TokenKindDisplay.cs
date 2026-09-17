@@ -54,7 +54,6 @@ public static class TokenKindDisplayExtensions
             TokenKind.Comma => "','",
             TokenKind.Semicolon => "';'",
             TokenKind.Colon => "':'",
-            TokenKind.RightDoubleArrow => "'=>'",
 
             // --- Assignment Symbols
             TokenKind.Equal => "'='",

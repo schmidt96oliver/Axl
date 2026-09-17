@@ -11,21 +11,21 @@ native("Print") fn Print(input: string): unit;
 
 native("Panic") fn Panic(msg: string): never;
 fn Panic(): never
-    => Panic("");  
+    = Panic("");   
 
 fn Print(i: i32)
-    => Print(I32ToString(i));
+    = Print(I32ToString(i));
 fn Print(i: i64)
-    => Print(I64ToString(i));
+    = Print(I64ToString(i));
 fn Print(i: f32)
-    => Print(F32ToString(i));
+    = Print(F32ToString(i));
 fn Print(i: f64)
-    => Print(F32ToString(i));
+    = Print(F32ToString(i));
 fn Print(b: bool)
-    => Print(if (b) "true" else "false");
+    = Print(if (b) "true" else "false");
 
 fn PrintLine(input: string)
-    => Print("{input}\n");
+    = Print("{input}\n");
     
 fn PrintLine(input: i32)
 {

@@ -18,6 +18,6 @@ public sealed class FnDeclSyntax(ImmutableArray<SyntaxElement> children)
 public sealed class FnBodySyntax(ImmutableArray<SyntaxElement> children)
     : MemberSyntax(SyntaxKind.FnBody, children)
 {
-    public bool IsArm => Children.Any(child => child is Token { Kind: TokenKind.RightDoubleArrow });
+    public bool IsExpressionBodied => Children.Any(child => child is Token { Kind: TokenKind.Equal });
     public ExprSyntax? Expr => Children.FirstOfTypeOrNull<ExprSyntax>();
 }

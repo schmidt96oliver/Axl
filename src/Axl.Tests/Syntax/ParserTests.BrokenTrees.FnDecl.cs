@@ -9,24 +9,6 @@ public partial class ParserTests
         public sealed class FnDecl
         {
             [Fact]
-            public void EqualAsArm()
-                => InlineSnapshot.Validate(Tree("fn A() = 1;"), """
-                    ERROR UnexpectedToken@[7, 8): Expected '=>', got '='.
-
-
-                    FnDecl
-                    · 'fn'
-                    · IdName 'A'
-                    · ParamList '(' ')'
-                    · FnBody
-                    · · Garbage '='
-                    · · ??'=>'
-                    · · NumberLiteral '1'
-                    · · ';'
-                    """);
-            
-            
-            [Fact]
             public void UnclosedParamList_1()
                 => InlineSnapshot.Validate(Tree("fn Foo( { }"), """
                     ERROR MissingToken@[7, 7): Expected ')'.
@@ -206,7 +188,7 @@ public partial class ParserTests
             
             [Fact]
             public void UnclosedParamList_9()
-                => InlineSnapshot.Validate(Tree("fn Foo(a: i32,  => 1;"), """
+                => InlineSnapshot.Validate(Tree("fn Foo(a: i32,  = 1;"), """
                     ERROR MissingToken@[14, 14): Expected a parameter.
 
 
@@ -226,7 +208,7 @@ public partial class ParserTests
                     · · · · ??ID
                     · · ??')'
                     · FnBody
-                    · · '=>'
+                    · · '='
                     · · NumberLiteral '1'
                     · · ';'
                     """);
@@ -235,7 +217,6 @@ public partial class ParserTests
             public void UnclosedParamList_10()
                 => InlineSnapshot.Validate(Tree("fn Foo(a: i32,  = 1;"), """
                     ERROR MissingToken@[14, 14): Expected a parameter.
-                    ERROR UnexpectedToken@[16, 17): Expected '=>', got '='.
 
 
                     FnDecl
@@ -254,8 +235,7 @@ public partial class ParserTests
                     · · · · ??ID
                     · · ??')'
                     · FnBody
-                    · · Garbage '='
-                    · · ??'=>'
+                    · · '='
                     · · NumberLiteral '1'
                     · · ';'
                     """);
@@ -576,7 +556,7 @@ public partial class ParserTests
             
             [Fact]
             public void NoParamList_2()
-                => InlineSnapshot.Validate(Tree("fn A => 1;"), """
+                => InlineSnapshot.Validate(Tree("fn A = 1;"), """
                     ERROR MissingToken@[4, 4): Expected parameters ('(').
 
 
@@ -587,7 +567,7 @@ public partial class ParserTests
                     · · ??'('
                     · · ??')'
                     · FnBody
-                    · · '=>'
+                    · · '='
                     · · NumberLiteral '1'
                     · · ';'
                     """);
