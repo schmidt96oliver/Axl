@@ -45,9 +45,9 @@ public partial class Parser
         // Add "=" as well, because there is an error production that turns it into
         // "=>" and it has no place being inside a parameter list anyway.
         EnsureParamList(anchor | TokenKind.OpenBrace | TokenKind.RightDoubleArrow
-                        | TokenKind.RightArrow | TokenKind.Semicolon | TokenKind.Equal);
+                        | TokenKind.Colon | TokenKind.Semicolon | TokenKind.Equal);
 
-        if (_scanner.IsAt(TokenKind.RightArrow))
+        if (_scanner.IsAt(TokenKind.Colon))
             EatReturnTypeAnnotation();
 
         EnsureFnBody(anchor);
@@ -111,9 +111,9 @@ public partial class Parser
         _scanner.EatKnown(TokenKind.FnKw);
         EnsureIdName();
 
-        EnsureParamList(anchor | TokenKind.RightArrow | TokenKind.Semicolon);
+        EnsureParamList(anchor | TokenKind.Colon | TokenKind.Semicolon);
 
-        if (_scanner.IsAt(TokenKind.RightArrow))
+        if (_scanner.IsAt(TokenKind.Colon))
             EatReturnTypeAnnotation();
 
         EnsureToken(TokenKind.Semicolon);
@@ -138,10 +138,10 @@ public partial class Parser
 
     private MarkClose EatReturnTypeAnnotation()
     {
-        Debug.Assert(_scanner.IsAt(TokenKind.RightArrow));
+        Debug.Assert(_scanner.IsAt(TokenKind.Colon));
 
         var returnTypeAnnotation = _scanner.Open();
-        _scanner.EatKnown(TokenKind.RightArrow);
+        _scanner.EatKnown(TokenKind.Colon);
 
         // --- Special case "never" keyword
         if (_scanner.Peek() is IdentifierToken { Identifier: "never" })

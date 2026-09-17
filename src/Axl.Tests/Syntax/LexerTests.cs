@@ -151,7 +151,7 @@ public sealed class LexerTests
 
     [Fact]
     public void Symbols_Other()
-        => InlineSnapshot.Validate(NoWhitespace("(){}<>-->.,;:"),
+        => InlineSnapshot.Validate(NoWhitespace("(){}<>-.,;:"),
             """
             - OpenParen: "("
             - CloseParen: ")"
@@ -160,7 +160,6 @@ public sealed class LexerTests
             - LessThan: "<"
             - GreaterThan: ">"
             - Minus: "-"
-            - RightArrow: "->"
             - Dot: "."
             - Comma: ","
             - Semicolon: ";"

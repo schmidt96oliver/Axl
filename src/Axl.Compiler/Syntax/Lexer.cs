@@ -223,9 +223,7 @@ public sealed class Lexer
                 break;
 
             case '-':
-                if (scanner.Match('>'))
-                    scanner.AddToken(TokenKind.RightArrow);
-                else if (scanner.Match('='))
+                if (scanner.Match('='))
                     scanner.AddToken(TokenKind.MinusEqual);
                 else
                     scanner.AddToken(TokenKind.Minus);

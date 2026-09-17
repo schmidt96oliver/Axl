@@ -47,7 +47,6 @@ public enum TokenKind
     Comma,
     Semicolon,
     Colon,
-    RightArrow,
     RightDoubleArrow,
     
     // --- Assignment Symbols

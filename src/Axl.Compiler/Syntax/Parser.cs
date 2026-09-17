@@ -227,7 +227,7 @@ public partial class Parser
         // --- Already at anchor?
         // Special-case here, so we report "expected close" instead of
         // "expected item" in cases like `Call( `.
-        if (_scanner.IsAt(anchor))
+        if (!_scanner.IsAt(itemFirst) && _scanner.IsAt(anchor))
         {
             EnsureToken(closeToken);
             return _scanner.Close(list, listKind);

@@ -18,7 +18,7 @@ FnBody          = "=>" Expr ";"
 ParamList       = "(" ")"
                 | "(" Param ("," Param)* ")"
 Param           = IdName TypeAnnotation?
-ReturnTypeAnnotation    = "->" (TypeName | "never")
+ReturnTypeAnnotation    = ":" (TypeName | "never")
 
 NativeFnDecl    = NativeClause "fn" IdName ParamList ReturnTypeAnnotation? ";"
 NativeClause    = "native" "(" StringExpr ")"
