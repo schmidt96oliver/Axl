@@ -3,7 +3,6 @@
 
 **Next:** 
 * `if (true) else 1;` generates UndefinedName
-* `var a = i32` fix crash (`EatExprHead` does not parse nativetypename)
 
 **Syntax ideas from https://core-lang.dev/design.html**
 > "Always rules" are better than "almost rules":
@@ -16,7 +15,7 @@
 
 * [x] replace `->` with `:` (gets rid of `->`; unifies TypeAnnotationClause)
 * [x] replace `=>` with `=` (get rid of `=>` and the production is already there)
-* [ ] drop compound assign (for now)
+* [x] drop compound assign (for now)
 
 * ?? replace `fn` with `fun` 
 

@@ -50,8 +50,6 @@ public enum TokenKind
     
     // --- Assignment Symbols
     Equal,
-    PlusEqual,
-    MinusEqual,
     
     // --- Bracket Symbols
     OpenParen,

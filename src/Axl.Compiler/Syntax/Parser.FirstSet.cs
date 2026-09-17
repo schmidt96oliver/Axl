@@ -50,9 +50,6 @@ public partial class Parser
         public static readonly TokenSet Member = FnDecl | NativeFnDecl;
 
         
-        public static readonly TokenSet AssignOperator = TokenSet.Of(
-            TokenKind.Equal, TokenKind.PlusEqual, TokenKind.MinusEqual);
-
         public static readonly TokenSet StringPart = TokenSet.Of(
             TokenKind.StringStart, TokenKind.StringText, TokenKind.StringEnd);
 

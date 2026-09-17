@@ -159,6 +159,8 @@ public sealed class Binder
     
     private BoundExpr BindAssign(BinaryExprSyntax syntax)
     {
+        Debug.Assert(syntax.Operator.Kind is TokenKind.Equal);
+        
         var value = BindExpr(syntax.Right);
         var target = BindAssignTarget(syntax.Left);
         
@@ -168,33 +170,12 @@ public sealed class Binder
         if (target.Type == _types.Error || value.Type == _types.Error)
             return new BoundAssign(target, value, value.Type, syntax);
         
-        // Handle compound assignment
-        if (syntax.Operator.Kind is not TokenKind.Equal)
-            return BindCompoundAssign(target, value, syntax);
-
         var type = CheckTypeAndReportMismatch(value, target.Type)
             ? _types.Unit
             : _types.Error;
         return new BoundAssign(target, value, type, syntax);
     }
 
-    private BoundExpr BindCompoundAssign(VariableSymbol target, BoundExpr value, BinaryExprSyntax syntax)
-    {
-        if (_types.TryGetCompoundAssignNativeOperator(syntax.Operator.Kind, target.Type, value.Type)
-            is not { } nativeOperator)
-        {
-            _diagnostics.ReportError(new Diagnostic.UndefinedOperator(syntax.Operator, [target.Type, value.Type], syntax));
-            return new BoundErrorExpr([value], _types.Error, syntax);
-        }
-        
-        var binary = new BoundNativeOperator(nativeOperator,
-            operands: [new BoundVariableRef(target, syntax.Left), value],
-            type: nativeOperator.ReturnType,
-            syntax: syntax);
-        var assign = new BoundAssign(target, binary, _types.Unit, syntax);
-        return assign;
-    }
-    
     private VariableSymbol? BindAssignTarget(ExprSyntax syntax)
     {
         if (syntax is not IdNameSyntax idNameSyntax)
@@ -370,8 +351,7 @@ public sealed class Binder
         
         TokenKind.DoubleEqual or TokenKind.BangEqual => BindEqualityComparison(syntax),
         
-        TokenKind.Equal or TokenKind.PlusEqual or TokenKind.MinusEqual 
-            => BindAssign(syntax),
+        TokenKind.Equal => BindAssign(syntax),
         
         _ => BindNativeOperator(syntax.Operator, syntax, syntax.Left, syntax.Right)
     };

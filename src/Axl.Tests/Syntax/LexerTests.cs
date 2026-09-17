@@ -132,7 +132,7 @@ public sealed class LexerTests
 
     [Fact]
     public void Symbols_Equals()
-        => InlineSnapshot.Validate(NoWhitespace("=== != <<=>>= = ++=--="), """
+        => InlineSnapshot.Validate(NoWhitespace("=== != <<=>>= = "), """
             - DoubleEqual: "=="
             - Equal: "="
             - BangEqual: "!="
@@ -141,16 +141,12 @@ public sealed class LexerTests
             - GreaterThan: ">"
             - GreaterThanEqual: ">="
             - Equal: "="
-            - Plus: "+"
-            - PlusEqual: "+="
-            - Minus: "-"
-            - MinusEqual: "-="
             - Eof
             """);
 
     [Fact]
     public void Symbols_Other()
-        => InlineSnapshot.Validate(NoWhitespace("(){}<>-.,;:"),
+        => InlineSnapshot.Validate(NoWhitespace("(){}<>-.,;:+-*/"),
             """
             - OpenParen: "("
             - CloseParen: ")"
@@ -163,6 +159,10 @@ public sealed class LexerTests
             - Comma: ","
             - Semicolon: ";"
             - Colon: ":"
+            - Plus: "+"
+            - Minus: "-"
+            - Star: "*"
+            - Slash: "/"
             - Eof
             """);
 

@@ -60,7 +60,7 @@ public partial class Parser
             TokenKind.AndKw => Precedence.LogicAnd,
             TokenKind.OrKw => Precedence.LogicOr,
             
-            TokenKind.Equal or TokenKind.PlusEqual or TokenKind.MinusEqual => Precedence.Assign,
+            TokenKind.Equal => Precedence.Assign,
 
             _ => null
         };

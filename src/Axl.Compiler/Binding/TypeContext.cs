@@ -56,22 +56,6 @@ public sealed class TypeContext
                                                              opInfo.OperandTypes.SequenceEqual(operandTypes));
     }
 
-    public NativeOperatorInfo? TryGetCompoundAssignNativeOperator(TokenKind assignOperatorKind, TypeSymbol leftType,
-        TypeSymbol rightType)
-    {
-        TokenKind? binaryKind = assignOperatorKind switch
-        {
-            TokenKind.PlusEqual => TokenKind.Plus,
-            TokenKind.MinusEqual => TokenKind.Minus,
-            _ => null
-        };
-        if (binaryKind is not TokenKind opKind)
-            return null;
-
-        return TryGetNativeOperator(opKind, leftType, rightType);
-    }
-
-
     private ImmutableArray<NativeOperatorInfo> MakeNativeOperatorInfos() =>
     [
         // Unary

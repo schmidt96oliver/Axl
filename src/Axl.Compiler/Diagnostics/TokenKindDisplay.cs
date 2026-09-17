@@ -57,8 +57,6 @@ public static class TokenKindDisplayExtensions
 
             // --- Assignment Symbols
             TokenKind.Equal => "'='",
-            TokenKind.PlusEqual => "'+='",
-            TokenKind.MinusEqual => "'-='",
 
             // --- Bracket Symbols
             TokenKind.OpenParen => "'('",

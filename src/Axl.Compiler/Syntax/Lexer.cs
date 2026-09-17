@@ -221,13 +221,10 @@ public sealed class Lexer
                 break;
 
             case '-':
-                if (scanner.Match('='))
-                    scanner.AddToken(TokenKind.MinusEqual);
-                else
-                    scanner.AddToken(TokenKind.Minus);
+                scanner.AddToken(TokenKind.Minus);
                 break;
             case '+':
-                scanner.AddToken(scanner.Match('=') ? TokenKind.PlusEqual : TokenKind.Plus);
+                scanner.AddToken(TokenKind.Plus);
                 break;
             case '*':
                 scanner.AddToken(TokenKind.Star);
