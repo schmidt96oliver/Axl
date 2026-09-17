@@ -104,6 +104,9 @@ public partial class Parser
             case TokenKind.FalseKw:
                 return _scanner.EatInto(SyntaxKind.FalseLiteral);
 
+            case var kind when FirstSet.NativeTypeName.Contains(kind):
+                return EatNativeTypeName();
+            
             // --- Strings
             case TokenKind.StringStart:
                 return EnsureStringExpr(anchor);
