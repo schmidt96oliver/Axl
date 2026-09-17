@@ -45,7 +45,7 @@ public partial class Parser
     /// </summary>
     private readonly record struct ClaimedRange(int First, int Last);
     
-    private abstract record ParseEvent
+    private closed record ParseEvent
     {
         public sealed record Open : ParseEvent;
 

@@ -72,7 +72,8 @@ public sealed class Binder
     private TypeSymbol BindType(TypeNameSyntax syntax) => syntax switch
     {
         NativeTypeNameSyntax nativeTypeNameSyntax => BindNativeType(nativeTypeNameSyntax),
-        _ => BindUnsupportedType(syntax)
+        IdNameSyntax => BindUnsupportedType(syntax),
+        PathSyntax => BindUnsupportedType(syntax),
     };
 
     private TypeSymbol BindNativeType(NativeTypeNameSyntax syntax) => syntax.Token.Kind switch
@@ -104,7 +105,6 @@ public sealed class Binder
         VarDeclSyntax varDeclSyntax => BindVarDecl(varDeclSyntax),
         ExprStmtSyntax exprStmt => BindExprStmt(exprStmt.Expr),
         WhileStmtSyntax whileStmtSyntax => BindWhile(whileStmtSyntax),
-        _ => throw new UnreachableException($"Unknown {nameof(StmtSyntax)}")
     };
 
     private BoundStmt BindExprStmt(ExprSyntax exprSyntax)
@@ -241,9 +241,15 @@ public sealed class Binder
         FalseLiteralSyntax => new BoundBoolLiteral(value: false, type: _types.Bool, syntax),
         StringExprSyntax stringExprSyntax => BindString(stringExprSyntax),
         
+        // Type names
+        TypeNameSyntax => BindUnsupported(syntax),
+        
         // Operators
         BinaryExprSyntax binaryExprSyntax => BindBinary(binaryExprSyntax),
         UnaryExprSyntax unaryExprSyntax => BindUnary(unaryExprSyntax),
+        
+        GetMemberExprSyntax => BindUnsupported(syntax),
+        CallExprSyntax => BindUnsupported(syntax),
         
         // Blocks and Control Flow
         BlockExprSyntax blockExprSyntax => BindBlock(blockExprSyntax),
@@ -253,9 +259,8 @@ public sealed class Binder
         ContinueExprSyntax or BreakExprSyntax => BindBreakOrContinue(syntax),
         ReturnExprSyntax returnExprSyntax => BindReturn(returnExprSyntax),
         
-        // Error and unsupported
+        // Error
         ErrorExprSyntax errorExprSyntax => BindError(errorExprSyntax),
-        _ => BindUnsupported(syntax)
     };
     
     
@@ -280,18 +285,15 @@ public sealed class Binder
     private BoundExpr BindVariableRef(IdNameSyntax syntax)
     {
         var symbol = LookupAndReportUndefined(syntax);
-    
-        switch (symbol)
+
+        return symbol switch
         {
-            case VariableSymbol variable:
-                return new BoundVariableRef(variable, syntax);
+            VariableSymbol variable => new BoundVariableRef(variable, syntax),
             
-            case null:
-                return new BoundErrorExpr(recoveredExprs: [], type: _types.Error, syntax);
-            
-            default:
-                throw new UnreachableException($"Unknown symbol kind {symbol.GetType().Name}.");
-        }
+            //TODO: Report error
+            TypeSymbol => new BoundErrorExpr(recoveredExprs: [], type: _types.Error, syntax),
+            null => new BoundErrorExpr(recoveredExprs: [], type: _types.Error, syntax),
+        };
     }
     
     private BoundStringExpr BindString(StringExprSyntax syntax)
@@ -309,7 +311,6 @@ public sealed class Binder
         {
             StringTextSyntax textSyntax => new StringPart.Text(textSyntax.TextToken.ProcessedText),
             StringInterpolationSyntax interpolationSyntax => BindStringInterpolation(interpolationSyntax),
-            _ => throw new UnreachableException($"Unknown {nameof(StringPartSyntax)}")
         };
     
     private StringPart BindStringInterpolation(StringInterpolationSyntax syntax)

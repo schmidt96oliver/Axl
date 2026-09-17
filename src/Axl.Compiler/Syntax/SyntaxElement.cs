@@ -3,7 +3,7 @@ using Axl.Compiler.Text;
 
 namespace Axl.Compiler.Syntax;
 
-public abstract class SyntaxElement
+public closed class SyntaxElement
 {
     private bool _wasParentSet = false;
     

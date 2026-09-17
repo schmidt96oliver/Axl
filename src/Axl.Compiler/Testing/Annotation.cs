@@ -2,7 +2,7 @@
 
 namespace Axl.Compiler.Testing;
 
-public abstract record Annotation(SourceLocation FullLocation, SourceLocation PrefixLocation)
+public closed record Annotation(SourceLocation FullLocation, SourceLocation PrefixLocation)
 {
     public int LineNumber => FullLocation.StartLine;
 }

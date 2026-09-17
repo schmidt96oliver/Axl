@@ -3,7 +3,7 @@ using Axl.Compiler.Text;
 
 namespace Axl.Compiler.Diagnostics;
 
-public abstract partial record Diagnostic
+public closed partial record Diagnostic
 {
     public virtual string Id => GetType().Name;
 
@@ -44,10 +44,10 @@ public abstract partial record Diagnostic
     // where severity is not error, but I expected it to be. That's important,
     // because following compilation passes might guard on errors :).
 
-    public abstract record Error : Diagnostic
+    public closed record Error : Diagnostic
     {
         public override DiagnosticSeverity DefaultSeverity => DiagnosticSeverity.Error;
     }
 
-    public abstract record Lint : Diagnostic;
+    public closed record Lint : Diagnostic;
 }

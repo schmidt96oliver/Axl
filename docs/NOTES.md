@@ -3,6 +3,7 @@
 
 **Next:** 
 * `if (true) else 1;` generates UndefinedName
+* `var a = i32` fix crash (`EatExprHead` does not parse nativetypename)
 
 **Moving On**
 * allow any type in string interpolation (that's a lowering problem)
@@ -25,6 +26,7 @@
 
 **Regressions**
 * `1_i32 == 1_i64`
+* `var a = i32`
 
 # Taxl: Multiple files
 * SourceText gets Origin (SourceText, Offset); construction by SourceText.Subtext
@@ -36,7 +38,7 @@
 # First features
 * i32, i64, f32, f64, bool, string
 * expressions: numeric, comparison, boolean
-* variables
+* variables****
 * string interpolation, escaped
 * blocks, if, loop (with break expression, continue)
 

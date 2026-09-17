@@ -4,7 +4,7 @@ using Axl.Compiler.Syntax;
 
 namespace Axl.Compiler.Binding.BoundTree;
 
-public abstract record StringPart
+public closed record StringPart
 {
     public sealed record Text(string ProcessedText) : StringPart;
 

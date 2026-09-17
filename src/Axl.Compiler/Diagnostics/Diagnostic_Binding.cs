@@ -9,7 +9,7 @@ namespace Axl.Compiler.Diagnostics;
 
 public partial record Diagnostic
 {
-    public record TypeMismatch(BoundExpr Expr, TypeSymbol Expected) : Error
+    public sealed record TypeMismatch(BoundExpr Expr, TypeSymbol Expected) : Error
     {
         public override ImmutableArray<SourceLocation> Locations
             => [Expr.Syntax.Location];

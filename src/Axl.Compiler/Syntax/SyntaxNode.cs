@@ -3,7 +3,7 @@ using Axl.Compiler.Text;
 
 namespace Axl.Compiler.Syntax;
 
-public abstract class SyntaxNode : SyntaxElement
+public closed class SyntaxNode : SyntaxElement
 {
     public SyntaxKind Kind { get; }
     

@@ -3,7 +3,7 @@ using Axl.Compiler.Text;
 
 namespace Axl.Compiler.Diagnostics;
 
-public abstract partial record Diagnostic
+public partial record Diagnostic
 {
     public sealed record UnknownNumberSuffix(SourceLocation Location) : Error
     {

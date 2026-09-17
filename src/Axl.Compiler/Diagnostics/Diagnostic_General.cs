@@ -4,7 +4,7 @@ using Axl.Compiler.Text;
 
 namespace Axl.Compiler.Diagnostics;
 
-public abstract partial record Diagnostic
+public closed partial record Diagnostic
 {
     public sealed record UnsupportedFeature(SyntaxElement Element, string? CustomMessage = null) : Error
     {

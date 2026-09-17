@@ -3,7 +3,7 @@ using Axl.Compiler.Syntax;
 
 namespace Axl.Compiler.Binding.BoundTree;
 
-public abstract class BoundStmt(SyntaxNode syntax)
+public closed class BoundStmt(SyntaxNode syntax)
 {
     public SyntaxNode Syntax { get; } = syntax;
 

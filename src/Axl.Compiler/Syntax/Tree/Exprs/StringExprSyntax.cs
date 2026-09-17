@@ -2,7 +2,7 @@
 
 namespace Axl.Compiler.Syntax.Tree;
 
-public abstract class StringPartSyntax(SyntaxKind kind, ImmutableArray<SyntaxElement> children)
+public closed class StringPartSyntax(SyntaxKind kind, ImmutableArray<SyntaxElement> children)
     : SyntaxNode(kind, children);
 
 public sealed class StringTextSyntax(ImmutableArray<SyntaxElement> children)
