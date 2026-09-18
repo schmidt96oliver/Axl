@@ -6,7 +6,7 @@
 // This is because it would be hard to reason about members before
 // the module decl: Do they belong in or out?
 
-fn Test() { }
+fun Test() { }
 
 module A;   //~error ModuleDeclAfterCode
 

@@ -22,19 +22,19 @@ public partial class ParserTests
                     """);
             
             [Fact]
-            public void InFnBody()
+            public void InFunBody()
                 => InlineSnapshot.Validate(Tree("""
-                                                fn A()
+                                                fun A()
                                                 { module Global; 1; }
                                                 """), """
-                    ERROR UnexpectedToken@[10, 16): Expected a statement, got 'module'.
+                    ERROR UnexpectedToken@[11, 17): Expected a statement, got 'module'.
 
 
-                    FnDecl
-                    · 'fn'
+                    FunDecl
+                    · 'fun'
                     · IdName 'A'
                     · ParamList '(' ')'
-                    · FnBody
+                    · FunBody
                     · · BlockExpr
                     · · · '{'
                     · · · Garbage 'module'

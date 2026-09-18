@@ -88,7 +88,7 @@ public partial class Parser
 
         // --- Close brace, valid closing
         // We need to catch common typing-cases here like
-        //    fn a()
+        //    fun a()
         //    {
         //       "Hello {
         //    }

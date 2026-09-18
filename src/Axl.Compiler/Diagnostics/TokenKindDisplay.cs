@@ -16,7 +16,7 @@ public static class TokenKindDisplayExtensions
             TokenKind.Eof => "end of file",
 
             // --- Keywords
-            TokenKind.FnKw => "'fn'",
+            TokenKind.FunKw => "'fun'",
             TokenKind.VarKw => "'var'",
             TokenKind.ModuleKw => "'module'",
             TokenKind.NativeKw => "'native'",

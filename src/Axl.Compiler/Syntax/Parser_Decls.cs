@@ -12,7 +12,7 @@ public partial class Parser
         Debug.Assert(_scanner.IsAt(FirstSet.Member));
 
         // --- Dispatch
-        if (_scanner.IsAt(TokenKind.FnKw))
+        if (_scanner.IsAt(TokenKind.FunKw))
             return EatFnDecl(anchor);
         if (_scanner.IsAt(TokenKind.NativeKw))
             return EatNativeFnDecl(anchor);
@@ -35,11 +35,11 @@ public partial class Parser
 
     private MarkClose EatFnDecl(Anchor anchor)
     {
-        Debug.Assert(_scanner.IsAt(TokenKind.FnKw));
+        Debug.Assert(_scanner.IsAt(TokenKind.FunKw));
 
         var fnDecl = _scanner.Open();
         
-        _scanner.EatKnown(TokenKind.FnKw);
+        _scanner.EatKnown(TokenKind.FunKw);
         EnsureIdName();
 
         EnsureParamList(anchor | TokenKind.OpenBrace | TokenKind.Colon |
@@ -50,7 +50,7 @@ public partial class Parser
 
         EnsureFnBody(anchor);
         
-        return _scanner.Close(fnDecl, SyntaxKind.FnDecl);
+        return _scanner.Close(fnDecl, SyntaxKind.FunDecl);
     }
 
     private MarkClose EnsureFnBody(Anchor anchor)
@@ -66,14 +66,14 @@ public partial class Parser
         }
         else
         {
-            EnsureBlock(anchor, ExpectedSyntax.FnBody);
+            EnsureBlock(anchor, ExpectedSyntax.FunBody);
 
             // Allow a semicolon if it's there for resilience.
             if (_scanner.IsAt(TokenKind.Semicolon))
                 _scanner.Eat();
         }
 
-        return _scanner.Close(fnBody, SyntaxKind.FnBody);
+        return _scanner.Close(fnBody, SyntaxKind.FunBody);
     }
 
     private MarkClose EatNativeFnDecl(Anchor anchor)
@@ -82,14 +82,14 @@ public partial class Parser
 
         var fnDecl = _scanner.Open();
         
-        EatNativeClause(anchor | TokenKind.FnKw | TokenKind.Semicolon);
+        EatNativeClause(anchor | TokenKind.FunKw | TokenKind.Semicolon);
 
-        if (!_scanner.IsAt(TokenKind.FnKw))
+        if (!_scanner.IsAt(TokenKind.FunKw))
         {
-            _scanner.ReportMissingTokenHere(TokenKind.FnKw);
+            _scanner.ReportMissingTokenHere(TokenKind.FunKw);
 
             // Since we anchor on ";" in EatNativeDecl, we need to handle
-            // that here. It was probably meant to close a native fn declaration,
+            // that here. It was probably meant to close a native fun declaration,
             // so just eat it.
             if (_scanner.IsAt(TokenKind.Semicolon))
                 _scanner.EatKnown(TokenKind.Semicolon);
@@ -97,7 +97,7 @@ public partial class Parser
             return _scanner.Close(fnDecl, SyntaxKind.Garbage);
         }
 
-        _scanner.EatKnown(TokenKind.FnKw);
+        _scanner.EatKnown(TokenKind.FunKw);
         EnsureIdName();
 
         EnsureParamList(anchor | TokenKind.Colon | TokenKind.Semicolon);
@@ -107,7 +107,7 @@ public partial class Parser
 
         EnsureToken(TokenKind.Semicolon);
 
-        return _scanner.Close(fnDecl, SyntaxKind.NativeFnDecl);
+        return _scanner.Close(fnDecl, SyntaxKind.NativeFunDecl);
     }
 
     private MarkClose EatNativeClause(Anchor anchor)
@@ -148,7 +148,7 @@ public partial class Parser
     private MarkClose EnsureParamList(Anchor anchor)
     {
         // Add ':' and type names to the first set, to catch
-        // cases like 'fn A( : i32)' gracefully.
+        // cases like 'fun A( : i32)' gracefully.
         var itemFirst = FirstSet.TypeName | TokenSet.Of(TokenKind.Identifier, TokenKind.Colon);
         
         return EnsureDelimitedList(anchor,
@@ -169,7 +169,7 @@ public partial class Parser
                 : ExpectedSyntax.Param);
 
             // A plain next identifier must not be eaten, it will become the next
-            // parameter. But if it looks like a path, like 'fn A(a a.b)',
+            // parameter. But if it looks like a path, like 'fun A(a a.b)',
             // then eat it as a type name for this parameter.
             if (_scanner.IsAt(TokenKind.Colon)
                 || _scanner.IsAt(FirstSet.NativeTypeName)

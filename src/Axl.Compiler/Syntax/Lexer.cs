@@ -274,7 +274,7 @@ public sealed class Lexer
             "else" => TokenKind.ElseKw,
             "f32" => TokenKind.F32Kw,
             "f64" => TokenKind.F64Kw,
-            "fn" => TokenKind.FnKw,
+            "fun" => TokenKind.FunKw,
             "false" => TokenKind.FalseKw,
             "i32" => TokenKind.I32Kw,
             "i64" => TokenKind.I64Kw,

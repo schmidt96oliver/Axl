@@ -26,8 +26,8 @@ public enum SyntaxKind
     
     // Declarations
     ModuleDecl,
-    FnDecl,
-    NativeFnDecl,
+    FunDecl,
+    NativeFunDecl,
     
     // Type Names
     Path,
@@ -67,6 +67,6 @@ public enum SyntaxKind
     ElseClause,
     TypeAnnotationClause,
     InitializerClause,
-    FnBody,
+    FunBody,
     ConditionClause
 }

@@ -9,7 +9,7 @@ public enum TokenKind
     Eof,
 
     // --- Keywords
-    FnKw,
+    FunKw,
     VarKw,
     ModuleKw,
     NativeKw,

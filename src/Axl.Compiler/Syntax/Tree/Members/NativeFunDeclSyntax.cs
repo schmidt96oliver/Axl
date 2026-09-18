@@ -2,8 +2,8 @@
 
 namespace Axl.Compiler.Syntax.Tree;
 
-public sealed class NativeFnDeclSyntax(ImmutableArray<SyntaxElement> children)
-    : MemberSyntax(SyntaxKind.NativeFnDecl, children)
+public sealed class NativeFunDeclSyntax(ImmutableArray<SyntaxElement> children)
+    : MemberSyntax(SyntaxKind.NativeFunDecl, children)
 {
     public StringExprSyntax NativeName
         => Children.FirstOfType<NativeClauseSyntax>().NativeName;

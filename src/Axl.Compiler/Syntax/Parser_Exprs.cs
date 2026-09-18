@@ -306,7 +306,7 @@ public partial class Parser
 
         foreach (var _ in _scanner.MustEatEachIteration())
         {
-            // --- Statement or FnDecl
+            // --- Statement or FunDecl
             if (_scanner.IsAt(FirstSet.Stmt))
                 EatStmt(blockAnchor);
             else if (_scanner.IsAt(FirstSet.Member))

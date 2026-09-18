@@ -10,11 +10,11 @@ namespace Axl.Compiler.Diagnostics;
 /// </summary>
 public readonly struct ExpectedSyntax
 {
-    public static readonly ExpectedSyntax FnBody = new("a function block");
+    public static readonly ExpectedSyntax FunBody = new("a function block");
     public static readonly ExpectedSyntax Expr = new("an expression");
     public static readonly ExpectedSyntax Stmt = new("a statement");
     public static readonly ExpectedSyntax TypeName = new("a type name");
-    public static readonly ExpectedSyntax Member = new("a member ('fn')");
+    public static readonly ExpectedSyntax Member = new("a member ('fun')");
     public static readonly ExpectedSyntax ParamList = new("parameters ('(')");
     public static readonly ExpectedSyntax String = new("a string");
     public static readonly ExpectedSyntax Param = new("a parameter");

@@ -2,8 +2,8 @@
 
 namespace Axl.Compiler.Syntax.Tree;
 
-public sealed class FnDeclSyntax(ImmutableArray<SyntaxElement> children)
-    : MemberSyntax(SyntaxKind.FnDecl, children)
+public sealed class FunDeclSyntax(ImmutableArray<SyntaxElement> children)
+    : MemberSyntax(SyntaxKind.FunDecl, children)
 {
     public IdentifierToken Name => Children.FirstOfType<IdNameSyntax>().Token;
 
@@ -13,10 +13,10 @@ public sealed class FnDeclSyntax(ImmutableArray<SyntaxElement> children)
     public TypeNameSyntax? ReturnTypeAnnotation
         => Children.FirstOfTypeOrNull<TypeAnnotationClauseSyntax>()?.TypeName;
     
-    public FnBodySyntax Body => Children.FirstOfType<FnBodySyntax>();
+    public FunBodySyntax Body => Children.FirstOfType<FunBodySyntax>();
 }
-public sealed class FnBodySyntax(ImmutableArray<SyntaxElement> children)
-    : MemberSyntax(SyntaxKind.FnBody, children)
+public sealed class FunBodySyntax(ImmutableArray<SyntaxElement> children)
+    : MemberSyntax(SyntaxKind.FunBody, children)
 {
     public bool IsExpressionBodied => Children.Any(child => child is Token { Kind: TokenKind.Equal });
     public ExprSyntax? Expr => Children.FirstOfTypeOrNull<ExprSyntax>();

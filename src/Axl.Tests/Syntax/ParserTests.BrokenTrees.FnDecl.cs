@@ -6,36 +6,36 @@ public partial class ParserTests
 {
     public partial class BrokenTrees
     {
-        public sealed class FnDecl
+        public sealed class FunDecl
         {
             [Fact]
             public void UnclosedParamList_1()
-                => InlineSnapshot.Validate(Tree("fn Foo( { }"), """
-                    ERROR MissingToken@[7, 7): Expected ')'.
+                => InlineSnapshot.Validate(Tree("fun Foo( { }"), """
+                    ERROR MissingToken@[8, 8): Expected ')'.
 
 
-                    FnDecl
-                    · 'fn'
+                    FunDecl
+                    · 'fun'
                     · IdName 'Foo'
                     · ParamList
                     · · '('
                     · · ??')'
-                    · FnBody
+                    · FunBody
                     · · BlockExpr '{' '}'
                     """);
             [Fact]
             public void UnclosedParamList_2()
-                => InlineSnapshot.Validate(Tree("fn Foo( ;"), """
-                    ERROR MissingToken@[7, 7): Expected ')'.
+                => InlineSnapshot.Validate(Tree("fun Foo( ;"), """
+                    ERROR MissingToken@[8, 8): Expected ')'.
 
 
-                    FnDecl
-                    · 'fn'
+                    FunDecl
+                    · 'fun'
                     · IdName 'Foo'
                     · ParamList
                     · · '('
                     · · ??')'
-                    · FnBody
+                    · FunBody
                     · · BlockExpr
                     · · · ??'{'
                     · · · ??'}'
@@ -43,29 +43,29 @@ public partial class ParserTests
                     """);
             [Fact]
             public void UnclosedParamList_3()
-                => InlineSnapshot.Validate(Tree("fn Foo( { };"), """
-                    ERROR MissingToken@[7, 7): Expected ')'.
+                => InlineSnapshot.Validate(Tree("fun Foo( { };"), """
+                    ERROR MissingToken@[8, 8): Expected ')'.
 
 
-                    FnDecl
-                    · 'fn'
+                    FunDecl
+                    · 'fun'
                     · IdName 'Foo'
                     · ParamList
                     · · '('
                     · · ??')'
-                    · FnBody
+                    · FunBody
                     · · BlockExpr '{' '}'
                     · · ';'
                     """);
             [Fact]
             public void UnclosedParamList_4()
-                => InlineSnapshot.Validate(Tree("fn Foo(: i32 { }"), """
-                    ERROR MissingToken@[7, 7): Expected an identifier.
-                    ERROR MissingToken@[12, 12): Expected ')'.
+                => InlineSnapshot.Validate(Tree("fun Foo(: i32 { }"), """
+                    ERROR MissingToken@[8, 8): Expected an identifier.
+                    ERROR MissingToken@[13, 13): Expected ')'.
 
 
-                    FnDecl
-                    · 'fn'
+                    FunDecl
+                    · 'fun'
                     · IdName 'Foo'
                     · ParamList
                     · · '('
@@ -76,17 +76,17 @@ public partial class ParserTests
                     · · · · ':'
                     · · · · NativeTypeName 'i32'
                     · · ??')'
-                    · FnBody
+                    · FunBody
                     · · BlockExpr '{' '}'
                     """);
             [Fact]
             public void UnclosedParamList_5()
-                => InlineSnapshot.Validate(Tree("fn Foo(a: i32,  { }"), """
-                    ERROR MissingToken@[14, 14): Expected a parameter.
+                => InlineSnapshot.Validate(Tree("fun Foo(a: i32,  { }"), """
+                    ERROR MissingToken@[15, 15): Expected a parameter.
 
 
-                    FnDecl
-                    · 'fn'
+                    FunDecl
+                    · 'fun'
                     · IdName 'Foo'
                     · ParamList
                     · · '('
@@ -100,18 +100,18 @@ public partial class ParserTests
                     · · · IdName
                     · · · · ??ID
                     · · ??')'
-                    · FnBody
+                    · FunBody
                     · · BlockExpr '{' '}'
                     """);
             [Fact]
             public void UnclosedParamList_6()
-                => InlineSnapshot.Validate(Tree("fn Foo(a: i32,: i32 { }"), """
-                    ERROR MissingToken@[14, 14): Expected an identifier.
-                    ERROR MissingToken@[19, 19): Expected ')'.
+                => InlineSnapshot.Validate(Tree("fun Foo(a: i32,: i32 { }"), """
+                    ERROR MissingToken@[15, 15): Expected an identifier.
+                    ERROR MissingToken@[20, 20): Expected ')'.
 
 
-                    FnDecl
-                    · 'fn'
+                    FunDecl
+                    · 'fun'
                     · IdName 'Foo'
                     · ParamList
                     · · '('
@@ -128,17 +128,17 @@ public partial class ParserTests
                     · · · · ':'
                     · · · · NativeTypeName 'i32'
                     · · ??')'
-                    · FnBody
+                    · FunBody
                     · · BlockExpr '{' '}'
                     """);
             [Fact]
             public void UnclosedParamList_7()
-                => InlineSnapshot.Validate(Tree("fn Foo(a: i32, @@ { }"), """
-                    ERROR UnexpectedToken@[15, 17): Expected a parameter, got unknown characters.
+                => InlineSnapshot.Validate(Tree("fun Foo(a: i32, @@ { }"), """
+                    ERROR UnexpectedToken@[16, 18): Expected a parameter, got unknown characters.
 
 
-                    FnDecl
-                    · 'fn'
+                    FunDecl
+                    · 'fun'
                     · IdName 'Foo'
                     · ParamList
                     · · '('
@@ -153,18 +153,18 @@ public partial class ParserTests
                     · · · IdName
                     · · · · ??ID
                     · · ??')'
-                    · FnBody
+                    · FunBody
                     · · BlockExpr '{' '}'
                     """);
             [Fact]
             public void UnclosedParamList_8()
-                => InlineSnapshot.Validate(Tree("fn Foo(a: i32, @@: string { }"), """
-                    ERROR UnexpectedToken@[15, 17): Expected a parameter, got unknown characters.
-                    ERROR MissingToken@[25, 25): Expected ')'.
+                => InlineSnapshot.Validate(Tree("fun Foo(a: i32, @@: string { }"), """
+                    ERROR UnexpectedToken@[16, 18): Expected a parameter, got unknown characters.
+                    ERROR MissingToken@[26, 26): Expected ')'.
 
 
-                    FnDecl
-                    · 'fn'
+                    FunDecl
+                    · 'fun'
                     · IdName 'Foo'
                     · ParamList
                     · · '('
@@ -182,18 +182,18 @@ public partial class ParserTests
                     · · · · ':'
                     · · · · NativeTypeName 'string'
                     · · ??')'
-                    · FnBody
+                    · FunBody
                     · · BlockExpr '{' '}'
                     """);
             
             [Fact]
             public void UnclosedParamList_9()
-                => InlineSnapshot.Validate(Tree("fn Foo(a: i32,  = 1;"), """
-                    ERROR MissingToken@[14, 14): Expected a parameter.
+                => InlineSnapshot.Validate(Tree("fun Foo(a: i32,  = 1;"), """
+                    ERROR MissingToken@[15, 15): Expected a parameter.
 
 
-                    FnDecl
-                    · 'fn'
+                    FunDecl
+                    · 'fun'
                     · IdName 'Foo'
                     · ParamList
                     · · '('
@@ -207,7 +207,7 @@ public partial class ParserTests
                     · · · IdName
                     · · · · ??ID
                     · · ??')'
-                    · FnBody
+                    · FunBody
                     · · '='
                     · · NumberLiteral '1'
                     · · ';'
@@ -215,12 +215,12 @@ public partial class ParserTests
             
             [Fact]
             public void UnclosedParamList_10()
-                => InlineSnapshot.Validate(Tree("fn Foo(a: i32,  = 1;"), """
-                    ERROR MissingToken@[14, 14): Expected a parameter.
+                => InlineSnapshot.Validate(Tree("fun Foo(a: i32,  = 1;"), """
+                    ERROR MissingToken@[15, 15): Expected a parameter.
 
 
-                    FnDecl
-                    · 'fn'
+                    FunDecl
+                    · 'fun'
                     · IdName 'Foo'
                     · ParamList
                     · · '('
@@ -234,7 +234,7 @@ public partial class ParserTests
                     · · · IdName
                     · · · · ??ID
                     · · ??')'
-                    · FnBody
+                    · FunBody
                     · · '='
                     · · NumberLiteral '1'
                     · · ';'
@@ -243,12 +243,12 @@ public partial class ParserTests
             
             [Fact]
             public void ParamList_ForgottenComma_1()
-                => InlineSnapshot.Validate(Tree("fn Foo(a b) { }"), """
-                    ERROR MissingToken@[8, 8): Expected ','.
+                => InlineSnapshot.Validate(Tree("fun Foo(a b) { }"), """
+                    ERROR MissingToken@[9, 9): Expected ','.
 
 
-                    FnDecl
-                    · 'fn'
+                    FunDecl
+                    · 'fun'
                     · IdName 'Foo'
                     · ParamList
                     · · '('
@@ -258,18 +258,18 @@ public partial class ParserTests
                     · · Param
                     · · · IdName 'b'
                     · · ')'
-                    · FnBody
+                    · FunBody
                     · · BlockExpr '{' '}'
                     """);
             
             [Fact]
             public void ParamList_ForgottenComma_2()
-                => InlineSnapshot.Validate(Tree("fn Foo(a: i32 b: string) { }"), """
-                    ERROR MissingToken@[13, 13): Expected ','.
+                => InlineSnapshot.Validate(Tree("fun Foo(a: i32 b: string) { }"), """
+                    ERROR MissingToken@[14, 14): Expected ','.
 
 
-                    FnDecl
-                    · 'fn'
+                    FunDecl
+                    · 'fun'
                     · IdName 'Foo'
                     · ParamList
                     · · '('
@@ -285,19 +285,19 @@ public partial class ParserTests
                     · · · · ':'
                     · · · · NativeTypeName 'string'
                     · · ')'
-                    · FnBody
+                    · FunBody
                     · · BlockExpr '{' '}'
                     """);
             
             [Fact]
             public void ParamList_ForgottenComma_3()
-                => InlineSnapshot.Validate(Tree("fn Foo(a: i32 b c: bool, d) { }"), """
-                    ERROR MissingToken@[13, 13): Expected ','.
-                    ERROR MissingToken@[15, 15): Expected ','.
+                => InlineSnapshot.Validate(Tree("fun Foo(a: i32 b c: bool, d) { }"), """
+                    ERROR MissingToken@[14, 14): Expected ','.
+                    ERROR MissingToken@[16, 16): Expected ','.
 
 
-                    FnDecl
-                    · 'fn'
+                    FunDecl
+                    · 'fun'
                     · IdName 'Foo'
                     · ParamList
                     · · '('
@@ -319,19 +319,19 @@ public partial class ParserTests
                     · · Param
                     · · · IdName 'd'
                     · · ')'
-                    · FnBody
+                    · FunBody
                     · · BlockExpr '{' '}'
                     """);
 
             
             [Fact]
             public void Param_ForgottenId()
-                => InlineSnapshot.Validate(Tree("fn A( : i32) { } "), """
-                    ERROR MissingToken@[5, 5): Expected an identifier.
+                => InlineSnapshot.Validate(Tree("fun A( : i32) { } "), """
+                    ERROR MissingToken@[6, 6): Expected an identifier.
 
 
-                    FnDecl
-                    · 'fn'
+                    FunDecl
+                    · 'fun'
                     · IdName 'A'
                     · ParamList
                     · · '('
@@ -342,18 +342,18 @@ public partial class ParserTests
                     · · · · ':'
                     · · · · NativeTypeName 'i32'
                     · · ')'
-                    · FnBody
+                    · FunBody
                     · · BlockExpr '{' '}'
                     """);
             
             [Fact]
             public void Param_ForgottenTypeName()
-                => InlineSnapshot.Validate(Tree("fn A(a : ) { } "), """
-                    ERROR MissingToken@[8, 8): Expected a type name.
+                => InlineSnapshot.Validate(Tree("fun A(a : ) { } "), """
+                    ERROR MissingToken@[9, 9): Expected a type name.
 
 
-                    FnDecl
-                    · 'fn'
+                    FunDecl
+                    · 'fun'
                     · IdName 'A'
                     · ParamList
                     · · '('
@@ -365,18 +365,18 @@ public partial class ParserTests
                     · · · · · IdName
                     · · · · · · ??ID
                     · · ')'
-                    · FnBody
+                    · FunBody
                     · · BlockExpr '{' '}'
                     """);
             
             [Fact]
             public void Param_ForgottenColon_FollowedByNativeTypeName()
-                => InlineSnapshot.Validate(Tree("fn A(a i32) { } "), """
-                    ERROR MissingToken@[6, 6): Expected ':'.
+                => InlineSnapshot.Validate(Tree("fun A(a i32) { } "), """
+                    ERROR MissingToken@[7, 7): Expected ':'.
 
 
-                    FnDecl
-                    · 'fn'
+                    FunDecl
+                    · 'fun'
                     · IdName 'A'
                     · ParamList
                     · · '('
@@ -386,18 +386,18 @@ public partial class ParserTests
                     · · · · ??':'
                     · · · · NativeTypeName 'i32'
                     · · ')'
-                    · FnBody
+                    · FunBody
                     · · BlockExpr '{' '}'
                     """);
             
             [Fact]
             public void Param_ForgottenColon_FollowedByQualifiedName_1()
-                => InlineSnapshot.Validate(Tree("fn A(a a.b) { } "), """
-                    ERROR MissingToken@[6, 6): Expected ':'.
+                => InlineSnapshot.Validate(Tree("fun A(a a.b) { } "), """
+                    ERROR MissingToken@[7, 7): Expected ':'.
 
 
-                    FnDecl
-                    · 'fn'
+                    FunDecl
+                    · 'fun'
                     · IdName 'A'
                     · ParamList
                     · · '('
@@ -410,19 +410,19 @@ public partial class ParserTests
                     · · · · · '.'
                     · · · · · IdName 'b'
                     · · ')'
-                    · FnBody
+                    · FunBody
                     · · BlockExpr '{' '}'
                     """);
             
             [Fact]
             public void Param_ForgottenColon_FollowedByQualifiedName_2()
-                => InlineSnapshot.Validate(Tree("fn A(a a.) { } "), """
-                    ERROR MissingToken@[6, 6): Expected ':'.
-                    ERROR MissingToken@[9, 9): Expected an identifier.
+                => InlineSnapshot.Validate(Tree("fun A(a a.) { } "), """
+                    ERROR MissingToken@[7, 7): Expected ':'.
+                    ERROR MissingToken@[10, 10): Expected an identifier.
 
 
-                    FnDecl
-                    · 'fn'
+                    FunDecl
+                    · 'fun'
                     · IdName 'A'
                     · ParamList
                     · · '('
@@ -436,18 +436,18 @@ public partial class ParserTests
                     · · · · · IdName
                     · · · · · · ??ID
                     · · ')'
-                    · FnBody
+                    · FunBody
                     · · BlockExpr '{' '}'
                     """);
             
             [Fact]
             public void Param_OnlyNativeTypeName()
-                => InlineSnapshot.Validate(Tree("fn A(f32) { } "), """
-                    ERROR MissingToken@[5, 5): Expected an identifier.
+                => InlineSnapshot.Validate(Tree("fun A(f32) { } "), """
+                    ERROR MissingToken@[6, 6): Expected an identifier.
 
 
-                    FnDecl
-                    · 'fn'
+                    FunDecl
+                    · 'fun'
                     · IdName 'A'
                     · ParamList
                     · · '('
@@ -458,20 +458,20 @@ public partial class ParserTests
                     · · · · ??':'
                     · · · · NativeTypeName 'f32'
                     · · ')'
-                    · FnBody
+                    · FunBody
                     · · BlockExpr '{' '}'
                     """);
             
             
             [Fact]
             public void ParamList_ForgottenItem_1()
-                => InlineSnapshot.Validate(Tree("fn Foo( , ) { }"), """
-                    ERROR MissingToken@[7, 7): Expected a parameter.
-                    ERROR MissingToken@[9, 9): Expected a parameter.
+                => InlineSnapshot.Validate(Tree("fun Foo( , ) { }"), """
+                    ERROR MissingToken@[8, 8): Expected a parameter.
+                    ERROR MissingToken@[10, 10): Expected a parameter.
 
 
-                    FnDecl
-                    · 'fn'
+                    FunDecl
+                    · 'fun'
                     · IdName 'Foo'
                     · ParamList
                     · · '('
@@ -483,20 +483,20 @@ public partial class ParserTests
                     · · · IdName
                     · · · · ??ID
                     · · ')'
-                    · FnBody
+                    · FunBody
                     · · BlockExpr '{' '}'
                     """);
 
             [Fact]
             public void ParamList_ForgottenItem_2()
-                => InlineSnapshot.Validate(Tree("fn Foo( , , ) { }"), """
-                    ERROR MissingToken@[7, 7): Expected a parameter.
-                    ERROR MissingToken@[9, 9): Expected a parameter.
-                    ERROR MissingToken@[11, 11): Expected a parameter.
+                => InlineSnapshot.Validate(Tree("fun Foo( , , ) { }"), """
+                    ERROR MissingToken@[8, 8): Expected a parameter.
+                    ERROR MissingToken@[10, 10): Expected a parameter.
+                    ERROR MissingToken@[12, 12): Expected a parameter.
 
 
-                    FnDecl
-                    · 'fn'
+                    FunDecl
+                    · 'fun'
                     · IdName 'Foo'
                     · ParamList
                     · · '('
@@ -512,18 +512,18 @@ public partial class ParserTests
                     · · · IdName
                     · · · · ??ID
                     · · ')'
-                    · FnBody
+                    · FunBody
                     · · BlockExpr '{' '}'
                     """);
 
             [Fact]
             public void ParamList_ForgottenItem_3()
-                => InlineSnapshot.Validate(Tree("fn Foo(a,) { }"), """
-                    ERROR MissingToken@[9, 9): Expected a parameter.
+                => InlineSnapshot.Validate(Tree("fun Foo(a,) { }"), """
+                    ERROR MissingToken@[10, 10): Expected a parameter.
 
 
-                    FnDecl
-                    · 'fn'
+                    FunDecl
+                    · 'fun'
                     · IdName 'Foo'
                     · ParamList
                     · · '('
@@ -534,39 +534,39 @@ public partial class ParserTests
                     · · · IdName
                     · · · · ??ID
                     · · ')'
-                    · FnBody
+                    · FunBody
                     · · BlockExpr '{' '}'
                     """);
 
             [Fact]
             public void NoParamList_1()
-                => InlineSnapshot.Validate(Tree("fn A { }"), """
-                    ERROR MissingToken@[4, 4): Expected parameters ('(').
+                => InlineSnapshot.Validate(Tree("fun A { }"), """
+                    ERROR MissingToken@[5, 5): Expected parameters ('(').
 
 
-                    FnDecl
-                    · 'fn'
+                    FunDecl
+                    · 'fun'
                     · IdName 'A'
                     · ParamList
                     · · ??'('
                     · · ??')'
-                    · FnBody
+                    · FunBody
                     · · BlockExpr '{' '}'
                     """);
             
             [Fact]
             public void NoParamList_2()
-                => InlineSnapshot.Validate(Tree("fn A = 1;"), """
-                    ERROR MissingToken@[4, 4): Expected parameters ('(').
+                => InlineSnapshot.Validate(Tree("fun A = 1;"), """
+                    ERROR MissingToken@[5, 5): Expected parameters ('(').
 
 
-                    FnDecl
-                    · 'fn'
+                    FunDecl
+                    · 'fun'
                     · IdName 'A'
                     · ParamList
                     · · ??'('
                     · · ??')'
-                    · FnBody
+                    · FunBody
                     · · '='
                     · · NumberLiteral '1'
                     · · ';'
@@ -574,12 +574,12 @@ public partial class ParserTests
             
             [Fact]
             public void NoParamList_3()
-                => InlineSnapshot.Validate(Tree("fn A: i32 { }"), """
-                    ERROR MissingToken@[4, 4): Expected parameters ('(').
+                => InlineSnapshot.Validate(Tree("fun A: i32 { }"), """
+                    ERROR MissingToken@[5, 5): Expected parameters ('(').
 
 
-                    FnDecl
-                    · 'fn'
+                    FunDecl
+                    · 'fun'
                     · IdName 'A'
                     · ParamList
                     · · ??'('
@@ -587,7 +587,7 @@ public partial class ParserTests
                     · TypeAnnotationClause
                     · · ':'
                     · · NativeTypeName 'i32'
-                    · FnBody
+                    · FunBody
                     · · BlockExpr '{' '}'
                     """);
             
@@ -595,12 +595,12 @@ public partial class ParserTests
 
             [Fact]
             public void ParamList_Garbage_1()
-                => InlineSnapshot.Validate(Tree("fn Foo(a @@ b) { }"), """
-                    ERROR UnexpectedToken@[9, 11): Expected ',', got unknown characters.
+                => InlineSnapshot.Validate(Tree("fun Foo(a @@ b) { }"), """
+                    ERROR UnexpectedToken@[10, 12): Expected ',', got unknown characters.
 
 
-                    FnDecl
-                    · 'fn'
+                    FunDecl
+                    · 'fun'
                     · IdName 'Foo'
                     · ParamList
                     · · '('
@@ -611,18 +611,18 @@ public partial class ParserTests
                     · · Param
                     · · · IdName 'b'
                     · · ')'
-                    · FnBody
+                    · FunBody
                     · · BlockExpr '{' '}'
                     """);
             
             [Fact]
             public void ParamList_Garbage_2()
-                => InlineSnapshot.Validate(Tree("fn Foo(@@ a, b) { }"), """
-                    ERROR UnexpectedToken@[7, 9): Expected a parameter, got unknown characters.
+                => InlineSnapshot.Validate(Tree("fun Foo(@@ a, b) { }"), """
+                    ERROR UnexpectedToken@[8, 10): Expected a parameter, got unknown characters.
 
 
-                    FnDecl
-                    · 'fn'
+                    FunDecl
+                    · 'fun'
                     · IdName 'Foo'
                     · ParamList
                     · · '('
@@ -633,18 +633,18 @@ public partial class ParserTests
                     · · Param
                     · · · IdName 'b'
                     · · ')'
-                    · FnBody
+                    · FunBody
                     · · BlockExpr '{' '}'
                     """);
             
             [Fact]
             public void ParamList_Garbage_3()
-                => InlineSnapshot.Validate(Tree("fn Foo(@@, a, b) { }"), """
-                    ERROR UnexpectedToken@[7, 9): Expected a parameter, got unknown characters.
+                => InlineSnapshot.Validate(Tree("fun Foo(@@, a, b) { }"), """
+                    ERROR UnexpectedToken@[8, 10): Expected a parameter, got unknown characters.
 
 
-                    FnDecl
-                    · 'fn'
+                    FunDecl
+                    · 'fun'
                     · IdName 'Foo'
                     · ParamList
                     · · '('
@@ -659,18 +659,18 @@ public partial class ParserTests
                     · · Param
                     · · · IdName 'b'
                     · · ')'
-                    · FnBody
+                    · FunBody
                     · · BlockExpr '{' '}'
                     """);
             
             [Fact]
             public void ParamList_Garbage_4()
-                => InlineSnapshot.Validate(Tree("fn Foo(@@) { }"), """
-                    ERROR UnexpectedToken@[7, 9): Expected a parameter, got unknown characters.
+                => InlineSnapshot.Validate(Tree("fun Foo(@@) { }"), """
+                    ERROR UnexpectedToken@[8, 10): Expected a parameter, got unknown characters.
 
 
-                    FnDecl
-                    · 'fn'
+                    FunDecl
+                    · 'fun'
                     · IdName 'Foo'
                     · ParamList
                     · · '('
@@ -679,19 +679,19 @@ public partial class ParserTests
                     · · · IdName
                     · · · · ??ID
                     · · ')'
-                    · FnBody
+                    · FunBody
                     · · BlockExpr '{' '}'
                     """);
             
             [Fact]
             public void ParamList_Garbage_5()
-                => InlineSnapshot.Validate(Tree("fn Foo(@@, ) { }"), """
-                    ERROR UnexpectedToken@[7, 9): Expected a parameter, got unknown characters.
-                    ERROR MissingToken@[10, 10): Expected a parameter.
+                => InlineSnapshot.Validate(Tree("fun Foo(@@, ) { }"), """
+                    ERROR UnexpectedToken@[8, 10): Expected a parameter, got unknown characters.
+                    ERROR MissingToken@[11, 11): Expected a parameter.
 
 
-                    FnDecl
-                    · 'fn'
+                    FunDecl
+                    · 'fun'
                     · IdName 'Foo'
                     · ParamList
                     · · '('
@@ -704,19 +704,19 @@ public partial class ParserTests
                     · · · IdName
                     · · · · ??ID
                     · · ')'
-                    · FnBody
+                    · FunBody
                     · · BlockExpr '{' '}'
                     """);
             
             [Fact]
             public void ParamList_Garbage_6()
-                => InlineSnapshot.Validate(Tree("fn Foo(a @@, @@) { }"), """
-                    ERROR UnexpectedToken@[9, 11): Expected ',', got unknown characters.
-                    ERROR UnexpectedToken@[13, 15): Expected a parameter, got unknown characters.
+                => InlineSnapshot.Validate(Tree("fun Foo(a @@, @@) { }"), """
+                    ERROR UnexpectedToken@[10, 12): Expected ',', got unknown characters.
+                    ERROR UnexpectedToken@[14, 16): Expected a parameter, got unknown characters.
 
 
-                    FnDecl
-                    · 'fn'
+                    FunDecl
+                    · 'fun'
                     · IdName 'Foo'
                     · ParamList
                     · · '('
@@ -729,19 +729,19 @@ public partial class ParserTests
                     · · · IdName
                     · · · · ??ID
                     · · ')'
-                    · FnBody
+                    · FunBody
                     · · BlockExpr '{' '}'
                     """);
             
             [Fact]
             public void ParamList_Garbage_7()
-                => InlineSnapshot.Validate(Tree("fn Foo(@@, a, b @@) { }"), """
-                    ERROR UnexpectedToken@[7, 9): Expected a parameter, got unknown characters.
-                    ERROR UnexpectedToken@[16, 18): Expected ')', got unknown characters.
+                => InlineSnapshot.Validate(Tree("fun Foo(@@, a, b @@) { }"), """
+                    ERROR UnexpectedToken@[8, 10): Expected a parameter, got unknown characters.
+                    ERROR UnexpectedToken@[17, 19): Expected ')', got unknown characters.
 
 
-                    FnDecl
-                    · 'fn'
+                    FunDecl
+                    · 'fun'
                     · IdName 'Foo'
                     · ParamList
                     · · '('
@@ -757,19 +757,19 @@ public partial class ParserTests
                     · · · IdName 'b'
                     · · Garbage '@@'
                     · · ')'
-                    · FnBody
+                    · FunBody
                     · · BlockExpr '{' '}'
                     """);
             
             [Fact]
             public void ParamList_Garbage_8()
-                => InlineSnapshot.Validate(Tree("fn Foo(@@,@@) { }"), """
-                    ERROR UnexpectedToken@[7, 9): Expected a parameter, got unknown characters.
-                    ERROR UnexpectedToken@[10, 12): Expected a parameter, got unknown characters.
+                => InlineSnapshot.Validate(Tree("fun Foo(@@,@@) { }"), """
+                    ERROR UnexpectedToken@[8, 10): Expected a parameter, got unknown characters.
+                    ERROR UnexpectedToken@[11, 13): Expected a parameter, got unknown characters.
 
 
-                    FnDecl
-                    · 'fn'
+                    FunDecl
+                    · 'fun'
                     · IdName 'Foo'
                     · ParamList
                     · · '('
@@ -783,7 +783,7 @@ public partial class ParserTests
                     · · · IdName
                     · · · · ??ID
                     · · ')'
-                    · FnBody
+                    · FunBody
                     · · BlockExpr '{' '}'
                     """);
 
@@ -865,7 +865,7 @@ public partial class ParserTests
             public void Native_1()
                 => InlineSnapshot.Validate(Tree("""
                                                 native;
-                                                fn A() { }
+                                                fun A() { }
                                                 """), """
                     ERROR MissingToken@[6, 6): Expected '('.
 
@@ -879,25 +879,25 @@ public partial class ParserTests
                     · · · ??'"'
                     · · ??')'
                     · ';'
-                    FnDecl
-                    · 'fn'
+                    FunDecl
+                    · 'fun'
                     · IdName 'A'
                     · ParamList '(' ')'
-                    · FnBody
+                    · FunBody
                     · · BlockExpr '{' '}'
                     """);
             
             [Fact]
             public void Native_2()
                 => InlineSnapshot.Validate(Tree("""
-                                                native fn ;
-                                                fn A() { }
+                                                native fun ;
+                                                fun A() { }
                                                 """), """
                     ERROR MissingToken@[6, 6): Expected '('.
-                    ERROR MissingToken@[9, 9): Expected an identifier.
+                    ERROR MissingToken@[10, 10): Expected an identifier.
 
 
-                    NativeFnDecl
+                    NativeFunDecl
                     · NativeClause
                     · · 'native'
                     · · ??'('
@@ -905,27 +905,27 @@ public partial class ParserTests
                     · · · ??'"'
                     · · · ??'"'
                     · · ??')'
-                    · 'fn'
+                    · 'fun'
                     · IdName
                     · · ??ID
                     · ParamList
                     · · ??'('
                     · · ??')'
                     · ';'
-                    FnDecl
-                    · 'fn'
+                    FunDecl
+                    · 'fun'
                     · IdName 'A'
                     · ParamList '(' ')'
-                    · FnBody
+                    · FunBody
                     · · BlockExpr '{' '}'
                     """);
             [Fact]
             public void Native_3()
-                => InlineSnapshot.Validate(Tree("native fn A();"), """
+                => InlineSnapshot.Validate(Tree("native fun A();"), """
                     ERROR MissingToken@[6, 6): Expected '('.
 
 
-                    NativeFnDecl
+                    NativeFunDecl
                     · NativeClause
                     · · 'native'
                     · · ??'('
@@ -933,18 +933,18 @@ public partial class ParserTests
                     · · · ??'"'
                     · · · ??'"'
                     · · ??')'
-                    · 'fn'
+                    · 'fun'
                     · IdName 'A'
                     · ParamList '(' ')'
                     · ';'
                     """);
             [Fact]
             public void Native_4()
-                => InlineSnapshot.Validate(Tree("native( fn A();"), """
+                => InlineSnapshot.Validate(Tree("native( fun A();"), """
                     ERROR MissingToken@[7, 7): Expected a string.
 
 
-                    NativeFnDecl
+                    NativeFunDecl
                     · NativeClause
                     · · 'native'
                     · · '('
@@ -952,7 +952,7 @@ public partial class ParserTests
                     · · · ??'"'
                     · · · ??'"'
                     · · ??')'
-                    · 'fn'
+                    · 'fun'
                     · IdName 'A'
                     · ParamList '(' ')'
                     · ';'
@@ -960,11 +960,11 @@ public partial class ParserTests
             
             [Fact]
             public void Native_5()
-                => InlineSnapshot.Validate(Tree("native(\"Foo\" fn A();"), """
+                => InlineSnapshot.Validate(Tree("native(\"Foo\" fun A();"), """
                     ERROR MissingToken@[12, 12): Expected ')'.
 
 
-                    NativeFnDecl
+                    NativeFunDecl
                     · NativeClause
                     · · 'native'
                     · · '('
@@ -973,18 +973,18 @@ public partial class ParserTests
                     · · · StringText 'Foo'
                     · · · '"'
                     · · ??')'
-                    · 'fn'
+                    · 'fun'
                     · IdName 'A'
                     · ParamList '(' ')'
                     · ';'
                     """);
             [Fact]
             public void Native_6()
-                => InlineSnapshot.Validate(Tree("native() fn A();"), """
+                => InlineSnapshot.Validate(Tree("native() fun A();"), """
                     ERROR MissingToken@[7, 7): Expected a string.
 
 
-                    NativeFnDecl
+                    NativeFunDecl
                     · NativeClause
                     · · 'native'
                     · · '('
@@ -992,7 +992,7 @@ public partial class ParserTests
                     · · · ??'"'
                     · · · ??'"'
                     · · ')'
-                    · 'fn'
+                    · 'fun'
                     · IdName 'A'
                     · ParamList '(' ')'
                     · ';'

@@ -11,19 +11,19 @@ public partial class ParserTests
             [Fact]
             public void Typing_ClosingBraceOnNextLine_1()
                 => InlineSnapshot.Validate(Tree("""
-                                                fn a()
+                                                fun a()
                                                 {
                                                     "Hello
                                                 }
                                                 """), """
-                    ERROR MissingToken@[21, 21): Expected '"'.
+                    ERROR MissingToken@[22, 22): Expected '"'.
 
 
-                    FnDecl
-                    · 'fn'
+                    FunDecl
+                    · 'fun'
                     · IdName 'a'
                     · ParamList '(' ')'
-                    · FnBody
+                    · FunBody
                     · · BlockExpr
                     · · · '{'
                     · · · ExprStmt
@@ -38,19 +38,19 @@ public partial class ParserTests
             [Fact]
             public void Typing_ClosingBraceOnNextLine_2()
                 => InlineSnapshot.Validate(Tree("""
-                                                fn a()
+                                                fun a()
                                                 {
                                                     "Hello {
                                                 }
                                                 """), """
-                    ERROR MissingToken@[23, 23): Expected '}'.
+                    ERROR MissingToken@[24, 24): Expected '}'.
 
 
-                    FnDecl
-                    · 'fn'
+                    FunDecl
+                    · 'fun'
                     · IdName 'a'
                     · ParamList '(' ')'
-                    · FnBody
+                    · FunBody
                     · · BlockExpr
                     · · · '{'
                     · · · ExprStmt
@@ -68,19 +68,19 @@ public partial class ParserTests
             [Fact]
             public void Typing_ClosingBraceOnNextLine_3()
                 => InlineSnapshot.Validate(Tree("""
-                                                fn a()
+                                                fun a()
                                                 {
                                                     "Hello { 1
                                                 }
                                                 """), """
-                    ERROR MissingToken@[25, 25): Expected '}'.
+                    ERROR MissingToken@[26, 26): Expected '}'.
 
 
-                    FnDecl
-                    · 'fn'
+                    FunDecl
+                    · 'fun'
                     · IdName 'a'
                     · ParamList '(' ')'
-                    · FnBody
+                    · FunBody
                     · · BlockExpr
                     · · · '{'
                     · · · ExprStmt
@@ -99,19 +99,19 @@ public partial class ParserTests
             [Fact]
             public void Typing_ClosingBraceOnNextLine_4()
                 => InlineSnapshot.Validate(Tree("""
-                                                fn a()
+                                                fun a()
                                                 {
                                                     "Hello { 1 +
                                                 }
                                                 """), """
-                    ERROR MissingToken@[27, 27): Expected an expression.
+                    ERROR MissingToken@[28, 28): Expected an expression.
 
 
-                    FnDecl
-                    · 'fn'
+                    FunDecl
+                    · 'fun'
                     · IdName 'a'
                     · ParamList '(' ')'
-                    · FnBody
+                    · FunBody
                     · · BlockExpr
                     · · · '{'
                     · · · ExprStmt
@@ -134,19 +134,19 @@ public partial class ParserTests
             [Fact]
             public void Typing_ClosingBraceOnNextLine_5()
                 => InlineSnapshot.Validate(Tree("""
-                                                fn a()
+                                                fun a()
                                                 {
                                                     "Hello { 1 + 6
                                                 }
                                                 """), """
-                    ERROR MissingToken@[29, 29): Expected '}'.
+                    ERROR MissingToken@[30, 30): Expected '}'.
 
 
-                    FnDecl
-                    · 'fn'
+                    FunDecl
+                    · 'fun'
                     · IdName 'a'
                     · ParamList '(' ')'
-                    · FnBody
+                    · FunBody
                     · · BlockExpr
                     · · · '{'
                     · · · ExprStmt
@@ -168,19 +168,19 @@ public partial class ParserTests
             [Fact]
             public void Typing_ClosingBraceOnNextLine_6()
                 => InlineSnapshot.Validate(Tree("""
-                                                fn a()
+                                                fun a()
                                                 {
                                                     "Hello { 1 + 6 }
                                                 }
                                                 """), """
-                    ERROR MissingToken@[31, 31): Expected '"'.
+                    ERROR MissingToken@[32, 32): Expected '"'.
 
 
-                    FnDecl
-                    · 'fn'
+                    FunDecl
+                    · 'fun'
                     · IdName 'a'
                     · ParamList '(' ')'
-                    · FnBody
+                    · FunBody
                     · · BlockExpr
                     · · · '{'
                     · · · ExprStmt
@@ -202,20 +202,20 @@ public partial class ParserTests
             [Fact]
             public void Typing_ExprOnNextLine_1()
                 => InlineSnapshot.Validate(Tree("""
-                                                fn a()
+                                                fun a()
                                                 {
                                                     "Hello
                                                     1+2;
                                                 }
                                                 """), """
-                    ERROR MissingToken@[21, 21): Expected '"'.
+                    ERROR MissingToken@[22, 22): Expected '"'.
 
 
-                    FnDecl
-                    · 'fn'
+                    FunDecl
+                    · 'fun'
                     · IdName 'a'
                     · ParamList '(' ')'
-                    · FnBody
+                    · FunBody
                     · · BlockExpr
                     · · · '{'
                     · · · ExprStmt
@@ -236,20 +236,20 @@ public partial class ParserTests
             [Fact]
             public void Typing_ExprOnNextLine_2()
                 => InlineSnapshot.Validate(Tree("""
-                                                fn a()
+                                                fun a()
                                                 {
                                                     "Hello { 1
                                                     1+2;
                                                 }
                                                 """), """
-                    ERROR MissingToken@[25, 25): Expected '}'.
+                    ERROR MissingToken@[26, 26): Expected '}'.
 
 
-                    FnDecl
-                    · 'fn'
+                    FunDecl
+                    · 'fun'
                     · IdName 'a'
                     · ParamList '(' ')'
-                    · FnBody
+                    · FunBody
                     · · BlockExpr
                     · · · '{'
                     · · · ExprStmt
@@ -274,20 +274,20 @@ public partial class ParserTests
             [Fact]
             public void Typing_ExprOnNextLine_3()
                 => InlineSnapshot.Validate(Tree("""
-                                                fn a()
+                                                fun a()
                                                 {
                                                     "Hello { 1 + 6 } World
                                                     1+2;
                                                 }
                                                 """), """
-                    ERROR MissingToken@[37, 37): Expected '"'.
+                    ERROR MissingToken@[38, 38): Expected '"'.
 
 
-                    FnDecl
-                    · 'fn'
+                    FunDecl
+                    · 'fun'
                     · IdName 'a'
                     · ParamList '(' ')'
-                    · FnBody
+                    · FunBody
                     · · BlockExpr
                     · · · '{'
                     · · · ExprStmt

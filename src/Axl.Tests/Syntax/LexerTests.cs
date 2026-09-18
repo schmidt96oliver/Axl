@@ -80,8 +80,8 @@ public sealed class LexerTests
 
     [Fact]
     public void Keywords()
-        => InlineSnapshot.Validate(NoWhitespace("fn var module native return if else while break continue and or not true false i32 f32 i64 f64 bool string char unit using"), """
-            - FnKw: "fn"
+        => InlineSnapshot.Validate(NoWhitespace("fun var module native return if else while break continue and or not true false i32 f32 i64 f64 bool string char unit using"), """
+            - FunKw: "fun"
             - VarKw: "var"
             - ModuleKw: "module"
             - NativeKw: "native"
@@ -110,8 +110,8 @@ public sealed class LexerTests
 
     [Fact]
     public void IdentifierVsKeyword()
-        => InlineSnapshot.Validate(NoWhitespace("fn vara aif _while else_ false0 False I32"), """
-            - FnKw: "fn"
+        => InlineSnapshot.Validate(NoWhitespace("fun vara aif _while else_ false0 False I32"), """
+            - FunKw: "fun"
             - Identifier: "vara"
             - Identifier: "aif"
             - Identifier: "_while"
@@ -295,9 +295,9 @@ public sealed class LexerTests
     
     [Fact]
     public void Strings_Plain()
-        => InlineSnapshot.Validate(All("\"Abcdefg //test @.;- f32 fn 🂦🂦 \""), """"
+        => InlineSnapshot.Validate(All("\"Abcdefg //test @.;- f32 fun 🂦🂦 \""), """"
             - StringStart: """
-            - StringText: "Abcdefg //test @.;- f32 fn \uD83C\uDCA6\uD83C\uDCA6 " processed="Abcdefg //test @.;- f32 fn 🂦🂦 "
+            - StringText: "Abcdefg //test @.;- f32 fun \uD83C\uDCA6\uD83C\uDCA6 " processed="Abcdefg //test @.;- f32 fun 🂦🂦 "
             - StringEnd: """
             - Eof
             """");
