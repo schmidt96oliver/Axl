@@ -111,4 +111,10 @@ public partial record Diagnostic
         public override string Message
             => $"Both 'if' and 'else' branches must have the same type. Got '{First.Type.Name}' and '{Second.Type.Name}'.";
     }
+
+    public sealed record NotAVariable(IdNameSyntax Syntax, Symbol Symbol) : Error
+    {
+        public override ImmutableArray<SourceLocation> Locations => [Syntax.Location];
+        public override string Message => $"'{Symbol.Name}' is a '{Symbol.KindName}'. Expected a variable.";
+    }
 }

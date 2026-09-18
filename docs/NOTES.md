@@ -2,7 +2,12 @@
                                        ≽(◕ ᴗ ◕)≼
 
 **Next:** 
-
+* [ ] Add ModuleSymbol; Make BaseModuleSymbol a ModuleSymbol
+* [ ] Add type name resolution
+* [ ] Remove native type keywords
+* [ ] Add IntrinsicFnSymbol, Intrinsic
+* [ ] Add Operators as intrinsic fns
+* [ ] Bind BinaryExpr as BoundIntrinsicCall and lower derived operators
 
 
 **Syntax ideas from https://core-lang.dev/design.html**

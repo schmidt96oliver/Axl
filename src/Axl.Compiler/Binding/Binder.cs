@@ -11,32 +11,48 @@ namespace Axl.Compiler.Binding;
 public sealed class Binder
 {
     private readonly DiagnosticBag _diagnostics = new();
-    private readonly TypeContext _types;
+    private readonly BaseModuleSymbol _baseModule;
     
     private Scope _scope;
     private bool _inLoop = false;
     
     
-    private Binder(Scope scope, TypeContext typeContext)
+    private Binder(Scope scope, BaseModuleSymbol baseModule)
     {
-        _types = typeContext;
+        _baseModule = baseModule;
 
         _scope = scope;
     }
 
-    public static BoundFile BindFile(FileSyntax syntax, TypeContext typeContext)
+    public static BoundFile BindFile(FileSyntax syntax, BaseModuleSymbol baseModule)
     {
         var scope = new Scope();
-        var binder = new Binder(scope, typeContext);
+        var binder = new Binder(scope, baseModule);
         
         // Everything other than stmts is not supported yet.
         foreach (var node in syntax.SyntaxNodes().Where(n => n is not StmtSyntax))
             binder._diagnostics.ReportError(new Diagnostic.UnsupportedFeature(node));
 
         var stmts = syntax.Stmts.Select(binder.BindStmt).ToImmutableArray();
-        var block = new BoundBlock(stmts, type: typeContext.Unit, syntax);
+        var block = new BoundBlock(stmts, type: baseModule.Unit, syntax);
 
         return new BoundFile(block, binder._diagnostics.Drain());
+    }
+    
+    
+    /// <summary>
+    /// Whether a value of type <paramref name="source"/> can be
+    /// assigned to a target of type <paramref name="target"/>.
+    /// </summary>
+    public bool IsAssignableTo(TypeSymbol source, TypeSymbol target)
+    {
+        // Errors are silent
+        if (source == _baseModule.Error || target == _baseModule.Error) return true;
+        
+        // Never assigns to anything
+        if (source == _baseModule.Never) return true;
+
+        return source == target;
     }
     
     
@@ -47,7 +63,7 @@ public sealed class Binder
     /// <returns><c>true</c>, if types matched. <c>false</c>, otherwise.</returns>
     private bool CheckTypeAndReportMismatch(BoundExpr expr, TypeSymbol expected)
     {
-        if (!_types.IsAssignableTo(expr.Type, expected))
+        if (!IsAssignableTo(expr.Type, expected))
         {
             _diagnostics.ReportError(new Diagnostic.TypeMismatch(
                 Expr: expr,
@@ -70,6 +86,9 @@ public sealed class Binder
         return symbol;
     }
     
+    
+    
+    
     #region Type names
 
     private TypeSymbol BindType(TypeNameSyntax syntax) => syntax switch
@@ -81,21 +100,21 @@ public sealed class Binder
 
     private TypeSymbol BindNativeType(NativeTypeNameSyntax syntax) => syntax.Token.Kind switch
     {
-        TokenKind.I32Kw => _types.I32,
-        TokenKind.I64Kw => _types.I64,
-        TokenKind.F32Kw => _types.F32,
-        TokenKind.F64Kw => _types.F64,
-        TokenKind.BoolKw => _types.Bool,
-        TokenKind.StringKw => _types.String,
-        TokenKind.UnitKw => _types.Unit,
-        TokenKind.NeverKw => _types.Never,
+        TokenKind.I32Kw => _baseModule.I32,
+        TokenKind.I64Kw => _baseModule.I64,
+        TokenKind.F32Kw => _baseModule.F32,
+        TokenKind.F64Kw => _baseModule.F64,
+        TokenKind.BoolKw => _baseModule.Bool,
+        TokenKind.StringKw => _baseModule.String,
+        TokenKind.UnitKw => _baseModule.Unit,
+        TokenKind.NeverKw => _baseModule.Never,
         _ => throw new UnreachableException($"Unknown {nameof(NativeTypeNameSyntax)}.")
     };
 
     private TypeSymbol BindUnsupportedType(TypeNameSyntax syntax)
     {
         _diagnostics.ReportError(new Diagnostic.UnsupportedFeature(syntax));
-        return _types.Error;
+        return _baseModule.Error;
     }
     
     #endregion
@@ -154,7 +173,7 @@ public sealed class Binder
             // touched on an error expr, si it should be fine. Mark my words in case of
             // oddities :D.
             return new BoundErrorExpr(recoveredExprs: [],
-                _types.Error, syntax);    
+                _baseModule.Error, syntax);    
         }
     
         return BindExpr(syntax.Initializer);
@@ -168,14 +187,14 @@ public sealed class Binder
         var target = BindAssignTarget(syntax.Left);
         
         if (target is null)
-            return new BoundErrorExpr(recoveredExprs: [value], _types.Error, syntax);
+            return new BoundErrorExpr(recoveredExprs: [value], _baseModule.Error, syntax);
         
-        if (target.Type == _types.Error || value.Type == _types.Error)
+        if (target.Type == _baseModule.Error || value.Type == _baseModule.Error)
             return new BoundAssign(target, value, value.Type, syntax);
         
         var type = CheckTypeAndReportMismatch(value, target.Type)
-            ? _types.Unit
-            : _types.Error;
+            ? _baseModule.Unit
+            : _baseModule.Error;
         return new BoundAssign(target, value, type, syntax);
     }
 
@@ -211,7 +230,7 @@ public sealed class Binder
         var body = BindExpr(syntax.Body);
         _inLoop = previousInLoop;
         
-        return new BoundWhile(condition, body, _types.Unit, syntax);
+        return new BoundWhile(condition, body, _baseModule.Unit, syntax);
     }
     
     #endregion
@@ -221,8 +240,8 @@ public sealed class Binder
         // Strings and Literals
         IdNameSyntax idNameSyntax => BindVariableRef(idNameSyntax),
         NumberLiteralSyntax numberLiteralSyntax => BindNumberLiteral(numberLiteralSyntax),
-        TrueLiteralSyntax => new BoundBoolLiteral(value: true, type: _types.Bool, syntax),
-        FalseLiteralSyntax => new BoundBoolLiteral(value: false, type: _types.Bool, syntax),
+        TrueLiteralSyntax => new BoundBoolLiteral(value: true, type: _baseModule.Bool, syntax),
+        FalseLiteralSyntax => new BoundBoolLiteral(value: false, type: _baseModule.Bool, syntax),
         StringExprSyntax stringExprSyntax => BindString(stringExprSyntax),
         
         // Type names
@@ -252,7 +271,7 @@ public sealed class Binder
     private BoundErrorExpr BindUnsupported(SyntaxNode syntax)
     {
         _diagnostics.ReportError(new Diagnostic.UnsupportedFeature(syntax));
-        return new BoundErrorExpr(recoveredExprs: [], type: _types.Error, syntax);
+        return new BoundErrorExpr(recoveredExprs: [], type: _baseModule.Error, syntax);
     }
 
     private BoundErrorExpr BindError(ErrorExprSyntax syntax)
@@ -260,7 +279,7 @@ public sealed class Binder
         var recovered = syntax.RecoverableNodes
             .Select(BindExpr)
             .ToImmutableArray();
-        return new BoundErrorExpr(recovered, _types.Error, syntax);
+        return new BoundErrorExpr(recovered, _baseModule.Error, syntax);
     }
     
     
@@ -270,14 +289,14 @@ public sealed class Binder
     {
         var symbol = LookupAndReportUndefined(syntax);
 
-        return symbol switch
-        {
-            VariableSymbol variable => new BoundVariableRef(variable, syntax),
-            
-            //TODO: Report error
-            TypeSymbol => new BoundErrorExpr(recoveredExprs: [], type: _types.Error, syntax),
-            null => new BoundErrorExpr(recoveredExprs: [], type: _types.Error, syntax),
-        };
+        if (symbol is null)
+            return new BoundErrorExpr(recoveredExprs: [], type: _baseModule.Error, syntax);
+
+        if (symbol is VariableSymbol variable)
+            return new BoundVariableRef(variable, syntax);
+        
+        _diagnostics.ReportError(new Diagnostic.NotAVariable(syntax, symbol));
+        return new BoundErrorExpr(recoveredExprs: [], type: _baseModule.Error, syntax);
     }
     
     private BoundStringExpr BindString(StringExprSyntax syntax)
@@ -287,7 +306,7 @@ public sealed class Binder
         if (parts.Length == 0)
             parts = [new StringPart.Text("")];
         
-        return new BoundStringExpr(parts, _types.String, syntax);
+        return new BoundStringExpr(parts, _baseModule.String, syntax);
     }
     
     private StringPart BindStringPart(StringPartSyntax syntax)
@@ -311,10 +330,10 @@ public sealed class Binder
         //TODO: Allow different types according to declared native conversion fns
         
         // For now, we can only accept string exprs
-        if (!CheckTypeAndReportMismatch(boundExpr, _types.String))
+        if (!CheckTypeAndReportMismatch(boundExpr, _baseModule.String))
         {
             return new StringPart.Interpolation(
-                new BoundErrorExpr(recoveredExprs: [boundExpr], type: _types.Error, syntax));
+                new BoundErrorExpr(recoveredExprs: [boundExpr], type: _baseModule.Error, syntax));
         }
     
         return new StringPart.Interpolation(boundExpr);
@@ -324,19 +343,19 @@ public sealed class Binder
     {
         TypeSymbol type = syntax.Token.Suffix switch
         {
-            NumberLiteralSuffix.I32 => _types.I32,
-            NumberLiteralSuffix.I64 => _types.I64,
-            NumberLiteralSuffix.F32 => _types.F32,
-            NumberLiteralSuffix.F64 => _types.F64,
+            NumberLiteralSuffix.I32 => _baseModule.I32,
+            NumberLiteralSuffix.I64 => _baseModule.I64,
+            NumberLiteralSuffix.F32 => _baseModule.F32,
+            NumberLiteralSuffix.F64 => _baseModule.F64,
     
-            _ => syntax.Token.HasDecimalPoint ? _types.DefaultFloatingNumberType : _types.DefaultIntegralNumberType
+            _ => syntax.Token.HasDecimalPoint ? _baseModule.DefaultFloatType : _baseModule.DefaultIntType
         };
         
         // Check the type against literal structure.
         // Literals with a decimal point can only become floating
         // point literals.
         if (syntax.Token.HasDecimalPoint &&
-            type != _types.F32 && type != _types.F64)
+            type != _baseModule.F32 && type != _baseModule.F64)
         {
             _diagnostics.ReportError(new Diagnostic.SuffixInvalidForDecimalNumber(syntax));
         }
@@ -347,113 +366,117 @@ public sealed class Binder
     #endregion
     
     #region Binary and Unary Exprs
-    
-    private BoundExpr BindBinary(BinaryExprSyntax syntax) => syntax.Operator.Kind switch
+
+    private BoundExpr BindBinary(BinaryExprSyntax syntax)
+        => syntax.Operator.Kind switch
     {
-        TokenKind.AndKw or TokenKind.OrKw => BindBooleanOperator(syntax),
-        
-        TokenKind.DoubleEqual or TokenKind.BangEqual => BindEqualityComparison(syntax),
-        
         TokenKind.Equal => BindAssign(syntax),
+        _ => BindUnsupported(syntax)
         
-        _ => BindNativeOperator(syntax.Operator, syntax, syntax.Left, syntax.Right)
+        // TokenKind.AndKw or TokenKind.OrKw => BindBooleanOperator(syntax),
+        //
+        // TokenKind.DoubleEqual or TokenKind.BangEqual => BindEqualityComparison(syntax),
+        //
+        //
+        // _ => BindNativeOperator(syntax.Operator, syntax, syntax.Left, syntax.Right)
     };
-    
+
     private BoundExpr BindUnary(UnaryExprSyntax syntax)
-    {
-        return BindNativeOperator(syntax.Operator, syntax, syntax.Operand);
-    }
+        => BindUnsupported(syntax);
+    // {
+    //     return BindNativeOperator(syntax.Operator, syntax, syntax.Operand);
+    // }
     
     
-    
-    private BoundExpr BindEqualityComparison(BinaryExprSyntax syntax)
-    {
-        Debug.Assert(syntax.Operator.Kind is TokenKind.DoubleEqual or TokenKind.BangEqual);
-        
-        var boundLeft = BindExpr(syntax.Left);
-        var boundRight = BindExpr(syntax.Right);
-        if (boundLeft.Type == _types.Error || boundRight.Type == _types.Error)
-        {
-            // Some operands have an error. So don't type-check them
-            // be silent and wrap in an error expression.
-            return new BoundErrorExpr(recoveredExprs: [boundLeft, boundRight],
-                type: _types.Error, syntax);
-        }
-        
-        // Equality type-checks everything
-        return new BoundEqualityComparison(boundLeft, boundRight,
-            kind: syntax.Operator.Kind switch
-            {
-                TokenKind.DoubleEqual => EqualityComparisonKind.Equals,
-                TokenKind.BangEqual => EqualityComparisonKind.NotEquals,
-                _ => throw new UnreachableException()
-            },
-            type: _types.Bool, 
-            syntax);
-    }
-    
-    private BoundExpr BindBooleanOperator(BinaryExprSyntax syntax)
-    {
-        Debug.Assert(syntax.Operator.Kind is TokenKind.AndKw or TokenKind.OrKw);
-    
-        var boundLeft = BindExpr(syntax.Left);
-        var boundRight = BindExpr(syntax.Right);
-        if (boundLeft.Type == _types.Error || boundRight.Type == _types.Error)
-        {
-            // Some operands have an error. So don't type-check them
-            // be silent and wrap in an error expression.
-            return new BoundErrorExpr(recoveredExprs: [boundLeft, boundRight],
-                type: _types.Error, syntax);
-        }
-    
-        // Type-check against bool
-        if (!CheckTypeAndReportMismatch(boundLeft, _types.Bool) ||
-            !CheckTypeAndReportMismatch(boundRight, _types.Bool))
-        {
-            return new BoundErrorExpr(recoveredExprs: [boundLeft, boundRight],
-                type: _types.Error, syntax);
-        }
-    
-        if (syntax.Operator.Kind is TokenKind.AndKw)
-            return new BoundAnd(boundLeft, boundRight, _types.Bool, syntax);
-        if (syntax.Operator.Kind is TokenKind.OrKw)
-            return new BoundOr(boundLeft, boundRight, _types.Bool, syntax);
-    
-        throw new UnreachableException();
-    }
-    
-    private BoundExpr BindNativeOperator(Token operatorToken, SyntaxNode syntax, params IEnumerable<ExprSyntax> operands)
-    {
-        var boundOperands = operands
-            .Select(expr => BindExpr(expr))
-            .ToImmutableArray();
-        
-        var operandTypes = boundOperands
-            .Select(expr => expr.Type)
-            .ToImmutableArray();
-        if (operandTypes.Any(type => type == _types.Error))
-        {
-            // Some operands have an error. So don't type-check them
-            // be silent and wrap in an error expression.
-            return new BoundErrorExpr(recoveredExprs: boundOperands,
-                type: _types.Error, syntax);
-        }
-    
-        var nativeOperator = _types.TryGetNativeOperator(
-            operatorToken.Kind,
-            operandTypes);
-        
-        if (nativeOperator is null)
-        {
-            _diagnostics.ReportError(
-                new Diagnostic.UndefinedOperator(operatorToken, [.. boundOperands.Select(expr => expr.Type)], syntax));
-            return new BoundErrorExpr(recoveredExprs: [.. boundOperands],
-                type: _types.Error, syntax);
-        }
-    
-        return new BoundNativeOperator(nativeOperator, [.. boundOperands], nativeOperator.ReturnType, syntax);
-    }
-    
+    //
+    // private BoundExpr BindEqualityComparison(BinaryExprSyntax syntax)
+    // {
+    //     Debug.Assert(syntax.Operator.Kind is TokenKind.DoubleEqual or TokenKind.BangEqual);
+    //     
+    //     var boundLeft = BindExpr(syntax.Left);
+    //     var boundRight = BindExpr(syntax.Right);
+    //     if (boundLeft.Type == _baseModule.Error || boundRight.Type == _baseModule.Error)
+    //     {
+    //         // Some operands have an error. So don't type-check them
+    //         // be silent and wrap in an error expression.
+    //         return new BoundErrorExpr(recoveredExprs: [boundLeft, boundRight],
+    //             type: _baseModule.Error, syntax);
+    //     }
+    //     
+    //     // Equality type-checks everything
+    //     return new BoundEqualityComparison(boundLeft, boundRight,
+    //         kind: syntax.Operator.Kind switch
+    //         {
+    //             TokenKind.DoubleEqual => EqualityComparisonKind.Equals,
+    //             TokenKind.BangEqual => EqualityComparisonKind.NotEquals,
+    //             _ => throw new UnreachableException()
+    //         },
+    //         type: _baseModule.Bool, 
+    //         syntax);
+    // }
+    //
+    // private BoundExpr BindBooleanOperator(BinaryExprSyntax syntax)
+    // {
+    //     Debug.Assert(syntax.Operator.Kind is TokenKind.AndKw or TokenKind.OrKw);
+    //
+    //     var boundLeft = BindExpr(syntax.Left);
+    //     var boundRight = BindExpr(syntax.Right);
+    //     if (boundLeft.Type == _baseModule.Error || boundRight.Type == _baseModule.Error)
+    //     {
+    //         // Some operands have an error. So don't type-check them
+    //         // be silent and wrap in an error expression.
+    //         return new BoundErrorExpr(recoveredExprs: [boundLeft, boundRight],
+    //             type: _baseModule.Error, syntax);
+    //     }
+    //
+    //     // Type-check against bool
+    //     if (!CheckTypeAndReportMismatch(boundLeft, _baseModule.Bool) ||
+    //         !CheckTypeAndReportMismatch(boundRight, _baseModule.Bool))
+    //     {
+    //         return new BoundErrorExpr(recoveredExprs: [boundLeft, boundRight],
+    //             type: _baseModule.Error, syntax);
+    //     }
+    //
+    //     if (syntax.Operator.Kind is TokenKind.AndKw)
+    //         return new BoundAnd(boundLeft, boundRight, _baseModule.Bool, syntax);
+    //     if (syntax.Operator.Kind is TokenKind.OrKw)
+    //         return new BoundOr(boundLeft, boundRight, _baseModule.Bool, syntax);
+    //
+    //     throw new UnreachableException();
+    // }
+    //
+    // private BoundExpr BindNativeOperator(Token operatorToken, SyntaxNode syntax, params IEnumerable<ExprSyntax> operands)
+    // {
+    //     var boundOperands = operands
+    //         .Select(expr => BindExpr(expr))
+    //         .ToImmutableArray();
+    //     
+    //     var operandTypes = boundOperands
+    //         .Select(expr => expr.Type)
+    //         .ToImmutableArray();
+    //     if (operandTypes.Any(type => type == _baseModule.Error))
+    //     {
+    //         // Some operands have an error. So don't type-check them
+    //         // be silent and wrap in an error expression.
+    //         return new BoundErrorExpr(recoveredExprs: boundOperands,
+    //             type: _baseModule.Error, syntax);
+    //     }
+    //
+    //     var nativeOperator = _baseModule.TryGetNativeOperator(
+    //         operatorToken.Kind,
+    //         operandTypes);
+    //     
+    //     if (nativeOperator is null)
+    //     {
+    //         _diagnostics.ReportError(
+    //             new Diagnostic.UndefinedOperator(operatorToken, [.. boundOperands.Select(expr => expr.Type)], syntax));
+    //         return new BoundErrorExpr(recoveredExprs: [.. boundOperands],
+    //             type: _baseModule.Error, syntax);
+    //     }
+    //
+    //     return new BoundNativeOperator(nativeOperator, [.. boundOperands], nativeOperator.ReturnType, syntax);
+    // }
+    //
     #endregion
     
     #region Blocks, Control Flow
@@ -464,14 +487,14 @@ public sealed class Binder
         var stmts = syntax.Stmts.Select(BindStmt).ToImmutableArray();
         _scope = _scope.Parent!;
     
-        return new BoundBlock(stmts, type: _types.Unit, syntax);
+        return new BoundBlock(stmts, type: _baseModule.Unit, syntax);
     }
 
     private BoundExpr BindCondition(ExprSyntax syntax)
     {
         var condition = BindExpr(syntax);
-        if (!CheckTypeAndReportMismatch(condition, expected: _types.Bool))
-            condition = new BoundErrorExpr(recoveredExprs: [condition], type: _types.Error, syntax);
+        if (!CheckTypeAndReportMismatch(condition, expected: _baseModule.Bool))
+            condition = new BoundErrorExpr(recoveredExprs: [condition], type: _baseModule.Error, syntax);
 
         return condition;
     }
@@ -483,10 +506,10 @@ public sealed class Binder
         var @else = BindElseExpr(syntax);
 
         var type = body.Type;
-        if (!_types.IsAssignableTo(source: @else.Type, target: body.Type))
+        if (!IsAssignableTo(source: @else.Type, target: body.Type))
         {
             _diagnostics.ReportError(new Diagnostic.IncompatibleBranches(body, @else));
-            type = _types.Error;
+            type = _baseModule.Error;
         }
         
         return new BoundIfExpr(condition, body, @else, type, syntax);
@@ -498,7 +521,7 @@ public sealed class Binder
         if (elseSyntax is null)
         {
             _diagnostics.ReportError(new Diagnostic.MissingElse(ifSyntax));
-            return new BoundErrorExpr([], _types.Error, ifSyntax);
+            return new BoundErrorExpr([], _baseModule.Error, ifSyntax);
         }
 
         return BindExpr(elseSyntax);
@@ -523,12 +546,12 @@ public sealed class Binder
         if (!_inLoop)
         {
             _diagnostics.ReportError(new Diagnostic.BreakOrContinueOutsideLoop(syntax));
-            return new BoundErrorExpr(recoveredExprs: [], _types.Error, syntax);
+            return new BoundErrorExpr(recoveredExprs: [], _baseModule.Error, syntax);
         }
     
         return syntax is BreakExprSyntax
-            ? new BoundBreak(_types.Never, syntax)
-            : new BoundContinue(_types.Never, syntax);
+            ? new BoundBreak(_baseModule.Never, syntax)
+            : new BoundContinue(_baseModule.Never, syntax);
     }
 
     private BoundExpr BindReturn(ReturnExprSyntax syntax)
@@ -538,9 +561,9 @@ public sealed class Binder
         // For now, we are on script scope. Thus, only allow
         // unit expressions or none.
         if (expr is not null)
-            CheckTypeAndReportMismatch(expr, _types.Unit);
+            CheckTypeAndReportMismatch(expr, _baseModule.Unit);
 
-        return new BoundReturn(expr, _types.Never, syntax);
+        return new BoundReturn(expr, _baseModule.Never, syntax);
     }
     
     #endregion

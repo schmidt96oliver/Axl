@@ -2,6 +2,7 @@
 using Axl.Compiler.Binding;
 using Axl.Compiler.Binding.BoundTree;
 using Axl.Compiler.Diagnostics;
+using Axl.Compiler.Symbols;
 using Axl.Compiler.Syntax;
 using Binder = Axl.Compiler.Binding.Binder;
 
@@ -10,13 +11,13 @@ namespace Axl.Compiler;
 public class Compilation
 {
     public SyntaxTree SyntaxTree { get; }
-    public TypeContext TypeContext { get; }
+    public BaseModuleSymbol BaseModule { get; }
 
     public BoundFile BoundFile
     {
         get
         {
-            field ??= Binder.BindFile(SyntaxTree.FileSyntax, TypeContext);
+            field ??= Binder.BindFile(SyntaxTree.FileSyntax, BaseModule);
             return field;
         }
     }
@@ -44,7 +45,7 @@ public class Compilation
     private Compilation(SyntaxTree syntaxTree)
     {
         SyntaxTree = syntaxTree;
-        TypeContext = new TypeContext();
+        BaseModule = new BaseModuleSymbol();
     }
 
     public static Compilation From(SyntaxTree syntaxTree)
