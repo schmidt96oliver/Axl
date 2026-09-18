@@ -24,16 +24,6 @@ public partial class Parser
         return _scanner.Close(typeExpr, SyntaxKind.TypeName);
     }
 
-    /// <param name="expectedSyntax">
-    /// The <see cref="ExpectedSyntax"/> a missing identifier token will be reported with.
-    /// <c>null</c> reports <see cref="TokenKind.Identifier"/>.
-    /// </param>
-    private MarkClose EnsureIdName(ExpectedSyntax? expectedSyntax = null)
-    {
-        var idName = _scanner.Open();
-        EnsureToken(TokenKind.Identifier, expectedSyntax);
-        return _scanner.Close(idName, SyntaxKind.IdName);
-    }
     
     private MarkClose EatTypeAnnotation()
     {

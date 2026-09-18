@@ -30,11 +30,6 @@
 >     () encloses terms
 >     [] encloses types
 
-* _experiment_: @internal types and functions:
-  * `Int32, Int64, Float32, Float64, Unit, Bool, String` are all symbols nameable through symbol lookup
-  * They are internally defined
-  * Have @internal functions `fn +(Int32 other)`; Binary operators resolve to functions with operator name
-
 * _design_: arrays as `Array[Int32]`, construct `Array[Int32](1, 2, 3)`, get `array.Get(index)` and `array.Set(index, value)` through @internal functions
 
 * _design_: `pub func`, `@internal pub func`, `@internal func`; static is encoded in signature? `func(self)` vs `func(arg: Int32)`

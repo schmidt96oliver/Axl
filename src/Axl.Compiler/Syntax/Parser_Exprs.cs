@@ -234,6 +234,13 @@ public partial class Parser
     }
 
 
+    private MarkClose EnsureIdName(ExpectedSyntax? expectedSyntax = null)
+    {
+        var idName = _scanner.Open();
+        EnsureToken(TokenKind.Identifier, expectedSyntax);
+        return _scanner.Close(idName, SyntaxKind.IdName);
+    }
+    
     private MarkClose EatGroupExpr(Anchor anchor)
     {
         Debug.Assert(_scanner.IsAt(TokenKind.OpenParen));
