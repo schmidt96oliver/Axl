@@ -11,11 +11,8 @@ public partial class Parser
     {
         Debug.Assert(_scanner.IsAt(FirstSet.Member));
 
-        // --- Dispatch
         if (_scanner.IsAt(TokenKind.FunKw))
             return EatFnDecl(anchor);
-        if (_scanner.IsAt(TokenKind.NativeKw))
-            return EatNativeFnDecl(anchor);
 
         throw new UnreachableException($"{nameof(FirstSet.Member)} too large");
     }
@@ -74,55 +71,6 @@ public partial class Parser
         }
 
         return _scanner.Close(fnBody, SyntaxKind.FunBody);
-    }
-
-    private MarkClose EatNativeFnDecl(Anchor anchor)
-    {
-        Debug.Assert(_scanner.IsAt(TokenKind.NativeKw));
-
-        var fnDecl = _scanner.Open();
-        
-        EatNativeClause(anchor | TokenKind.FunKw | TokenKind.Semicolon);
-
-        if (!_scanner.IsAt(TokenKind.FunKw))
-        {
-            _scanner.ReportMissingTokenHere(TokenKind.FunKw);
-
-            // Since we anchor on ";" in EatNativeDecl, we need to handle
-            // that here. It was probably meant to close a native fun declaration,
-            // so just eat it.
-            if (_scanner.IsAt(TokenKind.Semicolon))
-                _scanner.EatKnown(TokenKind.Semicolon);
-
-            return _scanner.Close(fnDecl, SyntaxKind.Garbage);
-        }
-
-        _scanner.EatKnown(TokenKind.FunKw);
-        EnsureIdName();
-
-        EnsureParamList(anchor | TokenKind.Colon | TokenKind.Semicolon);
-
-        if (_scanner.IsAt(TokenKind.Colon))
-            EatReturnTypeAnnotation();
-
-        EnsureToken(TokenKind.Semicolon);
-
-        return _scanner.Close(fnDecl, SyntaxKind.NativeFunDecl);
-    }
-
-    private MarkClose EatNativeClause(Anchor anchor)
-    {
-        // We can handle ")".
-        var nativeClauseAnchor = anchor | TokenKind.CloseParen;
-
-        var nativeClause = _scanner.Open();
-        _scanner.EatKnown(TokenKind.NativeKw);
-
-        EnsureToken(TokenKind.OpenParen);
-        EnsureStringExpr(nativeClauseAnchor);
-        EnsureToken(TokenKind.CloseParen);
-
-        return _scanner.Close(nativeClause, SyntaxKind.NativeClause);
     }
 
     private MarkClose EatReturnTypeAnnotation()

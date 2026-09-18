@@ -7,7 +7,7 @@ ModuleDecl      = "module" Path ";"
 UsingDirective  = "using" Path ";"
 
 ## Member Declarations
-MemberDecl       = FnDecl | NativeFnDecl
+MemberDecl       = FnDecl
                 
 FunDecl           = "fun" IdName ParamList ReturnTypeAnnotation? FunBody
 > Identifier "never" is promoted to SyntaxKind.NativeTypeName with TokenKind.NeverKw
@@ -19,10 +19,6 @@ ParamList       = "(" ")"
                 | "(" Param ("," Param)* ")"
 Param           = IdName TypeAnnotation?
 ReturnTypeAnnotation    = ":" (TypeName | "never")
-
-NativeFunDecl    = NativeClause "fun" IdName ParamList ReturnTypeAnnotation? ";"
-NativeClause    = "native" "(" StringExpr ")"
-> Binder rejects interpolations inside StringExpr
 
 ## Statements
 Stmt        = ExprStmt

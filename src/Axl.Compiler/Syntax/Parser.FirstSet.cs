@@ -45,9 +45,8 @@ public partial class Parser
 
         
         public static readonly TokenSet FnDecl = TokenSet.Of(TokenKind.FunKw);
-        public static readonly TokenSet NativeFnDecl = TokenSet.Of(TokenKind.NativeKw);
 
-        public static readonly TokenSet Member = FnDecl | NativeFnDecl;
+        public static readonly TokenSet Member = FnDecl;
 
         
         public static readonly TokenSet StringPart = TokenSet.Of(

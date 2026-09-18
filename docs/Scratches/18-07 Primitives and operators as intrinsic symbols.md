@@ -4,6 +4,7 @@
   * Are `TypeSymbol` on Standard Library module symbol
   * Discoverable through name resolution
   * Have members
+  * `Error` and `Never` are not nameable in code and are internal symbols
 
 *Operators*
   * Are intrinsic functions as members on their TypeSymbol
@@ -17,9 +18,6 @@
   * Frees keywords: `i32, i64, f32, f64, bool, string, unit, never`
   * Supports extensibility naturally
 
-*Problems*
-  * `Never` becomes nameable
-
 *Implementation*
   * [ ] Add ModuleSymbol; Make StdLib a ModuleSymbol
   * [ ] Add type name resolution
@@ -29,5 +27,5 @@
   * [ ] Bind BinaryExpr as BoundIntrinsicCall and lower derived operators
 
 *Open questions*
-  * [ ] Name of standard library: `Standard, System, Core`
-  * [ ] Name of types: `Int32, Bool, Unit, Never`; `I32, I64, F32, F64, Bool, String, Unit, Never`
+  * [x] Name of standard library: `Base`
+  * [x] Name of types: `I32, I64, F32, F64, Bool, String, Unit, Never`

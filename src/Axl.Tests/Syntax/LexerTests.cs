@@ -80,11 +80,10 @@ public sealed class LexerTests
 
     [Fact]
     public void Keywords()
-        => InlineSnapshot.Validate(NoWhitespace("fun var module native return if else while break continue and or not true false i32 f32 i64 f64 bool string char unit using"), """
+        => InlineSnapshot.Validate(NoWhitespace("fun var module return if else while break continue and or not true false i32 f32 i64 f64 bool string char unit using"), """
             - FunKw: "fun"
             - VarKw: "var"
             - ModuleKw: "module"
-            - NativeKw: "native"
             - ReturnKw: "return"
             - IfKw: "if"
             - ElseKw: "else"

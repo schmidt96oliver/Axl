@@ -27,7 +27,6 @@ public enum SyntaxKind
     // Declarations
     ModuleDecl,
     FunDecl,
-    NativeFunDecl,
     
     // Type Names
     Path,

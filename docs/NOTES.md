@@ -14,8 +14,6 @@
 >     () encloses terms
 >     [] encloses types
 
-* ?? replace `fn` (slightly cryptic; not pronouncable) with `fun`(nice ref; collides in wording) or `func`(clear; no collision; longer)
-
 * _experiment_: @internal types and functions:
   * `Int32, Int64, Float32, Float64, Unit, Bool, String` are all symbols nameable through symbol lookup
   * They are internally defined

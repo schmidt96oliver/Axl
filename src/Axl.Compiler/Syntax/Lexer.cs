@@ -282,7 +282,6 @@ public sealed class Lexer
             "while" => TokenKind.WhileKw,
             "module" => TokenKind.ModuleKw,
             "not" => TokenKind.NotKw,
-            "native" => TokenKind.NativeKw,
             "unit" => TokenKind.UnitKw,
             "or" => TokenKind.OrKw,
             "return" => TokenKind.ReturnKw,

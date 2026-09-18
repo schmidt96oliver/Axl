@@ -19,7 +19,6 @@ public static class TokenKindDisplayExtensions
             TokenKind.FunKw => "'fun'",
             TokenKind.VarKw => "'var'",
             TokenKind.ModuleKw => "'module'",
-            TokenKind.NativeKw => "'native'",
             TokenKind.ReturnKw => "'return'",
             TokenKind.IfKw => "'if'",
             TokenKind.ElseKw => "'else'",

@@ -12,7 +12,6 @@ public enum TokenKind
     FunKw,
     VarKw,
     ModuleKw,
-    NativeKw,
     ReturnKw,
     IfKw,
     ElseKw,
