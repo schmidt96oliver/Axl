@@ -1,5 +1,6 @@
 ﻿using System.Collections.Immutable;
 using System.Diagnostics;
+using System.Security.Permissions;
 using Axl.Compiler.Binding.BoundTree;
 using Axl.Compiler.Diagnostics;
 using Axl.Compiler.Symbols;
@@ -24,9 +25,22 @@ public sealed class Binder
         _scope = scope;
     }
 
+    private static Scope CreateGlobalScope(BaseModuleSymbol baseModule)
+    {
+        var global = new Scope();
+        
+        global.Declare(baseModule);
+        
+        // 'Base' is implicitly used
+        foreach (var member in baseModule.Members)
+            global.Declare(member);
+        
+        return global;
+    }
+    
     public static BoundFile BindFile(FileSyntax syntax, BaseModuleSymbol baseModule)
     {
-        var scope = new Scope();
+        var scope = new Scope(parent: CreateGlobalScope(baseModule));
         var binder = new Binder(scope, baseModule);
         
         // Everything other than stmts is not supported yet.
@@ -74,9 +88,9 @@ public sealed class Binder
         return true;
     }
 
-    private Symbol? LookupAndReportUndefined(IdNameSyntax syntax)
+    private Symbol? LookupAndReportUndefined(IdentifierToken syntax)
     {
-        if (syntax.Token.IsMissing)
+        if (syntax.IsMissing)
             return null;
         
         var symbol = _scope.Lookup(SymbolName.From(syntax));
@@ -85,6 +99,9 @@ public sealed class Binder
             _diagnostics.ReportError(new Diagnostic.UndefinedName(syntax));
         return symbol;
     }
+
+    private Symbol? LookupAndReportUndefined(IdNameSyntax syntax)
+        => LookupAndReportUndefined(syntax.Token);
     
     
     
@@ -93,24 +110,65 @@ public sealed class Binder
 
     private TypeSymbol BindType(TypeNameSyntax syntax) => syntax switch
     {
-        NativeTypeNameSyntax nativeTypeNameSyntax => BindNativeType(nativeTypeNameSyntax),
-        IdNameSyntax => BindUnsupportedType(syntax),
-        PathSyntax => BindUnsupportedType(syntax),
+        IdNameSyntax idNameSyntax => BindTypeIdName(idNameSyntax),
+        PathSyntax pathSyntax => BindTypePathName(pathSyntax),
+        NativeTypeNameSyntax nativeTypeNameSyntax => BindUnsupportedType(nativeTypeNameSyntax),
     };
 
-    private TypeSymbol BindNativeType(NativeTypeNameSyntax syntax) => syntax.Token.Kind switch
+    private TypeSymbol BindTypeIdName(IdNameSyntax syntax)
     {
-        TokenKind.I32Kw => _baseModule.I32,
-        TokenKind.I64Kw => _baseModule.I64,
-        TokenKind.F32Kw => _baseModule.F32,
-        TokenKind.F64Kw => _baseModule.F64,
-        TokenKind.BoolKw => _baseModule.Bool,
-        TokenKind.StringKw => _baseModule.String,
-        TokenKind.UnitKw => _baseModule.Unit,
-        TokenKind.NeverKw => _baseModule.Never,
-        _ => throw new UnreachableException($"Unknown {nameof(NativeTypeNameSyntax)}.")
-    };
+        var symbol = LookupAndReportUndefined(syntax);
 
+        if (symbol is null)
+            return _baseModule.Error;
+
+        if (symbol is TypeSymbol typeSymbol)
+            return typeSymbol;
+        
+        _diagnostics.ReportError(new Diagnostic.UnexpectedSymbolKind(syntax.Token, symbol, SymbolKind.Type));
+        return _baseModule.Error;
+    }
+
+    private TypeSymbol BindTypePathName(PathSyntax syntax)
+    {
+        var parts = syntax.Parts.ToImmutableArray();
+        
+        var current = LookupAndReportUndefined(parts[0]);
+        if (current is null)
+            return _baseModule.Error;
+
+        for (var i = 1; i < parts.Length; i++)
+        {
+            var partName = SymbolName.From(parts[i]);
+            if (partName.IsEmpty)
+                return _baseModule.Error;
+
+            if (current is BaseModuleSymbol module)
+            {
+                var member = module.LookupMember(partName);
+                if (member is null)
+                {
+                    _diagnostics.ReportError(new Diagnostic.UndefinedMember(parts[i], current));
+                    return _baseModule.Error;
+                }
+
+                current = member;
+            }
+            else
+            {
+                _diagnostics.ReportError(new Diagnostic.UndefinedMember(parts[i], current));
+                return _baseModule.Error;
+            }
+        }
+
+        Debug.Assert(current is not null);
+        if (current is TypeSymbol type)
+            return type;
+        
+        _diagnostics.ReportError(new Diagnostic.UnexpectedSymbolKind(parts[^1], current, SymbolKind.Type));
+        return _baseModule.Error;
+    }
+    
     private TypeSymbol BindUnsupportedType(TypeNameSyntax syntax)
     {
         _diagnostics.ReportError(new Diagnostic.UnsupportedFeature(syntax));
@@ -295,7 +353,7 @@ public sealed class Binder
         if (symbol is VariableSymbol variable)
             return new BoundVariableRef(variable, syntax);
         
-        _diagnostics.ReportError(new Diagnostic.NotAVariable(syntax, symbol));
+        _diagnostics.ReportError(new Diagnostic.UnexpectedSymbolKind(syntax.Token, symbol, SymbolKind.Variable));
         return new BoundErrorExpr(recoveredExprs: [], type: _baseModule.Error, syntax);
     }
     

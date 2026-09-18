@@ -2,13 +2,20 @@
                                        ≽(◕ ᴗ ◕)≼
 
 **Next:** 
-* [ ] Add ModuleSymbol; Make BaseModuleSymbol a ModuleSymbol
+* [x] Add ModuleSymbol; Make BaseModuleSymbol a ModuleSymbol
 * [ ] Add type name resolution
 * [ ] Remove native type keywords
 * [ ] Add IntrinsicFnSymbol, Intrinsic
 * [ ] Add Operators as intrinsic fns
 * [ ] Bind BinaryExpr as BoundIntrinsicCall and lower derived operators
 
+**Tests**
+  * [ ] Primitives bind as `Base.I32` and `I32` for `I32, I64, F32, F64, Bool, String, Unit`
+  * [ ] Variables, `Base` rejeceted as type
+  * [ ] Types, Module rejected as value
+  * [ ] Undefined Members on `Base`
+  * [ ] Undefined Names inside patzhs `A.B.C`
+  * [ ] `Never`, `Error` not nameable
 
 **Syntax ideas from https://core-lang.dev/design.html**
 > "Always rules" are better than "almost rules":

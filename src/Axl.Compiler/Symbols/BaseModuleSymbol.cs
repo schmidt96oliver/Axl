@@ -4,8 +4,8 @@ namespace Axl.Compiler.Symbols;
 
 public sealed class BaseModuleSymbol : Symbol
 {
-    public override string KindName => "module";
-    
+    public override SymbolKind Kind => SymbolKind.Module;
+
     public ImmutableArray<Symbol> Members { get; }
     
     public TypeSymbol I32 { get; }
@@ -45,10 +45,10 @@ public sealed class BaseModuleSymbol : Symbol
     }
 
 
-    public ImmutableArray<Symbol> LookupMember(SymbolName name)
+    public Symbol? LookupMember(SymbolName name)
         => name.IsEmpty
-            ? []
-            : [.. Members.Where(symbol => symbol.Name == name)];
+            ? null
+            : Members.SingleOrDefault(symbol => symbol.Name == name);
     
     
     private static ImmutableArray<Symbol> GetBoolMembers(TypeSymbol @bool) =>

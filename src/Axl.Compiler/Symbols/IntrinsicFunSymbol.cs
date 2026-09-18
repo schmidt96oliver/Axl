@@ -9,7 +9,8 @@ public sealed class IntrinsicFunSymbol(
     TypeSymbol returnType)
     : Symbol(name)
 {
-    public override string KindName => "intrinsic fun";
+    public override SymbolKind Kind => SymbolKind.Fun;
+
     
     public Intrinsic Intrinsic { get; } = intrinsic;
     public ImmutableArray<TypeSymbol> ParemeterTypes { get; } = paremeterTypes;

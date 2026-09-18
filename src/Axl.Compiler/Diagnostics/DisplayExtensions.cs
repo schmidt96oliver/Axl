@@ -1,9 +1,10 @@
 using System.Diagnostics;
+using Axl.Compiler.Symbols;
 using Axl.Compiler.Syntax;
 
 namespace Axl.Compiler.Diagnostics;
 
-public static class TokenKindDisplayExtensions
+public static class DisplayExtensions
 {
     extension(TokenKind kind)
     {
@@ -76,6 +77,19 @@ public static class TokenKindDisplayExtensions
             TokenKind.GreaterThanEqual => "'>='",
 
             _ => throw new UnreachableException($"No DisplayName for TokenKind '{kind}'."),
+        };
+    }
+
+    extension(SymbolKind kind)
+    {
+        public string DisplayName => kind switch
+        {
+            SymbolKind.Fun => "a function",
+            SymbolKind.Module => "a module",
+            SymbolKind.Variable => "a variable",
+            SymbolKind.Type => "a type",
+
+            _ => throw new UnreachableException($"Unknown {nameof(SymbolKind)}")
         };
     }
 }

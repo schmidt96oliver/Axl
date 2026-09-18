@@ -36,13 +36,13 @@ public partial record Diagnostic
             => $"Suffix '{NumberLiteralSyntax.Token.Suffix.ToString().ToLower()}' describes an integral type. Expected a type that describes a decimal number.";
     }
 
-    public sealed record UndefinedName(IdNameSyntax Syntax) : Error
+    public sealed record UndefinedName(IdentifierToken Syntax) : Error
     {
         public override ImmutableArray<SourceLocation> Locations
             => [Syntax.Location];
     
         public override string Message
-            => $"Undefined name '{Syntax.Token.Identifier}'.";
+            => $"Undefined name '{Syntax.Identifier}'.";
     }
 
     public sealed record UndefinedOperator(Token OperatorToken, ImmutableArray<TypeSymbol> OperandTypes, SyntaxNode Syntax) : Error
@@ -82,7 +82,7 @@ public partial record Diagnostic
         public override string Message
             => ResolvedSymbol is null
                 ? "The assignment target must be a variable."
-                : $"'{ResolvedSymbol.Name}' is a {ResolvedSymbol.KindName}. The assignment target must be a variable.";
+                : $"'{ResolvedSymbol.Name}' is {ResolvedSymbol.Kind.DisplayName}. The assignment target must be a variable.";
     }
 
     public sealed record BreakOrContinueOutsideLoop(ExprSyntax Syntax) : Error
@@ -112,9 +112,15 @@ public partial record Diagnostic
             => $"Both 'if' and 'else' branches must have the same type. Got '{First.Type.Name}' and '{Second.Type.Name}'.";
     }
 
-    public sealed record NotAVariable(IdNameSyntax Syntax, Symbol Symbol) : Error
+    public sealed record UnexpectedSymbolKind(IdentifierToken Syntax, Symbol Symbol, SymbolKind Expected) : Error
     {
         public override ImmutableArray<SourceLocation> Locations => [Syntax.Location];
-        public override string Message => $"'{Symbol.Name}' is a '{Symbol.KindName}'. Expected a variable.";
+        public override string Message => $"'{Symbol.Name}' is {Symbol.Kind.DisplayName}. Expected {Expected.DisplayName}.";
+    }
+
+    public sealed record UndefinedMember(IdentifierToken Syntax, Symbol Symbol) : Error
+    {
+        public override ImmutableArray<SourceLocation> Locations => [Syntax.Location];
+        public override string Message => $"'{Symbol.Name}' has no member '{Syntax.Identifier}'.";
     }
 }
