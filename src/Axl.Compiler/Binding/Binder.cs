@@ -60,6 +60,9 @@ public sealed class Binder
 
     private Symbol? LookupAndReportUndefined(IdNameSyntax syntax)
     {
+        if (syntax.Token.IsMissing)
+            return null;
+        
         var symbol = _scope.Lookup(SymbolName.From(syntax));
         
         if (symbol is null)
