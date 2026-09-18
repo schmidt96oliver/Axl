@@ -108,28 +108,7 @@ public sealed class Binder
     
     #region Type names
 
-    private TypeSymbol BindType(TypeNameSyntax syntax) => syntax switch
-    {
-        IdNameSyntax idNameSyntax => BindTypeIdName(idNameSyntax),
-        PathSyntax pathSyntax => BindTypePathName(pathSyntax),
-        NativeTypeNameSyntax nativeTypeNameSyntax => BindUnsupportedType(nativeTypeNameSyntax),
-    };
-
-    private TypeSymbol BindTypeIdName(IdNameSyntax syntax)
-    {
-        var symbol = LookupAndReportUndefined(syntax);
-
-        if (symbol is null)
-            return _baseModule.Error;
-
-        if (symbol is TypeSymbol typeSymbol)
-            return typeSymbol;
-        
-        _diagnostics.ReportError(new Diagnostic.UnexpectedSymbolKind(syntax.Token, symbol, SymbolKind.Type));
-        return _baseModule.Error;
-    }
-
-    private TypeSymbol BindTypePathName(PathSyntax syntax)
+    private TypeSymbol BindTypeName(TypeNameSyntax syntax)
     {
         var parts = syntax.Parts.ToImmutableArray();
         
@@ -169,12 +148,6 @@ public sealed class Binder
         return _baseModule.Error;
     }
     
-    private TypeSymbol BindUnsupportedType(TypeNameSyntax syntax)
-    {
-        _diagnostics.ReportError(new Diagnostic.UnsupportedFeature(syntax));
-        return _baseModule.Error;
-    }
-    
     #endregion
     
     
@@ -198,7 +171,7 @@ public sealed class Binder
     private BoundVarDecl BindVarDecl(VarDeclSyntax syntax)
     {
         var variableType = syntax.TypeAnnotation is not null
-            ? BindType(syntax.TypeAnnotation)
+            ? BindTypeName(syntax.TypeAnnotation)
             : null;
         
         var boundInitializer = BindVarDeclInitializer(syntax);
@@ -302,9 +275,6 @@ public sealed class Binder
         FalseLiteralSyntax => new BoundBoolLiteral(value: false, type: _baseModule.Bool, syntax),
         StringExprSyntax stringExprSyntax => BindString(stringExprSyntax),
         
-        // Type names
-        TypeNameSyntax => BindUnsupported(syntax),
-        
         // Operators
         BinaryExprSyntax binaryExprSyntax => BindBinary(binaryExprSyntax),
         UnaryExprSyntax unaryExprSyntax => BindUnary(unaryExprSyntax),
@@ -353,7 +323,7 @@ public sealed class Binder
         if (symbol is VariableSymbol variable)
             return new BoundVariableRef(variable, syntax);
         
-        _diagnostics.ReportError(new Diagnostic.UnexpectedSymbolKind(syntax.Token, symbol, SymbolKind.Variable));
+        _diagnostics.ReportError(new Diagnostic.UnexpectedSymbolKind(syntax, symbol, SymbolKind.Variable));
         return new BoundErrorExpr(recoveredExprs: [], type: _baseModule.Error, syntax);
     }
     

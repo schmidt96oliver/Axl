@@ -7,18 +7,10 @@ namespace Axl.Compiler.Syntax;
 
 public partial class Parser
 {
-    private MarkClose EnsureTypeName()
-    {
-        if (_scanner.IsAt(FirstSet.NativeTypeName))
-            return EatNativeTypeName();
-        
-        return EnsurePath(ExpectedSyntax.TypeName);
-    }
-
-    private MarkClose EnsurePath(ExpectedSyntax? expectedSyntax = null)
+    private MarkClose EnsureTypeName(ExpectedSyntax? expectedSyntax = null)
     {
         var typeExpr = _scanner.Open();
-        EnsureIdName(expectedSyntax);
+        EnsureIdName(expectedSyntax ?? ExpectedSyntax.TypeName);
 
         foreach (var _ in _scanner.MustEatEachIteration())
         {
@@ -29,13 +21,7 @@ public partial class Parser
             EnsureIdName();
         }
 
-        return _scanner.Close(typeExpr, SyntaxKind.Path);
-    }
-
-    private MarkClose EatNativeTypeName()
-    {
-        Debug.Assert(_scanner.IsAt(FirstSet.NativeTypeName));
-        return _scanner.EatInto(SyntaxKind.NativeTypeName);
+        return _scanner.Close(typeExpr, SyntaxKind.TypeName);
     }
 
     /// <param name="expectedSyntax">
@@ -47,5 +33,13 @@ public partial class Parser
         var idName = _scanner.Open();
         EnsureToken(TokenKind.Identifier, expectedSyntax);
         return _scanner.Close(idName, SyntaxKind.IdName);
+    }
+    
+    private MarkClose EatTypeAnnotation()
+    {
+        var typeAnnotation = _scanner.Open();
+        _scanner.EatKnown(TokenKind.Colon);
+        EnsureTypeName();
+        return _scanner.Close(typeAnnotation, SyntaxKind.TypeAnnotationClause);
     }
 }

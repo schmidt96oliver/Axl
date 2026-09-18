@@ -112,15 +112,15 @@ public partial record Diagnostic
             => $"Both 'if' and 'else' branches must have the same type. Got '{First.Type.Name}' and '{Second.Type.Name}'.";
     }
 
-    public sealed record UnexpectedSymbolKind(IdentifierToken Syntax, Symbol Symbol, SymbolKind Expected) : Error
+    public sealed record UnexpectedSymbolKind(IdNameSyntax Syntax, Symbol Symbol, SymbolKind Expected) : Error
     {
         public override ImmutableArray<SourceLocation> Locations => [Syntax.Location];
         public override string Message => $"'{Symbol.Name}' is {Symbol.Kind.DisplayName}. Expected {Expected.DisplayName}.";
     }
 
-    public sealed record UndefinedMember(IdentifierToken Syntax, Symbol Symbol) : Error
+    public sealed record UndefinedMember(IdNameSyntax Syntax, Symbol Symbol) : Error
     {
         public override ImmutableArray<SourceLocation> Locations => [Syntax.Location];
-        public override string Message => $"'{Symbol.Name}' has no member '{Syntax.Identifier}'.";
+        public override string Message => $"'{Symbol.Name}' has no member '{Syntax.Token.Identifier}'.";
     }
 }

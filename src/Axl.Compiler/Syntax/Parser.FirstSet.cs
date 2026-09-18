@@ -16,18 +16,7 @@ public partial class Parser
     /// </remarks>
     private static class FirstSet
     {
-        public static readonly TokenSet NativeTypeName = TokenSet.Of(
-            TokenKind.I32Kw, TokenKind.I64Kw, TokenKind.F32Kw, TokenKind.F64Kw, TokenKind.StringKw,
-            TokenKind.BoolKw,
-            TokenKind.UnitKw
-        );
-
-        public static readonly TokenSet Path = TokenSet.Of(TokenKind.Identifier);
-
-        public static readonly TokenSet TypeName = NativeTypeName | Path;
-
-
-        public static readonly TokenSet Expr = NativeTypeName | TokenSet.Of(
+        public static readonly TokenSet Expr = TokenSet.Of(
             TokenKind.TrueKw, TokenKind.FalseKw,
             TokenKind.NumberLiteral,
             TokenKind.Identifier,

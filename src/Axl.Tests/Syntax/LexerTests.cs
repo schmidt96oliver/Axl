@@ -80,7 +80,7 @@ public sealed class LexerTests
 
     [Fact]
     public void Keywords()
-        => InlineSnapshot.Validate(NoWhitespace("fun var module return if else while break continue and or not true false i32 f32 i64 f64 bool string char unit using"), """
+        => InlineSnapshot.Validate(NoWhitespace("fun var module return if else while break continue and or not true false using"), """
             - FunKw: "fun"
             - VarKw: "var"
             - ModuleKw: "module"
@@ -95,14 +95,6 @@ public sealed class LexerTests
             - NotKw: "not"
             - TrueKw: "true"
             - FalseKw: "false"
-            - I32Kw: "i32"
-            - F32Kw: "f32"
-            - I64Kw: "i64"
-            - F64Kw: "f64"
-            - BoolKw: "bool"
-            - StringKw: "string"
-            - Identifier: "char"
-            - UnitKw: "unit"
             - UsingKw: "using"
             - Eof
             """);
@@ -208,7 +200,7 @@ public sealed class LexerTests
             ERROR UnknownNumberSuffix@[21, 24): Only 'i32', 'i64', 'f32' or 'f64' are valid number suffixes. Got 'b_1'.
 
             - NumberLiteral: "0b1100" block="0b1100" suffix=None
-            - F32Kw: "f32"
+            - Identifier: "f32"
             - NumberLiteral: "0b01" block="0b01" suffix=None
             - NumberLiteral: "23" block="23" suffix=None
             - NumberLiteral: "0b" block="0" suffix=None
@@ -238,7 +230,7 @@ public sealed class LexerTests
             ERROR UnknownNumberSuffix@[30, 33): Only 'i32', 'i64', 'f32' or 'f64' are valid number suffixes. Got 'x_1'.
 
             - NumberLiteral: "0x0F" block="0x0F" suffix=None
-            - I32Kw: "i32"
+            - Identifier: "i32"
             - NumberLiteral: "0xG" block="0" suffix=None
             - NumberLiteral: "0xh" block="0" suffix=None
             - NumberLiteral: "0xXYZ" block="0" suffix=None
@@ -255,12 +247,12 @@ public sealed class LexerTests
             - Dot: "."
             - NumberLiteral: "1" block="1" suffix=None
             - Dot: "."
-            - F32Kw: "f32"
+            - Identifier: "f32"
             - NumberLiteral: "1.1" block="1.1" suffix=None
             - Dot: "."
             - NumberLiteral: "1.1" block="1.1" suffix=None
             - Dot: "."
-            - F32Kw: "f32"
+            - Identifier: "f32"
             - Dot: "."
             - Identifier: "_1_1"
             - Eof

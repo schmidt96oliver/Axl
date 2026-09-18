@@ -1,7 +1,7 @@
 ﻿//@check
 
 var a: i32 = 1;
-
+  
 a = 1;      
 a = "";     //~error TypeMismatch
 a = 1.1;    //~error TypeMismatch

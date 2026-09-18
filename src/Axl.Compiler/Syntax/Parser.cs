@@ -98,7 +98,7 @@ public partial class Parser
         var usingDirective = _scanner.Open();
         
         _scanner.EatKnown(TokenKind.UsingKw);
-        EnsurePath(ExpectedSyntax.ModuleName);
+        EnsureTypeName(ExpectedSyntax.ModuleName);
         EnsureToken(TokenKind.Semicolon);
         
         return _scanner.Close(usingDirective, SyntaxKind.UsingDirective);

@@ -127,7 +127,6 @@ public class SemanticTokensHandler(ILanguageServerFacade facade) : SemanticToken
                 }
 
                 case TokenKind.AndKw:
-                case TokenKind.BoolKw:
                 case TokenKind.BreakKw:
                 case TokenKind.ContinueKw:
                 case TokenKind.ElseKw:
@@ -136,19 +135,12 @@ public class SemanticTokensHandler(ILanguageServerFacade facade) : SemanticToken
                 case TokenKind.IfKw:
                 case TokenKind.WhileKw:
                 case TokenKind.ModuleKw:
-                case TokenKind.NeverKw:
-                case TokenKind.UnitKw:
                 case TokenKind.NotKw:
                 case TokenKind.OrKw:
                 case TokenKind.ReturnKw:
-                case TokenKind.StringKw:
                 case TokenKind.TrueKw:
                 case TokenKind.UsingKw:
                 case TokenKind.VarKw:
-                case TokenKind.F32Kw:
-                case TokenKind.F64Kw:
-                case TokenKind.I32Kw:
-                case TokenKind.I64Kw:
                     builder.Push(location.StartLine, location.StartColumn, token.FullRange.Length,
                         (SemanticTokenType?)SemanticTokenType.Keyword);
                     break;

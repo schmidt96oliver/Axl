@@ -3,13 +3,17 @@
 
 **Next:** 
 * [x] Add ModuleSymbol; Make BaseModuleSymbol a ModuleSymbol
-* [ ] Add type name resolution
-* [ ] Remove native type keywords
-* [ ] Add IntrinsicFnSymbol, Intrinsic
-* [ ] Add Operators as intrinsic fns
+* [x] Add IntrinsicFnSymbol, Intrinsic
+* [x] Add type name resolution
+* [x] Remove native type keywords
+
+* [ ] Make param type annotation required in Parser
+* [ ] Churn through Parser.BrokenTrees
+
+* [ ] Bind Operators as intrinsic fns
 * [ ] Bind BinaryExpr as BoundIntrinsicCall and lower derived operators
 
-**Tests**
+* [ ] Corpus Tests
   * [ ] Primitives bind as `Base.I32` and `I32` for `I32, I64, F32, F64, Bool, String, Unit`
   * [ ] Variables, `Base` rejeceted as type
   * [ ] Types, Module rejected as value

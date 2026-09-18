@@ -53,10 +53,7 @@ public partial class Parser
         // --- Optional type annotation
         if (_scanner.IsAt(TokenKind.Colon))
         {
-            var typeAnnotation = _scanner.Open();
-            _scanner.EatKnown(TokenKind.Colon);
-            EnsureTypeName();
-            _scanner.Close(typeAnnotation, SyntaxKind.TypeAnnotationClause);
+            EatTypeAnnotation();
         }
 
         // --- Optional initializer
@@ -73,6 +70,8 @@ public partial class Parser
 
         return _scanner.Close(varDecl, SyntaxKind.VarDecl);
     }
+
+    
 
     private MarkClose EatWhile(Anchor anchor)
     {

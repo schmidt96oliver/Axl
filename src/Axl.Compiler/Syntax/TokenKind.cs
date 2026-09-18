@@ -23,16 +23,6 @@ public enum TokenKind
     NotKw,
     UsingKw,
     
-    // --- Type keywords
-    I32Kw,
-    I64Kw,
-    F32Kw,
-    F64Kw,
-    BoolKw,
-    StringKw,
-    UnitKw,
-    NeverKw,
-    
     // --- Literals
     NumberLiteral,
     StringStart,

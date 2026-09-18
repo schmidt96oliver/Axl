@@ -3,22 +3,19 @@
 
 File            = (Stmt | UsingDirective | ModuleDecl | Member)*
 
-ModuleDecl      = "module" Path ";"
-UsingDirective  = "using" Path ";"
+ModuleDecl      = "module" TypeName ";"
+UsingDirective  = "using" TypeName ";"
 
 ## Member Declarations
 MemberDecl       = FnDecl
                 
-FunDecl           = "fun" IdName ParamList ReturnTypeAnnotation? FunBody
-> Identifier "never" is promoted to SyntaxKind.NativeTypeName with TokenKind.NeverKw
-
+FunDecl           = "fun" IdName ParamList TypeAnnotation? FunBody
 FunBody          = "=>" Expr ";"
                 | BlockExpr
 
 ParamList       = "(" ")"
                 | "(" Param ("," Param)* ")"
 Param           = IdName TypeAnnotation?
-ReturnTypeAnnotation    = ":" (TypeName | "never")
 
 ## Statements
 Stmt        = ExprStmt
@@ -75,19 +72,7 @@ Continue    = "continue"
 Return      = "return" Expr?
 
 ## Type Names
-TypeName        = NativeTypeName
-                | Path
-> TypeName is an Expr in AST. In the grammar we need to distinguish:
-> Path is a TypeName construct, whereas GetMemberExpr would parse the
-> same syntax but in expression position. In AST, they both collapse
-> into Expr to be better nameable.
-
-NativeTypeName  = "i32" | "i64" | "f32" | "f64" | "string" | "bool" | "unit"
-> SyntaxKind.NativeTypeName can also hold TokenKind.NeverKw. NeverKw is promoted
-> from TokenKind.Identifier if FnDecl return type and only there.
-
-Path   = IdName ("." IdName)*
-
+TypeName        = IdName ("." IdName)*
 TypeAnnotation  = ":" TypeName
 
 # Precedence Table

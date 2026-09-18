@@ -3,7 +3,7 @@
 namespace Axl.Compiler.Syntax.Tree;
 
 public sealed class IdNameSyntax(ImmutableArray<SyntaxElement> children)
-    : TypeNameSyntax(SyntaxKind.IdName, children)
+    : ExprSyntax(SyntaxKind.IdName, children)
 {
     public IdentifierToken Token => Children.FirstNonTriviaToken() as IdentifierToken
                                     ?? throw new ArgumentException(

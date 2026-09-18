@@ -29,9 +29,7 @@ public enum SyntaxKind
     FunDecl,
     
     // Type Names
-    Path,
-    IdName,
-    NativeTypeName,
+    TypeName,
     
     // Literals
     TrueLiteral,
@@ -44,6 +42,7 @@ public enum SyntaxKind
     StringText,
     
     // Expressions
+    IdName,
     GroupExpr,
     BinaryExpr,
     UnaryExpr,

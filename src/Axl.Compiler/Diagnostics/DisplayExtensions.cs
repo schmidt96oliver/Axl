@@ -31,16 +31,6 @@ public static class DisplayExtensions
             TokenKind.NotKw => "'not'",
             TokenKind.UsingKw => "'using'",
 
-            // --- Type keywords
-            TokenKind.I32Kw => "'i32'",
-            TokenKind.I64Kw => "'i64'",
-            TokenKind.F32Kw => "'f32'",
-            TokenKind.F64Kw => "'f64'",
-            TokenKind.BoolKw => "'bool'",
-            TokenKind.StringKw => "'string'",
-            TokenKind.UnitKw => "'unit'",
-            TokenKind.NeverKw => "'never'",
-
             // --- Literals
             TokenKind.NumberLiteral => "a number",
             TokenKind.StringStart => "'\"'",
