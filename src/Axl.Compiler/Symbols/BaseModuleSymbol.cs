@@ -33,8 +33,8 @@ public sealed class BaseModuleSymbol : Symbol
         I64 = new TypeSymbol("I64", i64 => GetI64Members(i64, Bool));
         F32 = new TypeSymbol("F32", f32 => GetF32Members(f32, Bool));
         F64 = new TypeSymbol("F64", f64 => GetF64Members(f64, Bool));
-        String = new TypeSymbol("String", _ => []);
-        Unit = new TypeSymbol("Unit", _ => []);
+        String = new TypeSymbol("String", @string => GetStringMembers(@string, Bool));
+        Unit = new TypeSymbol("Unit", unit => GetUnitMembers(unit, Bool));
         
         Members = [I32, I64, F32, F64, Bool, String, Unit];
         
@@ -54,6 +54,16 @@ public sealed class BaseModuleSymbol : Symbol
     private static ImmutableArray<Symbol> GetBoolMembers(TypeSymbol @bool) =>
     [
         new IntrinsicFunSymbol(SymbolName.From("not"), Intrinsic.NotBool, [@bool], @bool),
+        new IntrinsicFunSymbol(SymbolName.From("=="), Intrinsic.EqualsBool, [@bool, @bool], @bool),
+    ];
+
+    private static ImmutableArray<Symbol> GetUnitMembers(TypeSymbol unit, TypeSymbol @bool) =>
+    [
+        new IntrinsicFunSymbol(SymbolName.From("=="), Intrinsic.EqualsUnit, [unit, unit], @bool)
+    ];
+    private static ImmutableArray<Symbol> GetStringMembers(TypeSymbol @string, TypeSymbol @bool) =>
+    [
+        new IntrinsicFunSymbol(SymbolName.From("=="), Intrinsic.EqualsString, [@string, @string], @bool)
     ];
     
     private static ImmutableArray<Symbol> GetI32Members(TypeSymbol i32, TypeSymbol @bool) =>
