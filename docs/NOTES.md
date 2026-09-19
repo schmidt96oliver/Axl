@@ -7,6 +7,10 @@
 * [x] Add type name resolution
 * [x] Remove native type keywords
 
+* [ ] Add `<=` intrinsics****
+* [ ] Add generic operator text somewhere
+* [ ] Error messages for undefined operator "1 != 1.1", "1 >= 2"
+ 
 * [ ] Bind Operators as intrinsic fns
 * [ ] Bind BinaryExpr as BoundIntrinsicCall and lower derived operators
 
@@ -15,6 +19,7 @@
 
 * [ ] ?? Replace `and/or` with `&& ||`. Reason: Familiarity and possibly conflict with "and/or" patterns later
 * ?? Common base class for "Type" and "Module" -> "ModuleOrTypeSymbol" that has members and member lookup
+
 
 * [ ] Corpus Tests
   * [ ] Primitives bind as `Base.I32` and `I32` for `I32, I64, F32, F64, Bool, String, Unit`

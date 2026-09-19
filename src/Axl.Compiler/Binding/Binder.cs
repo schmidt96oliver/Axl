@@ -396,25 +396,32 @@ public sealed class Binder
     
     #region Binary and Unary Exprs
 
-    private BoundExpr BindBinary(BinaryExprSyntax syntax)
+    private BoundExpr BindBinary(BinaryExprSyntax syntax) => syntax.Operator.Kind switch
     {
-        if (syntax.Operator.Kind is TokenKind.Equal)
-            return BindAssign(syntax);
-        
-        //TODO: Handle derived operators
-        if (syntax.Operator.Kind is TokenKind.BangEqual
-            or TokenKind.LessThanEqual or TokenKind.GreaterThan or TokenKind.GreaterThanEqual)
-            return BindUnsupported(syntax);
-        
-        //TODO: Handle Boolean operators
-        if (syntax.Operator.Kind is TokenKind.AndKw or TokenKind.OrKw)
-            return BindUnsupported(syntax);
+        TokenKind.AndKw or TokenKind.OrKw => BindBooleanOperator(syntax),
+        TokenKind.Equal => BindAssign(syntax),
+        _ => BindBinaryOperator(syntax)
+    };
 
+    private BoundExpr BindBinaryOperator(BinaryExprSyntax syntax)
+    {
         var left = BindExpr(syntax.Left);
         var right = BindExpr(syntax.Right);
-        return BindOperatorCall(SymbolName.From(syntax.Operator.Text), [left, right], syntax);
-    }
 
+        return syntax.Operator.Kind switch
+        {
+            // != bound as (not (left == right))
+            TokenKind.BangEqual => BindOperatorCall(SymbolName.From("not"),
+                [BindOperatorCall(SymbolName.From("=="), [left, right], syntax)], syntax),
+            
+            // left >/>= right bound as right </<= left
+            TokenKind.GreaterThan => BindOperatorCall(SymbolName.From("<"), [right, left], syntax),
+            TokenKind.GreaterThanEqual => BindOperatorCall(SymbolName.From("<="), [right, left], syntax),
+            
+            _ => BindOperatorCall(SymbolName.From(syntax.Operator.Text), [left, right], syntax)
+        };
+    }
+    
     private BoundExpr BindOperatorCall(SymbolName operatorName, ImmutableArray<BoundExpr> arguments, SyntaxNode syntax)
     {
         Debug.Assert(arguments.Length >= 1);
@@ -436,96 +443,36 @@ public sealed class Binder
     private BoundExpr BindUnary(UnaryExprSyntax syntax)
         => BindOperatorCall(SymbolName.From(syntax.Operator.Text), [BindExpr(syntax.Operand)], syntax);
     
+    private BoundExpr BindBooleanOperator(BinaryExprSyntax syntax)
+    {
+        Debug.Assert(syntax.Operator.Kind is TokenKind.AndKw or TokenKind.OrKw);
     
-    //
-    // private BoundExpr BindEqualityComparison(BinaryExprSyntax syntax)
-    // {
-    //     Debug.Assert(syntax.Operator.Kind is TokenKind.DoubleEqual or TokenKind.BangEqual);
-    //     
-    //     var boundLeft = BindExpr(syntax.Left);
-    //     var boundRight = BindExpr(syntax.Right);
-    //     if (boundLeft.Type == _baseModule.Error || boundRight.Type == _baseModule.Error)
-    //     {
-    //         // Some operands have an error. So don't type-check them
-    //         // be silent and wrap in an error expression.
-    //         return new BoundErrorExpr(recoveredExprs: [boundLeft, boundRight],
-    //             type: _baseModule.Error, syntax);
-    //     }
-    //     
-    //     // Equality type-checks everything
-    //     return new BoundEqualityComparison(boundLeft, boundRight,
-    //         kind: syntax.Operator.Kind switch
-    //         {
-    //             TokenKind.DoubleEqual => EqualityComparisonKind.Equals,
-    //             TokenKind.BangEqual => EqualityComparisonKind.NotEquals,
-    //             _ => throw new UnreachableException()
-    //         },
-    //         type: _baseModule.Bool, 
-    //         syntax);
-    // }
-    //
-    // private BoundExpr BindBooleanOperator(BinaryExprSyntax syntax)
-    // {
-    //     Debug.Assert(syntax.Operator.Kind is TokenKind.AndKw or TokenKind.OrKw);
-    //
-    //     var boundLeft = BindExpr(syntax.Left);
-    //     var boundRight = BindExpr(syntax.Right);
-    //     if (boundLeft.Type == _baseModule.Error || boundRight.Type == _baseModule.Error)
-    //     {
-    //         // Some operands have an error. So don't type-check them
-    //         // be silent and wrap in an error expression.
-    //         return new BoundErrorExpr(recoveredExprs: [boundLeft, boundRight],
-    //             type: _baseModule.Error, syntax);
-    //     }
-    //
-    //     // Type-check against bool
-    //     if (!CheckTypeAndReportMismatch(boundLeft, _baseModule.Bool) ||
-    //         !CheckTypeAndReportMismatch(boundRight, _baseModule.Bool))
-    //     {
-    //         return new BoundErrorExpr(recoveredExprs: [boundLeft, boundRight],
-    //             type: _baseModule.Error, syntax);
-    //     }
-    //
-    //     if (syntax.Operator.Kind is TokenKind.AndKw)
-    //         return new BoundAnd(boundLeft, boundRight, _baseModule.Bool, syntax);
-    //     if (syntax.Operator.Kind is TokenKind.OrKw)
-    //         return new BoundOr(boundLeft, boundRight, _baseModule.Bool, syntax);
-    //
-    //     throw new UnreachableException();
-    // }
-    //
-    // private BoundExpr BindNativeOperator(Token operatorToken, SyntaxNode syntax, params IEnumerable<ExprSyntax> operands)
-    // {
-    //     var boundOperands = operands
-    //         .Select(expr => BindExpr(expr))
-    //         .ToImmutableArray();
-    //     
-    //     var operandTypes = boundOperands
-    //         .Select(expr => expr.Type)
-    //         .ToImmutableArray();
-    //     if (operandTypes.Any(type => type == _baseModule.Error))
-    //     {
-    //         // Some operands have an error. So don't type-check them
-    //         // be silent and wrap in an error expression.
-    //         return new BoundErrorExpr(recoveredExprs: boundOperands,
-    //             type: _baseModule.Error, syntax);
-    //     }
-    //
-    //     var nativeOperator = _baseModule.TryGetNativeOperator(
-    //         operatorToken.Kind,
-    //         operandTypes);
-    //     
-    //     if (nativeOperator is null)
-    //     {
-    //         _diagnostics.ReportError(
-    //             new Diagnostic.UndefinedOperator(operatorToken, [.. boundOperands.Select(expr => expr.Type)], syntax));
-    //         return new BoundErrorExpr(recoveredExprs: [.. boundOperands],
-    //             type: _baseModule.Error, syntax);
-    //     }
-    //
-    //     return new BoundNativeOperator(nativeOperator, [.. boundOperands], nativeOperator.ReturnType, syntax);
-    // }
-    //
+        var left = BindExpr(syntax.Left);
+        var right = BindExpr(syntax.Right);
+        if (left.Type == _baseModule.Error || right.Type == _baseModule.Error)
+        {
+            // Some operands have an error. So don't type-check them
+            // be silent and wrap in an error expression.
+            return new BoundErrorExpr(recoveredExprs: [left, right],
+                type: _baseModule.Error, syntax);
+        }
+    
+        // Type-check against bool
+        if (!CheckTypeAndReportMismatch(left, _baseModule.Bool) ||
+            !CheckTypeAndReportMismatch(right, _baseModule.Bool))
+        {
+            return new BoundErrorExpr(recoveredExprs: [left, right],
+                type: _baseModule.Error, syntax);
+        }
+    
+        if (syntax.Operator.Kind is TokenKind.AndKw)
+            return new BoundAnd(left, right, _baseModule.Bool, syntax);
+        if (syntax.Operator.Kind is TokenKind.OrKw)
+            return new BoundOr(left, right, _baseModule.Bool, syntax);
+    
+        throw new UnreachableException();
+    }
+    
     #endregion
     
     #region Blocks, Control Flow
