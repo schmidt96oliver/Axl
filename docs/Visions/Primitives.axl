@@ -1,0 +1,31 @@
+﻿module Base;
+
+@primitive
+pub struct I32
+{
+    // No fields, since it is marked @primitive
+    
+    @intrinsic
+    pub fun +(left: I32, right: I32): I32;
+    @intrinsic
+    pub fun -(left: I32, right: I32): I32;
+    @intrinsic
+    pub fun *(left: I32, right: I32): I32;
+    @intrinsic
+    pub fun /(left: I32, right: I32): I32;
+    
+    @intrinsic
+    pub fun ==(left: I32, right: I32): Bool;
+    @intrinsic
+    pub fun <(left: I32, right: I32): Bool;
+    @intrinsic
+    pub fun <=(left: I32, right: I32): Bool;
+    
+    // Decide, if < or <= is intrinsic
+    
+    // These are compiler generated
+    pub fun >(left: I32, right: I32): Bool
+        = right < left;
+    pub fun >=(left: I32, right: I32): Bool
+        = right <= left;
+}

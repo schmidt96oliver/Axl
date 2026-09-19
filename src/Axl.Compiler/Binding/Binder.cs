@@ -408,28 +408,10 @@ public sealed class Binder
         var left = BindExpr(syntax.Left);
         var right = BindExpr(syntax.Right);
 
-        return syntax.Operator.Kind switch
-        {
-            // != bound as (not (left == right))
-            TokenKind.BangEqual => BindOperatorCall(
-                operatorText: SyntaxFacts.GetText(TokenKind.NotKw),
-                arguments: [BindOperatorCall(
-                    operatorText: SyntaxFacts.GetText(TokenKind.DoubleEqual), 
-                    arguments: [left, right], 
-                    syntax, 
-                    errorOperatorName: syntax.Operator.Text)],
-                syntax, 
-                errorOperatorName: syntax.Operator.Text),
-            
-            // left >/>= right bound as right </<= left
-            TokenKind.GreaterThan => BindOperatorCall(SyntaxFacts.GetText(TokenKind.LessThan), [right, left], syntax, syntax.Operator.Text),
-            TokenKind.GreaterThanEqual => BindOperatorCall(SyntaxFacts.GetText(TokenKind.LessThanEqual), [right, left], syntax, syntax.Operator.Text),
-            
-            _ => BindOperatorCall(syntax.Operator.Text, [left, right], syntax, syntax.Operator.Text)
-        };
+        return BindOperatorCall(syntax.Operator.Text, [left, right], syntax);
     }
     
-    private BoundExpr BindOperatorCall(ReadOnlySpan<char> operatorText, ImmutableArray<BoundExpr> arguments, SyntaxNode syntax, ReadOnlySpan<char> errorOperatorName)
+    private BoundExpr BindOperatorCall(ReadOnlySpan<char> operatorText, ImmutableArray<BoundExpr> arguments, SyntaxNode syntax)
     {
         Debug.Assert(arguments.Length >= 1);
         
@@ -441,7 +423,7 @@ public sealed class Binder
         if (fun is null)
         {
             _diagnostics.ReportError(
-                new Diagnostic.UndefinedOperator(errorOperatorName.ToString(), [.. arguments.Select(arg => arg.Type)], syntax));
+                new Diagnostic.UndefinedOperator(operatorText.ToString(), [.. arguments.Select(arg => arg.Type)], syntax));
             return new BoundErrorExpr(arguments, _baseModule.Error, syntax);
         }
 
@@ -449,7 +431,7 @@ public sealed class Binder
     }
 
     private BoundExpr BindUnary(UnaryExprSyntax syntax)
-        => BindOperatorCall(SymbolName.From(syntax.Operator.Text), [BindExpr(syntax.Operand)], syntax, syntax.Operator.Text);
+        => BindOperatorCall(SymbolName.From(syntax.Operator.Text), [BindExpr(syntax.Operand)], syntax);
     
     private BoundExpr BindBooleanOperator(BinaryExprSyntax syntax)
     {
