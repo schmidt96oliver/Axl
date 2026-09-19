@@ -12,13 +12,13 @@
 * [x] Add `<=` intrinsics****
 * [x] Add generic operator text somewhere
 * [x] Error messages for undefined operator "1 != 1.1", "1 >= 2"
+* [x] Common base class for "Type" and "Module" -> "ModuleOrTypeSymbol" that has members and member lookup
  
 
 * [ ] Make param type annotation required in Parser
 * [ ] Churn through Parser.BrokenTrees
 
 * ?? Replace `and/or` with `&& ||`. Reason: Familiarity and possibly conflict with "and/or" patterns later
-* ?? Common base class for "Type" and "Module" -> "ModuleOrTypeSymbol" that has members and member lookup
 * ?? *Design* drift of `<, <=, ==` if defined separately
 
 

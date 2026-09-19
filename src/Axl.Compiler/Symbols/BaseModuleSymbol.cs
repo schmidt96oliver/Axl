@@ -3,11 +3,11 @@ using Axl.Compiler.Syntax;
 
 namespace Axl.Compiler.Symbols;
 
-public sealed class BaseModuleSymbol : Symbol
+public sealed class BaseModuleSymbol : ModuleOrTypeSymbol
 {
     public override SymbolKind Kind => SymbolKind.Module;
 
-    public ImmutableArray<Symbol> Members { get; }
+    public override ImmutableArray<Symbol> Members { get; }
     
     public TypeSymbol I32 { get; }
     public TypeSymbol I64 { get;}
@@ -45,11 +45,6 @@ public sealed class BaseModuleSymbol : Symbol
         Never = new TypeSymbol("Never", _ => []);
     }
 
-
-    public Symbol? LookupMember(SymbolName name)
-        => name.IsEmpty
-            ? null
-            : Members.SingleOrDefault(symbol => symbol.Name == name);
     
     
     private static ImmutableArray<Symbol> GetBoolMembers(TypeSymbol @bool) =>

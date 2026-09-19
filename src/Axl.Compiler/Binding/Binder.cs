@@ -123,9 +123,9 @@ public sealed class Binder
             if (partName.IsEmpty)
                 return _baseModule.Error;
 
-            if (current is BaseModuleSymbol module)
+            if (current is ModuleOrTypeSymbol moduleOrType)
             {
-                var member = module.LookupMember(partName);
+                var member = moduleOrType.LookupMember(partName);
                 if (member is null)
                 {
                     _diagnostics.ReportError(new Diagnostic.UndefinedMember(parts[i], current));
