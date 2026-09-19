@@ -15,8 +15,8 @@
 * [x] Common base class for "Type" and "Module" -> "ModuleOrTypeSymbol" that has members and member lookup
  
 
-* [ ] Make param type annotation required in Parser
-* [ ] Churn through Parser.BrokenTrees
+* [x] Make param type annotation required in Parser
+* [x] Churn through Parser.BrokenTrees
 
 
 
