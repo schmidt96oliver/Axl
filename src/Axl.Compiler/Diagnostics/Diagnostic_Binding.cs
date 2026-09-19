@@ -45,7 +45,7 @@ public partial record Diagnostic
             => $"Undefined name '{Syntax.Identifier}'.";
     }
 
-    public sealed record UndefinedOperator(SymbolName OperatorName, ImmutableArray<TypeSymbol> OperandTypes, SyntaxNode Syntax) : Error
+    public sealed record UndefinedOperator(string OperatorName, ImmutableArray<TypeSymbol> OperandTypes, SyntaxNode Syntax) : Error
     {
         public override ImmutableArray<SourceLocation> Locations
         {

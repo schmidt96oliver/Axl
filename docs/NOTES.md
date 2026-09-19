@@ -11,13 +11,13 @@
 
 * [x] Add `<=` intrinsics****
 * [x] Add generic operator text somewhere
-* [ ] Error messages for undefined operator "1 != 1.1", "1 >= 2"
+* [x] Error messages for undefined operator "1 != 1.1", "1 >= 2"
  
 
 * [ ] Make param type annotation required in Parser
 * [ ] Churn through Parser.BrokenTrees
 
-* [ ] ?? Replace `and/or` with `&& ||`. Reason: Familiarity and possibly conflict with "and/or" patterns later
+* ?? Replace `and/or` with `&& ||`. Reason: Familiarity and possibly conflict with "and/or" patterns later
 * ?? Common base class for "Type" and "Module" -> "ModuleOrTypeSymbol" that has members and member lookup
 * ?? *Design* drift of `<, <=, ==` if defined separately
 
@@ -30,6 +30,9 @@
   * [ ] Undefined Names inside patzhs `A.B.C`
   * [ ] `Never`, `Error` not nameable
   * [ ] All operators `+ - * / < <= > >= not and or`
+
+* [ ] Syntax highlighting for types
+  * Probably requires rework of BoundNode structure
 
 **Syntax ideas from https://core-lang.dev/design.html**
 > "Always rules" are better than "almost rules":

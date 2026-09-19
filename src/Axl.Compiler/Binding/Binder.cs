@@ -411,29 +411,37 @@ public sealed class Binder
         return syntax.Operator.Kind switch
         {
             // != bound as (not (left == right))
-            TokenKind.BangEqual => BindOperatorCall(SymbolName.From(SyntaxFacts.GetText(TokenKind.NotKw)),
-                [BindOperatorCall(SymbolName.From(SyntaxFacts.GetText(TokenKind.DoubleEqual)), [left, right], syntax)], syntax),
+            TokenKind.BangEqual => BindOperatorCall(
+                operatorText: SyntaxFacts.GetText(TokenKind.NotKw),
+                arguments: [BindOperatorCall(
+                    operatorText: SyntaxFacts.GetText(TokenKind.DoubleEqual), 
+                    arguments: [left, right], 
+                    syntax, 
+                    errorOperatorName: syntax.Operator.Text)],
+                syntax, 
+                errorOperatorName: syntax.Operator.Text),
             
             // left >/>= right bound as right </<= left
-            TokenKind.GreaterThan => BindOperatorCall(SymbolName.From(SyntaxFacts.GetText(TokenKind.LessThan)), [right, left], syntax),
-            TokenKind.GreaterThanEqual => BindOperatorCall(SymbolName.From(SyntaxFacts.GetText(TokenKind.LessThanEqual)), [right, left], syntax),
+            TokenKind.GreaterThan => BindOperatorCall(SyntaxFacts.GetText(TokenKind.LessThan), [right, left], syntax, syntax.Operator.Text),
+            TokenKind.GreaterThanEqual => BindOperatorCall(SyntaxFacts.GetText(TokenKind.LessThanEqual), [right, left], syntax, syntax.Operator.Text),
             
-            _ => BindOperatorCall(SymbolName.From(syntax.Operator.Text), [left, right], syntax)
+            _ => BindOperatorCall(syntax.Operator.Text, [left, right], syntax, syntax.Operator.Text)
         };
     }
     
-    private BoundExpr BindOperatorCall(SymbolName operatorName, ImmutableArray<BoundExpr> arguments, SyntaxNode syntax)
+    private BoundExpr BindOperatorCall(ReadOnlySpan<char> operatorText, ImmutableArray<BoundExpr> arguments, SyntaxNode syntax, ReadOnlySpan<char> errorOperatorName)
     {
         Debug.Assert(arguments.Length >= 1);
         
         if (arguments.Any(arg => arg.Type == _baseModule.Error))
             return new BoundErrorExpr(arguments, _baseModule.Error, syntax);
 
+        var operatorName = SymbolName.From(operatorText);
         var fun = arguments[0].Type.LookupFun(operatorName, [.. arguments.Select(arg => arg.Type)]);
         if (fun is null)
         {
             _diagnostics.ReportError(
-                new Diagnostic.UndefinedOperator(operatorName, [.. arguments.Select(arg => arg.Type)], syntax));
+                new Diagnostic.UndefinedOperator(errorOperatorName.ToString(), [.. arguments.Select(arg => arg.Type)], syntax));
             return new BoundErrorExpr(arguments, _baseModule.Error, syntax);
         }
 
@@ -441,7 +449,7 @@ public sealed class Binder
     }
 
     private BoundExpr BindUnary(UnaryExprSyntax syntax)
-        => BindOperatorCall(SymbolName.From(syntax.Operator.Text), [BindExpr(syntax.Operand)], syntax);
+        => BindOperatorCall(SymbolName.From(syntax.Operator.Text), [BindExpr(syntax.Operand)], syntax, syntax.Operator.Text);
     
     private BoundExpr BindBooleanOperator(BinaryExprSyntax syntax)
     {
