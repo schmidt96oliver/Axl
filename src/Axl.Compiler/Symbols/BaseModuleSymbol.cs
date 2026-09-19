@@ -77,6 +77,7 @@ public sealed class BaseModuleSymbol : Symbol
 
         new IntrinsicFunSymbol(SymbolName.From("=="), Intrinsic.EqualsI32, [i32, i32], @bool),
         new IntrinsicFunSymbol(SymbolName.From("<"), Intrinsic.LessThanI32, [i32, i32], @bool),
+        new IntrinsicFunSymbol(SymbolName.From("<="), Intrinsic.LessThanOrEqualI32, [i32, i32], @bool),
     ];
     
     private static ImmutableArray<Symbol> GetI64Members(TypeSymbol i64, TypeSymbol @bool) =>
@@ -90,6 +91,7 @@ public sealed class BaseModuleSymbol : Symbol
 
         new IntrinsicFunSymbol(SymbolName.From("=="), Intrinsic.EqualsI64, [i64, i64], @bool),
         new IntrinsicFunSymbol(SymbolName.From("<"), Intrinsic.LessThanI64, [i64, i64], @bool),
+        new IntrinsicFunSymbol(SymbolName.From("<="), Intrinsic.LessThanOrEqualI64, [i64, i64], @bool),
     ];
     
     private static ImmutableArray<Symbol> GetF32Members(TypeSymbol f32, TypeSymbol @bool) =>
@@ -103,6 +105,7 @@ public sealed class BaseModuleSymbol : Symbol
 
         new IntrinsicFunSymbol(SymbolName.From("=="), Intrinsic.EqualsF32, [f32, f32], @bool),
         new IntrinsicFunSymbol(SymbolName.From("<"), Intrinsic.LessThanF32, [f32, f32], @bool),
+        new IntrinsicFunSymbol(SymbolName.From("<="), Intrinsic.LessThanOrEqualF32, [f32, f32], @bool),
     ];
     
     private static ImmutableArray<Symbol> GetF64Members(TypeSymbol f64, TypeSymbol @bool) =>
@@ -116,6 +119,7 @@ public sealed class BaseModuleSymbol : Symbol
 
         new IntrinsicFunSymbol(SymbolName.From("=="), Intrinsic.EqualsF64, [f64, f64], @bool),
         new IntrinsicFunSymbol(SymbolName.From("<"), Intrinsic.LessThanF64, [f64, f64], @bool),
+        new IntrinsicFunSymbol(SymbolName.From("<="), Intrinsic.LessThanOrEqualF64, [f64, f64], @bool),
     ];
 
 

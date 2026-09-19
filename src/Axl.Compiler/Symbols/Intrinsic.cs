@@ -9,6 +9,7 @@ public enum Intrinsic
     MultiplyI32,
     EqualsI32,
     LessThanI32,
+    LessThanOrEqualI32,
     
     NegateI64,
     AddI64,
@@ -17,6 +18,7 @@ public enum Intrinsic
     MultiplyI64,
     EqualsI64,
     LessThanI64,
+    LessThanOrEqualI64,
     
     NegateF32,
     AddF32,
@@ -25,6 +27,7 @@ public enum Intrinsic
     MultiplyF32,
     EqualsF32,
     LessThanF32,
+    LessThanOrEqualF32,
     
     NegateF64,
     AddF64,
@@ -33,11 +36,12 @@ public enum Intrinsic
     MultiplyF64,
     EqualsF64,
     LessThanF64,
+    LessThanOrEqualF64,
     
     NotBool,
     EqualsBool,
     
     EqualsUnit,
     
-    EqualsString
+    EqualsString,
 }

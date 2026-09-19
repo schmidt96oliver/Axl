@@ -6,13 +6,13 @@
 * [x] Add IntrinsicFnSymbol, Intrinsic
 * [x] Add type name resolution
 * [x] Remove native type keywords
+* [x] Bind Operators as intrinsic fns
+* [x] Bind BinaryExpr as BoundIntrinsicCall and lower derived operators
 
-* [ ] Add `<=` intrinsics****
+* [x] Add `<=` intrinsics****
 * [ ] Add generic operator text somewhere
 * [ ] Error messages for undefined operator "1 != 1.1", "1 >= 2"
  
-* [ ] Bind Operators as intrinsic fns
-* [ ] Bind BinaryExpr as BoundIntrinsicCall and lower derived operators
 
 * [ ] Make param type annotation required in Parser
 * [ ] Churn through Parser.BrokenTrees
@@ -28,6 +28,7 @@
   * [ ] Undefined Members on `Base`
   * [ ] Undefined Names inside patzhs `A.B.C`
   * [ ] `Never`, `Error` not nameable
+  * [ ] All operators `+ - * / < <= > >= not and or`
 
 **Syntax ideas from https://core-lang.dev/design.html**
 > "Always rules" are better than "almost rules":
