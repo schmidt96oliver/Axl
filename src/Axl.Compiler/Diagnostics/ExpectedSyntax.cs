@@ -10,6 +10,7 @@ namespace Axl.Compiler.Diagnostics;
 /// </summary>
 public readonly struct ExpectedSyntax
 {
+    public static readonly ExpectedSyntax TypeAnnotation = new("a type annotation");
     public static readonly ExpectedSyntax FunBody = new("a function block");
     public static readonly ExpectedSyntax Expr = new("an expression");
     public static readonly ExpectedSyntax Stmt = new("a statement");

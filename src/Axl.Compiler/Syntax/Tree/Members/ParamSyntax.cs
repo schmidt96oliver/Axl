@@ -7,6 +7,6 @@ public sealed class ParamSyntax(ImmutableArray<SyntaxElement> children)
 {
     public IdentifierToken Name => Children.FirstOfType<IdNameSyntax>().Token;
 
-    public TypeNameSyntax? TypeAnnotation => Children
-        .FirstOfTypeOrNull<TypeAnnotationClauseSyntax>()?.TypeName;
+    public TypeNameSyntax TypeAnnotation => Children
+        .FirstOfType<TypeAnnotationClauseSyntax>().TypeName;
 }

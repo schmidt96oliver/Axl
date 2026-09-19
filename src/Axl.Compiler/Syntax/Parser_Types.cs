@@ -25,10 +25,20 @@ public partial class Parser
     }
 
     
-    private MarkClose EatTypeAnnotation()
+    private MarkClose EnsureTypeAnnotation()
     {
         var typeAnnotation = _scanner.Open();
-        _scanner.EatKnown(TokenKind.Colon);
+        if (!EnsureToken(TokenKind.Colon, ExpectedSyntax.TypeAnnotation))
+        {
+            // Make a type annotation
+            var typeName = _scanner.Open();
+            var idName = _scanner.Open();
+            _scanner.MakeAndReport(TokenKind.Identifier);
+            _scanner.Close(idName, SyntaxKind.IdName);
+            _scanner.Close(typeName, SyntaxKind.TypeName);
+            return _scanner.Close(typeAnnotation, SyntaxKind.TypeAnnotationClause);
+        }
+        
         EnsureTypeName();
         return _scanner.Close(typeAnnotation, SyntaxKind.TypeAnnotationClause);
     }

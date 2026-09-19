@@ -53,7 +53,7 @@ public partial class Parser
         // --- Optional type annotation
         if (_scanner.IsAt(TokenKind.Colon))
         {
-            EatTypeAnnotation();
+            EnsureTypeAnnotation();
         }
 
         // --- Optional initializer

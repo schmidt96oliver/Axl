@@ -12,7 +12,7 @@ public partial class Parser
         Debug.Assert(_scanner.IsAt(FirstSet.Member));
 
         if (_scanner.IsAt(TokenKind.FunKw))
-            return EatFnDecl(anchor);
+            return EatFunDecl(anchor);
 
         throw new UnreachableException($"{nameof(FirstSet.Member)} too large");
     }
@@ -30,7 +30,7 @@ public partial class Parser
         return _scanner.Close(moduleDecl, SyntaxKind.ModuleDecl);
     }
 
-    private MarkClose EatFnDecl(Anchor anchor)
+    private MarkClose EatFunDecl(Anchor anchor)
     {
         Debug.Assert(_scanner.IsAt(TokenKind.FunKw));
 
@@ -43,14 +43,14 @@ public partial class Parser
                         TokenKind.Semicolon | TokenKind.Equal);
 
         if (_scanner.IsAt(TokenKind.Colon))
-            EatTypeAnnotation();
+            EnsureTypeAnnotation();
 
-        EnsureFnBody(anchor);
+        EnsureFunBody(anchor);
 
         return _scanner.Close(fnDecl, SyntaxKind.FunDecl);
     }
 
-    private MarkClose EnsureFnBody(Anchor anchor)
+    private MarkClose EnsureFunBody(Anchor anchor)
     {
         var fnBody = _scanner.Open();
 
@@ -96,18 +96,7 @@ public partial class Parser
                 ? TokenKind.Identifier
                 : ExpectedSyntax.Param);
 
-            // A plain next identifier must not be eaten, it will become the next
-            // parameter. But if it looks like a typename, like 'fun A(a a.b)',
-            // then eat it as a type name for this parameter.
-            if (_scanner.IsAt(TokenKind.Colon)
-                || _scanner.IsAt(TokenKind.Identifier) && _scanner.Peek(1).Kind is TokenKind.Dot)
-            {
-                var typeAnnotation = _scanner.Open();
-                EnsureToken(TokenKind.Colon);
-                EnsureTypeName();
-                _scanner.Close(typeAnnotation, SyntaxKind.TypeAnnotationClause);
-            }
-
+            EnsureTypeAnnotation();
             return _scanner.Close(param, SyntaxKind.Param);
         }
     }

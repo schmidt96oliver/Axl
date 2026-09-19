@@ -18,8 +18,6 @@
 * [ ] Make param type annotation required in Parser
 * [ ] Churn through Parser.BrokenTrees
 
-* ?? Replace `and/or` with `&& ||`. Reason: Familiarity and possibly conflict with "and/or" patterns later
-* ?? *Design* drift of `<, <=, ==` if defined separately
 
 
 * [ ] Corpus Tests
@@ -49,6 +47,8 @@
   * allows no body on all `func`'s; Binder ensures: `Unit`-typed or `@internal`
 
 * _design_: duck-typing on `ToString` for the time; `@internal` symbols allow that straight-away
+
+* *design*: Replace `and/or` with `&& ||`. Reason: Familiarity and possibly conflict with "and/or" patterns later
 
 **Moving On**
 * allow any type in string interpolation (that's a lowering problem)
