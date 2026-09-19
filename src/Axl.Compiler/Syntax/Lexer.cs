@@ -255,41 +255,10 @@ public sealed class Lexer
     {
         var text = scanner.CurrentText;
         
-        // Short-circuit
-        // Shortest keyword is 2 chars (if)
-        // Longest keyword is 8 chars (continue)
-        if (text.Length is < 2 or > 8)
-        {
-            scanner.AddIdentifier();
-            return;
-        }
-        
-        // --- Keyword?
-        var tokenKind = text switch
-        {
-            "and" => TokenKind.AndKw,
-            "break" => TokenKind.BreakKw,
-            "continue" => TokenKind.ContinueKw,
-            "else" => TokenKind.ElseKw,
-            "fun" => TokenKind.FunKw,
-            "false" => TokenKind.FalseKw,
-            "if" => TokenKind.IfKw,
-            "while" => TokenKind.WhileKw,
-            "module" => TokenKind.ModuleKw,
-            "not" => TokenKind.NotKw,
-            "or" => TokenKind.OrKw,
-            "return" => TokenKind.ReturnKw,
-            "true" => TokenKind.TrueKw,
-            "using" => TokenKind.UsingKw,
-            "var" => TokenKind.VarKw,
-
-            _ => TokenKind.Identifier
-        };
-        
-        if (tokenKind is TokenKind.Identifier)
-            scanner.AddIdentifier();
+        if (SyntaxFacts.GetKeywordKind(text) is TokenKind keywordKind)
+            scanner.AddToken(keywordKind);
         else
-            scanner.AddToken(tokenKind);
+            scanner.AddIdentifier();
     }
 
     private static void LexNumber(ref Scanner scanner)

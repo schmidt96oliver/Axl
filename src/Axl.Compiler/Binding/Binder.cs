@@ -411,12 +411,12 @@ public sealed class Binder
         return syntax.Operator.Kind switch
         {
             // != bound as (not (left == right))
-            TokenKind.BangEqual => BindOperatorCall(SymbolName.From("not"),
-                [BindOperatorCall(SymbolName.From("=="), [left, right], syntax)], syntax),
+            TokenKind.BangEqual => BindOperatorCall(SymbolName.From(SyntaxFacts.GetText(TokenKind.NotKw)),
+                [BindOperatorCall(SymbolName.From(SyntaxFacts.GetText(TokenKind.DoubleEqual)), [left, right], syntax)], syntax),
             
             // left >/>= right bound as right </<= left
-            TokenKind.GreaterThan => BindOperatorCall(SymbolName.From("<"), [right, left], syntax),
-            TokenKind.GreaterThanEqual => BindOperatorCall(SymbolName.From("<="), [right, left], syntax),
+            TokenKind.GreaterThan => BindOperatorCall(SymbolName.From(SyntaxFacts.GetText(TokenKind.LessThan)), [right, left], syntax),
+            TokenKind.GreaterThanEqual => BindOperatorCall(SymbolName.From(SyntaxFacts.GetText(TokenKind.LessThanEqual)), [right, left], syntax),
             
             _ => BindOperatorCall(SymbolName.From(syntax.Operator.Text), [left, right], syntax)
         };

@@ -15,58 +15,10 @@ public static class DisplayExtensions
             TokenKind.Whitespace => "whitespace",
             TokenKind.UnknownCharacters => "unknown characters",
             TokenKind.Eof => "end of file",
-
-            // --- Keywords
-            TokenKind.FunKw => "'fun'",
-            TokenKind.VarKw => "'var'",
-            TokenKind.ModuleKw => "'module'",
-            TokenKind.ReturnKw => "'return'",
-            TokenKind.IfKw => "'if'",
-            TokenKind.ElseKw => "'else'",
-            TokenKind.WhileKw => "'while'",
-            TokenKind.BreakKw => "'break'",
-            TokenKind.ContinueKw => "'continue'",
-            TokenKind.AndKw => "'and'",
-            TokenKind.OrKw => "'or'",
-            TokenKind.NotKw => "'not'",
-            TokenKind.UsingKw => "'using'",
-
-            // --- Literals
             TokenKind.NumberLiteral => "a number",
-            TokenKind.StringStart => "'\"'",
             TokenKind.StringText => "string text",
-            TokenKind.StringEnd => "'\"'",
-            TokenKind.TrueKw => "'true'",
-            TokenKind.FalseKw => "'false'",
 
-            // --- Symbols
-            TokenKind.Dot => "'.'",
-            TokenKind.Comma => "','",
-            TokenKind.Semicolon => "';'",
-            TokenKind.Colon => "':'",
-
-            // --- Assignment Symbols
-            TokenKind.Equal => "'='",
-
-            // --- Bracket Symbols
-            TokenKind.OpenParen => "'('",
-            TokenKind.CloseParen => "')'",
-            TokenKind.OpenBrace => "'{'",
-            TokenKind.CloseBrace => "'}'",
-
-            // --- Mathematical Symbols
-            TokenKind.Plus => "'+'",
-            TokenKind.Minus => "'-'",
-            TokenKind.Star => "'*'",
-            TokenKind.Slash => "'/'",
-            TokenKind.DoubleEqual => "'=='",
-            TokenKind.BangEqual => "'!='",
-            TokenKind.LessThan => "'<'",
-            TokenKind.LessThanEqual => "'<='",
-            TokenKind.GreaterThan => "'>'",
-            TokenKind.GreaterThanEqual => "'>='",
-
-            _ => throw new UnreachableException($"No DisplayName for TokenKind '{kind}'."),
+            _ => $"'{SyntaxFacts.GetText(kind) ?? throw new UnreachableException($"No DisplayName for TokenKind '{kind}'.")}'"
         };
     }
 
