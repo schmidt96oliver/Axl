@@ -7,5 +7,5 @@ if (1) {}  //~error TypeMismatch
 if (1.1) {}  //~error TypeMismatch
 if ("string") {}  //~error TypeMismatch
 
-if ("string" == 1) {}  
-if ("string" == 1 and true) {} 
+if (1 == 1) {}  
+if (1 == 1 and true) {} 

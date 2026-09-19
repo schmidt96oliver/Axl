@@ -1,0 +1,8 @@
+﻿//@check
+
+var a: Base = {};    //~error UnexpectedSymbolKind
+
+var b: a = {};                  //~error UnexpectedSymbolKind
+
+var a: Base.Bupp = {};          //~error UndefinedMember
+var a: Base.Bupp.Blop = {};   //~error UndefinedMember

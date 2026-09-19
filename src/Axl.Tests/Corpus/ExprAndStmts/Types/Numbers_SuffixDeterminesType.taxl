@@ -4,16 +4,16 @@
 
 // Integral numbers
 var a = 1_i32;
-//~type ^^^^^ i32
+//~type ^^^^^ I32
 var a = 1_i64;
-//~type ^^^^^ i64
+//~type ^^^^^ I64
 var a = 1_f32;
-//~type ^^^^^ f32
+//~type ^^^^^ F32
 var a = 1_f64;
-//~type ^^^^^ f64
+//~type ^^^^^ F64
 
 // Decimal numbers
 var a = 1.1_f32;
-//~type ^^^^^^^ f32
+//~type ^^^^^^^ F32
 var a = 1.1_f64;
-//~type ^^^^^^^ f64
+//~type ^^^^^^^ F64

@@ -1,0 +1,6 @@
+﻿//@check
+
+// Error type should not be nameable since it is unsound.
+
+var a: Error = 1;       //~error UndefinedName
+var a: Base.Error = 1;  //~error UndefinedMember

@@ -1,0 +1,6 @@
+﻿//@check
+
+// Never type should not be nameable since it is unsound. It's reserved for expressions.
+
+var a: Never = 1;       //~error UndefinedName
+var a: Base.Never = 1;  //~error UndefinedMember

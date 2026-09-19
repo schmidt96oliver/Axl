@@ -1,0 +1,24 @@
+﻿//@check
+
+// Types in Base module are implicitly used to simplify writing of types.
+
+var a: I32 = 1;
+var a: Base.I32 = 2;
+
+var a: I64 = 1i64;
+var a: Base.I64 = 2i64;
+
+var a: F32 = 1f32;
+var a: Base.F32 = 2f32;
+
+var a: F64 = 1f64;
+var a: Base.F64 = 2f64;
+
+var a: String = "";
+var a: Base.String = "";
+
+var a: Unit = { };
+var a: Base.Unit = { };
+
+var a: Bool = true;
+var a: Base.Bool = false;

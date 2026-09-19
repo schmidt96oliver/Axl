@@ -18,17 +18,6 @@
 * [x] Make param type annotation required in Parser
 * [x] Churn through Parser.BrokenTrees
 
-
-
-* [ ] Corpus Tests
-  * [ ] Primitives bind as `Base.I32` and `I32` for `I32, I64, F32, F64, Bool, String, Unit`
-  * [ ] Variables, `Base` rejeceted as type
-  * [ ] Types, Module rejected as value
-  * [ ] Undefined Members on `Base`
-  * [ ] Undefined Names inside patzhs `A.B.C`
-  * [ ] `Never`, `Error` not nameable
-  * [ ] All operators `+ - * / < <= > >= not and or`
-
 * [ ] Syntax highlighting for types
   * Probably requires rework of BoundNode structure
 
@@ -55,7 +44,13 @@
 * local fn bodies with "cannot capture" warning.
     * They can see other local fns transitively
 
-**Simplifications**
+**Stashed small ones**:
+- LSP: Make Serial (see Omnisharp) and weave CancellationToken
+
+**Regressions**
+
+
+**Refactors**
 * SyntaxTree API
     * SyntaxTree.From/Parse, ParseTokens
     * Pass SyntaxTree into SyntaxNode
@@ -66,12 +61,6 @@
     * Move to DiagnosticBag.Report***
     * Think about Parser deduping
 
-**Stashed small ones**:
-- LSP: Make Serial (see Omnisharp) and weave CancellationToken
-
-**Regressions**
-* `1_i32 == 1_i64`
-* `var a = i32`
 
 # Taxl: Multiple files
 * SourceText gets Origin (SourceText, Offset); construction by SourceText.Subtext
