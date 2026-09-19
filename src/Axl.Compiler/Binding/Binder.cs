@@ -1,5 +1,6 @@
 ﻿using System.Collections.Immutable;
 using System.Diagnostics;
+using System.Runtime.InteropServices;
 using System.Security.Permissions;
 using Axl.Compiler.Binding.BoundTree;
 using Axl.Compiler.Diagnostics;
@@ -396,24 +397,44 @@ public sealed class Binder
     #region Binary and Unary Exprs
 
     private BoundExpr BindBinary(BinaryExprSyntax syntax)
-        => syntax.Operator.Kind switch
     {
-        TokenKind.Equal => BindAssign(syntax),
-        _ => BindUnsupported(syntax)
+        if (syntax.Operator.Kind is TokenKind.Equal)
+            return BindAssign(syntax);
         
-        // TokenKind.AndKw or TokenKind.OrKw => BindBooleanOperator(syntax),
-        //
-        // TokenKind.DoubleEqual or TokenKind.BangEqual => BindEqualityComparison(syntax),
-        //
-        //
-        // _ => BindNativeOperator(syntax.Operator, syntax, syntax.Left, syntax.Right)
-    };
+        //TODO: Handle derived operators
+        if (syntax.Operator.Kind is TokenKind.BangEqual
+            or TokenKind.LessThanEqual or TokenKind.GreaterThan or TokenKind.GreaterThanEqual)
+            return BindUnsupported(syntax);
+        
+        //TODO: Handle Boolean operators
+        if (syntax.Operator.Kind is TokenKind.AndKw or TokenKind.OrKw)
+            return BindUnsupported(syntax);
+
+        var left = BindExpr(syntax.Left);
+        var right = BindExpr(syntax.Right);
+        return BindOperatorCall(SymbolName.From(syntax.Operator.Text), [left, right], syntax);
+    }
+
+    private BoundExpr BindOperatorCall(SymbolName operatorName, ImmutableArray<BoundExpr> arguments, SyntaxNode syntax)
+    {
+        Debug.Assert(arguments.Length >= 1);
+        
+        if (arguments.Any(arg => arg.Type == _baseModule.Error))
+            return new BoundErrorExpr(arguments, _baseModule.Error, syntax);
+
+        var fun = arguments[0].Type.LookupFun(operatorName, [.. arguments.Select(arg => arg.Type)]);
+        if (fun is null)
+        {
+            _diagnostics.ReportError(
+                new Diagnostic.UndefinedOperator(operatorName, [.. arguments.Select(arg => arg.Type)], syntax));
+            return new BoundErrorExpr(arguments, _baseModule.Error, syntax);
+        }
+
+        return new BoundCall(fun, arguments, fun.ReturnType, syntax);
+    }
 
     private BoundExpr BindUnary(UnaryExprSyntax syntax)
-        => BindUnsupported(syntax);
-    // {
-    //     return BindNativeOperator(syntax.Operator, syntax, syntax.Operand);
-    // }
+        => BindOperatorCall(SymbolName.From(syntax.Operator.Text), [BindExpr(syntax.Operand)], syntax);
     
     
     //

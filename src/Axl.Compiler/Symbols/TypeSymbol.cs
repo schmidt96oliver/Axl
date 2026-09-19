@@ -14,4 +14,9 @@ public sealed class TypeSymbol : Symbol
     {
         Members = memberFactory(this);
     }
+
+    public IntrinsicFunSymbol? LookupFun(SymbolName name, ImmutableArray<TypeSymbol> parameterTypes)
+        => Members.OfType<IntrinsicFunSymbol>().SingleOrDefault(fun => fun.Name == name &&
+                                                                       fun.ParemeterTypes
+                                                                           .SequenceEqual(parameterTypes));
 }

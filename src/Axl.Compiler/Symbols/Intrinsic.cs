@@ -35,4 +35,9 @@ public enum Intrinsic
     LessThanF64,
     
     NotBool,
+    EqualsBool,
+    
+    EqualsUnit,
+    
+    EqualsString
 }

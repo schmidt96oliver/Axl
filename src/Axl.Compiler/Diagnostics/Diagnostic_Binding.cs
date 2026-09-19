@@ -45,7 +45,7 @@ public partial record Diagnostic
             => $"Undefined name '{Syntax.Identifier}'.";
     }
 
-    public sealed record UndefinedOperator(Token OperatorToken, ImmutableArray<TypeSymbol> OperandTypes, SyntaxNode Syntax) : Error
+    public sealed record UndefinedOperator(SymbolName OperatorName, ImmutableArray<TypeSymbol> OperandTypes, SyntaxNode Syntax) : Error
     {
         public override ImmutableArray<SourceLocation> Locations
         {
@@ -66,7 +66,7 @@ public partial record Diagnostic
         }
 
         public override string Message
-            => $"Operator {OperatorToken.Kind.DisplayName} is not defined for {GetTypeString()}.";
+            => $"Operator '{OperatorName}' is not defined for {GetTypeString()}.";
 
         private string GetTypeString()
             => OperandTypes.Length == 1
