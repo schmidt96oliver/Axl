@@ -147,6 +147,23 @@ public sealed class Binder
         return symbol;
     }
 
+    private Symbol? BindSymbol(GetMemberExprSyntax syntax, SymbolKind? expectedKind = null)
+    {
+        Symbol? parent;
+        if (syntax.Left is GetMemberExprSyntax leftGetMember)
+            parent = BindSymbol(leftGetMember);
+        else if (syntax.Left is IdNameSyntax leftIdName)
+            parent = BindSymbol(leftIdName);
+        else
+        {
+            _diagnostics.ReportError(new Diagnostic.UndefinedMember(syntax.Member, Symbol: null));
+            return null;
+        }
+
+        if (parent is null)
+            return null;
+        return BindSymbol(syntax.Member, parent, expectedKind);
+    }
 
     #region Type names
 
@@ -605,13 +622,14 @@ public sealed class Binder
 
     private IntrinsicFunSymbol? BindCallee(ExprSyntax syntax)
     {
-        if (syntax is not IdNameSyntax idNameSyntax)
-        {
-            _diagnostics.ReportError(new Diagnostic.InvalidCallee(syntax));
-            return null;
-        }
+        if (syntax is IdNameSyntax idNameSyntax)
+            return BindSymbol(idNameSyntax, expectedKind: SymbolKind.Fun) as IntrinsicFunSymbol;
 
-        return BindSymbol(idNameSyntax, expectedKind: SymbolKind.Fun) as IntrinsicFunSymbol;
+        if (syntax is GetMemberExprSyntax getMemberSyntax)
+            return BindSymbol(getMemberSyntax, expectedKind: SymbolKind.Fun) as IntrinsicFunSymbol;
+
+        _diagnostics.ReportError(new Diagnostic.InvalidCallee(syntax));
+        return null;
     }
 
     #endregion

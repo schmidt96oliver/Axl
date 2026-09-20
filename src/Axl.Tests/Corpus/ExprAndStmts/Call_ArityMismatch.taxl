@@ -3,6 +3,9 @@
 // Print accepts one parameter.
     
 Print();        //~error ArityMismatch
+Base.Print();        //~error ArityMismatch
 Print(1, 2);    //~error ArityMismatch
+Base.Print(1, 2);    //~error ArityMismatch
 
 Print("");      // valid
+Base.Print("");      // valid

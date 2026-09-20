@@ -118,10 +118,12 @@ public partial record Diagnostic
         public override string Message => $"'{Symbol.Name}' is {Symbol.Kind.DisplayName}. Expected {Expected.DisplayName}.";
     }
 
-    public sealed record UndefinedMember(IdNameSyntax Syntax, Symbol Symbol) : Error
+    public sealed record UndefinedMember(IdNameSyntax Syntax, Symbol? Symbol) : Error
     {
         public override ImmutableArray<SourceLocation> Locations => [Syntax.Location];
-        public override string Message => $"'{Symbol.Name}' has no member '{Syntax.Token.Identifier}'.";
+        public override string Message => Symbol is not null 
+            ? $"'{Symbol.Name}' has no member '{Syntax.Token.Identifier}'."
+            : $"Could not resolved member '{Syntax.Token.Identifier}'.";
     }
 
     public sealed record CannotConvert(ExprSyntax Syntax, TypeSymbol From, TypeSymbol To) : Error

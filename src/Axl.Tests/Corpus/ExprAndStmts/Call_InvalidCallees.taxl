@@ -5,5 +5,8 @@
 (1)(1);         //~error InvalidCallee
 (Print)("");    //~error InvalidCallee
   
+Base.Bla("", 2);   //~error UndefinedMember
+Blupp.Bla("", 2);   //~error UndefinedName
+  
 var a = 1;
 a(1);          //~error UnexpectedSymbolKind

@@ -3,5 +3,7 @@
 // Print accepts one parameter of type String
 
 Print({ });     //~error TypeMismatch
+Base.Print({ });     //~error TypeMismatch
 
 Print("{1}");  // valid
+Base.Print("{1}");  // valid
