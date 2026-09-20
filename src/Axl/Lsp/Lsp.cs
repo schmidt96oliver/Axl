@@ -16,6 +16,7 @@ public static class Lsp
                 .WithHandler<SemanticTokensHandler>()
                 .WithHandler<TextDocumentSyncHandler>()
                 .WithHandler<FoldingRangeHandler>()
+                .WithHandler<HoverHandler>()
             );
         await server.WaitForExit;
     }
