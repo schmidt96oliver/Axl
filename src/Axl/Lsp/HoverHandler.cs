@@ -41,7 +41,7 @@ public class HoverHandler : HoverHandlerBase
         VariableSymbol variable => $"var {variable.Name}: `{variable.Type.Name}`",
         TypeSymbol type => $"type `{type.Name}`",
         BaseModuleSymbol => "base module",
-
+        IntrinsicFunSymbol intrinsicFun => $"fun '{intrinsicFun.Name}' @intrinsic({intrinsicFun.Intrinsic}) ",
         _ => ""
     };
 }

@@ -28,7 +28,7 @@ public sealed class Analysis
     public SyntaxNode SyntaxNodeAt(SourceLocation location)
     {
         SyntaxNode currentNode = _compilation.SyntaxTree.FileSyntax;
-        Debug.Assert(currentNode.Range?.Contains(location.Range) == true);
+        Debug.Assert(currentNode.FullRange.Contains(location.Range));
 
         while (true)
         {
