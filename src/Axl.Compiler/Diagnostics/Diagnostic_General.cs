@@ -9,7 +9,7 @@ public closed partial record Diagnostic
     public sealed record UnsupportedFeature(SyntaxElement Element, string? CustomMessage = null) : Error
     {
         public override ImmutableArray<SourceLocation> Locations
-            => [Element.Location];
+            => Element is SyntaxNode node ? [node.SyntaxElements().First().Location] : [Element.Location];
 
         public override string Message
             => CustomMessage ?? $"{GetElementText(Element)} is not (yet) supported.";

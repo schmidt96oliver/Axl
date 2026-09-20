@@ -47,7 +47,6 @@ One type (maybe struct) inside scripts.
 - LSP: Make Serial (see Omnisharp) and weave CancellationToken to avoid concurrency awkwardness.
 * Binder: Duck-type `ToString` for string interpolations
 * Axl: Replace `and, or` with `&&, ||`. For familiarity and possibly conflict with "and/or" patterns later
-* Diagnostics: Report unsupported only on the first token. It is much more fun to play without those squiggles.
 * Taxl: Expected output through `//@expect "1stline\n2ndline"` normalized.
 * Axl: Named arguments as `callee(parameter = value, param2 = value2)`
 * Compiler: Replace `SymbolName` with `string`. There is really no reason to have a separate type.
