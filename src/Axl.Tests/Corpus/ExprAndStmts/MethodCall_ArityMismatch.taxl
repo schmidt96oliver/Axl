@@ -1,0 +1,8 @@
+﻿//@check
+
+1.ToString(1);      //~error ArityMismatch
+I32.ToString(1, 1); //~error ArityMismatch
+I32.ToString();     //~error ArityMismatch
+
+1.1.ToString();     
+F64.ToString(1.1); 

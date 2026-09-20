@@ -112,7 +112,7 @@ public partial record Diagnostic
             => $"Both 'if' and 'else' branches must have the same type. Got '{First.Type.Name}' and '{Second.Type.Name}'.";
     }
 
-    public sealed record UnexpectedSymbolKind(IdNameSyntax Syntax, Symbol Symbol, SymbolKind Expected) : Error
+    public sealed record UnexpectedSymbolKind(SyntaxNode Syntax, Symbol Symbol, SymbolKind Expected) : Error
     {
         public override ImmutableArray<SourceLocation> Locations => [Syntax.Location];
         public override string Message => $"'{Symbol.Name}' is {Symbol.Kind.DisplayName}. Expected {Expected.DisplayName}.";
@@ -132,7 +132,7 @@ public partial record Diagnostic
         public override string Message => $"Cannot convert from type '{From.Name}' to '{To.Name}'.";
     }
 
-    public sealed record ArityMismatch(ArgListSyntax Syntax, IntrinsicFunSymbol Fun, int Got) : Error
+    public sealed record ArityMismatch(ArgListSyntax Syntax, IntrinsicFunSymbol Fun, int Got, bool IsMethodCall) : Error
     {
         public override ImmutableArray<SourceLocation> Locations
         {
@@ -146,13 +146,24 @@ public partial record Diagnostic
             }
         }
 
+        private int ArityMinus => IsMethodCall ? 1 : 0;
+
         public override string Message =>
-            $"'{Fun.Name}' has {Fun.ParameterTypes.Length} parameter(s), but was called with {Got} argument(s).";
+            $"'{Fun.Name}' has {Fun.ParameterTypes.Length - ArityMinus} parameter(s), but was called with {Got - ArityMinus} argument(s).";
     }
 
     public sealed record InvalidCallee(ExprSyntax Syntax) : Error
     {
         public override ImmutableArray<SourceLocation> Locations => [Syntax.Location];
         public override string Message => $"Expected {SymbolKind.Fun.DisplayName}.";
+    }
+
+    public sealed record CannotCallAsMethod(SyntaxNode MethodSyntax, IntrinsicFunSymbol MethodSymbol, TypeSymbol ExprType) : Error
+    {
+        public override ImmutableArray<SourceLocation> Locations => [MethodSyntax.Location];
+
+        public override string Message => MethodSymbol.ParameterTypes.Length == 0
+            ? $"Cannot call '{MethodSymbol.Name}' as a method, because it has 0 parameters."
+            : $"Cannot call '{MethodSymbol.Name}' as a method, because it's first parameter does not accept type '{ExprType.Name}'.";
     }
 }

@@ -1,0 +1,9 @@
+﻿//@run-pass
+
+// Calling 1.ToString and I32.ToString(1) is semantically the same.
+
+Print(1.ToString());
+Print(I32.ToString(1));
+
+//=== stdout
+// 11

@@ -2,14 +2,14 @@
                                        ≽(◕ ᴗ ◕)≼
 
 **Next:** 
-* intrinsic print, bind call and getmember (only ModuleOrType, dont check instance members)
 
 # Roadmap
 
 ## 1. Running scripts (no funs)
-* [ ] Intrinsic Print
+* [x] Intrinsic Print
 * [ ] Scripts bind
 * [x] Duck-typed ToString
+* [x] Bind methods
 * [ ] `let` binding
 * [ ] Treewalking Interpreter on BoundTree
   * --or-- MIR and MirInterpreter

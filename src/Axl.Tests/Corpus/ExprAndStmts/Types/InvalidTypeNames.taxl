@@ -1,8 +1,11 @@
 ﻿//@check
 
-var a: Base = {};    //~error UnexpectedSymbolKind
+var a: Base = {};           //~error UnexpectedSymbolKind
 
-var b: a = {};                  //~error UnexpectedSymbolKind
+var b: a = {};              //~error UnexpectedSymbolKind
 
-var a: Base.Bupp = {};          //~error UndefinedMember
-var a: Base.Bupp.Blop = {};   //~error UndefinedMember
+var a: Base.A = {};         //~error UndefinedMember
+var a: Base.A.B = {};       //~error UndefinedMember
+
+var a: a = 1;               //~error UnexpectedSymbolKind
+var a: I32.ToString = 1;    //~error UnexpectedSymbolKind

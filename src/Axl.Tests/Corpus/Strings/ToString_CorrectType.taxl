@@ -1,0 +1,15 @@
+﻿//@check
+
+
+var a = 1.ToString();
+//~type ^^^^^^^^^^^^ String
+var a = 1i64.ToString();
+//~type ^^^^^^^^^^^^^^^ String
+
+var a = 1.1.ToString();
+//~type ^^^^^^^^^^^^^^ String
+var a = 1.1f32.ToString();
+//~type ^^^^^^^^^^^^^^^^^ String
+
+var a = true.ToString();
+//~type ^^^^^^^^^^^^^^^ String
