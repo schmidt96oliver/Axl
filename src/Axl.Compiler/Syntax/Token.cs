@@ -7,7 +7,7 @@ public class Token : SyntaxElement
 {
     public TokenKind Kind { get; }
     public sealed override SourceRange FullRange { get; }
-    public sealed override SourceRange? Range => Kind.IsTrivia ? null : FullRange;
+    public sealed override SourceRange? Range => SyntaxFacts.IsTrivia(Kind) ? null : FullRange;
     public bool IsMissing { get; }
 
     /// <summary>

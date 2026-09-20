@@ -127,7 +127,7 @@ public partial class Parser
             _tokens = new List<Token>(capacity: tokens.Length);
             foreach (var token in tokens)
             {
-                if (!token.Kind.IsTrivia)
+                if (!SyntaxFacts.IsTrivia(token.Kind))
                     _tokens.Add(token);
             }
 

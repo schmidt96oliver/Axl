@@ -2,13 +2,6 @@
                                        ≽(◕ ᴗ ◕)≼
 
 **Next:** 
-* [ ] Syntax highlighting for types
-  * Probably requires rework of BoundNode structure
-
-
-* Add Hover symbol kind
-
-* LSP: Add SyntaxFacts.IsKeyword
 
 # Roadmap
 

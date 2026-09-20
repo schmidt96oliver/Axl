@@ -19,6 +19,6 @@ public static class SyntaxElementEnumerableExtensions
             => array.OfType<T>().Skip(1).First();
         
         public Token FirstNonTriviaToken()
-            => array.OfType<Token>().First(t => !t.Kind.IsTrivia);
+            => array.OfType<Token>().First(t => !SyntaxFacts.IsTrivia(t.Kind));
     }
 }

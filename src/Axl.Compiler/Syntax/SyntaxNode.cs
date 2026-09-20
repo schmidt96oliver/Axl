@@ -51,9 +51,11 @@ public closed class SyntaxNode : SyntaxElement
     /// garbage nodes and unknown character tokens.
     /// </summary>
     public IEnumerable<SyntaxElement> SyntaxElements()
-        => Children.Where(element =>
-            element is not (Token { Kind.IsTrivia: true } or Token { Kind: TokenKind.UnknownCharacters }
-                or SyntaxNode { Kind: SyntaxKind.Garbage }));
+        => Children.Where(element => element switch
+        {
+            Token token => !SyntaxFacts.IsTrivia(token.Kind) && token.Kind is not TokenKind.UnknownCharacters,
+            SyntaxNode node => node.Kind is not SyntaxKind.Garbage
+        });
     
     /// <summary>
     /// Enumerates all nodes relevant for syntax. That excludes gargabe nodes.

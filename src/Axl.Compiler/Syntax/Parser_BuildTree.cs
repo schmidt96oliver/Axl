@@ -27,7 +27,7 @@ public partial class Parser
                 case ParseEvent.Eat:
                 case ParseEvent.EatAs:
                     // Flush all trivia here
-                    while (nextToken < tokens.Length && tokens[nextToken].Kind.IsTrivia)
+                    while (nextToken < tokens.Length && SyntaxFacts.IsTrivia(tokens[nextToken].Kind))
                     {
                         nodeBuilders.Peek().Add(tokens[nextToken]);
                         nextToken++;

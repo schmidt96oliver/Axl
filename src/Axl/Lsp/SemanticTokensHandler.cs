@@ -145,23 +145,12 @@ public class SemanticTokensHandler(ILanguageServerFacade facade) : SemanticToken
                     break;
                 }
 
-                case TokenKind.AndKw:
-                case TokenKind.BreakKw:
-                case TokenKind.ContinueKw:
-                case TokenKind.ElseKw:
-                case TokenKind.FalseKw:
-                case TokenKind.FunKw:
-                case TokenKind.IfKw:
-                case TokenKind.WhileKw:
-                case TokenKind.ModuleKw:
-                case TokenKind.NotKw:
-                case TokenKind.OrKw:
-                case TokenKind.ReturnKw:
-                case TokenKind.TrueKw:
-                case TokenKind.UsingKw:
-                case TokenKind.VarKw:
-                    builder.Push(location.StartLine, location.StartColumn, token.FullRange.Length,
-                        (SemanticTokenType?)SemanticTokenType.Keyword);
+                default:
+                    if (SyntaxFacts.IsKeyword(token.Kind))
+                    {
+                        builder.Push(location.StartLine, location.StartColumn, token.FullRange.Length,
+                            (SemanticTokenType?)SemanticTokenType.Keyword);
+                    }
                     break;
             }
         }

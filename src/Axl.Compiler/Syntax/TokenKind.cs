@@ -63,9 +63,8 @@ public static class TokenKindExtensions
 {
     extension(TokenKind kind)
     {
-        public bool IsTrivia =>
-            kind is TokenKind.Comment or TokenKind.Whitespace;
-
+        public bool IsTrivia => SyntaxFacts.IsTrivia(kind);
+        
         public bool HasValue =>
             kind is TokenKind.Identifier or TokenKind.NumberLiteral or TokenKind.StringText;
     }
