@@ -2,26 +2,120 @@
                                        ≽(◕ ᴗ ◕)≼
 
 **Next:** 
-* [x] Add ModuleSymbol; Make BaseModuleSymbol a ModuleSymbol
-* [x] Add IntrinsicFnSymbol, Intrinsic
-* [x] Add type name resolution
-* [x] Remove native type keywords
-* [x] Bind Operators as intrinsic fns
-* [x] Bind BinaryExpr as BoundIntrinsicCall and lower derived operators
-
-* [x] Add `<=` intrinsics****
-* [x] Add generic operator text somewhere
-* [x] Error messages for undefined operator "1 != 1.1", "1 >= 2"
-* [x] Common base class for "Type" and "Module" -> "ModuleOrTypeSymbol" that has members and member lookup
- 
-
-* [x] Make param type annotation required in Parser
-* [x] Churn through Parser.BrokenTrees
-
 * [ ] Syntax highlighting for types
   * Probably requires rework of BoundNode structure
 
-**Syntax ideas from https://core-lang.dev/design.html**
+
+* Add Hover symbol kind
+
+* LSP: Add SyntaxFacts.IsKeyword
+
+# Roadmap
+
+## 1. Running scripts (no funs)
+* [ ] Intrinsic Print
+* [ ] Scripts bind
+* [ ] Duck-typed ToString
+* [ ] `let` binding
+* [ ] Treewalking Interpreter on BoundTree
+  * --or-- MIR and MirInterpreter
+
+## 2. Funs (in script)
+* [ ] Forward-declaration of funs
+* [ ] Local funs
+* [ ] Cannot be shadowed by local (variable or parameter)
+* [ ] Definite Return Analysis (needs MIR or ad-hoc)
+* ?? Named arguments
+
+## 3. Type (in script)
+One type (maybe struct) inside scripts.
+* [ ] Initialization
+* [ ] Fields
+* [ ] (Static) fun and methods
+* [ ] User-declared operators
+* [ ] User-declared ToString
+* [ ] `pub` visibility
+* ?? Member generation
+
+## 4. Modules and multiple files
+* [ ] Modules visible anywhere
+* [ ] `pub` visibility
+* [ ] Taxl handles multiple files
+* [ ] LSP manages Compilation objects
+* [ ] Using directives
+
+## 5. `Base` module as Axl-Code
+* [ ] `@intrinsic` and `@primitive` annotations
+* [ ] BaseModuleSymbol searches for correct symbols
+* [ ] IntrinsicLookup checks signatures
+* [ ] Replace entire BaseModuleSymbol with axl text :)).
+
+# Little proposals
+- LSP: Make Serial (see Omnisharp) and weave CancellationToken to avoid concurrency awkwardness.
+* Binder: Duck-type `ToString` for string interpolations
+* Axl: Replace `and, or` with `&&, ||`. For familiarity and possibly conflict with "and/or" patterns later
+* Diagnostics: Report unsupported only on the first token. It is much more fun to play without those squiggles.
+* Taxl: Expected output through `//@expect "1stline\n2ndline"` normalized.
+* Axl: Named arguments as `callee(parameter = value, param2 = value2)`
+* Compiler: Replace `SymbolName` with `string`. There is really no reason to have a separate type.
+
+# Proposals
+## Lexer/Parser: Resolve string interpolation awkwardness
+Currently, Lexer emits flat tokens and Parser must reconstruct the Lexers ideas about strings
+(see `WillStringBeContinued`).
+* Idea: Lexer emits TokenTree. A StringTree = `"` + Text + InterpolationTree
+* Idea: Tokens are a singly linked list.
+    * normal Tokens have on `Next` pointer
+    * DelimitedToken has pointers `Next` and `EndGroup`
+
+## Lexer: Single sealed Token class
+Currently, some TokenKinds have a derived class which carries a value. These can be
+flattened into a single Token class.
+* IdentifierToken => Just the token, `.Text` is enough
+* StringTextToken => Provide `.EscapedText` on every Token, lazily computing from a generalized
+  `SyntaxFacts.EscapeSequences`. Lexer should read this too.
+* NumberLiteralToken => Split into NumberLiteral with pure text and a following NumberSuffix
+  (`I32NumberSuffix`, `I64NumberSuffix`, ...). This split is wanted for diagnostics anyway.
+
+## SyntaxTree: Rework
+*BIG Rework*, requires multiple steps.
+*Issues*:
+  * Parent and Tree pointers make mutable nodes necessary. 
+  * Tokens that come from the Lexer have no SyntaxTree reference, so access of Location or Text will throw. 
+  * Parser and AST layer can drift silently apart. 
+  * Nullable Range is awkward to handle.
+*Idea*:
+  * Construction through `SyntaxTree.From/LoadFile` similar to SourceText
+  * Trivia attached to Tokens. As necessity that SyntaxNodes only represent non-trivia. This improves the
+    split between Range and FullRange. The entire pipeline doesn't need to know about trivia anyway.
+  * Directly construct SyntaxNode with children. Parser needs to pass all tokens and trees. This removes
+    the matklad style events. This could also improve overall design of the parser and readability.
+
+## Taxl: Multiple files
+TestFile needs to split one taxl file into multiple SourceTexts and map
+diagnostics and annotations accordingly.
+* Idea:
+  * SourceText gets Origin (SourceText, Offset); construction by SourceText.Subtext
+  * SourceLocation always refers to root source text
+  * .GetLocation walks origins
+  * SourceText.Contains checks for origin as well
+  * Compilation.GetSyntaxTreeAt(location) just checks text.Contains(location)
+
+## Diagnostics: Flat bag
+Currently, diagnostics are their own data structure. It would be easier and less
+boilerplate-heavy to provide `Report*` methods on DiagnosticBag. Only the parser
+needs a new way to report them (either through `Make*` or on a different mechanism).
+
+## Axl: Member generation
+*Requires*: Structs/Type
+Currently, all operators must be declared on the type. It is enough to declared
+`==` and `<=` (or `<`) and then compiler-generate `!=, <=, >, >=` from those. It will enhance
+the language with less boilerplate. Care needs to be taken to (1) allow overwritten
+declarations for speed and (2) maybe lint operators that can be generated. Also
+`==` and `ToString` could be generated from fields.
+
+# Design notes and ideas
+## From https://core-lang.dev/design.html
 > "Always rules" are better than "almost rules":
 >     . selects
 >     = assigns
@@ -30,69 +124,10 @@
 >     () encloses terms
 >     [] encloses types
 
-* _design_: arrays as `Array[Int32]`, construct `Array[Int32](1, 2, 3)`, get `array.Get(index)` and `array.Set(index, value)` through @internal functions
+Possibly add:
+>     | | lambda
 
-* _design_: `pub func`, `@internal pub func`, `@internal func`; static is encoded in signature? `func(self)` vs `func(arg: Int32)`
-  * allows no body on all `func`'s; Binder ensures: `Unit`-typed or `@internal`
-
-* _design_: duck-typing on `ToString` for the time; `@internal` symbols allow that straight-away
-
-* *design*: Replace `and/or` with `&& ||`. Reason: Familiarity and possibly conflict with "and/or" patterns later
-
-**Moving On**
-* allow any type in string interpolation (that's a lowering problem)
-* local fn bodies with "cannot capture" warning.
-    * They can see other local fns transitively
-
-**Stashed small ones**:
-- LSP: Make Serial (see Omnisharp) and weave CancellationToken
-
-**Regressions**
-
-
-**Refactors**
-* SyntaxTree API
-    * SyntaxTree.From/Parse, ParseTokens
-    * Pass SyntaxTree into SyntaxNode
-    * Span not nullable
-    * AST: Members, Usings, etc necessary or just walk completely over it?
-    * Tokens coming from Lexer should also have .Text, .Location, etc...
-* Diagnostics
-    * Move to DiagnosticBag.Report***
-    * Think about Parser deduping
-
-
-# Taxl: Multiple files
-* SourceText gets Origin (SourceText, Offset); construction by SourceText.Subtext
-* SourceLocation always refers to root source text
-* .GetLocation walks origins
-* SourceText.Contains checks for origin as well
-* Compilation.GetSyntaxTreeAt(location) just checks text.Contains(location)
-
-# First features
-* i32, i64, f32, f64, bool, string
-* expressions: numeric, comparison, boolean
-* variables****
-* string interpolation, escaped
-* blocks, if, loop (with break expression, continue)
-
-* fns
-  * none, never type
-  * return expr
-  * forward-declared, overloaded
-* native functions: Print, PrintLine, ToString
-
-* multi-file modules
-  * `using` directive
-
-
-# Possible Refactors
-## String Awkwardness: Lexer <-> Parser
-Lexer emits flat tokens and Parser must reconstruct the Lexers ideas about strings
-(see `WillStringBeContinued`). 
-* Idea: Lexer emits TokenTree. A StringTree = `"` + Text + InterpolationTree
-* Idea: Tokens are a singly linked list.
-  * normal Tokens have on `Next` pointer
-  * DelimitedToken has pointers `Next` and `EndGroup`
-  * StringInterpolation: Parser can easily reconstruct the Lexers ideas without unbounded lookahead
-  * RecoverTo: {} balancing is free, because it can skip until `EndGroup`
+* Arrays: `Array[Int32]`. Needs generics
+  * construct `Array[Int32](1, 2, 3)`
+  * get `array.Get(index)`
+  * `array.Set(index, value)` through @intrinsic functions

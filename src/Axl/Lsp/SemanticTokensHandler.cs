@@ -1,3 +1,5 @@
+using Axl.Compiler;
+using Axl.Compiler.Symbols;
 using Axl.Compiler.Syntax;
 using Axl.Compiler.Testing;
 using Axl.Compiler.Text;
@@ -23,7 +25,10 @@ public class SemanticTokensHandler(ILanguageServerFacade facade) : SemanticToken
                     SemanticTokenType.String,
                     SemanticTokenType.Keyword,
                     SemanticTokenType.Decorator,
-                    SemanticTokenType.Regexp),
+                    SemanticTokenType.Regexp,
+                    SemanticTokenType.Namespace,
+                    SemanticTokenType.Variable,
+                    SemanticTokenType.Type),
                 TokenModifiers = []
             },
             Full = true
@@ -46,14 +51,15 @@ public class SemanticTokensHandler(ILanguageServerFacade facade) : SemanticToken
                     DiagnosticConverter.Convert(testFile.Diagnostics) : []))
         });
 
-        TokenizeTree(builder, compilation.SyntaxTree, DocumentStore.TryGetTestFile(identifier.TextDocument.Uri));
+        TokenizeTree(builder, compilation, DocumentStore.TryGetTestFile(identifier.TextDocument.Uri));
 
 
         return Task.CompletedTask;
     }
 
-    private void TokenizeTree(SemanticTokensBuilder builder, SyntaxTree tree, TestFile? testFile)
+    private void TokenizeTree(SemanticTokensBuilder builder, Compilation compilation, TestFile? testFile)
     {
+        var tree = compilation.SyntaxTree;
         foreach (var token in EnumerateTokens(tree.FileSyntax))
         {
             if (token.FullRange.Length == 0)
@@ -61,7 +67,7 @@ public class SemanticTokensHandler(ILanguageServerFacade facade) : SemanticToken
             if (token.FullRange.Start >= tree.SourceText.Length)
                 continue;
 
-            var location = tree.SourceText.GetLocation(token.FullRange);
+            var location = token.Location;
             switch (token.Kind)
             {
                 case TokenKind.Comment:
@@ -76,6 +82,19 @@ public class SemanticTokensHandler(ILanguageServerFacade facade) : SemanticToken
 
                     break;
                 }
+                
+                case TokenKind.Identifier:
+                    var semanticTokenType = compilation.BoundFile.TryGetSymbol(location) switch
+                    {
+                        TypeSymbol => SemanticTokenType.Type,
+                        VariableSymbol => SemanticTokenType.Variable,
+                        ModuleOrTypeSymbol => SemanticTokenType.Namespace,
+                        _ => (SemanticTokenType?)null
+                    };
+                    
+                    if (semanticTokenType is not null)
+                        builder.Push(location.StartLine, location.StartColumn, token.FullRange.Length, semanticTokenType);
+                    break;
 
                 case TokenKind.StringStart:
                 case TokenKind.StringEnd:

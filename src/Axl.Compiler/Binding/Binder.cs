@@ -1,12 +1,12 @@
-﻿using System.Collections.Immutable;
+﻿using System.Collections.Frozen;
+using System.Collections.Immutable;
 using System.Diagnostics;
-using System.Runtime.InteropServices;
-using System.Security.Permissions;
 using Axl.Compiler.Binding.BoundTree;
 using Axl.Compiler.Diagnostics;
 using Axl.Compiler.Symbols;
 using Axl.Compiler.Syntax;
 using Axl.Compiler.Syntax.Tree;
+using Axl.Compiler.Text;
 
 namespace Axl.Compiler.Binding;
 
@@ -17,6 +17,14 @@ public sealed class Binder
     
     private Scope _scope;
     private bool _inLoop = false;
+    
+    /// <summary>
+    /// We need to keep a mapping of resolved symbols to their location in
+    /// text for the LSP. Searching the bound tree is not pragmatic, since
+    /// it would force us to emit a bound tree that's very close to syntax
+    /// which would confuse lowering.
+    /// </summary>
+    private readonly Dictionary<SourceLocation, Symbol> _resolvedSymbols = [];
     
     
     private Binder(Scope scope, BaseModuleSymbol baseModule)
@@ -51,7 +59,7 @@ public sealed class Binder
         var stmts = syntax.Stmts.Select(binder.BindStmt).ToImmutableArray();
         var block = new BoundBlock(stmts, type: baseModule.Unit, syntax);
 
-        return new BoundFile(block, binder._diagnostics.Drain());
+        return new BoundFile(block, binder._diagnostics.Drain(), binder._resolvedSymbols.ToFrozenDictionary());
     }
     
     
@@ -93,18 +101,27 @@ public sealed class Binder
     {
         if (syntax.IsMissing)
             return null;
-        
+
         var symbol = _scope.Lookup(SymbolName.From(syntax));
-        
+
         if (symbol is null)
             _diagnostics.ReportError(new Diagnostic.UndefinedName(syntax));
+
+        AddResolvedSymbol(syntax.Location, symbol);
         return symbol;
     }
 
     private Symbol? LookupAndReportUndefined(IdNameSyntax syntax)
         => LookupAndReportUndefined(syntax.Token);
-    
-    
+
+
+    private void AddResolvedSymbol(SourceLocation location, Symbol? symbol)
+    {
+        if (symbol is null) return;
+        
+        Debug.Assert(!_resolvedSymbols.ContainsKey(location));
+        _resolvedSymbols.Add(location, symbol);
+    }
     
     
     #region Type names
@@ -126,6 +143,7 @@ public sealed class Binder
             if (current is ModuleOrTypeSymbol moduleOrType)
             {
                 var member = moduleOrType.LookupMember(partName);
+                AddResolvedSymbol(parts[i].Location, member);
                 if (member is null)
                 {
                     _diagnostics.ReportError(new Diagnostic.UndefinedMember(parts[i], current));
@@ -190,6 +208,7 @@ public sealed class Binder
     
         var variable = new VariableSymbol(SymbolName.From(syntax.Name), variableType);
         _scope.Declare(variable);
+        AddResolvedSymbol(syntax.Name.Location, variable);
     
         return new BoundVarDecl(variable, boundInitializer, syntax);
     }
