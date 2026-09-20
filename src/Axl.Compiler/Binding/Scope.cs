@@ -9,12 +9,12 @@ public sealed class Scope(Scope? parent = null)
     public Scope? Parent { get; } = parent;
 
     
-    public Symbol? Lookup(SymbolName name)
+    public Symbol? Lookup(string name)
     {
         // Last declared symbol is first, since it might shadow
         // symbols declared before.
         
-        return _declaredSymbols.LastOrDefault(symbol => symbol.Name == name)
+        return _declaredSymbols.LastOrDefault(symbol => symbol.Name.SequenceEqual(name))
                ?? Parent?.Lookup(name);
     }
 

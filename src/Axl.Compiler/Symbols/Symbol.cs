@@ -1,8 +1,8 @@
 ﻿namespace Axl.Compiler.Symbols;
 
-public closed class Symbol(SymbolName name)
+public closed class Symbol(string name)
 {
-    public SymbolName Name { get; } = name;
+    public string Name { get; } = name;
 
     public abstract SymbolKind Kind { get; }
 }

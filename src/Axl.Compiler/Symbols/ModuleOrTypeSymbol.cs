@@ -2,17 +2,17 @@
 
 namespace Axl.Compiler.Symbols;
 
-public closed class ModuleOrTypeSymbol(SymbolName name) : Symbol(name)
+public closed class ModuleOrTypeSymbol(string name) : Symbol(name)
 {
     public abstract ImmutableArray<Symbol> Members { get; }
     
-    public IntrinsicFunSymbol? LookupFun(SymbolName name, ImmutableArray<TypeSymbol> parameterTypes)
+    public IntrinsicFunSymbol? LookupFun(string name, ImmutableArray<TypeSymbol> parameterTypes)
         => Members.OfType<IntrinsicFunSymbol>().SingleOrDefault(fun => fun.Name == name &&
                                                                        fun.ParemeterTypes
                                                                            .SequenceEqual(parameterTypes));
     
-    public Symbol? LookupMember(SymbolName name)
-        => name.IsEmpty
+    public Symbol? LookupMember(string name)
+        => name is ""
             ? null
             : Members.SingleOrDefault(symbol => symbol.Name == name);
 }

@@ -110,7 +110,7 @@ public sealed class Binder
         if (syntax.Token.IsMissing)
             return null;
 
-        var name = SymbolName.From(syntax);
+        var name = syntax.Token.Identifier;
 
         Symbol? symbol;
         switch (parent)
@@ -206,7 +206,7 @@ public sealed class Binder
             CheckTypeAndReportMismatch(boundInitializer, variableType);
         }
     
-        var variable = new VariableSymbol(SymbolName.From(syntax.Name), variableType);
+        var variable = new VariableSymbol(syntax.Name.Identifier, variableType);
         _scope.Declare(variable);
         AddResolvedSymbol(syntax.Name.Location, variable);
     
@@ -375,7 +375,7 @@ public sealed class Binder
         
         // Try to find duck-typed ToString
         if (boundExpr.Type is ModuleOrTypeSymbol moduleOrType
-            && moduleOrType.LookupFun(SymbolName.From("ToString"), [boundExpr.Type]) is IntrinsicFunSymbol toStringFun
+            && moduleOrType.LookupFun("ToString", [boundExpr.Type]) is IntrinsicFunSymbol toStringFun
             && IsAssignableTo(toStringFun.ReturnType, _baseModule.String))
         {
             var conversion = new BoundCall(toStringFun, [boundExpr], toStringFun.ReturnType, syntax.Expr);
@@ -437,8 +437,7 @@ public sealed class Binder
         if (arguments.Any(arg => arg.Type == _baseModule.Error))
             return new BoundErrorExpr(arguments, _baseModule.Error, syntax);
 
-        var operatorName = SymbolName.From(operatorText);
-        var fun = arguments[0].Type.LookupFun(operatorName, [.. arguments.Select(arg => arg.Type)]);
+        var fun = arguments[0].Type.LookupFun(operatorText.ToString(), [.. arguments.Select(arg => arg.Type)]);
         if (fun is null)
         {
             _diagnostics.ReportError(
@@ -450,7 +449,7 @@ public sealed class Binder
     }
 
     private BoundExpr BindUnary(UnaryExprSyntax syntax)
-        => BindOperatorCall(SymbolName.From(syntax.Operator.Text), [BindExpr(syntax.Operand)], syntax);
+        => BindOperatorCall(syntax.Operator.Text, [BindExpr(syntax.Operand)], syntax);
     
     private BoundExpr BindBooleanOperator(BinaryExprSyntax syntax)
     {

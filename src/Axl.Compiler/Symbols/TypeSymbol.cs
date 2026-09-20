@@ -19,7 +19,7 @@ public sealed class TypeSymbol : ModuleOrTypeSymbol
     }
 
     public TypeSymbol(string name, Func<ImmutableArray<Symbol>> memberFactory) 
-        : base(SymbolName.From(name))
+        : base(name)
     {
         _memberFactory = memberFactory;
     }

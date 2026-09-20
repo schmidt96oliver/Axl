@@ -49,7 +49,6 @@ One type (maybe struct) inside scripts.
 * Axl: Replace `and, or` with `&&, ||`. For familiarity and possibly conflict with "and/or" patterns later
 * Taxl: Expected output through `//@expect "1stline\n2ndline"` normalized.
 * Axl: Named arguments as `callee(parameter = value, param2 = value2)`
-* Compiler: Replace `SymbolName` with `string`. There is really no reason to have a separate type.
 
 # Proposals
 ## Lexer/Parser: Resolve string interpolation awkwardness

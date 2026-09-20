@@ -3,7 +3,7 @@
 namespace Axl.Compiler.Symbols;
 
 public sealed class IntrinsicFunSymbol(
-    SymbolName name,
+    string name,
     Intrinsic intrinsic,
     ImmutableArray<TypeSymbol> paremeterTypes,
     TypeSymbol returnType)
