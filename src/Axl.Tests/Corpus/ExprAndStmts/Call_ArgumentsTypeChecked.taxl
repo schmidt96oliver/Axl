@@ -1,0 +1,7 @@
+﻿//@check
+
+// Print accepts one parameter of type String
+
+Print({ });     //~error TypeMismatch
+
+Print("{1}");  // valid

@@ -8,7 +8,7 @@ public closed class ModuleOrTypeSymbol(string name) : Symbol(name)
     
     public IntrinsicFunSymbol? LookupFun(string name, ImmutableArray<TypeSymbol> parameterTypes)
         => Members.OfType<IntrinsicFunSymbol>().SingleOrDefault(fun => fun.Name == name &&
-                                                                       fun.ParemeterTypes
+                                                                       fun.ParameterTypes
                                                                            .SequenceEqual(parameterTypes));
     
     public Symbol? LookupMember(string name)

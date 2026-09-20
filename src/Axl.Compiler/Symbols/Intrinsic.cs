@@ -64,4 +64,7 @@ public enum Intrinsic
     
     EqualsString,
     NotEqualsString,
+    
+    
+    Print
 }

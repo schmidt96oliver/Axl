@@ -5,7 +5,7 @@ namespace Axl.Compiler.Symbols;
 public sealed class IntrinsicFunSymbol(
     string name,
     Intrinsic intrinsic,
-    ImmutableArray<TypeSymbol> paremeterTypes,
+    ImmutableArray<TypeSymbol> parameterTypes,
     TypeSymbol returnType)
     : Symbol(name)
 {
@@ -13,6 +13,6 @@ public sealed class IntrinsicFunSymbol(
 
     
     public Intrinsic Intrinsic { get; } = intrinsic;
-    public ImmutableArray<TypeSymbol> ParemeterTypes { get; } = paremeterTypes;
+    public ImmutableArray<TypeSymbol> ParameterTypes { get; } = parameterTypes;
     public TypeSymbol ReturnType { get; } = returnType;
 }

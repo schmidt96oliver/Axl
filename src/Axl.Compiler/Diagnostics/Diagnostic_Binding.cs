@@ -129,4 +129,28 @@ public partial record Diagnostic
         public override ImmutableArray<SourceLocation> Locations => [Syntax.Location];
         public override string Message => $"Cannot convert from type '{From.Name}' to '{To.Name}'.";
     }
+
+    public sealed record ArityMismatch(ArgListSyntax Syntax, IntrinsicFunSymbol Fun, int Got) : Error
+    {
+        public override ImmutableArray<SourceLocation> Locations
+        {
+            get
+            {
+                var argExprs = Syntax.Arguments.ToList();
+                if (argExprs.Count == 0) return [Syntax.Location];
+                
+                var range = SourceRange.FromTo(argExprs[0].Location.Range, argExprs[^1].Location.Range);
+                return [Syntax.Tree.SourceText.GetLocation(range)];
+            }
+        }
+
+        public override string Message =>
+            $"'{Fun.Name}' has {Fun.ParameterTypes.Length} parameter(s), but was called with {Got} argument(s).";
+    }
+
+    public sealed record InvalidCallee(ExprSyntax Syntax) : Error
+    {
+        public override ImmutableArray<SourceLocation> Locations => [Syntax.Location];
+        public override string Message => $"Expected {SymbolKind.Fun.DisplayName}.";
+    }
 }

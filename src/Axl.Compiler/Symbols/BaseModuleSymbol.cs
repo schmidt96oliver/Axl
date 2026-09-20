@@ -36,8 +36,10 @@ public sealed class BaseModuleSymbol : ModuleOrTypeSymbol
         F64 = new TypeSymbol("F64", GetF64Members);
         String = new TypeSymbol("String", GetStringMembers);
         Unit = new TypeSymbol("Unit", GetUnitMembers);
+
+        var funs = GetFuns();
         
-        Members = [I32, I64, F32, F64, Bool, String, Unit];
+        Members = [I32, I64, F32, F64, Bool, String, Unit, ..funs];
         
         // Error and Never are not nameable from code, so they will not become
         // members.
@@ -45,6 +47,11 @@ public sealed class BaseModuleSymbol : ModuleOrTypeSymbol
         Never = new TypeSymbol("Never", () => []);
     }
 
+
+    private ImmutableArray<Symbol> GetFuns() =>
+    [
+        new IntrinsicFunSymbol("Print", Intrinsic.Print, [String], Unit)
+    ];
     
     
     private ImmutableArray<Symbol> GetBoolMembers() =>
@@ -142,7 +149,4 @@ public sealed class BaseModuleSymbol : ModuleOrTypeSymbol
         
         new IntrinsicFunSymbol("ToString", Intrinsic.ToStringF64, [F64], String),
     ];
-
-
-
 }

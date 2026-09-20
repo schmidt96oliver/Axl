@@ -1,0 +1,9 @@
+﻿//@check
+
+// Everything that is not a fun is invalid.
+
+(1)(1);         //~error InvalidCallee
+(Print)("");    //~error InvalidCallee
+  
+var a = 1;
+a(1);          //~error UnexpectedSymbolKind

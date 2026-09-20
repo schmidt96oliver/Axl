@@ -169,7 +169,6 @@ public sealed class Binder
     
     #endregion
     
-    
     #region Stmts
     
     private BoundStmt BindStmt(StmtSyntax syntax) => syntax switch
@@ -230,48 +229,6 @@ public sealed class Binder
         return BindExpr(syntax.Initializer);
     }
     
-    private BoundExpr BindAssign(BinaryExprSyntax syntax)
-    {
-        Debug.Assert(syntax.Operator.Kind is TokenKind.Equal);
-        
-        var value = BindExpr(syntax.Right);
-        var target = BindAssignTarget(syntax.Left);
-        
-        if (target is null)
-            return new BoundErrorExpr(recoveredExprs: [value], _baseModule.Error, syntax);
-        
-        if (target.Type == _baseModule.Error || value.Type == _baseModule.Error)
-            return new BoundAssign(target, value, value.Type, syntax);
-        
-        var type = CheckTypeAndReportMismatch(value, target.Type)
-            ? _baseModule.Unit
-            : _baseModule.Error;
-        return new BoundAssign(target, value, type, syntax);
-    }
-
-    private VariableSymbol? BindAssignTarget(ExprSyntax syntax)
-    {
-        if (syntax is not IdNameSyntax idNameSyntax)
-        {
-            _diagnostics.ReportError(new Diagnostic.InvalidAssignTarget(syntax));
-            return null;
-        }
-    
-        var symbol = BindSymbol(idNameSyntax);
-        switch (symbol)
-        {
-            case VariableSymbol variable:
-                return variable;
-            
-            case null:
-                return null;
-            
-            default:
-                _diagnostics.ReportError(new Diagnostic.InvalidAssignTarget(syntax, symbol));
-                return null;
-        }
-    }
-
     private BoundExpr BindWhile(WhileStmtSyntax syntax)
     {
         var condition = BindCondition(syntax.Condition);
@@ -285,6 +242,7 @@ public sealed class Binder
     }
     
     #endregion
+    
     
     private BoundExpr BindExpr(ExprSyntax syntax) => syntax switch
     {
@@ -300,7 +258,7 @@ public sealed class Binder
         UnaryExprSyntax unaryExprSyntax => BindUnary(unaryExprSyntax),
         
         GetMemberExprSyntax => BindUnsupported(syntax),
-        CallExprSyntax => BindUnsupported(syntax),
+        CallExprSyntax callExprSyntax => BindCall(callExprSyntax),
         
         // Blocks and Control Flow
         BlockExprSyntax blockExprSyntax => BindBlock(blockExprSyntax),
@@ -314,8 +272,6 @@ public sealed class Binder
         ErrorExprSyntax errorExprSyntax => BindError(errorExprSyntax),
     };
     
-    
-
     private BoundErrorExpr BindUnsupported(SyntaxNode syntax)
     {
         _diagnostics.ReportError(new Diagnostic.UnsupportedFeature(syntax));
@@ -413,7 +369,7 @@ public sealed class Binder
     
     #endregion
     
-    #region Binary and Unary Exprs
+    #region Operator Exprs
 
     private BoundExpr BindBinary(BinaryExprSyntax syntax) => syntax.Operator.Kind switch
     {
@@ -570,5 +526,93 @@ public sealed class Binder
         return new BoundReturn(expr, _baseModule.Never, syntax);
     }
     
+    #endregion
+    
+    #region Assign, Call, GetMember
+    
+    private BoundExpr BindAssign(BinaryExprSyntax syntax)
+    {
+        Debug.Assert(syntax.Operator.Kind is TokenKind.Equal);
+        
+        var value = BindExpr(syntax.Right);
+        var target = BindAssignTarget(syntax.Left);
+        
+        if (target is null)
+            return new BoundErrorExpr(recoveredExprs: [value], _baseModule.Error, syntax);
+        
+        if (target.Type == _baseModule.Error || value.Type == _baseModule.Error)
+            return new BoundAssign(target, value, value.Type, syntax);
+        
+        var type = CheckTypeAndReportMismatch(value, target.Type)
+            ? _baseModule.Unit
+            : _baseModule.Error;
+        return new BoundAssign(target, value, type, syntax);
+    }
+
+    private VariableSymbol? BindAssignTarget(ExprSyntax syntax)
+    {
+        if (syntax is not IdNameSyntax idNameSyntax)
+        {
+            _diagnostics.ReportError(new Diagnostic.InvalidAssignTarget(syntax));
+            return null;
+        }
+    
+        var symbol = BindSymbol(idNameSyntax);
+        switch (symbol)
+        {
+            case VariableSymbol variable:
+                return variable;
+            
+            case null:
+                return null;
+            
+            default:
+                _diagnostics.ReportError(new Diagnostic.InvalidAssignTarget(syntax, symbol));
+                return null;
+        }
+    }
+
+
+    private BoundExpr BindCall(CallExprSyntax syntax)
+    {
+        var arguments = syntax.ArgumentExprs.Select(BindExpr).ToImmutableArray();
+        
+        // Bind Callee
+        var fun = BindCallee(syntax.Callee);
+        if (fun is null || arguments.Any(arg => arg.Type == _baseModule.Error))
+            return new BoundErrorExpr(recoveredExprs: [..arguments], _baseModule.Error, syntax);
+
+        // Check arity
+        if (arguments.Length != fun.ParameterTypes.Length)
+        {
+            _diagnostics.ReportError(new Diagnostic.ArityMismatch(syntax.Children.FirstOfType<ArgListSyntax>(),
+                fun, Got: arguments.Length));
+            return new BoundErrorExpr(recoveredExprs: arguments, _baseModule.Error, syntax);
+        }
+
+        // Check parameter types
+        var hadError = false;
+        for (var i = 0; i < arguments.Length; i++)
+        {
+            if (!CheckTypeAndReportMismatch(arguments[i], fun.ParameterTypes[i]))
+                hadError = true;
+        }
+        if (hadError)
+            return new BoundErrorExpr(recoveredExprs: arguments, _baseModule.Error, syntax);
+
+        return new BoundCall(fun, arguments, fun.ReturnType, syntax);
+    }
+
+    private IntrinsicFunSymbol? BindCallee(ExprSyntax syntax)
+    {
+        if (syntax is not IdNameSyntax idNameSyntax)
+        {
+            _diagnostics.ReportError(new Diagnostic.InvalidCallee(syntax));
+            return null;
+        }
+
+        return BindSymbol(idNameSyntax, expectedKind: SymbolKind.Fun) as IntrinsicFunSymbol;
+    }
+
     #endregion
 }

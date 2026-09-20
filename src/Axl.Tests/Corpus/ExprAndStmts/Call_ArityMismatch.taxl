@@ -1,0 +1,8 @@
+﻿//@check
+    
+// Print accepts one parameter.
+    
+Print();        //~error ArityMismatch
+Print(1, 2);    //~error ArityMismatch
+
+Print("");      // valid
