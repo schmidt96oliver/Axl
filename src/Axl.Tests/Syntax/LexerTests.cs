@@ -80,7 +80,8 @@ public sealed class LexerTests
 
     [Fact]
     public void Keywords()
-        => InlineSnapshot.Validate(NoWhitespace("fun var module return if else while break continue and or not true false using"), """
+        => InlineSnapshot.Validate(NoWhitespace("let fun var module return if else while break continue and or not true false using"), """
+            - LetKw: "let"
             - FunKw: "fun"
             - VarKw: "var"
             - ModuleKw: "module"

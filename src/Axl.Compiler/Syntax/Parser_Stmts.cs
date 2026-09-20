@@ -14,7 +14,7 @@ public partial class Parser
         if (_scanner.IsAt(FirstSet.Expr))
             return EatExprStmt(anchor);
 
-        if (_scanner.IsAt(TokenKind.VarKw))
+        if (_scanner.IsAt(FirstSet.Var))
             return EatVarDecl(anchor);
         
         if (_scanner.IsAt(TokenKind.WhileKw))
@@ -42,10 +42,10 @@ public partial class Parser
     
     private MarkClose EatVarDecl(Anchor anchor)
     {
-        Debug.Assert(_scanner.IsAt(TokenKind.VarKw));
+        Debug.Assert(_scanner.IsAt(FirstSet.Var));
 
         var varDecl = _scanner.Open();
-        _scanner.EatKnown(TokenKind.VarKw);
+        _scanner.Eat();
 
         // --- Name
         EnsureIdName();

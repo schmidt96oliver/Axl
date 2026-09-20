@@ -11,6 +11,7 @@ public enum TokenKind
     // --- Keywords
     FunKw,
     VarKw,
+    LetKw,
     ModuleKw,
     ReturnKw,
     IfKw,

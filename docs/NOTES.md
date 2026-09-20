@@ -2,15 +2,17 @@
                                        ≽(◕ ᴗ ◕)≼
 
 **Next:** 
+* BoundTreeInterpreter
+* Test corpus cleanup (what's _really_ necessary?)
 
 # Roadmap
 
 ## 1. Running scripts (no funs)
 * [x] Intrinsic Print
-* [ ] Scripts bind
+* [x] Scripts bind
 * [x] Duck-typed ToString
 * [x] Bind methods
-* [ ] `let` binding
+* [x] `let` binding
 * [ ] Treewalking Interpreter on BoundTree
   * --or-- MIR and MirInterpreter
 

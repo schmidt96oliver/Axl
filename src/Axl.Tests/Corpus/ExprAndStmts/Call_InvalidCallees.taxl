@@ -7,5 +7,5 @@
 Base.Bla("", 2);   //~error UndefinedMember
 Blupp.Bla("", 2);   //~error UndefinedName
   
-var a = 1;
+let a = 1;
 a(1);          //~error UnexpectedSymbolKind

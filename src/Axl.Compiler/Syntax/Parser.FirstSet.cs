@@ -27,8 +27,11 @@ public partial class Parser
             TokenKind.IfKw, TokenKind.OpenBrace,
             TokenKind.BreakKw, TokenKind.ContinueKw, TokenKind.ReturnKw
         );
+        
+        public static readonly TokenSet Var = TokenSet.Of(TokenKind.VarKw, TokenKind.LetKw);
+        
 
-        public static readonly TokenSet NonExprStmt = TokenSet.Of(TokenKind.VarKw, TokenKind.WhileKw);
+        public static readonly TokenSet NonExprStmt = Var | TokenKind.WhileKw;
         
         public static readonly TokenSet Stmt = Expr | NonExprStmt;
 
@@ -44,5 +47,6 @@ public partial class Parser
         
         public static readonly TokenSet StringContinuation = TokenSet.Of(
             TokenKind.StringText, TokenKind.StringEnd, TokenKind.OpenBrace);
+
     }
 }

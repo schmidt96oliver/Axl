@@ -24,7 +24,7 @@ Stmt        = ExprStmt
 
 ExprStmt    = Expr ";"
 
-VarDecl             = "var" IdName TypeAnnotation? InitializerClause? ";"
+VarDecl             = ("var" | "let") IdName TypeAnnotation? InitializerClause? ";"
 InitializerClause   = "=" Expr
 
 WhileStmt   = "while" "(" Expr ")" Block

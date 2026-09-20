@@ -80,9 +80,13 @@ public partial record Diagnostic
             => [Syntax.Location];
 
         public override string Message
-            => ResolvedSymbol is null
-                ? "The assignment target must be a variable."
-                : $"'{ResolvedSymbol.Name}' is {ResolvedSymbol.Kind.DisplayName}. The assignment target must be a variable.";
+            => ResolvedSymbol switch
+            {
+                null => "The assignment target must be a variable.",
+                VariableSymbol { IsReadOnly: true } => $"Cannot assign to readonly variable '{ResolvedSymbol.Name}'.",
+                _ =>
+                    $"'{ResolvedSymbol.Name}' is {ResolvedSymbol.Kind.DisplayName}. The assignment target must be a variable."
+            };
     }
 
     public sealed record BreakOrContinueOutsideLoop(ExprSyntax Syntax) : Error

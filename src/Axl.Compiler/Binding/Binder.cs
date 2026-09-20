@@ -204,8 +204,9 @@ public sealed class Binder
             // Check type
             CheckTypeAndReportMismatch(boundInitializer, variableType);
         }
-    
-        var variable = new VariableSymbol(syntax.Name.Identifier, variableType);
+
+        var isReadOnly = syntax.VarOrLetKwToken.Kind is TokenKind.LetKw;
+        var variable = new VariableSymbol(syntax.Name.Identifier, isReadOnly, variableType);
         _scope.Declare(variable);
         AddResolvedSymbol(syntax.Name.Location, variable);
     
@@ -581,12 +582,12 @@ public sealed class Binder
         var symbol = BindSymbol(idNameSyntax);
         switch (symbol)
         {
-            case VariableSymbol variable:
+            case VariableSymbol { IsReadOnly: false } variable:
                 return variable;
-            
+
             case null:
                 return null;
-            
+
             default:
                 _diagnostics.ReportError(new Diagnostic.InvalidAssignTarget(syntax, symbol));
                 return null;

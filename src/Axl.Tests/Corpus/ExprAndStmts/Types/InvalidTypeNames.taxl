@@ -5,7 +5,7 @@ var a: Base = {};           //~error UnexpectedSymbolKind
 var b: a = {};              //~error UnexpectedSymbolKind
 
 var a: Base.A = {};         //~error UndefinedMember
-var a: Base.A.B = {};       //~error UndefinedMember
+let a: Base.A.B = {};       //~error UndefinedMember
 
 var a: a = 1;               //~error UnexpectedSymbolKind
-var a: I32.ToString = 1;    //~error UnexpectedSymbolKind
+let a: I32.ToString = 1;    //~error UnexpectedSymbolKind

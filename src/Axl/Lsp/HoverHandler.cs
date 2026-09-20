@@ -38,7 +38,8 @@ public class HoverHandler : HoverHandlerBase
 
     private string GetHoverText(Symbol symbol) => symbol switch
     {
-        VariableSymbol variable => $"var {variable.Name}: `{variable.Type.Name}`",
+        VariableSymbol{IsReadOnly: false} variable => $"var {variable.Name}: `{variable.Type.Name}`",
+        VariableSymbol{IsReadOnly: true} variable => $"let {variable.Name}: `{variable.Type.Name}`",
         TypeSymbol type => $"type `{type.Name}`",
         BaseModuleSymbol => "base module",
         IntrinsicFunSymbol intrinsicFun => $"fun '{intrinsicFun.Name}' @intrinsic({intrinsicFun.Intrinsic}) ",

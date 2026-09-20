@@ -18,6 +18,7 @@ public static class SyntaxFacts
         TokenKind.OrKw => "or",
         TokenKind.NotKw => "not",
         TokenKind.UsingKw => "using",
+        TokenKind.LetKw => "let",
     
         // --- Literals
         TokenKind.StringStart => "\"",
@@ -81,6 +82,7 @@ public static class SyntaxFacts
             "true" => TokenKind.TrueKw,
             "using" => TokenKind.UsingKw,
             "var" => TokenKind.VarKw,
+            "let" => TokenKind.LetKw,
 
             _ => null
         };

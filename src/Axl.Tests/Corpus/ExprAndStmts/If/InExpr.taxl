@@ -1,11 +1,9 @@
 ﻿//@run-pass
 
-using Standard;
+let a: I32 = 1;
+let predicate: Bool = false;
 
-var a: i32 = 1;
-var predicate: bool = false;
-
-PrintLine(1 + if (predicate) a else 0);
+Print("{1 + if (predicate) a else 0}");
 
 //=== stdout
 // 1
