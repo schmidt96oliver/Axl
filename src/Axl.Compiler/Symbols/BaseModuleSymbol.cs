@@ -30,107 +30,117 @@ public sealed class BaseModuleSymbol : ModuleOrTypeSymbol
     {
         Bool = new TypeSymbol("Bool", GetBoolMembers);
         
-        I32 = new TypeSymbol("I32", i32 => GetI32Members(i32, Bool));
-        I64 = new TypeSymbol("I64", i64 => GetI64Members(i64, Bool));
-        F32 = new TypeSymbol("F32", f32 => GetF32Members(f32, Bool));
-        F64 = new TypeSymbol("F64", f64 => GetF64Members(f64, Bool));
-        String = new TypeSymbol("String", @string => GetStringMembers(@string, Bool));
-        Unit = new TypeSymbol("Unit", unit => GetUnitMembers(unit, Bool));
+        I32 = new TypeSymbol("I32", GetI32Members);
+        I64 = new TypeSymbol("I64", GetI64Members);
+        F32 = new TypeSymbol("F32", GetF32Members);
+        F64 = new TypeSymbol("F64", GetF64Members);
+        String = new TypeSymbol("String", GetStringMembers);
+        Unit = new TypeSymbol("Unit", GetUnitMembers);
         
         Members = [I32, I64, F32, F64, Bool, String, Unit];
         
         // Error and Never are not nameable from code, so they will not become
         // members.
-        Error = new TypeSymbol("Error", _ => []);
-        Never = new TypeSymbol("Never", _ => []);
+        Error = new TypeSymbol("Error", () => []);
+        Never = new TypeSymbol("Never", () => []);
     }
 
     
     
-    private static ImmutableArray<Symbol> GetBoolMembers(TypeSymbol @bool) =>
+    private ImmutableArray<Symbol> GetBoolMembers() =>
     [
-        new IntrinsicFunSymbol(SymbolName.From(SyntaxFacts.GetText(TokenKind.NotKw)), Intrinsic.NotBool, [@bool], @bool),
-        new IntrinsicFunSymbol(SymbolName.From(SyntaxFacts.GetText(TokenKind.DoubleEqual)), Intrinsic.EqualsBool, [@bool, @bool], @bool),
-        new IntrinsicFunSymbol(SymbolName.From(SyntaxFacts.GetText(TokenKind.BangEqual)), Intrinsic.NotEqualsBool, [@bool, @bool], @bool),
-    ];
-
-    private static ImmutableArray<Symbol> GetUnitMembers(TypeSymbol unit, TypeSymbol @bool) =>
-    [
-        new IntrinsicFunSymbol(SymbolName.From(SyntaxFacts.GetText(TokenKind.DoubleEqual)), Intrinsic.EqualsUnit, [unit, unit], @bool),
-        new IntrinsicFunSymbol(SymbolName.From(SyntaxFacts.GetText(TokenKind.BangEqual)), Intrinsic.NotEqualsUnit, [unit, unit], @bool),
-    ];
-    private static ImmutableArray<Symbol> GetStringMembers(TypeSymbol @string, TypeSymbol @bool) =>
-    [
-        new IntrinsicFunSymbol(SymbolName.From(SyntaxFacts.GetText(TokenKind.DoubleEqual)), Intrinsic.EqualsString, [@string, @string], @bool),
-        new IntrinsicFunSymbol(SymbolName.From(SyntaxFacts.GetText(TokenKind.BangEqual)), Intrinsic.NotEqualsString, [@string, @string], @bool)
-    ];
-    
-    private static ImmutableArray<Symbol> GetI32Members(TypeSymbol i32, TypeSymbol @bool) =>
-    [
-        new IntrinsicFunSymbol(SymbolName.From(SyntaxFacts.GetText(TokenKind.Minus)), Intrinsic.NegateI32, [i32], i32),
-
-        new IntrinsicFunSymbol(SymbolName.From(SyntaxFacts.GetText(TokenKind.Plus)), Intrinsic.AddI32, [i32, i32], i32),
-        new IntrinsicFunSymbol(SymbolName.From(SyntaxFacts.GetText(TokenKind.Minus)), Intrinsic.SubtractI32, [i32, i32], i32),
-        new IntrinsicFunSymbol(SymbolName.From(SyntaxFacts.GetText(TokenKind.Star)), Intrinsic.MultiplyI32, [i32, i32], i32),
-        new IntrinsicFunSymbol(SymbolName.From(SyntaxFacts.GetText(TokenKind.Slash)), Intrinsic.DivideI32, [i32, i32], i32),
-
-        new IntrinsicFunSymbol(SymbolName.From(SyntaxFacts.GetText(TokenKind.DoubleEqual)), Intrinsic.EqualsI32, [i32, i32], @bool),
-        new IntrinsicFunSymbol(SymbolName.From(SyntaxFacts.GetText(TokenKind.BangEqual)), Intrinsic.NotEqualsI32, [i32, i32], @bool),
-        new IntrinsicFunSymbol(SymbolName.From(SyntaxFacts.GetText(TokenKind.LessThan)), Intrinsic.LessThanI32, [i32, i32], @bool),
-        new IntrinsicFunSymbol(SymbolName.From(SyntaxFacts.GetText(TokenKind.LessThanEqual)), Intrinsic.LessThanOrEqualI32, [i32, i32], @bool),
-        new IntrinsicFunSymbol(SymbolName.From(SyntaxFacts.GetText(TokenKind.GreaterThan)), Intrinsic.GreaterThanI32, [i32, i32], @bool),
-        new IntrinsicFunSymbol(SymbolName.From(SyntaxFacts.GetText(TokenKind.GreaterThanEqual)), Intrinsic.GreaterThanOrEqualI32, [i32, i32], @bool),
-    ];
-    
-    private static ImmutableArray<Symbol> GetI64Members(TypeSymbol i64, TypeSymbol @bool) =>
-    [
-        new IntrinsicFunSymbol(SymbolName.From(SyntaxFacts.GetText(TokenKind.Minus)), Intrinsic.NegateI64, [i64], i64),
-
-        new IntrinsicFunSymbol(SymbolName.From(SyntaxFacts.GetText(TokenKind.Plus)), Intrinsic.AddI64, [i64, i64], i64),
-        new IntrinsicFunSymbol(SymbolName.From(SyntaxFacts.GetText(TokenKind.Minus)), Intrinsic.SubtractI64, [i64, i64], i64),
-        new IntrinsicFunSymbol(SymbolName.From(SyntaxFacts.GetText(TokenKind.Star)), Intrinsic.MultiplyI64, [i64, i64], i64),
-        new IntrinsicFunSymbol(SymbolName.From(SyntaxFacts.GetText(TokenKind.Slash)), Intrinsic.DivideI64, [i64, i64], i64),
-
-        new IntrinsicFunSymbol(SymbolName.From(SyntaxFacts.GetText(TokenKind.DoubleEqual)), Intrinsic.EqualsI64, [i64, i64], @bool),
-        new IntrinsicFunSymbol(SymbolName.From(SyntaxFacts.GetText(TokenKind.BangEqual)), Intrinsic.NotEqualsI64, [i64, i64], @bool),
-        new IntrinsicFunSymbol(SymbolName.From(SyntaxFacts.GetText(TokenKind.LessThan)), Intrinsic.LessThanI64, [i64, i64], @bool),
-        new IntrinsicFunSymbol(SymbolName.From(SyntaxFacts.GetText(TokenKind.LessThanEqual)), Intrinsic.LessThanOrEqualI64, [i64, i64], @bool),
-        new IntrinsicFunSymbol(SymbolName.From(SyntaxFacts.GetText(TokenKind.GreaterThan)), Intrinsic.GreaterThanI64, [i64, i64], @bool),
-        new IntrinsicFunSymbol(SymbolName.From(SyntaxFacts.GetText(TokenKind.GreaterThanEqual)), Intrinsic.GreaterThanOrEqualI64, [i64, i64], @bool),
-    ];
-    
-    private static ImmutableArray<Symbol> GetF32Members(TypeSymbol f32, TypeSymbol @bool) =>
-    [
-        new IntrinsicFunSymbol(SymbolName.From(SyntaxFacts.GetText(TokenKind.Minus)), Intrinsic.NegateF32, [f32], f32),
-
-        new IntrinsicFunSymbol(SymbolName.From(SyntaxFacts.GetText(TokenKind.Plus)), Intrinsic.AddF32, [f32, f32], f32),
-        new IntrinsicFunSymbol(SymbolName.From(SyntaxFacts.GetText(TokenKind.Minus)), Intrinsic.SubtractF32, [f32, f32], f32),
-        new IntrinsicFunSymbol(SymbolName.From(SyntaxFacts.GetText(TokenKind.Star)), Intrinsic.MultiplyF32, [f32, f32], f32),
-        new IntrinsicFunSymbol(SymbolName.From(SyntaxFacts.GetText(TokenKind.Slash)), Intrinsic.DivideF32, [f32, f32], f32),
+        new IntrinsicFunSymbol(SymbolName.From(SyntaxFacts.GetText(TokenKind.NotKw)), Intrinsic.NotBool, [Bool], Bool),
+        new IntrinsicFunSymbol(SymbolName.From(SyntaxFacts.GetText(TokenKind.DoubleEqual)), Intrinsic.EqualsBool, [Bool, Bool], Bool),
+        new IntrinsicFunSymbol(SymbolName.From(SyntaxFacts.GetText(TokenKind.BangEqual)), Intrinsic.NotEqualsBool, [Bool, Bool], Bool),
         
-        new IntrinsicFunSymbol(SymbolName.From(SyntaxFacts.GetText(TokenKind.DoubleEqual)), Intrinsic.EqualsF32, [f32, f32], @bool),
-        new IntrinsicFunSymbol(SymbolName.From(SyntaxFacts.GetText(TokenKind.BangEqual)), Intrinsic.NotEqualsF32, [f32, f32], @bool),
-        new IntrinsicFunSymbol(SymbolName.From(SyntaxFacts.GetText(TokenKind.LessThan)), Intrinsic.LessThanF32, [f32, f32], @bool),
-        new IntrinsicFunSymbol(SymbolName.From(SyntaxFacts.GetText(TokenKind.LessThanEqual)), Intrinsic.LessThanOrEqualF32, [f32, f32], @bool),
-        new IntrinsicFunSymbol(SymbolName.From(SyntaxFacts.GetText(TokenKind.GreaterThan)), Intrinsic.GreaterThanF32, [f32, f32], @bool),
-        new IntrinsicFunSymbol(SymbolName.From(SyntaxFacts.GetText(TokenKind.GreaterThanEqual)), Intrinsic.GreaterThanOrEqualF32, [f32, f32], @bool),
+        new IntrinsicFunSymbol(SymbolName.From("ToString"), Intrinsic.ToStringBool, [Bool], String),
+    ];
+
+    private ImmutableArray<Symbol> GetUnitMembers() =>
+    [
+        new IntrinsicFunSymbol(SymbolName.From(SyntaxFacts.GetText(TokenKind.DoubleEqual)), Intrinsic.EqualsUnit, [Unit, Unit], Bool),
+        new IntrinsicFunSymbol(SymbolName.From(SyntaxFacts.GetText(TokenKind.BangEqual)), Intrinsic.NotEqualsUnit, [Unit, Unit], Bool),
+    ];
+    private ImmutableArray<Symbol> GetStringMembers() =>
+    [
+        new IntrinsicFunSymbol(SymbolName.From(SyntaxFacts.GetText(TokenKind.DoubleEqual)), Intrinsic.EqualsString, [String, String], Bool),
+        new IntrinsicFunSymbol(SymbolName.From(SyntaxFacts.GetText(TokenKind.BangEqual)), Intrinsic.NotEqualsString, [String, String], Bool)
     ];
     
-    private static ImmutableArray<Symbol> GetF64Members(TypeSymbol f64, TypeSymbol @bool) =>
+    private ImmutableArray<Symbol> GetI32Members() =>
     [
-        new IntrinsicFunSymbol(SymbolName.From(SyntaxFacts.GetText(TokenKind.Minus)), Intrinsic.NegateF64, [f64], f64),
+        new IntrinsicFunSymbol(SymbolName.From(SyntaxFacts.GetText(TokenKind.Minus)), Intrinsic.NegateI32, [I32], I32),
 
-        new IntrinsicFunSymbol(SymbolName.From(SyntaxFacts.GetText(TokenKind.Plus)), Intrinsic.AddF64, [f64, f64], f64),
-        new IntrinsicFunSymbol(SymbolName.From(SyntaxFacts.GetText(TokenKind.Minus)), Intrinsic.SubtractF64, [f64, f64], f64),
-        new IntrinsicFunSymbol(SymbolName.From(SyntaxFacts.GetText(TokenKind.Star)), Intrinsic.MultiplyF64, [f64, f64], f64),
-        new IntrinsicFunSymbol(SymbolName.From(SyntaxFacts.GetText(TokenKind.Slash)), Intrinsic.DivideF64, [f64, f64], f64),
+        new IntrinsicFunSymbol(SymbolName.From(SyntaxFacts.GetText(TokenKind.Plus)), Intrinsic.AddI32, [I32, I32], I32),
+        new IntrinsicFunSymbol(SymbolName.From(SyntaxFacts.GetText(TokenKind.Minus)), Intrinsic.SubtractI32, [I32, I32], I32),
+        new IntrinsicFunSymbol(SymbolName.From(SyntaxFacts.GetText(TokenKind.Star)), Intrinsic.MultiplyI32, [I32, I32], I32),
+        new IntrinsicFunSymbol(SymbolName.From(SyntaxFacts.GetText(TokenKind.Slash)), Intrinsic.DivideI32, [I32, I32], I32),
 
-        new IntrinsicFunSymbol(SymbolName.From(SyntaxFacts.GetText(TokenKind.DoubleEqual)), Intrinsic.EqualsF64, [f64, f64], @bool),
-        new IntrinsicFunSymbol(SymbolName.From(SyntaxFacts.GetText(TokenKind.BangEqual)), Intrinsic.NotEqualsF64, [f64, f64], @bool),
-        new IntrinsicFunSymbol(SymbolName.From(SyntaxFacts.GetText(TokenKind.LessThan)), Intrinsic.LessThanF64, [f64, f64], @bool),
-        new IntrinsicFunSymbol(SymbolName.From(SyntaxFacts.GetText(TokenKind.LessThanEqual)), Intrinsic.LessThanOrEqualF64, [f64, f64], @bool),
-        new IntrinsicFunSymbol(SymbolName.From(SyntaxFacts.GetText(TokenKind.GreaterThan)), Intrinsic.GreaterThanF64, [f64, f64], @bool),
-        new IntrinsicFunSymbol(SymbolName.From(SyntaxFacts.GetText(TokenKind.GreaterThanEqual)), Intrinsic.GreaterThanOrEqualF64, [f64, f64], @bool),
+        new IntrinsicFunSymbol(SymbolName.From(SyntaxFacts.GetText(TokenKind.DoubleEqual)), Intrinsic.EqualsI32, [I32, I32], Bool),
+        new IntrinsicFunSymbol(SymbolName.From(SyntaxFacts.GetText(TokenKind.BangEqual)), Intrinsic.NotEqualsI32, [I32, I32], Bool),
+        new IntrinsicFunSymbol(SymbolName.From(SyntaxFacts.GetText(TokenKind.LessThan)), Intrinsic.LessThanI32, [I32, I32], Bool),
+        new IntrinsicFunSymbol(SymbolName.From(SyntaxFacts.GetText(TokenKind.LessThanEqual)), Intrinsic.LessThanOrEqualI32, [I32, I32], Bool),
+        new IntrinsicFunSymbol(SymbolName.From(SyntaxFacts.GetText(TokenKind.GreaterThan)), Intrinsic.GreaterThanI32, [I32, I32], Bool),
+        new IntrinsicFunSymbol(SymbolName.From(SyntaxFacts.GetText(TokenKind.GreaterThanEqual)), Intrinsic.GreaterThanOrEqualI32, [I32, I32], Bool),
+        
+        new IntrinsicFunSymbol(SymbolName.From("ToString"), Intrinsic.ToStringI32, [I32], String),
+    ];
+    
+    private ImmutableArray<Symbol> GetI64Members() =>
+    [
+        new IntrinsicFunSymbol(SymbolName.From(SyntaxFacts.GetText(TokenKind.Minus)), Intrinsic.NegateI64, [I64], I64),
+
+        new IntrinsicFunSymbol(SymbolName.From(SyntaxFacts.GetText(TokenKind.Plus)), Intrinsic.AddI64, [I64, I64], I64),
+        new IntrinsicFunSymbol(SymbolName.From(SyntaxFacts.GetText(TokenKind.Minus)), Intrinsic.SubtractI64, [I64, I64], I64),
+        new IntrinsicFunSymbol(SymbolName.From(SyntaxFacts.GetText(TokenKind.Star)), Intrinsic.MultiplyI64, [I64, I64], I64),
+        new IntrinsicFunSymbol(SymbolName.From(SyntaxFacts.GetText(TokenKind.Slash)), Intrinsic.DivideI64, [I64, I64], I64),
+
+        new IntrinsicFunSymbol(SymbolName.From(SyntaxFacts.GetText(TokenKind.DoubleEqual)), Intrinsic.EqualsI64, [I64, I64], Bool),
+        new IntrinsicFunSymbol(SymbolName.From(SyntaxFacts.GetText(TokenKind.BangEqual)), Intrinsic.NotEqualsI64, [I64, I64], Bool),
+        new IntrinsicFunSymbol(SymbolName.From(SyntaxFacts.GetText(TokenKind.LessThan)), Intrinsic.LessThanI64, [I64, I64], Bool),
+        new IntrinsicFunSymbol(SymbolName.From(SyntaxFacts.GetText(TokenKind.LessThanEqual)), Intrinsic.LessThanOrEqualI64, [I64, I64], Bool),
+        new IntrinsicFunSymbol(SymbolName.From(SyntaxFacts.GetText(TokenKind.GreaterThan)), Intrinsic.GreaterThanI64, [I64, I64], Bool),
+        new IntrinsicFunSymbol(SymbolName.From(SyntaxFacts.GetText(TokenKind.GreaterThanEqual)), Intrinsic.GreaterThanOrEqualI64, [I64, I64], Bool),
+        
+        new IntrinsicFunSymbol(SymbolName.From("ToString"), Intrinsic.ToStringI64, [I64], String),
+    ];
+    
+    private ImmutableArray<Symbol> GetF32Members() =>
+    [
+        new IntrinsicFunSymbol(SymbolName.From(SyntaxFacts.GetText(TokenKind.Minus)), Intrinsic.NegateF32, [F32], F32),
+
+        new IntrinsicFunSymbol(SymbolName.From(SyntaxFacts.GetText(TokenKind.Plus)), Intrinsic.AddF32, [F32, F32], F32),
+        new IntrinsicFunSymbol(SymbolName.From(SyntaxFacts.GetText(TokenKind.Minus)), Intrinsic.SubtractF32, [F32, F32], F32),
+        new IntrinsicFunSymbol(SymbolName.From(SyntaxFacts.GetText(TokenKind.Star)), Intrinsic.MultiplyF32, [F32, F32], F32),
+        new IntrinsicFunSymbol(SymbolName.From(SyntaxFacts.GetText(TokenKind.Slash)), Intrinsic.DivideF32, [F32, F32], F32),
+        
+        new IntrinsicFunSymbol(SymbolName.From(SyntaxFacts.GetText(TokenKind.DoubleEqual)), Intrinsic.EqualsF32, [F32, F32], Bool),
+        new IntrinsicFunSymbol(SymbolName.From(SyntaxFacts.GetText(TokenKind.BangEqual)), Intrinsic.NotEqualsF32, [F32, F32], Bool),
+        new IntrinsicFunSymbol(SymbolName.From(SyntaxFacts.GetText(TokenKind.LessThan)), Intrinsic.LessThanF32, [F32, F32], Bool),
+        new IntrinsicFunSymbol(SymbolName.From(SyntaxFacts.GetText(TokenKind.LessThanEqual)), Intrinsic.LessThanOrEqualF32, [F32, F32], Bool),
+        new IntrinsicFunSymbol(SymbolName.From(SyntaxFacts.GetText(TokenKind.GreaterThan)), Intrinsic.GreaterThanF32, [F32, F32], Bool),
+        new IntrinsicFunSymbol(SymbolName.From(SyntaxFacts.GetText(TokenKind.GreaterThanEqual)), Intrinsic.GreaterThanOrEqualF32, [F32, F32], Bool),
+        
+        new IntrinsicFunSymbol(SymbolName.From("ToString"), Intrinsic.ToStringF32, [F32], String),
+    ];
+    
+    private ImmutableArray<Symbol> GetF64Members() =>
+    [
+        new IntrinsicFunSymbol(SymbolName.From(SyntaxFacts.GetText(TokenKind.Minus)), Intrinsic.NegateF64, [F64], F64),
+
+        new IntrinsicFunSymbol(SymbolName.From(SyntaxFacts.GetText(TokenKind.Plus)), Intrinsic.AddF64, [F64, F64], F64),
+        new IntrinsicFunSymbol(SymbolName.From(SyntaxFacts.GetText(TokenKind.Minus)), Intrinsic.SubtractF64, [F64, F64], F64),
+        new IntrinsicFunSymbol(SymbolName.From(SyntaxFacts.GetText(TokenKind.Star)), Intrinsic.MultiplyF64, [F64, F64], F64),
+        new IntrinsicFunSymbol(SymbolName.From(SyntaxFacts.GetText(TokenKind.Slash)), Intrinsic.DivideF64, [F64, F64], F64),
+
+        new IntrinsicFunSymbol(SymbolName.From(SyntaxFacts.GetText(TokenKind.DoubleEqual)), Intrinsic.EqualsF64, [F64, F64], Bool),
+        new IntrinsicFunSymbol(SymbolName.From(SyntaxFacts.GetText(TokenKind.BangEqual)), Intrinsic.NotEqualsF64, [F64, F64], Bool),
+        new IntrinsicFunSymbol(SymbolName.From(SyntaxFacts.GetText(TokenKind.LessThan)), Intrinsic.LessThanF64, [F64, F64], Bool),
+        new IntrinsicFunSymbol(SymbolName.From(SyntaxFacts.GetText(TokenKind.LessThanEqual)), Intrinsic.LessThanOrEqualF64, [F64, F64], Bool),
+        new IntrinsicFunSymbol(SymbolName.From(SyntaxFacts.GetText(TokenKind.GreaterThan)), Intrinsic.GreaterThanF64, [F64, F64], Bool),
+        new IntrinsicFunSymbol(SymbolName.From(SyntaxFacts.GetText(TokenKind.GreaterThanEqual)), Intrinsic.GreaterThanOrEqualF64, [F64, F64], Bool),
+        
+        new IntrinsicFunSymbol(SymbolName.From("ToString"), Intrinsic.ToStringF64, [F64], String),
     ];
 
 

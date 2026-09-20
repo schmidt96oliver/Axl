@@ -369,17 +369,22 @@ public sealed class Binder
         }
                 
         var boundExpr = BindExpr(syntax.Expr);
+
+        if (IsAssignableTo(boundExpr.Type, _baseModule.String))
+            return new StringPart.Interpolation(boundExpr);
         
-        //TODO: Allow different types according to declared native conversion fns
-        
-        // For now, we can only accept string exprs
-        if (!CheckTypeAndReportMismatch(boundExpr, _baseModule.String))
+        // Try to find duck-typed ToString
+        if (boundExpr.Type is ModuleOrTypeSymbol moduleOrType
+            && moduleOrType.LookupFun(SymbolName.From("ToString"), [boundExpr.Type]) is IntrinsicFunSymbol toStringFun
+            && IsAssignableTo(toStringFun.ReturnType, _baseModule.String))
         {
-            return new StringPart.Interpolation(
-                new BoundErrorExpr(recoveredExprs: [boundExpr], type: _baseModule.Error, syntax));
+            var conversion = new BoundCall(toStringFun, [boundExpr], toStringFun.ReturnType, syntax.Expr);
+            return new StringPart.Interpolation(conversion);
         }
-    
-        return new StringPart.Interpolation(boundExpr);
+        
+        // Could not convert to string
+        _diagnostics.ReportError(new Diagnostic.CannotConvert(syntax.Expr, From: boundExpr.Type, To: _baseModule.String));
+        return new StringPart.Interpolation(new BoundErrorExpr(recoveredExprs: [boundExpr], type: _baseModule.Error, syntax));
     }
     
     private BoundNumberLiteral BindNumberLiteral(NumberLiteralSyntax syntax)

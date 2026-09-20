@@ -2,13 +2,14 @@
                                        ≽(◕ ᴗ ◕)≼
 
 **Next:** 
+* intrinsic print, bind call and getmember (only ModuleOrType, dont check instance members)
 
 # Roadmap
 
 ## 1. Running scripts (no funs)
 * [ ] Intrinsic Print
 * [ ] Scripts bind
-* [ ] Duck-typed ToString
+* [x] Duck-typed ToString
 * [ ] `let` binding
 * [ ] Treewalking Interpreter on BoundTree
   * --or-- MIR and MirInterpreter
@@ -45,7 +46,6 @@ One type (maybe struct) inside scripts.
 
 # Little proposals
 - LSP: Make Serial (see Omnisharp) and weave CancellationToken to avoid concurrency awkwardness.
-* Binder: Duck-type `ToString` for string interpolations
 * Axl: Replace `and, or` with `&&, ||`. For familiarity and possibly conflict with "and/or" patterns later
 * Taxl: Expected output through `//@expect "1stline\n2ndline"` normalized.
 * Axl: Named arguments as `callee(parameter = value, param2 = value2)`

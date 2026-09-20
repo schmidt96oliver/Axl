@@ -1,0 +1,12 @@
+﻿//@run-pass
+
+// Tests the duck-typed ToString conversions.
+Print("{1i32} ");
+Print("{2i64} ");
+Print("{1.1f32} ");
+Print("{2.1f64} ");
+Print("{true} ");
+Print("{false}");
+
+//=== stdout
+// 1 2 1.1 2.1 true false

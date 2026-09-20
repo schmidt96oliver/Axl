@@ -123,4 +123,10 @@ public partial record Diagnostic
         public override ImmutableArray<SourceLocation> Locations => [Syntax.Location];
         public override string Message => $"'{Symbol.Name}' has no member '{Syntax.Token.Identifier}'.";
     }
+
+    public sealed record CannotConvert(ExprSyntax Syntax, TypeSymbol From, TypeSymbol To) : Error
+    {
+        public override ImmutableArray<SourceLocation> Locations => [Syntax.Location];
+        public override string Message => $"Cannot convert from type '{From.Name}' to '{To.Name}'.";
+    }
 }

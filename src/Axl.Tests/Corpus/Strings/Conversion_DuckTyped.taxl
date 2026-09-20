@@ -1,0 +1,22 @@
+﻿//@check
+    
+// Conversion ToString is duck-typed.
+// When trying to convert an expression to string, the binder
+// searches for "ToString" methods that fit the signature.
+
+// Strings are accepted
+var a = "{ "" }";
+
+// All primitive types have a ToString
+var a = "{true}";
+var a = "{1i32}";
+var a = "{1i64}";
+var a = "{1f32}";
+var a = "{1f64}";
+
+// Error is silent
+var error = 1 + 1.1;    //~error UndefinedOperator
+var a = "{ error }"; 
+
+// Unit has no ToString
+var a = "{ {} }";   //~error CannotConvert

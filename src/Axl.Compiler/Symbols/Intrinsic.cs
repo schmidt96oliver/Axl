@@ -13,6 +13,7 @@ public enum Intrinsic
     LessThanOrEqualI32,
     GreaterThanI32,
     GreaterThanOrEqualI32,
+    ToStringI32,
     
     NegateI64,
     AddI64,
@@ -25,6 +26,7 @@ public enum Intrinsic
     LessThanOrEqualI64,
     GreaterThanI64,
     GreaterThanOrEqualI64,
+    ToStringI64,
     
     NegateF32,
     AddF32,
@@ -37,6 +39,7 @@ public enum Intrinsic
     LessThanOrEqualF32,
     GreaterThanF32,
     GreaterThanOrEqualF32,
+    ToStringF32,
     
     NegateF64,
     AddF64,
@@ -49,10 +52,12 @@ public enum Intrinsic
     LessThanOrEqualF64,
     GreaterThanF64,
     GreaterThanOrEqualF64,
+    ToStringF64,
     
     NotBool,
     EqualsBool,
     NotEqualsBool,
+    ToStringBool,
     
     EqualsUnit,
     NotEqualsUnit,
