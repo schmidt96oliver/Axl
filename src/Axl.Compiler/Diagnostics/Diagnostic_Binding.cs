@@ -36,13 +36,13 @@ public partial record Diagnostic
             => $"Suffix '{NumberLiteralSyntax.Token.Suffix.ToString().ToLower()}' describes an integral type. Expected a type that describes a decimal number.";
     }
 
-    public sealed record UndefinedName(IdentifierToken Syntax) : Error
+    public sealed record UndefinedName(IdNameSyntax Syntax) : Error
     {
         public override ImmutableArray<SourceLocation> Locations
             => [Syntax.Location];
     
         public override string Message
-            => $"Undefined name '{Syntax.Identifier}'.";
+            => $"Undefined name '{Syntax.Token.Identifier}'.";
     }
 
     public sealed record UndefinedOperator(string OperatorName, ImmutableArray<TypeSymbol> OperandTypes, SyntaxNode Syntax) : Error

@@ -96,25 +96,7 @@ public sealed class Binder
 
         return true;
     }
-
-    private Symbol? LookupAndReportUndefined(IdentifierToken syntax)
-    {
-        if (syntax.IsMissing)
-            return null;
-
-        var symbol = _scope.Lookup(SymbolName.From(syntax));
-
-        if (symbol is null)
-            _diagnostics.ReportError(new Diagnostic.UndefinedName(syntax));
-
-        AddResolvedSymbol(syntax.Location, symbol);
-        return symbol;
-    }
-
-    private Symbol? LookupAndReportUndefined(IdNameSyntax syntax)
-        => LookupAndReportUndefined(syntax.Token);
-
-
+    
     private void AddResolvedSymbol(SourceLocation location, Symbol? symbol)
     {
         if (symbol is null) return;
@@ -122,49 +104,67 @@ public sealed class Binder
         Debug.Assert(!_resolvedSymbols.ContainsKey(location));
         _resolvedSymbols.Add(location, symbol);
     }
-    
-    
+
+    private Symbol? BindSymbol(IdNameSyntax syntax, Symbol? parent = null, SymbolKind? expectedKind = null)
+    {
+        if (syntax.Token.IsMissing)
+            return null;
+
+        var name = SymbolName.From(syntax);
+
+        Symbol? symbol;
+        switch (parent)
+        {
+            case null:
+            {
+                symbol = _scope.Lookup(name);
+
+                if (symbol is null)
+                    _diagnostics.ReportError(new Diagnostic.UndefinedName(syntax));
+                break;
+            }
+            case ModuleOrTypeSymbol moduleOrType:
+            {
+                symbol = moduleOrType.LookupMember(name);
+
+                if (symbol is null)
+                    _diagnostics.ReportError(new Diagnostic.UndefinedMember(syntax, parent));
+                break;
+            }
+            default:
+                symbol = null;
+                _diagnostics.ReportError(new Diagnostic.UndefinedMember(syntax, parent));
+                break;
+        }
+
+        if (expectedKind is not null && symbol is not null && symbol.Kind != expectedKind)
+        {
+            _diagnostics.ReportError(new Diagnostic.UnexpectedSymbolKind(syntax, symbol, expectedKind.Value));
+            return null;
+        }
+        
+        AddResolvedSymbol(syntax.Location, symbol);
+        return symbol;
+    }
+
+
     #region Type names
 
     private TypeSymbol BindTypeName(TypeNameSyntax syntax)
     {
         var parts = syntax.Parts.ToImmutableArray();
-        
-        var current = LookupAndReportUndefined(parts[0]);
-        if (current is null)
-            return _baseModule.Error;
 
-        for (var i = 1; i < parts.Length; i++)
+        Symbol? current = null;
+        Debug.Assert(parts.Length >= 1);
+        for (var i = 0; i < parts.Length; i++)
         {
-            var partName = SymbolName.From(parts[i]);
-            if (partName.IsEmpty)
+            current = BindSymbol(parts[i], parent: current,
+                expectedKind: i == parts.Length - 1 ? SymbolKind.Type : null);
+            if (current is null)
                 return _baseModule.Error;
-
-            if (current is ModuleOrTypeSymbol moduleOrType)
-            {
-                var member = moduleOrType.LookupMember(partName);
-                AddResolvedSymbol(parts[i].Location, member);
-                if (member is null)
-                {
-                    _diagnostics.ReportError(new Diagnostic.UndefinedMember(parts[i], current));
-                    return _baseModule.Error;
-                }
-
-                current = member;
-            }
-            else
-            {
-                _diagnostics.ReportError(new Diagnostic.UndefinedMember(parts[i], current));
-                return _baseModule.Error;
-            }
         }
 
-        Debug.Assert(current is not null);
-        if (current is TypeSymbol type)
-            return type;
-        
-        _diagnostics.ReportError(new Diagnostic.UnexpectedSymbolKind(parts[^1], current, SymbolKind.Type));
-        return _baseModule.Error;
+        return (TypeSymbol)current!;
     }
     
     #endregion
@@ -257,7 +257,7 @@ public sealed class Binder
             return null;
         }
     
-        var symbol = LookupAndReportUndefined(idNameSyntax);
+        var symbol = BindSymbol(idNameSyntax);
         switch (symbol)
         {
             case VariableSymbol variable:
@@ -332,21 +332,16 @@ public sealed class Binder
     
     
     #region Literals and Strings
-    
+
     private BoundExpr BindVariableRef(IdNameSyntax syntax)
     {
-        var symbol = LookupAndReportUndefined(syntax);
+        var symbol = BindSymbol(syntax, expectedKind: SymbolKind.Variable);
 
-        if (symbol is null)
-            return new BoundErrorExpr(recoveredExprs: [], type: _baseModule.Error, syntax);
-
-        if (symbol is VariableSymbol variable)
-            return new BoundVariableRef(variable, syntax);
-        
-        _diagnostics.ReportError(new Diagnostic.UnexpectedSymbolKind(syntax, symbol, SymbolKind.Variable));
-        return new BoundErrorExpr(recoveredExprs: [], type: _baseModule.Error, syntax);
+        return symbol is null
+            ? new BoundErrorExpr(recoveredExprs: [], type: _baseModule.Error, syntax)
+            : new BoundVariableRef((VariableSymbol)symbol, syntax);
     }
-    
+
     private BoundStringExpr BindString(StringExprSyntax syntax)
     {
         var parts = syntax.Parts.Select(BindStringPart).ToImmutableArray();
