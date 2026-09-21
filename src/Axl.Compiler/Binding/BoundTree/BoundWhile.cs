@@ -4,8 +4,8 @@ using Axl.Compiler.Syntax;
 
 namespace Axl.Compiler.Binding.BoundTree;
 
-public sealed class BoundWhile(BoundExpr condition, BoundExpr body, TypeSymbol type, SyntaxNode syntax)
-    : BoundExpr(type, syntax)
+public sealed class BoundWhile(BoundExpr condition, BoundExpr body, SyntaxNode syntax)
+    : BoundStmt(syntax)
 {
     public BoundExpr Condition { get; } = condition;
     public BoundExpr Body { get; } = body;

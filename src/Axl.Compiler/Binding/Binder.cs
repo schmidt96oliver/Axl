@@ -230,7 +230,7 @@ public sealed class Binder
         return BindExpr(syntax.Initializer);
     }
     
-    private BoundExpr BindWhile(WhileStmtSyntax syntax)
+    private BoundStmt BindWhile(WhileStmtSyntax syntax)
     {
         var condition = BindCondition(syntax.Condition);
 
@@ -239,7 +239,7 @@ public sealed class Binder
         var body = BindExpr(syntax.Body);
         _inLoop = previousInLoop;
         
-        return new BoundWhile(condition, body, _baseModule.Unit, syntax);
+        return new BoundWhile(condition, body, syntax);
     }
     
     #endregion

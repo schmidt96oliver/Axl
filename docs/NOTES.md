@@ -5,6 +5,9 @@
 * BoundTreeInterpreter
 * Test corpus cleanup (what's _really_ necessary?)
 
+* distinguish method calls (Fun.IsMethod/SelfParameter) opposed to static/shared/free (research keywords)
+  * Options `shared fun`, `static fun` or `fun` vs `meth/act/def/met`
+
 # Roadmap
 
 ## 1. Running scripts (no funs)
@@ -14,7 +17,8 @@
 * [x] Bind methods
 * [x] `let` binding
 * [ ] Treewalking Interpreter on BoundTree
-  * --or-- MIR and MirInterpreter
+* [ ] Taxl Run tests
+  * Options: `//===` sections; `//@expect ".."`; `//= "..."`; `//~expect ".."`
 
 ## 2. Funs (in script)
 * [ ] Forward-declaration of funs
@@ -110,15 +114,22 @@ declarations for speed and (2) maybe lint operators that can be generated. Also
 # Design notes and ideas
 ## From https://core-lang.dev/design.html
 > "Always rules" are better than "almost rules":
->     . selects
->     = assigns
->     : ascribes (a type) = 'zuweisen'
->     @ annotates
->     () encloses terms
->     [] encloses types
+>     .   selects
+>     =   assigns
+>     ==  structural equality
+>     === reference equality
+>     :   ascribes (a type) = 'zuweisen'
+>     @   annotates
+>     ()  encloses terms
+>     []  encloses types
+>     
 
-Possibly add:
+Possibly add or change:
 >     | | lambda
+>     < > encloses types
+>     [ ] encloses collections
+>      ?  maybe/option
+>      !  nope
 
 * Arrays: `Array[Int32]`. Needs generics
   * construct `Array[Int32](1, 2, 3)`
