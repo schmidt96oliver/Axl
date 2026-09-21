@@ -169,7 +169,7 @@ public class SemanticTokensHandler(ILanguageServerFacade facade) : SemanticToken
         }
 
         // Directives and annotations
-        var decoratorLength = GetTaxlCommentDecoratorLength(commentToken.FullRange, testFile);
+        var decoratorLength = GetTaxlCommentDecoratorLength(commentToken.FullRange, testFile, out var restIsString);
         if (decoratorLength <= 0)
         {
             // Entire length is just a comment
@@ -179,13 +179,30 @@ public class SemanticTokensHandler(ILanguageServerFacade facade) : SemanticToken
         
         builder.Push(startLine, startColumn, decoratorLength,
             (SemanticTokenType?)SemanticTokenType.Decorator);
+        
+        if (restIsString && decoratorLength < commentToken.FullRange.Length)
+        {
+            var restStart = startColumn + decoratorLength;
+            var restLength = commentToken.FullRange.Length - decoratorLength;
+            builder.Push(startLine, restStart, restLength,
+                (SemanticTokenType?)SemanticTokenType.String);
+        }
     }
     
-    private int GetTaxlCommentDecoratorLength(SourceRange commentRange, TestFile testFile)
+    private int GetTaxlCommentDecoratorLength(SourceRange commentRange, TestFile testFile, out bool restIsString)
     {
+        restIsString = false;
+        
         // Directive?
-        if (testFile.Directive?.Location.Range == commentRange)
+        if (testFile.Directive is not null && commentRange.Contains(testFile.Directive.Location.Range))
             return commentRange.Length;
+        
+        // Expectation?
+        if (testFile.Expectation is not null && commentRange.Contains(testFile.Expectation.Location.Range))
+        {
+            restIsString = true;
+            return testFile.Expectation!.PrefixLocation.Length;
+        }
 
         // An annotation?
         var annotation = testFile.Annotations
