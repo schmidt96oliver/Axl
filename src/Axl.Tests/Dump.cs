@@ -235,6 +235,8 @@ public class Dump(SourceText sourceText)
     public Dump Add(TestFile testFile)
     {
         _builder.AppendLine($"Directive: {testFile.Directive?.Kind.ToString() ?? "???"}");
+        if (testFile.Expectation is not null)
+            _builder.AppendLine($"Expectation: \"{testFile.Expectation.Text}\"");
 
         foreach (var annotation in testFile.Annotations)
         {

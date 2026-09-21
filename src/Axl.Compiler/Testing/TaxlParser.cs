@@ -31,14 +31,37 @@ public sealed class TaxlParser(SourceText sourceText, DiagnosticBag diagnostics)
             // Comments and empty lines are skipped. Everything else
             // will block directives.
             if (text is not ("" or ['/', '/', ..]))
-                goto missing;
+                break;
         }
 
-        missing:
         diagnostics.ReportError(new Diagnostic.MissingTaxlDirective(sourceText.GetLocation(sourceText.Lines[0].Range)));
         return null;
     }
 
+    public Expectation? ParseExpectation()
+    {
+        var trimmedLineLocations = sourceText.Lines.Select(line => sourceText.GetLocation(TrimSpan(line.Range)));
+        
+        foreach (var trimmedLineLocation in trimmedLineLocations)
+        {
+            var text = trimmedLineLocation.Text;
+            if (text.StartsWith("//="))
+            {
+                var prefixLocation = trimmedLineLocation.SourceText.GetLocationFromLength(
+                    trimmedLineLocation.Start, 3);
+                var expectationText = text[3..].ToString();
+                return new Expectation(expectationText, trimmedLineLocation, prefixLocation);
+            }
+
+            // Comments and empty lines are skipped. Everything else
+            // will block directives.
+            if (text is not ("" or ['/', '/', ..]))
+                break;
+        }
+
+        return null;
+    }
+    
     public ImmutableArray<Annotation> ParseAnnotations()
     {
         // Just run the lexer, since it already knows best where to find

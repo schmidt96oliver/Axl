@@ -11,7 +11,8 @@ public sealed class TestFile
     public SourceText SourceText { get; }
     
     public Directive? Directive { get; }
-    
+    public Expectation? Expectation { get; }
+
     public ImmutableArray<Annotation> Annotations { get; }
 
     /// <summary>
@@ -47,11 +48,13 @@ public sealed class TestFile
 
     private TestFile(SourceText sourceText, 
         Directive? directive,
+        Expectation? expectation,
         ImmutableArray<Annotation> annotations,
         ImmutableArray<Diagnostic> diagnostics)
     {
         SourceText = sourceText;
         Directive = directive;
+        Expectation = expectation;
         Annotations = annotations;
         Diagnostics = diagnostics;
     }
@@ -63,8 +66,9 @@ public sealed class TestFile
         var parser = new TaxlParser(sourceText, diagnostics);
         
         var directive = parser.ParseDirective();
+        var expectation = parser.ParseExpectation();
         var annotations = parser.ParseAnnotations();
         
-        return new TestFile(sourceText, directive, annotations, diagnostics.Drain());
+        return new TestFile(sourceText, directive, expectation, annotations, diagnostics.Drain());
     }
 }
