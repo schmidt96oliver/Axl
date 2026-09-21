@@ -81,34 +81,34 @@ public sealed partial class TestFileTests
         [Fact]
         public void Type_Valid_1()
             => InlineSnapshot.Validate(Structure("""
-                                            //@run-pass
+                                            //@run
                                             var a = 2;
                                             //~type ^ i32
                                             """), """
-                Directive: RunPass
+                Directive: Run
                 //~ type "i32" on "2"
                 """);
         
         [Fact]
         public void Type_Valid_2()
             => InlineSnapshot.Validate(Structure("""
-                                            //@run-pass
+                                            //@run
                                             var a = 2;
                                              //~type^ i32
                                             """), """
-                Directive: RunPass
+                Directive: Run
                 //~ type "i32" on "2"
                 """);
         
         [Fact]
         public void Type_MissingCarets()
             => InlineSnapshot.Validate(Structure("""
-                                            //@run-panic
+                                            //@run
                                             var a = 2;
                                             //~type i32
                                             """), """
-                ERROR InvalidTaxlAnnotation@[26, 37): Annotation '//~type i32' is invalid.
-                Directive: RunPanic
+                ERROR InvalidTaxlAnnotation@[20, 31): Annotation '//~type i32' is invalid.
+                Directive: Run
                 """);
         [Fact]
         public void Type_FirstLine()

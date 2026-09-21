@@ -5,8 +5,7 @@ namespace Axl.Compiler.Testing;
 public enum DirectiveKind
 {
     Check,
-    RunPass,
-    RunPanic
+    Run,
 }
 
 public sealed record Directive(DirectiveKind Kind, SourceLocation Location);

@@ -1,4 +1,4 @@
-﻿//@run-pass
+﻿//@run
 
 // Calling 1.ToString and I32.ToString(1) is semantically the same.
 

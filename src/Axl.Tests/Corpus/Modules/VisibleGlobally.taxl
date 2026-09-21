@@ -1,4 +1,4 @@
-﻿//@run-pass
+﻿//@run
 
 // Module files are visible globally from every other file.
 

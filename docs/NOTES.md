@@ -2,7 +2,7 @@
                                        ≽(◕ ᴗ ◕)≼
 
 **Next:** 
-* BoundTreeInterpreter
+* Add taxl `//@run` and `//= Text`
 * Test corpus cleanup (what's _really_ necessary?)
 
 * distinguish method calls (Fun.IsMethod/SelfParameter) opposed to static/shared/free (research keywords)
@@ -16,9 +16,8 @@
 * [x] Duck-typed ToString
 * [x] Bind methods
 * [x] `let` binding
-* [ ] Treewalking Interpreter on BoundTree
+* [x] Treewalking Interpreter on BoundTree
 * [ ] Taxl Run tests
-  * Options: `//===` sections; `//@expect ".."`; `//= "..."`; `//~expect ".."`
 
 ## 2. Funs (in script)
 * [ ] Forward-declaration of funs

@@ -20,8 +20,7 @@ public sealed class TaxlParser(SourceText sourceText, DiagnosticBag diagnostics)
                 var directive = text switch
                 {
                     "//@check" => new Directive(DirectiveKind.Check, trimmedLineLocation),
-                    "//@run-pass" => new Directive(DirectiveKind.RunPass, trimmedLineLocation),
-                    "//@run-panic" => new Directive(DirectiveKind.RunPanic, trimmedLineLocation),
+                    "//@run" => new Directive(DirectiveKind.Run, trimmedLineLocation),
                     _ => null
                 };
                 if (directive is null)

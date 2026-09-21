@@ -12,33 +12,27 @@ public sealed partial class TestFileTests
                                             //@check  
                                             """), "Directive: Check");
         [Fact]
-        public void RunPass_Valid()
+        public void Run_Valid()
             => InlineSnapshot.Validate(Structure("""
-                                            //@run-pass  
-                                            """), "Directive: RunPass");
-        [Fact]
-        public void RunPanic_Valid()
-            => InlineSnapshot.Validate(Structure("""
-                                            //@run-panic  
-                                            """), "Directive: RunPanic");
-
+                                            //@run  
+                                            """), "Directive: Run");
         [Fact]
         public void AfterWhitespace_Accepted()
             => InlineSnapshot.Validate(Structure("""
-                                               //@run-pass
-                                            """), "Directive: RunPass");
+                                               //@run
+                                            """), "Directive: Run");
 
         [Fact]
         public void Multiples_Ignored()
             => InlineSnapshot.Validate(Structure("""
-                                            //@run-pass
+                                            //@run
                                             //@check
-                                            """), "Directive: RunPass");
+                                            """), "Directive: Run");
         [Fact]
         public void AfterText_Ignored()
             => InlineSnapshot.Validate(Structure("""
                                             bla
-                                            //@run-pass
+                                            //@run
                                             """), """
                 ERROR MissingTaxlDirective@[0, 3): Test directive missing.
                 Directive: ???
