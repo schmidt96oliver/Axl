@@ -4,6 +4,12 @@ namespace Axl.Compiler.Testing;
 
 public enum DirectiveKind
 {
+    /// <summary>
+    /// The test file contains no directive, or it
+    /// could not be recognized.
+    /// </summary>
+    Error,
+    
     Check,
     Run,
 }

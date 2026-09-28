@@ -8,7 +8,7 @@ namespace Axl.Compiler.Testing;
 
 public sealed class TaxlParser(SourceText sourceText, DiagnosticBag diagnostics)
 {
-    public Directive? ParseDirective()
+    public Directive ParseDirective()
     {
         var trimmedLineLocations = sourceText.Lines.Select(line => sourceText.GetLocation(TrimSpan(line.Range)));
         
@@ -21,9 +21,9 @@ public sealed class TaxlParser(SourceText sourceText, DiagnosticBag diagnostics)
                 {
                     "//@check" => new Directive(DirectiveKind.Check, trimmedLineLocation),
                     "//@run" => new Directive(DirectiveKind.Run, trimmedLineLocation),
-                    _ => null
+                    _ => new Directive(DirectiveKind.Error, trimmedLineLocation)
                 };
-                if (directive is null)
+                if (directive.Kind is DirectiveKind.Error)
                     diagnostics.ReportError(new Diagnostic.UnknownTaxlDirective(trimmedLineLocation));
                 return directive;
             }
@@ -35,7 +35,7 @@ public sealed class TaxlParser(SourceText sourceText, DiagnosticBag diagnostics)
         }
 
         diagnostics.ReportError(new Diagnostic.MissingTaxlDirective(sourceText.GetLocation(sourceText.Lines[0].Range)));
-        return null;
+        return new Directive(DirectiveKind.Error, sourceText.GetLocationFromLength(0, 0));
     }
 
     public Expectation? ParseExpectation()

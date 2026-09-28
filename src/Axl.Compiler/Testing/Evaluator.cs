@@ -27,8 +27,8 @@ public sealed class Evaluator
 
     public static Evaluation Evaluate(TestFile testFile)
     {
-        // Check unsupported compilation diagnostics first, so
-        // that erroneous test files are allowed.
+        // The test file might still contain unsupported features.
+        // In that case, tests should be skipped instead of failing.
         var unsupportedFeatures = testFile.Compilation
             .Diagnostics
             .OfType<Diagnostic.UnsupportedFeature>()
@@ -40,7 +40,6 @@ public sealed class Evaluator
             return Evaluation.Unsupported(message);
         }
         
-        // Test file diagnostics
         if (testFile.Diagnostics.Any())
         {
             var message = "Invalid test file!\n" + string.Join('\n',
@@ -49,8 +48,7 @@ public sealed class Evaluator
             return Evaluation.Failed(message);
         }
         
-        // Unsupported test directives
-        Debug.Assert(testFile.Directive is not null, "Without diagnostics, the test file must have a directive.");
+        Debug.Assert(testFile.Directive.Kind is not DirectiveKind.Error);
         if (testFile.Directive.Kind is not DirectiveKind.Check)
             return Evaluation.Unsupported($"Test directive {testFile.Directive.Kind} is not supported.");
 

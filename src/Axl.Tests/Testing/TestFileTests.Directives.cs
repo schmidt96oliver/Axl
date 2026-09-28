@@ -35,7 +35,7 @@ public sealed partial class TestFileTests
                                             //@run
                                             """), """
                 ERROR MissingTaxlDirective@[0, 3): Test directive missing.
-                Directive: ???
+                Directive: Error
                 """);
 
         [Fact]
@@ -49,14 +49,14 @@ public sealed partial class TestFileTests
         public void Empty()
             => InlineSnapshot.Validate(Structure("//@"), """
                 ERROR UnknownTaxlDirective@[0, 3): Directive '//@' is not known.
-                Directive: ???
+                Directive: Error
                 """);
         
         [Fact]
         public void Unknown()
             => InlineSnapshot.Validate(Structure("//@bla"), """
                 ERROR UnknownTaxlDirective@[0, 6): Directive '//@bla' is not known.
-                Directive: ???
+                Directive: Error
                 """);
     }
 }

@@ -20,13 +20,13 @@ public sealed partial class TestFileTests
     public void Empty()
         => InlineSnapshot.Validate(Structure(""), """
             ERROR MissingTaxlDirective@[0, 0): Test directive missing.
-            Directive: ???
+            Directive: Error
             """);
 
     [Fact]
     public void Whitespace()
         => InlineSnapshot.Validate(Structure("   "), """
             ERROR MissingTaxlDirective@[0, 3): Test directive missing.
-            Directive: ???
+            Directive: Error
             """);
 }

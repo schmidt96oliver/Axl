@@ -10,7 +10,7 @@ public sealed class TestFile
 {
     public SourceText SourceText { get; }
     
-    public Directive? Directive { get; }
+    public Directive Directive { get; }
     public Expectation? Expectation { get; }
 
     public ImmutableArray<Annotation> Annotations { get; }
@@ -47,7 +47,7 @@ public sealed class TestFile
 
 
     private TestFile(SourceText sourceText, 
-        Directive? directive,
+        Directive directive,
         Expectation? expectation,
         ImmutableArray<Annotation> annotations,
         ImmutableArray<Diagnostic> diagnostics)
