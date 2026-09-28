@@ -14,9 +14,6 @@ public static class SyntaxFacts
         TokenKind.WhileKw => "while",
         TokenKind.BreakKw => "break",
         TokenKind.ContinueKw => "continue",
-        TokenKind.AndKw => "and",
-        TokenKind.OrKw => "or",
-        TokenKind.NotKw => "not",
         TokenKind.UsingKw => "using",
         TokenKind.LetKw => "let",
     
@@ -31,6 +28,9 @@ public static class SyntaxFacts
         TokenKind.Comma => ",",
         TokenKind.Semicolon => ";",
         TokenKind.Colon => ":",
+        TokenKind.DoubleAmpersand => "&&",
+        TokenKind.DoubleVerticalBar => "||",
+        TokenKind.Bang => "!",
     
         // --- Assignment Symbols
         TokenKind.Equal => "=",
@@ -67,7 +67,6 @@ public static class SyntaxFacts
         // --- Keyword?
         return text switch
         {
-            "and" => TokenKind.AndKw,
             "break" => TokenKind.BreakKw,
             "continue" => TokenKind.ContinueKw,
             "else" => TokenKind.ElseKw,
@@ -76,8 +75,6 @@ public static class SyntaxFacts
             "if" => TokenKind.IfKw,
             "while" => TokenKind.WhileKw,
             "module" => TokenKind.ModuleKw,
-            "not" => TokenKind.NotKw,
-            "or" => TokenKind.OrKw,
             "return" => TokenKind.ReturnKw,
             "true" => TokenKind.TrueKw,
             "using" => TokenKind.UsingKw,

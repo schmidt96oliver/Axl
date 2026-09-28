@@ -80,7 +80,7 @@ public sealed class LexerTests
 
     [Fact]
     public void Keywords()
-        => InlineSnapshot.Validate(NoWhitespace("let fun var module return if else while break continue and or not true false using"), """
+        => InlineSnapshot.Validate(NoWhitespace("let fun var module return if else while break continue true false using"), """
             - LetKw: "let"
             - FunKw: "fun"
             - VarKw: "var"
@@ -91,9 +91,6 @@ public sealed class LexerTests
             - WhileKw: "while"
             - BreakKw: "break"
             - ContinueKw: "continue"
-            - AndKw: "and"
-            - OrKw: "or"
-            - NotKw: "not"
             - TrueKw: "true"
             - FalseKw: "false"
             - UsingKw: "using"
@@ -124,10 +121,12 @@ public sealed class LexerTests
 
     [Fact]
     public void Symbols_Equals()
-        => InlineSnapshot.Validate(NoWhitespace("=== != <<=>>= = "), """
+        => InlineSnapshot.Validate(NoWhitespace("=== !!=! <<=>>= = "), """
             - DoubleEqual: "=="
             - Equal: "="
+            - Bang: "!"
             - BangEqual: "!="
+            - Bang: "!"
             - LessThan: "<"
             - LessThanEqual: "<="
             - GreaterThan: ">"
@@ -138,7 +137,7 @@ public sealed class LexerTests
 
     [Fact]
     public void Symbols_Other()
-        => InlineSnapshot.Validate(NoWhitespace("(){}<>-.,;:+-*/"),
+        => InlineSnapshot.Validate(NoWhitespace("(){}<>-.,;:+-*/&&||!"),
             """
             - OpenParen: "("
             - CloseParen: ")"
@@ -155,6 +154,9 @@ public sealed class LexerTests
             - Minus: "-"
             - Star: "*"
             - Slash: "/"
+            - DoubleAmpersand: "&&"
+            - DoubleVerticalBar: "||"
+            - Bang: "!"
             - Eof
             """);
 

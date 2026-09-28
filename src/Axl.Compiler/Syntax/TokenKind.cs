@@ -19,9 +19,6 @@ public enum TokenKind
     WhileKw,
     BreakKw,
     ContinueKw,
-    AndKw,
-    OrKw,
-    NotKw,
     UsingKw,
     
     // --- Literals
@@ -37,6 +34,9 @@ public enum TokenKind
     Comma,
     Semicolon,
     Colon,
+    DoubleAmpersand,
+    DoubleVerticalBar,
+    Bang,
     
     // --- Assignment Symbols
     Equal,

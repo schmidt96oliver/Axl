@@ -6,17 +6,17 @@ public partial class Parser
     {
         // Ordered from lowest to highest, so the int value can be used 
         // for comparison.
-        Assign,    
+        Assign, 
         
         LogicOr,
         LogicAnd,
-        LogicNot,
 
         Comparison,
 
         Sum,
         Factor,
 
+        LogicNot,
         Negate,
 
         ArgList,
@@ -45,7 +45,7 @@ public partial class Parser
             => kind switch
             {
                 TokenKind.Minus => Precedence.Negate,
-                TokenKind.NotKw => Precedence.LogicNot,
+                TokenKind.Bang => Precedence.LogicNot,
                 _ => null
             };
 
@@ -57,8 +57,8 @@ public partial class Parser
             TokenKind.LessThan or TokenKind.LessThanEqual or TokenKind.GreaterThan or TokenKind.GreaterThanEqual
                 or TokenKind.DoubleEqual or TokenKind.BangEqual => Precedence.Comparison,
 
-            TokenKind.AndKw => Precedence.LogicAnd,
-            TokenKind.OrKw => Precedence.LogicOr,
+            TokenKind.DoubleAmpersand => Precedence.LogicAnd,
+            TokenKind.DoubleVerticalBar => Precedence.LogicOr,
             
             TokenKind.Equal => Precedence.Assign,
 

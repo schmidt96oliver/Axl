@@ -210,14 +210,19 @@ public sealed class Lexer
                 break;
 
             case '=':
-                if (scanner.Match('='))
-                    scanner.AddToken(TokenKind.DoubleEqual);
-                else
-                    scanner.AddToken(TokenKind.Equal);
+                scanner.AddToken(scanner.Match('=') ? TokenKind.DoubleEqual : TokenKind.Equal);
                 break;
 
-            case '!' when scanner.Match('='):
-                scanner.AddToken(TokenKind.BangEqual);
+            case '!':
+                scanner.AddToken(scanner.Match('=') ? TokenKind.BangEqual : TokenKind.Bang);
+                break;
+            
+            case '&' when scanner.Match('&'):
+                scanner.AddToken(TokenKind.DoubleAmpersand);
+                break;
+            
+            case '|' when scanner.Match('|'):
+                scanner.AddToken(TokenKind.DoubleVerticalBar);
                 break;
 
             case '-':

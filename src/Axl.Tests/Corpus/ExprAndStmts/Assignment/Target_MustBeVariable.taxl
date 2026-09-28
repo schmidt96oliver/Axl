@@ -11,6 +11,6 @@ var a = 1;
 
 (a) = 1; //~error InvalidAssignTarget
 
-a and a = 1;  //~error InvalidAssignTarget
+a && a = 1;  //~error InvalidAssignTarget
 
 { } = { };      //~error InvalidAssignTarget

@@ -6,8 +6,6 @@
   * Options `shared fun`, `static fun` or `fun` vs `meth/act/def/met`
   * Should operators be `static` or instance members?
 
-* Axl: Replace `and, or` with `&&, ||`. For familiarity and possibly conflict with "and/or" patterns later
-
 # Roadmap
 
 ## 1. Running scripts (no funs)

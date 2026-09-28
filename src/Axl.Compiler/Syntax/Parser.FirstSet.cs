@@ -22,7 +22,7 @@ public partial class Parser
             TokenKind.Identifier,
             TokenKind.StringStart,
             TokenKind.OpenParen,
-            TokenKind.Minus, TokenKind.NotKw,
+            TokenKind.Minus, TokenKind.Bang,
             
             TokenKind.IfKw, TokenKind.OpenBrace,
             TokenKind.BreakKw, TokenKind.ContinueKw, TokenKind.ReturnKw

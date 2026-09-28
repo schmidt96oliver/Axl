@@ -422,7 +422,7 @@ public sealed class Binder
 
     private BoundExpr BindBinary(BinaryExprSyntax syntax) => syntax.Operator.Kind switch
     {
-        TokenKind.AndKw or TokenKind.OrKw => BindBooleanOperator(syntax),
+        TokenKind.DoubleAmpersand or TokenKind.DoubleVerticalBar => BindBooleanOperator(syntax),
         TokenKind.Equal => BindAssign(syntax),
         _ => BindBinaryOperator(syntax)
     };
@@ -458,7 +458,7 @@ public sealed class Binder
     
     private BoundExpr BindBooleanOperator(BinaryExprSyntax syntax)
     {
-        Debug.Assert(syntax.Operator.Kind is TokenKind.AndKw or TokenKind.OrKw);
+        Debug.Assert(syntax.Operator.Kind is TokenKind.DoubleAmpersand or TokenKind.DoubleVerticalBar);
     
         var left = BindExpr(syntax.Left);
         var right = BindExpr(syntax.Right);
@@ -478,9 +478,9 @@ public sealed class Binder
                 type: _baseModule.Error, syntax);
         }
     
-        if (syntax.Operator.Kind is TokenKind.AndKw)
+        if (syntax.Operator.Kind is TokenKind.DoubleAmpersand)
             return new BoundAnd(left, right, _baseModule.Bool, syntax);
-        if (syntax.Operator.Kind is TokenKind.OrKw)
+        if (syntax.Operator.Kind is TokenKind.DoubleVerticalBar)
             return new BoundOr(left, right, _baseModule.Bool, syntax);
     
         throw new UnreachableException();

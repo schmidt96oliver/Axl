@@ -17,7 +17,7 @@ public partial class ParserTests
 
         [Fact]
         public void Assign_Lowest()
-            => InlineSnapshot.Validate(SExpr("a.b() = not c and d;"), "(((a . b) (( ))) = ((not c) and d))");
+            => InlineSnapshot.Validate(SExpr("a.b() = !c && d;"), "(((a . b) (( ))) = ((! c) && d))");
 
         [Fact]
         public void Assign_RightAssociative()
@@ -28,10 +28,10 @@ public partial class ParserTests
             => InlineSnapshot.Validate(SExpr("(1+2)*3;"), "((1 + 2) * 3)");
         [Fact]
         public void Group_2()
-            => InlineSnapshot.Validate(SExpr("not (1+2).a*3 == -1;"), "(not ((((1 + 2) . a) * 3) == (- 1)))");
+            => InlineSnapshot.Validate(SExpr("! (1+2).a*3 == -1;"), "(((! ((1 + 2) . a)) * 3) == (- 1))");
         [Fact]
         public void Group_3()
-            => InlineSnapshot.Validate(SExpr("(1 == 2) != 3 and (4 or 5);"), "(((1 == 2) != 3) and (4 or 5))");
+            => InlineSnapshot.Validate(SExpr("(1 == 2) != 3 && (4 || 5);"), "(((1 == 2) != 3) && (4 || 5))");
         
         [Fact]
         public void Comparison_1()
@@ -39,10 +39,10 @@ public partial class ParserTests
         
         [Fact]
         public void Boolean_1()
-            => InlineSnapshot.Validate(SExpr("not 1 < 2 and not 3 + 4 >= 5;"), "((not (1 < 2)) and (not ((3 + 4) >= 5)))");
+            => InlineSnapshot.Validate(SExpr("!1 < 2 && !3 + 4 >= 5;"), "(((! 1) < 2) && (((! 3) + 4) >= 5))");
         [Fact]
         public void Boolean_2()
-            => InlineSnapshot.Validate(SExpr("not 1 == 2 or not 3 + 4 != 5;"), "((not (1 == 2)) or (not ((3 + 4) != 5)))");
+            => InlineSnapshot.Validate(SExpr("!1 == 2 || !3 + 4 != 5;"), "(((! 1) == 2) || (((! 3) + 4) != 5))");
 
         [Fact]
         public void GetMember_1()
@@ -110,24 +110,24 @@ public partial class ParserTests
 
         [Fact]
         public void AndOr_DoNotChain_1()
-            => InlineSnapshot.Validate(SExpr("1 and 2 or 3;"), """
-                ERROR InvalidOperatorChaining@[2, 5), [8, 10): Cannot chain 'and' and 'or'.
+            => InlineSnapshot.Validate(SExpr("1 && 2 || 3;"), """
+                ERROR InvalidOperatorChaining@[2, 4), [7, 9): Cannot chain '&&' and '||'.
 
-                (1 and 2 or 3)
+                (1 && 2 || 3)
                 """);
         [Fact]
         public void AndOr_DoNotChain_2()
-            => InlineSnapshot.Validate(SExpr("1 and 2 and 3 or 3;"), """
-                ERROR InvalidOperatorChaining@[8, 11), [14, 16): Cannot chain 'and' and 'or'.
+            => InlineSnapshot.Validate(SExpr("1 && 2 && 3 || 3;"), """
+                ERROR InvalidOperatorChaining@[7, 9), [12, 14): Cannot chain '&&' and '||'.
 
-                ((1 and 2) and 3 or 3)
+                ((1 && 2) && 3 || 3)
                 """);
         [Fact]
         public void AndOr_DoNotChain_3()
-            => InlineSnapshot.Validate(SExpr("1 or 2 and 3 or 3;"), """
-                ERROR InvalidOperatorChaining@[2, 4), [7, 10), [13, 15): Cannot chain 'or', 'and' and 'or'.
+            => InlineSnapshot.Validate(SExpr("1 || 2 && 3 || 3;"), """
+                ERROR InvalidOperatorChaining@[2, 4), [7, 9), [12, 14): Cannot chain '||', '&&' and '||'.
 
-                (1 or 2 and 3 or 3)
+                (1 || 2 && 3 || 3)
                 """);
     }
 }

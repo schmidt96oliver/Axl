@@ -56,7 +56,7 @@ public sealed class BaseModuleSymbol : ModuleOrTypeSymbol
     
     private ImmutableArray<Symbol> GetBoolMembers() =>
     [
-        new IntrinsicFunSymbol(SyntaxFacts.GetText(TokenKind.NotKw)!, Intrinsic.NotBool, [Bool], Bool),
+        new IntrinsicFunSymbol(SyntaxFacts.GetText(TokenKind.Bang)!, Intrinsic.NotBool, [Bool], Bool),
         new IntrinsicFunSymbol(SyntaxFacts.GetText(TokenKind.DoubleEqual)!, Intrinsic.EqualsBool, [Bool, Bool], Bool),
         new IntrinsicFunSymbol(SyntaxFacts.GetText(TokenKind.BangEqual)!, Intrinsic.NotEqualsBool, [Bool, Bool], Bool),
         
