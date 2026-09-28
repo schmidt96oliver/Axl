@@ -2,17 +2,11 @@
                                        ≽(◕ ᴗ ◕)≼
 
 **Next:** 
-* Test corpus: Switch from `//=== stdout` to `//=` syntax
-* Test corpus cleanup (what's _really_ necessary?)
-
 * distinguish method calls (Fun.IsMethod/SelfParameter) opposed to static/shared/free (research keywords)
   * Options `shared fun`, `static fun` or `fun` vs `meth/act/def/met`
   * Should operators be `static` or instance members?
 
 * [ ] Test: Shadowing and scope
-* [ ] Test: Programs (e.g. fibonacci)
-
-* [ ] Test: Support '\n' in expectation (-> Concat.taxl, Escapes.taxl)
 
 # Roadmap
 
@@ -68,8 +62,6 @@ One type (maybe struct) inside scripts.
 
 * Refactor: Constants in BoundTree as `BoundConst` with `union ConstValue`. It is easier to follow and still faithful. Less boilerplate.
 * Refactor: BoundTree StringPart as union. This is the idiomatic way in C# now.
-
-* Tests: Allow multiple `//=` for multiple lines (useful for: Strings/Concat, )
 
 # Proposals
 ## Lexer/Parser: Resolve string interpolation awkwardness

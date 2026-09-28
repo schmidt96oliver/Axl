@@ -40,26 +40,37 @@ public sealed class TaxlParser(SourceText sourceText, DiagnosticBag diagnostics)
 
     public Expectation? ParseExpectation()
     {
-        var trimmedLineLocations = sourceText.Lines.Select(line => sourceText.GetLocation(TrimSpan(line.Range)));
-        
-        foreach (var trimmedLineLocation in trimmedLineLocations)
-        {
-            var text = trimmedLineLocation.Text;
-            if (text.StartsWith("//="))
-            {
-                var prefixLocation = trimmedLineLocation.SourceText.GetLocationFromLength(
-                    trimmedLineLocation.Start, 3);
-                var expectationText = text[3..].ToString();
-                return new Expectation(expectationText, trimmedLineLocation, prefixLocation);
-            }
+        // Expectation can be stated as a single, connected block of lines
+        // starting with `//=`, e.g.:
+        /*
+         * //@check
+         * //= line 1
+         * //= line 2
+         */
+        // An empty line or anything else will stop the expectation block.
 
-            // Comments and empty lines are skipped. Everything else
-            // will block directives.
-            if (text is not ("" or ['/', '/', ..]))
-                break;
-        }
+        var trimmedLineLocations = sourceText.Lines
+            .Select(line => sourceText.GetLocation(TrimSpan(line.Range)))
+            .ToList();
 
-        return null;
+        var expectationLineIndices = Enumerable.Range(0, trimmedLineLocations.Count)
+            .TakeWhile(i => trimmedLineLocations[i].Text is "" or ['/', '/', ..])
+            .SkipWhile(i => !trimmedLineLocations[i].Text.StartsWith("//="))
+            .TakeWhile(i => trimmedLineLocations[i].Text.StartsWith("//="))
+            .ToList();
+        if (expectationLineIndices.Count == 0)
+            return null;
+
+        var expectationText = string.Join(Environment.NewLine,
+            expectationLineIndices.Select(i => trimmedLineLocations[i].Text[3..].ToString()));
+        var prefixLocations = expectationLineIndices
+            .Select(i => trimmedLineLocations[i])
+            .Select(lineLocation => lineLocation.SourceText.GetLocationFromLength(lineLocation.Start, 3))
+            .ToImmutableArray();
+        var range = SourceRange.FromTo(trimmedLineLocations[0].Range, trimmedLineLocations[^1].Range);
+        var location = trimmedLineLocations[0].SourceText.GetLocation(range);
+
+        return new Expectation(expectationText, location, prefixLocations);
     }
     
     public ImmutableArray<Annotation> ParseAnnotations()

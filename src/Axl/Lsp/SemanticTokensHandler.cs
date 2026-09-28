@@ -194,14 +194,20 @@ public class SemanticTokensHandler(ILanguageServerFacade facade) : SemanticToken
         restIsString = false;
         
         // Directive?
-        if (testFile.Directive is not null && commentRange.Contains(testFile.Directive.Location.Range))
+        if (commentRange.Contains(testFile.Directive.Location.Range))
             return commentRange.Length;
         
         // Expectation?
-        if (testFile.Expectation is not null && commentRange.Contains(testFile.Expectation.Location.Range))
+        if (testFile.Expectation is not null && testFile.Expectation.Location.Range.Contains(commentRange))
         {
-            restIsString = true;
-            return testFile.Expectation!.PrefixLocation.Length;
+            SourceLocation? prefixLocation = testFile.Expectation.PrefixLocations.FirstOrDefault(l => commentRange.Contains(l.Range));
+            if (prefixLocation is SourceLocation loc)
+            {
+                restIsString = true;
+                return loc.Length;
+            }
+            
+            return 0;
         }
 
         // An annotation?

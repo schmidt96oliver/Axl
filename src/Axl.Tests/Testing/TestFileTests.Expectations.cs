@@ -21,10 +21,39 @@ public sealed partial class TestFileTests
                 """);
         
         [Fact]
-        public void Second_Ignored()
-            => InlineSnapshot.Validate(Structure("//@run\n//= Hello World\n//= Nope"), """
+        public void MultiLine()
+            => InlineSnapshot.Validate(Structure("""
+                                                 //@run
+                                                 //= A
+                                                 //= B
+                                                 //= C
+                                                 """), """
                 Directive: Run
-                Expectation: " Hello World"
+                Expectation: " A
+                 B
+                 C"
+                """);
+        [Fact]
+        public void MultiLine_StoppedByNewline()
+            => InlineSnapshot.Validate(Structure("""
+                                                 //@run
+                                                 //= A
+                                                 
+                                                 //= Nope, just a comment
+                                                 """), """
+                Directive: Run
+                Expectation: " A"
+                """);
+        [Fact]
+        public void MultiLine_StoppedByText()
+            => InlineSnapshot.Validate(Structure("""
+                                                 //@run
+                                                 //= A
+                                                 bla
+                                                 //= Nope, just a comment
+                                                 """), """
+                Directive: Run
+                Expectation: " A"
                 """);
         
         [Fact]
