@@ -1,0 +1,13 @@
+﻿//@run
+//= 2.2 inner 2.2
+
+let a = 1;
+let a = 2.2;
+Print("{a} ");
+
+{
+    let a = "inner ";
+    Print(a);
+}
+
+Print("{a}");

@@ -6,7 +6,10 @@
   * Options `shared fun`, `static fun` or `fun` vs `meth/act/def/met`
   * Should operators be `static` or instance members?
 
-* [ ] Test: Shadowing and scope
+* Refactor: Constants in BoundTree as `BoundConst` with `union ConstValue`. It is easier to follow and still faithful. Less boilerplate.
+* Refactor: BoundTree StringPart as union. This is the idiomatic way in C# now.
+
+* Axl: Replace `and, or` with `&&, ||`. For familiarity and possibly conflict with "and/or" patterns later
 
 # Roadmap
 
@@ -17,7 +20,7 @@
 * [x] Bind methods
 * [x] `let` binding
 * [x] Treewalking Interpreter on BoundTree
-* [ ] Taxl Run tests
+* [x] Taxl Run tests
 
 ## 2. Funs (in script)
 * [ ] Forward-declaration of funs
@@ -57,11 +60,7 @@ One type (maybe struct) inside scripts.
 
 # Little proposals
 - LSP: Make Serial (see Omnisharp) and weave CancellationToken to avoid concurrency awkwardness.
-* Axl: Replace `and, or` with `&&, ||`. For familiarity and possibly conflict with "and/or" patterns later
 * Axl: Named arguments as `callee(parameter = value, param2 = value2)`
-
-* Refactor: Constants in BoundTree as `BoundConst` with `union ConstValue`. It is easier to follow and still faithful. Less boilerplate.
-* Refactor: BoundTree StringPart as union. This is the idiomatic way in C# now.
 
 # Proposals
 ## Lexer/Parser: Resolve string interpolation awkwardness
