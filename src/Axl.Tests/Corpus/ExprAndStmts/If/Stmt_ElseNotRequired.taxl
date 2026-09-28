@@ -1,0 +1,7 @@
+﻿//@check
+
+// In stmt position, if does not need an else branch.
+
+if (true) 1; 
+if (true) ""; 
+if (true) { } 

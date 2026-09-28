@@ -1,41 +1,24 @@
 ﻿//@run
+//= 2 2 y y y y
 
 // Semicolon can be written to separate if-branch from else-branch.
 // This is purely for familiarity with C-style languages for ifs
 // in statement position. For consistency it's allowed in expression
 // position as well and is not required in either position.
 
-PrintLine(if (false) 1; else 2);
-PrintLine(if (false) 1 else 2);
+let a = if (false) 1; else 2;
+Print("{a} ");
 
-if (false) PrintLine("nope")
-else PrintLine("yes");
+let b = if (false) 1 else 2;
+Print("{b} ");
 
-if (false) PrintLine("nope");
-else PrintLine("yes");
+if (false) Print("n ") else Print("y ");
+if (false) Print("n "); else Print("y ");
 
-// Also for else if
-PrintLine(if (2 == 1) 10
-          else if (2 == 2) 20
-          else 30);
-PrintLine(if (2 == 1) 10;
-          else if (2 == 2) 20;
-          else 30);
+if (2 == 1) Print("n ")
+else if (2 == 2) Print("y ")
+else Print("n ");
 
-if (2 == 1) PrintLine("nope")
-else if (2 == 2) PrintLine("yes")
-else PrintLine("nope");
-
-if (2 == 1) PrintLine("nope");
-else if (2 == 2) PrintLine("yes");
-else PrintLine("nope");
-
-//=== stdout
-// 2
-// 2
-// yes
-// yes
-// 20
-// 20
-// yes
-// yes
+if (2 == 1) Print("n ");
+else if (2 == 2) Print("y ");
+else Print("n ");

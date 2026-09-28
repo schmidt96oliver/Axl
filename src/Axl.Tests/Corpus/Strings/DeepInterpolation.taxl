@@ -1,13 +1,8 @@
 ﻿//@run
+//= 1y
 
-using Standard;
-
-PrintLine("{ "{ "{ "1" }" }" }");
-PrintLine("{ "{ "{ 
+Print("{ "{ "{ "1" }" }" }");
+Print("{ "{ "{ 
         if (true) "y"
         else "n"
     }" }" }");
-    
-//=== stdout
-// 1
-// y

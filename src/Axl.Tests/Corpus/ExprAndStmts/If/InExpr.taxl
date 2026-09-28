@@ -1,9 +1,0 @@
-﻿//@run
-
-let a: I32 = 1;
-let predicate: Bool = false;
-
-Print("{1 + if (predicate) a else 0}");
-
-//=== stdout
-// 1

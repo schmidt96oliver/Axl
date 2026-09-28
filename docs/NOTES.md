@@ -12,6 +12,8 @@
 * [ ] Test: Shadowing and scope
 * [ ] Test: Programs (e.g. fibonacci)
 
+* [ ] Test: Support '\n' in expectation (-> Concat.taxl, Escapes.taxl)
+
 # Roadmap
 
 ## 1. Running scripts (no funs)
@@ -67,6 +69,8 @@ One type (maybe struct) inside scripts.
 * Refactor: Constants in BoundTree as `BoundConst` with `union ConstValue`. It is easier to follow and still faithful. Less boilerplate.
 * Refactor: BoundTree StringPart as union. This is the idiomatic way in C# now.
 
+* Tests: Allow multiple `//=` for multiple lines (useful for: Strings/Concat, )
+
 # Proposals
 ## Lexer/Parser: Resolve string interpolation awkwardness
 Currently, Lexer emits flat tokens and Parser must reconstruct the Lexers ideas about strings
@@ -115,6 +119,8 @@ diagnostics and annotations accordingly.
 Currently, diagnostics are their own data structure. It would be easier and less
 boilerplate-heavy to provide `Report*` methods on DiagnosticBag. Only the parser
 needs a new way to report them (either through `Make*` or on a different mechanism).
+*Other option*: Report them locally, which keeps the message and data coupled to the
+reporting site. Which does make sense architciturally, since they will be searched together.
 
 ## Axl: Member generation
 *Requires*: Structs/Type

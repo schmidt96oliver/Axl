@@ -1,0 +1,5 @@
+﻿//@check
+
+fun Test(a: string,   //~error DuplicateParameters
+        a: bool)     //~error DuplicateParameters
+{ }

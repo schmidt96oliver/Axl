@@ -1,16 +1,9 @@
 ﻿//@run
+//= ABCD
 
-using Standard;
+// Empty interpolations can be used to define strings across multiple lines.
 
-PrintLine("A{
+Print("A{
     }B{
     }C{
     }D");
-    
-
-    
-//=== stdout
-// A
-// B
-// C
-// D

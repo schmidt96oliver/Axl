@@ -1,0 +1,16 @@
+﻿//@check
+//= true 1 2 3.1 3.2
+    
+// Conversion ToString is duck-typed.
+// When trying to convert an expression to string, the binder
+// searches for "ToString" methods that fit the signature.
+
+// Strings are accepted
+Print("{ "" } ");
+
+// All primitive types have a ToString
+Print("{true} ");
+Print("{1i32} ");
+Print("{2i64} ");
+Print("{3.1f32} ");
+Print("{3.2f64} ");

@@ -13,13 +13,8 @@ else 1;
 if (false) .1f32
 else { }    
 
-// Else can be missing with any main-branch value
+// If inside an if-stmt branch is a stmt as well.
 
-if (true) 1; 
-if (true) ""; 
-if (true) { } 
-
-// Stmt position nests into if stmts
 if (true)
     if (true) 1 else "";
 else

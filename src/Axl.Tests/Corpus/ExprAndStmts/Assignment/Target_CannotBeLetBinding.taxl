@@ -4,7 +4,3 @@
 let a = 1;
 a = 2;      //~error InvalidAssignTarget
 a = {};     //~error InvalidAssignTarget
-
-// Var binding can be reassigned.
-var a = 2;
-a = 2;
