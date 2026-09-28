@@ -1,0 +1,17 @@
+﻿//@run  
+//= 1 1 2 3 5 8 13 21 34 55 89 144
+
+// F(n) = F(n-1) + F(n-2)
+
+var prevPrev = 0;
+var prev = 1;
+
+while (prev < 200)
+{
+    Print("{prev} ");
+    
+    let next = prev + prevPrev;
+    
+    prevPrev = prev;
+    prev = next;
+}

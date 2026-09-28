@@ -2,11 +2,17 @@
                                        ≽(◕ ᴗ ◕)≼
 
 **Next:** 
-* Add taxl `//@run` and `//= Text`
+* TestEvaluator: Support `//@run` and `//= expectation`
+* Test corpus: Switch from `//=== stdout` to `//=` syntax
+* Run `//@run` tests :))
 * Test corpus cleanup (what's _really_ necessary?)
 
 * distinguish method calls (Fun.IsMethod/SelfParameter) opposed to static/shared/free (research keywords)
   * Options `shared fun`, `static fun` or `fun` vs `meth/act/def/met`
+  * Should operators be `static` or instance members?
+
+* [ ] Test: Shadowing and scope
+* [ ] Test: Programs (e.g. fibonacci)
 
 # Roadmap
 
@@ -36,6 +42,12 @@ One type (maybe struct) inside scripts.
 * [ ] `pub` visibility
 * ?? Member generation
 
+* Cyclic Member ideas:
+  (a) Member factory delegate (current BaseModule design)
+  (b) Pass a binder instance to Symbol
+  (c) Have Symbol retrieve Binder
+  (d) Mutable .Members set eagerly in a separate pass
+
 ## 4. Modules and multiple files
 * [ ] Modules visible anywhere
 * [ ] `pub` visibility
@@ -52,8 +64,10 @@ One type (maybe struct) inside scripts.
 # Little proposals
 - LSP: Make Serial (see Omnisharp) and weave CancellationToken to avoid concurrency awkwardness.
 * Axl: Replace `and, or` with `&&, ||`. For familiarity and possibly conflict with "and/or" patterns later
-* Taxl: Expected output through `//@expect "1stline\n2ndline"` normalized.
 * Axl: Named arguments as `callee(parameter = value, param2 = value2)`
+
+* Refactor: Constants in BoundTree as `BoundConst` with `union ConstValue`. It is easier to follow and still faithful. Less boilerplate.
+* Refactor: BoundTree StringPart as union. This is the idiomatic way in C# now.
 
 # Proposals
 ## Lexer/Parser: Resolve string interpolation awkwardness
@@ -80,12 +94,14 @@ flattened into a single Token class.
   * Tokens that come from the Lexer have no SyntaxTree reference, so access of Location or Text will throw. 
   * Parser and AST layer can drift silently apart. 
   * Nullable Range is awkward to handle.
-*Idea*:
+*Idea(s)*:
   * Construction through `SyntaxTree.From/LoadFile` similar to SourceText
   * Trivia attached to Tokens. As necessity that SyntaxNodes only represent non-trivia. This improves the
     split between Range and FullRange. The entire pipeline doesn't need to know about trivia anyway.
   * Directly construct SyntaxNode with children. Parser needs to pass all tokens and trees. This removes
     the matklad style events. This could also improve overall design of the parser and readability.
+  * Collapse FileSyntax and SyntaxTree. SyntaxTree can be the root node. This might simplify the design,
+    especially around adding Tree.
 
 ## Taxl: Multiple files
 TestFile needs to split one taxl file into multiple SourceTexts and map
@@ -110,7 +126,7 @@ the language with less boilerplate. Care needs to be taken to (1) allow overwrit
 declarations for speed and (2) maybe lint operators that can be generated. Also
 `==` and `ToString` could be generated from fields.
 
-# Design notes and ideas
+# Design and feature ideas
 ## From https://core-lang.dev/design.html
 > "Always rules" are better than "almost rules":
 >     .   selects
@@ -134,3 +150,13 @@ Possibly add or change:
   * construct `Array[Int32](1, 2, 3)`
   * get `array.Get(index)`
   * `array.Set(index, value)` through @intrinsic functions
+
+* Lambdas and non-local return.
+  * Return in a lambda should ideally return from the fun it's written in (not the lambda)
+    or be disallowed. Non-local return needs escape-analysis; does not allow lazy iterators
+    and is a little more complicated. A way needs to be found to return from the lambda. Research
+    Kotlins non-local returns.
+
+* Extension syntax: `fun Type.ExtensionMethod()` instead of `extend() { }` block.
+
+* Static/Private/Public members: Maybe with `public: `, `private: `, `static: ` similar to C++.
