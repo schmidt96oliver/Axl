@@ -110,7 +110,7 @@ public sealed class BoundTreeInterpreter
         BoundIfExpr boundIfExpr => EvaluateIf(boundIfExpr),
         
         BoundOr boundOr => EvaluateOr(boundOr),
-        BoundStringExpr boundStringExpr => EvaluateString(boundStringExpr),
+        BoundStringExpr boundStringExpr => string.Concat(boundStringExpr.Parts.Select(part => (string)Evaluate(part))),
         
         BoundBreak => throw new BreakException(),
         BoundContinue => throw new ContinueException(),
@@ -130,22 +130,6 @@ public sealed class BoundTreeInterpreter
         foreach (var stmt in boundBlock.Stmts)
             Run(stmt);
         return _unitValue;
-    }
-    
-    
-    private object EvaluateString(BoundStringExpr boundStringExpr)
-    {
-        var builder = new StringBuilder();
-        foreach (var part in boundStringExpr.Parts)
-        {
-            builder.Append(part switch
-            {
-                StringPart.Text(var text) => text,
-                StringPart.Interpolation(var expr) => (string)Evaluate(expr)
-            });
-        }
-
-        return builder.ToString();
     }
 
     private object EvaluateOr(BoundOr boundOr)

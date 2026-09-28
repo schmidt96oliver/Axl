@@ -4,7 +4,7 @@ using Axl.Compiler.Syntax;
 
 namespace Axl.Compiler.Binding.BoundTree;
 
-public union ConstValue(int, long, float, double, bool);
+public union ConstValue(int, long, float, double, bool, string);
 
 public sealed class BoundConst(ConstValue value, TypeSymbol type, SyntaxNode syntax) 
     : BoundExpr(type, syntax)

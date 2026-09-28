@@ -4,22 +4,11 @@ using Axl.Compiler.Syntax;
 
 namespace Axl.Compiler.Binding.BoundTree;
 
-public closed record StringPart
+public sealed class BoundStringExpr(ImmutableArray<BoundExpr> parts, TypeSymbol type, SyntaxNode syntax) : BoundExpr(type, syntax)
 {
-    public sealed record Text(string ProcessedText) : StringPart;
+    public ImmutableArray<BoundExpr> Parts { get; } = parts;
 
-    public sealed record Interpolation(BoundExpr Expr) : StringPart;
-}
-
-public sealed class BoundStringExpr(ImmutableArray<StringPart> parts, TypeSymbol type, SyntaxNode syntax) : BoundExpr(type, syntax)
-{
-    public ImmutableArray<StringPart> Parts { get; } = parts;
-
-    protected override ImmutableArray<BoundStmt> GetChildren() =>
-    [
-        .. Parts
-            .OfType<StringPart.Interpolation>()
-            .Select(interpolation => interpolation.Expr)
-    ];
+    protected override ImmutableArray<BoundStmt> GetChildren()
+        => Parts.CastArray<BoundStmt>();
 
 }

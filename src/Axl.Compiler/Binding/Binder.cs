@@ -318,44 +318,43 @@ public sealed class Binder
         var parts = syntax.Parts.Select(BindStringPart).ToImmutableArray();
     
         if (parts.Length == 0)
-            parts = [new StringPart.Text("")];
+            parts = [new BoundConst("", _baseModule.String, syntax)];
         
         return new BoundStringExpr(parts, _baseModule.String, syntax);
     }
     
-    private StringPart BindStringPart(StringPartSyntax syntax)
+    private BoundExpr BindStringPart(StringPartSyntax syntax)
         => syntax switch
         {
-            StringTextSyntax textSyntax => new StringPart.Text(textSyntax.TextToken.ProcessedText),
+            StringTextSyntax textSyntax => new BoundConst(textSyntax.TextToken.ProcessedText, _baseModule.String, syntax),
             StringInterpolationSyntax interpolationSyntax => BindStringInterpolation(interpolationSyntax),
         };
     
-    private StringPart BindStringInterpolation(StringInterpolationSyntax syntax)
+    private BoundExpr BindStringInterpolation(StringInterpolationSyntax syntax)
     {
         if (syntax.Expr is null)
         {
-            // Empty interpolation means nothing will be added. Just
-            // return an empty text then.
-            return new StringPart.Text(ProcessedText: "");
+            // Empty interpolation means nothing will be added, which is equivalent
+            // to an empty text const.
+            return new BoundConst("", _baseModule.String, syntax);
         }
                 
         var boundExpr = BindExpr(syntax.Expr);
 
         if (IsAssignableTo(boundExpr.Type, _baseModule.String))
-            return new StringPart.Interpolation(boundExpr);
+            return boundExpr;
         
         // Try to find duck-typed ToString
         if (boundExpr.Type is ModuleOrTypeSymbol moduleOrType
             && moduleOrType.LookupFun("ToString", [boundExpr.Type]) is IntrinsicFunSymbol toStringFun
             && IsAssignableTo(toStringFun.ReturnType, _baseModule.String))
         {
-            var conversion = new BoundCall(toStringFun, [boundExpr], toStringFun.ReturnType, syntax.Expr);
-            return new StringPart.Interpolation(conversion);
+            return new BoundCall(toStringFun, [boundExpr], toStringFun.ReturnType, syntax.Expr);
         }
         
         // Could not convert to string
         _diagnostics.ReportError(new Diagnostic.CannotConvert(syntax.Expr, From: boundExpr.Type, To: _baseModule.String));
-        return new StringPart.Interpolation(new BoundErrorExpr(recoveredExprs: [boundExpr], type: _baseModule.Error, syntax));
+        return new BoundErrorExpr(recoveredExprs: [boundExpr], type: _baseModule.Error, syntax);
     }
     
     private BoundExpr BindNumberLiteral(NumberLiteralSyntax syntax)
