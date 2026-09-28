@@ -1,0 +1,7 @@
+﻿//@check
+
+// Numbers that would produce an overflow must give an error.
+
+let a = 10000000000i32;             //~error NumberTooBig
+let a = 10000000000i64; 
+let a = 10000000000000000000i64;    //~error NumberTooBig

@@ -101,12 +101,11 @@ public sealed class BoundTreeInterpreter
     private object Evaluate(BoundExpr expr) => expr switch
     {
         BoundVariableRef boundVariableRef => _values[boundVariableRef.Variable],
-        BoundNumberLiteral boundNumberLiteral => EvaluateNumberLiteral(boundNumberLiteral),
+        BoundConst boundConst => boundConst.Value.Value!,
         
         BoundAnd boundAnd => EvaluateAnd(boundAnd),
         BoundAssign boundAssign => EvaluateAssign(boundAssign),
         BoundBlock boundBlock => EvaluateBlock(boundBlock),
-        BoundBoolLiteral boundBoolLiteral => boundBoolLiteral.Value,
         BoundCall boundCall => EvaluateCall(boundCall),
         BoundIfExpr boundIfExpr => EvaluateIf(boundIfExpr),
         
@@ -126,17 +125,6 @@ public sealed class BoundTreeInterpreter
         return _unitValue;
     }
 
-    private object EvaluateNumberLiteral(BoundNumberLiteral boundNumberLiteral)
-        => boundNumberLiteral.Type.Name switch
-        {
-            "I32" => (object)int.Parse(boundNumberLiteral.Token.Body),
-            "I64" => (object)long.Parse(boundNumberLiteral.Token.Body),
-            "F32" => (object)float.Parse(boundNumberLiteral.Token.Body, CultureInfo.InvariantCulture),
-            "F64" => (object)double.Parse(boundNumberLiteral.Token.Body, CultureInfo.InvariantCulture),
-            _ => throw new UnreachableException()
-        };
-    
-    
     private object EvaluateBlock(BoundBlock boundBlock)
     {
         foreach (var stmt in boundBlock.Stmts)

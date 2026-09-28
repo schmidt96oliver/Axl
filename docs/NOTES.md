@@ -6,7 +6,6 @@
   * Options `shared fun`, `static fun` or `fun` vs `meth/act/def/met`
   * Should operators be `static` or instance members?
 
-* Refactor: Constants in BoundTree as `BoundConst` with `union ConstValue`. It is easier to follow and still faithful. Less boilerplate.
 * Refactor: BoundTree StringPart as union. This is the idiomatic way in C# now.
 
 * Axl: Replace `and, or` with `&&, ||`. For familiarity and possibly conflict with "and/or" patterns later

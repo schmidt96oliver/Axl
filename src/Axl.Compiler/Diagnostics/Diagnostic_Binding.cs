@@ -170,4 +170,12 @@ public partial record Diagnostic
             ? $"Cannot call '{MethodSymbol.Name}' as a method, because it has 0 parameters."
             : $"Cannot call '{MethodSymbol.Name}' as a method, because it's first parameter does not accept type '{ExprType.Name}'.";
     }
+
+    public sealed record NumberTooBig(NumberLiteralSyntax Syntax, TypeSymbol TargetType) : Error
+    {
+        public override ImmutableArray<SourceLocation> Locations => [Syntax.Location];
+
+        public override string Message
+            => $"The integral is too big to fit into '{TargetType.Name}'.";
+    }
 }

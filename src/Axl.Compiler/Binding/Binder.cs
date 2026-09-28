@@ -1,6 +1,7 @@
 ﻿using System.Collections.Frozen;
 using System.Collections.Immutable;
 using System.Diagnostics;
+using System.Globalization;
 using Axl.Compiler.Binding.BoundTree;
 using Axl.Compiler.Diagnostics;
 using Axl.Compiler.Symbols;
@@ -257,8 +258,8 @@ public sealed class Binder
         
         // Strings and Literals
         NumberLiteralSyntax numberLiteralSyntax => BindNumberLiteral(numberLiteralSyntax),
-        TrueLiteralSyntax => new BoundBoolLiteral(value: true, type: _baseModule.Bool, syntax),
-        FalseLiteralSyntax => new BoundBoolLiteral(value: false, type: _baseModule.Bool, syntax),
+        TrueLiteralSyntax => new BoundConst(value: true, type: _baseModule.Bool, syntax),
+        FalseLiteralSyntax => new BoundConst(value: false, type: _baseModule.Bool, syntax),
         StringExprSyntax stringExprSyntax => BindString(stringExprSyntax),
         
         // Operators
@@ -357,9 +358,9 @@ public sealed class Binder
         return new StringPart.Interpolation(new BoundErrorExpr(recoveredExprs: [boundExpr], type: _baseModule.Error, syntax));
     }
     
-    private BoundNumberLiteral BindNumberLiteral(NumberLiteralSyntax syntax)
+    private BoundExpr BindNumberLiteral(NumberLiteralSyntax syntax)
     {
-        TypeSymbol type = syntax.Token.Suffix switch
+        var type = syntax.Token.Suffix switch
         {
             NumberLiteralSuffix.I32 => _baseModule.I32,
             NumberLiteralSuffix.I64 => _baseModule.I64,
@@ -369,16 +370,51 @@ public sealed class Binder
             _ => syntax.Token.HasDecimalPoint ? _baseModule.DefaultFloatType : _baseModule.DefaultIntType
         };
         
-        // Check the type against literal structure.
-        // Literals with a decimal point can only become floating
-        // point literals.
+        // Literals like "1.1i32" need to be rejected.
         if (syntax.Token.HasDecimalPoint &&
             type != _baseModule.F32 && type != _baseModule.F64)
         {
             _diagnostics.ReportError(new Diagnostic.SuffixInvalidForDecimalNumber(syntax));
+            return new BoundErrorExpr([], _baseModule.Error, syntax);
+        }
+
+        if (type == _baseModule.I32)
+        {
+            if (!int.TryParse(syntax.Token.Body, out var value))
+            {
+                // The number literal is too big to fit inside an int/i32.
+                _diagnostics.ReportError(new Diagnostic.NumberTooBig(syntax, type));
+                return new BoundErrorExpr([], _baseModule.Error, syntax);
+            }
+
+            return new BoundConst(value, type, syntax);
+        }
+
+        if (type == _baseModule.I64)
+        {
+            if (!long.TryParse(syntax.Token.Body, out var value))
+            {
+                // The number literal is too big to fit inside an long/i64.
+                _diagnostics.ReportError(new Diagnostic.NumberTooBig(syntax, type));
+                return new BoundErrorExpr([], _baseModule.Error, syntax);
+            }
+
+            return new BoundConst(value, type, syntax);
+        }
+
+        if (type == _baseModule.F32)
+        {
+            var value = float.Parse(syntax.Token.Body, CultureInfo.InvariantCulture);
+            return new BoundConst(value, type, syntax);
         }
         
-        return new BoundNumberLiteral(syntax.Token, type, syntax);
+        if (type == _baseModule.F64)
+        {
+            var value = double.Parse(syntax.Token.Body, CultureInfo.InvariantCulture);
+            return new BoundConst(value, type, syntax);
+        }
+
+        throw new UnreachableException();
     }
     
     #endregion
