@@ -1,6 +1,7 @@
 ﻿using System.Collections.Immutable;
 using System.Data;
 using System.Diagnostics;
+using System.Globalization;
 using System.Text;
 using Axl.Compiler.Binding.BoundTree;
 using Axl.Compiler.Diagnostics;
@@ -130,8 +131,8 @@ public sealed class BoundTreeInterpreter
         {
             "I32" => (object)int.Parse(boundNumberLiteral.Token.Body),
             "I64" => (object)long.Parse(boundNumberLiteral.Token.Body),
-            "F32" => (object)float.Parse(boundNumberLiteral.Token.Body),
-            "F64" => (object)double.Parse(boundNumberLiteral.Token.Body),
+            "F32" => (object)float.Parse(boundNumberLiteral.Token.Body, CultureInfo.InvariantCulture),
+            "F64" => (object)double.Parse(boundNumberLiteral.Token.Body, CultureInfo.InvariantCulture),
             _ => throw new UnreachableException()
         };
     
@@ -210,7 +211,7 @@ public sealed class BoundTreeInterpreter
             Intrinsic.LessThanOrEqualI32 => (int)args[0] <= (int)args[1],
             Intrinsic.GreaterThanI32 => (int)args[0] > (int)args[1],
             Intrinsic.GreaterThanOrEqualI32 => (int)args[0] >= (int)args[1],
-            
+
             Intrinsic.NegateI64 => -(long)args[0],
             Intrinsic.AddI64 => (long)args[0] + (long)args[1],
             Intrinsic.SubtractI64 => (long)args[0] - (long)args[1],
@@ -222,7 +223,7 @@ public sealed class BoundTreeInterpreter
             Intrinsic.LessThanOrEqualI64 => (long)args[0] <= (long)args[1],
             Intrinsic.GreaterThanI64 => (long)args[0] > (long)args[1],
             Intrinsic.GreaterThanOrEqualI64 => (long)args[0] >= (long)args[1],
-            
+
             Intrinsic.NegateF32 => -(float)args[0],
             Intrinsic.AddF32 => (float)args[0] + (float)args[1],
             Intrinsic.SubtractF32 => (float)args[0] - (float)args[1],
@@ -234,7 +235,7 @@ public sealed class BoundTreeInterpreter
             Intrinsic.LessThanOrEqualF32 => (float)args[0] <= (float)args[1],
             Intrinsic.GreaterThanF32 => (float)args[0] > (float)args[1],
             Intrinsic.GreaterThanOrEqualF32 => (float)args[0] >= (float)args[1],
-            
+
             Intrinsic.NegateF64 => -(double)args[0],
             Intrinsic.AddF64 => (double)args[0] + (double)args[1],
             Intrinsic.SubtractF64 => (double)args[0] - (double)args[1],
@@ -246,21 +247,22 @@ public sealed class BoundTreeInterpreter
             Intrinsic.LessThanOrEqualF64 => (double)args[0] <= (double)args[1],
             Intrinsic.GreaterThanF64 => (double)args[0] > (double)args[1],
             Intrinsic.GreaterThanOrEqualF64 => (double)args[0] >= (double)args[1],
-            
+
             Intrinsic.NotBool => !(bool)args[0],
             Intrinsic.EqualsBool => (bool)args[0] == (bool)args[1],
             Intrinsic.NotEqualsBool => (bool)args[0] != (bool)args[1],
-            
+
             Intrinsic.EqualsUnit => true,
             Intrinsic.NotEqualsUnit => false,
-            
+
             Intrinsic.EqualsString => (string)args[0] == (string)args[1],
             Intrinsic.NotEqualsString => (string)args[0] != (string)args[1],
-            
+
             Intrinsic.ToStringI32 or Intrinsic.ToStringI64
-                or Intrinsic.ToStringF32 or Intrinsic.ToStringF64
                 or Intrinsic.ToStringBool => args[0].ToString(),
-            
+            Intrinsic.ToStringF32 => ((float)args[0]).ToString(CultureInfo.InvariantCulture),
+            Intrinsic.ToStringF64 => ((double)args[0]).ToString(CultureInfo.InvariantCulture),
+
             _ => throw new UnreachableException()
         };
     }
