@@ -2,9 +2,7 @@
                                        ≽(◕ ᴗ ◕)≼
 
 **Next:** 
-* TestEvaluator: Support `//@run` and `//= expectation`
 * Test corpus: Switch from `//=== stdout` to `//=` syntax
-* Run `//@run` tests :))
 * Test corpus cleanup (what's _really_ necessary?)
 
 * distinguish method calls (Fun.IsMethod/SelfParameter) opposed to static/shared/free (research keywords)

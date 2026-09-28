@@ -48,14 +48,22 @@ public sealed class Evaluator
             return Evaluation.Failed(message);
         }
         
-        Debug.Assert(testFile.Directive.Kind is not DirectiveKind.Error);
-        if (testFile.Directive.Kind is not DirectiveKind.Check)
-            return Evaluation.Unsupported($"Test directive {testFile.Directive.Kind} is not supported.");
-
-        // Evaluate
         var evaluator = new Evaluator(testFile);
-        evaluator.CheckDiagnostics();
-        evaluator.CheckTypes();
+        switch (testFile.Directive.Kind)
+        {
+            case DirectiveKind.Check:
+                evaluator.CheckDiagnostics();
+                evaluator.CheckTypes();
+                break;
+
+            case DirectiveKind.Run:
+                evaluator.CheckDiagnostics();
+                evaluator.CheckExpectedOutput();
+                break;
+
+            default:
+                throw new UnreachableException("Unknown directive.");
+        }
 
         if (evaluator._failedChecks.Count > 0)
         {
@@ -159,4 +167,34 @@ public sealed class Evaluator
             }
         }
     }
+
+
+    private void CheckExpectedOutput()
+    {
+        if (_testFile.Expectation is null)
+        {
+            _failedChecks.Add(new FailedCheck(0, "Missing expected output."));
+            return;
+        }
+
+        var output = new StringWriter();
+        BoundTreeInterpreter.Run(_testFile.Compilation.BoundFile, output);
+        
+        var actualOutput = Normalize(output.ToString());
+        var expectedOutput = Normalize(_testFile.Expectation.Text);
+
+        if (actualOutput != expectedOutput)
+        {
+            var message = $"Output was '{actualOutput}', but expected '{expectedOutput}'.";
+            _failedChecks.Add(new FailedCheck(_testFile.Expectation.Location.StartLine, message));
+        }
+    }
+
+    /// <summary>
+    /// Removes whitespace that start and end each line and replaces line-breaks
+    /// with '\n'. Used for comparing output.
+    /// </summary>
+    private string Normalize(string input)
+        => string.Join('\n', input.Split('\n').Select(line => line.Trim()));
+
 }
