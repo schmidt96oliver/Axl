@@ -2,7 +2,7 @@
 
 namespace Axl.Compiler.Symbols;
 
-public sealed class IntrinsicFunSymbol(
+public sealed class FunSymbol(
     string name,
     Intrinsic intrinsic,
     ImmutableArray<TypeSymbol> parameterTypes,

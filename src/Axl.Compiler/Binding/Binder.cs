@@ -346,7 +346,7 @@ public sealed class Binder
         
         // Try to find duck-typed ToString
         if (boundExpr.Type is ModuleOrTypeSymbol moduleOrType
-            && moduleOrType.LookupFun("ToString", [boundExpr.Type]) is IntrinsicFunSymbol toStringFun
+            && moduleOrType.LookupFun("ToString", [boundExpr.Type]) is FunSymbol toStringFun
             && IsAssignableTo(toStringFun.ReturnType, _baseModule.String))
         {
             return new BoundCall(toStringFun, [boundExpr], toStringFun.ReturnType, syntax.Expr);
@@ -670,9 +670,9 @@ public sealed class Binder
     }
 
     
-    private union BoundCallee(IntrinsicFunSymbol, MethodCall);
+    private union BoundCallee(FunSymbol, MethodCall);
 
-    private readonly record struct MethodCall(BoundExpr Expr, IntrinsicFunSymbol MemberFun);
+    private readonly record struct MethodCall(BoundExpr Expr, FunSymbol MemberFun);
     
     private BoundExpr BindCall(CallExprSyntax syntax)
     {
@@ -685,7 +685,7 @@ public sealed class Binder
 
         var fun = (BoundCallee)callee! switch
         {
-            IntrinsicFunSymbol funSymbol => funSymbol, 
+            FunSymbol funSymbol => funSymbol, 
             MethodCall(_, var memberFun) => memberFun
         };
 
@@ -720,7 +720,7 @@ public sealed class Binder
         {
             case BoundSymbol boundSymbol:
             {
-                if (boundSymbol.Symbol is not IntrinsicFunSymbol funSymbol)
+                if (boundSymbol.Symbol is not FunSymbol funSymbol)
                 {
                     _diagnostics.ReportError(new Diagnostic.UnexpectedSymbolKind(boundSymbol.Syntax, boundSymbol.Symbol,
                         SymbolKind.Fun));
@@ -732,7 +732,7 @@ public sealed class Binder
             
             case BoundInstanceMember instanceMember:
             {
-                if (instanceMember.Member.Symbol is not IntrinsicFunSymbol funSymbol)
+                if (instanceMember.Member.Symbol is not FunSymbol funSymbol)
                 {
                     _diagnostics.ReportError(new Diagnostic.UnexpectedSymbolKind(instanceMember.Member.Syntax, instanceMember.Member.Symbol, SymbolKind.Fun));
                     return null;

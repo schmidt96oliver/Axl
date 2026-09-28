@@ -136,7 +136,7 @@ public partial record Diagnostic
         public override string Message => $"Cannot convert from type '{From.Name}' to '{To.Name}'.";
     }
 
-    public sealed record ArityMismatch(ArgListSyntax Syntax, IntrinsicFunSymbol Fun, int Got, bool IsMethodCall) : Error
+    public sealed record ArityMismatch(ArgListSyntax Syntax, FunSymbol Fun, int Got, bool IsMethodCall) : Error
     {
         public override ImmutableArray<SourceLocation> Locations
         {
@@ -162,7 +162,7 @@ public partial record Diagnostic
         public override string Message => $"Expected {SymbolKind.Fun.DisplayName}.";
     }
 
-    public sealed record CannotCallAsMethod(SyntaxNode MethodSyntax, IntrinsicFunSymbol MethodSymbol, TypeSymbol ExprType) : Error
+    public sealed record CannotCallAsMethod(SyntaxNode MethodSyntax, FunSymbol MethodSymbol, TypeSymbol ExprType) : Error
     {
         public override ImmutableArray<SourceLocation> Locations => [MethodSyntax.Location];
 

@@ -4,10 +4,10 @@ using Axl.Compiler.Syntax;
 
 namespace Axl.Compiler.Binding.BoundTree;
 
-public sealed class BoundCall(IntrinsicFunSymbol fun, ImmutableArray<BoundExpr> arguments, TypeSymbol type, SyntaxNode syntax)
+public sealed class BoundCall(FunSymbol fun, ImmutableArray<BoundExpr> arguments, TypeSymbol type, SyntaxNode syntax)
     : BoundExpr(type, syntax)
 {
-    public IntrinsicFunSymbol Fun { get; } = fun;
+    public FunSymbol Fun { get; } = fun;
     public ImmutableArray<BoundExpr> Arguments { get; } = arguments;
 
     protected override ImmutableArray<BoundStmt> GetChildren()

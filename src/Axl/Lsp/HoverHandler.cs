@@ -42,7 +42,7 @@ public class HoverHandler : HoverHandlerBase
         VariableSymbol{IsReadOnly: true} variable => $"let {variable.Name}: `{variable.Type.Name}`",
         TypeSymbol type => $"type `{type.Name}`",
         BaseModuleSymbol => "base module",
-        IntrinsicFunSymbol intrinsicFun => $"fun '{intrinsicFun.Name}' @intrinsic({intrinsicFun.Intrinsic}) ",
+        FunSymbol intrinsicFun => $"fun '{intrinsicFun.Name}' @intrinsic({intrinsicFun.Intrinsic}) ",
         _ => ""
     };
 }
