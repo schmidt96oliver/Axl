@@ -1,0 +1,17 @@
+﻿//@run
+//= -1 2 0 3 1 true false true true false false
+  
+// Implicitly tests .ToString as well 
+  
+Print("{-1i64} ");
+Print("{1i64 + 1i64} ");
+Print("{1i64 - 1i64} ");
+Print("{1i64 * 3i64} ");
+Print("{2i64 / 2i64} ");
+
+Print("{1i64 == 1i64} ");
+Print("{1i64 != 1i64} ");
+Print("{1i64 < 2i64} ");
+Print("{1i64 <= 2i64} ");
+Print("{1i64 > 2i64} ");
+Print("{1i64 >= 2i64} ");

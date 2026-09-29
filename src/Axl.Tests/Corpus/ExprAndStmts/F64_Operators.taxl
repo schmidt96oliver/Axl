@@ -1,0 +1,17 @@
+﻿//@run
+//= -1.1 2.2 0 3 1 true false true true false false 
+  
+// Implicitly tests .ToString as well  
+  
+Print("{-1.1f64} ");
+Print("{1.1f64 + 1.1f64} ");
+Print("{1.1f64 - 1.1f64} ");
+Print("{1f64 * 3f64} ");
+Print("{2.1f64 / 2.1f64} ");
+
+Print("{1.1f64 == 1.1f64} ");
+Print("{1.1f64 != 1.1f64} ");
+Print("{1f64 < 2f64} ");
+Print("{1f64 <= 2f64} ");
+Print("{1f64 > 2f64} ");
+Print("{1f64 >= 2f64} ");
