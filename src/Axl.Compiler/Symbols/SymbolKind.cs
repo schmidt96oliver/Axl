@@ -3,7 +3,8 @@
 public enum SymbolKind
 {
     Fun,
+    FunGroup,
     Module,
     Type,
-    Variable
+    Variable,
 }

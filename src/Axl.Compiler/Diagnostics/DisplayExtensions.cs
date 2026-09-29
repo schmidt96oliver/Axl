@@ -27,6 +27,7 @@ public static class DisplayExtensions
         public string DisplayName => kind switch
         {
             SymbolKind.Fun => "a function",
+            SymbolKind.FunGroup => "a function group",
             SymbolKind.Module => "a module",
             SymbolKind.Variable => "a variable",
             SymbolKind.Type => "a type",

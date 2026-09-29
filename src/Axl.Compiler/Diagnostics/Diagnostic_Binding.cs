@@ -136,7 +136,7 @@ public partial record Diagnostic
         public override string Message => $"Cannot convert from type '{From.Name}' to '{To.Name}'.";
     }
 
-    public sealed record ArityMismatch(ArgListSyntax Syntax, FunSymbol Fun, int Got, bool IsMethodCall) : Error
+    public sealed record ArityMismatch(ArgListSyntax Syntax, FunSymbol Fun, int Got) : Error
     {
         public override ImmutableArray<SourceLocation> Locations
         {
@@ -150,10 +150,8 @@ public partial record Diagnostic
             }
         }
 
-        private int ArityMinus => IsMethodCall ? 1 : 0;
-
         public override string Message =>
-            $"'{Fun.Name}' has {Fun.ParameterTypes.Length - ArityMinus} parameter(s), but was called with {Got - ArityMinus} argument(s).";
+            $"'{Fun.Name}' has {Fun.ParameterTypes.Length} parameter(s), but was called with {Got} argument(s).";
     }
 
     public sealed record InvalidCallee(ExprSyntax Syntax) : Error
@@ -162,20 +160,23 @@ public partial record Diagnostic
         public override string Message => $"Expected {SymbolKind.Fun.DisplayName}.";
     }
 
-    public sealed record CannotCallAsMethod(SyntaxNode MethodSyntax, FunSymbol MethodSymbol, TypeSymbol ExprType) : Error
-    {
-        public override ImmutableArray<SourceLocation> Locations => [MethodSyntax.Location];
-
-        public override string Message => MethodSymbol.ParameterTypes.Length == 0
-            ? $"Cannot call '{MethodSymbol.Name}' as a method, because it has 0 parameters."
-            : $"Cannot call '{MethodSymbol.Name}' as a method, because it's first parameter does not accept type '{ExprType.Name}'.";
-    }
-
     public sealed record NumberTooBig(NumberLiteralSyntax Syntax, TypeSymbol TargetType) : Error
     {
         public override ImmutableArray<SourceLocation> Locations => [Syntax.Location];
 
         public override string Message
             => $"The integral is too big to fit into '{TargetType.Name}'.";
+    }
+
+    public sealed record CannotCallWithoutReceiver(FunSymbol Fun, ExprSyntax Syntax) : Error
+    {
+        public override ImmutableArray<SourceLocation> Locations => [Syntax.Location];
+        public override string Message => $"'{Fun.Name}' is a method. It cannot be called from static context.";
+    }
+    
+    public sealed record CannotCallWithReceiver(FunSymbol Fun, ExprSyntax Syntax) : Error
+    {
+        public override ImmutableArray<SourceLocation> Locations => [Syntax.Location];
+        public override string Message => $"'{Fun.Name}' is static. It cannot be called from an instance.";
     }
 }

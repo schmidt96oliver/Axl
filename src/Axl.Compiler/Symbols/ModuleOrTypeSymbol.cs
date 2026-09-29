@@ -6,11 +6,6 @@ public closed class ModuleOrTypeSymbol(string name) : Symbol(name)
 {
     public abstract ImmutableArray<Symbol> Members { get; }
     
-    public FunSymbol? LookupFun(string name, ImmutableArray<TypeSymbol> parameterTypes)
-        => Members.OfType<FunSymbol>().SingleOrDefault(fun => fun.Name == name &&
-                                                                       fun.ParameterTypes
-                                                                           .SequenceEqual(parameterTypes));
-    
     public Symbol? LookupMember(string name)
         => name is ""
             ? null

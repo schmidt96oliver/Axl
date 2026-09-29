@@ -2,6 +2,7 @@
 using System.Collections.Immutable;
 using System.Diagnostics;
 using System.Globalization;
+using System.Runtime.CompilerServices;
 using Axl.Compiler.Binding.BoundTree;
 using Axl.Compiler.Diagnostics;
 using Axl.Compiler.Symbols;
@@ -77,6 +78,26 @@ public sealed class Binder
         if (source == _baseModule.Never) return true;
 
         return source == target;
+    }
+
+    private FunSymbol? LookupMethod(TypeSymbol instanceType, string name, ImmutableArray<TypeSymbol> argumentTypes)
+    {
+        var symbol = instanceType.LookupMember(name);
+        var fun = symbol switch
+        {
+            FunSymbol funSymbol => funSymbol,
+            FunGroupSymbol funGroupSymbol => funGroupSymbol.LookupFun(instanceType, argumentTypes),
+            _ => null
+        };
+        
+        if (fun is { Receiver: not null } &&
+            IsAssignableTo(instanceType, fun.Receiver) &&
+            fun.ParameterTypes.SequenceEqual(argumentTypes))
+        {
+            return fun;
+        }
+
+        return null;
     }
     
     
@@ -345,18 +366,19 @@ public sealed class Binder
             return boundExpr;
         
         // Try to find duck-typed ToString
-        if (boundExpr.Type is ModuleOrTypeSymbol moduleOrType
-            && moduleOrType.LookupFun("ToString", [boundExpr.Type]) is FunSymbol toStringFun
+        if (LookupMethod(boundExpr.Type, "ToString", []) is FunSymbol toStringFun
             && IsAssignableTo(toStringFun.ReturnType, _baseModule.String))
         {
-            return new BoundCall(toStringFun, [boundExpr], toStringFun.ReturnType, syntax.Expr);
+            return new BoundCall(toStringFun, receiver: boundExpr, arguments: [], syntax.Expr);
         }
         
         // Could not convert to string
         _diagnostics.ReportError(new Diagnostic.CannotConvert(syntax.Expr, From: boundExpr.Type, To: _baseModule.String));
         return new BoundErrorExpr(recoveredExprs: [boundExpr], type: _baseModule.Error, syntax);
     }
+
     
+
     private BoundExpr BindNumberLiteral(NumberLiteralSyntax syntax)
     {
         var type = syntax.Token.Suffix switch
@@ -420,42 +442,42 @@ public sealed class Binder
     
     #region Operator Exprs
 
-    private BoundExpr BindBinary(BinaryExprSyntax syntax) => syntax.Operator.Kind switch
+    private BoundExpr BindUnary(UnaryExprSyntax syntax)
+        => BindOperatorCall(syntax.Operator.Text.ToString(), receiver: BindExpr(syntax.Operand), arguments: [], syntax);
+    
+    private BoundExpr BindBinary(BinaryExprSyntax syntax)
     {
-        TokenKind.DoubleAmpersand or TokenKind.DoubleVerticalBar => BindBooleanOperator(syntax),
-        TokenKind.Equal => BindAssign(syntax),
-        _ => BindBinaryOperator(syntax)
-    };
-
-    private BoundExpr BindBinaryOperator(BinaryExprSyntax syntax)
-    {
+        if (syntax.Operator.Kind is TokenKind.DoubleAmpersand or TokenKind.DoubleVerticalBar)
+            return BindBooleanOperator(syntax);
+        if (syntax.Operator.Kind == TokenKind.Equal)
+            return BindAssign(syntax);
+        
         var left = BindExpr(syntax.Left);
         var right = BindExpr(syntax.Right);
 
-        return BindOperatorCall(syntax.Operator.Text, [left, right], syntax);
+        return BindOperatorCall(syntax.Operator.Text.ToString(), receiver: left, arguments: [right], syntax);
     }
     
-    private BoundExpr BindOperatorCall(ReadOnlySpan<char> operatorText, ImmutableArray<BoundExpr> arguments, SyntaxNode syntax)
+    private BoundExpr BindOperatorCall(string operatorName, BoundExpr receiver, ImmutableArray<BoundExpr> arguments, SyntaxNode syntax)
     {
-        Debug.Assert(arguments.Length >= 1);
-        
-        if (arguments.Any(arg => arg.Type == _baseModule.Error))
-            return new BoundErrorExpr(arguments, _baseModule.Error, syntax);
-
-        var fun = arguments[0].Type.LookupFun(operatorText.ToString(), [.. arguments.Select(arg => arg.Type)]);
-        if (fun is null)
+        if (receiver.Type == _baseModule.Error ||
+            arguments.Any(arg => arg.Type == _baseModule.Error))
         {
-            _diagnostics.ReportError(
-                new Diagnostic.UndefinedOperator(operatorText.ToString(), [.. arguments.Select(arg => arg.Type)], syntax));
             return new BoundErrorExpr(arguments, _baseModule.Error, syntax);
         }
 
-        return new BoundCall(fun, arguments, fun.ReturnType, syntax);
+        var operatorFun = LookupMethod(receiver.Type, operatorName, [.. arguments.Select(expr => expr.Type)]);
+        if (operatorFun is null)
+        {
+            _diagnostics.ReportError(
+                new Diagnostic.UndefinedOperator(operatorName,
+                    [receiver.Type, .. arguments.Select(arg => arg.Type)], syntax));
+            return new BoundErrorExpr(arguments, _baseModule.Error, syntax);
+        }
+
+        return new BoundCall(operatorFun, receiver, arguments, syntax);
     }
 
-    private BoundExpr BindUnary(UnaryExprSyntax syntax)
-        => BindOperatorCall(syntax.Operator.Text, [BindExpr(syntax.Operand)], syntax);
-    
     private BoundExpr BindBooleanOperator(BinaryExprSyntax syntax)
     {
         Debug.Assert(syntax.Operator.Kind is TokenKind.DoubleAmpersand or TokenKind.DoubleVerticalBar);
@@ -628,7 +650,7 @@ public sealed class Binder
                 return null;
         }
     }
-
+    
     private BoundExprOrSymbol BindGetMember(GetMemberExprSyntax syntax)
     {
         var left = BindExprOrSymbol(syntax.Left);
@@ -669,34 +691,24 @@ public sealed class Binder
         }
     }
 
-    
-    private union BoundCallee(FunSymbol, MethodCall);
-
-    private readonly record struct MethodCall(BoundExpr Expr, FunSymbol MemberFun);
+    private readonly record struct BoundCallee(FunSymbol Fun, BoundExpr? Receiver);
     
     private BoundExpr BindCall(CallExprSyntax syntax)
     {
         var arguments = syntax.ArgumentExprs.Select(BindExpr).ToImmutableArray();
         
         // Bind Callee
-        var callee = BindCallee(syntax.Callee);
-        if (callee is null || arguments.Any(arg => arg.Type == _baseModule.Error))
-            return new BoundErrorExpr(recoveredExprs: [..arguments], _baseModule.Error, syntax);
-
-        var fun = (BoundCallee)callee! switch
+        if (BindCallee(syntax.Callee) is not { } callee || 
+            arguments.Any(arg => arg.Type == _baseModule.Error))
         {
-            FunSymbol funSymbol => funSymbol, 
-            MethodCall(_, var memberFun) => memberFun
-        };
+            return new BoundErrorExpr(recoveredExprs: [.. arguments], _baseModule.Error, syntax);
+        }
 
-        if (callee is MethodCall methodCallee)
-            arguments = [methodCallee.Expr, .. arguments];
-        
         // Check arity
-        if (arguments.Length != fun.ParameterTypes.Length)
+        if (arguments.Length != callee.Fun.ParameterTypes.Length)
         {
             _diagnostics.ReportError(new Diagnostic.ArityMismatch(syntax.Children.FirstOfType<ArgListSyntax>(),
-                fun, Got: arguments.Length, IsMethodCall: callee is MethodCall));
+                callee.Fun, Got: arguments.Length));
             return new BoundErrorExpr(recoveredExprs: arguments, _baseModule.Error, syntax);
         }
 
@@ -704,13 +716,13 @@ public sealed class Binder
         var hadError = false;
         for (var i = 0; i < arguments.Length; i++)
         {
-            if (!CheckTypeAndReportMismatch(arguments[i], fun.ParameterTypes[i]))
+            if (!CheckTypeAndReportMismatch(arguments[i], callee.Fun.ParameterTypes[i]))
                 hadError = true;
         }
         if (hadError)
             return new BoundErrorExpr(recoveredExprs: arguments, _baseModule.Error, syntax);
 
-        return new BoundCall(fun, arguments, fun.ReturnType, syntax);
+        return new BoundCall(callee.Fun, callee.Receiver, arguments, syntax);
     }
 
     private BoundCallee? BindCallee(ExprSyntax syntax)
@@ -727,7 +739,13 @@ public sealed class Binder
                     return null;
                 }
 
-                return funSymbol;
+                if (funSymbol.Receiver is not null)
+                {
+                    _diagnostics.ReportError(new Diagnostic.CannotCallWithoutReceiver(funSymbol, syntax));
+                    return null;
+                }
+
+                return new BoundCallee(funSymbol, Receiver: null);
             }
             
             case BoundInstanceMember instanceMember:
@@ -738,16 +756,14 @@ public sealed class Binder
                     return null;
                 }
 
-                if (funSymbol.ParameterTypes.Length == 0 ||
-                    !IsAssignableTo(instanceMember.Expr.Type, funSymbol.ParameterTypes[0]))
+                if (funSymbol.Receiver is null ||
+                    !IsAssignableTo(instanceMember.Expr.Type, funSymbol.Receiver))
                 {
-                    _diagnostics.ReportError(new Diagnostic.CannotCallAsMethod(MethodSyntax: instanceMember.Member.Syntax, 
-                        MethodSymbol: funSymbol,
-                        ExprType: instanceMember.Expr.Type));
+                    _diagnostics.ReportError(new Diagnostic.CannotCallWithReceiver(funSymbol, syntax));
                     return null;
                 }
-
-                return new MethodCall(instanceMember.Expr, funSymbol);
+                
+                return new BoundCallee(funSymbol, instanceMember.Expr);
             }
             
             case BoundErrorExpr:

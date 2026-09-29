@@ -2,9 +2,11 @@
                                        ≽(◕ ᴗ ◕)≼
 
 **Next:** 
-* distinguish method calls (Fun.IsMethod/SelfParameter) opposed to static/shared/free (research keywords)
-  * Options `shared fun`, `static fun` or `fun` vs `meth/act/def/met`
-  * Should operators be `static` or instance members?
+* Add tests for all primitive operators
+
+* Add Parameters as VariableSymbol/LocalSymbol/ParameterSymbol
+
+* ?? Add `ErrorTypeSymbol.Instance` instead of `BaseModuleSymbol.Error`, because error is not in source text
 
 # Roadmap
 
@@ -19,9 +21,10 @@
 
 ## 2. Funs (in script)
 * [ ] Forward-declaration of funs
-* [ ] Local funs
-* [ ] Cannot be shadowed by local (variable or parameter)
+* [ ] Overloads
+* [ ] Reject Local funs
 * [ ] Definite Return Analysis (needs MIR or ad-hoc)
+* [ ] FunGroup bound as callee
 * ?? Named arguments
 
 ## 3. Type (in script)
