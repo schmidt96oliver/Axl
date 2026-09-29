@@ -18,7 +18,6 @@ public sealed class BaseModuleSymbol : ModuleOrTypeSymbol
     public TypeSymbol Unit { get; }
 
     public TypeSymbol Never { get; }
-    public TypeSymbol Error { get; }
 
 
     public TypeSymbol DefaultIntType => I32;
@@ -41,9 +40,8 @@ public sealed class BaseModuleSymbol : ModuleOrTypeSymbol
 
         Members = [I32, I64, F32, F64, Bool, String, Unit, .. funs];
 
-        // Error and Never are not nameable from code, so they will not become
+        // Never is not nameable from code, so they will not become
         // members.
-        Error = new TypeSymbol("Error", () => []);
         Never = new TypeSymbol("Never", () => []);
     }
 

@@ -4,7 +4,8 @@ using Axl.Compiler.Syntax;
 
 namespace Axl.Compiler.Binding.BoundTree;
 
-public sealed class BoundErrorExpr(ImmutableArray<BoundExpr> recoveredExprs, TypeSymbol type, SyntaxNode syntax) : BoundExpr(type, syntax)
+public sealed class BoundErrorExpr(ImmutableArray<BoundExpr> recoveredExprs, SyntaxNode syntax) 
+    : BoundExpr(ErrorTypeSymbol.Instance, syntax)
 {
     public ImmutableArray<BoundExpr> RecoveredExprs { get; } = recoveredExprs;
 

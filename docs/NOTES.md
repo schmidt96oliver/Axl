@@ -2,7 +2,6 @@
                                        ≽(◕ ᴗ ◕)≼
 
 **Next:** 
-* ?? Add `ErrorTypeSymbol.Instance` instead of `BaseModuleSymbol.Error`, because error is not in source text
 
 # Roadmap
 

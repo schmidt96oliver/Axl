@@ -2,7 +2,6 @@
 using System.Collections.Immutable;
 using System.Diagnostics;
 using System.Globalization;
-using System.Runtime.CompilerServices;
 using Axl.Compiler.Binding.BoundTree;
 using Axl.Compiler.Diagnostics;
 using Axl.Compiler.Symbols;
@@ -72,7 +71,7 @@ public sealed class Binder
     public bool IsAssignableTo(TypeSymbol source, TypeSymbol target)
     {
         // Errors are silent
-        if (source == _baseModule.Error || target == _baseModule.Error) return true;
+        if (source is ErrorTypeSymbol || target is ErrorTypeSymbol) return true;
         
         // Never assigns to anything
         if (source == _baseModule.Never) return true;
@@ -183,7 +182,7 @@ public sealed class Binder
             current = BindSymbol(parts[i], parent: current,
                 expectedKind: i == parts.Length - 1 ? SymbolKind.Type : null);
             if (current is null)
-                return _baseModule.Error;
+                return ErrorTypeSymbol.Instance;
         }
 
         return (TypeSymbol)current!;
@@ -245,8 +244,7 @@ public sealed class Binder
             // where a null syntax would be nice. But practically, syntax shouldn't be
             // touched on an error expr, si it should be fine. Mark my words in case of
             // oddities :D.
-            return new BoundErrorExpr(recoveredExprs: [],
-                _baseModule.Error, syntax);    
+            return new BoundErrorExpr(recoveredExprs: [], syntax: syntax);    
         }
     
         return BindExpr(syntax.Initializer);
@@ -304,7 +302,7 @@ public sealed class Binder
         var recovered = syntax.RecoverableNodes
             .Select(BindExpr)
             .ToImmutableArray();
-        return new BoundErrorExpr(recovered, _baseModule.Error, syntax);
+        return new BoundErrorExpr(recovered, syntax);
     }
     
     private BoundExpr BindExpr(ExprSyntax syntax)
@@ -320,12 +318,12 @@ public sealed class Binder
             
             case BoundSymbol boundSymbol:
                 _diagnostics.ReportError(new Diagnostic.UnexpectedSymbolKind(boundSymbol.Syntax, boundSymbol.Symbol, SymbolKind.Variable));
-                return new BoundErrorExpr(recoveredExprs: [], _baseModule.Error, syntax);
+                return new BoundErrorExpr(recoveredExprs: [], syntax: syntax);
             
             case BoundInstanceMember instanceMember:
                 var member = instanceMember.Member;
                 _diagnostics.ReportError(new Diagnostic.UnexpectedSymbolKind(member.Syntax, member.Symbol, SymbolKind.Variable));
-                return new BoundErrorExpr(recoveredExprs: [], _baseModule.Error, syntax);
+                return new BoundErrorExpr(recoveredExprs: [], syntax: syntax);
                 
             default:
                 throw new UnreachableException();
@@ -374,7 +372,7 @@ public sealed class Binder
         
         // Could not convert to string
         _diagnostics.ReportError(new Diagnostic.CannotConvert(syntax.Expr, From: boundExpr.Type, To: _baseModule.String));
-        return new BoundErrorExpr(recoveredExprs: [boundExpr], type: _baseModule.Error, syntax);
+        return new BoundErrorExpr(recoveredExprs: [boundExpr], syntax: syntax);
     }
 
     
@@ -396,7 +394,7 @@ public sealed class Binder
             type != _baseModule.F32 && type != _baseModule.F64)
         {
             _diagnostics.ReportError(new Diagnostic.SuffixInvalidForDecimalNumber(syntax));
-            return new BoundErrorExpr([], _baseModule.Error, syntax);
+            return new BoundErrorExpr([], syntax);
         }
 
         if (type == _baseModule.I32)
@@ -405,7 +403,7 @@ public sealed class Binder
             {
                 // The number literal is too big to fit inside an int/i32.
                 _diagnostics.ReportError(new Diagnostic.NumberTooBig(syntax, type));
-                return new BoundErrorExpr([], _baseModule.Error, syntax);
+                return new BoundErrorExpr([], syntax);
             }
 
             return new BoundConst(value, type, syntax);
@@ -417,7 +415,7 @@ public sealed class Binder
             {
                 // The number literal is too big to fit inside an long/i64.
                 _diagnostics.ReportError(new Diagnostic.NumberTooBig(syntax, type));
-                return new BoundErrorExpr([], _baseModule.Error, syntax);
+                return new BoundErrorExpr([], syntax);
             }
 
             return new BoundConst(value, type, syntax);
@@ -460,10 +458,10 @@ public sealed class Binder
     
     private BoundExpr BindOperatorCall(string operatorName, BoundExpr receiver, ImmutableArray<BoundExpr> arguments, SyntaxNode syntax)
     {
-        if (receiver.Type == _baseModule.Error ||
-            arguments.Any(arg => arg.Type == _baseModule.Error))
+        if (receiver.Type is ErrorTypeSymbol ||
+            arguments.Any(arg => arg.Type is ErrorTypeSymbol))
         {
-            return new BoundErrorExpr(arguments, _baseModule.Error, syntax);
+            return new BoundErrorExpr(arguments, syntax);
         }
 
         var operatorFun = LookupMethod(receiver.Type, operatorName, [.. arguments.Select(expr => expr.Type)]);
@@ -472,7 +470,7 @@ public sealed class Binder
             _diagnostics.ReportError(
                 new Diagnostic.UndefinedOperator(operatorName,
                     [receiver.Type, .. arguments.Select(arg => arg.Type)], syntax));
-            return new BoundErrorExpr(arguments, _baseModule.Error, syntax);
+            return new BoundErrorExpr(arguments, syntax);
         }
 
         return new BoundCall(operatorFun, receiver, arguments, syntax);
@@ -484,20 +482,18 @@ public sealed class Binder
     
         var left = BindExpr(syntax.Left);
         var right = BindExpr(syntax.Right);
-        if (left.Type == _baseModule.Error || right.Type == _baseModule.Error)
+        if (left.Type is ErrorTypeSymbol || right.Type is ErrorTypeSymbol)
         {
             // Some operands have an error. So don't type-check them
             // be silent and wrap in an error expression.
-            return new BoundErrorExpr(recoveredExprs: [left, right],
-                type: _baseModule.Error, syntax);
+            return new BoundErrorExpr(recoveredExprs: [left, right], syntax: syntax);
         }
     
         // Type-check against bool
         if (!CheckTypeAndReportMismatch(left, _baseModule.Bool) ||
             !CheckTypeAndReportMismatch(right, _baseModule.Bool))
         {
-            return new BoundErrorExpr(recoveredExprs: [left, right],
-                type: _baseModule.Error, syntax);
+            return new BoundErrorExpr(recoveredExprs: [left, right], syntax: syntax);
         }
     
         if (syntax.Operator.Kind is TokenKind.DoubleAmpersand)
@@ -525,7 +521,7 @@ public sealed class Binder
     {
         var condition = BindExpr(syntax);
         if (!CheckTypeAndReportMismatch(condition, expected: _baseModule.Bool))
-            condition = new BoundErrorExpr(recoveredExprs: [condition], type: _baseModule.Error, syntax);
+            condition = new BoundErrorExpr(recoveredExprs: [condition], syntax: syntax);
 
         return condition;
     }
@@ -540,7 +536,7 @@ public sealed class Binder
         if (!IsAssignableTo(source: @else.Type, target: body.Type))
         {
             _diagnostics.ReportError(new Diagnostic.IncompatibleBranches(body, @else));
-            type = _baseModule.Error;
+            type = ErrorTypeSymbol.Instance;
         }
         
         return new BoundIfExpr(condition, body, @else, type, syntax);
@@ -552,7 +548,7 @@ public sealed class Binder
         if (elseSyntax is null)
         {
             _diagnostics.ReportError(new Diagnostic.MissingElse(ifSyntax));
-            return new BoundErrorExpr([], _baseModule.Error, ifSyntax);
+            return new BoundErrorExpr([], ifSyntax);
         }
 
         return BindExpr(elseSyntax);
@@ -577,7 +573,7 @@ public sealed class Binder
         if (!_inLoop)
         {
             _diagnostics.ReportError(new Diagnostic.BreakOrContinueOutsideLoop(syntax));
-            return new BoundErrorExpr(recoveredExprs: [], _baseModule.Error, syntax);
+            return new BoundErrorExpr(recoveredExprs: [], syntax: syntax);
         }
     
         return syntax is BreakExprSyntax
@@ -606,7 +602,7 @@ public sealed class Binder
         if (BindSymbol(syntax) is { } symbol)
             return new BoundSymbol(syntax, symbol);
 
-        return new BoundErrorExpr([], _baseModule.Error, syntax);
+        return new BoundErrorExpr([], syntax);
     }
     
     private BoundExpr BindAssign(BinaryExprSyntax syntax)
@@ -617,14 +613,14 @@ public sealed class Binder
         var target = BindAssignTarget(syntax.Left);
         
         if (target is null)
-            return new BoundErrorExpr(recoveredExprs: [value], _baseModule.Error, syntax);
+            return new BoundErrorExpr(recoveredExprs: [value], syntax: syntax);
         
-        if (target.Type == _baseModule.Error || value.Type == _baseModule.Error)
+        if (target.Type is ErrorTypeSymbol || value.Type is ErrorTypeSymbol)
             return new BoundAssign(target, value, value.Type, syntax);
         
         var type = CheckTypeAndReportMismatch(value, target.Type)
             ? _baseModule.Unit
-            : _baseModule.Error;
+            : ErrorTypeSymbol.Instance;
         return new BoundAssign(target, value, type, syntax);
     }
 
@@ -668,23 +664,23 @@ public sealed class Binder
             BoundSymbol symbol
                 => BindSymbol(syntax.Member, parent: symbol.Symbol) is { } member
                     ? new BoundSymbol(syntax.Member, member)
-                    : new BoundErrorExpr([], _baseModule.Error, syntax),
+                    : new BoundErrorExpr([], syntax),
 
             BoundExpr expr => BindInstanceMember(expr),
 
             BoundInstanceMember instanceMember
-                => new BoundErrorExpr([instanceMember.Expr], _baseModule.Error, syntax)
+                => new BoundErrorExpr([instanceMember.Expr], syntax)
         };
         
         BoundExprOrSymbol BindInstanceMember(BoundExpr expr)
         {
             var type = expr.Type;
-            if (type == _baseModule.Error)
-                return new BoundErrorExpr([expr], _baseModule.Error, syntax.Member);
+            if (type is ErrorTypeSymbol)
+                return new BoundErrorExpr([expr], syntax.Member);
 
             var member = BindSymbol(syntax.Member, parent: type);
             if (member is null)
-                return new BoundErrorExpr([expr], _baseModule.Error, syntax);
+                return new BoundErrorExpr([expr], syntax);
             var boundMember = new BoundSymbol(syntax.Member, member);
 
             return new BoundInstanceMember(expr, boundMember);
@@ -699,9 +695,9 @@ public sealed class Binder
         
         // Bind Callee
         if (BindCallee(syntax.Callee) is not { } callee || 
-            arguments.Any(arg => arg.Type == _baseModule.Error))
+            arguments.Any(arg => arg.Type is ErrorTypeSymbol))
         {
-            return new BoundErrorExpr(recoveredExprs: [.. arguments], _baseModule.Error, syntax);
+            return new BoundErrorExpr(recoveredExprs: [.. arguments], syntax: syntax);
         }
 
         // Check arity
@@ -709,7 +705,7 @@ public sealed class Binder
         {
             _diagnostics.ReportError(new Diagnostic.ArityMismatch(syntax.Children.FirstOfType<ArgListSyntax>(),
                 callee.Fun, Got: arguments.Length));
-            return new BoundErrorExpr(recoveredExprs: arguments, _baseModule.Error, syntax);
+            return new BoundErrorExpr(recoveredExprs: arguments, syntax: syntax);
         }
 
         // Check parameter types
@@ -720,7 +716,7 @@ public sealed class Binder
                 hadError = true;
         }
         if (hadError)
-            return new BoundErrorExpr(recoveredExprs: arguments, _baseModule.Error, syntax);
+            return new BoundErrorExpr(recoveredExprs: arguments, syntax: syntax);
 
         return new BoundCall(callee.Fun, callee.Receiver, arguments, syntax);
     }
