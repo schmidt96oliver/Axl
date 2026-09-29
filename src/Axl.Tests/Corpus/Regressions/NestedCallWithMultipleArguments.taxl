@@ -1,0 +1,12 @@
+﻿//@run
+//= 3
+
+// Fixed Bug: Argument list with multiple arguments would break
+//            if inside another call, because ',' was in the anchor set.
+
+A(In(1, 2));
+  
+fun A(i: I32)
+    = Print("{i}");
+fun In(i: I32, i2: I32): I32 
+    = i + i2;

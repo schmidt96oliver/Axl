@@ -254,6 +254,13 @@ public partial class Parser
                         : TokenKind.Comma);
             }
 
+            // Comma might be in the anchor set, so handle it before.
+            if (_scanner.IsAt(TokenKind.Comma))
+            {
+                _scanner.Eat();
+                continue;
+            }
+            
             if (_scanner.IsAt(closeToken) || _scanner.IsAt(anchor))
                 break;
             
