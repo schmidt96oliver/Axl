@@ -1,0 +1,16 @@
+﻿//@run
+//= 1 0.1 true str
+
+Print("{ Test(1) }");
+Print("{ Test(1, 2) }");
+Print("{ Test("A") }");
+Print("{ Test() }");
+     
+fun Test(a: I32): I32
+    = 1;
+fun Test(a: I32, b: I32): F64
+    = 0.1;
+fun Test(a: String): Bool
+    = true;
+fun Test(): String
+    = "str";

@@ -1,0 +1,9 @@
+﻿//@check
+
+// Functions are callable from in- and outside before they are declared.
+
+Test();
+
+fun Test() { Test(); }
+
+Test();

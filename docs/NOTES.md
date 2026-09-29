@@ -11,6 +11,8 @@
 * bind fun bodies
 * execut fun bodies
 
+* add test program with recursion
+
 # Roadmap
 
 ## 1. Running scripts (no funs)

@@ -208,4 +208,13 @@ public partial record Diagnostic
 
         public override string Message => $"Duplicate parameter '{Duplicates[0].Name}'.";
     }
+
+    public sealed record CannotResolveFun(FunGroupSymbol FunGroup, ImmutableArray<TypeSymbol> ArgumentTypes, ExprSyntax Syntax) : Error
+    {
+        public override ImmutableArray<SourceLocation> Locations => [Syntax.Location];
+
+        public override string Message => $"Cannot resolve fun '{FunGroup.Name}({
+            string.Join(", ", ArgumentTypes.Select(argType => argType.Name))
+        })'.";
+    }
 }

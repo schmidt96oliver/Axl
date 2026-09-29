@@ -167,7 +167,9 @@ public sealed class Binder
             return null;
         }
         
-        AddResolvedSymbol(syntax.Location, symbol);
+        // Fun groups are resolved during callee binding.
+        if (symbol is not FunGroupSymbol)
+            AddResolvedSymbol(syntax.Location, symbol);
         return symbol;
     }
 
@@ -783,7 +785,7 @@ public sealed class Binder
         var arguments = syntax.ArgumentExprs.Select(BindExpr).ToImmutableArray();
         
         // Bind Callee
-        if (BindCallee(syntax.Callee) is not { } callee || 
+        if (BindCallee(syntax.Callee, [.. arguments.Select(arg => arg.Type)]) is not { } callee || 
             arguments.Any(arg => arg.Type is ErrorTypeSymbol))
         {
             return new BoundErrorExpr(recoveredExprs: [.. arguments], syntax: syntax);
@@ -810,57 +812,60 @@ public sealed class Binder
         return new BoundCall(callee.Fun, callee.Receiver, arguments, syntax);
     }
 
-    private BoundCallee? BindCallee(ExprSyntax syntax)
+    private BoundCallee? BindCallee(ExprSyntax syntax, ImmutableArray<TypeSymbol> argumentTypes)
     {
         var callee = BindExprOrSymbol(syntax);
-        switch (callee)
+        if (callee is BoundErrorExpr)
+            return null;
+        if (callee is BoundExpr)
         {
-            case BoundSymbol boundSymbol:
-            {
-                if (boundSymbol.Symbol is not FunSymbol funSymbol)
-                {
-                    _diagnostics.ReportError(new Diagnostic.UnexpectedSymbolKind(boundSymbol.Syntax, boundSymbol.Symbol,
-                        SymbolKind.Fun));
-                    return null;
-                }
-
-                if (funSymbol.ReceiverType is not null)
-                {
-                    _diagnostics.ReportError(new Diagnostic.CannotCallWithoutReceiver(funSymbol, syntax));
-                    return null;
-                }
-
-                return new BoundCallee(funSymbol, Receiver: null);
-            }
-            
-            case BoundInstanceMember instanceMember:
-            {
-                if (instanceMember.Member.Symbol is not FunSymbol funSymbol)
-                {
-                    _diagnostics.ReportError(new Diagnostic.UnexpectedSymbolKind(instanceMember.Member.Syntax, instanceMember.Member.Symbol, SymbolKind.Fun));
-                    return null;
-                }
-
-                if (funSymbol.ReceiverType is null ||
-                    !IsAssignableTo(instanceMember.Expr.Type, funSymbol.ReceiverType))
-                {
-                    _diagnostics.ReportError(new Diagnostic.CannotCallWithReceiver(funSymbol, syntax));
-                    return null;
-                }
-                
-                return new BoundCallee(funSymbol, instanceMember.Expr);
-            }
-            
-            case BoundErrorExpr:
-                return null;
-            
-            case BoundExpr:
-                _diagnostics.ReportError(new Diagnostic.InvalidCallee(syntax));
-                return null;
-            
-            default:
-                throw new UnreachableException();
+            _diagnostics.ReportError(new Diagnostic.InvalidCallee(syntax));
+            return null;
         }
+
+        var (receiver, symbol, symbolRefSyntax) = callee switch
+        {
+            BoundSymbol boundSymbol => (null, boundSymbol.Symbol, boundSymbol.Syntax),
+            BoundInstanceMember instanceMember => (instanceMember.Expr, instanceMember.Member.Symbol, instanceMember.Member.Syntax),
+            _ => throw new UnreachableException()
+        };
+
+        var funSymbol = symbol as FunSymbol;
+        if (symbol is FunGroupSymbol funGroupSymbol)
+        {
+            var candidates = funGroupSymbol.Funs
+                .Where(fun => fun.ReceiverType == receiver?.Type &&
+                              fun.ParameterTypes.SequenceEqual(argumentTypes))
+                .ToImmutableArray();
+            if (candidates.Length != 1)
+            {
+                _diagnostics.ReportError(new Diagnostic.CannotResolveFun(funGroupSymbol, argumentTypes, syntax));
+                return null;
+            }
+
+            funSymbol = candidates[0];
+            AddResolvedSymbol(symbolRefSyntax.Location, funSymbol);
+        }
+        
+        if (funSymbol is null)
+        {
+            _diagnostics.ReportError(new Diagnostic.UnexpectedSymbolKind(symbolRefSyntax, symbol, SymbolKind.Fun));
+            return null;
+        }
+
+        var compatible = receiver is null && funSymbol.ReceiverType is null ||
+                         receiver is not null && funSymbol.ReceiverType is not null &&
+                         IsAssignableTo(receiver.Type, funSymbol.ReceiverType);
+        if (!compatible)
+        {
+            if (funSymbol.ReceiverType is not null)
+                _diagnostics.ReportError(new Diagnostic.CannotCallWithoutReceiver(funSymbol, syntax));
+            else 
+                _diagnostics.ReportError(new Diagnostic.CannotCallWithReceiver(funSymbol, syntax));
+            return null;
+        }
+        
+        return new BoundCallee(funSymbol, receiver);
     }
 
     #endregion
