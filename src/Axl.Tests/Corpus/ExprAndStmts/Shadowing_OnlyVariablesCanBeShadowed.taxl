@@ -1,0 +1,24 @@
+﻿//@check
+
+// Only variables can be declared again. They can not overwrite
+// anything else (funs, types) that is declared
+// on the same scope.
+
+// Reason: Funs and types are visible before they are declared.
+//         Allowing shadowing in the example below would mean,
+//         that 'Test' still refers to the variable, even after
+//         'fun Test' has been declared in syntax order. That is
+//         highly confusing and unexpected.
+
+let Test = 1;       //~error CannotShadow
+
+fun Test() { }
+
+let Test = 1;       //~error CannotShadow
+
+// Inside blocks, shadowing is allowed
+{
+    let Test = 1;
+}
+fun Other() { let Test = 1; }
+if (true) { let Test = 2; }

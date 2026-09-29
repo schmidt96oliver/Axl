@@ -217,4 +217,12 @@ public partial record Diagnostic
             string.Join(", ", ArgumentTypes.Select(argType => argType.Name))
         })'.";
     }
+
+    public sealed record CannotShadow(Symbol ShadowedSymbol, IdentifierToken NameSyntax) : Error
+    {
+        public override ImmutableArray<SourceLocation> Locations => [NameSyntax.Location];
+
+        public override string Message
+            => $"'{ShadowedSymbol.Name}' is already declared on this scope. Only variables can be shadowed.";
+    }
 }

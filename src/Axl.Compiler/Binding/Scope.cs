@@ -8,18 +8,32 @@ public sealed class Scope(Scope? parent = null)
     
     public Scope? Parent { get; } = parent;
 
-    
-    public Symbol? Lookup(string name)
+
+    /// <summary>
+    /// Returns the last symbol with the specified name that
+    /// is declared on this scope. Or <c>null</c>, if <paramref name="name"/>
+    /// is not declared.
+    /// </summary>
+    public Symbol? LookupHere(string name)
     {
         // Last declared symbol is first, since it might shadow
         // symbols declared before.
         
-        return _declaredSymbols.LastOrDefault(symbol => symbol.Name.SequenceEqual(name))
-               ?? Parent?.Lookup(name);
+        return _declaredSymbols.LastOrDefault(symbol => symbol.Name.SequenceEqual(name));
     }
+    
+    /// <summary>
+    /// Returns the last symbol with the specified name that
+    /// is declared on this or any parent scope.
+    /// Or <c>null</c>, if <paramref name="name"/> is not declared.
+    /// </summary>
+    public Symbol? Lookup(string name)
+        => LookupHere(name) ?? Parent?.Lookup(name);
 
     public void Declare(Symbol symbol)
     {
         _declaredSymbols.Add(symbol);
     }
+
+    
 }

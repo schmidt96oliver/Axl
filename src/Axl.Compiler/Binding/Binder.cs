@@ -298,7 +298,7 @@ public sealed class Binder
         return BindExpr(exprSyntax);
     }
     
-    private BoundVarDecl BindVarDecl(VarDeclSyntax syntax)
+    private BoundStmt BindVarDecl(VarDeclSyntax syntax)
     {
         var variableType = syntax.TypeAnnotation is not null
             ? BindTypeName(syntax.TypeAnnotation)
@@ -317,6 +317,14 @@ public sealed class Binder
             CheckTypeAndReportMismatch(boundInitializer, variableType);
         }
 
+        // Accept shadowing only if it's another variable.
+        var lookupResult = _scope.LookupHere(syntax.Name.Identifier);
+        if (lookupResult is not (null or VariableSymbol))
+        {
+            _diagnostics.ReportError(new Diagnostic.CannotShadow(lookupResult, syntax.Name));
+            return new BoundErrorExpr([], syntax);
+        }
+        
         var isReadOnly = syntax.VarOrLetKwToken.Kind is TokenKind.LetKw;
         var variable = new VariableSymbol(syntax.Name.Identifier, isReadOnly, variableType);
         _scope.Declare(variable);

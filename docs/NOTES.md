@@ -3,9 +3,6 @@
 
 **Next:** 
 
-* bind call to FunGroup
-* reject shadowing of any non-variable (esp. funs) on same scope
-
 * test empty name parameters
 
 * bind fun bodies
@@ -27,9 +24,9 @@
 ## 2. Funs (in script)
 * [x] Forward-declaration of funs
 * [ ] Binding of fun bodies
-* [ ] Overloads
+* [x] Overloads
 * [ ] Reject Local funs
-* [ ] Reject shadowing of funs on same scope
+* [x] Reject shadowing of funs on same scope
 * [ ] Definite Return Analysis (needs MIR or ad-hoc)
 * ?? Named arguments
 
