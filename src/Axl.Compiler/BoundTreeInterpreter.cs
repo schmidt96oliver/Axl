@@ -231,8 +231,8 @@ public sealed class BoundTreeInterpreter
             Intrinsic.EqualsString => (string)receiver! == (string)args[0],
             Intrinsic.NotEqualsString => (string)receiver! != (string)args[0],
 
-            Intrinsic.ToStringI32 or Intrinsic.ToStringI64
-                or Intrinsic.ToStringBool => receiver!.ToString(),
+            Intrinsic.ToStringI32 or Intrinsic.ToStringI64 => receiver!.ToString(),
+            Intrinsic.ToStringBool => (bool)receiver! ? "true" : "false",
             Intrinsic.ToStringF32 => ((float)receiver!).ToString(CultureInfo.InvariantCulture),
             Intrinsic.ToStringF64 => ((double)receiver!).ToString(CultureInfo.InvariantCulture),
 
