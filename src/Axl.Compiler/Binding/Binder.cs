@@ -90,9 +90,9 @@ public sealed class Binder
             _ => null
         };
         
-        if (fun is { Receiver: not null } &&
-            IsAssignableTo(instanceType, fun.Receiver) &&
-            fun.ParameterTypes.SequenceEqual(argumentTypes))
+        if (fun is { ReceiverType: not null } &&
+            IsAssignableTo(instanceType, fun.ReceiverType) &&
+            fun.Parameters.Select(param => param.Type).SequenceEqual(argumentTypes))
         {
             return fun;
         }
@@ -705,7 +705,7 @@ public sealed class Binder
         }
 
         // Check arity
-        if (arguments.Length != callee.Fun.ParameterTypes.Length)
+        if (arguments.Length != callee.Fun.Parameters.Length)
         {
             _diagnostics.ReportError(new Diagnostic.ArityMismatch(syntax.Children.FirstOfType<ArgListSyntax>(),
                 callee.Fun, Got: arguments.Length));
@@ -716,7 +716,7 @@ public sealed class Binder
         var hadError = false;
         for (var i = 0; i < arguments.Length; i++)
         {
-            if (!CheckTypeAndReportMismatch(arguments[i], callee.Fun.ParameterTypes[i]))
+            if (!CheckTypeAndReportMismatch(arguments[i], callee.Fun.Parameters[i].Type))
                 hadError = true;
         }
         if (hadError)
@@ -739,7 +739,7 @@ public sealed class Binder
                     return null;
                 }
 
-                if (funSymbol.Receiver is not null)
+                if (funSymbol.ReceiverType is not null)
                 {
                     _diagnostics.ReportError(new Diagnostic.CannotCallWithoutReceiver(funSymbol, syntax));
                     return null;
@@ -756,8 +756,8 @@ public sealed class Binder
                     return null;
                 }
 
-                if (funSymbol.Receiver is null ||
-                    !IsAssignableTo(instanceMember.Expr.Type, funSymbol.Receiver))
+                if (funSymbol.ReceiverType is null ||
+                    !IsAssignableTo(instanceMember.Expr.Type, funSymbol.ReceiverType))
                 {
                     _diagnostics.ReportError(new Diagnostic.CannotCallWithReceiver(funSymbol, syntax));
                     return null;

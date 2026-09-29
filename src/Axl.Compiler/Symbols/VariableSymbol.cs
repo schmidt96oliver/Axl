@@ -1,6 +1,6 @@
 ﻿namespace Axl.Compiler.Symbols;
 
-public sealed class VariableSymbol(string name, bool isReadOnly, TypeSymbol type) : Symbol(name)
+public class VariableSymbol(string name, bool isReadOnly, TypeSymbol type) : Symbol(name)
 {
     public override SymbolKind Kind => SymbolKind.Variable;
 

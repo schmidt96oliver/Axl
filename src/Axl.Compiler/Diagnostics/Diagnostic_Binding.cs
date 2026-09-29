@@ -83,6 +83,7 @@ public partial record Diagnostic
             => ResolvedSymbol switch
             {
                 null => "The assignment target must be a variable.",
+                ParameterSymbol => $"Cannot assign to parameter '{ResolvedSymbol.Name}'.",
                 VariableSymbol { IsReadOnly: true } => $"Cannot assign to readonly variable '{ResolvedSymbol.Name}'.",
                 _ =>
                     $"'{ResolvedSymbol.Name}' is {ResolvedSymbol.Kind.DisplayName}. The assignment target must be a variable."
@@ -151,7 +152,7 @@ public partial record Diagnostic
         }
 
         public override string Message =>
-            $"'{Fun.Name}' has {Fun.ParameterTypes.Length} parameter(s), but was called with {Got} argument(s).";
+            $"'{Fun.Name}' has {Fun.Parameters.Length} parameter(s), but was called with {Got} argument(s).";
     }
 
     public sealed record InvalidCallee(ExprSyntax Syntax) : Error

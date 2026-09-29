@@ -2,8 +2,6 @@
                                        ≽(◕ ᴗ ◕)≼
 
 **Next:** 
-* Add Parameters as VariableSymbol/LocalSymbol/ParameterSymbol
-
 * ?? Add `ErrorTypeSymbol.Instance` instead of `BaseModuleSymbol.Error`, because error is not in source text
 
 # Roadmap

@@ -7,4 +7,5 @@ public enum SymbolKind
     Module,
     Type,
     Variable,
+    Parameter
 }

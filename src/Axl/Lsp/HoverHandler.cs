@@ -38,11 +38,12 @@ public class HoverHandler : HoverHandlerBase
 
     private string GetHoverText(Symbol symbol) => symbol switch
     {
-        VariableSymbol{IsReadOnly: false} variable => $"var {variable.Name}: `{variable.Type.Name}`",
-        VariableSymbol{IsReadOnly: true} variable => $"let {variable.Name}: `{variable.Type.Name}`",
-        TypeSymbol type => $"type `{type.Name}`",
+        ParameterSymbol param => $"parameter {param.Name}: {param.Type}",
+        VariableSymbol{IsReadOnly: false} variable => $"var {variable.Name}: {variable.Type.Name}",
+        VariableSymbol{IsReadOnly: true} variable => $"let {variable.Name}: {variable.Type.Name}",
+        TypeSymbol type => $"type {type.Name}",
         BaseModuleSymbol => "base module",
-        FunSymbol intrinsicFun => $"fun '{intrinsicFun.Name}' @intrinsic({intrinsicFun.Intrinsic}) ",
+        FunSymbol fun => $"fun '{fun.Name}' @intrinsic({fun.Intrinsic}) ",
         _ => ""
     };
 }

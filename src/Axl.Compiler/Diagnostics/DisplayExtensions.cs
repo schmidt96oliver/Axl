@@ -30,6 +30,7 @@ public static class DisplayExtensions
             SymbolKind.FunGroup => "a function group",
             SymbolKind.Module => "a module",
             SymbolKind.Variable => "a variable",
+            SymbolKind.Parameter => "a parameter",
             SymbolKind.Type => "a type",
 
             _ => throw new UnreachableException($"Unknown {nameof(SymbolKind)}")
