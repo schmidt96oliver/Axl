@@ -3,6 +3,14 @@
 
 **Next:** 
 
+* bind call to FunGroup
+* reject shadowing of any non-variable (esp. funs) on same scope
+
+* test empty name parameters
+
+* bind fun bodies
+* execut fun bodies
+
 # Roadmap
 
 ## 1. Running scripts (no funs)
@@ -15,11 +23,12 @@
 * [x] Taxl Run tests
 
 ## 2. Funs (in script)
-* [ ] Forward-declaration of funs
+* [x] Forward-declaration of funs
+* [ ] Binding of fun bodies
 * [ ] Overloads
 * [ ] Reject Local funs
+* [ ] Reject shadowing of funs on same scope
 * [ ] Definite Return Analysis (needs MIR or ad-hoc)
-* [ ] FunGroup bound as callee
 * ?? Named arguments
 
 ## 3. Type (in script)

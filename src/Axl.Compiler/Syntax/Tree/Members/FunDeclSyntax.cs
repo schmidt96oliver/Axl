@@ -7,8 +7,10 @@ public sealed class FunDeclSyntax(ImmutableArray<SyntaxElement> children)
 {
     public IdentifierToken Name => Children.FirstOfType<IdNameSyntax>().Token;
 
+    public ParamListSyntax ParameterList => Children.FirstOfType<ParamListSyntax>();
+    
     public IEnumerable<ParamSyntax> Parameters
-        => Children.FirstOfType<ParamListSyntax>().Parameters;
+        => ParameterList.Parameters;
 
     public TypeNameSyntax? ReturnTypeAnnotation
         => Children.FirstOfTypeOrNull<TypeAnnotationClauseSyntax>()?.TypeName;

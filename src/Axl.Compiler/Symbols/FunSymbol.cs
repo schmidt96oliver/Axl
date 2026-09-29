@@ -1,13 +1,15 @@
 ﻿using System.Collections.Immutable;
+using Axl.Compiler.Syntax.Tree;
 
 namespace Axl.Compiler.Symbols;
 
 public sealed class FunSymbol(
     string name,
-    Intrinsic intrinsic,
     TypeSymbol? receiverType,
     ImmutableArray<ParameterSymbol> parameters,
-    TypeSymbol returnType)
+    TypeSymbol returnType,
+    Intrinsic? intrinsic = null,
+    FunDeclSyntax? declarationSyntax = null)
     : Symbol(name)
 {
     public override SymbolKind Kind => SymbolKind.Fun;
@@ -22,7 +24,10 @@ public sealed class FunSymbol(
     
     public ImmutableArray<ParameterSymbol> Parameters { get; } = parameters;
     
-    public TypeSymbol ReturnType { get; } = returnType;
+    public ImmutableArray<TypeSymbol> ParameterTypes { get; } = [.. parameters.Select(parameter => parameter.Type)];
     
-    public Intrinsic Intrinsic { get; } = intrinsic;
+    public TypeSymbol ReturnType { get; } = returnType;
+    public FunDeclSyntax? DeclarationSyntax { get; } = declarationSyntax;
+
+    public Intrinsic? Intrinsic { get; } = intrinsic;
 }

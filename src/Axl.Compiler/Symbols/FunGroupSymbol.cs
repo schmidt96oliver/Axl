@@ -15,5 +15,5 @@ public sealed class FunGroupSymbol(string name, ImmutableArray<FunSymbol> funs) 
 
     public FunSymbol? LookupFun(TypeSymbol? receiver, ImmutableArray<TypeSymbol> argumentTypes)
         => Funs.FirstOrDefault(fun => fun.ReceiverType == receiver &&
-            fun.Parameters.Select(param => param.Type).SequenceEqual(argumentTypes));
+            fun.ParameterTypes.SequenceEqual(argumentTypes));
 }

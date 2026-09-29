@@ -1,0 +1,25 @@
+﻿//@check
+
+// Funs with the same name must have different arity or different parameter types.
+// The parameter name and return type are not relevant.
+
+fun A(a: I32) { }           //~error DuplicateFunDeclarations
+fun A(b: I32): String = ""; //~error DuplicateFunDeclarations
+
+fun B(): Unit { }           //~error DuplicateFunDeclarations
+fun B(): I32 = 1;           //~error DuplicateFunDeclarations
+
+fun C(a: String, b: F32, c: Bool) { }           //~error DuplicateFunDeclarations
+fun C(d: String, e: F32, f: Bool): F64 = 1.1;   //~error DuplicateFunDeclarations
+
+// The following are allowed:
+fun C() { }
+fun C(a: I32) { };
+fun C(a: I64) { };
+fun C(a: I32, b: String) { }
+     
+// Errors in parameter type do not lead to another error.
+fun D(a: BLA) { }       //~error UndefinedName
+fun D(a: BLA) { }       //~error UndefinedName
+fun D(a: I32) { }       //~error DuplicateFunDeclarations
+fun D(a: I32) { }       //~error DuplicateFunDeclarations

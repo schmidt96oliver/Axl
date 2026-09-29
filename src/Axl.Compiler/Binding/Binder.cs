@@ -53,8 +53,11 @@ public sealed class Binder
         var scope = new Scope(parent: CreateGlobalScope(baseModule));
         var binder = new Binder(scope, baseModule);
         
-        // Everything other than stmts is not supported yet.
-        foreach (var node in syntax.SyntaxNodes().Where(n => n is not StmtSyntax))
+        // Forward-declare all fun symbols
+        binder.BindFunSymbols(syntax.Children.OfType<FunDeclSyntax>());
+        
+        // Everything other than stmts and fun decls is not supported yet.
+        foreach (var node in syntax.SyntaxNodes().Where(n => n is not (StmtSyntax or FunDeclSyntax)))
             binder._diagnostics.ReportError(new Diagnostic.UnsupportedFeature(node));
 
         var stmts = syntax.Stmts.Select(binder.BindStmt).ToImmutableArray();
@@ -91,7 +94,7 @@ public sealed class Binder
         
         if (fun is { ReceiverType: not null } &&
             IsAssignableTo(instanceType, fun.ReceiverType) &&
-            fun.Parameters.Select(param => param.Type).SequenceEqual(argumentTypes))
+            fun.ParameterTypes.SequenceEqual(argumentTypes))
         {
             return fun;
         }
@@ -168,6 +171,92 @@ public sealed class Binder
         return symbol;
     }
 
+    
+    #region Declarations
+
+    private void BindFunSymbols(IEnumerable<FunDeclSyntax> syntaxes)
+    {
+        // Declare funs with a valid name and group them if necessary.
+        // Funs with empty names cannot be referenced from source and
+        // would just clutter lookup.
+        
+        var symbols = syntaxes
+            .Select(BindFunSymbol)
+            .Where(fun => fun.Name.Length > 0)
+            .GroupBy(fun => fun.Name)
+            .Select(funGrp => (Symbol)(funGrp.ToImmutableArray() switch
+            {
+                [] => throw new UnreachableException(),
+                [var single] => single,
+                var multiple => new FunGroupSymbol(funGrp.Key, multiple)
+            }))
+            .ToImmutableArray();
+
+        // Report errors for duplicate signatures
+        foreach (var funGroup in symbols.OfType<FunGroupSymbol>())
+        {
+            var remaining = funGroup.Funs.ToList();
+            while (remaining.Count > 0)
+            {
+                var first = remaining[0];
+                var sameSignature = remaining
+                    .Where(fun => fun.ReceiverType == first.ReceiverType &&
+                                  fun.ParameterTypes.SequenceEqual(first.ParameterTypes))
+                    .ToImmutableArray();
+                if (sameSignature.Length > 1)
+                {
+                    // Errors in the signature should not report another error.
+                    var duplicatesToReport = sameSignature.Where(fun =>
+                            fun.ParameterTypes.All(paramType => paramType is not ErrorTypeSymbol))
+                        .ToImmutableArray();
+                    
+                    if (duplicatesToReport.Length > 1)
+                        _diagnostics.ReportError(new Diagnostic.DuplicateFunDeclarations(sameSignature));
+                }
+
+                remaining.RemoveAll(sameSignature.Contains);
+            }
+        }
+
+        // Declare symbols
+        foreach (var symbol in symbols)
+            _scope.Declare(symbol);
+    }
+
+    private FunSymbol BindFunSymbol(FunDeclSyntax syntax)
+    {
+        var parameters = syntax.Parameters
+            .Select(paramSyntax =>
+                new ParameterSymbol(paramSyntax.Name.Identifier, 
+                    BindTypeName(paramSyntax.TypeAnnotation),
+                    paramSyntax))
+            .ToImmutableArray();
+        var returnType = syntax.ReturnTypeAnnotation is not null
+            ? BindTypeName(syntax.ReturnTypeAnnotation)
+            : _baseModule.Unit;
+        
+        // Report duplicate parameter errors only on parameters
+        // with a non-empty name.
+        var duplicateParamGroups = parameters
+            .GroupBy(param => param.Name)
+            .Select(grp => grp.ToImmutableArray())
+            .Where(grp => grp.Length > 1 && grp[0].Name.Length > 0);
+        foreach (var duplicateGroup in duplicateParamGroups)
+        {
+            _diagnostics.ReportError(new Diagnostic.DuplicateParameters(duplicateGroup));
+        }
+
+        var funSymbol = new FunSymbol(syntax.Name.Identifier,
+            receiverType: null,
+            parameters: parameters, 
+            returnType: returnType, 
+            declarationSyntax: syntax);
+        
+        AddResolvedSymbol(syntax.Name.Location, funSymbol);
+        return funSymbol;
+    }
+    
+    #endregion
     
     #region Type names
 

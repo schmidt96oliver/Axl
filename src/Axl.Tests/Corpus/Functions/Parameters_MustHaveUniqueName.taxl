@@ -1,5 +1,5 @@
 ﻿//@check
 
-fun Test(a: string,   //~error DuplicateParameters
-        a: bool)     //~error DuplicateParameters
+fun Test(a: String,   //~error DuplicateParameters
+         a: Bool)     //~error DuplicateParameters
 { }

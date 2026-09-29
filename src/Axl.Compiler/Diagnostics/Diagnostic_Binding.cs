@@ -180,4 +180,32 @@ public partial record Diagnostic
         public override ImmutableArray<SourceLocation> Locations => [Syntax.Location];
         public override string Message => $"'{Fun.Name}' is static. It cannot be called from an instance.";
     }
+
+    public sealed record DuplicateFunDeclarations(ImmutableArray<FunSymbol> Duplicates) : Error
+    {
+        public override ImmutableArray<SourceLocation> Locations
+            // Squiggle the name and parameter list, since they are at fault.
+            =>
+            [
+                .. Duplicates.Where(fun => fun.DeclarationSyntax is not null)
+                    .Select(fun =>
+                        fun.DeclarationSyntax!.Location.SourceText.GetLocation(SourceRange.FromTo(fun.DeclarationSyntax!.Name.Location.Range,
+                            fun.DeclarationSyntax!.ParameterList.Location.Range)))
+            ];
+
+        public override string LocationLabel => "Also declared here.";
+
+        public override string Message => $"'{Duplicates[0].Name}' with the same signature is already declared.";
+    }
+
+    public sealed record DuplicateParameters(ImmutableArray<ParameterSymbol> Duplicates) : Error
+    {
+        public override ImmutableArray<SourceLocation> Locations
+            // Squiggle all parameter names
+            => [.. Duplicates.Where(param => param.DeclarationSyntax is not null).Select(param => param.DeclarationSyntax!.Name.Location)];
+
+        public override string LocationLabel => "Also declared here.";
+
+        public override string Message => $"Duplicate parameter '{Duplicates[0].Name}'.";
+    }
 }
