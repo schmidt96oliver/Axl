@@ -1,5 +1,4 @@
 ﻿using System.Collections.Immutable;
-using System.Diagnostics;
 using Axl.Compiler.Binding.BoundTree;
 using Axl.Compiler.Symbols;
 using Axl.Compiler.Syntax;
@@ -13,7 +12,7 @@ public partial record Diagnostic
     public sealed record TypeMismatch(BoundExpr Expr, TypeSymbol Expected) : Error
     {
         public override ImmutableArray<SourceLocation> Locations
-            => [Expr.Syntax.Location];
+            => [Expr.Syntax!.Location];
 
         public override string Message
             => $"Expected type '{Expected.Name}' but got '{Expr.Type.Name}'.";
@@ -112,7 +111,7 @@ public partial record Diagnostic
     public sealed record IncompatibleBranches(BoundExpr First, BoundExpr Second) : Error
     {
         public override ImmutableArray<SourceLocation> Locations
-            => [First.Syntax.Location, Second.Syntax.Location];
+            => [First.Syntax!.Location, Second.Syntax!.Location];
 
         public override string Message
             => $"Both 'if' and 'else' branches must have the same type. Got '{First.Type.Name}' and '{Second.Type.Name}'.";

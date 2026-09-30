@@ -3,9 +3,9 @@ using Axl.Compiler.Syntax;
 
 namespace Axl.Compiler.Binding.BoundTree;
 
-public closed class BoundStmt(SyntaxNode syntax)
+public closed class BoundStmt(SyntaxNode? syntax = null)
 {
-    public SyntaxNode Syntax { get; } = syntax;
+    public SyntaxNode? Syntax { get; } = syntax;
 
     public ImmutableArray<BoundStmt> Children
     {

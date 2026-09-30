@@ -3,7 +3,7 @@ using Axl.Compiler.Syntax;
 
 namespace Axl.Compiler.Binding.BoundTree;
 
-public sealed class BoundIfStmt(BoundExpr condition, BoundStmt then, BoundStmt? @else, SyntaxNode syntax)
+public sealed class BoundIfStmt(BoundExpr condition, BoundStmt then, BoundStmt? @else, SyntaxNode? syntax = null)
     : BoundStmt(syntax)
 {
     public BoundExpr Condition { get; } = condition;

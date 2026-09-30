@@ -4,7 +4,7 @@ using Axl.Compiler.Syntax;
 
 namespace Axl.Compiler.Binding.BoundTree;
 
-public sealed class BoundReturn(BoundExpr? expr, TypeSymbol type, SyntaxNode syntax)
+public sealed class BoundReturn(BoundExpr? expr, TypeSymbol type, SyntaxNode? syntax = null)
     : BoundExpr(type, syntax)
 {
     public BoundExpr? Expr { get; } = expr;

@@ -3,8 +3,8 @@
 
 **Next:** 
 
-* Design FunSymbol body property (intrinsic, generated, bound)
 * Bind fun bodies eagerly onto `FunSymbol.Body` (or decide otherwise)
+  * [x] Bind expression bodied funs
 * How does LSP/Analysis search fun bodies?
   * [ ] Test typeof for flat funs
   * [ ] Think about nested/local funs
@@ -22,6 +22,9 @@
 * add test program with recursion
 
 * ?? BaseModule generated bodies
+
+* DivergenceAnalyser
+  * synthesize `return { }` for Unit funs
 
 * Binder cleanup (esp. BoundExprOrSymbol -> SymbolRef; Bind())
 

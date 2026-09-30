@@ -4,7 +4,7 @@ using Axl.Compiler.Syntax;
 
 namespace Axl.Compiler.Binding.BoundTree;
 
-public sealed class BoundStringExpr(ImmutableArray<BoundExpr> parts, TypeSymbol type, SyntaxNode syntax) : BoundExpr(type, syntax)
+public sealed class BoundStringExpr(ImmutableArray<BoundExpr> parts, TypeSymbol type, SyntaxNode? syntax = null) : BoundExpr(type, syntax)
 {
     public ImmutableArray<BoundExpr> Parts { get; } = parts;
 

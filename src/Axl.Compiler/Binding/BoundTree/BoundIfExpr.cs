@@ -4,7 +4,8 @@ using Axl.Compiler.Syntax;
 
 namespace Axl.Compiler.Binding.BoundTree;
 
-public sealed class BoundIfExpr(BoundExpr condition, BoundExpr then, BoundExpr @else, TypeSymbol type, SyntaxNode syntax)
+public sealed class BoundIfExpr(BoundExpr condition, BoundExpr then, BoundExpr @else, TypeSymbol type,
+    SyntaxNode? syntax = null)
     : BoundExpr(type, syntax)
 {
     public BoundExpr Condition { get; } = condition;

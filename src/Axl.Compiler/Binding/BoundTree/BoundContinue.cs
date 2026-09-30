@@ -4,7 +4,7 @@ using Axl.Compiler.Syntax;
 
 namespace Axl.Compiler.Binding.BoundTree;
 
-public sealed class BoundContinue(TypeSymbol type, SyntaxNode syntax)
+public sealed class BoundContinue(TypeSymbol type, SyntaxNode? syntax = null)
     : BoundExpr(type, syntax)
 {
     protected override ImmutableArray<BoundStmt> GetChildren()

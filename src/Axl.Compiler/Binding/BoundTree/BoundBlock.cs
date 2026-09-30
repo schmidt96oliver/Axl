@@ -7,7 +7,7 @@ namespace Axl.Compiler.Binding.BoundTree;
 public sealed class BoundBlock(
     ImmutableArray<BoundStmt> stmts,
     TypeSymbol type,
-    SyntaxNode syntax) : BoundExpr(type, syntax)
+    SyntaxNode? syntax = null) : BoundExpr(type, syntax)
 {
     public ImmutableArray<BoundStmt> Stmts { get; } = stmts;
 

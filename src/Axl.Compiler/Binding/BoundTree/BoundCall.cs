@@ -8,7 +8,7 @@ public sealed class BoundCall(
     FunSymbol fun,
     BoundExpr? receiver,
     ImmutableArray<BoundExpr> arguments,
-    SyntaxNode syntax)
+    SyntaxNode? syntax = null)
     : BoundExpr(fun.ReturnType, syntax)
 {
     public FunSymbol Fun { get; } = fun;

@@ -18,6 +18,7 @@ public sealed class Binder
     
     private Scope _scope;
     private readonly FunSymbol _fun;
+    private readonly Dictionary<FunDeclSyntax, FunSymbol> _funSymbolsByDecl = [];
     private bool _inLoop = false;
     
     /// <summary>
@@ -64,8 +65,25 @@ public sealed class Binder
         foreach (var node in syntax.SyntaxNodes().Where(n => n is not (StmtSyntax or FunDeclSyntax)))
             binder._diagnostics.ReportError(new Diagnostic.UnsupportedFeature(node));
 
-        var scriptStmts = syntax.Stmts.Select(binder.BindStmt).ToImmutableArray();
-        var scriptBlock = new BoundBlock(scriptStmts, type: baseModule.Unit, syntax);
+        var scriptStmts = ImmutableArray.CreateBuilder<BoundStmt>();
+        foreach (var node in syntax.SyntaxNodes())
+        {
+            switch (node)
+            {
+                case StmtSyntax stmt:
+                    scriptStmts.Add(binder.BindStmt(stmt));
+                    break;
+                case FunDeclSyntax funDecl:
+                    binder.BindFunBody(funDecl);
+                    break;
+
+                default:
+                    binder._diagnostics.ReportError(new Diagnostic.UnsupportedFeature(node));
+                    break;
+            }
+        }
+        
+        var scriptBlock = new BoundBlock(scriptStmts.DrainToImmutable(), type: baseModule.Unit, syntax);
         scriptFun.Body = scriptBlock;
 
         return new BoundFile(scriptFun, funs, binder._diagnostics.Drain(), binder._resolvedSymbols.ToFrozenDictionary());
@@ -181,7 +199,38 @@ public sealed class Binder
         return symbol;
     }
 
-    
+
+    private void BindFunBody(FunDeclSyntax funDecl)
+    {
+        var funSymbol = _funSymbolsByDecl[funDecl];
+        
+        var funScope = new Scope(parent: _scope);
+        foreach (var param in funSymbol.Parameters)
+            funScope.Declare(param);
+
+        var funBinder = new Binder(funScope, funSymbol, _baseModule);
+
+        if (funDecl.Body.Expr is null)
+        {
+            // The fun has no body at all, so it returns unit.
+            funSymbol.Body = new BoundBlock([new BoundReturn(null, _baseModule.Unit)], _baseModule.Unit);
+        }
+        else if (funDecl.Body.IsExpressionBodied)
+        {
+            var expr = funBinder.BindExpr(funDecl.Body.Expr);
+            funSymbol.Body = new BoundBlock([new BoundReturn(expr, _baseModule.Never)], _baseModule.Unit);
+        }
+        else
+        {
+            if (funDecl.Body.Expr is not BlockExprSyntax blockSyntax)
+                throw new UnreachableException();
+            funSymbol.Body = funBinder.BindBlock(blockSyntax);
+        }
+        
+        funBinder._diagnostics.DrainInto(_diagnostics);
+    }
+
+
     #region Declarations
 
     private ImmutableArray<FunSymbol> BindFunSymbols(IEnumerable<FunDeclSyntax> syntaxes)
@@ -265,6 +314,7 @@ public sealed class Binder
             returnType: returnType, 
             declarationSyntax: syntax);
         
+        _funSymbolsByDecl.Add(syntax, funSymbol);
         AddResolvedSymbol(syntax.Name.Location, funSymbol);
         return funSymbol;
     }
@@ -349,12 +399,7 @@ public sealed class Binder
         if (syntax.Initializer is null)
         {
             _diagnostics.ReportError(new Diagnostic.MissingInitializer(syntax));
-            
-            // LIE and add the entire var decl syntax. This is the only (probably) case,
-            // where a null syntax would be nice. But practically, syntax shouldn't be
-            // touched on an error expr, si it should be fine. Mark my words in case of
-            // oddities :D.
-            return new BoundErrorExpr(recoveredExprs: [], syntax: syntax);    
+            return new BoundErrorExpr(recoveredExprs: []);    
         }
     
         return BindExpr(syntax.Initializer);

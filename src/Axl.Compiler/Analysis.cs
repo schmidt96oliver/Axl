@@ -58,7 +58,8 @@ public sealed class Analysis
         var owningBlock = _compilation.BoundFile.Funs
             .Where(fun => fun.Body is BoundBlock)
             .Select(fun => (fun.Body.Value as BoundBlock)!)
-            .FirstOrDefault(block => block.Syntax.Location.Range.Contains(syntaxRange));
+            .FirstOrDefault(block => block.Syntax is not null &&
+                block.Syntax.Location.Range.Contains(syntaxRange));
 
         if (owningBlock is null)
         {
@@ -69,11 +70,11 @@ public sealed class Analysis
         
         // Descend into bound tree to find expr syntax
         BoundStmt current = owningBlock;
-        Debug.Assert(current.Syntax.Range?.Contains(syntaxRange) == true);
+        Debug.Assert(current.Syntax?.Range?.Contains(syntaxRange) == true);
         
         while (true)
         {
-            var next = current.Children.FirstOrDefault(child => child.Syntax.Range?.Contains(syntaxRange) == true);
+            var next = current.Children.FirstOrDefault(child => child.Syntax?.Range?.Contains(syntaxRange) == true);
             if (next is null) return null;
             if (next.Syntax == syntax)
             {
