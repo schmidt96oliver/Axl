@@ -789,110 +789,126 @@ public sealed class Binder
         }
     }
 
-    private readonly record struct BoundCallee(FunSymbol Fun, BoundExpr? Receiver);
-    
     private BoundExpr BindCall(CallExprSyntax syntax)
     {
         var arguments = syntax.ArgumentExprs.Select(BindExpr).ToImmutableArray();
+        var callee = BindExprOrSymbol(syntax.Callee);
+        if (callee is BoundExpr expr)
+        {
+            if (callee is not BoundErrorExpr)
+                _diagnostics.ReportError(new Diagnostic.InvalidCallee(syntax.Callee));
+            return new BoundErrorExpr(recoveredExprs: [expr, .. arguments], syntax);
+        }
+
+        var (calleeSymbol, receiver) = callee switch
+        {
+            BoundSymbol boundSymbol => (boundSymbol.Symbol, null),
+            BoundInstanceMember instanceMember => (instanceMember.Member.Symbol, instanceMember.Expr),
+            _ => throw new UnreachableException()
+        };
         
-        // Bind Callee
-        if (BindCallee(syntax.Callee, [.. arguments.Select(arg => arg.Type)]) is not { } callee)
+        if (calleeSymbol is not (FunGroupSymbol or FunSymbol))
         {
-            return new BoundErrorExpr(recoveredExprs: [.. arguments], syntax: syntax);
+            _diagnostics.ReportError(new Diagnostic.UnexpectedSymbolKind(syntax.Callee, calleeSymbol, SymbolKind.Fun));
+            return new BoundErrorExpr(
+                recoveredExprs: receiver is not null ? [receiver, .. arguments] : arguments,
+                syntax);
         }
 
-        // Check arity
-        if (arguments.Length != callee.Fun.Parameters.Length)
+        var candidates = calleeSymbol switch
         {
-            _diagnostics.ReportError(new Diagnostic.ArityMismatch(syntax.Children.FirstOfType<ArgListSyntax>(),
-                callee.Fun, got: arguments.Length));
-            return new BoundErrorExpr(recoveredExprs: arguments, syntax: syntax);
-        }
-
-        // Check parameter types
-        var hadError = false;
-        for (var i = 0; i < arguments.Length; i++)
-        {
-            if (arguments[i].Type is ErrorTypeSymbol ||
-                !CheckTypeAndReportMismatch(arguments[i], callee.Fun.Parameters[i].Type))
-                hadError = true;
-        }
-        if (hadError)
-            return new BoundErrorExpr(recoveredExprs: arguments, syntax: syntax);
-
-        return new BoundCall(callee.Fun, callee.Receiver, arguments, syntax);
-    }
-
-    private BoundCallee? BindCallee(ExprSyntax syntax, ImmutableArray<TypeSymbol> argumentTypes)
-    {
-        var callee = BindExprOrSymbol(syntax);
-        if (callee is BoundErrorExpr)
-            return null;
-        if (callee is BoundExpr)
-        {
-            _diagnostics.ReportError(new Diagnostic.InvalidCallee(syntax));
-            return null;
-        }
-
-        var (receiver, symbol, symbolRefSyntax) = callee switch
-        {
-            BoundSymbol boundSymbol => (null, boundSymbol.Symbol, boundSymbol.Syntax),
-            BoundInstanceMember instanceMember => (instanceMember.Expr, instanceMember.Member.Symbol, instanceMember.Member.Syntax),
+            FunGroupSymbol group => group.Funs,
+            FunSymbol fun => [fun],
             _ => throw new UnreachableException()
         };
 
-        var funSymbol = symbol as FunSymbol;
-        if (symbol is FunGroupSymbol funGroupSymbol)
+        var funName = candidates[0].Name;
+        Debug.Assert(candidates.All(fun => fun.Name == funName));
+
+        return SelectCallee(candidates, receiver, arguments, funName, syntax) is { } selectedFun
+            ? new BoundCall(selectedFun, receiver, arguments, syntax)
+            : new BoundErrorExpr(
+                recoveredExprs: receiver is not null ? [receiver, .. arguments] : arguments
+                , syntax);
+    }
+
+    private FunSymbol? SelectCallee(ImmutableArray<FunSymbol> initialCandidates, BoundExpr? receiver, ImmutableArray<BoundExpr> arguments,
+        string funName, CallExprSyntax callSyntax)
+    {
+        // Filter based on receiver 
+        var candidates = initialCandidates
+            .Where(AreReceiversCompatible)
+            .ToList();
+        if (candidates.Count == 0)
         {
-            var withSameArity = funGroupSymbol.Funs
-                .Where(fun => fun.ReceiverType == receiver?.Type &&
-                              fun.Parameters.Length == argumentTypes.Length)
-                .ToList();
-            if (withSameArity.Count == 0)
+            // Either all are static and called with a receiver or vice versa.
+            if (initialCandidates[0].ReceiverType is not null)
             {
-                _diagnostics.ReportError(new Diagnostic.ArityMismatch(syntax, funGroupSymbol, argumentTypes.Length));
-                return null;
+                _diagnostics.ReportError(new Diagnostic.CannotCallWithoutReceiver(funName, 
+                    IsOverloaded: initialCandidates.Length > 1,
+                    callSyntax.Callee));
             }
-            
-            // If any argument has an error, the correct fun cannot be resolved
-            // and there already is a diagnostic.
-            if (argumentTypes.OfType<ErrorTypeSymbol>().Any())
+            else
+            {
+                _diagnostics.ReportError(new Diagnostic.CannotCallWithReceiver(funName,
+                    IsOverloaded: initialCandidates.Length > 1,
+                    callSyntax.Callee));
+            }
+            return null;
+        }
+        
+        // Filter arity
+        candidates.RemoveAll(fun => fun.Parameters.Length != arguments.Length);
+        if (candidates.Count == 0)
+        {
+            _diagnostics.ReportError(new Diagnostic.ArityMismatch(callSyntax.ArgList,
+                funName,
+                ParameterCount: initialCandidates.Length == 1 ? initialCandidates[0].Parameters.Length : null,
+                ArgumentCount: arguments.Length));
+            return null;
+        }
+
+        // If argument have an error, only check arity and don't go deeper.
+        // It cannot be resolved without valid types.
+        if (arguments.Any(arg => arg.Type is ErrorTypeSymbol))
+            return null;
+        
+        // Filter assignable arguments
+        if (candidates.Count == 1)
+        {
+            // Only one candidate left, so report TypeMismatch errors.
+            var hadError = false;
+            for (var i = 0; i < arguments.Length; i++)
+            {
+                if (arguments[i].Type is ErrorTypeSymbol ||
+                    !CheckTypeAndReportMismatch(arguments[i], candidates[0].Parameters[i].Type))
+                {
+                    hadError = true;
+                }
+            }
+            if (hadError)
                 return null;
-            
-            var candidates = withSameArity
-                .Where(fun =>
-                    Enumerable.Range(0, argumentTypes.Length)
-                        .All(i => IsAssignableTo(argumentTypes[i], fun.ParameterTypes[i])))
-                .ToList();
+        }
+        else
+        {
+            // Multiple candidates to select from, so report CannotResolveFun.
+            var candidatesWithMatchingArity = candidates.ToImmutableArray();
+            candidates.RemoveAll(fun => Enumerable.Range(0, arguments.Length)
+                .Any(i => !IsAssignableTo(arguments[i].Type, fun.ParameterTypes[i])));
             if (candidates.Count != 1)
             {
-                _diagnostics.ReportError(new Diagnostic.CannotResolveFun(funGroupSymbol, argumentTypes, syntax));
+                _diagnostics.ReportError(new Diagnostic.CannotResolveFun(callSyntax.ArgList, funName,
+                    candidatesWithMatchingArity, [.. arguments.Select(arg => arg.Type)]));
                 return null;
             }
-
-            funSymbol = candidates[0];
-            AddResolvedSymbol(symbolRefSyntax.Location, funSymbol);
-        }
-        
-        if (funSymbol is null)
-        {
-            _diagnostics.ReportError(new Diagnostic.UnexpectedSymbolKind(symbolRefSyntax, symbol, SymbolKind.Fun));
-            return null;
         }
 
-        var compatible = receiver is null && funSymbol.ReceiverType is null ||
-                         receiver is not null && funSymbol.ReceiverType is not null &&
-                         IsAssignableTo(receiver.Type, funSymbol.ReceiverType);
-        if (!compatible)
-        {
-            if (funSymbol.ReceiverType is not null)
-                _diagnostics.ReportError(new Diagnostic.CannotCallWithoutReceiver(funSymbol, syntax));
-            else 
-                _diagnostics.ReportError(new Diagnostic.CannotCallWithReceiver(funSymbol, syntax));
-            return null;
-        }
-        
-        return new BoundCallee(funSymbol, receiver);
+        return candidates[0];
+
+        bool AreReceiversCompatible(FunSymbol fun)
+            => receiver is null && fun.ReceiverType is null ||
+               receiver is not null && fun.ReceiverType is not null &&
+               IsAssignableTo(receiver.Type, fun.ReceiverType);
     }
 
     #endregion

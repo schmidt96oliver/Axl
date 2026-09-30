@@ -3,8 +3,6 @@
 
 **Next:** 
 
-* Simplify and report overloaded errors on arglist
-
 * Design FunSymbol body property (intrinsic, generated, bound)
 * Bind fun bodies eagerly onto `FunSymbol.Body` (or decide otherwise)
 * How does LSP/Analysis search fun bodies?
@@ -18,6 +16,8 @@
 * test empty name parameters
 
 * add test program with recursion
+
+* Binder cleanup (esp. BoundExprOrSymbol -> SymbolRef; Bind())
 
 # Roadmap
 

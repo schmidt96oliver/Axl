@@ -138,29 +138,13 @@ public partial record Diagnostic
         public override string Message => $"Cannot convert from type '{From.Name}' to '{To.Name}'.";
     }
 
-    public sealed record ArityMismatch : Error
+    public sealed record ArityMismatch(ArgListSyntax Syntax, string FunName, int? ParameterCount, int ArgumentCount) : Error
     {
-        public ArityMismatch(SyntaxNode syntax, FunSymbol fun, int got)
-        {
-            Syntax = syntax;
-            Fun = fun;
-            Got = got;
-        }
-        public ArityMismatch(SyntaxNode syntax, FunGroupSymbol funGroup, int got)
-        {
-            Syntax = syntax;
-            FunGroup = funGroup;
-            Got = got;
-        }
-
         public override ImmutableArray<SourceLocation> Locations
         {
             get
             {
-                if (Syntax is not ArgListSyntax argList)
-                    return [Syntax.Location];
-                
-                var argExprs = argList.Arguments.ToList();
+                var argExprs = Syntax.Arguments.ToList();
                 if (argExprs.Count == 0) return [Syntax.Location];
                 
                 var range = SourceRange.FromTo(argExprs[0].Location.Range, argExprs[^1].Location.Range);
@@ -168,16 +152,9 @@ public partial record Diagnostic
             }
         }
 
-        public override string Message => Fun is not null
-            ? $"'{Fun.Name}' has {Fun.Parameters.Length} parameter(s), but was called with {Got} argument(s)."
-            : FunGroup is not null
-                ? $"'{FunGroup.Name}' has no overload that takes {Got} parameter(s)."
-                : throw new UnreachableException();
-
-        public SyntaxNode Syntax { get; init; }
-        public FunSymbol? Fun { get; init; }
-        public FunGroupSymbol? FunGroup { get; init; }
-        public int Got { get; init; }
+        public override string Message => ParameterCount is int parameterCount
+            ? $"'{FunName}' has {parameterCount} parameter(s), but was called with {ArgumentCount} argument(s)."
+            : $"'{FunName}' has no overload that takes {ArgumentCount} parameter(s).";
     }
 
     public sealed record InvalidCallee(ExprSyntax Syntax) : Error
@@ -194,16 +171,20 @@ public partial record Diagnostic
             => $"The integral is too big to fit into '{TargetType.Name}'.";
     }
 
-    public sealed record CannotCallWithoutReceiver(FunSymbol Fun, ExprSyntax Syntax) : Error
+    public sealed record CannotCallWithoutReceiver(string FunName, bool IsOverloaded, ExprSyntax Syntax) : Error
     {
         public override ImmutableArray<SourceLocation> Locations => [Syntax.Location];
-        public override string Message => $"'{Fun.Name}' is a method. It cannot be called from static context.";
+        public override string Message => IsOverloaded
+            ? $"All overloads of '{FunName}' are methods. They cannot be called from a static context."
+            : $"'{FunName}' is a method. It cannot be called from a static context.";
     }
     
-    public sealed record CannotCallWithReceiver(FunSymbol Fun, ExprSyntax Syntax) : Error
+    public sealed record CannotCallWithReceiver(string FunName, bool IsOverloaded, ExprSyntax Syntax) : Error
     {
         public override ImmutableArray<SourceLocation> Locations => [Syntax.Location];
-        public override string Message => $"'{Fun.Name}' is static. It cannot be called from an instance.";
+        public override string Message => IsOverloaded
+            ? $"All overloads of '{FunName}' are static. They cannot be called from an instance."
+            : $"'{FunName}' is static. It cannot be called from an instance.";
     }
 
     public sealed record DuplicateFunDeclarations(ImmutableArray<FunSymbol> Duplicates) : Error
@@ -234,13 +215,38 @@ public partial record Diagnostic
         public override string Message => $"Duplicate parameter '{Duplicates[0].Name}'.";
     }
 
-    public sealed record CannotResolveFun(FunGroupSymbol FunGroup, ImmutableArray<TypeSymbol> ArgumentTypes, ExprSyntax Syntax) : Error
+    public sealed record CannotResolveFun(ArgListSyntax Syntax, string FunName, ImmutableArray<FunSymbol> Candidates, ImmutableArray<TypeSymbol> ArgumentTypes) : Error
     {
-        public override ImmutableArray<SourceLocation> Locations => [Syntax.Location];
+        public override ImmutableArray<SourceLocation> Locations
+        {
+            get
+            {
+                var argExprs = Syntax.Arguments.ToList();
+                if (argExprs.Count == 0) return [Syntax.Location];
 
-        public override string Message => $"Cannot resolve fun '{FunGroup.Name}({
-            string.Join(", ", ArgumentTypes.Select(argType => argType.Name))
-        })'.";
+                var range = SourceRange.FromTo(argExprs[0].Location.Range, argExprs[^1].Location.Range);
+                return [Syntax.Tree.SourceText.GetLocation(range)];
+            }
+        }
+
+        public override string Message => $"""
+                                           No overload of '{FunName}' takes arguments {GetTypeListString(ArgumentTypes)}'.
+                                           Candidates:
+                                           {GetCandidateString()}
+                                           """;
+
+        private string GetTypeListString(IEnumerable<TypeSymbol> types)
+            => $"({string.Join(", ", types.Select(argType => argType.Name))})";
+        
+        private string GetCandidateString()
+        {
+            return string.Join('\n', Candidates.Take(5).Select(Single));
+            
+            string Single(FunSymbol fun)
+                => string.Concat(fun.ReceiverType is null ? "static fun " : "fun ",
+                    $"'{FunName} '",
+                    GetTypeListString(fun.ParameterTypes));
+        }
     }
 
     public sealed record CannotShadow(Symbol ShadowedSymbol, IdentifierToken NameSyntax) : Error
