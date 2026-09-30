@@ -1,17 +1,39 @@
-﻿//@run  
-//= 1 1 2 3 5 8 13 21 34 55 89 144
+﻿//@run
+//= 1 1 2 3 5 8 13 21 34 
+//= 1 1 2 3 5 8 13 21 34 
 
-// F(n) = F(n-1) + F(n-2)
+// Fibonacci as a loop and as a recursive fun.
 
-var prevPrev = 0;
-var prev = 1;
+let max = 50;
 
-while (prev < 200)
+Loop(max);
+Print("\n");
+
+var n = 1;
+while (true)
 {
-    Print("{prev} ");
-    
-    let next = prev + prevPrev;
-    
-    prevPrev = prev;
-    prev = next;
+    let fib = Recursive(n);
+    n = n + 1;
+    if (fib >= max) return;
+    Print("{fib} ");
 }
+
+fun Loop(n: I32)
+{
+    var prevPrev = 0;
+    var prev = 1;
+    
+    while (prev < n)
+    {
+        Print("{prev} ");
+        
+        let next = prev + prevPrev;
+        
+        prevPrev = prev;
+        prev = next;
+    }
+}
+
+fun Recursive(n: I32): I32
+    = if (n < 2) n
+      else Recursive(n - 1) + Recursive(n - 2);

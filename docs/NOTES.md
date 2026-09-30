@@ -10,7 +10,7 @@
   * [ ] Think about nested/local funs
 * execut fun bodies
   * [x] Catch returns and add their expression
-  * [ ] Test execution
+  * [x] Test execution
 
 * reject captured variables (before they should bind)
   * Variable/Parameter need Owner pointer -> Move to Symbol?
@@ -18,8 +18,6 @@
   * Script as fun, so that locals have a natural Owner?
 
 * test empty name parameters
-
-* add test program with recursion
 
 * ?? BaseModule generated bodies
 
