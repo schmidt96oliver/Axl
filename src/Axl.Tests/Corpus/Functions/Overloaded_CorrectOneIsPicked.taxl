@@ -1,10 +1,10 @@
 ﻿//@run
 //= 1 0.1 true str
 
-Print("{ Test(1) }");
-Print("{ Test(1, 2) }");
-Print("{ Test("A") }");
-Print("{ Test() }");
+Print("{ Test(1) } ");
+Print("{ Test(1, 2) } ");
+Print("{ Test("A") } ");
+Print("{ Test() } ");
      
 fun Test(a: I32): I32
     = 1;

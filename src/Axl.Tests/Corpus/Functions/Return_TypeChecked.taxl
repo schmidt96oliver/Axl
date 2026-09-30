@@ -1,0 +1,35 @@
+﻿//@check
+
+// Return values are type-checked against the return type annotation.
+// If no annotation is given, the fun will get return type 'Unit'.
+// Return without value can only type-check against Unit return.
+
+fun NoReturnType()
+{
+    return 1;       //~error TypeMismatch
+    return true;    //~error TypeMismatch
+    
+    // Unit returns are allowed
+    return { }; 
+    return;
+}
+
+fun UnitReturn(): Unit
+{
+    return 1;       //~error TypeMismatch
+    return true;    //~error TypeMismatch
+    
+    // Unit returns are allowed
+    return { }; 
+    return;
+}
+
+
+fun I32Return(): I32
+{
+    return;         //~error MissingReturnValue
+    return true;    //~error TypeMismatch 
+    return 1.1;     //~error TypeMismatch 
+    
+    return 1i32;
+}  

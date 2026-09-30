@@ -14,11 +14,14 @@ public sealed class BoundTreeInterpreter
     private sealed class BreakException : Exception;
     private sealed class ContinueException : Exception;
 
-    private sealed class ReturnException : Exception;
-    
-    
+    private sealed class ReturnException(object value) : Exception
+    {
+        public object Value { get; } = value;
+    }
+
+
     private readonly TextWriter _output;
-    private readonly Dictionary<VariableSymbol, object> _values = [];
+    private Dictionary<VariableSymbol, object> _values = [];
     private readonly object _unitValue = new();
 
     private BoundTreeInterpreter(TextWriter output)
@@ -54,12 +57,28 @@ public sealed class BoundTreeInterpreter
             return CallIntrinsic(intrinsic, receiver, args);
         if (fun.Body is not BoundBlock block)
             throw new UnreachableException();
+
+        var prevEnvironment = _values;
+        _values = [];
         
         for (var i = 0; i < fun.Parameters.Length; i++)
             _values[fun.Parameters[i]] = args[i];
         
-        //TODO: Catch returns and add their expression
-        Run(block);
+        try
+        {
+            Run(block);
+        }
+        catch (ReturnException returnException)
+        {
+            _values = prevEnvironment;
+            return returnException.Value;
+        }
+
+        // For now, throw if return is missing. Later on, a return stmt
+        // will be inserted if necessary and we can throw always.
+        _values = prevEnvironment;
+        if (fun.ReturnType.Name is not "Unit")
+            throw new UnreachableException("Not all code paths return a value.");
         return _unitValue;
     }
 
@@ -207,10 +226,19 @@ public sealed class BoundTreeInterpreter
         
         BoundBreak => throw new BreakException(),
         BoundContinue => throw new ContinueException(),
-        BoundReturn => throw new ReturnException(),
+        BoundReturn boundReturn => EvaluateReturn(boundReturn),
         
         BoundErrorExpr => throw new UnreachableException(),
     };
+
+    private object EvaluateReturn(BoundReturn boundReturn)
+    {
+        var value = boundReturn.Expr is not null
+            ? Evaluate(boundReturn.Expr)
+            : _unitValue;
+        
+        throw new ReturnException(value);
+    }
 
     private object EvaluateAssign(BoundAssign boundAssign)
     {

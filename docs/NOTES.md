@@ -9,7 +9,7 @@
   * [ ] Test typeof for flat funs
   * [ ] Think about nested/local funs
 * execut fun bodies
-  * [ ] Catch returns and add their expression
+  * [x] Catch returns and add their expression
   * [ ] Test execution
 
 * reject captured variables (before they should bind)

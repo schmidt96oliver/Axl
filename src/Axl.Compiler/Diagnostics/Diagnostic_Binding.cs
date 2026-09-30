@@ -255,4 +255,10 @@ public partial record Diagnostic
         public override string Message
             => $"'{ShadowedSymbol.Name}' is already declared on this scope. Only variables can be shadowed.";
     }
+
+    public sealed record MissingReturnValue(ReturnExprSyntax Syntax) : Error
+    {
+        public override ImmutableArray<SourceLocation> Locations => [Syntax.SyntaxElements().First().Location];
+        public override string Message => "Return value is missing.";
+    }
 }

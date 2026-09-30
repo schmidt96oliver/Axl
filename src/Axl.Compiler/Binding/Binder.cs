@@ -740,10 +740,16 @@ public sealed class Binder
     {
         var expr = syntax.Expr is not null ? BindExpr(syntax.Expr) : null;
 
-        // For now, we are on script scope. Thus, only allow
-        // unit expressions or none.
         if (expr is not null)
-            CheckTypeAndReportMismatch(expr, _baseModule.Unit);
+        {
+            if (!CheckTypeAndReportMismatch(expr, _fun.ReturnType))
+                expr = new BoundErrorExpr([expr], syntax.Expr);
+        }
+        else if (_fun.ReturnType != _baseModule.Unit)
+        {
+            _diagnostics.ReportError(new Diagnostic.MissingReturnValue(syntax));
+            expr = new BoundErrorExpr([]);
+        }
 
         return new BoundReturn(expr, _baseModule.Never, syntax);
     }
