@@ -48,163 +48,163 @@ public sealed class BaseModuleSymbol : ModuleOrTypeSymbol
 
     private ImmutableArray<Symbol> GetFuns() =>
     [
-        new FunSymbol("Print", receiverType: null, parameters: [new ParameterSymbol("text", String)], returnType: Unit, intrinsic: Intrinsic.Print)
+        new FunSymbol("Print", receiverType: null, parameters: [new ParameterSymbol("text", String)], returnType: Unit, body: Intrinsic.Print)
     ];
 
 
     private ImmutableArray<Symbol> GetBoolMembers() =>
     [
-        new FunSymbol(SyntaxFacts.GetText(TokenKind.Bang)!, receiverType: Bool, parameters: [], returnType: Bool, intrinsic: Intrinsic.NotBool),
+        new FunSymbol(SyntaxFacts.GetText(TokenKind.Bang)!, receiverType: Bool, parameters: [], returnType: Bool, body: Intrinsic.NotBool),
         new FunSymbol(SyntaxFacts.GetText(TokenKind.DoubleEqual)!, receiverType: Bool,
-            parameters: [new ParameterSymbol("right", Bool)], returnType: Bool, intrinsic: Intrinsic.EqualsBool),
+            parameters: [new ParameterSymbol("right", Bool)], returnType: Bool, body: Intrinsic.EqualsBool),
         new FunSymbol(SyntaxFacts.GetText(TokenKind.BangEqual)!, receiverType: Bool,
-            parameters: [new ParameterSymbol("right", Bool)], returnType: Bool, intrinsic: Intrinsic.NotEqualsBool),
+            parameters: [new ParameterSymbol("right", Bool)], returnType: Bool, body: Intrinsic.NotEqualsBool),
 
-        new FunSymbol("ToString", receiverType: Bool, parameters: [], returnType: String, intrinsic: Intrinsic.ToStringBool),
+        new FunSymbol("ToString", receiverType: Bool, parameters: [], returnType: String, body: Intrinsic.ToStringBool),
     ];
 
     private ImmutableArray<Symbol> GetUnitMembers() =>
     [
         new FunSymbol(SyntaxFacts.GetText(TokenKind.DoubleEqual)!, receiverType: Unit,
-            parameters: [new ParameterSymbol("right", Unit)], returnType: Bool, intrinsic: Intrinsic.EqualsUnit),
+            parameters: [new ParameterSymbol("right", Unit)], returnType: Bool, body: Intrinsic.EqualsUnit),
         new FunSymbol(SyntaxFacts.GetText(TokenKind.BangEqual)!, receiverType: Unit,
-            parameters: [new ParameterSymbol("right", Unit)], returnType: Bool, intrinsic: Intrinsic.NotEqualsUnit),
+            parameters: [new ParameterSymbol("right", Unit)], returnType: Bool, body: Intrinsic.NotEqualsUnit),
     ];
 
     private ImmutableArray<Symbol> GetStringMembers() =>
     [
         new FunSymbol(SyntaxFacts.GetText(TokenKind.DoubleEqual)!, receiverType: String,
-            parameters: [new ParameterSymbol("right", String)], returnType: Bool, intrinsic: Intrinsic.EqualsString),
+            parameters: [new ParameterSymbol("right", String)], returnType: Bool, body: Intrinsic.EqualsString),
         new FunSymbol(SyntaxFacts.GetText(TokenKind.BangEqual)!, receiverType: String,
-            parameters: [new ParameterSymbol("right", String)], returnType: Bool, intrinsic: Intrinsic.NotEqualsString)
+            parameters: [new ParameterSymbol("right", String)], returnType: Bool, body: Intrinsic.NotEqualsString)
     ];
 
     private ImmutableArray<Symbol> GetI32Members() =>
     [
         new FunGroupSymbol(SyntaxFacts.GetText(TokenKind.Minus)!, [
-            new FunSymbol(SyntaxFacts.GetText(TokenKind.Minus)!, receiverType: I32, parameters: [], returnType: I32, intrinsic: Intrinsic.NegateI32),
+            new FunSymbol(SyntaxFacts.GetText(TokenKind.Minus)!, receiverType: I32, parameters: [], returnType: I32, body: Intrinsic.NegateI32),
             new FunSymbol(SyntaxFacts.GetText(TokenKind.Minus)!, receiverType: I32,
-                parameters: [new ParameterSymbol("right", I32)], returnType: I32, intrinsic: Intrinsic.SubtractI32),
+                parameters: [new ParameterSymbol("right", I32)], returnType: I32, body: Intrinsic.SubtractI32),
         ]),
 
         new FunSymbol(SyntaxFacts.GetText(TokenKind.Plus)!, receiverType: I32,
-            parameters: [new ParameterSymbol("right", I32)], returnType: I32, intrinsic: Intrinsic.AddI32),
+            parameters: [new ParameterSymbol("right", I32)], returnType: I32, body: Intrinsic.AddI32),
 
         new FunSymbol(SyntaxFacts.GetText(TokenKind.Star)!, receiverType: I32,
-            parameters: [new ParameterSymbol("right", I32)], returnType: I32, intrinsic: Intrinsic.MultiplyI32),
+            parameters: [new ParameterSymbol("right", I32)], returnType: I32, body: Intrinsic.MultiplyI32),
         new FunSymbol(SyntaxFacts.GetText(TokenKind.Slash)!, receiverType: I32,
-            parameters: [new ParameterSymbol("right", I32)], returnType: I32, intrinsic: Intrinsic.DivideI32),
+            parameters: [new ParameterSymbol("right", I32)], returnType: I32, body: Intrinsic.DivideI32),
 
         new FunSymbol(SyntaxFacts.GetText(TokenKind.DoubleEqual)!, receiverType: I32,
-            parameters: [new ParameterSymbol("right", I32)], returnType: Bool, intrinsic: Intrinsic.EqualsI32),
+            parameters: [new ParameterSymbol("right", I32)], returnType: Bool, body: Intrinsic.EqualsI32),
         new FunSymbol(SyntaxFacts.GetText(TokenKind.BangEqual)!, receiverType: I32,
-            parameters: [new ParameterSymbol("right", I32)], returnType: Bool, intrinsic: Intrinsic.NotEqualsI32),
+            parameters: [new ParameterSymbol("right", I32)], returnType: Bool, body: Intrinsic.NotEqualsI32),
         new FunSymbol(SyntaxFacts.GetText(TokenKind.LessThan)!, receiverType: I32,
-            parameters: [new ParameterSymbol("right", I32)], returnType: Bool, intrinsic: Intrinsic.LessThanI32),
+            parameters: [new ParameterSymbol("right", I32)], returnType: Bool, body: Intrinsic.LessThanI32),
         new FunSymbol(SyntaxFacts.GetText(TokenKind.LessThanEqual)!, receiverType: I32,
             parameters: [new ParameterSymbol("right", I32)],
-            returnType: Bool, intrinsic: Intrinsic.LessThanOrEqualI32),
+            returnType: Bool, body: Intrinsic.LessThanOrEqualI32),
         new FunSymbol(SyntaxFacts.GetText(TokenKind.GreaterThan)!, receiverType: I32,
             parameters: [new ParameterSymbol("right", I32)],
-            returnType: Bool, intrinsic: Intrinsic.GreaterThanI32),
+            returnType: Bool, body: Intrinsic.GreaterThanI32),
         new FunSymbol(SyntaxFacts.GetText(TokenKind.GreaterThanEqual)!,
             receiverType: I32,
-            parameters: [new ParameterSymbol("right", I32)], returnType: Bool, intrinsic: Intrinsic.GreaterThanOrEqualI32),
+            parameters: [new ParameterSymbol("right", I32)], returnType: Bool, body: Intrinsic.GreaterThanOrEqualI32),
 
-        new FunSymbol("ToString", receiverType: I32, parameters: [], returnType: String, intrinsic: Intrinsic.ToStringI32),
+        new FunSymbol("ToString", receiverType: I32, parameters: [], returnType: String, body: Intrinsic.ToStringI32),
     ];
 
     private ImmutableArray<Symbol> GetI64Members() =>
     [
         new FunGroupSymbol(SyntaxFacts.GetText(TokenKind.Minus)!, [
-            new FunSymbol(SyntaxFacts.GetText(TokenKind.Minus)!, receiverType: I64, parameters: [], returnType: I64, intrinsic: Intrinsic.NegateI64),
+            new FunSymbol(SyntaxFacts.GetText(TokenKind.Minus)!, receiverType: I64, parameters: [], returnType: I64, body: Intrinsic.NegateI64),
             new FunSymbol(SyntaxFacts.GetText(TokenKind.Minus)!, receiverType: I64,
-                parameters: [new ParameterSymbol("right", I64)], returnType: I64, intrinsic: Intrinsic.SubtractI64),
+                parameters: [new ParameterSymbol("right", I64)], returnType: I64, body: Intrinsic.SubtractI64),
         ]),
 
         new FunSymbol(SyntaxFacts.GetText(TokenKind.Plus)!, receiverType: I64,
-            parameters: [new ParameterSymbol("right", I64)], returnType: I64, intrinsic: Intrinsic.AddI64),
+            parameters: [new ParameterSymbol("right", I64)], returnType: I64, body: Intrinsic.AddI64),
         new FunSymbol(SyntaxFacts.GetText(TokenKind.Star)!, receiverType: I64,
-            parameters: [new ParameterSymbol("right", I64)], returnType: I64, intrinsic: Intrinsic.MultiplyI64),
+            parameters: [new ParameterSymbol("right", I64)], returnType: I64, body: Intrinsic.MultiplyI64),
         new FunSymbol(SyntaxFacts.GetText(TokenKind.Slash)!, receiverType: I64,
-            parameters: [new ParameterSymbol("right", I64)], returnType: I64, intrinsic: Intrinsic.DivideI64),
+            parameters: [new ParameterSymbol("right", I64)], returnType: I64, body: Intrinsic.DivideI64),
 
         new FunSymbol(SyntaxFacts.GetText(TokenKind.DoubleEqual)!, receiverType: I64,
-            parameters: [new ParameterSymbol("right", I64)], returnType: Bool, intrinsic: Intrinsic.EqualsI64),
+            parameters: [new ParameterSymbol("right", I64)], returnType: Bool, body: Intrinsic.EqualsI64),
         new FunSymbol(SyntaxFacts.GetText(TokenKind.BangEqual)!, receiverType: I64,
-            parameters: [new ParameterSymbol("right", I64)], returnType: Bool, intrinsic: Intrinsic.NotEqualsI64),
+            parameters: [new ParameterSymbol("right", I64)], returnType: Bool, body: Intrinsic.NotEqualsI64),
         new FunSymbol(SyntaxFacts.GetText(TokenKind.LessThan)!, receiverType: I64,
-            parameters: [new ParameterSymbol("right", I64)], returnType: Bool, intrinsic: Intrinsic.LessThanI64),
+            parameters: [new ParameterSymbol("right", I64)], returnType: Bool, body: Intrinsic.LessThanI64),
         new FunSymbol(SyntaxFacts.GetText(TokenKind.LessThanEqual)!, receiverType: I64,
-            parameters: [new ParameterSymbol("right", I64)], returnType: Bool, intrinsic: Intrinsic.LessThanOrEqualI64),
+            parameters: [new ParameterSymbol("right", I64)], returnType: Bool, body: Intrinsic.LessThanOrEqualI64),
         new FunSymbol(SyntaxFacts.GetText(TokenKind.GreaterThan)!, receiverType: I64,
-            parameters: [new ParameterSymbol("right", I64)], returnType: Bool, intrinsic: Intrinsic.GreaterThanI64),
+            parameters: [new ParameterSymbol("right", I64)], returnType: Bool, body: Intrinsic.GreaterThanI64),
         new FunSymbol(SyntaxFacts.GetText(TokenKind.GreaterThanEqual)!,
-            receiverType: I64, parameters: [new ParameterSymbol("right", I64)], returnType: Bool, intrinsic: Intrinsic.GreaterThanOrEqualI64),
+            receiverType: I64, parameters: [new ParameterSymbol("right", I64)], returnType: Bool, body: Intrinsic.GreaterThanOrEqualI64),
 
-        new FunSymbol("ToString", receiverType: I64, parameters: [], returnType: String, intrinsic: Intrinsic.ToStringI64),
+        new FunSymbol("ToString", receiverType: I64, parameters: [], returnType: String, body: Intrinsic.ToStringI64),
     ];
 
     private ImmutableArray<Symbol> GetF32Members() =>
     [
         new FunGroupSymbol(SyntaxFacts.GetText(TokenKind.Minus)!, [
-            new FunSymbol(SyntaxFacts.GetText(TokenKind.Minus)!, receiverType: F32, parameters: [], returnType: F32, intrinsic: Intrinsic.NegateF32),
+            new FunSymbol(SyntaxFacts.GetText(TokenKind.Minus)!, receiverType: F32, parameters: [], returnType: F32, body: Intrinsic.NegateF32),
             new FunSymbol(SyntaxFacts.GetText(TokenKind.Minus)!, receiverType: F32,
-                parameters: [new ParameterSymbol("right", F32)], returnType: F32, intrinsic: Intrinsic.SubtractF32),
+                parameters: [new ParameterSymbol("right", F32)], returnType: F32, body: Intrinsic.SubtractF32),
         ]),
 
         new FunSymbol(SyntaxFacts.GetText(TokenKind.Plus)!, receiverType: F32,
-            parameters: [new ParameterSymbol("right", F32)], returnType: F32, intrinsic: Intrinsic.AddF32),
+            parameters: [new ParameterSymbol("right", F32)], returnType: F32, body: Intrinsic.AddF32),
         new FunSymbol(SyntaxFacts.GetText(TokenKind.Star)!, receiverType: F32,
-            parameters: [new ParameterSymbol("right", F32)], returnType: F32, intrinsic: Intrinsic.MultiplyF32),
+            parameters: [new ParameterSymbol("right", F32)], returnType: F32, body: Intrinsic.MultiplyF32),
         new FunSymbol(SyntaxFacts.GetText(TokenKind.Slash)!, receiverType: F32,
-            parameters: [new ParameterSymbol("right", F32)], returnType: F32, intrinsic: Intrinsic.DivideF32),
+            parameters: [new ParameterSymbol("right", F32)], returnType: F32, body: Intrinsic.DivideF32),
 
         new FunSymbol(SyntaxFacts.GetText(TokenKind.DoubleEqual)!, receiverType: F32,
-            parameters: [new ParameterSymbol("right", F32)], returnType: Bool, intrinsic: Intrinsic.EqualsF32),
+            parameters: [new ParameterSymbol("right", F32)], returnType: Bool, body: Intrinsic.EqualsF32),
         new FunSymbol(SyntaxFacts.GetText(TokenKind.BangEqual)!, receiverType: F32,
-            parameters: [new ParameterSymbol("right", F32)], returnType: Bool, intrinsic: Intrinsic.NotEqualsF32),
+            parameters: [new ParameterSymbol("right", F32)], returnType: Bool, body: Intrinsic.NotEqualsF32),
         new FunSymbol(SyntaxFacts.GetText(TokenKind.LessThan)!, receiverType: F32,
-            parameters: [new ParameterSymbol("right", F32)], returnType: Bool, intrinsic: Intrinsic.LessThanF32),
+            parameters: [new ParameterSymbol("right", F32)], returnType: Bool, body: Intrinsic.LessThanF32),
         new FunSymbol(SyntaxFacts.GetText(TokenKind.LessThanEqual)!, receiverType: F32,
-            parameters: [new ParameterSymbol("right", F32)], returnType: Bool, intrinsic: Intrinsic.LessThanOrEqualF32),
+            parameters: [new ParameterSymbol("right", F32)], returnType: Bool, body: Intrinsic.LessThanOrEqualF32),
         new FunSymbol(SyntaxFacts.GetText(TokenKind.GreaterThan)!, receiverType: F32,
-            parameters: [new ParameterSymbol("right", F32)], returnType: Bool, intrinsic: Intrinsic.GreaterThanF32),
+            parameters: [new ParameterSymbol("right", F32)], returnType: Bool, body: Intrinsic.GreaterThanF32),
         new FunSymbol(SyntaxFacts.GetText(TokenKind.GreaterThanEqual)!,
-            receiverType: F32, parameters: [new ParameterSymbol("right", F32)], returnType: Bool, intrinsic: Intrinsic.GreaterThanOrEqualF32),
+            receiverType: F32, parameters: [new ParameterSymbol("right", F32)], returnType: Bool, body: Intrinsic.GreaterThanOrEqualF32),
 
-        new FunSymbol("ToString", receiverType: F32, parameters: [], returnType: String, intrinsic: Intrinsic.ToStringF32),
+        new FunSymbol("ToString", receiverType: F32, parameters: [], returnType: String, body: Intrinsic.ToStringF32),
     ];
 
     private ImmutableArray<Symbol> GetF64Members() =>
     [
         new FunGroupSymbol(SyntaxFacts.GetText(TokenKind.Minus)!, [
-            new FunSymbol(SyntaxFacts.GetText(TokenKind.Minus)!, receiverType: F64, parameters: [], returnType: F64, intrinsic: Intrinsic.NegateF64),
+            new FunSymbol(SyntaxFacts.GetText(TokenKind.Minus)!, receiverType: F64, parameters: [], returnType: F64, body: Intrinsic.NegateF64),
             new FunSymbol(SyntaxFacts.GetText(TokenKind.Minus)!, receiverType: F64,
-                parameters: [new ParameterSymbol("right", F64)], returnType: F64, intrinsic: Intrinsic.SubtractF64),
+                parameters: [new ParameterSymbol("right", F64)], returnType: F64, body: Intrinsic.SubtractF64),
         ]),
 
         new FunSymbol(SyntaxFacts.GetText(TokenKind.Plus)!, receiverType: F64,
-            parameters: [new ParameterSymbol("right", F64)], returnType: F64, intrinsic: Intrinsic.AddF64),
+            parameters: [new ParameterSymbol("right", F64)], returnType: F64, body: Intrinsic.AddF64),
         new FunSymbol(SyntaxFacts.GetText(TokenKind.Star)!, receiverType: F64,
-            parameters: [new ParameterSymbol("right", F64)], returnType: F64, intrinsic: Intrinsic.MultiplyF64),
+            parameters: [new ParameterSymbol("right", F64)], returnType: F64, body: Intrinsic.MultiplyF64),
         new FunSymbol(SyntaxFacts.GetText(TokenKind.Slash)!, receiverType: F64,
-            parameters: [new ParameterSymbol("right", F64)], returnType: F64, intrinsic: Intrinsic.DivideF64),
+            parameters: [new ParameterSymbol("right", F64)], returnType: F64, body: Intrinsic.DivideF64),
 
         new FunSymbol(SyntaxFacts.GetText(TokenKind.DoubleEqual)!, receiverType: F64,
-            parameters: [new ParameterSymbol("right", F64)], returnType: Bool, intrinsic: Intrinsic.EqualsF64),
+            parameters: [new ParameterSymbol("right", F64)], returnType: Bool, body: Intrinsic.EqualsF64),
         new FunSymbol(SyntaxFacts.GetText(TokenKind.BangEqual)!, receiverType: F64,
-            parameters: [new ParameterSymbol("right", F64)], returnType: Bool, intrinsic: Intrinsic.NotEqualsF64),
+            parameters: [new ParameterSymbol("right", F64)], returnType: Bool, body: Intrinsic.NotEqualsF64),
         new FunSymbol(SyntaxFacts.GetText(TokenKind.LessThan)!, receiverType: F64,
-            parameters: [new ParameterSymbol("right", F64)], returnType: Bool, intrinsic: Intrinsic.LessThanF64),
+            parameters: [new ParameterSymbol("right", F64)], returnType: Bool, body: Intrinsic.LessThanF64),
         new FunSymbol(SyntaxFacts.GetText(TokenKind.LessThanEqual)!, receiverType: F64,
-            parameters: [new ParameterSymbol("right", F64)], returnType: Bool, intrinsic: Intrinsic.LessThanOrEqualF64),
+            parameters: [new ParameterSymbol("right", F64)], returnType: Bool, body: Intrinsic.LessThanOrEqualF64),
         new FunSymbol(SyntaxFacts.GetText(TokenKind.GreaterThan)!, receiverType: F64,
-            parameters: [new ParameterSymbol("right", F64)], returnType: Bool, intrinsic: Intrinsic.GreaterThanF64),
+            parameters: [new ParameterSymbol("right", F64)], returnType: Bool, body: Intrinsic.GreaterThanF64),
         new FunSymbol(SyntaxFacts.GetText(TokenKind.GreaterThanEqual)!,
-            receiverType: F64, parameters: [new ParameterSymbol("right", F64)], returnType: Bool, intrinsic: Intrinsic.GreaterThanOrEqualF64),
+            receiverType: F64, parameters: [new ParameterSymbol("right", F64)], returnType: Bool, body: Intrinsic.GreaterThanOrEqualF64),
 
-        new FunSymbol("ToString", receiverType: F64, parameters: [], returnType: String, intrinsic: Intrinsic.ToStringF64),
+        new FunSymbol("ToString", receiverType: F64, parameters: [], returnType: String, body: Intrinsic.ToStringF64),
     ];
 
 }

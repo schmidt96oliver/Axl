@@ -37,7 +37,7 @@ public sealed class BoundTreeInterpreter
 
         try
         {
-            interpreter.Run(file.Block);
+            interpreter.Call(file.ScriptFun, null, []);
         }
         catch (ReturnException) {}
     }
@@ -47,6 +47,99 @@ public sealed class BoundTreeInterpreter
         foreach (var diag in diagnostics)
             output.WriteLine($"[{diag.DefaultSeverity.ToString().ToUpper()}] {diag.Id}@l.{diag.Locations[0].StartLine}: {diag.Message}");
     }
+
+    private object Call(FunSymbol fun, object? receiver, ImmutableArray<object> args)
+    {
+        if (fun.Body is Intrinsic intrinsic)
+            return CallIntrinsic(intrinsic, receiver, args);
+        if (fun.Body is not BoundBlock block)
+            throw new UnreachableException();
+        
+        for (var i = 0; i < fun.Parameters.Length; i++)
+            _values[fun.Parameters[i]] = args[i];
+        
+        //TODO: Catch returns and add their expression
+        Run(block);
+        return _unitValue;
+    }
+
+    private object CallIntrinsic(Intrinsic intrinsic, object? receiver, ImmutableArray<object> args)
+    {
+        if (intrinsic is Intrinsic.Print)
+        {
+            _output.Write(args[0].ToString());
+            return _unitValue;
+        }
+        
+        return intrinsic switch
+            {
+                Intrinsic.NegateI32 => -(int)receiver!,
+                Intrinsic.AddI32 => (int)receiver! + (int)args[0],
+                Intrinsic.SubtractI32 => (int)receiver! - (int)args[0],
+                Intrinsic.DivideI32 => (int)receiver! / (int)args[0],
+                Intrinsic.MultiplyI32 => (int)receiver! * (int)args[0],
+                Intrinsic.EqualsI32 => (int)receiver! == (int)args[0],
+                Intrinsic.NotEqualsI32 => (int)receiver! != (int)args[0],
+                Intrinsic.LessThanI32 => (int)receiver! < (int)args[0],
+                Intrinsic.LessThanOrEqualI32 => (int)receiver! <= (int)args[0],
+                Intrinsic.GreaterThanI32 => (int)receiver! > (int)args[0],
+                Intrinsic.GreaterThanOrEqualI32 => (int)receiver! >= (int)args[0],
+
+                Intrinsic.NegateI64 => -(long)receiver!,
+                Intrinsic.AddI64 => (long)receiver! + (long)args[0],
+                Intrinsic.SubtractI64 => (long)receiver! - (long)args[0],
+                Intrinsic.DivideI64 => (long)receiver! / (long)args[0],
+                Intrinsic.MultiplyI64 => (long)receiver! * (long)args[0],
+                Intrinsic.EqualsI64 => (long)receiver! == (long)args[0],
+                Intrinsic.NotEqualsI64 => (long)receiver! != (long)args[0],
+                Intrinsic.LessThanI64 => (long)receiver! < (long)args[0],
+                Intrinsic.LessThanOrEqualI64 => (long)receiver! <= (long)args[0],
+                Intrinsic.GreaterThanI64 => (long)receiver! > (long)args[0],
+                Intrinsic.GreaterThanOrEqualI64 => (long)receiver! >= (long)args[0],
+
+                Intrinsic.NegateF32 => -(float)receiver!,
+                Intrinsic.AddF32 => (float)receiver! + (float)args[0],
+                Intrinsic.SubtractF32 => (float)receiver! - (float)args[0],
+                Intrinsic.DivideF32 => (float)receiver! / (float)args[0],
+                Intrinsic.MultiplyF32 => (float)receiver! * (float)args[0],
+                Intrinsic.EqualsF32 => (float)receiver! == (float)args[0],
+                Intrinsic.NotEqualsF32 => (float)receiver! != (float)args[0],
+                Intrinsic.LessThanF32 => (float)receiver! < (float)args[0],
+                Intrinsic.LessThanOrEqualF32 => (float)receiver! <= (float)args[0],
+                Intrinsic.GreaterThanF32 => (float)receiver! > (float)args[0],
+                Intrinsic.GreaterThanOrEqualF32 => (float)receiver! >= (float)args[0],
+
+                Intrinsic.NegateF64 => -(double)receiver!,
+                Intrinsic.AddF64 => (double)receiver! + (double)args[0],
+                Intrinsic.SubtractF64 => (double)receiver! - (double)args[0],
+                Intrinsic.DivideF64 => (double)receiver! / (double)args[0],
+                Intrinsic.MultiplyF64 => (double)receiver! * (double)args[0],
+                Intrinsic.EqualsF64 => (double)receiver! == (double)args[0],
+                Intrinsic.NotEqualsF64 => (double)receiver! != (double)args[0],
+                Intrinsic.LessThanF64 => (double)receiver! < (double)args[0],
+                Intrinsic.LessThanOrEqualF64 => (double)receiver! <= (double)args[0],
+                Intrinsic.GreaterThanF64 => (double)receiver! > (double)args[0],
+                Intrinsic.GreaterThanOrEqualF64 => (double)receiver! >= (double)args[0],
+
+                Intrinsic.NotBool => !(bool)receiver!,
+                Intrinsic.EqualsBool => (bool)receiver! == (bool)args[0],
+                Intrinsic.NotEqualsBool => (bool)receiver! != (bool)args[0],
+
+                Intrinsic.EqualsUnit => true,
+                Intrinsic.NotEqualsUnit => false,
+
+                Intrinsic.EqualsString => (string)receiver! == (string)args[0],
+                Intrinsic.NotEqualsString => (string)receiver! != (string)args[0],
+
+                Intrinsic.ToStringI32 or Intrinsic.ToStringI64 => receiver!.ToString(),
+                Intrinsic.ToStringBool => (bool)receiver! ? "true" : "false",
+                Intrinsic.ToStringF32 => ((float)receiver!).ToString(CultureInfo.InvariantCulture),
+                Intrinsic.ToStringF64 => ((double)receiver!).ToString(CultureInfo.InvariantCulture),
+
+                _ => throw new UnreachableException()
+            };
+    }
+
 
     private void Run(BoundStmt stmt)
     {
@@ -157,86 +250,8 @@ public sealed class BoundTreeInterpreter
     private object EvaluateCall(BoundCall boundCall)
     {
         var receiver = boundCall.Receiver is not null ? Evaluate(boundCall.Receiver) : null;
-        var args = new object[boundCall.Arguments.Length];
-        for (var i = 0; i < args.Length; i++)
-        {
-            var val = Evaluate(boundCall.Arguments[i]);
-            args[i] = val;
-        }
-        // var args = boundCall.Arguments.Select(Evaluate).ToArray();
-
-        if (boundCall.Fun.Intrinsic is Intrinsic.Print)
-        {
-            _output.Write(args[0].ToString());
-            return _unitValue;
-        }
-
-        return boundCall.Fun.Intrinsic switch
-        {
-            Intrinsic.NegateI32 => -(int)receiver!,
-            Intrinsic.AddI32 => (int)receiver! + (int)args[0],
-            Intrinsic.SubtractI32 => (int)receiver! - (int)args[0],
-            Intrinsic.DivideI32 => (int)receiver! / (int)args[0],
-            Intrinsic.MultiplyI32 => (int)receiver! * (int)args[0],
-            Intrinsic.EqualsI32 => (int)receiver! == (int)args[0],
-            Intrinsic.NotEqualsI32 => (int)receiver! != (int)args[0],
-            Intrinsic.LessThanI32 => (int)receiver! < (int)args[0],
-            Intrinsic.LessThanOrEqualI32 => (int)receiver! <= (int)args[0],
-            Intrinsic.GreaterThanI32 => (int)receiver! > (int)args[0],
-            Intrinsic.GreaterThanOrEqualI32 => (int)receiver! >= (int)args[0],
-
-            Intrinsic.NegateI64 => -(long)receiver!,
-            Intrinsic.AddI64 => (long)receiver! + (long)args[0],
-            Intrinsic.SubtractI64 => (long)receiver! - (long)args[0],
-            Intrinsic.DivideI64 => (long)receiver! / (long)args[0],
-            Intrinsic.MultiplyI64 => (long)receiver! * (long)args[0],
-            Intrinsic.EqualsI64 => (long)receiver! == (long)args[0],
-            Intrinsic.NotEqualsI64 => (long)receiver! != (long)args[0],
-            Intrinsic.LessThanI64 => (long)receiver! < (long)args[0],
-            Intrinsic.LessThanOrEqualI64 => (long)receiver! <= (long)args[0],
-            Intrinsic.GreaterThanI64 => (long)receiver! > (long)args[0],
-            Intrinsic.GreaterThanOrEqualI64 => (long)receiver! >= (long)args[0],
-
-            Intrinsic.NegateF32 => -(float)receiver!,
-            Intrinsic.AddF32 => (float)receiver! + (float)args[0],
-            Intrinsic.SubtractF32 => (float)receiver! - (float)args[0],
-            Intrinsic.DivideF32 => (float)receiver! / (float)args[0],
-            Intrinsic.MultiplyF32 => (float)receiver! * (float)args[0],
-            Intrinsic.EqualsF32 => (float)receiver! == (float)args[0],
-            Intrinsic.NotEqualsF32 => (float)receiver! != (float)args[0],
-            Intrinsic.LessThanF32 => (float)receiver! < (float)args[0],
-            Intrinsic.LessThanOrEqualF32 => (float)receiver! <= (float)args[0],
-            Intrinsic.GreaterThanF32 => (float)receiver! > (float)args[0],
-            Intrinsic.GreaterThanOrEqualF32 => (float)receiver! >= (float)args[0],
-
-            Intrinsic.NegateF64 => -(double)receiver!,
-            Intrinsic.AddF64 => (double)receiver! + (double)args[0],
-            Intrinsic.SubtractF64 => (double)receiver! - (double)args[0],
-            Intrinsic.DivideF64 => (double)receiver! / (double)args[0],
-            Intrinsic.MultiplyF64 => (double)receiver! * (double)args[0],
-            Intrinsic.EqualsF64 => (double)receiver! == (double)args[0],
-            Intrinsic.NotEqualsF64 => (double)receiver! != (double)args[0],
-            Intrinsic.LessThanF64 => (double)receiver! < (double)args[0],
-            Intrinsic.LessThanOrEqualF64 => (double)receiver! <= (double)args[0],
-            Intrinsic.GreaterThanF64 => (double)receiver! > (double)args[0],
-            Intrinsic.GreaterThanOrEqualF64 => (double)receiver! >= (double)args[0],
-
-            Intrinsic.NotBool => !(bool)receiver!,
-            Intrinsic.EqualsBool => (bool)receiver! == (bool)args[0],
-            Intrinsic.NotEqualsBool => (bool)receiver! != (bool)args[0],
-
-            Intrinsic.EqualsUnit => true,
-            Intrinsic.NotEqualsUnit => false,
-
-            Intrinsic.EqualsString => (string)receiver! == (string)args[0],
-            Intrinsic.NotEqualsString => (string)receiver! != (string)args[0],
-
-            Intrinsic.ToStringI32 or Intrinsic.ToStringI64 => receiver!.ToString(),
-            Intrinsic.ToStringBool => (bool)receiver! ? "true" : "false",
-            Intrinsic.ToStringF32 => ((float)receiver!).ToString(CultureInfo.InvariantCulture),
-            Intrinsic.ToStringF64 => ((double)receiver!).ToString(CultureInfo.InvariantCulture),
-
-            _ => throw new UnreachableException()
-        };
+        var args = boundCall.Arguments.Select(Evaluate).ToImmutableArray();
+        
+        return Call(boundCall.Fun, receiver, args);
     }
 }

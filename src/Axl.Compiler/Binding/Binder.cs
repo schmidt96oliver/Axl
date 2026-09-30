@@ -17,6 +17,7 @@ public sealed class Binder
     private readonly BaseModuleSymbol _baseModule;
     
     private Scope _scope;
+    private readonly FunSymbol _fun;
     private bool _inLoop = false;
     
     /// <summary>
@@ -28,11 +29,12 @@ public sealed class Binder
     private readonly Dictionary<SourceLocation, Symbol> _resolvedSymbols = [];
     
     
-    private Binder(Scope scope, BaseModuleSymbol baseModule)
+    private Binder(Scope scope, FunSymbol fun, BaseModuleSymbol baseModule)
     {
         _baseModule = baseModule;
 
         _scope = scope;
+        _fun = fun;
     }
 
     private static Scope CreateGlobalScope(BaseModuleSymbol baseModule)
@@ -50,20 +52,23 @@ public sealed class Binder
     
     public static BoundFile BindFile(FileSyntax syntax, BaseModuleSymbol baseModule)
     {
+        var scriptFun = new FunSymbol("", null, [], baseModule.Unit);
+        
         var scope = new Scope(parent: CreateGlobalScope(baseModule));
-        var binder = new Binder(scope, baseModule);
+        var binder = new Binder(scope, scriptFun, baseModule);
         
         // Forward-declare all fun symbols
-        binder.BindFunSymbols(syntax.Children.OfType<FunDeclSyntax>());
+        var funs = binder.BindFunSymbols(syntax.Children.OfType<FunDeclSyntax>());
         
         // Everything other than stmts and fun decls is not supported yet.
         foreach (var node in syntax.SyntaxNodes().Where(n => n is not (StmtSyntax or FunDeclSyntax)))
             binder._diagnostics.ReportError(new Diagnostic.UnsupportedFeature(node));
 
-        var stmts = syntax.Stmts.Select(binder.BindStmt).ToImmutableArray();
-        var block = new BoundBlock(stmts, type: baseModule.Unit, syntax);
+        var scriptStmts = syntax.Stmts.Select(binder.BindStmt).ToImmutableArray();
+        var scriptBlock = new BoundBlock(scriptStmts, type: baseModule.Unit, syntax);
+        scriptFun.Body = scriptBlock;
 
-        return new BoundFile(block, binder._diagnostics.Drain(), binder._resolvedSymbols.ToFrozenDictionary());
+        return new BoundFile(scriptFun, funs, binder._diagnostics.Drain(), binder._resolvedSymbols.ToFrozenDictionary());
     }
     
     
@@ -179,14 +184,15 @@ public sealed class Binder
     
     #region Declarations
 
-    private void BindFunSymbols(IEnumerable<FunDeclSyntax> syntaxes)
+    private ImmutableArray<FunSymbol> BindFunSymbols(IEnumerable<FunDeclSyntax> syntaxes)
     {
         // Declare funs with a valid name and group them if necessary.
         // Funs with empty names cannot be referenced from source and
         // would just clutter lookup.
+
+        var funs = syntaxes.Select(BindFunSymbol).ToImmutableArray();
         
-        var symbols = syntaxes
-            .Select(BindFunSymbol)
+        var groupsOrSingleByName = funs
             .Where(fun => fun.Name.Length > 0)
             .GroupBy(fun => fun.Name)
             .Select(funGrp => (Symbol)(funGrp.ToImmutableArray() switch
@@ -198,7 +204,7 @@ public sealed class Binder
             .ToImmutableArray();
 
         // Report errors for duplicate signatures
-        foreach (var funGroup in symbols.OfType<FunGroupSymbol>())
+        foreach (var funGroup in groupsOrSingleByName.OfType<FunGroupSymbol>())
         {
             var remaining = funGroup.Funs.ToList();
             while (remaining.Count > 0)
@@ -224,8 +230,10 @@ public sealed class Binder
         }
 
         // Declare symbols
-        foreach (var symbol in symbols)
+        foreach (var symbol in groupsOrSingleByName)
             _scope.Declare(symbol);
+
+        return funs;
     }
 
     private FunSymbol BindFunSymbol(FunDeclSyntax syntax)

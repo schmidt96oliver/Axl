@@ -1,16 +1,12 @@
 ﻿using System.Collections.Immutable;
+using Axl.Compiler.Binding.BoundTree;
 using Axl.Compiler.Syntax.Tree;
 
 namespace Axl.Compiler.Symbols;
 
-public sealed class FunSymbol(
-    string name,
-    TypeSymbol? receiverType,
-    ImmutableArray<ParameterSymbol> parameters,
-    TypeSymbol returnType,
-    Intrinsic? intrinsic = null,
-    FunDeclSyntax? declarationSyntax = null)
-    : Symbol(name)
+public union FunBody(Intrinsic, BoundBlock);
+
+public sealed class FunSymbol : Symbol
 {
     public override SymbolKind Kind => SymbolKind.Fun;
 
@@ -20,14 +16,51 @@ public sealed class FunSymbol(
     /// denotes the type it is a method of. <c>null</c>, if this
     /// method is free or a static member.
     /// </summary>
-    public TypeSymbol? ReceiverType { get; } = receiverType;
+    public TypeSymbol? ReceiverType { get; }
     
-    public ImmutableArray<ParameterSymbol> Parameters { get; } = parameters;
+    public ImmutableArray<ParameterSymbol> Parameters { get; }
     
-    public ImmutableArray<TypeSymbol> ParameterTypes { get; } = [.. parameters.Select(parameter => parameter.Type)];
+    public ImmutableArray<TypeSymbol> ParameterTypes { get; }
     
-    public TypeSymbol ReturnType { get; } = returnType;
-    public FunDeclSyntax? DeclarationSyntax { get; } = declarationSyntax;
+    public TypeSymbol ReturnType { get; }
+    public FunDeclSyntax? DeclarationSyntax { get; }
 
-    public Intrinsic? Intrinsic { get; } = intrinsic;
+    private FunBody? _body;
+
+    public FunBody Body
+    {
+        get
+        {
+            Guard.IsState(_body is not null, "Body has not been bound yet.");
+            return _body.Value;
+        }
+
+        // Body is only set during construction (intrinsics, generated) or
+        // during binding. So the binder needs to ensure, that it is set.
+        internal set
+        {
+            Guard.IsState(_body is null, "Cannot set body twice.");
+            _body = value;
+        }
+    }
+    
+
+    public FunSymbol(string name,
+        TypeSymbol? receiverType,
+        ImmutableArray<ParameterSymbol> parameters,
+        TypeSymbol returnType,
+        FunBody? body = null,
+        FunDeclSyntax? declarationSyntax = null) : base(name)
+    {
+        ReceiverType = receiverType;
+        Parameters = parameters;
+        ParameterTypes = [.. parameters.Select(parameter => parameter.Type)];
+        ReturnType = returnType;
+        DeclarationSyntax = declarationSyntax;
+
+        if (body is not null)
+            Body = body.Value;
+    }
+
+    
 }

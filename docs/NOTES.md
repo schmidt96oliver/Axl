@@ -6,7 +6,11 @@
 * Design FunSymbol body property (intrinsic, generated, bound)
 * Bind fun bodies eagerly onto `FunSymbol.Body` (or decide otherwise)
 * How does LSP/Analysis search fun bodies?
+  * [ ] Test typeof for flat funs
+  * [ ] Think about nested/local funs
 * execut fun bodies
+  * [ ] Catch returns and add their expression
+  * [ ] Test execution
 
 * reject captured variables (before they should bind)
   * Variable/Parameter need Owner pointer -> Move to Symbol?
@@ -16,6 +20,8 @@
 * test empty name parameters
 
 * add test program with recursion
+
+* ?? BaseModule generated bodies
 
 * Binder cleanup (esp. BoundExprOrSymbol -> SymbolRef; Bind())
 
