@@ -3,26 +3,24 @@
 
 **Next:** 
 
-* Bind fun bodies eagerly onto `FunSymbol.Body` (or decide otherwise)
-  * [x] Bind expression bodied funs
-* How does LSP/Analysis search fun bodies?
-  * [ ] Test typeof for flat funs
-  * [ ] Think about nested/local funs
-* execut fun bodies
-  * [x] Catch returns and add their expression
-  * [x] Test execution
+* Play around with and test functions :))
+
+* ? refactor: Bind fun bodies in same Binder
+  * Currently, diagnostics and resolved symbols need to be carried over, which is awkward 
+     if new state is added.
 
 * reject captured variables (before they should bind)
   * Variable/Parameter need Owner pointer -> Move to Symbol?
   * -or- other solutions to knowing where locals are declared?
-  * Script as fun, so that locals have a natural Owner?
-
-* test empty name parameters
-
-* ?? BaseModule generated bodies
 
 * DivergenceAnalyser
   * synthesize `return { }` for Unit funs
+
+* ?? BaseModule generated bodies
+
+* ? Local Funs
+  * Analysis.TypeOf will need to handle nested funs correctly
+  * They need a home (probably just BoundFile and scope)
 
 * Binder cleanup (esp. BoundExprOrSymbol -> SymbolRef; Bind())
 
@@ -39,7 +37,7 @@
 
 ## 2. Funs (in script)
 * [x] Forward-declaration of funs
-* [ ] Binding of fun bodies
+* [x] Binding of fun bodies
 * [x] Overloads
 * [ ] Reject Local funs
 * [x] Reject shadowing of funs on same scope

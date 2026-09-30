@@ -228,6 +228,8 @@ public sealed class Binder
         }
         
         funBinder._diagnostics.DrainInto(_diagnostics);
+        foreach (var resolvedSymbol in funBinder._resolvedSymbols)
+            _resolvedSymbols.Add(resolvedSymbol.Key, resolvedSymbol.Value);
     }
 
 
@@ -288,10 +290,7 @@ public sealed class Binder
     private FunSymbol BindFunSymbol(FunDeclSyntax syntax)
     {
         var parameters = syntax.Parameters
-            .Select(paramSyntax =>
-                new ParameterSymbol(paramSyntax.Name.Identifier, 
-                    BindTypeName(paramSyntax.TypeAnnotation),
-                    paramSyntax))
+            .Select(BindParameter)
             .ToImmutableArray();
         var returnType = syntax.ReturnTypeAnnotation is not null
             ? BindTypeName(syntax.ReturnTypeAnnotation)
@@ -310,7 +309,7 @@ public sealed class Binder
 
         var funSymbol = new FunSymbol(syntax.Name.Identifier,
             receiverType: null,
-            parameters: parameters, 
+            parameters: parameters,  
             returnType: returnType, 
             declarationSyntax: syntax);
         
@@ -318,7 +317,16 @@ public sealed class Binder
         AddResolvedSymbol(syntax.Name.Location, funSymbol);
         return funSymbol;
     }
-    
+
+    private ParameterSymbol BindParameter(ParamSyntax syntax)
+    {
+        var symbol = new ParameterSymbol(syntax.Name.Identifier,
+            BindTypeName(syntax.TypeAnnotation),
+            syntax);
+        AddResolvedSymbol(syntax.Name.Location, symbol);
+        return symbol;
+    }
+
     #endregion
     
     #region Type names
