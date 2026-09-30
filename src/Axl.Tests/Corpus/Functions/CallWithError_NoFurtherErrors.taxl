@@ -1,0 +1,19 @@
+﻿//@check
+
+// Arity is always checked. Further errors in the argument list
+// must not lead to more errors.
+
+let a = error;      //~error UndefinedName
+
+Single(a);          // no error
+Single(a, a);       //~error ArityMismatch
+
+fun Single(i: I32) { }
+
+// Also for overloaded funs
+Overloaded(a);        // no error
+Overloaded(a, a);     //~error ArityMismatch
+
+fun Overloaded() { }
+fun Overloaded(i: I32) { }
+fun Overloaded(f: F32) { }

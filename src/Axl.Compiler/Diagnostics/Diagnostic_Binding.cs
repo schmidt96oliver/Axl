@@ -1,4 +1,5 @@
 ﻿using System.Collections.Immutable;
+using System.Diagnostics;
 using Axl.Compiler.Binding.BoundTree;
 using Axl.Compiler.Symbols;
 using Axl.Compiler.Syntax;
@@ -137,13 +138,29 @@ public partial record Diagnostic
         public override string Message => $"Cannot convert from type '{From.Name}' to '{To.Name}'.";
     }
 
-    public sealed record ArityMismatch(ArgListSyntax Syntax, FunSymbol Fun, int Got) : Error
+    public sealed record ArityMismatch : Error
     {
+        public ArityMismatch(SyntaxNode syntax, FunSymbol fun, int got)
+        {
+            Syntax = syntax;
+            Fun = fun;
+            Got = got;
+        }
+        public ArityMismatch(SyntaxNode syntax, FunGroupSymbol funGroup, int got)
+        {
+            Syntax = syntax;
+            FunGroup = funGroup;
+            Got = got;
+        }
+
         public override ImmutableArray<SourceLocation> Locations
         {
             get
             {
-                var argExprs = Syntax.Arguments.ToList();
+                if (Syntax is not ArgListSyntax argList)
+                    return [Syntax.Location];
+                
+                var argExprs = argList.Arguments.ToList();
                 if (argExprs.Count == 0) return [Syntax.Location];
                 
                 var range = SourceRange.FromTo(argExprs[0].Location.Range, argExprs[^1].Location.Range);
@@ -151,8 +168,16 @@ public partial record Diagnostic
             }
         }
 
-        public override string Message =>
-            $"'{Fun.Name}' has {Fun.Parameters.Length} parameter(s), but was called with {Got} argument(s).";
+        public override string Message => Fun is not null
+            ? $"'{Fun.Name}' has {Fun.Parameters.Length} parameter(s), but was called with {Got} argument(s)."
+            : FunGroup is not null
+                ? $"'{FunGroup.Name}' has no overload that takes {Got} parameter(s)."
+                : throw new UnreachableException();
+
+        public SyntaxNode Syntax { get; init; }
+        public FunSymbol? Fun { get; init; }
+        public FunGroupSymbol? FunGroup { get; init; }
+        public int Got { get; init; }
     }
 
     public sealed record InvalidCallee(ExprSyntax Syntax) : Error

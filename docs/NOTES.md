@@ -3,10 +3,19 @@
 
 **Next:** 
 
-* test empty name parameters
+* Simplify and report overloaded errors on arglist
 
-* bind fun bodies
+* Design FunSymbol body property (intrinsic, generated, bound)
+* Bind fun bodies eagerly onto `FunSymbol.Body` (or decide otherwise)
+* How does LSP/Analysis search fun bodies?
 * execut fun bodies
+
+* reject captured variables (before they should bind)
+  * Variable/Parameter need Owner pointer -> Move to Symbol?
+  * -or- other solutions to knowing where locals are declared?
+  * Script as fun, so that locals have a natural Owner?
+
+* test empty name parameters
 
 * add test program with recursion
 

@@ -84,6 +84,9 @@ public sealed class Binder
 
     private FunSymbol? LookupMethod(TypeSymbol instanceType, string name, ImmutableArray<TypeSymbol> argumentTypes)
     {
+        if (argumentTypes.OfType<ErrorTypeSymbol>().Any())
+            return null;
+        
         var symbol = instanceType.LookupMember(name);
         var fun = symbol switch
         {
@@ -793,8 +796,7 @@ public sealed class Binder
         var arguments = syntax.ArgumentExprs.Select(BindExpr).ToImmutableArray();
         
         // Bind Callee
-        if (BindCallee(syntax.Callee, [.. arguments.Select(arg => arg.Type)]) is not { } callee || 
-            arguments.Any(arg => arg.Type is ErrorTypeSymbol))
+        if (BindCallee(syntax.Callee, [.. arguments.Select(arg => arg.Type)]) is not { } callee)
         {
             return new BoundErrorExpr(recoveredExprs: [.. arguments], syntax: syntax);
         }
@@ -803,7 +805,7 @@ public sealed class Binder
         if (arguments.Length != callee.Fun.Parameters.Length)
         {
             _diagnostics.ReportError(new Diagnostic.ArityMismatch(syntax.Children.FirstOfType<ArgListSyntax>(),
-                callee.Fun, Got: arguments.Length));
+                callee.Fun, got: arguments.Length));
             return new BoundErrorExpr(recoveredExprs: arguments, syntax: syntax);
         }
 
@@ -811,7 +813,8 @@ public sealed class Binder
         var hadError = false;
         for (var i = 0; i < arguments.Length; i++)
         {
-            if (!CheckTypeAndReportMismatch(arguments[i], callee.Fun.Parameters[i].Type))
+            if (arguments[i].Type is ErrorTypeSymbol ||
+                !CheckTypeAndReportMismatch(arguments[i], callee.Fun.Parameters[i].Type))
                 hadError = true;
         }
         if (hadError)
@@ -841,11 +844,27 @@ public sealed class Binder
         var funSymbol = symbol as FunSymbol;
         if (symbol is FunGroupSymbol funGroupSymbol)
         {
-            var candidates = funGroupSymbol.Funs
+            var withSameArity = funGroupSymbol.Funs
                 .Where(fun => fun.ReceiverType == receiver?.Type &&
-                              fun.ParameterTypes.SequenceEqual(argumentTypes))
-                .ToImmutableArray();
-            if (candidates.Length != 1)
+                              fun.Parameters.Length == argumentTypes.Length)
+                .ToList();
+            if (withSameArity.Count == 0)
+            {
+                _diagnostics.ReportError(new Diagnostic.ArityMismatch(syntax, funGroupSymbol, argumentTypes.Length));
+                return null;
+            }
+            
+            // If any argument has an error, the correct fun cannot be resolved
+            // and there already is a diagnostic.
+            if (argumentTypes.OfType<ErrorTypeSymbol>().Any())
+                return null;
+            
+            var candidates = withSameArity
+                .Where(fun =>
+                    Enumerable.Range(0, argumentTypes.Length)
+                        .All(i => IsAssignableTo(argumentTypes[i], fun.ParameterTypes[i])))
+                .ToList();
+            if (candidates.Count != 1)
             {
                 _diagnostics.ReportError(new Diagnostic.CannotResolveFun(funGroupSymbol, argumentTypes, syntax));
                 return null;
