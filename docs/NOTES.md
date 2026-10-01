@@ -7,14 +7,13 @@
 
 * ?? BaseModule generated bodies
 
-* ? Local Funs
-  * Analysis.TypeOf through lazily built sidetable
-  * They need a home (probably just BoundFile and scope)
-
 * Binder cleanup 
   * (esp. BoundExprOrSymbol -> SymbolRef; Bind())
   * BindFunBody currently drains diagnostics and resolved symbols; Pass DiagnosticBag and SideTables into constructor instead
+
+* Simplify to Binder => BoundTree (not used for LSP much) + SideTables (use for LSP)
   * `BoundErrorExpr` -> `BoundError` and ??drop recovered exprs; They are used very inconsistently anyway
+  * Drop or change taxl type, because it is a source of pain for not much benefit
 
 # Roadmap
 
@@ -31,7 +30,7 @@
 * [x] Forward-declaration of funs
 * [x] Binding of fun bodies
 * [x] Overloads
-* [ ] Reject Local funs
+* [x] Local funs
 * [x] Reject shadowing of funs on same scope
 * [x] Reject captured variables
 * [x] Definite Return Analysis (needs MIR or ad-hoc)

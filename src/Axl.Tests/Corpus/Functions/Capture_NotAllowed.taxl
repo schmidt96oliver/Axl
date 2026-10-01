@@ -1,14 +1,22 @@
 ﻿//@check
 
-// Funs cannot refer to variables outside of their activation frame.
+// Funs cannot refer to variables/parameters outside of their activation frame.
 // This is currently not implemented, because it poses quite some
 // complexity.
 
 let a = 1;
 
-fun Test()
+fun Test(param: I32)
 {
     a = 2;      //~error CannotCapture
     let b = a;  //~error CannotCapture
     let a = a;  //~error CannotCapture
+    
+    let c = 1;
+    fun Inner()
+    {
+        c = 2;          //~error CannotCapture
+        let c = c;      //~error CannotCapture
+        let c = param;  //~error CannotCapture
+    }
 }

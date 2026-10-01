@@ -6,10 +6,12 @@ namespace Axl.Compiler.Binding.BoundTree;
 
 public sealed class BoundBlock(
     ImmutableArray<BoundStmt> stmts,
+    ImmutableArray<FunSymbol> localFuns,
     TypeSymbol type,
     SyntaxNode? syntax = null) : BoundExpr(type, syntax)
 {
     public ImmutableArray<BoundStmt> Stmts { get; } = stmts;
+    public ImmutableArray<FunSymbol> LocalFuns { get; } = localFuns;
 
     protected override ImmutableArray<BoundStmt> GetChildren()
         => Stmts;

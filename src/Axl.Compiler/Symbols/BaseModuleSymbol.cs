@@ -17,9 +17,6 @@ public sealed class BaseModuleSymbol : ModuleOrTypeSymbol
     public TypeSymbol Bool { get; }
     public TypeSymbol Unit { get; }
 
-    public TypeSymbol Never { get; }
-
-
     public TypeSymbol DefaultIntType => I32;
     public TypeSymbol DefaultFloatType => F64;
 
@@ -39,10 +36,6 @@ public sealed class BaseModuleSymbol : ModuleOrTypeSymbol
         var funs = GetFuns();
 
         Members = [I32, I64, F32, F64, Bool, String, Unit, .. funs];
-
-        // Never is not nameable from code, so they will not become
-        // members.
-        Never = new TypeSymbol("Never", () => []);
     }
 
 

@@ -23,3 +23,18 @@ fun D(a: BLA) { }       //~error UndefinedName
 fun D(a: BLA) { }       //~error UndefinedName
 fun D(a: I32) { }       //~error DuplicateFunDeclarations
 fun D(a: I32) { }       //~error DuplicateFunDeclarations
+
+
+// Also inside blocks and other funs
+{
+    fun A(a: I32) { }           //~error DuplicateFunDeclarations
+    fun A(b: I32): String = ""; //~error DuplicateFunDeclarations
+    fun A() { }
+}
+
+fun Outer()
+{
+    fun B(): Unit { }           //~error DuplicateFunDeclarations
+    fun B(): I32 = 1;           //~error DuplicateFunDeclarations
+    fun B(i: I32) { }
+}

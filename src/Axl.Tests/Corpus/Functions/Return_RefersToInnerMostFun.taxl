@@ -1,0 +1,17 @@
+﻿//@run
+//= 1 2
+ 
+// The return statement always returns from the innermost fun
+
+Print("{ Outer() } ");
+
+fun Outer(): I32
+{
+    Print("{ Inner() } ");
+    return 2;
+    
+    fun Inner(): I32
+    {
+        return 1;
+    }
+}

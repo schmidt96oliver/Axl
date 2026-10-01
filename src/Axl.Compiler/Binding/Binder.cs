@@ -59,36 +59,14 @@ public sealed class Binder
         var binder = new Binder(scope, scriptFun, baseModule);
         
         // Forward-declare all fun symbols
-        var funs = binder.BindFunSymbols(syntax.Children.OfType<FunDeclSyntax>());
-        
-        // Everything other than stmts and fun decls is not supported yet.
-        foreach (var node in syntax.SyntaxNodes().Where(n => n is not (StmtSyntax or FunDeclSyntax)))
-            binder._diagnostics.ReportError(new Diagnostic.UnsupportedFeature(node));
-
-        var scriptStmts = ImmutableArray.CreateBuilder<BoundStmt>();
-        foreach (var node in syntax.SyntaxNodes())
-        {
-            switch (node)
-            {
-                case StmtSyntax stmt:
-                    scriptStmts.Add(binder.BindStmt(stmt));
-                    break;
-                case FunDeclSyntax funDecl:
-                    binder.BindFunBody(funDecl);
-                    break;
-
-                default:
-                    binder._diagnostics.ReportError(new Diagnostic.UnsupportedFeature(node));
-                    break;
-            }
-        }
+        var block = binder.BindBlock(syntax);
         
         //TODO: Move to BindFunBody, so that everything follows the same logic.
-        var returnStmt = new BoundReturn(null, baseModule.Never);
-        var scriptBlock = new BoundBlock([..scriptStmts, returnStmt], type: baseModule.Unit, syntax);
-        scriptFun.Body = scriptBlock;
-
-        return new BoundFile(scriptFun, funs, binder._diagnostics.Drain(), binder._resolvedSymbols.ToFrozenDictionary());
+        var returnStmt = new BoundReturn(null);
+        block = new BoundBlock([..block.Stmts, returnStmt], block.LocalFuns, block.Type, block.Syntax);
+        scriptFun.Body = block;
+        
+        return new BoundFile(scriptFun, binder._diagnostics.Drain(), binder._resolvedSymbols.ToFrozenDictionary());
     }
     
     
@@ -102,7 +80,7 @@ public sealed class Binder
         if (source is ErrorTypeSymbol || target is ErrorTypeSymbol) return true;
         
         // Never assigns to anything
-        if (source == _baseModule.Never) return true;
+        if (source is NeverTypeSymbol) return true;
 
         return source == target;
     }
@@ -220,8 +198,8 @@ public sealed class Binder
             if (funSymbol.ReturnType == _baseModule.Unit)
             {
                 // For unit return type, insert an empty return at the end.
-                var returnStmt = new BoundReturn(null, _baseModule.Never);
-                body = new BoundBlock([.. body.Stmts, returnStmt], body.Type, body.Syntax);
+                var returnStmt = new BoundReturn(null);
+                body = new BoundBlock([.. body.Stmts, returnStmt], body.LocalFuns, body.Type, body.Syntax);
             }
             else
             {
@@ -231,6 +209,7 @@ public sealed class Binder
         
         funSymbol.Body = body;
         
+        // Transfer state to current binder
         funBinder._diagnostics.DrainInto(_diagnostics);
         foreach (var resolvedSymbol in funBinder._resolvedSymbols)
             _resolvedSymbols.Add(resolvedSymbol.Key, resolvedSymbol.Value);
@@ -252,7 +231,7 @@ public sealed class Binder
             if (!CheckTypeAndReportMismatch(expr, fun.ReturnType))
                 expr = new BoundErrorExpr([expr], syntax.Body.Expr);
             
-            return new BoundBlock([new BoundReturn(expr, _baseModule.Never)], _baseModule.Unit);
+            return new BoundBlock([new BoundReturn(expr)], [], _baseModule.Unit);
         }
 
         if (syntax.Body.Expr is not BlockExprSyntax blockSyntax)
@@ -699,13 +678,33 @@ public sealed class Binder
     
     #region Blocks, Control Flow
     
-    private BoundBlock BindBlock(BlockExprSyntax syntax)
+    private BoundBlock BindBlock(SyntaxNode syntax)
     {
         _scope = new Scope(parent: _scope);
-        var stmts = syntax.Stmts.Select(BindStmt).ToImmutableArray();
+
+        // Forward-declare all fun symbols
+        var funs = BindFunSymbols(syntax.Children.OfType<FunDeclSyntax>());
+
+        var stmts = ImmutableArray.CreateBuilder<BoundStmt>();
+        foreach (var node in syntax.SyntaxNodes())
+        {
+            switch (node)
+            {
+                case StmtSyntax stmt:
+                    stmts.Add(BindStmt(stmt));
+                    break;
+                case FunDeclSyntax funDecl:
+                    BindFunBody(funDecl);
+                    break;
+
+                default:
+                    _diagnostics.ReportError(new Diagnostic.UnsupportedFeature(node));
+                    break;
+            }
+        }
+        
         _scope = _scope.Parent!;
-    
-        return new BoundBlock(stmts, type: _baseModule.Unit, syntax);
+        return new BoundBlock(stmts.DrainToImmutable(), funs, type: _baseModule.Unit, syntax);
     }
 
     private BoundExpr BindCondition(ExprSyntax syntax)
@@ -774,8 +773,8 @@ public sealed class Binder
         }
     
         return syntax is BreakExprSyntax
-            ? new BoundBreak(_baseModule.Never, syntax)
-            : new BoundContinue(_baseModule.Never, syntax);
+            ? new BoundBreak(syntax)
+            : new BoundContinue(syntax);
     }
 
     private BoundExpr BindReturn(ReturnExprSyntax syntax)
@@ -793,7 +792,7 @@ public sealed class Binder
             expr = new BoundErrorExpr([]);
         }
 
-        return new BoundReturn(expr, _baseModule.Never, syntax);
+        return new BoundReturn(expr, syntax);
     }
     
     #endregion

@@ -6,14 +6,9 @@ using Axl.Compiler.Text;
 
 namespace Axl.Compiler.Binding.BoundTree;
 
-public sealed class BoundFile(FunSymbol scriptFun, ImmutableArray<FunSymbol> funs, ImmutableArray<Diagnostic> diagnostics, FrozenDictionary<SourceLocation, Symbol> resolvedSymbols)
+public sealed class BoundFile(FunSymbol scriptFun, ImmutableArray<Diagnostic> diagnostics, FrozenDictionary<SourceLocation, Symbol> resolvedSymbols)
 {
     public FunSymbol ScriptFun { get; } = scriptFun;
-    
-    /// <summary>
-    /// Excluding the script fun.
-    /// </summary>
-    public ImmutableArray<FunSymbol> Funs { get; } = funs;
     
     public ImmutableArray<Diagnostic> Diagnostics { get; } = diagnostics;
     

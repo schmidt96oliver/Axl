@@ -1,4 +1,5 @@
-﻿using System.Diagnostics;
+﻿using System.Collections.Frozen;
+using System.Diagnostics;
 using Axl.Compiler.Binding.BoundTree;
 using Axl.Compiler.Symbols;
 using Axl.Compiler.Syntax;
@@ -14,6 +15,7 @@ namespace Axl.Compiler;
 public sealed class Analysis
 {
     private readonly Compilation _compilation;
+    private FrozenDictionary<ExprSyntax, TypeSymbol>? _typesBySyntax;
     
     internal Analysis(Compilation compilation)
     {
@@ -42,47 +44,38 @@ public sealed class Analysis
             currentNode = nextNode;
         }
     }
-    
+
+    private FrozenDictionary<ExprSyntax, TypeSymbol> BuildTypeTable()
+    {
+        var typesBySyntax = new Dictionary<ExprSyntax, TypeSymbol>();
+
+        if (_compilation.BoundFile.ScriptFun.Body is BoundBlock scriptBlock)
+            Recursive(scriptBlock);
+
+        return typesBySyntax.ToFrozenDictionary();
+        
+        void Recursive(BoundStmt stmt)
+        {
+            if (stmt is BoundBlock block)
+            {
+                foreach (var fun in block.LocalFuns)
+                {
+                    if (fun.Body is BoundBlock funBlock)
+                        Recursive(funBlock);
+                }
+            }
+            
+            if (stmt is BoundExpr { Syntax: ExprSyntax exprSyntax } expr)
+                typesBySyntax.Add(exprSyntax, expr.Type);
+            
+            foreach (var child in stmt.Children)
+                Recursive(child);
+        }
+    }
     
     public TypeSymbol? TypeOf(ExprSyntax syntax)
     {
-        Debug.Assert(syntax.Range is not null);
-        var syntaxRange = syntax.Range.Value;
-        
-        //TODO: Account for nested funs
-        // When local funs are added, they will nest into each other
-        // and we need to find the deepest, because normally, the blocks range
-        // will cover the local fun.
-        
-        // Find the bound block it is inside.
-        var owningBlock = _compilation.BoundFile.Funs
-            .Where(fun => fun.Body is BoundBlock)
-            .Select(fun => (fun.Body.Value as BoundBlock)!)
-            .FirstOrDefault(block => block.Syntax is not null &&
-                block.Syntax.Location.Range.Contains(syntaxRange));
-
-        if (owningBlock is null)
-        {
-            if (_compilation.BoundFile.ScriptFun.Body is not BoundBlock scriptBlock)
-                return null;
-            owningBlock = scriptBlock;
-        }
-        
-        // Descend into bound tree to find expr syntax
-        BoundStmt current = owningBlock;
-        Debug.Assert(current.Syntax?.Range?.Contains(syntaxRange) == true);
-        
-        while (true)
-        {
-            var next = current.Children.FirstOrDefault(child => child.Syntax?.Range?.Contains(syntaxRange) == true);
-            if (next is null) return null;
-            if (next.Syntax == syntax)
-            {
-                Debug.Assert(next is BoundExpr);
-                return ((BoundExpr)next).Type;
-            }
-        
-            current = next;
-        }
+        _typesBySyntax ??= BuildTypeTable();
+        return _typesBySyntax.GetValueOrDefault(syntax);
     }
 }

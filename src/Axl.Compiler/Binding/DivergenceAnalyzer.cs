@@ -1,5 +1,6 @@
 ﻿using System.Diagnostics;
 using Axl.Compiler.Binding.BoundTree;
+using Axl.Compiler.Symbols;
 
 namespace Axl.Compiler.Binding;
 
@@ -15,7 +16,7 @@ public static class DivergenceAnalyzer
         {
             get
             {
-                if (boundStmt is BoundExpr { Type.Name: "Never" })
+                if (boundStmt is BoundExpr { Type: NeverTypeSymbol })
                     return true;
                 
                 return boundStmt switch

@@ -13,3 +13,18 @@ fun D(): Unit
     
 fun E(): Unit
     = "";       //~error TypeMismatch
+    
+{
+    fun A(): F32
+        = true;     //~error TypeMismatch
+    fun B(): Bool
+        = "";     //~error TypeMismatch
+}
+
+fun Outer()
+{
+    fun A(): F32
+        = true;     //~error TypeMismatch
+    fun B(): Bool
+        = "";     //~error TypeMismatch
+}
