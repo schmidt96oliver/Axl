@@ -267,4 +267,28 @@ public partial record Diagnostic
         public override ImmutableArray<SourceLocation> Locations => [Syntax.Location];
         public override string Message => $"Cannot capture variable '{Syntax.Token.Identifier}' from outside of this fun.";
     }
+
+    public sealed record MissingReturn(SyntaxNode BlockSyntax, TypeNameSyntax ReturnTypeAnnotationSyntax) : Error
+    {
+        public override ImmutableArray<SourceLocation> Locations
+        {
+            get
+            {
+                if (BlockSyntax is BlockExprSyntax blockExprSyntax &&
+                    blockExprSyntax.SyntaxElements().First(el => el is Token { Kind: TokenKind.CloseBrace })
+                        is Token { IsMissing: false } closeBraceToken)
+                {
+                    return [closeBraceToken.Location];
+                }
+
+                return [BlockSyntax.Location];
+            }
+        }
+
+        public override string Message
+            => "Not all code-paths return a value.";
+
+        public override ImmutableArray<LabeledSourceLocation> Related
+            => [new(ReturnTypeAnnotationSyntax.Location, "Return type declared here.")];
+    }
 }

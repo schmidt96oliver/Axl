@@ -5,8 +5,8 @@
 
 * Play around with and test functions :))
 
-* DivergenceAnalyser
-  * synthesize `return { }` for Unit funs
+* type-check expression bodied fun returns!
+* `if (true) return 1 else 2;` should type-check
 
 * ?? BaseModule generated bodies
 
@@ -37,7 +37,7 @@
 * [ ] Reject Local funs
 * [x] Reject shadowing of funs on same scope
 * [x] Reject captured variables
-* [ ] Definite Return Analysis (needs MIR or ad-hoc)
+* [x] Definite Return Analysis (needs MIR or ad-hoc)
 * ?? Named arguments
 
 ## 3. Type (in script)

@@ -1,0 +1,84 @@
+﻿//@check
+
+// --- Returns inside expressions
+fun Call1(): I32
+{ Print(return 1); }
+fun Call2(): I32
+{ Dupe("", return 2); }
+fun Dupe(a: String, b: String) { }
+
+fun VarDecl(): I32
+{ let a = return 3; }
+
+fun Assign(): I32
+{ 
+    var a = 2;
+    a = return 3; 
+}
+
+fun Block(): I32
+{ 
+    Print("");
+    return 1;
+    Print("");
+}
+
+fun Logic1(): I32
+{ (return 1) && true; }
+fun Logic2(): I32
+{ (return 1) || true; }
+fun Logic3(): I32
+{ 
+    // Right side is not always executed.
+    let a = false || (return 1);
+    let a = false && (return 1);
+} //~error MissingReturn
+
+fun StringInterpolation1(): I32
+{ "{ return 1 }"; } 
+fun StringInterpolation2(): I32
+{ "{ 2 } { return 1 }"; } 
+
+fun IfExpr1(): I32
+{ let a = if (true) return 1; else return 2; } 
+fun IfExpr2(): I32
+{ let a = if (true) 2 else return 2; } //~error MissingReturn
+
+// --- While ignored
+fun While(): I32
+{ while (true) { return 1; } } //~error MissingReturn
+
+// --- If statement
+fun IfStmt1(): I32
+{ if (true) return 1; } //~error MissingReturn
+
+fun IfStmt2(): I32
+{ 
+    if (true) return 1;
+    else return 2;
+}
+
+fun IfStmt3(): I32
+{
+    if (true)
+    {
+        if (true) return 1;
+    }
+    else return 2;
+}   //~error MissingReturn
+
+fun IfStmt4(): I32
+{
+    if (true)
+    {
+        if (true) return 1;
+        else return 3;
+    }
+    else return 2;
+}  
+
+fun IfStmt5(): I32
+{
+    if (return 1)
+    { }
+}  

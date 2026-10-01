@@ -1,6 +1,6 @@
 ﻿//@run
 //= false true false false true
-  
+ 
 // Implicitly tests .ToString as well 
   
 Print("{true == false} ");

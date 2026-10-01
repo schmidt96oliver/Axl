@@ -83,7 +83,9 @@ public sealed class Binder
             }
         }
         
-        var scriptBlock = new BoundBlock(scriptStmts.DrainToImmutable(), type: baseModule.Unit, syntax);
+        //TODO: Move to BindFunBody, so that everything follows the same logic.
+        var returnStmt = new BoundReturn(null, baseModule.Never);
+        var scriptBlock = new BoundBlock([..scriptStmts, returnStmt], type: baseModule.Unit, syntax);
         scriptFun.Body = scriptBlock;
 
         return new BoundFile(scriptFun, funs, binder._diagnostics.Drain(), binder._resolvedSymbols.ToFrozenDictionary());
@@ -210,26 +212,47 @@ public sealed class Binder
 
         var funBinder = new Binder(funScope, funSymbol, _baseModule);
 
-        if (funDecl.Body.Expr is null)
+        var body = BindFunBodyBlock(funDecl, funBinder);
+        
+        // Check that all code-paths return a value
+        if (!body.IsDiverging)
         {
-            // The fun has no body at all, so it returns unit.
-            funSymbol.Body = new BoundBlock([new BoundReturn(null, _baseModule.Unit)], _baseModule.Unit);
+            if (funSymbol.ReturnType == _baseModule.Unit)
+            {
+                // For unit return type, insert an empty return at the end.
+                var returnStmt = new BoundReturn(null, _baseModule.Never);
+                body = new BoundBlock([.. body.Stmts, returnStmt], body.Type, body.Syntax);
+            }
+            else
+            {
+                _diagnostics.ReportError(new Diagnostic.MissingReturn(body.Syntax!, funDecl.ReturnTypeAnnotation!));
+            }
         }
-        else if (funDecl.Body.IsExpressionBodied)
-        {
-            var expr = funBinder.BindExpr(funDecl.Body.Expr);
-            funSymbol.Body = new BoundBlock([new BoundReturn(expr, _baseModule.Never)], _baseModule.Unit);
-        }
-        else
-        {
-            if (funDecl.Body.Expr is not BlockExprSyntax blockSyntax)
-                throw new UnreachableException();
-            funSymbol.Body = funBinder.BindBlock(blockSyntax);
-        }
+        
+        funSymbol.Body = body;
         
         funBinder._diagnostics.DrainInto(_diagnostics);
         foreach (var resolvedSymbol in funBinder._resolvedSymbols)
             _resolvedSymbols.Add(resolvedSymbol.Key, resolvedSymbol.Value);
+    }
+
+    private BoundBlock BindFunBodyBlock(FunDeclSyntax funDecl, Binder funBinder)
+    {
+        if (funDecl.Body.Expr is null)
+        {
+            // The fun has no body at all, so it returns unit.
+            return new BoundBlock([new BoundReturn(null, _baseModule.Never)], _baseModule.Unit);
+        }
+
+        if (funDecl.Body.IsExpressionBodied)
+        {
+            var expr = funBinder.BindExpr(funDecl.Body.Expr);
+            return new BoundBlock([new BoundReturn(expr, _baseModule.Never)], _baseModule.Unit);
+        }
+
+        if (funDecl.Body.Expr is not BlockExprSyntax blockSyntax)
+            throw new UnreachableException();
+        return funBinder.BindBlock(blockSyntax);
     }
 
 

@@ -60,10 +60,10 @@ public sealed class BoundTreeInterpreter
 
         var prevEnvironment = _values;
         _values = [];
-        
+
         for (var i = 0; i < fun.Parameters.Length; i++)
             _values[fun.Parameters[i]] = args[i];
-        
+
         try
         {
             Run(block);
@@ -74,12 +74,9 @@ public sealed class BoundTreeInterpreter
             return returnException.Value;
         }
 
-        // For now, throw if return is missing. Later on, a return stmt
-        // will be inserted if necessary and we can throw always.
-        _values = prevEnvironment;
-        if (fun.ReturnType.Name is not "Unit")
-            throw new UnreachableException("Not all code paths return a value.");
-        return _unitValue;
+        // For all fun bodies, the Binder ensures that all code paths return.
+        // Otherwise, it errors or synthesizes a return.
+        throw new UnreachableException("Not all code paths return a value.");
     }
 
     private object CallIntrinsic(Intrinsic intrinsic, object? receiver, ImmutableArray<object> args)
