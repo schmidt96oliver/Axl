@@ -225,7 +225,7 @@ public sealed class BoundTreeInterpreter
         BoundContinue => throw new ContinueException(),
         BoundReturn boundReturn => EvaluateReturn(boundReturn),
         
-        BoundErrorExpr => throw new UnreachableException(),
+        BoundError => throw new UnreachableException(),
     };
 
     private object EvaluateReturn(BoundReturn boundReturn)

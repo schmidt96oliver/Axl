@@ -26,7 +26,7 @@ public static class DivergenceAnalyzer
                     BoundBreak or BoundContinue => throw new UnreachableException(
                         "Loops are not handled, so break/continue are not reachable."),
                     BoundConst => false,
-                    BoundErrorExpr => false,
+                    BoundError => false,
                     BoundReturn => true,
                     BoundVariableRef => false,
                     BoundWhile => false,
