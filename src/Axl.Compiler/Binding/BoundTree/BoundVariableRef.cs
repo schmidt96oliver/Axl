@@ -1,5 +1,4 @@
-﻿using System.Collections.Immutable;
-using Axl.Compiler.Symbols;
+﻿using Axl.Compiler.Symbols;
 using Axl.Compiler.Syntax;
 
 namespace Axl.Compiler.Binding.BoundTree;
@@ -11,7 +10,4 @@ namespace Axl.Compiler.Binding.BoundTree;
 public sealed class BoundVariableRef(VariableSymbol variable, SyntaxNode? syntax = null) : BoundExpr(variable.Type, syntax)
 {
     public VariableSymbol Variable { get; } = variable;
-    
-    protected override ImmutableArray<BoundStmt> GetChildren() => [];
-    
 }

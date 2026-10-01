@@ -1,12 +1,7 @@
-﻿using System.Collections.Immutable;
-using Axl.Compiler.Symbols;
+﻿using Axl.Compiler.Symbols;
 using Axl.Compiler.Syntax;
 
 namespace Axl.Compiler.Binding.BoundTree;
 
 public sealed class BoundBreak(SyntaxNode? syntax = null)
-    : BoundExpr(NeverTypeSymbol.Instance, syntax)
-{
-    protected override ImmutableArray<BoundStmt> GetChildren()
-        => [];
-}
+    : BoundExpr(NeverTypeSymbol.Instance, syntax);

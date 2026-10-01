@@ -11,10 +11,6 @@
   * (esp. BoundExprOrSymbol -> SymbolRef; Bind())
   * BindFunBody currently drains diagnostics and resolved symbols; Pass DiagnosticBag and SideTables into constructor instead
 
-* Simplify to Binder => BoundTree (not used for LSP much) + SideTables (use for LSP)
-  * `BoundErrorExpr` -> `BoundError` and ??drop recovered exprs; They are used very inconsistently anyway
-  * Drop or change taxl type, because it is a source of pain for not much benefit
-
 # Roadmap
 
 ## 1. Running scripts (no funs)
@@ -41,6 +37,7 @@ One type (maybe struct) inside scripts.
 * [ ] Initialization
 * [ ] Fields
 * [ ] (Static) fun and methods
+* [ ] explicit and implicit `self`
 * [ ] User-declared operators
 * [ ] User-declared ToString
 * [ ] `pub` visibility

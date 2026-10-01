@@ -13,7 +13,4 @@ public sealed class BoundBlock(
     public ImmutableArray<BoundStmt> Stmts { get; } = stmts;
     public ImmutableArray<FunSymbol> LocalFuns { get; } = localFuns;
 
-    protected override ImmutableArray<BoundStmt> GetChildren()
-        => Stmts;
-
 }

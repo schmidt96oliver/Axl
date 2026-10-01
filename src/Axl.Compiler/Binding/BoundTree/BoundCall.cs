@@ -14,8 +14,4 @@ public sealed class BoundCall(
     public FunSymbol Fun { get; } = fun;
     public BoundExpr? Receiver { get; } = receiver;
     public ImmutableArray<BoundExpr> Arguments { get; } = arguments;
-
-
-    protected override ImmutableArray<BoundStmt> GetChildren()
-        => Arguments.CastArray<BoundStmt>();
 }

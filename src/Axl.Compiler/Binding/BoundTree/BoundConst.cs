@@ -1,5 +1,4 @@
-﻿using System.Collections.Immutable;
-using Axl.Compiler.Symbols;
+﻿using Axl.Compiler.Symbols;
 using Axl.Compiler.Syntax;
 
 namespace Axl.Compiler.Binding.BoundTree;
@@ -10,7 +9,4 @@ public sealed class BoundConst(ConstValue value, TypeSymbol type, SyntaxNode? sy
     : BoundExpr(type, syntax)
 {
     public ConstValue Value { get; } = value;
-
-    protected override ImmutableArray<BoundStmt> GetChildren()
-        => [];
 }
