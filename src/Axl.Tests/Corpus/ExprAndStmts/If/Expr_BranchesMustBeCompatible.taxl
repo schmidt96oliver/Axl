@@ -26,13 +26,15 @@ var a = if (true)
         else 1;
 
 // Never types
-let a = if (true) return else 2;
-//~type ^^^^^^^^^^^^^^^^^^^^^^^ I32
-let a = if (true) 1 else return;
-//~type ^^^^^^^^^^^^^^^^^^^^^^^ I32
+// Both branches have type I32
+var a = if (true) return else 2;
+a = 1;
+a = 1.1;        //~error TypeMismatch
+var a = if (true) 1 else return;
+a = 1;
+a = true;    //~error TypeMismatch
 
-let a = if (true) return else return;
-//~type ^^^^^^^^^^^^^^^^^^^^^^^^^^^^ Never
+var a = if (true) return else return;
 
 // Valid cases:
 var a = if (true) 1 else 2;

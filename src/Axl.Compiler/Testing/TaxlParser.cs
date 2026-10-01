@@ -73,12 +73,12 @@ public sealed class TaxlParser(SourceText sourceText, DiagnosticBag diagnostics)
         return new Expectation(expectationText, location, prefixLocations);
     }
     
-    public ImmutableArray<Annotation> ParseAnnotations()
+    public ImmutableArray<DiagnosticAnnotation> ParseAnnotations()
     {
         // Just run the lexer, since it already knows best where to find
         // the correct comments in sourceText text.
 
-        var annotations = ImmutableArray.CreateBuilder<Annotation>();
+        var annotations = ImmutableArray.CreateBuilder<DiagnosticAnnotation>();
         var annotationLocations = Lexer.Lex(sourceText, new DiagnosticBag())
             .Where(t => t.Kind is TokenKind.Comment)
             .Select(t => sourceText.GetLocation(t.FullRange))
@@ -86,8 +86,7 @@ public sealed class TaxlParser(SourceText sourceText, DiagnosticBag diagnostics)
 
         foreach (var location in annotationLocations)
         {
-            var annotation = (Annotation?)ParseDiagnosticAnnotation(location)
-                             ?? ParseTypeAnnotation(location);
+            var annotation = ParseDiagnosticAnnotation(location);
             if (annotation is null)
                 diagnostics.ReportError(new Diagnostic.InvalidTaxlAnnotation(location));
             else
@@ -131,50 +130,6 @@ public sealed class TaxlParser(SourceText sourceText, DiagnosticBag diagnostics)
             PrefixLocation: new SourceLocation(location.SourceText, prefixRange),
             Kind: kind,
             id);
-    }
-
-    private TypeAnnotation? ParseTypeAnnotation(SourceLocation location)
-    {
-        var text = location.Text;
-        if (!text.StartsWith("//~type"))
-            return null;
-        
-        // --- Caret range
-        var caretStart = text.IndexOf('^');
-        if (caretStart < 0)
-            return null;
-        var caretLast = text.LastIndexOf('^');
-        var caretRange = SourceRange.FromLength(location.Range.Start + caretStart,
-            length: caretLast - caretStart + 1);
-        
-        // Allow only contiguous caret blocks
-        if (text[caretStart..(caretLast + 1)].ContainsAnyExcept('^'))
-            return null;
-        
-        // --- Project caret to line above
-        var lineAbove = location.StartLine - 1;
-        if (lineAbove < 0)
-            return null;
-        var referencedRange = SourceRange.FromLength(
-            start: sourceText.Lines[lineAbove].Start + caretRange.Start - sourceText.Lines[location.StartLine].Start,
-            length: caretRange.Length);
-        if (!sourceText.Lines[lineAbove].Range.Contains(referencedRange))
-            return null;
-        
-        var referencedLocation = sourceText.GetLocation(referencedRange);
-        
-        // --- Argument
-        var typeName = text[(caretLast + 1)..].Trim().ToString();
-        if (string.IsNullOrEmpty(typeName))
-            return null;
-
-        var prefixRange = SourceRange.FromLength(location.Range.Start, 
-            length: caretLast + 1);
-        return new TypeAnnotation(
-            FullLocation: location,
-            PrefixLocation: sourceText.GetLocation(prefixRange),
-            referencedLocation,
-            typeName);
     }
     
     

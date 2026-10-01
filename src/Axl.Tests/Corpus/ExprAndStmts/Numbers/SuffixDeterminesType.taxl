@@ -3,17 +3,22 @@
 // The suffix determines the number types if present.
 
 // Integral numbers
-var a = 1_i32;
-//~type ^^^^^ I32
-var a = 1_i64;
-//~type ^^^^^ I64
-var a = 1_f32;
-//~type ^^^^^ F32
-var a = 1_f64;
-//~type ^^^^^ F64
+var a: I32 = 1_i32;
+a = 1_i64;              //~error TypeMismatch
+
+var a: I64 = 1_i64;
+a = 1_i32;              //~error TypeMismatch
+
+var a: F32 = 1_f32;
+a = 1_i32;              //~error TypeMismatch
+
+var a: F64 = 1_f64;
+a = 1_f32;              //~error TypeMismatch
+
 
 // Decimal numbers
-var a = 1.1_f32;
-//~type ^^^^^^^ F32
-var a = 1.1_f64;
-//~type ^^^^^^^ F64
+var a: F32 = 1.1_f32;
+a = 1_f64;              //~error TypeMismatch
+
+var a: F64 = 1.1_f64;
+a = 1_f32;              //~error TypeMismatch

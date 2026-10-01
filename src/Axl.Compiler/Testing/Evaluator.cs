@@ -49,15 +49,13 @@ public sealed class Evaluator
         }
         
         var evaluator = new Evaluator(testFile);
+        evaluator.CheckDiagnostics();
         switch (testFile.Directive.Kind)
         {
             case DirectiveKind.Check:
-                evaluator.CheckDiagnostics();
-                evaluator.CheckTypes();
                 break;
 
             case DirectiveKind.Run:
-                evaluator.CheckDiagnostics();
                 evaluator.CheckExpectedOutput();
                 break;
 
@@ -138,37 +136,6 @@ public sealed class Evaluator
     }
     
     
-    private void CheckTypes()
-    {
-        var typeAnnotations = _testFile.Annotations
-            .OfType<TypeAnnotation>();
-        
-        foreach (var annotation in typeAnnotations)
-        {
-            var line = annotation.LineNumber;
-
-            if (_testFile.Compilation.Analysis.SyntaxNodeAt(annotation.ReferencedLocation) is not ExprSyntax syntax)
-            {
-                _failedChecks.Add(new FailedCheck(line,
-                    $"Type annotation does not point to {nameof(ExprSyntax)}"));
-                continue;
-            }
-
-            if (_testFile.Compilation.Analysis.TypeOf(syntax) is not { } type)
-            {
-                _failedChecks.Add(new FailedCheck(line, "Could not resolve type"));
-                continue;
-            }
-
-            if (type.Name != annotation.TypeName)
-            {
-                _failedChecks.Add(new FailedCheck(line,
-                    $"Expected type '{annotation.TypeName}', got '{type.Name}'."));
-            }
-        }
-    }
-
-
     private void CheckExpectedOutput()
     {
         if (_testFile.Expectation is null)

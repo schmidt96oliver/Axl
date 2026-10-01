@@ -240,17 +240,8 @@ public class Dump(SourceText sourceText)
 
         foreach (var annotation in testFile.Annotations)
         {
-            _builder.Append("//~ ");
-            switch (annotation)
-            {
-                case DiagnosticAnnotation diagnostic:
-                    _builder.AppendLine($"{diagnostic.Kind.ToString().ToLower()}@l.{diagnostic.LineNumber}: \"{diagnostic.Id}\"");
-                    break;
-
-                case TypeAnnotation type:
-                    _builder.AppendLine($"type \"{type.TypeName}\" on \"{type.ReferencedLocation.Text}\"");
-                    break;
-            }
+            _builder.AppendLine(
+                $"//~ {annotation.Kind.ToString().ToLower()}@l.{annotation.LineNumber}: \"{annotation.Id}\"");
         }
 
         return this;

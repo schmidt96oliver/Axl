@@ -13,7 +13,7 @@ public sealed class TestFile
     public Directive Directive { get; }
     public Expectation? Expectation { get; }
 
-    public ImmutableArray<Annotation> Annotations { get; }
+    public ImmutableArray<DiagnosticAnnotation> Annotations { get; }
 
     /// <summary>
     /// Diagnostics emitted during parsing of this test file.
@@ -49,7 +49,7 @@ public sealed class TestFile
     private TestFile(SourceText sourceText, 
         Directive directive,
         Expectation? expectation,
-        ImmutableArray<Annotation> annotations,
+        ImmutableArray<DiagnosticAnnotation> annotations,
         ImmutableArray<Diagnostic> diagnostics)
     {
         SourceText = sourceText;

@@ -13,4 +13,6 @@ public sealed record DiagnosticAnnotation(
     SourceLocation PrefixLocation,
     DiagnosticKind Kind,
     string Id)
-    : Annotation(FullLocation, PrefixLocation);
+{
+    public int LineNumber => FullLocation.StartLine;
+}
