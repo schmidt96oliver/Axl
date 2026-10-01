@@ -5,24 +5,19 @@
 
 * Play around with and test functions :))
 
-* ? refactor: Bind fun bodies in same Binder
-  * Currently, diagnostics and resolved symbols need to be carried over, which is awkward 
-     if new state is added.
-
-* reject captured variables (before they should bind)
-  * Variable/Parameter need Owner pointer -> Move to Symbol?
-  * -or- other solutions to knowing where locals are declared?
-
 * DivergenceAnalyser
   * synthesize `return { }` for Unit funs
 
 * ?? BaseModule generated bodies
 
 * ? Local Funs
-  * Analysis.TypeOf will need to handle nested funs correctly
+  * Analysis.TypeOf through lazily built sidetable
   * They need a home (probably just BoundFile and scope)
 
-* Binder cleanup (esp. BoundExprOrSymbol -> SymbolRef; Bind())
+* Binder cleanup 
+  * (esp. BoundExprOrSymbol -> SymbolRef; Bind())
+  * BindFunBody currently drains diagnostics and resolved symbols; Pass DiagnosticBag and SideTables into constructor instead
+  * `BoundErrorExpr` -> `BoundError` and ??drop recovered exprs; They are used very inconsistently anyway
 
 # Roadmap
 
@@ -41,6 +36,7 @@
 * [x] Overloads
 * [ ] Reject Local funs
 * [x] Reject shadowing of funs on same scope
+* [x] Reject captured variables
 * [ ] Definite Return Analysis (needs MIR or ad-hoc)
 * ?? Named arguments
 

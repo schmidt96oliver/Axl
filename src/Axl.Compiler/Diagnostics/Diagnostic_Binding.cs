@@ -261,4 +261,10 @@ public partial record Diagnostic
         public override ImmutableArray<SourceLocation> Locations => [Syntax.SyntaxElements().First().Location];
         public override string Message => "Return value is missing.";
     }
+
+    public sealed record CannotCapture(IdNameSyntax Syntax) : Error
+    {
+        public override ImmutableArray<SourceLocation> Locations => [Syntax.Location];
+        public override string Message => $"Cannot capture variable '{Syntax.Token.Identifier}' from outside of this fun.";
+    }
 }

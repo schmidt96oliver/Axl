@@ -7,10 +7,8 @@
 1 = 1; //~error InvalidAssignTarget
 
 var a = 1;
-(if (true) a) = 1; //~error InvalidAssignTarget
+(if (true) a else 1) = 1; //~error InvalidAssignTarget
 
 (a) = 1; //~error InvalidAssignTarget
-
-a && a = 1;  //~error InvalidAssignTarget
 
 { } = { };      //~error InvalidAssignTarget

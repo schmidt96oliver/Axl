@@ -1,0 +1,14 @@
+﻿//@check
+
+// Funs cannot refer to variables outside of their activation frame.
+// This is currently not implemented, because it poses quite some
+// complexity.
+
+let a = 1;
+
+fun Test()
+{
+    a = 2;      //~error CannotCapture
+    let b = a;  //~error CannotCapture
+    let a = a;  //~error CannotCapture
+}

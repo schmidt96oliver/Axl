@@ -60,6 +60,10 @@ public sealed class FunSymbol : Symbol
 
         if (body is not null)
             Body = body.Value;
+        
+        // Set parameter owners
+        foreach (var parameter in Parameters)
+            parameter.Owner = this;
     }
 
     

@@ -395,7 +395,7 @@ public sealed class Binder
         }
         
         var isReadOnly = syntax.VarOrLetKwToken.Kind is TokenKind.LetKw;
-        var variable = new VariableSymbol(syntax.Name.Identifier, isReadOnly, variableType);
+        var variable = new VariableSymbol(syntax.Name.Identifier, isReadOnly, variableType, _fun);
         _scope.Declare(variable);
         AddResolvedSymbol(syntax.Name.Location, variable);
     
@@ -768,10 +768,17 @@ public sealed class Binder
     
     private BoundExprOrSymbol BindIdName(IdNameSyntax syntax)
     {
-        if (BindSymbol(syntax) is { } symbol)
-            return new BoundSymbol(syntax, symbol);
+        if (BindSymbol(syntax) is not { } symbol)
+            return new BoundErrorExpr([], syntax);
 
-        return new BoundErrorExpr([], syntax);
+        // Reject captures variables
+        if (symbol is VariableSymbol variable && variable.Owner != _fun)
+        {
+            _diagnostics.ReportError(new Diagnostic.CannotCapture(syntax));
+            return new BoundErrorExpr([], syntax);
+        }
+        
+        return new BoundSymbol(syntax, symbol);
     }
     
     private BoundExpr BindAssign(BinaryExprSyntax syntax)
@@ -795,23 +802,25 @@ public sealed class Binder
 
     private VariableSymbol? BindAssignTarget(ExprSyntax syntax)
     {
-        if (syntax is not IdNameSyntax idNameSyntax)
+        var bound = BindExprOrSymbol(syntax);
+        switch (bound)
         {
-            _diagnostics.ReportError(new Diagnostic.InvalidAssignTarget(syntax));
-            return null;
-        }
-    
-        var symbol = BindSymbol(idNameSyntax);
-        switch (symbol)
-        {
-            case VariableSymbol { IsReadOnly: false } variable:
+            case BoundSymbol(_, VariableSymbol { IsReadOnly: false } variable):
                 return variable;
+            case BoundSymbol(_, var symbol):
+                _diagnostics.ReportError(new Diagnostic.InvalidAssignTarget(syntax, symbol));
+                return null;
 
+            case BoundInstanceMember(_, var (_, symbol)):
+                _diagnostics.ReportError(new Diagnostic.InvalidAssignTarget(syntax, symbol));
+                return null;
+            
             case null:
+            case BoundErrorExpr:
                 return null;
 
             default:
-                _diagnostics.ReportError(new Diagnostic.InvalidAssignTarget(syntax, symbol));
+                _diagnostics.ReportError(new Diagnostic.InvalidAssignTarget(syntax));
                 return null;
         }
     }
