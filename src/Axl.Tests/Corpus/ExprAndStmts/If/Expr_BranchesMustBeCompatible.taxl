@@ -1,9 +1,12 @@
 ﻿//@check
 
-// In expression position, types of both branches must be equal.
+// In expression position, one branch must be assignable to the
+// other. In most cases, that means that they are equal, but e.g. for
+// Never, the best branch must be picked.
 // Error is reported on both branches.
 
 
+// Non-never types
 var a = if (true) 1     //~error IncompatibleBranches
         else "Hello";   //~error IncompatibleBranches
 
@@ -21,6 +24,15 @@ var a = if (true)
             if (false) 1    //~error IncompatibleBranches
             else 1.1        //~error IncompatibleBranches
         else 1;
+
+// Never types
+let a = if (true) return else 2;
+//~type ^^^^^^^^^^^^^^^^^^^^^^^ I32
+let a = if (true) 1 else return;
+//~type ^^^^^^^^^^^^^^^^^^^^^^^ I32
+
+let a = if (true) return else return;
+//~type ^^^^^^^^^^^^^^^^^^^^^^^^^^^^ Never
 
 // Valid cases:
 var a = if (true) 1 else 2;

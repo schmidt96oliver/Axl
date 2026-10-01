@@ -5,8 +5,6 @@
 
 * Play around with and test functions :))
 
-* `if (true) return 1 else 2;` should type-check
-
 * ?? BaseModule generated bodies
 
 * ? Local Funs

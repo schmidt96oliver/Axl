@@ -723,8 +723,14 @@ public sealed class Binder
         var body = BindExpr(syntax.Body);
         var @else = BindElseExpr(syntax);
 
-        var type = body.Type;
-        if (!IsAssignableTo(source: @else.Type, target: body.Type))
+        // In some cases (e.g. Never type), one branch is assignable to
+        // the other but not vice versa. Pick the one that works.
+        TypeSymbol type;
+        if (IsAssignableTo(source: @else.Type, target: body.Type))
+            type = body.Type;
+        else if (IsAssignableTo(source: body.Type, target: @else.Type))
+            type = @else.Type;
+        else
         {
             _diagnostics.ReportError(new Diagnostic.IncompatibleBranches(body, @else));
             type = ErrorTypeSymbol.Instance;
