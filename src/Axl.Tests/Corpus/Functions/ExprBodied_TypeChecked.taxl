@@ -1,0 +1,15 @@
+﻿//@check
+
+fun A(): I32
+    = true;     //~error TypeMismatch
+fun B(): String
+    = 2;        //~error TypeMismatch
+    
+fun C(): I32
+    = 2;
+    
+fun D(): Unit
+    = { };
+    
+fun E(): Unit
+    = "";       //~error TypeMismatch

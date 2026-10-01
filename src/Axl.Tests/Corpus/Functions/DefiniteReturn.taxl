@@ -82,3 +82,9 @@ fun IfStmt5(): I32
     if (return 1)
     { }
 }  
+
+// --- Expression bodied fun
+fun ExprBodied1(): I32
+    = return 2;
+fun ExprBodied2(): I32
+    = 2;

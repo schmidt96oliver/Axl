@@ -5,7 +5,6 @@
 
 * Play around with and test functions :))
 
-* type-check expression bodied fun returns!
 * `if (true) return 1 else 2;` should type-check
 
 * ?? BaseModule generated bodies

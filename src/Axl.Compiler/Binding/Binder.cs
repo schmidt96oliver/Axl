@@ -212,7 +212,7 @@ public sealed class Binder
 
         var funBinder = new Binder(funScope, funSymbol, _baseModule);
 
-        var body = BindFunBodyBlock(funDecl, funBinder);
+        var body = BindFunBodyBlock(funSymbol, funBinder);
         
         // Check that all code-paths return a value
         if (!body.IsDiverging)
@@ -236,21 +236,26 @@ public sealed class Binder
             _resolvedSymbols.Add(resolvedSymbol.Key, resolvedSymbol.Value);
     }
 
-    private BoundBlock BindFunBodyBlock(FunDeclSyntax funDecl, Binder funBinder)
+    private BoundBlock BindFunBodyBlock(FunSymbol fun, Binder funBinder)
     {
-        if (funDecl.Body.Expr is null)
+        var syntax = fun.DeclarationSyntax ??
+                     throw new ArgumentException($"{nameof(fun)} must be code-declared.", nameof(fun));
+        if (syntax.Body.Expr is null)
         {
             // The fun has no body at all, so it returns unit.
-            return new BoundBlock([new BoundReturn(null, _baseModule.Never)], _baseModule.Unit);
+            throw new NotImplementedException("Funs without body not supported yet.");
         }
 
-        if (funDecl.Body.IsExpressionBodied)
+        if (syntax.Body.IsExpressionBodied)
         {
-            var expr = funBinder.BindExpr(funDecl.Body.Expr);
+            var expr = funBinder.BindExpr(syntax.Body.Expr);
+            if (!CheckTypeAndReportMismatch(expr, fun.ReturnType))
+                expr = new BoundErrorExpr([expr], syntax.Body.Expr);
+            
             return new BoundBlock([new BoundReturn(expr, _baseModule.Never)], _baseModule.Unit);
         }
 
-        if (funDecl.Body.Expr is not BlockExprSyntax blockSyntax)
+        if (syntax.Body.Expr is not BlockExprSyntax blockSyntax)
             throw new UnreachableException();
         return funBinder.BindBlock(blockSyntax);
     }
