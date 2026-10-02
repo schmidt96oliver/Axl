@@ -11,6 +11,11 @@ namespace Axl.Compiler;
 
 public sealed class BoundTreeInterpreter
 {
+    private sealed class Environment(object? receiver) : Dictionary<VariableSymbol, object>()
+    {
+        public object? Receiver { get; } = receiver;
+    }
+    
     private sealed class BreakException : Exception;
     private sealed class ContinueException : Exception;
 
@@ -21,7 +26,7 @@ public sealed class BoundTreeInterpreter
 
 
     private readonly TextWriter _output;
-    private Dictionary<VariableSymbol, object> _values = [];
+    private Environment _env = new(null);
     private readonly object _unitValue = new();
 
     private BoundTreeInterpreter(TextWriter output)
@@ -58,11 +63,11 @@ public sealed class BoundTreeInterpreter
         if (fun.Body is not BoundBlock block)
             throw new UnreachableException();
 
-        var prevEnvironment = _values;
-        _values = [];
+        var prevEnvironment = _env;
+        _env = new Environment(receiver);
 
         for (var i = 0; i < fun.Parameters.Length; i++)
-            _values[fun.Parameters[i]] = args[i];
+            _env[fun.Parameters[i]] = args[i];
 
         try
         {
@@ -70,7 +75,7 @@ public sealed class BoundTreeInterpreter
         }
         catch (ReturnException returnException)
         {
-            _values = prevEnvironment;
+            _env = prevEnvironment;
             return returnException.Value;
         }
 
@@ -95,11 +100,7 @@ public sealed class BoundTreeInterpreter
                 Intrinsic.DivideI32 => (int)receiver! / (int)args[0],
                 Intrinsic.MultiplyI32 => (int)receiver! * (int)args[0],
                 Intrinsic.EqualsI32 => (int)receiver! == (int)args[0],
-                Intrinsic.NotEqualsI32 => (int)receiver! != (int)args[0],
                 Intrinsic.LessThanI32 => (int)receiver! < (int)args[0],
-                Intrinsic.LessThanOrEqualI32 => (int)receiver! <= (int)args[0],
-                Intrinsic.GreaterThanI32 => (int)receiver! > (int)args[0],
-                Intrinsic.GreaterThanOrEqualI32 => (int)receiver! >= (int)args[0],
 
                 Intrinsic.NegateI64 => -(long)receiver!,
                 Intrinsic.AddI64 => (long)receiver! + (long)args[0],
@@ -107,11 +108,7 @@ public sealed class BoundTreeInterpreter
                 Intrinsic.DivideI64 => (long)receiver! / (long)args[0],
                 Intrinsic.MultiplyI64 => (long)receiver! * (long)args[0],
                 Intrinsic.EqualsI64 => (long)receiver! == (long)args[0],
-                Intrinsic.NotEqualsI64 => (long)receiver! != (long)args[0],
                 Intrinsic.LessThanI64 => (long)receiver! < (long)args[0],
-                Intrinsic.LessThanOrEqualI64 => (long)receiver! <= (long)args[0],
-                Intrinsic.GreaterThanI64 => (long)receiver! > (long)args[0],
-                Intrinsic.GreaterThanOrEqualI64 => (long)receiver! >= (long)args[0],
 
                 Intrinsic.NegateF32 => -(float)receiver!,
                 Intrinsic.AddF32 => (float)receiver! + (float)args[0],
@@ -119,11 +116,7 @@ public sealed class BoundTreeInterpreter
                 Intrinsic.DivideF32 => (float)receiver! / (float)args[0],
                 Intrinsic.MultiplyF32 => (float)receiver! * (float)args[0],
                 Intrinsic.EqualsF32 => (float)receiver! == (float)args[0],
-                Intrinsic.NotEqualsF32 => (float)receiver! != (float)args[0],
                 Intrinsic.LessThanF32 => (float)receiver! < (float)args[0],
-                Intrinsic.LessThanOrEqualF32 => (float)receiver! <= (float)args[0],
-                Intrinsic.GreaterThanF32 => (float)receiver! > (float)args[0],
-                Intrinsic.GreaterThanOrEqualF32 => (float)receiver! >= (float)args[0],
 
                 Intrinsic.NegateF64 => -(double)receiver!,
                 Intrinsic.AddF64 => (double)receiver! + (double)args[0],
@@ -131,21 +124,13 @@ public sealed class BoundTreeInterpreter
                 Intrinsic.DivideF64 => (double)receiver! / (double)args[0],
                 Intrinsic.MultiplyF64 => (double)receiver! * (double)args[0],
                 Intrinsic.EqualsF64 => (double)receiver! == (double)args[0],
-                Intrinsic.NotEqualsF64 => (double)receiver! != (double)args[0],
                 Intrinsic.LessThanF64 => (double)receiver! < (double)args[0],
-                Intrinsic.LessThanOrEqualF64 => (double)receiver! <= (double)args[0],
-                Intrinsic.GreaterThanF64 => (double)receiver! > (double)args[0],
-                Intrinsic.GreaterThanOrEqualF64 => (double)receiver! >= (double)args[0],
 
                 Intrinsic.NotBool => !(bool)receiver!,
                 Intrinsic.EqualsBool => (bool)receiver! == (bool)args[0],
-                Intrinsic.NotEqualsBool => (bool)receiver! != (bool)args[0],
 
                 Intrinsic.EqualsUnit => true,
-                Intrinsic.NotEqualsUnit => false,
-
                 Intrinsic.EqualsString => (string)receiver! == (string)args[0],
-                Intrinsic.NotEqualsString => (string)receiver! != (string)args[0],
 
                 Intrinsic.ToStringI32 or Intrinsic.ToStringI64 => receiver!.ToString()!,
                 Intrinsic.ToStringBool => (bool)receiver! ? "true" : "false",
@@ -169,7 +154,7 @@ public sealed class BoundTreeInterpreter
                 RunIf(boundIfStmt);
                 break;
             case BoundVarDecl boundVarDecl:
-                _values[boundVarDecl.Variable] = Evaluate(boundVarDecl.Initializer);
+                _env[boundVarDecl.Variable] = Evaluate(boundVarDecl.Initializer);
                 break;
             
             case BoundExpr boundExpr:
@@ -209,7 +194,8 @@ public sealed class BoundTreeInterpreter
 
     private object Evaluate(BoundExpr expr) => expr switch
     {
-        BoundVariableRef boundVariableRef => _values[boundVariableRef.Variable],
+        BoundSelfRef => _env.Receiver ?? throw new UnreachableException(),
+        BoundVariableRef boundVariableRef => _env[boundVariableRef.Variable],
         BoundConst boundConst => boundConst.Value.Value!,
         
         BoundAnd boundAnd => EvaluateAnd(boundAnd),
@@ -239,7 +225,7 @@ public sealed class BoundTreeInterpreter
 
     private object EvaluateAssign(BoundAssign boundAssign)
     {
-        _values[boundAssign.Target] = Evaluate(boundAssign.Value);
+        _env[boundAssign.Target] = Evaluate(boundAssign.Value);
         return _unitValue;
     }
 

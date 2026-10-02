@@ -5,7 +5,7 @@
 
 * Play around with and test functions :))
 
-* ?? BaseModule generated bodies
+* generate PrintLine; Print(anything with ToString)
 
 * Binder cleanup 
   * (esp. BoundExprOrSymbol -> SymbolRef; Bind())
