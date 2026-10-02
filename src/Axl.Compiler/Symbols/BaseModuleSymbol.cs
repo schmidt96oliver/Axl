@@ -34,16 +34,61 @@ public sealed class BaseModuleSymbol : ModuleOrTypeSymbol
         String = new TypeSymbol("String", () => AddRemainingMembers(GetStringMembers()));
         Unit = new TypeSymbol("Unit", () => AddRemainingMembers(GetUnitMembers()));
 
-        var funs = GetFuns();
-
+        var funs = GeneratePrintFuns(I32, I64, F32, F64, Bool);
         Members = [I32, I64, F32, F64, Bool, String, Unit, .. funs];
     }
 
 
-    private ImmutableArray<Symbol> GetFuns() =>
-    [
-        new FunSymbol("Print", receiverType: null, parameters: [new ParameterSymbol("text", String)], returnType: Unit, body: Intrinsic.Print)
-    ];
+    private ImmutableArray<Symbol> GeneratePrintFuns(params ReadOnlySpan<TypeSymbol> types)
+    {
+        var printFuns = ImmutableArray.CreateBuilder<FunSymbol>();
+        var printLineFuns = ImmutableArray.CreateBuilder<FunSymbol>();
+        
+        var print = new FunSymbol("Print", 
+            receiverType: null, 
+            parameters: [new ParameterSymbol("text", String)],
+            returnType: Unit, 
+            body: Intrinsic.Print);
+        printFuns.Add(print);
+
+        // PrintLine = Print("{arg}\n")
+        var b = new FunBuilder(this);
+        b.Param("text", String);
+        b.StaticCall(print, b.String(b.Arg0, "\n"));
+        var printLine = b.ToFun("PrintLine");
+        printLineFuns.Add(printLine);
+        
+        // PrintLine() = Print("\n")
+        b = new FunBuilder(this);
+        b.StaticCall(print, b.String("\n"));
+        printLineFuns.Add(b.ToFun("PrintLine"));
+
+        // Generate Print(T) and PrintLine(T) for all 
+        // T that have T.ToString()
+        foreach (var type in types)
+        {
+            if (type.Members.OfType<FunSymbol>().FirstOrDefault(fun =>
+                    fun.Name is "ToString" && fun.ReceiverType == type && fun.Parameters.Length == 0)
+                is not { } toString)
+            {
+                continue;
+            }
+
+            var typePrint = new FunBuilder(this);
+            typePrint.Param("arg", type);
+            typePrint.StaticCall(print, typePrint.InstanceCall(toString, typePrint.Arg0));
+            printFuns.Add(typePrint.ToFun("Print"));
+            
+            var typePrintLine = new FunBuilder(this);
+            typePrintLine.Param("arg", type);
+            typePrintLine.StaticCall(printLine, typePrintLine.InstanceCall(toString, typePrintLine.Arg0));
+            printLineFuns.Add(typePrintLine.ToFun("PrintLine"));
+        }
+
+        var printGroup = new FunGroupSymbol("Print", printFuns.DrainToImmutable());
+        var printLineGroup = new FunGroupSymbol("PrintLine", printLineFuns.DrainToImmutable());
+        return [printGroup, printLineGroup];
+    }
 
 
     private ImmutableArray<Symbol> GetBoolMembers() =>

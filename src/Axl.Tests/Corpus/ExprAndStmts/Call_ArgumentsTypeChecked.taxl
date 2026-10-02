@@ -1,9 +1,10 @@
 ﻿//@check
 
 // Print accepts one parameter of type String
+  
+Test({ });     //~error TypeMismatch
+Test(1);        //~error TypeMismatch
 
-Print({ });     //~error TypeMismatch
-Base.Print({ });     //~error TypeMismatch
+Test("{1}");  // valid
 
-Print("{1}");  // valid
-Base.Print("{1}");  // valid
+fun Test(arg: String) { }

@@ -162,6 +162,6 @@ public sealed class Evaluator
     /// with '\n'. Used for comparing output.
     /// </summary>
     private string Normalize(string input)
-        => string.Join('\n', input.Split('\n').Select(line => line.Trim()));
+        => string.Join('\n', input.Split('\n').Select(line => line.Trim())).Trim();
 
 }

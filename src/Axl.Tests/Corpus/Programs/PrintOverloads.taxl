@@ -1,0 +1,20 @@
+﻿//@run
+//= 101.12.2true
+//= 1
+//= 0
+//= 1.1
+//= 2.2
+//= false
+
+Print(1);
+Print(0i64);
+Print(1.1);
+Print(2.2f32);
+Print(true);
+PrintLine();
+
+PrintLine(1);
+PrintLine(0i64);
+PrintLine(1.1);
+PrintLine(2.2f32);
+PrintLine(false);

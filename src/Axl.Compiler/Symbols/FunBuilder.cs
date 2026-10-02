@@ -1,5 +1,6 @@
 ﻿using System.Collections.Immutable;
 using System.Diagnostics;
+using System.Linq.Expressions;
 using Axl.Compiler.Binding;
 using Axl.Compiler.Binding.BoundTree;
 using Axl.Compiler.Syntax;
@@ -43,13 +44,20 @@ public sealed class FunBuilder(BaseModuleSymbol baseModule)
 
     public BoundCall InstanceCall(FunSymbol fun, BoundExpr receiver, params ImmutableArray<BoundExpr> arguments)
     {
-        Guard.IsState(_receiverType is not null);
         Guard.MustBe(receiver.Type == fun.ReceiverType);
         Guard.MustBe(arguments.Select(arg => arg.Type).SequenceEqual(fun.ParameterTypes));
 
         return Set(new BoundCall(fun, receiver, [.. arguments]));
     }
 
+    public BoundCall StaticCall(FunSymbol fun, params ImmutableArray<BoundExpr> arguments)
+    {
+        Guard.IsState(_receiverType is null);
+        Guard.MustBe(arguments.Select(arg => arg.Type).SequenceEqual(fun.ParameterTypes));
+
+        return Set(new BoundCall(fun, null, [.. arguments]));
+    }
+    
     public BoundReturn Return(BoundExpr? expr = null)
     {
         var exprType = expr?.Type ?? baseModule.Unit;
@@ -114,5 +122,20 @@ public sealed class FunBuilder(BaseModuleSymbol baseModule)
     {
         Guard.MustBe(left.Type == baseModule.Bool && right.Type == baseModule.Bool);
         return Set(new BoundOr(left, right, baseModule.Bool));
+    }
+
+
+    public union StringPart(BoundExpr, string);
+    
+    public BoundStringExpr String(params ImmutableArray<StringPart> parts)
+    {
+        Guard.IsState(parts.All(part => part is not BoundExpr expr || expr.Type == baseModule.String));
+        return Set(new BoundStringExpr([
+            .. parts.Select(part => part switch
+            {
+                BoundExpr expr => expr,
+                string str => new BoundConst(str, baseModule.String)
+            })
+        ], baseModule.String));
     }
 }

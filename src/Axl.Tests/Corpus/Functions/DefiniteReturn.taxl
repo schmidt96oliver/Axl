@@ -2,10 +2,11 @@
 
 // --- Returns inside expressions
 fun Call1(): I32
-{ Print(return 1); }
+{ Dupe(return 1); }
 fun Call2(): I32
 { Dupe("", return 2); }
 fun Dupe(a: String, b: String) { }
+fun Dupe(a: String) { }
 
 fun VarDecl(): I32
 { let a = return 3; }

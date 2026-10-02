@@ -3,10 +3,6 @@
 
 **Next:** 
 
-* Play around with and test functions :))
-
-* generate PrintLine; Print(anything with ToString)
-
 * Binder cleanup 
   * (esp. BoundExprOrSymbol -> SymbolRef; Bind())
 
@@ -29,6 +25,7 @@
 * [x] Reject shadowing of funs on same scope
 * [x] Reject captured variables
 * [x] Definite Return Analysis (needs MIR or ad-hoc)
+* [x] Compiler generated versions of `!=, <=, >, >=` from `==, <`
 * ?? Named arguments
 
 ## 3. Type (in script)
@@ -37,7 +34,7 @@ One type (maybe struct) inside scripts.
 * [ ] Fields
 * [ ] (Static) fun and methods
 * [ ] explicit and implicit `self`
-* [ ] User-declared operators
+* [ ] User-declared operators + generation of `!=, <=, >, >=` from `==, <`
 * [ ] User-declared ToString
 * [ ] `pub` visibility
 * ?? Member generation
