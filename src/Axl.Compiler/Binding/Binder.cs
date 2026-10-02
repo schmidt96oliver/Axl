@@ -1,5 +1,4 @@
-﻿using System.Collections.Frozen;
-using System.Collections.Immutable;
+﻿using System.Collections.Immutable;
 using System.Diagnostics;
 using System.Globalization;
 using Axl.Compiler.Binding.BoundTree;
@@ -7,32 +6,25 @@ using Axl.Compiler.Diagnostics;
 using Axl.Compiler.Symbols;
 using Axl.Compiler.Syntax;
 using Axl.Compiler.Syntax.Tree;
-using Axl.Compiler.Text;
 
 namespace Axl.Compiler.Binding;
 
 public sealed class Binder
 {
-    private readonly DiagnosticBag _diagnostics = new();
+    private readonly DiagnosticBag _diagnostics;
+    private readonly SemanticSideTable _semanticSideTable;
     private readonly BaseModuleSymbol _baseModule;
-    
-    private Scope _scope;
     private readonly FunSymbol _fun;
+    
     private readonly Dictionary<FunDeclSyntax, FunSymbol> _funSymbolsByDecl = [];
+    private Scope _scope;
     private bool _inLoop = false;
     
-    /// <summary>
-    /// We need to keep a mapping of resolved symbols to their location in
-    /// text for the LSP. Searching the bound tree is not pragmatic, since
-    /// it would force us to emit a bound tree that's very close to syntax
-    /// which would confuse lowering.
-    /// </summary>
-    private readonly Dictionary<SourceLocation, Symbol> _resolvedSymbols = [];
-    
-    
-    private Binder(Scope scope, FunSymbol fun, BaseModuleSymbol baseModule)
+    private Binder(FunSymbol fun, Scope scope, BaseModuleSymbol baseModule, DiagnosticBag diagnosticBag, SemanticSideTable semanticSideTable)
     {
         _baseModule = baseModule;
+        _diagnostics = diagnosticBag;
+        _semanticSideTable = semanticSideTable;
 
         _scope = scope;
         _fun = fun;
@@ -54,9 +46,11 @@ public sealed class Binder
     public static BoundFile BindFile(FileSyntax syntax, BaseModuleSymbol baseModule)
     {
         var scriptFun = new FunSymbol("", null, [], baseModule.Unit);
-        
+
+        var diagnostics = new DiagnosticBag();
+        var semanticSideTable = new SemanticSideTable();
         var scope = new Scope(parent: CreateGlobalScope(baseModule));
-        var binder = new Binder(scope, scriptFun, baseModule);
+        var binder = new Binder(scriptFun, scope, baseModule, diagnostics, semanticSideTable);
         
         // Forward-declare all fun symbols
         var block = binder.BindBlock(syntax);
@@ -66,7 +60,7 @@ public sealed class Binder
         block = new BoundBlock([..block.Stmts, returnStmt], block.LocalFuns, block.Type, block.Syntax);
         scriptFun.Body = block;
         
-        return new BoundFile(scriptFun, binder._diagnostics.Drain(), binder._resolvedSymbols.ToFrozenDictionary());
+        return new BoundFile(scriptFun, diagnostics.Drain(), semanticSideTable);
     }
     
     
@@ -127,14 +121,6 @@ public sealed class Binder
         return true;
     }
     
-    private void AddResolvedSymbol(SourceLocation location, Symbol? symbol)
-    {
-        if (symbol is null) return;
-        
-        Debug.Assert(!_resolvedSymbols.ContainsKey(location));
-        _resolvedSymbols.Add(location, symbol);
-    }
-
     private Symbol? BindSymbol(IdNameSyntax syntax, Symbol? parent = null, SymbolKind? expectedKind = null)
     {
         if (syntax.Token.IsMissing)
@@ -175,7 +161,7 @@ public sealed class Binder
         
         // Fun groups are resolved during callee binding.
         if (symbol is not FunGroupSymbol)
-            AddResolvedSymbol(syntax.Location, symbol);
+            _semanticSideTable.AddResolvedSymbol(syntax.Location, symbol);
         return symbol;
     }
 
@@ -188,7 +174,7 @@ public sealed class Binder
         foreach (var param in funSymbol.Parameters)
             funScope.Declare(param);
 
-        var funBinder = new Binder(funScope, funSymbol, _baseModule);
+        var funBinder = new Binder(funSymbol, funScope, _baseModule, _diagnostics, _semanticSideTable);
 
         var body = BindFunBodyBlock(funSymbol, funBinder);
         
@@ -208,11 +194,6 @@ public sealed class Binder
         }
         
         funSymbol.Body = body;
-        
-        // Transfer state to current binder
-        funBinder._diagnostics.DrainInto(_diagnostics);
-        foreach (var resolvedSymbol in funBinder._resolvedSymbols)
-            _resolvedSymbols.Add(resolvedSymbol.Key, resolvedSymbol.Value);
     }
 
     private BoundBlock BindFunBodyBlock(FunSymbol fun, Binder funBinder)
@@ -321,7 +302,7 @@ public sealed class Binder
             declarationSyntax: syntax);
         
         _funSymbolsByDecl.Add(syntax, funSymbol);
-        AddResolvedSymbol(syntax.Name.Location, funSymbol);
+        _semanticSideTable.AddResolvedSymbol(syntax.Name.Location, funSymbol);
         return funSymbol;
     }
 
@@ -330,7 +311,7 @@ public sealed class Binder
         var symbol = new ParameterSymbol(syntax.Name.Identifier,
             BindTypeName(syntax.TypeAnnotation),
             syntax);
-        AddResolvedSymbol(syntax.Name.Location, symbol);
+        _semanticSideTable.AddResolvedSymbol(syntax.Name.Location, symbol);
         return symbol;
     }
 
@@ -404,7 +385,7 @@ public sealed class Binder
         var isReadOnly = syntax.VarOrLetKwToken.Kind is TokenKind.LetKw;
         var variable = new VariableSymbol(syntax.Name.Identifier, isReadOnly, variableType, _fun);
         _scope.Declare(variable);
-        AddResolvedSymbol(syntax.Name.Location, variable);
+        _semanticSideTable.AddResolvedSymbol(syntax.Name.Location, variable);
     
         return new BoundVarDecl(variable, boundInitializer, syntax);
     }

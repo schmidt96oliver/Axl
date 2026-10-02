@@ -25,7 +25,7 @@ public class HoverHandler : HoverHandlerBase
         
         var index = compilation.SyntaxTree.SourceText.Lines[request.Position.Line].Start + request.Position.Character;
         var node = compilation.SyntaxNodeAt(compilation.SyntaxTree.SourceText.GetLocationFromLength(index, 0));
-        var symbol = compilation.BoundFile.TryGetSymbol(node.Location);
+        var symbol = compilation.BoundFile.SemanticSideTable.TryGetSymbol(node.Location);
         if (symbol is null)
             return Task.FromResult<Hover?>(null);
 

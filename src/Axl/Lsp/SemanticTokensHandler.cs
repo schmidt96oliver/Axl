@@ -84,7 +84,7 @@ public class SemanticTokensHandler(ILanguageServerFacade facade) : SemanticToken
                 }
                 
                 case TokenKind.Identifier:
-                    var semanticTokenType = compilation.BoundFile.TryGetSymbol(location) switch
+                    var semanticTokenType = compilation.BoundFile.SemanticSideTable.TryGetSymbol(location) switch
                     {
                         TypeSymbol => SemanticTokenType.Type,
                         VariableSymbol => SemanticTokenType.Variable,

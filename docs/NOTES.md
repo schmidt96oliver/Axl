@@ -10,21 +10,6 @@
 * Binder cleanup 
   * (esp. BoundExprOrSymbol -> SymbolRef; Bind())
 
-* *Separation BoundTree <-> LSP data*
-  * BoundTree - Meant for the pipeline, i.e. for lowering into MIR and Binder-internal type-checking
-    * Does not need much information
-  * LSP data - Some sidetables needed, if requested from LSP
-    * ?? Something like SemanticModelBuilder? can be passed into Binder and it cooporates by registering symbols
-  * Idea 1: Compilation carries `SemanticModel`, `BindFile` internally passes `SemanticModelBuilder` 
-  * Idea 2: SemanticModel builds an index on demand; for symbols it rebinds on demand
-    * For this, scopes need to be recoverable
-    * For typenames `Base.I32`, a nested structure could help, so SemanticModel can ask `BindTypeName(TypeNameExpr = "Base")` because it knows
-    * I think, most symbols can come from an index
-* BindFunBody currently drains diagnostics and resolved symbols; Pass DiagnosticBag and SideTables into constructor instead
-
-
-
-
 # Roadmap
 
 ## 1. Running scripts (no funs)
