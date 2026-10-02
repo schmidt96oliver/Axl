@@ -1,0 +1,12 @@
+﻿//@check
+
+// Local funs will shadow parameters, while variables cannot shadow local funs.
+
+fun Test(A: I32) 
+{
+    Print("{ A }");     //~error UnexpectedSymbolKind
+    A();                // valid because it's a call
+    
+    let A = 1;          //~error CannotShadow
+    fun A(){ }
+}

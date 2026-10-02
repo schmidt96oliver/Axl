@@ -9,7 +9,21 @@
 
 * Binder cleanup 
   * (esp. BoundExprOrSymbol -> SymbolRef; Bind())
-  * BindFunBody currently drains diagnostics and resolved symbols; Pass DiagnosticBag and SideTables into constructor instead
+
+* *Separation BoundTree <-> LSP data*
+  * BoundTree - Meant for the pipeline, i.e. for lowering into MIR and Binder-internal type-checking
+    * Does not need much information
+  * LSP data - Some sidetables needed, if requested from LSP
+    * ?? Something like SemanticModelBuilder? can be passed into Binder and it cooporates by registering symbols
+  * Idea 1: Compilation carries `SemanticModel`, `BindFile` internally passes `SemanticModelBuilder` 
+  * Idea 2: SemanticModel builds an index on demand; for symbols it rebinds on demand
+    * For this, scopes need to be recoverable
+    * For typenames `Base.I32`, a nested structure could help, so SemanticModel can ask `BindTypeName(TypeNameExpr = "Base")` because it knows
+    * I think, most symbols can come from an index
+* BindFunBody currently drains diagnostics and resolved symbols; Pass DiagnosticBag and SideTables into constructor instead
+
+
+
 
 # Roadmap
 
@@ -67,6 +81,14 @@ One type (maybe struct) inside scripts.
 * Axl: Named arguments as `callee(parameter = value, param2 = value2)`
 
 # Proposals
+## LSP-Work: Completion Context
+Add Completion Context, Goto Definition, Hover, Highlighting, ...
+* Recoverable (and probably immutable) scopes;
+  * Binder could them them in sidetable or on data structure 
+  * or scopes are cached and created lazily
+* Binder can run ad-hoc to bind special items the LSP asks for
+* SemanticModel builds indices to answer LSP questions
+
 ## Lexer/Parser: Resolve string interpolation awkwardness
 Currently, Lexer emits flat tokens and Parser must reconstruct the Lexers ideas about strings
 (see `WillStringBeContinued`).
