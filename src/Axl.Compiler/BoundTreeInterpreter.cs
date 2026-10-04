@@ -157,7 +157,7 @@ public sealed class BoundTreeInterpreter
                 _env[boundVarDecl.Variable] = Evaluate(boundVarDecl.Initializer);
                 break;
             
-            case BoundExpr boundExpr:
+            case BoundValue boundExpr:
                 Evaluate(boundExpr);
                 break;
         }
@@ -192,10 +192,10 @@ public sealed class BoundTreeInterpreter
         }
     }
 
-    private object Evaluate(BoundExpr expr) => expr switch
+    private object Evaluate(BoundValue value) => value switch
     {
-        BoundSelfRef => _env.Receiver ?? throw new UnreachableException(),
-        BoundVariableRef boundVariableRef => _env[boundVariableRef.Variable],
+        BoundSelf => _env.Receiver ?? throw new UnreachableException(),
+        BoundVariable boundVariableRef => _env[boundVariableRef.Variable],
         BoundConst boundConst => boundConst.Value.Value!,
         
         BoundAnd boundAnd => EvaluateAnd(boundAnd),
@@ -216,8 +216,8 @@ public sealed class BoundTreeInterpreter
 
     private object EvaluateReturn(BoundReturn boundReturn)
     {
-        var value = boundReturn.Expr is not null
-            ? Evaluate(boundReturn.Expr)
+        var value = boundReturn.Value is not null
+            ? Evaluate(boundReturn.Value)
             : _unitValue;
         
         throw new ReturnException(value);

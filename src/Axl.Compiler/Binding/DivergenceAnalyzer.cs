@@ -16,7 +16,7 @@ public static class DivergenceAnalyzer
         {
             get
             {
-                if (boundStmt is BoundExpr { Type: NeverTypeSymbol })
+                if (boundStmt is BoundValue { Type: NeverTypeSymbol })
                     return true;
                 
                 return boundStmt switch
@@ -28,8 +28,8 @@ public static class DivergenceAnalyzer
                     BoundConst => false,
                     BoundError => false,
                     BoundReturn => true,
-                    BoundVariableRef => false,
-                    BoundSelfRef => false,
+                    BoundVariable => false,
+                    BoundSelf => false,
                     BoundWhile => false,
                     BoundCall boundCall => boundCall.Receiver?.IsDiverging == true ||
                                            boundCall.Arguments.Any(get_IsDiverging),

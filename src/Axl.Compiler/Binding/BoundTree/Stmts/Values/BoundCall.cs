@@ -6,12 +6,12 @@ namespace Axl.Compiler.Binding.BoundTree;
 
 public sealed class BoundCall(
     FunSymbol fun,
-    BoundExpr? receiver,
-    ImmutableArray<BoundExpr> arguments,
+    BoundValue? receiver,
+    ImmutableArray<BoundValue> arguments,
     SyntaxNode? syntax = null)
-    : BoundExpr(fun.ReturnType, syntax)
+    : BoundValue(fun.ReturnType, syntax)
 {
     public FunSymbol Fun { get; } = fun;
-    public BoundExpr? Receiver { get; } = receiver;
-    public ImmutableArray<BoundExpr> Arguments { get; } = arguments;
+    public BoundValue? Receiver { get; } = receiver;
+    public ImmutableArray<BoundValue> Arguments { get; } = arguments;
 }

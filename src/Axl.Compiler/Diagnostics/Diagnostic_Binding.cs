@@ -1,4 +1,5 @@
 ﻿using System.Collections.Immutable;
+using System.Diagnostics;
 using Axl.Compiler.Binding.BoundTree;
 using Axl.Compiler.Symbols;
 using Axl.Compiler.Syntax;
@@ -9,13 +10,13 @@ namespace Axl.Compiler.Diagnostics;
 
 public partial record Diagnostic
 {
-    public sealed record TypeMismatch(BoundExpr Expr, TypeSymbol Expected) : Error
+    public sealed record TypeMismatch(BoundValue Value, TypeSymbol Expected) : Error
     {
         public override ImmutableArray<SourceLocation> Locations
-            => [Expr.Syntax!.Location];
+            => [Value.Syntax!.Location];
 
         public override string Message
-            => $"Expected type '{Expected.Name}' but got '{Expr.Type.Name}'.";
+            => $"Expected type '{Expected.Name}' but got '{Value.Type.Name}'.";
     }
 
     public sealed record MissingInitializer(VarDeclSyntax VarDeclSyntax) : Error
@@ -74,19 +75,23 @@ public partial record Diagnostic
                 : $"types {string.Join(", ", OperandTypes[..^1].Select(expr => $"'{expr.Name}'"))} and '{OperandTypes[^1].Name}'";
     }
 
-    public sealed record InvalidAssignTarget(ExprSyntax Syntax, Symbol? ResolvedSymbol = null) : Error
+    public sealed record CannotAssign(BoundNode BoundTarget) : Error
     {
         public override ImmutableArray<SourceLocation> Locations
-            => [Syntax.Location];
+            => [BoundTarget.Syntax!.Location];
 
         public override string Message
-            => ResolvedSymbol switch
+            => BoundTarget switch
             {
-                null => "The assignment target must be a variable.",
-                ParameterSymbol => $"Cannot assign to parameter '{ResolvedSymbol.Name}'.",
-                VariableSymbol { IsReadOnly: true } => $"Cannot assign to readonly variable '{ResolvedSymbol.Name}'.",
-                _ =>
-                    $"'{ResolvedSymbol.Name}' is {ResolvedSymbol.Kind.DisplayName}. The assignment target must be a variable."
+                BoundValue { IsPlace: false } => "Cannot assign to a temporary value.",
+                BoundValue { IsPlace: true, IsAssignable: false } => "Cannot assign to through 'let' binding.",
+                
+                BoundFunGroupRef boundFunGroup => $"Cannot assign to '{boundFunGroup.FunGroup.Name}', because it is a group of overloaded funs.",
+                BoundFunRef boundFun => $"Cannot assign to '{boundFun.Fun.Name}', because it is a function.",
+                BoundModuleRef boundModule => $"Cannot assign to '{boundModule.Module.Name}', because it is a module.",
+                BoundTypeRef boundType => $"Cannot assign to '{boundType.Type.Name}', because it is a type.",
+                
+                BoundStmt => throw new UnreachableException("Non-value stmts can never be in assignment target position.")
             };
     }
 
@@ -108,7 +113,7 @@ public partial record Diagnostic
             => "'if' must have an 'else' branch if used as an expression.";
     }
 
-    public sealed record IncompatibleBranches(BoundExpr First, BoundExpr Second) : Error
+    public sealed record IncompatibleBranches(BoundValue First, BoundValue Second) : Error
     {
         public override ImmutableArray<SourceLocation> Locations
             => [First.Syntax!.Location, Second.Syntax!.Location];
@@ -123,12 +128,13 @@ public partial record Diagnostic
         public override string Message => $"'{Symbol.Name}' is {Symbol.Kind.DisplayName}. Expected {Expected.DisplayName}.";
     }
 
-    public sealed record UndefinedMember(IdNameSyntax Syntax, Symbol? Symbol) : Error
+    public sealed record UndefinedMember(IdNameSyntax MemberSyntax, Symbol OwnerSymbol) : Error
     {
-        public override ImmutableArray<SourceLocation> Locations => [Syntax.Location];
-        public override string Message => Symbol is not null 
-            ? $"'{Symbol.Name}' has no member '{Syntax.Token.Identifier}'."
-            : $"Could not resolved member '{Syntax.Token.Identifier}'.";
+        public override ImmutableArray<SourceLocation> Locations => [MemberSyntax.Location];
+
+        public override string Message =>
+            $"'{OwnerSymbol.Name}' has no member '{MemberSyntax.Token.Identifier}'.";
+
     }
 
     public sealed record CannotConvert(ExprSyntax Syntax, TypeSymbol From, TypeSymbol To) : Error
@@ -156,10 +162,18 @@ public partial record Diagnostic
             : $"'{FunName}' has no overload that takes {ArgumentCount} parameter(s).";
     }
 
-    public sealed record InvalidCallee(ExprSyntax Syntax) : Error
+    public sealed record CannotCall(BoundNode BoundCallee) : Error
     {
-        public override ImmutableArray<SourceLocation> Locations => [Syntax.Location];
-        public override string Message => $"Expected {SymbolKind.Fun.DisplayName}.";
+        public override ImmutableArray<SourceLocation> Locations => [BoundCallee.Syntax!.Location];
+
+        public override string Message => BoundCallee switch
+        {
+            BoundModuleRef boundModuleRef => $"Cannot call '{boundModuleRef.Module.Name}', because it is a module.",
+            BoundTypeRef boundTypeRef => $"Cannot call '{boundTypeRef.Type.Name}', because it is a type.",
+            BoundValue => $"Expected a function.",
+
+            BoundFunGroupRef or BoundFunRef or BoundStmt => throw new UnreachableException(),
+        };
     }
 
     public sealed record NumberTooBig(NumberLiteralSyntax Syntax, TypeSymbol TargetType) : Error
@@ -290,5 +304,17 @@ public partial record Diagnostic
 
         public override ImmutableArray<LabeledSourceLocation> Related
             => [new(ReturnTypeAnnotationSyntax.Location, "Return type declared here.")];
+    }
+
+    public sealed record CannotAccessThroughInstance(IdNameSyntax MemberSyntax, TypeSymbol ParentSymbol) : Error
+    {
+        public override ImmutableArray<SourceLocation> Locations => [MemberSyntax.Location];
+        public override string Message => $"Cannot access nested type '{MemberSyntax.Token.Identifier}' through a value. Use '{ParentSymbol.Name}.{MemberSyntax.Token.Identifier}' instead.";
+    }
+
+    public sealed record NotAValue(BoundNode BoundNode) : Error
+    {
+        public override ImmutableArray<SourceLocation> Locations => [BoundNode.Syntax!.Location];
+        public override string Message => $"Expected a value.";
     }
 }

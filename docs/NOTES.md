@@ -3,6 +3,15 @@
 
 **Next:** 
 
+* Make Typename the same as GetMember expr?
+  * remove UnexpectedSymbolKind, BindSymbol
+
+* Errors:
+  * InstanceRequired, CannotCallWithInstance
+  * SymbolKind, UnexpectedSymbolKind still needed?
+
+* replace "BaseModule" with "moduleSymbol" where appropriate
+
 * Binder cleanup 
   * (esp. BoundExprOrSymbol -> SymbolRef; Bind())
 
@@ -37,7 +46,10 @@ One type (maybe struct) inside scripts.
 * [ ] User-declared operators + generation of `!=, <=, >, >=` from `==, <`
 * [ ] User-declared ToString
 * [ ] `pub` visibility
+* [ ] Chained field access mutates in place
 * ?? Member generation
+
+* Pointers to structs: Only of `self` and chained fields
 
 * Cyclic Member ideas:
   (a) Member factory delegate (current BaseModule design)
@@ -46,6 +58,8 @@ One type (maybe struct) inside scripts.
   (d) Mutable .Members set eagerly in a separate pass
 
 ## 4. Modules and multiple files
+* [ ] Rename "module" -> "namespace". A module implies a unit of compilation. Namespaces just disambiguate names
+
 * [ ] Modules visible anywhere
 * [ ] `pub` visibility
 * [ ] Taxl handles multiple files

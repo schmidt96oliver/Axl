@@ -1,9 +1,9 @@
 ﻿//@check
     
 // In expression position, all symbols except variables are rejected
-var a = Base;               //~error UnexpectedSymbolKind
-var a = Base.I32;           //~error UnexpectedSymbolKind
-var a = Base.I32.ToString;  //~error UnexpectedSymbolKind
+var a = Base;               //~error NotAValue
+var a = Base.I32;           //~error NotAValue
+var a = Base.I32.ToString;  //~error NotAValue
 
 // Variable accepted in expression position
 var a = 2;

@@ -2,5 +2,5 @@
     
 // Let bindings cannot be reassigned.
 let a = 1;
-a = 2;      //~error InvalidAssignTarget
-a = {};     //~error InvalidAssignTarget
+a = 2;      //~error CannotAssign
+a = {};     //~error CannotAssign

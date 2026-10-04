@@ -18,16 +18,16 @@ public sealed class FunBuilder(BaseModuleSymbol baseModule)
     private BoundStmt? _last = null;
     private bool _isFinished = false;
 
-    public BoundSelfRef Self
+    public BoundSelf Self
     {
         get
         {
             Guard.IsState(_receiverType is not null);
-            return new BoundSelfRef(_receiverType);
+            return new BoundSelf(_receiverType);
         }
     }
 
-    public BoundVariableRef Arg0
+    public BoundVariable Arg0
         => new(_parameters[0]);
 
     public void Receiver(TypeSymbol type)
@@ -42,7 +42,7 @@ public sealed class FunBuilder(BaseModuleSymbol baseModule)
         _parameters.Add(paramSymbol);
     }
 
-    public BoundCall InstanceCall(FunSymbol fun, BoundExpr receiver, params ImmutableArray<BoundExpr> arguments)
+    public BoundCall InstanceCall(FunSymbol fun, BoundValue receiver, params ImmutableArray<BoundValue> arguments)
     {
         Guard.MustBe(receiver.Type == fun.ReceiverType);
         Guard.MustBe(arguments.Select(arg => arg.Type).SequenceEqual(fun.ParameterTypes));
@@ -50,7 +50,7 @@ public sealed class FunBuilder(BaseModuleSymbol baseModule)
         return Set(new BoundCall(fun, receiver, [.. arguments]));
     }
 
-    public BoundCall StaticCall(FunSymbol fun, params ImmutableArray<BoundExpr> arguments)
+    public BoundCall StaticCall(FunSymbol fun, params ImmutableArray<BoundValue> arguments)
     {
         Guard.IsState(_receiverType is null);
         Guard.MustBe(arguments.Select(arg => arg.Type).SequenceEqual(fun.ParameterTypes));
@@ -58,7 +58,7 @@ public sealed class FunBuilder(BaseModuleSymbol baseModule)
         return Set(new BoundCall(fun, null, [.. arguments]));
     }
     
-    public BoundReturn Return(BoundExpr? expr = null)
+    public BoundReturn Return(BoundValue? expr = null)
     {
         var exprType = expr?.Type ?? baseModule.Unit;
         _returnType ??= exprType;
@@ -118,22 +118,22 @@ public sealed class FunBuilder(BaseModuleSymbol baseModule)
         return (BoundBlock)_last;
     }
 
-    public BoundExpr Or(BoundExpr left, BoundExpr right)
+    public BoundValue Or(BoundValue left, BoundValue right)
     {
         Guard.MustBe(left.Type == baseModule.Bool && right.Type == baseModule.Bool);
         return Set(new BoundOr(left, right, baseModule.Bool));
     }
 
 
-    public union StringPart(BoundExpr, string);
+    public union StringPart(BoundValue, string);
     
     public BoundStringExpr String(params ImmutableArray<StringPart> parts)
     {
-        Guard.IsState(parts.All(part => part is not BoundExpr expr || expr.Type == baseModule.String));
+        Guard.IsState(parts.All(part => part is not BoundValue expr || expr.Type == baseModule.String));
         return Set(new BoundStringExpr([
             .. parts.Select(part => part switch
             {
-                BoundExpr expr => expr,
+                BoundValue expr => expr,
                 string str => new BoundConst(str, baseModule.String)
             })
         ], baseModule.String));

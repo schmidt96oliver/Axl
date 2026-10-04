@@ -104,16 +104,16 @@ public sealed class Binder
     
     
     /// <summary>
-    /// Checks, whether <paramref name="expr"/> is assignable to
+    /// Checks, whether <paramref name="value"/> is assignable to
     /// <paramref name="expected"/>. If not, reports a <see cref="Diagnostic.TypeMismatch"/>.
     /// </summary>
     /// <returns><c>true</c>, if types matched. <c>false</c>, otherwise.</returns>
-    private bool CheckTypeAndReportMismatch(BoundExpr expr, TypeSymbol expected)
+    private bool CheckTypeAndReportMismatch(BoundValue value, TypeSymbol expected)
     {
-        if (!IsAssignableTo(expr.Type, expected))
+        if (!IsAssignableTo(value.Type, expected))
         {
             _diagnostics.ReportError(new Diagnostic.TypeMismatch(
-                Expr: expr,
+                Value: value,
                 Expected: expected));
             return false;
         }
@@ -208,7 +208,7 @@ public sealed class Binder
 
         if (syntax.Body.IsExpressionBodied)
         {
-            var expr = funBinder.BindExpr(syntax.Body.Expr);
+            var expr = funBinder.BindValue(syntax.Body.Expr);
             if (!CheckTypeAndReportMismatch(expr, fun.ReturnType))
                 expr = new BoundError(syntax.Body.Expr);
             
@@ -352,7 +352,7 @@ public sealed class Binder
         if (exprSyntax is IfExprSyntax ifExprSyntax)
             return BindIfStmt(ifExprSyntax);
 
-        return BindExpr(exprSyntax);
+        return BindValue(exprSyntax);
     }
     
     private BoundStmt BindVarDecl(VarDeclSyntax syntax)
@@ -390,7 +390,7 @@ public sealed class Binder
         return new BoundVarDecl(variable, boundInitializer, syntax);
     }
     
-    private BoundExpr BindVarDeclInitializer(VarDeclSyntax syntax)
+    private BoundValue BindVarDeclInitializer(VarDeclSyntax syntax)
     {
         if (syntax.Initializer is null)
         {
@@ -398,7 +398,7 @@ public sealed class Binder
             return new BoundError();    
         }
     
-        return BindExpr(syntax.Initializer);
+        return BindValue(syntax.Initializer);
     }
     
     private BoundStmt BindWhile(WhileStmtSyntax syntax)
@@ -407,7 +407,7 @@ public sealed class Binder
 
         var previousInLoop = _inLoop;
         _inLoop = true;
-        var body = BindExpr(syntax.Body);
+        var body = BindValue(syntax.Body);
         _inLoop = previousInLoop;
         
         return new BoundWhile(condition, body, syntax);
@@ -415,12 +415,7 @@ public sealed class Binder
     
     #endregion
 
-    
-    private readonly record struct BoundInstanceMember(BoundExpr Expr, BoundSymbol Member);
-    private readonly record struct BoundSymbol(SyntaxNode Syntax, Symbol Symbol);
-    private union BoundExprOrSymbol(BoundSymbol, BoundExpr, BoundInstanceMember);
-
-    private BoundExprOrSymbol BindExprOrSymbol(ExprSyntax syntax) => syntax switch
+    private BoundNode BindExpr(ExprSyntax syntax) => syntax switch
     {
         GetMemberExprSyntax getMemberExprSyntax => BindGetMember(getMemberExprSyntax),
         IdNameSyntax idNameSyntax => BindIdName(idNameSyntax),
@@ -439,7 +434,7 @@ public sealed class Binder
         // Blocks and Control Flow
         BlockExprSyntax blockExprSyntax => BindBlock(blockExprSyntax),
         IfExprSyntax ifExprSyntax => BindIfExpr(ifExprSyntax),
-        GroupExprSyntax groupExprSyntax => BindExpr(groupExprSyntax.Inner),
+        GroupExprSyntax groupExprSyntax => BindValue(groupExprSyntax.Inner),
         BreakExprSyntax breakExprSyntax => BindBreakOrContinue(breakExprSyntax),
         ContinueExprSyntax or BreakExprSyntax => BindBreakOrContinue(syntax),
         ReturnExprSyntax returnExprSyntax => BindReturn(returnExprSyntax),
@@ -448,29 +443,16 @@ public sealed class Binder
         ErrorExprSyntax errorExprSyntax => new BoundError(errorExprSyntax),
     };
 
-    private BoundExpr BindExpr(ExprSyntax syntax)
+    private BoundValue BindValue(ExprSyntax syntax)
     {
-        var exprOrSymbol = BindExprOrSymbol(syntax);
-        switch (exprOrSymbol)
+        var bound = BindExpr(syntax);
+        if (bound is not BoundValue value)
         {
-            case BoundExpr boundExpr:
-                return boundExpr;
-            
-            case BoundSymbol(_, VariableSymbol variable):
-                return new BoundVariableRef(variable, syntax);
-            
-            case BoundSymbol boundSymbol:
-                _diagnostics.ReportError(new Diagnostic.UnexpectedSymbolKind(boundSymbol.Syntax, boundSymbol.Symbol, SymbolKind.Variable));
-                return new BoundError(syntax);
-            
-            case BoundInstanceMember instanceMember:
-                var member = instanceMember.Member;
-                _diagnostics.ReportError(new Diagnostic.UnexpectedSymbolKind(member.Syntax, member.Symbol, SymbolKind.Variable));
-                return new BoundError(syntax);
-                
-            default:
-                throw new UnreachableException();
+            _diagnostics.ReportError(new Diagnostic.NotAValue(bound));
+            return new BoundError(syntax);
         }
+
+        return value;
     }
 
     #region Literals and Strings
@@ -485,14 +467,14 @@ public sealed class Binder
         return new BoundStringExpr(parts, _baseModule.String, syntax);
     }
     
-    private BoundExpr BindStringPart(StringPartSyntax syntax)
+    private BoundValue BindStringPart(StringPartSyntax syntax)
         => syntax switch
         {
             StringTextSyntax textSyntax => new BoundConst(textSyntax.TextToken.ProcessedText, _baseModule.String, syntax),
             StringInterpolationSyntax interpolationSyntax => BindStringInterpolation(interpolationSyntax),
         };
     
-    private BoundExpr BindStringInterpolation(StringInterpolationSyntax syntax)
+    private BoundValue BindStringInterpolation(StringInterpolationSyntax syntax)
     {
         if (syntax.Expr is null)
         {
@@ -501,7 +483,7 @@ public sealed class Binder
             return new BoundConst("", _baseModule.String, syntax);
         }
                 
-        var boundExpr = BindExpr(syntax.Expr);
+        var boundExpr = BindValue(syntax.Expr);
 
         if (IsAssignableTo(boundExpr.Type, _baseModule.String))
             return boundExpr;
@@ -520,7 +502,7 @@ public sealed class Binder
 
     
 
-    private BoundExpr BindNumberLiteral(NumberLiteralSyntax syntax)
+    private BoundValue BindNumberLiteral(NumberLiteralSyntax syntax)
     {
         var type = syntax.Token.Suffix switch
         {
@@ -583,23 +565,23 @@ public sealed class Binder
     
     #region Operator Exprs
 
-    private BoundExpr BindUnary(UnaryExprSyntax syntax)
-        => BindOperatorCall(syntax.Operator.Text.ToString(), receiver: BindExpr(syntax.Operand), arguments: [], syntax);
+    private BoundValue BindUnary(UnaryExprSyntax syntax)
+        => BindOperatorCall(syntax.Operator.Text.ToString(), receiver: BindValue(syntax.Operand), arguments: [], syntax);
     
-    private BoundExpr BindBinary(BinaryExprSyntax syntax)
+    private BoundValue BindBinary(BinaryExprSyntax syntax)
     {
         if (syntax.Operator.Kind is TokenKind.DoubleAmpersand or TokenKind.DoubleVerticalBar)
             return BindBooleanOperator(syntax);
         if (syntax.Operator.Kind == TokenKind.Equal)
             return BindAssign(syntax);
         
-        var left = BindExpr(syntax.Left);
-        var right = BindExpr(syntax.Right);
+        var left = BindValue(syntax.Left);
+        var right = BindValue(syntax.Right);
 
         return BindOperatorCall(syntax.Operator.Text.ToString(), receiver: left, arguments: [right], syntax);
     }
     
-    private BoundExpr BindOperatorCall(string operatorName, BoundExpr receiver, ImmutableArray<BoundExpr> arguments, SyntaxNode syntax)
+    private BoundValue BindOperatorCall(string operatorName, BoundValue receiver, ImmutableArray<BoundValue> arguments, SyntaxNode syntax)
     {
         if (receiver.Type is ErrorTypeSymbol ||
             arguments.Any(arg => arg.Type is ErrorTypeSymbol))
@@ -619,12 +601,12 @@ public sealed class Binder
         return new BoundCall(operatorFun, receiver, arguments, syntax);
     }
 
-    private BoundExpr BindBooleanOperator(BinaryExprSyntax syntax)
+    private BoundValue BindBooleanOperator(BinaryExprSyntax syntax)
     {
         Debug.Assert(syntax.Operator.Kind is TokenKind.DoubleAmpersand or TokenKind.DoubleVerticalBar);
     
-        var left = BindExpr(syntax.Left);
-        var right = BindExpr(syntax.Right);
+        var left = BindValue(syntax.Left);
+        var right = BindValue(syntax.Right);
         if (left.Type is ErrorTypeSymbol || right.Type is ErrorTypeSymbol)
         {
             // Some operands have an error. So don't type-check them
@@ -680,19 +662,19 @@ public sealed class Binder
         return new BoundBlock(stmts.DrainToImmutable(), funs, type: _baseModule.Unit, syntax);
     }
 
-    private BoundExpr BindCondition(ExprSyntax syntax)
+    private BoundValue BindCondition(ExprSyntax syntax)
     {
-        var condition = BindExpr(syntax);
+        var condition = BindValue(syntax);
         if (!CheckTypeAndReportMismatch(condition, expected: _baseModule.Bool))
             condition = new BoundError(syntax);
 
         return condition;
     }
     
-    private BoundExpr BindIfExpr(IfExprSyntax syntax)
+    private BoundValue BindIfExpr(IfExprSyntax syntax)
     {
         var condition = BindCondition(syntax.Condition);
-        var body = BindExpr(syntax.Body);
+        var body = BindValue(syntax.Body);
         var @else = BindElseExpr(syntax);
 
         // In some cases (e.g. Never type), one branch is assignable to
@@ -711,7 +693,7 @@ public sealed class Binder
         return new BoundIfExpr(condition, body, @else, type, syntax);
     }
 
-    private BoundExpr BindElseExpr(IfExprSyntax ifSyntax)
+    private BoundValue BindElseExpr(IfExprSyntax ifSyntax)
     {
         var elseSyntax = ifSyntax.ElseBody;
         if (elseSyntax is null)
@@ -720,7 +702,7 @@ public sealed class Binder
             return new BoundError();
         }
 
-        return BindExpr(elseSyntax);
+        return BindValue(elseSyntax);
     }
 
     private BoundStmt BindIfStmt(IfExprSyntax syntax)
@@ -735,7 +717,7 @@ public sealed class Binder
         return new BoundIfStmt(condition, body, @else, syntax);
     }
     
-    private BoundExpr BindBreakOrContinue(ExprSyntax syntax)
+    private BoundValue BindBreakOrContinue(ExprSyntax syntax)
     {
         Debug.Assert(syntax is BreakExprSyntax or ContinueExprSyntax);
         
@@ -750,9 +732,9 @@ public sealed class Binder
             : new BoundContinue(syntax);
     }
 
-    private BoundExpr BindReturn(ReturnExprSyntax syntax)
+    private BoundValue BindReturn(ReturnExprSyntax syntax)
     {
-        var expr = syntax.Expr is not null ? BindExpr(syntax.Expr) : null;
+        var expr = syntax.Expr is not null ? BindValue(syntax.Expr) : null;
 
         if (expr is not null)
         {
@@ -771,144 +753,191 @@ public sealed class Binder
     #endregion
     
     #region Names, Assign, Call, GetMember
-    
-    private BoundExprOrSymbol BindIdName(IdNameSyntax syntax)
+
+    private BoundNode BindIdName(IdNameSyntax syntax)
     {
-        if (BindSymbol(syntax) is not { } symbol)
+        if (syntax.Token.IsMissing)
             return new BoundError(syntax);
 
-        // Reject captures variables
-        if (symbol is VariableSymbol variable && variable.Owner != _fun)
+        var symbol = _scope.Lookup(syntax.Token.Identifier);
+        return symbol switch
         {
-            _diagnostics.ReportError(new Diagnostic.CannotCapture(syntax));
+            BaseModuleSymbol baseModule => new BoundModuleRef(baseModule, syntax),
+            TypeSymbol type => new BoundTypeRef(type, syntax),
+
+            FunSymbol fun => new BoundFunRef(fun, receiver: null, syntax),
+            FunGroupSymbol funGroup => new BoundFunGroupRef(funGroup, receiver: null, syntax),
+
+            VariableSymbol variableSymbol => BindVariable(variableSymbol),
+            
+            null => BindUndefinedName()
+        };
+
+        BoundNode BindVariable(VariableSymbol variable)
+        {
+            // Captured variables need to be rejected.
+
+            if (variable.Owner != _fun)
+            {
+                _diagnostics.ReportError(new Diagnostic.CannotCapture(syntax));
+                return new BoundError(syntax);
+            }
+
+            return new BoundVariable(variable, syntax);
+        }
+
+        BoundError BindUndefinedName()
+        {
+            _diagnostics.ReportError(new Diagnostic.UndefinedName(syntax));
             return new BoundError(syntax);
         }
-        
-        return new BoundSymbol(syntax, symbol);
     }
-    
-    private BoundExpr BindAssign(BinaryExprSyntax syntax)
+
+    private BoundValue BindAssign(BinaryExprSyntax syntax)
     {
         Debug.Assert(syntax.Operator.Kind is TokenKind.Equal);
         
-        var value = BindExpr(syntax.Right);
-        var target = BindAssignTarget(syntax.Left);
+        var target = BindValue(syntax.Left);
+        var value = BindValue(syntax.Right);
+
+        //TODO: Have BoundAssign take BoundValue as target
         
-        if (target is null)
+        if (target is BoundError) 
             return new BoundError(syntax);
-        
+        if (target is not BoundVariable { IsPlace: true, IsAssignable: true } targetBoundVar)
+        {
+            _diagnostics.ReportError(new Diagnostic.CannotAssign(target));
+            return new BoundError(syntax);
+        }
+
         if (target.Type is ErrorTypeSymbol || value.Type is ErrorTypeSymbol)
-            return new BoundAssign(target, value, value.Type, syntax);
+            return new BoundAssign(targetBoundVar.Variable, value, ErrorTypeSymbol.Instance, syntax);
         
         var type = CheckTypeAndReportMismatch(value, target.Type)
             ? _baseModule.Unit
             : ErrorTypeSymbol.Instance;
-        return new BoundAssign(target, value, type, syntax);
+        return new BoundAssign(targetBoundVar.Variable, value, type, syntax);
     }
 
-    private VariableSymbol? BindAssignTarget(ExprSyntax syntax)
+    private BoundNode BindGetMember(GetMemberExprSyntax syntax)
     {
-        var bound = BindExprOrSymbol(syntax);
-        switch (bound)
-        {
-            case BoundSymbol(_, VariableSymbol { IsReadOnly: false } variable):
-                return variable;
-            case BoundSymbol(_, var symbol):
-                _diagnostics.ReportError(new Diagnostic.InvalidAssignTarget(syntax, symbol));
-                return null;
-
-            case BoundInstanceMember(_, var (_, symbol)):
-                _diagnostics.ReportError(new Diagnostic.InvalidAssignTarget(syntax, symbol));
-                return null;
-            
-            case null:
-            case BoundError:
-                return null;
-
-            default:
-                _diagnostics.ReportError(new Diagnostic.InvalidAssignTarget(syntax));
-                return null;
-        }
-    }
-    
-    private BoundExprOrSymbol BindGetMember(GetMemberExprSyntax syntax)
-    {
-        var left = BindExprOrSymbol(syntax.Left);
-        if (left is BoundInstanceMember instMember)
-        {
-            _diagnostics.ReportError(
-                new Diagnostic.UndefinedMember(syntax.Member, Symbol: instMember.Member.Symbol));
-        }
+        var left = BindExpr(syntax.Left);
 
         return left switch
         {
-            BoundSymbol(var variableSyntax, VariableSymbol variable)
-                => BindInstanceMember(new BoundVariableRef(variable, variableSyntax)),
+            BoundFunGroupRef boundFunGroupRef => BindUndefined(boundFunGroupRef.FunGroup),
+                BoundFunRef boundFunRef => BindUndefined(boundFunRef.Fun),
 
-            BoundSymbol symbol
-                => BindSymbol(syntax.Member, parent: symbol.Symbol) is { } member
-                    ? new BoundSymbol(syntax.Member, member)
-                    : new BoundError(syntax),
+            BoundModuleRef boundModuleRef => BindModuleOrTypeMember(boundModuleRef.Module),
+            BoundTypeRef boundTypeRef => BindModuleOrTypeMember(boundTypeRef.Type),
 
-            BoundExpr expr => BindInstanceMember(expr),
-            BoundInstanceMember => new BoundError(syntax)
+            BoundValue boundValue => BindValueMember(boundValue),
+
+            BoundStmt => throw new UnreachableException("Stmt can never be the left side of GetMember.")
         };
-        
-        BoundExprOrSymbol BindInstanceMember(BoundExpr expr)
+
+        BoundNode BindModuleOrTypeMember(ModuleOrTypeSymbol parent)
         {
-            var type = expr.Type;
+            if (syntax.Member.Token.IsMissing)
+                return new BoundError(syntax);
+
+            var memberName = syntax.Member.Token.Identifier;
+            var memberSymbol = parent.LookupMember(memberName);
+
+            if (memberSymbol is null)
+            {
+                _diagnostics.ReportError(new Diagnostic.UndefinedMember(syntax.Member, parent));
+                return new BoundError(syntax);
+            }
+
+            return memberSymbol switch
+            {
+                BaseModuleSymbol baseModule => new BoundModuleRef(baseModule, syntax),
+                TypeSymbol type => new BoundTypeRef(type, syntax),
+
+                FunSymbol fun => new BoundFunRef(fun, receiver: null, syntax),
+                FunGroupSymbol funGroup => new BoundFunGroupRef(funGroup, receiver: null, syntax),
+
+                VariableSymbol => throw new UnreachableException("Variables are not members.")
+            };
+        }
+
+        BoundNode BindUndefined(Symbol parent)
+        {
+            _diagnostics.ReportError(new Diagnostic.UndefinedMember(syntax.Member, parent));
+            return new BoundError(syntax);
+        }
+
+        BoundNode BindValueMember(BoundValue value)
+        {
+            var type = value.Type;
             if (type is ErrorTypeSymbol)
                 return new BoundError(syntax.Member);
 
-            var member = BindSymbol(syntax.Member, parent: type);
-            if (member is null)
-                return new BoundError(syntax.Member);
-            var boundMember = new BoundSymbol(syntax.Member, member);
+            if (syntax.Member.Token.IsMissing)
+                return new BoundError(syntax);
 
-            return new BoundInstanceMember(expr, boundMember);
+            var memberName = syntax.Member.Token.Identifier;
+            var memberSymbol = type.LookupMember(memberName);
+
+            if (memberSymbol is null)
+            {
+                _diagnostics.ReportError(new Diagnostic.UndefinedMember(syntax.Member, type));
+                return new BoundError(syntax);
+            }
+
+            if (memberSymbol is TypeSymbol)
+            {
+                // Tried access of a nested type, which must not be accessed through a value.
+                _diagnostics.ReportError(new Diagnostic.CannotAccessThroughInstance(syntax.Member, type));
+                return new BoundError(syntax);
+            }
+
+            return memberSymbol switch
+            {
+                FunSymbol fun => new BoundFunRef(fun, receiver: value, syntax),
+                FunGroupSymbol funGroup => new BoundFunGroupRef(funGroup, receiver: value, syntax),
+                
+                VariableSymbol or BaseModuleSymbol => throw new UnreachableException("Variables and modules are not type members."),
+                TypeSymbol => throw new UnreachableException(),
+            };
         }
     }
 
-    private BoundExpr BindCall(CallExprSyntax syntax)
+    private BoundValue BindCall(CallExprSyntax syntax)
     {
-        var arguments = syntax.ArgumentExprs.Select(BindExpr).ToImmutableArray();
-        var callee = BindExprOrSymbol(syntax.Callee);
-        if (callee is BoundExpr)
+        var callee = BindExpr(syntax.Callee);
+        var arguments = syntax.ArgumentExprs.Select(BindValue).ToImmutableArray();
+
+        ImmutableArray<FunSymbol> calleeCandidates;
+        BoundValue? receiver;
+
+        if (callee is BoundFunRef boundFunRef)
+        {
+            calleeCandidates = [boundFunRef.Fun];
+            receiver = boundFunRef.Receiver;
+        }
+        else if (callee is BoundFunGroupRef boundFunGroupRef)
+        {
+            calleeCandidates = boundFunGroupRef.FunGroup.Funs;
+            receiver = boundFunGroupRef.Receiver;
+        }
+        else
         {
             if (callee is not BoundError)
-                _diagnostics.ReportError(new Diagnostic.InvalidCallee(syntax.Callee));
+                _diagnostics.ReportError(new Diagnostic.CannotCall(callee));
             return new BoundError(syntax);
         }
-
-        var (calleeSymbol, receiver) = callee switch
-        {
-            BoundSymbol boundSymbol => (boundSymbol.Symbol, null),
-            BoundInstanceMember instanceMember => (instanceMember.Member.Symbol, instanceMember.Expr),
-            _ => throw new UnreachableException()
-        };
         
-        if (calleeSymbol is not (FunGroupSymbol or FunSymbol))
-        {
-            _diagnostics.ReportError(new Diagnostic.UnexpectedSymbolKind(syntax.Callee, calleeSymbol, SymbolKind.Fun));
-            return new BoundError(syntax);
-        }
+        var funName = calleeCandidates[0].Name;
+        Debug.Assert(calleeCandidates.All(fun => fun.Name == funName));
 
-        var candidates = calleeSymbol switch
-        {
-            FunGroupSymbol group => group.Funs,
-            FunSymbol fun => [fun],
-            _ => throw new UnreachableException()
-        };
-
-        var funName = candidates[0].Name;
-        Debug.Assert(candidates.All(fun => fun.Name == funName));
-
-        return SelectCallee(candidates, receiver, arguments, funName, syntax) is { } selectedFun
+        return SelectCallee(calleeCandidates, receiver, arguments, funName, syntax) is { } selectedFun
             ? new BoundCall(selectedFun, receiver, arguments, syntax)
             : new BoundError(syntax);
     }
 
-    private FunSymbol? SelectCallee(ImmutableArray<FunSymbol> initialCandidates, BoundExpr? receiver, ImmutableArray<BoundExpr> arguments,
+    private FunSymbol? SelectCallee(ImmutableArray<FunSymbol> initialCandidates, BoundValue? receiver, ImmutableArray<BoundValue> arguments,
         string funName, CallExprSyntax callSyntax)
     {
         // Filter based on receiver 

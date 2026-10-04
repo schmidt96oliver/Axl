@@ -2,13 +2,15 @@
 
 // Only variables can be assigned to.
 
-1 + 1 = true;   //~error InvalidAssignTarget
+1 + 1 = true;   //~error CannotAssign
 
-1 = 1; //~error InvalidAssignTarget
+1 = 1; //~error CannotAssign
 
 var a = 1;
-(if (true) a else 1) = 1; //~error InvalidAssignTarget
+(if (true) a else 1) = 1; //~error CannotAssign
 
-(a) = 1; //~error InvalidAssignTarget
+{ } = { };      //~error CannotAssign
 
-{ } = { };      //~error InvalidAssignTarget
+
+// The variable in a group can be assigned to
+(a) = 1;

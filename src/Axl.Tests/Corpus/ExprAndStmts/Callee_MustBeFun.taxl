@@ -2,10 +2,10 @@
 
 // Everything that is not a fun is invalid.
 
-(1)(1);         //~error InvalidCallee
+(1)(1);         //~error CannotCall
    
 Base.Bla("", 2);   //~error UndefinedMember
 Blupp.Bla("", 2);   //~error UndefinedName
-  
+   
 let a = 1;
-a(1);          //~error UnexpectedSymbolKind
+a(1);          //~error CannotCall
