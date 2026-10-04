@@ -43,6 +43,7 @@ public class HoverHandler : HoverHandlerBase
         TypeSymbol type => $"type {type.Name}",
         BaseModuleSymbol => "base module",
         FunSymbol fun => $"fun {fun.Name}{GetParameterText(fun)}{GetFunAnnotationText(fun)}",
+        FunGroupSymbol funGroup => $"fun group {funGroup.Name}",
         _ => ""
     };
 

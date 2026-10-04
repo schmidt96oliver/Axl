@@ -3,15 +3,10 @@
 
 **Next:** 
 
-* add resolved symbols
-
 * Errors:
   * InstanceRequired, CannotCallWithInstance
 
 * replace "BaseModule" with "moduleSymbol" where appropriate
-
-* Binder cleanup 
-  * (esp. BoundExprOrSymbol -> SymbolRef; Bind())
 
 # Roadmap
 
@@ -33,7 +28,7 @@
 * [x] Reject captured variables
 * [x] Definite Return Analysis (needs MIR or ad-hoc)
 * [x] Compiler generated versions of `!=, <=, >, >=` from `==, <`
-* ?? Named arguments
+* [ ] ?? Named arguments
 
 ## 3. Type (in script)
 One type (maybe struct) inside scripts.

@@ -709,6 +709,9 @@ public sealed class Binder
             return new BoundError(syntax);
 
         var symbol = _scope.Lookup(syntax.Token.Identifier);
+        if (symbol is not null)
+            _semanticSideTable.AddResolvedSymbol(syntax.Location, symbol);
+        
         return symbol switch
         {
             BaseModuleSymbol baseModule => new BoundModuleRef(baseModule, syntax),
@@ -799,6 +802,8 @@ public sealed class Binder
                 return new BoundError(syntax);
             }
 
+            _semanticSideTable.AddResolvedSymbol(syntax.Member.Location, memberSymbol);
+
             return memberSymbol switch
             {
                 BaseModuleSymbol baseModule => new BoundModuleRef(baseModule, syntax),
@@ -834,6 +839,8 @@ public sealed class Binder
                 _diagnostics.ReportError(new Diagnostic.UndefinedMember(syntax.Member, type));
                 return new BoundError(syntax);
             }
+
+            _semanticSideTable.AddResolvedSymbol(syntax.Member.Location, memberSymbol);
 
             if (memberSymbol is TypeSymbol)
             {
