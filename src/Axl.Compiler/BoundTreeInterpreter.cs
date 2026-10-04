@@ -225,7 +225,9 @@ public sealed class BoundTreeInterpreter
 
     private object EvaluateAssign(BoundAssign boundAssign)
     {
-        _env[boundAssign.Target] = Evaluate(boundAssign.Value);
+        if (boundAssign.Target is not BoundVariable boundVar) throw new UnreachableException();
+        
+        _env[boundVar.Variable] = Evaluate(boundAssign.Value);
         return _unitValue;
     }
 

@@ -748,23 +748,21 @@ public sealed class Binder
         var target = BindValue(syntax.Left);
         var value = BindValue(syntax.Right);
 
-        //TODO: Have BoundAssign take BoundValue as target
-        
         if (target is BoundError) 
             return new BoundError(syntax);
-        if (target is not BoundVariable { IsPlace: true, IsAssignable: true } targetBoundVar)
+        if (value.Type is ErrorTypeSymbol)
+            return new BoundAssign(target, value, ErrorTypeSymbol.Instance, syntax);
+        
+        if (!target.IsPlace || !target.IsAssignable)
         {
             _diagnostics.ReportError(new Diagnostic.CannotAssign(target));
             return new BoundError(syntax);
         }
 
-        if (target.Type is ErrorTypeSymbol || value.Type is ErrorTypeSymbol)
-            return new BoundAssign(targetBoundVar.Variable, value, ErrorTypeSymbol.Instance, syntax);
-        
         var type = CheckTypeAndReportMismatch(value, target.Type)
             ? _baseModule.Unit
             : ErrorTypeSymbol.Instance;
-        return new BoundAssign(targetBoundVar.Variable, value, type, syntax);
+        return new BoundAssign(target, value, type, syntax);
     }
 
     private BoundNode BindGetMember(GetMemberExprSyntax syntax)
