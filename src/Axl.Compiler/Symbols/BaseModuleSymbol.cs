@@ -6,8 +6,6 @@ namespace Axl.Compiler.Symbols;
 
 public sealed class BaseModuleSymbol : ModuleOrTypeSymbol
 {
-    public override SymbolKind Kind => SymbolKind.Module;
-
     public override ImmutableArray<Symbol> Members { get; }
 
     public TypeSymbol I32 { get; }

@@ -5,7 +5,6 @@ namespace Axl.Compiler.Symbols;
 public class TypeSymbol : ModuleOrTypeSymbol
 {
     private readonly Func<ImmutableArray<Symbol>> _memberFactory;
-    public override SymbolKind Kind => SymbolKind.Type;
 
 
     public override ImmutableArray<Symbol> Members

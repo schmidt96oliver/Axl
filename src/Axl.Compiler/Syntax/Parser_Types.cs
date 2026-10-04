@@ -1,4 +1,3 @@
-using System.Diagnostics;
 using Axl.Compiler.Diagnostics;
 
 // ReSharper disable UnusedMethodReturnValue.Local
@@ -9,19 +8,24 @@ public partial class Parser
 {
     private MarkClose EnsureTypeName(ExpectedSyntax? expectedSyntax = null)
     {
-        var typeExpr = _scanner.Open();
-        EnsureIdName(expectedSyntax ?? ExpectedSyntax.TypeName);
+        // Parse into a GetMemberExpr, because it works exactly the same way.
+        // It just needs to be a subset, so not all expressions are allowed in
+        // type position.
 
+        var lhs = EnsureIdName(expectedSyntax ?? ExpectedSyntax.TypeName);
+        
         foreach (var _ in _scanner.MustEatEachIteration())
         {
             if (!_scanner.IsAt(TokenKind.Dot))
                 break;
 
+            var getMember = _scanner.OpenBefore(lhs);
             _scanner.EatKnown(TokenKind.Dot);
             EnsureIdName();
+            lhs = _scanner.Close(getMember, SyntaxKind.GetMemberExpr);
         }
 
-        return _scanner.Close(typeExpr, SyntaxKind.TypeName);
+        return lhs;
     }
 
     
@@ -30,12 +34,10 @@ public partial class Parser
         var typeAnnotation = _scanner.Open();
         if (!EnsureToken(TokenKind.Colon, ExpectedSyntax.TypeAnnotation))
         {
-            // Make a type annotation
-            var typeName = _scanner.Open();
+            // Make an id name
             var idName = _scanner.Open();
             _scanner.MakeAndReport(TokenKind.Identifier);
             _scanner.Close(idName, SyntaxKind.IdName);
-            _scanner.Close(typeName, SyntaxKind.TypeName);
             return _scanner.Close(typeAnnotation, SyntaxKind.TypeAnnotationClause);
         }
         

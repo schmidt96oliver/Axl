@@ -10,8 +10,6 @@ public sealed class FunGroupSymbol(string name, ImmutableArray<FunSymbol> funs) 
     public ImmutableArray<FunSymbol> Funs { get; } = funs.Length >= 2
         ? funs
         : throw new ArgumentException("Must have 2 or more funs.", nameof(funs));
-    
-    public override SymbolKind Kind => SymbolKind.FunGroup;
 
     public FunSymbol? LookupFun(TypeSymbol? receiver, ImmutableArray<TypeSymbol> argumentTypes)
         => Funs.FirstOrDefault(fun => fun.ReceiverType == receiver &&

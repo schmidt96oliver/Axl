@@ -8,8 +8,6 @@ public union FunBody(Intrinsic, BoundBlock);
 
 public sealed class FunSymbol : Symbol
 {
-    public override SymbolKind Kind => SymbolKind.Fun;
-
     /// <summary>
     /// The <see cref="TypeSymbol"/> this fun gets as an implicit
     /// 'self' argument. If this fun is a method, <see cref="ReceiverType"/>

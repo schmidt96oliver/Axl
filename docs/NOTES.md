@@ -3,12 +3,10 @@
 
 **Next:** 
 
-* Make Typename the same as GetMember expr?
-  * remove UnexpectedSymbolKind, BindSymbol
+* add resolved symbols
 
 * Errors:
   * InstanceRequired, CannotCallWithInstance
-  * SymbolKind, UnexpectedSymbolKind still needed?
 
 * replace "BaseModule" with "moduleSymbol" where appropriate
 

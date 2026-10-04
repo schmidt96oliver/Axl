@@ -121,51 +121,7 @@ public sealed class Binder
         return true;
     }
     
-    private Symbol? BindSymbol(IdNameSyntax syntax, Symbol? parent = null, SymbolKind? expectedKind = null)
-    {
-        if (syntax.Token.IsMissing)
-            return null;
-
-        var name = syntax.Token.Identifier;
-
-        Symbol? symbol;
-        switch (parent)
-        {
-            case null:
-            {
-                symbol = _scope.Lookup(name);
-
-                if (symbol is null)
-                    _diagnostics.ReportError(new Diagnostic.UndefinedName(syntax));
-                break;
-            }
-            case ModuleOrTypeSymbol moduleOrType:
-            {
-                symbol = moduleOrType.LookupMember(name);
-
-                if (symbol is null)
-                    _diagnostics.ReportError(new Diagnostic.UndefinedMember(syntax, parent));
-                break;
-            }
-            default:
-                symbol = null;
-                _diagnostics.ReportError(new Diagnostic.UndefinedMember(syntax, parent));
-                break;
-        }
-
-        if (expectedKind is not null && symbol is not null && symbol.Kind != expectedKind)
-        {
-            _diagnostics.ReportError(new Diagnostic.UnexpectedSymbolKind(syntax, symbol, expectedKind.Value));
-            return null;
-        }
-        
-        // Fun groups are resolved during callee binding.
-        if (symbol is not FunGroupSymbol)
-            _semanticSideTable.AddResolvedSymbol(syntax.Location, symbol);
-        return symbol;
-    }
-
-
+    
     private void BindFunBody(FunDeclSyntax funDecl)
     {
         var funSymbol = _funSymbolsByDecl[funDecl];
@@ -281,7 +237,7 @@ public sealed class Binder
             .Select(BindParameter)
             .ToImmutableArray();
         var returnType = syntax.ReturnTypeAnnotation is not null
-            ? BindTypeName(syntax.ReturnTypeAnnotation)
+            ? BindType(syntax.ReturnTypeAnnotation)
             : _baseModule.Unit;
         
         // Report duplicate parameter errors only on parameters
@@ -309,33 +265,12 @@ public sealed class Binder
     private ParameterSymbol BindParameter(ParamSyntax syntax)
     {
         var symbol = new ParameterSymbol(syntax.Name.Identifier,
-            BindTypeName(syntax.TypeAnnotation),
+            BindType(syntax.TypeAnnotation),
             syntax);
         _semanticSideTable.AddResolvedSymbol(syntax.Name.Location, symbol);
         return symbol;
     }
 
-    #endregion
-    
-    #region Type names
-
-    private TypeSymbol BindTypeName(TypeNameSyntax syntax)
-    {
-        var parts = syntax.Parts.ToImmutableArray();
-
-        Symbol? current = null;
-        Debug.Assert(parts.Length >= 1);
-        for (var i = 0; i < parts.Length; i++)
-        {
-            current = BindSymbol(parts[i], parent: current,
-                expectedKind: i == parts.Length - 1 ? SymbolKind.Type : null);
-            if (current is null)
-                return ErrorTypeSymbol.Instance;
-        }
-
-        return (TypeSymbol)current!;
-    }
-    
     #endregion
     
     #region Stmts
@@ -358,7 +293,7 @@ public sealed class Binder
     private BoundStmt BindVarDecl(VarDeclSyntax syntax)
     {
         var variableType = syntax.TypeAnnotation is not null
-            ? BindTypeName(syntax.TypeAnnotation)
+            ? BindType(syntax.TypeAnnotation)
             : null;
         
         var boundInitializer = BindVarDeclInitializer(syntax);
@@ -454,6 +389,20 @@ public sealed class Binder
 
         return value;
     }
+
+    private TypeSymbol BindType(ExprSyntax syntax)
+    {
+        var bound = BindExpr(syntax);
+        if (bound is not BoundTypeRef typeRef)
+        {
+            if (bound is not BoundError)
+                _diagnostics.ReportError(new Diagnostic.NotAType(bound));
+            return ErrorTypeSymbol.Instance;
+        }
+
+        return typeRef.Type;
+    }
+    
 
     #region Literals and Strings
 

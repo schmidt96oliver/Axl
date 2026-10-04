@@ -16,8 +16,7 @@ public partial class ParserTests
 
                     ModuleDecl
                     · 'module'
-                    · TypeName
-                    · · IdName 'A'
+                    · IdName 'A'
                     · ??';'
                     """);
             

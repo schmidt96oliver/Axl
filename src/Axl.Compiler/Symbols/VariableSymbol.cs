@@ -2,8 +2,6 @@
 
 public class VariableSymbol : Symbol
 {
-    public override SymbolKind Kind => SymbolKind.Variable;
-
     public bool IsReadOnly { get; }
     public TypeSymbol Type { get; }
 

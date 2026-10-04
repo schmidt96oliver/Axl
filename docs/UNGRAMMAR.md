@@ -51,7 +51,6 @@ Group       = "(" Expr ")"
 
 Literal     = "true" | "false"
             | NumberLiteral
-            | NativeTypeName
 
 Binary      = Expr ("+"|"-"|"*"|"/"|"<"|"<="|">"|">="  |"=="|"!=" |"and"|"or") Expr
 Unary       = ("-" | "not") Expr
@@ -72,7 +71,9 @@ Continue    = "continue"
 Return      = "return" Expr?
 
 ## Type Names
-TypeName        = IdName ("." IdName)*
+TypeName        = IdName | (TypeName ("." IdName))
+> Deliberately a subset of GetMember. And the parser produces a GetMemberExpr
+
 TypeAnnotation  = ":" TypeName
 
 # Precedence Table

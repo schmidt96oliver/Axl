@@ -21,19 +21,4 @@ public static class DisplayExtensions
             _ => $"'{SyntaxFacts.GetText(kind) ?? throw new UnreachableException($"No DisplayName for TokenKind '{kind}'.")}'"
         };
     }
-
-    extension(SymbolKind kind)
-    {
-        public string DisplayName => kind switch
-        {
-            SymbolKind.Fun => "a function",
-            SymbolKind.FunGroup => "a function group",
-            SymbolKind.Module => "a module",
-            SymbolKind.Variable => "a variable",
-            SymbolKind.Parameter => "a parameter",
-            SymbolKind.Type => "a type",
-
-            _ => throw new UnreachableException($"Unknown {nameof(SymbolKind)}")
-        };
-    }
 }

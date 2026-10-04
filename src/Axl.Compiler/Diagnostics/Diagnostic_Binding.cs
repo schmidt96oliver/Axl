@@ -122,12 +122,6 @@ public partial record Diagnostic
             => $"Both 'if' and 'else' branches must have the same type. Got '{First.Type.Name}' and '{Second.Type.Name}'.";
     }
 
-    public sealed record UnexpectedSymbolKind(SyntaxNode Syntax, Symbol Symbol, SymbolKind Expected) : Error
-    {
-        public override ImmutableArray<SourceLocation> Locations => [Syntax.Location];
-        public override string Message => $"'{Symbol.Name}' is {Symbol.Kind.DisplayName}. Expected {Expected.DisplayName}.";
-    }
-
     public sealed record UndefinedMember(IdNameSyntax MemberSyntax, Symbol OwnerSymbol) : Error
     {
         public override ImmutableArray<SourceLocation> Locations => [MemberSyntax.Location];
@@ -282,7 +276,7 @@ public partial record Diagnostic
         public override string Message => $"Cannot capture variable '{Syntax.Token.Identifier}' from outside of this fun.";
     }
 
-    public sealed record MissingReturn(SyntaxNode BlockSyntax, TypeNameSyntax ReturnTypeAnnotationSyntax) : Error
+    public sealed record MissingReturn(SyntaxNode BlockSyntax, ExprSyntax ReturnTypeAnnotationSyntax) : Error
     {
         public override ImmutableArray<SourceLocation> Locations
         {
@@ -313,6 +307,12 @@ public partial record Diagnostic
     }
 
     public sealed record NotAValue(BoundNode BoundNode) : Error
+    {
+        public override ImmutableArray<SourceLocation> Locations => [BoundNode.Syntax!.Location];
+        public override string Message => $"Expected a value.";
+    }
+
+    public sealed record NotAType(BoundNode BoundNode) : Error
     {
         public override ImmutableArray<SourceLocation> Locations => [BoundNode.Syntax!.Location];
         public override string Message => $"Expected a value.";

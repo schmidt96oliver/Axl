@@ -5,5 +5,5 @@ namespace Axl.Compiler.Syntax.Tree;
 public sealed class ModuleDeclSyntax(ImmutableArray<SyntaxElement> children)
     : SyntaxNode(SyntaxKind.ModuleDecl, children)
 {
-    public TypeNameSyntax TypeName => Children.FirstOfType<TypeNameSyntax>();
+    public ExprSyntax NameExpr => Children.FirstOfType<ExprSyntax>();
 }

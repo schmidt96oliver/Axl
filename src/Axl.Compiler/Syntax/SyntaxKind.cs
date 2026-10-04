@@ -28,9 +28,6 @@ public enum SyntaxKind
     ModuleDecl,
     FunDecl,
     
-    // Type Names
-    TypeName,
-    
     // Literals
     TrueLiteral,
     FalseLiteral,
