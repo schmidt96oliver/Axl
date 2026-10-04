@@ -30,45 +30,12 @@ public sealed class Binder
         _fun = fun;
     }
 
-    private static Scope CreateGlobalScope(BaseModuleSymbol baseModule)
-    {
-        var global = new Scope();
-        
-        global.Declare(baseModule);
-        
-        // 'Base' is implicitly used
-        foreach (var member in baseModule.Members)
-            global.Declare(member);
-        
-        return global;
-    }
-    
-    public static BoundFile BindFile(FileSyntax syntax, BaseModuleSymbol baseModule)
-    {
-        var scriptFun = new FunSymbol("", null, [], baseModule.Unit);
-
-        var diagnostics = new DiagnosticBag();
-        var semanticSideTable = new SemanticSideTable();
-        var scope = new Scope(parent: CreateGlobalScope(baseModule));
-        var binder = new Binder(scriptFun, scope, baseModule, diagnostics, semanticSideTable);
-        
-        // Forward-declare all fun symbols
-        var block = binder.BindBlock(syntax);
-        
-        //TODO: Move to BindFunBody, so that everything follows the same logic.
-        var returnStmt = new BoundReturn(null);
-        block = new BoundBlock([..block.Stmts, returnStmt], block.LocalFuns, block.Type, block.Syntax);
-        scriptFun.Body = block;
-        
-        return new BoundFile(scriptFun, diagnostics.Drain(), semanticSideTable);
-    }
-    
     
     /// <summary>
     /// Whether a value of type <paramref name="source"/> can be
     /// assigned to a target of type <paramref name="target"/>.
     /// </summary>
-    public bool IsAssignableTo(TypeSymbol source, TypeSymbol target)
+    private static bool IsAssignableTo(TypeSymbol source, TypeSymbol target)
     {
         // Errors are silent
         if (source is ErrorTypeSymbol || target is ErrorTypeSymbol) return true;
@@ -79,6 +46,20 @@ public sealed class Binder
         return source == target;
     }
 
+    private bool CheckTypeAndReportMismatch(BoundValue value, TypeSymbol expected)
+    {
+        if (!IsAssignableTo(value.Type, expected))
+        {
+            _diagnostics.ReportError(new Diagnostic.TypeMismatch(
+                Value: value,
+                Expected: expected));
+            return false;
+        }
+
+        return true;
+    }
+    
+    
     private FunSymbol? LookupMethod(TypeSymbol instanceType, string name, ImmutableArray<TypeSymbol> argumentTypes)
     {
         if (argumentTypes.OfType<ErrorTypeSymbol>().Any())
@@ -103,83 +84,46 @@ public sealed class Binder
     }
     
     
-    /// <summary>
-    /// Checks, whether <paramref name="value"/> is assignable to
-    /// <paramref name="expected"/>. If not, reports a <see cref="Diagnostic.TypeMismatch"/>.
-    /// </summary>
-    /// <returns><c>true</c>, if types matched. <c>false</c>, otherwise.</returns>
-    private bool CheckTypeAndReportMismatch(BoundValue value, TypeSymbol expected)
-    {
-        if (!IsAssignableTo(value.Type, expected))
-        {
-            _diagnostics.ReportError(new Diagnostic.TypeMismatch(
-                Value: value,
-                Expected: expected));
-            return false;
-        }
+    #region Global
 
-        return true;
+    private static Scope CreateGlobalScope(BaseModuleSymbol baseModule)
+    {
+        var global = new Scope();
+
+        global.Declare(baseModule);
+
+        // 'Base' is implicitly used
+        foreach (var member in baseModule.Members)
+            global.Declare(member);
+
+        return global;
+    }
+
+    public static BoundFile BindFile(FileSyntax syntax, BaseModuleSymbol baseModule)
+    {
+        var scriptFun = new FunSymbol("", null, [], baseModule.Unit);
+
+        var diagnostics = new DiagnosticBag();
+        var semanticSideTable = new SemanticSideTable();
+        var scope = new Scope(parent: CreateGlobalScope(baseModule));
+        var binder = new Binder(scriptFun, scope, baseModule, diagnostics, semanticSideTable);
+
+        // Forward-declare all fun symbols
+        var block = binder.BindBlock(syntax);
+
+        //TODO: Move to BindFunBody, so that everything follows the same logic.
+        var returnStmt = new BoundReturn(null);
+        block = new BoundBlock([.. block.Stmts, returnStmt], block.LocalFuns, block.Type, block.Syntax);
+        scriptFun.Body = block;
+
+        return new BoundFile(scriptFun, diagnostics.Drain(), semanticSideTable);
     }
     
+    #endregion
     
-    private void BindFunBody(FunDeclSyntax funDecl)
-    {
-        var funSymbol = _funSymbolsByDecl[funDecl];
-        
-        var funScope = new Scope(parent: _scope);
-        foreach (var param in funSymbol.Parameters)
-            funScope.Declare(param);
+    #region Members
 
-        var funBinder = new Binder(funSymbol, funScope, _baseModule, _diagnostics, _semanticSideTable);
-
-        var body = BindFunBodyBlock(funSymbol, funBinder);
-        
-        // Check that all code-paths return a value
-        if (!body.IsDiverging)
-        {
-            if (funSymbol.ReturnType == _baseModule.Unit)
-            {
-                // For unit return type, insert an empty return at the end.
-                var returnStmt = new BoundReturn(null);
-                body = new BoundBlock([.. body.Stmts, returnStmt], body.LocalFuns, body.Type, body.Syntax);
-            }
-            else
-            {
-                _diagnostics.ReportError(new Diagnostic.MissingReturn(body.Syntax!, funDecl.ReturnTypeAnnotation!));
-            }
-        }
-        
-        funSymbol.Body = body;
-    }
-
-    private BoundBlock BindFunBodyBlock(FunSymbol fun, Binder funBinder)
-    {
-        var syntax = fun.DeclarationSyntax ??
-                     throw new ArgumentException($"{nameof(fun)} must be code-declared.", nameof(fun));
-        if (syntax.Body.Expr is null)
-        {
-            // The fun has no body at all, so it returns unit.
-            throw new NotImplementedException("Funs without body not supported yet.");
-        }
-
-        if (syntax.Body.IsExpressionBodied)
-        {
-            var expr = funBinder.BindValue(syntax.Body.Expr);
-            if (!CheckTypeAndReportMismatch(expr, fun.ReturnType))
-                expr = new BoundError(syntax.Body.Expr);
-            
-            return new BoundBlock([new BoundReturn(expr)], [], _baseModule.Unit);
-        }
-
-        if (syntax.Body.Expr is not BlockExprSyntax blockSyntax)
-            throw new UnreachableException();
-        return funBinder.BindBlock(blockSyntax);
-    }
-
-
-    #region Declarations
-
-    private ImmutableArray<FunSymbol> BindFunSymbols(IEnumerable<FunDeclSyntax> syntaxes)
+    private ImmutableArray<FunSymbol> BindAllFunSymbols(IEnumerable<FunDeclSyntax> syntaxes)
     {
         // Declare funs with a valid name and group them if necessary.
         // Funs with empty names cannot be referenced from source and
@@ -269,6 +213,61 @@ public sealed class Binder
             syntax);
         _semanticSideTable.AddResolvedSymbol(syntax.Name.Location, symbol);
         return symbol;
+    }
+
+    
+    private void BindFunBody(FunDeclSyntax funDecl)
+    {
+        var funSymbol = _funSymbolsByDecl[funDecl];
+        
+        var funScope = new Scope(parent: _scope);
+        foreach (var param in funSymbol.Parameters)
+            funScope.Declare(param);
+
+        var funBinder = new Binder(funSymbol, funScope, _baseModule, _diagnostics, _semanticSideTable);
+
+        var body = BindFunBodyBlock(funSymbol, funBinder);
+        
+        // Check that all code-paths return a value
+        if (!body.IsDiverging)
+        {
+            if (funSymbol.ReturnType == _baseModule.Unit)
+            {
+                // For unit return type, insert an empty return at the end.
+                var returnStmt = new BoundReturn(null);
+                body = new BoundBlock([.. body.Stmts, returnStmt], body.LocalFuns, body.Type, body.Syntax);
+            }
+            else
+            {
+                _diagnostics.ReportError(new Diagnostic.MissingReturn(body.Syntax!, funDecl.ReturnTypeAnnotation!));
+            }
+        }
+        
+        funSymbol.Body = body;
+    }
+
+    private BoundBlock BindFunBodyBlock(FunSymbol fun, Binder funBinder)
+    {
+        var syntax = fun.DeclarationSyntax ??
+                     throw new ArgumentException($"{nameof(fun)} must be code-declared.", nameof(fun));
+        if (syntax.Body.Expr is null)
+        {
+            // The fun has no body at all, so it returns unit.
+            throw new NotImplementedException("Funs without body not supported yet.");
+        }
+
+        if (syntax.Body.IsExpressionBodied)
+        {
+            var expr = funBinder.BindValue(syntax.Body.Expr);
+            if (!CheckTypeAndReportMismatch(expr, fun.ReturnType))
+                expr = new BoundError(syntax.Body.Expr);
+            
+            return new BoundBlock([new BoundReturn(expr)], [], _baseModule.Unit);
+        }
+
+        if (syntax.Body.Expr is not BlockExprSyntax blockSyntax)
+            throw new UnreachableException();
+        return funBinder.BindBlock(blockSyntax);
     }
 
     #endregion
@@ -403,7 +402,6 @@ public sealed class Binder
         return typeRef.Type;
     }
     
-
     #region Literals and Strings
 
     private BoundStringExpr BindString(StringExprSyntax syntax)
@@ -448,8 +446,6 @@ public sealed class Binder
         _diagnostics.ReportError(new Diagnostic.CannotConvert(syntax.Expr, From: boundExpr.Type, To: _baseModule.String));
         return new BoundError(syntax);
     }
-
-    
 
     private BoundValue BindNumberLiteral(NumberLiteralSyntax syntax)
     {
@@ -512,7 +508,7 @@ public sealed class Binder
     
     #endregion
     
-    #region Operator Exprs
+    #region Operators
 
     private BoundValue BindUnary(UnaryExprSyntax syntax)
         => BindOperatorCall(syntax.Operator.Text.ToString(), receiver: BindValue(syntax.Operand), arguments: [], syntax);
@@ -587,7 +583,7 @@ public sealed class Binder
         _scope = new Scope(parent: _scope);
 
         // Forward-declare all fun symbols
-        var funs = BindFunSymbols(syntax.Children.OfType<FunDeclSyntax>());
+        var funs = BindAllFunSymbols(syntax.Children.OfType<FunDeclSyntax>());
 
         var stmts = ImmutableArray.CreateBuilder<BoundStmt>();
         foreach (var node in syntax.SyntaxNodes())
