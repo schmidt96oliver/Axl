@@ -17,17 +17,17 @@ public partial class Parser
         throw new UnreachableException($"{nameof(FirstSet.Member)} too large");
     }
 
-    private MarkClose EatModuleDecl()
+    private MarkClose EatNamespaceDecl()
     {
-        Debug.Assert(_scanner.IsAt(TokenKind.ModuleKw));
+        Debug.Assert(_scanner.IsAt(TokenKind.NamespaceKw));
 
-        var moduleDecl = _scanner.Open();
+        var namespaceDecl = _scanner.Open();
 
-        _scanner.EatKnown(TokenKind.ModuleKw);
-        EnsureTypeName(ExpectedSyntax.ModuleName);
+        _scanner.EatKnown(TokenKind.NamespaceKw);
+        EnsureTypeName(ExpectedSyntax.NamespaceName);
         EnsureToken(TokenKind.Semicolon);
 
-        return _scanner.Close(moduleDecl, SyntaxKind.ModuleDecl);
+        return _scanner.Close(namespaceDecl, SyntaxKind.NamespaceDecl);
     }
 
     private MarkClose EatFunDecl(Anchor anchor)

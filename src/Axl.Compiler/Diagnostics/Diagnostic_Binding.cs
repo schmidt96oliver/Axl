@@ -88,7 +88,7 @@ public partial record Diagnostic
                 
                 BoundFunGroupRef boundFunGroup => $"Cannot assign to '{boundFunGroup.FunGroup.Name}', because it is a group of overloaded funs.",
                 BoundFunRef boundFun => $"Cannot assign to '{boundFun.Fun.Name}', because it is a function.",
-                BoundModuleRef boundModule => $"Cannot assign to '{boundModule.Module.Name}', because it is a module.",
+                BoundNamespaceRef boundNamespace => $"Cannot assign to '{boundNamespace.Namespace.Name}', because it is a namespace.",
                 BoundTypeRef boundType => $"Cannot assign to '{boundType.Type.Name}', because it is a type.",
                 
                 BoundStmt => throw new UnreachableException("Non-value stmts can never be in assignment target position.")
@@ -162,7 +162,7 @@ public partial record Diagnostic
 
         public override string Message => BoundCallee switch
         {
-            BoundModuleRef boundModuleRef => $"Cannot call '{boundModuleRef.Module.Name}', because it is a module.",
+            BoundNamespaceRef boundNamespaceRef => $"Cannot call '{boundNamespaceRef.Namespace.Name}', because it is a namespace.",
             BoundTypeRef boundTypeRef => $"Cannot call '{boundTypeRef.Type.Name}', because it is a type.",
             BoundValue => $"Expected a function.",
 

@@ -46,7 +46,7 @@ public partial class Parser
     {
         var file = _scanner.Open();
 
-        // Don't anchor on module or using, because these are expected at
+        // Don't anchor on namespace or using, because these are expected at
         // the start of a file, and it makes sense to eat them as garbage
         // inside each grammar.
         var fileAnchor = Anchor.From(FirstSet.Member) | FirstSet.NonExprStmt;
@@ -57,8 +57,8 @@ public partial class Parser
                 EatStmt(fileAnchor | TokenKind.Semicolon);
             else if (_scanner.IsAt(FirstSet.Member))
                 EatMember(fileAnchor);
-            else if (_scanner.IsAt(TokenKind.ModuleKw))
-                EatModuleDecl();
+            else if (_scanner.IsAt(TokenKind.NamespaceKw))
+                EatNamespaceDecl();
             else if (_scanner.IsAt(TokenKind.UsingKw))
                 EatUsingDirective();
             else
@@ -68,7 +68,7 @@ public partial class Parser
                 // If the parser is already confused, we recover to any position that
                 // can start a new statement.
                 var recoverAnchor = Anchor.From(FirstSet.Stmt)
-                                    | TokenKind.ModuleKw
+                                    | TokenKind.NamespaceKw
                                     | TokenKind.UsingKw
                                     | FirstSet.Member 
                                     | TokenKind.Semicolon;
@@ -98,7 +98,7 @@ public partial class Parser
         var usingDirective = _scanner.Open();
         
         _scanner.EatKnown(TokenKind.UsingKw);
-        EnsureTypeName(ExpectedSyntax.ModuleName);
+        EnsureTypeName(ExpectedSyntax.NamespaceName);
         EnsureToken(TokenKind.Semicolon);
         
         return _scanner.Close(usingDirective, SyntaxKind.UsingDirective);

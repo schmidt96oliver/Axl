@@ -2,7 +2,7 @@
 
 namespace Axl.Compiler.Symbols;
 
-public class TypeSymbol : ModuleOrTypeSymbol
+public class TypeSymbol : NamespaceOrTypeSymbol
 {
     private readonly Func<ImmutableArray<Symbol>> _memberFactory;
 

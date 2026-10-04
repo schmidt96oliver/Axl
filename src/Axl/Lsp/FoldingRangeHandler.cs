@@ -35,16 +35,16 @@ public class FoldingRangeHandler : FoldingRangeHandlerBase
         
         foreach (var node in EnumerateAllChildNodes(tree.FileSyntax))
         {
-            if (GetFnOrModuleFoldingRange(node) is FoldingRange foldingRange)
+            if (GetBlockOrNamespaceFoldingRange(node) is FoldingRange foldingRange)
                 yield return foldingRange;
 
             foreach (var range in GetCommentFoldingRanges(node, tree.SourceText))
                 yield return range;
         }
         
-        FoldingRange? GetFnOrModuleFoldingRange(SyntaxNode node)
+        FoldingRange? GetBlockOrNamespaceFoldingRange(SyntaxNode node)
         {
-            if (node.Kind is not (SyntaxKind.ModuleDecl or SyntaxKind.BlockExpr))
+            if (node.Kind is not (SyntaxKind.NamespaceDecl or SyntaxKind.BlockExpr))
                 return null;
             if (node.Range?.IsEmpty != false)
                 return null;

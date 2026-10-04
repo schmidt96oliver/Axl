@@ -7,7 +7,7 @@ public static class SyntaxFacts
         // --- Keywords
         TokenKind.FunKw => "fun",
         TokenKind.VarKw => "var",
-        TokenKind.ModuleKw => "module",
+        TokenKind.NamespaceKw => "namespace",
         TokenKind.ReturnKw => "return",
         TokenKind.IfKw => "if",
         TokenKind.ElseKw => "else",
@@ -61,7 +61,7 @@ public static class SyntaxFacts
         // Short-circuit
         // Shortest keyword is 2 chars (if)
         // Longest keyword is 8 chars (continue)
-        if (text.Length is < 2 or > 8)
+        if (text.Length is < 2 or > 9)
             return null;
         
         // --- Keyword?
@@ -74,7 +74,7 @@ public static class SyntaxFacts
             "false" => TokenKind.FalseKw,
             "if" => TokenKind.IfKw,
             "while" => TokenKind.WhileKw,
-            "module" => TokenKind.ModuleKw,
+            "namespace" => TokenKind.NamespaceKw,
             "return" => TokenKind.ReturnKw,
             "true" => TokenKind.TrueKw,
             "using" => TokenKind.UsingKw,

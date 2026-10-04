@@ -19,7 +19,7 @@ public readonly struct ExpectedSyntax
     public static readonly ExpectedSyntax ParamList = new("parameters ('(')");
     public static readonly ExpectedSyntax String = new("a string");
     public static readonly ExpectedSyntax Param = new("a parameter");
-    public static readonly ExpectedSyntax ModuleName = new("a module name");
+    public static readonly ExpectedSyntax NamespaceName = new("a namespace name");
     public static readonly ExpectedSyntax? Block = new("a block");
     
     private ExpectedSyntax(string description)

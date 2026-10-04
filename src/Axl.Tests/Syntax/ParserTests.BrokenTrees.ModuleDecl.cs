@@ -6,16 +6,16 @@ public partial class ParserTests
 {
     public partial class BrokenTrees
     {
-        public sealed class ModuleDecl
+        public sealed class NamespaceDecl
         {
             [Fact]
             public void MissingSemicolon()
-                => InlineSnapshot.Validate(Tree("module A"), """
-                    ERROR MissingToken@[8, 8): Expected ';'.
+                => InlineSnapshot.Validate(Tree("namespace A"), """
+                    ERROR MissingToken@[11, 11): Expected ';'.
 
 
-                    ModuleDecl
-                    · 'module'
+                    NamespaceDecl
+                    · 'namespace'
                     · IdName 'A'
                     · ??';'
                     """);
@@ -24,9 +24,9 @@ public partial class ParserTests
             public void InFunBody()
                 => InlineSnapshot.Validate(Tree("""
                                                 fun A()
-                                                { module Global; 1; }
+                                                { namespace Global; 1; }
                                                 """), """
-                    ERROR UnexpectedToken@[11, 17): Expected a statement, got 'module'.
+                    ERROR UnexpectedToken@[11, 20): Expected a statement, got 'namespace'.
 
 
                     FunDecl
@@ -36,7 +36,7 @@ public partial class ParserTests
                     · FunBody
                     · · BlockExpr
                     · · · '{'
-                    · · · Garbage 'module'
+                    · · · Garbage 'namespace'
                     · · · ExprStmt
                     · · · · IdName 'Global'
                     · · · · ';'
@@ -47,14 +47,14 @@ public partial class ParserTests
                     """);
             [Fact]
             public void InBlock()
-                => InlineSnapshot.Validate(Tree("{ module Global; }"), """
-                    ERROR UnexpectedToken@[2, 8): Expected a statement, got 'module'.
+                => InlineSnapshot.Validate(Tree("{ namespace Global; }"), """
+                    ERROR UnexpectedToken@[2, 11): Expected a statement, got 'namespace'.
 
 
                     ExprStmt
                     · BlockExpr
                     · · '{'
-                    · · Garbage 'module'
+                    · · Garbage 'namespace'
                     · · ExprStmt
                     · · · IdName 'Global'
                     · · · ';'

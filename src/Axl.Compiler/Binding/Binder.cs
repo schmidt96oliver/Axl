@@ -13,16 +13,16 @@ public sealed class Binder
 {
     private readonly DiagnosticBag _diagnostics;
     private readonly SemanticSideTable _semanticSideTable;
-    private readonly BaseModuleSymbol _baseModule;
+    private readonly BaseNamespaceSymbol _base;
     private readonly FunSymbol _fun;
     
     private readonly Dictionary<FunDeclSyntax, FunSymbol> _funSymbolsByDecl = [];
     private Scope _scope;
     private bool _inLoop = false;
     
-    private Binder(FunSymbol fun, Scope scope, BaseModuleSymbol baseModule, DiagnosticBag diagnosticBag, SemanticSideTable semanticSideTable)
+    private Binder(FunSymbol fun, Scope scope, BaseNamespaceSymbol @base, DiagnosticBag diagnosticBag, SemanticSideTable semanticSideTable)
     {
-        _baseModule = baseModule;
+        _base = @base;
         _diagnostics = diagnosticBag;
         _semanticSideTable = semanticSideTable;
 
@@ -86,27 +86,27 @@ public sealed class Binder
     
     #region Global
 
-    private static Scope CreateGlobalScope(BaseModuleSymbol baseModule)
+    private static Scope CreateGlobalScope(NamespaceSymbol baseNamespace)
     {
         var global = new Scope();
 
-        global.Declare(baseModule);
+        global.Declare(baseNamespace);
 
         // 'Base' is implicitly used
-        foreach (var member in baseModule.Members)
+        foreach (var member in baseNamespace.Members)
             global.Declare(member);
 
         return global;
     }
 
-    public static BoundFile BindFile(FileSyntax syntax, BaseModuleSymbol baseModule)
+    public static BoundFile BindFile(FileSyntax syntax, BaseNamespaceSymbol baseNamespace)
     {
-        var scriptFun = new FunSymbol("", null, [], baseModule.Unit);
+        var scriptFun = new FunSymbol("", null, [], baseNamespace.Unit);
 
         var diagnostics = new DiagnosticBag();
         var semanticSideTable = new SemanticSideTable();
-        var scope = new Scope(parent: CreateGlobalScope(baseModule));
-        var binder = new Binder(scriptFun, scope, baseModule, diagnostics, semanticSideTable);
+        var scope = new Scope(parent: CreateGlobalScope(baseNamespace));
+        var binder = new Binder(scriptFun, scope, baseNamespace, diagnostics, semanticSideTable);
 
         // Forward-declare all fun symbols
         var block = binder.BindBlock(syntax);
@@ -182,7 +182,7 @@ public sealed class Binder
             .ToImmutableArray();
         var returnType = syntax.ReturnTypeAnnotation is not null
             ? BindType(syntax.ReturnTypeAnnotation)
-            : _baseModule.Unit;
+            : _base.Unit;
         
         // Report duplicate parameter errors only on parameters
         // with a non-empty name.
@@ -224,14 +224,14 @@ public sealed class Binder
         foreach (var param in funSymbol.Parameters)
             funScope.Declare(param);
 
-        var funBinder = new Binder(funSymbol, funScope, _baseModule, _diagnostics, _semanticSideTable);
+        var funBinder = new Binder(funSymbol, funScope, _base, _diagnostics, _semanticSideTable);
 
         var body = BindFunBodyBlock(funSymbol, funBinder);
         
         // Check that all code-paths return a value
         if (!body.IsDiverging)
         {
-            if (funSymbol.ReturnType == _baseModule.Unit)
+            if (funSymbol.ReturnType == _base.Unit)
             {
                 // For unit return type, insert an empty return at the end.
                 var returnStmt = new BoundReturn(null);
@@ -262,7 +262,7 @@ public sealed class Binder
             if (!CheckTypeAndReportMismatch(expr, fun.ReturnType))
                 expr = new BoundError(syntax.Body.Expr);
             
-            return new BoundBlock([new BoundReturn(expr)], [], _baseModule.Unit);
+            return new BoundBlock([new BoundReturn(expr)], [], _base.Unit);
         }
 
         if (syntax.Body.Expr is not BlockExprSyntax blockSyntax)
@@ -357,8 +357,8 @@ public sealed class Binder
         
         // Strings and Literals
         NumberLiteralSyntax numberLiteralSyntax => BindNumberLiteral(numberLiteralSyntax),
-        TrueLiteralSyntax => new BoundConst(value: true, type: _baseModule.Bool, syntax),
-        FalseLiteralSyntax => new BoundConst(value: false, type: _baseModule.Bool, syntax),
+        TrueLiteralSyntax => new BoundConst(value: true, type: _base.Bool, syntax),
+        FalseLiteralSyntax => new BoundConst(value: false, type: _base.Bool, syntax),
         StringExprSyntax stringExprSyntax => BindString(stringExprSyntax),
         
         // Operators
@@ -409,15 +409,15 @@ public sealed class Binder
         var parts = syntax.Parts.Select(BindStringPart).ToImmutableArray();
     
         if (parts.Length == 0)
-            parts = [new BoundConst("", _baseModule.String, syntax)];
+            parts = [new BoundConst("", _base.String, syntax)];
         
-        return new BoundStringExpr(parts, _baseModule.String, syntax);
+        return new BoundStringExpr(parts, _base.String, syntax);
     }
     
     private BoundValue BindStringPart(StringPartSyntax syntax)
         => syntax switch
         {
-            StringTextSyntax textSyntax => new BoundConst(textSyntax.TextToken.ProcessedText, _baseModule.String, syntax),
+            StringTextSyntax textSyntax => new BoundConst(textSyntax.TextToken.ProcessedText, _base.String, syntax),
             StringInterpolationSyntax interpolationSyntax => BindStringInterpolation(interpolationSyntax),
         };
     
@@ -427,23 +427,23 @@ public sealed class Binder
         {
             // Empty interpolation means nothing will be added, which is equivalent
             // to an empty text const.
-            return new BoundConst("", _baseModule.String, syntax);
+            return new BoundConst("", _base.String, syntax);
         }
                 
         var boundExpr = BindValue(syntax.Expr);
 
-        if (IsAssignableTo(boundExpr.Type, _baseModule.String))
+        if (IsAssignableTo(boundExpr.Type, _base.String))
             return boundExpr;
         
         // Try to find duck-typed ToString
         if (LookupMethod(boundExpr.Type, "ToString", []) is FunSymbol toStringFun
-            && IsAssignableTo(toStringFun.ReturnType, _baseModule.String))
+            && IsAssignableTo(toStringFun.ReturnType, _base.String))
         {
             return new BoundCall(toStringFun, receiver: boundExpr, arguments: [], syntax.Expr);
         }
         
         // Could not convert to string
-        _diagnostics.ReportError(new Diagnostic.CannotConvert(syntax.Expr, From: boundExpr.Type, To: _baseModule.String));
+        _diagnostics.ReportError(new Diagnostic.CannotConvert(syntax.Expr, From: boundExpr.Type, To: _base.String));
         return new BoundError(syntax);
     }
 
@@ -451,23 +451,23 @@ public sealed class Binder
     {
         var type = syntax.Token.Suffix switch
         {
-            NumberLiteralSuffix.I32 => _baseModule.I32,
-            NumberLiteralSuffix.I64 => _baseModule.I64,
-            NumberLiteralSuffix.F32 => _baseModule.F32,
-            NumberLiteralSuffix.F64 => _baseModule.F64,
+            NumberLiteralSuffix.I32 => _base.I32,
+            NumberLiteralSuffix.I64 => _base.I64,
+            NumberLiteralSuffix.F32 => _base.F32,
+            NumberLiteralSuffix.F64 => _base.F64,
     
-            _ => syntax.Token.HasDecimalPoint ? _baseModule.DefaultFloatType : _baseModule.DefaultIntType
+            _ => syntax.Token.HasDecimalPoint ? _base.DefaultFloatType : _base.DefaultIntType
         };
         
         // Literals like "1.1i32" need to be rejected.
         if (syntax.Token.HasDecimalPoint &&
-            type != _baseModule.F32 && type != _baseModule.F64)
+            type != _base.F32 && type != _base.F64)
         {
             _diagnostics.ReportError(new Diagnostic.SuffixInvalidForDecimalNumber(syntax));
             return new BoundError(syntax);
         }
 
-        if (type == _baseModule.I32)
+        if (type == _base.I32)
         {
             if (!int.TryParse(syntax.Token.Body, out var value))
             {
@@ -479,7 +479,7 @@ public sealed class Binder
             return new BoundConst(value, type, syntax);
         }
 
-        if (type == _baseModule.I64)
+        if (type == _base.I64)
         {
             if (!long.TryParse(syntax.Token.Body, out var value))
             {
@@ -491,13 +491,13 @@ public sealed class Binder
             return new BoundConst(value, type, syntax);
         }
 
-        if (type == _baseModule.F32)
+        if (type == _base.F32)
         {
             var value = float.Parse(syntax.Token.Body, CultureInfo.InvariantCulture);
             return new BoundConst(value, type, syntax);
         }
         
-        if (type == _baseModule.F64)
+        if (type == _base.F64)
         {
             var value = double.Parse(syntax.Token.Body, CultureInfo.InvariantCulture);
             return new BoundConst(value, type, syntax);
@@ -560,16 +560,16 @@ public sealed class Binder
         }
     
         // Type-check against bool
-        if (!CheckTypeAndReportMismatch(left, _baseModule.Bool) ||
-            !CheckTypeAndReportMismatch(right, _baseModule.Bool))
+        if (!CheckTypeAndReportMismatch(left, _base.Bool) ||
+            !CheckTypeAndReportMismatch(right, _base.Bool))
         {
             return new BoundError(syntax);
         }
     
         if (syntax.Operator.Kind is TokenKind.DoubleAmpersand)
-            return new BoundAnd(left, right, _baseModule.Bool, syntax);
+            return new BoundAnd(left, right, _base.Bool, syntax);
         if (syntax.Operator.Kind is TokenKind.DoubleVerticalBar)
-            return new BoundOr(left, right, _baseModule.Bool, syntax);
+            return new BoundOr(left, right, _base.Bool, syntax);
     
         throw new UnreachableException();
     }
@@ -604,13 +604,13 @@ public sealed class Binder
         }
         
         _scope = _scope.Parent!;
-        return new BoundBlock(stmts.DrainToImmutable(), funs, type: _baseModule.Unit, syntax);
+        return new BoundBlock(stmts.DrainToImmutable(), funs, type: _base.Unit, syntax);
     }
 
     private BoundValue BindCondition(ExprSyntax syntax)
     {
         var condition = BindValue(syntax);
-        if (!CheckTypeAndReportMismatch(condition, expected: _baseModule.Bool))
+        if (!CheckTypeAndReportMismatch(condition, expected: _base.Bool))
             condition = new BoundError(syntax);
 
         return condition;
@@ -686,7 +686,7 @@ public sealed class Binder
             if (!CheckTypeAndReportMismatch(expr, _fun.ReturnType))
                 expr = new BoundError(syntax.Expr);
         }
-        else if (_fun.ReturnType != _baseModule.Unit)
+        else if (_fun.ReturnType != _base.Unit)
         {
             _diagnostics.ReportError(new Diagnostic.MissingReturnValue(syntax));
             expr = new BoundError();
@@ -710,7 +710,7 @@ public sealed class Binder
         
         return symbol switch
         {
-            BaseModuleSymbol baseModule => new BoundModuleRef(baseModule, syntax),
+            NamespaceSymbol boundNamespace => new BoundNamespaceRef(boundNamespace, syntax),
             TypeSymbol type => new BoundTypeRef(type, syntax),
 
             FunSymbol fun => new BoundFunRef(fun, receiver: null, syntax),
@@ -760,7 +760,7 @@ public sealed class Binder
         }
 
         var type = CheckTypeAndReportMismatch(value, target.Type)
-            ? _baseModule.Unit
+            ? _base.Unit
             : ErrorTypeSymbol.Instance;
         return new BoundAssign(target, value, type, syntax);
     }
@@ -774,15 +774,15 @@ public sealed class Binder
             BoundFunGroupRef boundFunGroupRef => BindUndefined(boundFunGroupRef.FunGroup),
                 BoundFunRef boundFunRef => BindUndefined(boundFunRef.Fun),
 
-            BoundModuleRef boundModuleRef => BindModuleOrTypeMember(boundModuleRef.Module),
-            BoundTypeRef boundTypeRef => BindModuleOrTypeMember(boundTypeRef.Type),
+            BoundNamespaceRef boundNamespaceRef => BindNamespaceOrTypeMember(boundNamespaceRef.Namespace),
+            BoundTypeRef boundTypeRef => BindNamespaceOrTypeMember(boundTypeRef.Type),
 
             BoundValue boundValue => BindValueMember(boundValue),
 
             BoundStmt => throw new UnreachableException("Stmt can never be the left side of GetMember.")
         };
 
-        BoundNode BindModuleOrTypeMember(ModuleOrTypeSymbol parent)
+        BoundNode BindNamespaceOrTypeMember(NamespaceOrTypeSymbol parent)
         {
             if (syntax.Member.Token.IsMissing)
                 return new BoundError(syntax);
@@ -800,7 +800,7 @@ public sealed class Binder
 
             return memberSymbol switch
             {
-                BaseModuleSymbol baseModule => new BoundModuleRef(baseModule, syntax),
+                NamespaceSymbol @namespace => new BoundNamespaceRef(@namespace, syntax),
                 TypeSymbol type => new BoundTypeRef(type, syntax),
 
                 FunSymbol fun => new BoundFunRef(fun, receiver: null, syntax),
@@ -848,7 +848,7 @@ public sealed class Binder
                 FunSymbol fun => new BoundFunRef(fun, receiver: value, syntax),
                 FunGroupSymbol funGroup => new BoundFunGroupRef(funGroup, receiver: value, syntax),
                 
-                VariableSymbol or BaseModuleSymbol => throw new UnreachableException("Variables and modules are not type members."),
+                VariableSymbol or NamespaceSymbol => throw new UnreachableException("Variables and namespaces are not type members."),
                 TypeSymbol => throw new UnreachableException(),
             };
         }

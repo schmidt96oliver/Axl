@@ -10,7 +10,7 @@ namespace Axl.Compiler.Symbols;
 /// <summary>
 /// Provides ergonomic methods to generate a function with body.
 /// </summary>
-public sealed class FunBuilder(BaseModuleSymbol baseModule)
+public sealed class FunBuilder(BaseNamespaceSymbol baseNamespace)
 {
     private readonly List<ParameterSymbol> _parameters = [];
     private TypeSymbol? _receiverType = null;
@@ -60,7 +60,7 @@ public sealed class FunBuilder(BaseModuleSymbol baseModule)
     
     public BoundReturn Return(BoundValue? expr = null)
     {
-        var exprType = expr?.Type ?? baseModule.Unit;
+        var exprType = expr?.Type ?? baseNamespace.Unit;
         _returnType ??= exprType;
 
         Guard.MustBe(exprType == _returnType);
@@ -69,7 +69,7 @@ public sealed class FunBuilder(BaseModuleSymbol baseModule)
 
     public BoundBlock Block(params ImmutableArray<BoundStmt> stmts)
     {
-        return Set(new BoundBlock(stmts, [], baseModule.Unit));
+        return Set(new BoundBlock(stmts, [], baseNamespace.Unit));
     }
 
     private T Set<T>(T expr)
@@ -105,7 +105,7 @@ public sealed class FunBuilder(BaseModuleSymbol baseModule)
 
         if (!_last.IsDiverging)
         {
-            if (_returnType is null || _returnType == baseModule.Unit)
+            if (_returnType is null || _returnType == baseNamespace.Unit)
             {
                 var block = (BoundBlock)_last;
                 Block([.. block.Stmts, Return()]);
@@ -120,8 +120,8 @@ public sealed class FunBuilder(BaseModuleSymbol baseModule)
 
     public BoundValue Or(BoundValue left, BoundValue right)
     {
-        Guard.MustBe(left.Type == baseModule.Bool && right.Type == baseModule.Bool);
-        return Set(new BoundOr(left, right, baseModule.Bool));
+        Guard.MustBe(left.Type == baseNamespace.Bool && right.Type == baseNamespace.Bool);
+        return Set(new BoundOr(left, right, baseNamespace.Bool));
     }
 
 
@@ -129,13 +129,13 @@ public sealed class FunBuilder(BaseModuleSymbol baseModule)
     
     public BoundStringExpr String(params ImmutableArray<StringPart> parts)
     {
-        Guard.IsState(parts.All(part => part is not BoundValue expr || expr.Type == baseModule.String));
+        Guard.IsState(parts.All(part => part is not BoundValue expr || expr.Type == baseNamespace.String));
         return Set(new BoundStringExpr([
             .. parts.Select(part => part switch
             {
                 BoundValue expr => expr,
-                string str => new BoundConst(str, baseModule.String)
+                string str => new BoundConst(str, baseNamespace.String)
             })
-        ], baseModule.String));
+        ], baseNamespace.String));
     }
 }

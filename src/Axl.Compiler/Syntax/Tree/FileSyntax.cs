@@ -21,16 +21,4 @@ public sealed class FileSyntax(ImmutableArray<SyntaxElement> children)
             _tree = value;
         }
     }
-
-    public IEnumerable<UsingDirectiveSyntax> Usings
-        => Children.OfType<UsingDirectiveSyntax>();   
-    
-    public IEnumerable<MemberSyntax> Members 
-        => Children.OfType<MemberSyntax>();
-    
-    public IEnumerable<StmtSyntax> Stmts 
-        => Children.OfType<StmtSyntax>();
-    
-    public ModuleDeclSyntax? FirstModuleDecl
-        => Children.FirstOfTypeOrNull<ModuleDeclSyntax>();
 }

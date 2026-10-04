@@ -4,7 +4,7 @@ using Axl.Compiler.Syntax;
 
 namespace Axl.Compiler.Symbols;
 
-public sealed class BaseModuleSymbol : ModuleOrTypeSymbol
+public sealed class BaseNamespaceSymbol : NamespaceSymbol
 {
     public override ImmutableArray<Symbol> Members { get; }
 
@@ -20,7 +20,7 @@ public sealed class BaseModuleSymbol : ModuleOrTypeSymbol
     public TypeSymbol DefaultFloatType => F64;
 
 
-    public BaseModuleSymbol()
+    public BaseNamespaceSymbol()
         : base("Base")
     {
         Bool = new TypeSymbol("Bool", () => AddRemainingMembers(GetBoolMembers()));
@@ -208,11 +208,11 @@ public sealed class BaseModuleSymbol : ModuleOrTypeSymbol
     {
         // Search in members first, because we might be adding to the bool type.
         var not = members.OfType<FunSymbol>().FirstOrDefault(fun =>
-                         fun.Name == SyntaxFacts.GetText(TokenKind.Bang) && fun.Parameters.Length == 0 &&
-                         fun.ReceiverType == Bool)
-                     ?? Bool.Members.OfType<FunSymbol>().First(fun =>
-                         fun.Name == SyntaxFacts.GetText(TokenKind.Bang) && fun.Parameters.Length == 0 &&
-                         fun.ReceiverType == Bool);
+                      fun.Name == SyntaxFacts.GetText(TokenKind.Bang) && fun.Parameters.Length == 0 &&
+                      fun.ReceiverType == Bool)
+                  ?? Bool.Members.OfType<FunSymbol>().First(fun =>
+                      fun.Name == SyntaxFacts.GetText(TokenKind.Bang) && fun.Parameters.Length == 0 &&
+                      fun.ReceiverType == Bool);
 
         var equal = members.OfType<FunSymbol>()
             .First(fun =>
@@ -221,19 +221,19 @@ public sealed class BaseModuleSymbol : ModuleOrTypeSymbol
 
         var notEqual = GenerateNotEqual(equal, not);
 
-         if (members.OfType<FunSymbol>()
-                 .FirstOrDefault(fun =>
-                     fun.Name == SyntaxFacts.GetText(TokenKind.LessThan) && fun.Parameters.Length == 1 &&
-                     fun.ReceiverType is not null) is FunSymbol lessThan)
-         {
-             var greaterThan = GenerateGreaterThan(lessThan);
-             var lessThanOrEqual = GenerateComparisonOrEqual(lessThan, equal, TokenKind.LessThanEqual);
-             var greaterThanOrEqual = GenerateComparisonOrEqual(greaterThan, equal, TokenKind.GreaterThanEqual);
+        if (members.OfType<FunSymbol>()
+                .FirstOrDefault(fun =>
+                    fun.Name == SyntaxFacts.GetText(TokenKind.LessThan) && fun.Parameters.Length == 1 &&
+                    fun.ReceiverType is not null) is FunSymbol lessThan)
+        {
+            var greaterThan = GenerateGreaterThan(lessThan);
+            var lessThanOrEqual = GenerateComparisonOrEqual(lessThan, equal, TokenKind.LessThanEqual);
+            var greaterThanOrEqual = GenerateComparisonOrEqual(greaterThan, equal, TokenKind.GreaterThanEqual);
 
-             return [.. members, notEqual, greaterThan, greaterThanOrEqual, lessThanOrEqual];
-         }
+            return [.. members, notEqual, greaterThan, greaterThanOrEqual, lessThanOrEqual];
+        }
 
-         return [.. members, notEqual];
+        return [.. members, notEqual];
     }
 
     private FunSymbol GenerateNotEqual(FunSymbol equal, FunSymbol notFun)

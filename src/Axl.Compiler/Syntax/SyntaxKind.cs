@@ -24,8 +24,9 @@ public enum SyntaxKind
     VarDecl,
     WhileStmt,
     
+    
     // Declarations
-    ModuleDecl,
+    NamespaceDecl,
     FunDecl,
     
     // Literals

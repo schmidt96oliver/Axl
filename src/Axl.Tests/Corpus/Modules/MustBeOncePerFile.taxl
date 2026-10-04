@@ -1,9 +1,9 @@
 ﻿//@check
 
-// Module declarations are allowed only once per file.
+// Namespace declarations are allowed only once per file.
 // This is to avoid any confusion, because multiple flat
-// module declarations are hard to reason about.
+// namespace declarations are hard to reason about.
 
-module A;
-module B;   //~error MultipleModuleDecls
-module C;   //~error MultipleModuleDecls
+namespace A;
+namespace B;   //~error MultipleNamespaceDecls
+namespace C;   //~error MultipleNamespaceDecls

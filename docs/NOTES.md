@@ -3,11 +3,6 @@
 
 **Next:** 
 
-* Errors:
-  * InstanceRequired, CannotCallWithInstance
-
-* replace "BaseModule" with "moduleSymbol" where appropriate
-
 # Roadmap
 
 ## 1. Running scripts (no funs)

@@ -88,7 +88,7 @@ public class SemanticTokensHandler(ILanguageServerFacade facade) : SemanticToken
                     {
                         TypeSymbol => SemanticTokenType.Type,
                         VariableSymbol => SemanticTokenType.Variable,
-                        ModuleOrTypeSymbol => SemanticTokenType.Namespace,
+                        NamespaceOrTypeSymbol => SemanticTokenType.Namespace,
                         _ => (SemanticTokenType?)null
                     };
                     

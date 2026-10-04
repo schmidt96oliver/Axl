@@ -2,8 +2,8 @@
 
 namespace Axl.Compiler.Syntax.Tree;
 
-public sealed class ModuleDeclSyntax(ImmutableArray<SyntaxElement> children)
-    : SyntaxNode(SyntaxKind.ModuleDecl, children)
+public sealed class NamespaceDeclSyntax(ImmutableArray<SyntaxElement> children)
+    : SyntaxNode(SyntaxKind.NamespaceDecl, children)
 {
     public ExprSyntax NameExpr => Children.FirstOfType<ExprSyntax>();
 }

@@ -41,7 +41,7 @@ public class HoverHandler : HoverHandlerBase
         VariableSymbol{IsReadOnly: false} variable => $"var {variable.Name}: {variable.Type.Name}",
         VariableSymbol{IsReadOnly: true} variable => $"let {variable.Name}: {variable.Type.Name}",
         TypeSymbol type => $"type {type.Name}",
-        BaseModuleSymbol => "base module",
+        NamespaceSymbol => "namespace",
         FunSymbol fun => $"fun {fun.Name}{GetParameterText(fun)}{GetFunAnnotationText(fun)}",
         FunGroupSymbol funGroup => $"fun group {funGroup.Name}",
         _ => ""

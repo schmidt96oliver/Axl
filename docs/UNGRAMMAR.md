@@ -1,9 +1,9 @@
 ﻿
 # Top-Level
 
-File            = (Stmt | UsingDirective | ModuleDecl | Member)*
+File            = (Stmt | UsingDirective | NamespaceDecl | Member)*
 
-ModuleDecl      = "module" TypeName ";"
+NamespaceDecl      = "namespace" TypeName ";"
 UsingDirective  = "using" TypeName ";"
 
 ## Member Declarations
