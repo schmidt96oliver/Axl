@@ -3,6 +3,7 @@
 
 **Next:** 
 
+* test `Struct.Field` static access
 
 # Roadmap
 

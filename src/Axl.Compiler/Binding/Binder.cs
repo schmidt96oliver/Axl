@@ -717,6 +717,7 @@ public sealed class Binder
             FunGroupSymbol funGroup => new BoundFunGroupRef(funGroup, receiver: null, syntax),
 
             VariableSymbol variableSymbol => BindVariable(variableSymbol),
+            FieldSymbol => throw new UnreachableException("Fields can only be accessed through types."),
             
             null => BindUndefinedName()
         };
@@ -796,6 +797,12 @@ public sealed class Binder
                 return new BoundError(syntax);
             }
 
+            if (memberSymbol is FieldSymbol)
+            {
+                _diagnostics.ReportError(new Diagnostic.CannotAccessFieldWithoutReceiver(syntax.Member, (FieldSymbol)memberSymbol));
+                return new BoundError(syntax);
+            }
+
             _semanticSideTable.AddResolvedSymbol(syntax.Member.Location, memberSymbol);
 
             return memberSymbol switch
@@ -806,7 +813,8 @@ public sealed class Binder
                 FunSymbol fun => new BoundFunRef(fun, receiver: null, syntax),
                 FunGroupSymbol funGroup => new BoundFunGroupRef(funGroup, receiver: null, syntax),
 
-                VariableSymbol => throw new UnreachableException("Variables are not members.")
+                VariableSymbol => throw new UnreachableException("Variables are not members."),
+                FieldSymbol => throw new UnreachableException("Already handled.")
             };
         }
 
@@ -847,6 +855,7 @@ public sealed class Binder
             {
                 FunSymbol fun => new BoundFunRef(fun, receiver: value, syntax),
                 FunGroupSymbol funGroup => new BoundFunGroupRef(funGroup, receiver: value, syntax),
+                FieldSymbol => throw new NotImplementedException(),     //TODO: Implement field access
                 
                 VariableSymbol or NamespaceSymbol => throw new UnreachableException("Variables and namespaces are not type members."),
                 TypeSymbol => throw new UnreachableException(),

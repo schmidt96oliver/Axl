@@ -1,8 +1,3 @@
-﻿using System.Collections.Immutable;
+﻿namespace Axl.Compiler.Symbols;
 
-namespace Axl.Compiler.Symbols;
-
-public class NamespaceSymbol(string name) : NamespaceOrTypeSymbol(name)
-{
-    public override ImmutableArray<Symbol> Members => [];
-}
+public closed class NamespaceSymbol(string name) : NamespaceOrTypeSymbol(name);

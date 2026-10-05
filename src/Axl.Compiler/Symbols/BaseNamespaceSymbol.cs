@@ -6,8 +6,6 @@ namespace Axl.Compiler.Symbols;
 
 public sealed class BaseNamespaceSymbol : NamespaceSymbol
 {
-    public override ImmutableArray<Symbol> Members { get; }
-
     public TypeSymbol I32 { get; }
     public TypeSymbol I64 { get; }
     public TypeSymbol F32 { get; }
@@ -23,14 +21,26 @@ public sealed class BaseNamespaceSymbol : NamespaceSymbol
     public BaseNamespaceSymbol()
         : base("Base")
     {
-        Bool = new TypeSymbol("Bool", () => AddRemainingMembers(GetBoolMembers()));
-
-        I32 = new TypeSymbol("I32", () => AddRemainingMembers(GetI32Members()));
-        I64 = new TypeSymbol("I64", () => AddRemainingMembers(GetI64Members()));
-        F32 = new TypeSymbol("F32", () => AddRemainingMembers(GetF32Members()));
-        F64 = new TypeSymbol("F64", () => AddRemainingMembers(GetF64Members()));
-        String = new TypeSymbol("String", () => AddRemainingMembers(GetStringMembers()));
-        Unit = new TypeSymbol("Unit", () => AddRemainingMembers(GetUnitMembers()));
+        //TODO: Make Unit non-primitive
+        
+        Bool = new StructSymbol("Bool", isPrimitive: true);
+        String = new StructSymbol("String", isPrimitive: true);
+        I32 = new StructSymbol("I32", isPrimitive: true);
+        I64 = new StructSymbol("I64", isPrimitive: true);
+        F32 = new StructSymbol("F32", isPrimitive: true);
+        F64 = new StructSymbol("F64", isPrimitive: true);
+        Unit = new StructSymbol("Unit", isPrimitive: true);
+        
+        // Bool members need to be generated first, because
+        // generation will look for ! operator.
+        Bool.Members = AddRemainingMembers(GetBoolMembers());
+        
+        I32.Members = AddRemainingMembers(GetI32Members());
+        I64.Members = AddRemainingMembers(GetI64Members());
+        F32.Members = AddRemainingMembers(GetF32Members());
+        F64.Members = AddRemainingMembers(GetF64Members());
+        String.Members = AddRemainingMembers(GetStringMembers());
+        Unit.Members = AddRemainingMembers(GetUnitMembers());
 
         var funs = GeneratePrintFuns(I32, I64, F32, F64, Bool);
         Members = [I32, I64, F32, F64, Bool, String, Unit, .. funs];

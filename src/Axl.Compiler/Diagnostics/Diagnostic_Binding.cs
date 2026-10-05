@@ -317,4 +317,10 @@ public partial record Diagnostic
         public override ImmutableArray<SourceLocation> Locations => [BoundNode.Syntax!.Location];
         public override string Message => $"Expected a value.";
     }
+
+    public sealed record CannotAccessFieldWithoutReceiver(SyntaxNode Syntax, FieldSymbol FieldSymbol) : Error
+    {
+        public override ImmutableArray<SourceLocation> Locations => [Syntax.Location];
+        public override string Message => $"Cannot access field '{FieldSymbol.Name}' in static context.";
+    }
 }
