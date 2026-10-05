@@ -859,6 +859,20 @@ public sealed class Binder
         var callee = BindExpr(syntax.Callee);
         var arguments = syntax.ArgumentExprs.Select(BindValue).ToImmutableArray();
 
+        //TODO: Implement named arguments
+        var hasNamedArg = false;
+        foreach (var argSyntax in syntax.ArgList.Arguments)
+        {
+            if (argSyntax.IsNamed)
+            {
+                hasNamedArg = true;
+                _diagnostics.ReportError(new Diagnostic.UnsupportedFeature(argSyntax, "Named arguments are not yet implemented."));
+            }
+        }
+
+        if (hasNamedArg)
+            return new BoundError(syntax);
+        
         ImmutableArray<FunSymbol> calleeCandidates;
         BoundValue? receiver;
 

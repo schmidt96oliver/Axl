@@ -260,7 +260,17 @@ public partial class Parser
 
         MarkClose EnsureArg(Anchor argAnchor)
         {
+            // Arg can be "name = EXPR" or "EXPR"
+            
             var arg = _scanner.Open();
+            
+            if (_scanner.IsAt(TokenKind.Identifier) && _scanner.Peek(1).Kind is TokenKind.Equal)
+            {
+                // Named argument
+                _scanner.EatInto(SyntaxKind.IdName);
+                _scanner.EatKnown(TokenKind.Equal);
+            }
+            
             EnsureExpr(argAnchor);
             return _scanner.Close(arg, SyntaxKind.Arg);
         }
