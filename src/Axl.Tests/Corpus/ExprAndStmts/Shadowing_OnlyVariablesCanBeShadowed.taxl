@@ -22,3 +22,8 @@ let Test = 1;       //~error CannotShadow
 }
 fun Other() { let Test = 1; }
 if (true) { let Test = 2; }
+
+
+let StructTest = 1;     //~error CannotShadow
+struct StructTest;
+let StructTest = 1;     //~error CannotShadow

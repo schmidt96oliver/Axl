@@ -1,0 +1,8 @@
+﻿//@check
+
+// The point here is, that members must be fully initialized before
+// fun parameter types are bound. Otherwise, there will be an exception.
+
+struct Test { pub X: I32; }
+
+fun Bar(a: Test.X) { }      //~error CannotAccessFieldWithoutReceiver

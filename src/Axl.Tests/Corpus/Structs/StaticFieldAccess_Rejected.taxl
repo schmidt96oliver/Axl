@@ -1,0 +1,7 @@
+﻿//@check
+
+// Fields must be accessed through an instance.
+
+struct Test { pub X: I32; }
+
+let a = Test.X;     //~error CannotAccessFieldWithoutReceiver

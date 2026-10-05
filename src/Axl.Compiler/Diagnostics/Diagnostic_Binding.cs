@@ -323,4 +323,27 @@ public partial record Diagnostic
         public override ImmutableArray<SourceLocation> Locations => [Syntax.Location];
         public override string Message => $"Cannot access field '{FieldSymbol.Name}' in static context.";
     }
+
+    public sealed record AlreadyDeclared(ImmutableArray<Symbol> OffendingSymbols) : Error
+    {
+        public override ImmutableArray<SourceLocation> Locations
+            // Squiggle the name and parameter list, since they are at fault.
+            =>
+            [
+                .. OffendingSymbols.Where(symbol => GetDeclarationNameSyntax(symbol) is not null)
+                    .Select(symbol => GetDeclarationNameSyntax(symbol)!.Location)
+            ];
+
+        private static SyntaxElement? GetDeclarationNameSyntax(Symbol symbol) => symbol switch
+        {
+            StructSymbol { DeclarationSyntax: not null } structSymbol => structSymbol.DeclarationSyntax.Name,
+            FunSymbol { DeclarationSyntax: not null } funSymbol => funSymbol.DeclarationSyntax.Name,
+            FieldSymbol { DeclarationSyntax: not null } fieldSymbol => fieldSymbol.DeclarationSyntax.Name,
+            _ => null
+        };
+        
+        public override string LocationLabel => "Also declared here.";
+
+        public override string Message => $"'{OffendingSymbols[0].Name}' is already declared.";
+    }
 }

@@ -3,7 +3,9 @@
 
 **Next:** 
 
-* test `Struct.Field` static access
+* check cyclic self-references (recursive)
+* bind initialization
+* bind field access
 
 # Roadmap
 
@@ -29,7 +31,7 @@
 
 ## 3. Structs (in script)
 One type (maybe struct) inside scripts.
-* [ ] Fields, pub/default private
+* [x] Fields, pub/default private
 * [ ] Initialization 
   * [ ] Fields must be named arguments (Can be omitted, if param name is the same as argument)
   * [ ] Reject, if any field is private
@@ -39,7 +41,7 @@ One type (maybe struct) inside scripts.
   * [ ] chained assignment mutates in place through `var`, rejected through `let`
 * [ ] Copy semantics
 * [ ] Cyclic references in fields are disallowed. Also nested.
-* [ ] Cannot shadow funs, variables
+* [x] Cannot shadow funs, variables
 * [ ] Empty structs; Unit is non-primitive empty struct; braces not required
 
 * [ ] `var`/non-var methods

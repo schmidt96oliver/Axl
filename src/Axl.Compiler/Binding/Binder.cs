@@ -109,11 +109,19 @@ public sealed class Binder
         var binder = new Binder(scriptFun, scope, baseNamespace, diagnostics, semanticSideTable);
 
         // Forward-declare all fun symbols
+        // Declare
+            // Declare structs
+            // Declare funs
+            // Report "already declared"
+            // Group funs
+        // Bind struct bodies
+        // Bind fun and script bodies
+        
         var block = binder.BindBlock(syntax);
 
         //TODO: Move to BindFunBody, so that everything follows the same logic.
         var returnStmt = new BoundReturn(null);
-        block = new BoundBlock([.. block.Stmts, returnStmt], block.LocalFuns, block.Type, block.Syntax);
+        block = new BoundBlock([.. block.Stmts, returnStmt], block.LocalMembers, block.Type, block.Syntax);
         scriptFun.Body = block;
 
         return new BoundFile(scriptFun, diagnostics.Drain(), semanticSideTable);
@@ -123,14 +131,60 @@ public sealed class Binder
     
     #region Members
 
-    private ImmutableArray<FunSymbol> BindAllFunSymbols(IEnumerable<FunDeclSyntax> syntaxes)
+    private ImmutableArray<Symbol> DeclareMembers(ImmutableArray<SyntaxNode> syntaxes)
+    {
+        var structs = syntaxes.OfType<StructDeclSyntax>().Select(BindStructSymbol).ToImmutableArray();
+        
+        foreach (var structSymbol in structs)
+            _scope.Declare(structSymbol);
+
+        foreach (var structSymbol in structs)
+            DeclareStructMembers(structSymbol);
+        
+        //TODO: Check self-referential fields
+        
+        var funs = syntaxes.OfType<FunDeclSyntax>().Select(BindFunSymbol).ToImmutableArray();
+
+        ReportAlreadyDeclaredSymbolErrors(structs, funs, out var alreadyDeclaredFuns);
+
+        var funGroups = GroupFunSymbols(funs, alreadyDeclaredFuns);
+        foreach (var funGroup in funGroups)
+            _scope.Declare(funGroup);
+
+        //TODO: Bind struct method/static method bodies here
+        
+        return [.. structs, .. funGroups];
+    }
+
+    private void ReportAlreadyDeclaredSymbolErrors(ImmutableArray<StructSymbol> structs, ImmutableArray<FunSymbol> funs, out ImmutableArray<FunSymbol> alreadyDeclaredFuns)
+    {
+        // Funs must not report "already declared" against each other, because
+        // that will be done during grouping. So only check struct <-> struct and struct <-> fun.
+
+        var duplicateArrays = structs
+            .Where(s => s.Name is not "")
+            .GroupBy(s => s.Name)
+            .Select(grp => grp.ToImmutableArray())
+            .Select(structGrp => (ImmutableArray<Symbol>)[..structGrp, ..funs.Where(fun => fun.Name == structGrp[0].Name)])
+            .Where(grp => grp.Length > 1);
+
+        var alreadyDeclaredFunsBuilder = ImmutableArray.CreateBuilder<FunSymbol>();
+        
+        foreach (var duplicateArray in duplicateArrays)
+        {
+            _diagnostics.ReportError(new Diagnostic.AlreadyDeclared(duplicateArray));
+            alreadyDeclaredFunsBuilder.AddRange(duplicateArray.OfType<FunSymbol>());
+        }
+
+        alreadyDeclaredFuns = alreadyDeclaredFunsBuilder.DrainToImmutable();
+    }
+
+    private ImmutableArray<Symbol> GroupFunSymbols(ImmutableArray<FunSymbol> funs, ImmutableArray<FunSymbol> alreadyDeclaredFuns)
     {
         // Declare funs with a valid name and group them if necessary.
         // Funs with empty names cannot be referenced from source and
         // would just clutter lookup.
 
-        var funs = syntaxes.Select(BindFunSymbol).ToImmutableArray();
-        
         var groupsOrSingleByName = funs
             .Where(fun => fun.Name.Length > 0)
             .GroupBy(fun => fun.Name)
@@ -156,8 +210,9 @@ public sealed class Binder
                 if (sameSignature.Length > 1)
                 {
                     // Errors in the signature should not report another error.
-                    var duplicatesToReport = sameSignature.Where(fun =>
-                            fun.ParameterTypes.All(paramType => paramType is not ErrorTypeSymbol))
+                    var duplicatesToReport = sameSignature
+                        .Where(fun => !alreadyDeclaredFuns.Contains(fun) &&
+                                      fun.ParameterTypes.All(paramType => paramType is not ErrorTypeSymbol))
                         .ToImmutableArray();
                     
                     if (duplicatesToReport.Length > 1)
@@ -168,12 +223,53 @@ public sealed class Binder
             }
         }
 
-        // Declare symbols
-        foreach (var symbol in groupsOrSingleByName)
-            _scope.Declare(symbol);
-
-        return funs;
+        return groupsOrSingleByName;
     }
+
+
+    private StructSymbol BindStructSymbol(StructDeclSyntax syntax)
+    {
+        var symbol = new StructSymbol(syntax.Name.Identifier, isPrimitive: false, syntax);
+        if (symbol.Name.Length > 0)
+            _semanticSideTable.AddResolvedSymbol(syntax.Name.Location, symbol);
+        return symbol;
+    }
+    
+    private void DeclareStructMembers(StructSymbol structSymbol)
+    {
+        Debug.Assert(structSymbol.DeclarationSyntax is not null);
+        var members = structSymbol.DeclarationSyntax.Body?.Children
+            .OfType<FieldDeclSyntax>()
+            .Select(Symbol (fieldSyntax) => BindField(structSymbol, fieldSyntax))
+            .ToImmutableArray() ?? [];
+        
+        // Report already declared members
+        var duplicateArrays = members
+            .Where(s => s.Name is not "")
+            .GroupBy(s => s.Name)
+            .Select(grp => grp.ToImmutableArray())
+            .Where(grp => grp.Length > 1);
+
+        foreach (var duplicateArray in duplicateArrays)
+            _diagnostics.ReportError(new Diagnostic.AlreadyDeclared(duplicateArray));
+
+        structSymbol.Members = members;
+    }
+
+    private FieldSymbol BindField(StructSymbol structSymbol, FieldDeclSyntax syntax)
+    {
+        var isPub = syntax.PubKw is not null;
+        var type = BindType(syntax.TypeExpr);
+        var symbol = new FieldSymbol(syntax.Name.Token.Identifier, isPub, structSymbol, type, syntax);
+        if (symbol.Name.Length > 0)
+            _semanticSideTable.AddResolvedSymbol(syntax.Name.Location, symbol);
+        return symbol;
+    }
+
+    
+    
+    
+    
 
     private FunSymbol BindFunSymbol(FunDeclSyntax syntax)
     {
@@ -235,7 +331,7 @@ public sealed class Binder
             {
                 // For unit return type, insert an empty return at the end.
                 var returnStmt = new BoundReturn(null);
-                body = new BoundBlock([.. body.Stmts, returnStmt], body.LocalFuns, body.Type, body.Syntax);
+                body = new BoundBlock([.. body.Stmts, returnStmt], body.LocalMembers, body.Type, body.Syntax);
             }
             else
             {
@@ -582,8 +678,12 @@ public sealed class Binder
     {
         _scope = new Scope(parent: _scope);
 
-        // Forward-declare all fun symbols
-        var funs = BindAllFunSymbols(syntax.Children.OfType<FunDeclSyntax>());
+        // Forward-declare all members.
+        // Structs are just selected here, because file syntax
+        // runs through this method as well.
+        var members = DeclareMembers([
+            .. syntax.Children.OfType<SyntaxNode>().Where(s => s is FunDeclSyntax or StructDeclSyntax)
+        ]);
 
         var stmts = ImmutableArray.CreateBuilder<BoundStmt>();
         foreach (var node in syntax.SyntaxNodes())
@@ -596,7 +696,11 @@ public sealed class Binder
                 case FunDeclSyntax funDecl:
                     BindFunBody(funDecl);
                     break;
-
+                
+                case StructDeclSyntax:
+                    // Structs are handled entirely before binding block content.
+                    break;
+                
                 default:
                     _diagnostics.ReportError(new Diagnostic.UnsupportedFeature(node));
                     break;
@@ -604,7 +708,7 @@ public sealed class Binder
         }
         
         _scope = _scope.Parent!;
-        return new BoundBlock(stmts.DrainToImmutable(), funs, type: _base.Unit, syntax);
+        return new BoundBlock(stmts.DrainToImmutable(), members, type: _base.Unit, syntax);
     }
 
     private BoundValue BindCondition(ExprSyntax syntax)

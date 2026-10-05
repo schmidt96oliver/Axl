@@ -1,0 +1,16 @@
+﻿//@check
+
+// Structs may not be declared multiple times, independent of
+// their content. 
+
+struct A;                //~error AlreadyDeclared
+struct A { X: I32; }     //~error AlreadyDeclared
+struct A { Y: F64; }     //~error AlreadyDeclared
+
+// Funs cannot use the same name, independent of their signature.
+// There should be no additional "already declared with same signature" errors.
+
+struct B;               //~error AlreadyDeclared
+fun B() { }             //~error AlreadyDeclared
+fun B(a: I32) { }       //~error AlreadyDeclared
+fun B(b: I32) { }       //~error AlreadyDeclared
