@@ -1,0 +1,13 @@
+﻿//@run
+//= ABCD
+
+// Arguments are evaluated in the order they are written.
+
+Test(A(), B(), C(), D());
+
+fun Test(a: Bool, b: Bool, c: Bool, d: Bool) { }
+
+fun A(): Bool { Print("A"); return true; }
+fun B(): Bool { Print("B"); return true; }
+fun C(): Bool { Print("C"); return true; }
+fun D(): Bool { Print("D"); return true; }

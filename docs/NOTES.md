@@ -3,6 +3,7 @@
 
 **Next:** 
 
+
 # Roadmap
 
 ## 1. Running scripts (no funs)
@@ -23,45 +24,71 @@
 * [x] Reject captured variables
 * [x] Definite Return Analysis (needs MIR or ad-hoc)
 * [x] Compiler generated versions of `!=, <=, >, >=` from `==, <`
-* [ ] ?? Named arguments
+* [ ] Named arguments
 
-## 3. Type (in script)
+## 3. Structs (in script)
 One type (maybe struct) inside scripts.
-* [ ] Initialization
-* [ ] Fields
-* [ ] (Static) fun and methods
-* [ ] explicit and implicit `self`
+* [ ] Fields, pub/default private
+* [ ] Initialization 
+  * [ ] Fields must be named arguments (Can be omitted, if param name is the same as argument)
+  * [ ] Reject, if any field is private
+  * [ ] Reject for primitves
+* [ ] Fields access and assignment through `var`
+  * [ ] rejected through `let`
+  * [ ] chained assignment mutates in place through `var`, rejected through `let`
+* [ ] Copy semantics
+* [ ] Cyclic references in fields are disallowed. Also nested.
+* [ ] Cannot shadow funs, variables
+* [ ] Empty structs; Unit is non-primitive empty struct; braces not required
+
+* [ ] `var`/non-var methods
+  * [ ] only `pub` can be called from outside
+  * [ ] explicit `self`
+  * [ ] reject field mutation in non-var context
+  * [ ] non-var can only call non-var methods through `self`
+  * [ ] `var fun` can only be called through `var`. Also nested cases.
+  * [ ] implicit `self`
+  * [ ] local funs become methods as well (`self` is captured)
+
+* [ ] `static fun`s
+  * [ ] only `pub` can be called from outside
 * [ ] User-declared operators + generation of `!=, <=, >, >=` from `==, <`
 * [ ] User-declared ToString
-* [ ] `pub` visibility
-* [ ] Chained field access mutates in place
-* ?? Member generation
+
+Stretch goals
+* [ ] Getter funs
+* [ ] Default field values
+* [ ] `static let` constants
+* [ ] `@derive(==)` and `@derive(ToString)`
+* [ ] Overloaded construction
+* [ ] Nested structs (beware access through instance: `instance.SubType` must be rejected)
 
 * Pointers to structs: Only of `self` and chained fields
+* private means: Only visible inside struct body
+* Rules achieved by: BoundSelf.IsPlace = true; BoundSelf.IsAssignable = is var fun
+* bind eager
+    1. BindStructSymbol declaration
+    2. BindStructMembers
+       1. Bind all member (fields, funs, nested structs) declarations
+       2. Bind all member (struct / fun) bodies
 
-* Cyclic Member ideas:
-  (a) Member factory delegate (current BaseModule design)
-  (b) Pass a binder instance to Symbol
-  (c) Have Symbol retrieve Binder
-  (d) Mutable .Members set eagerly in a separate pass
-
-## 4. Modules and multiple files
-* [ ] Rename "module" -> "namespace". A module implies a unit of compilation. Namespaces just disambiguate names
-
-* [ ] Modules visible anywhere
+## 4. Namespaces and multiple files
+* [ ] Namespaces visible anywhere
 * [ ] `pub` visibility
 * [ ] Taxl handles multiple files
 * [ ] LSP manages Compilation objects
 * [ ] Using directives
 
-## 5. `Base` module as Axl-Code
+## 5. `Base` namespace as Axl-Code
 * [ ] `@intrinsic` and `@primitive` annotations
-* [ ] BaseModuleSymbol searches for correct symbols
+  * `@primitive(I32)` mapped to PrimitiveKind on struct
+  * `@intrinsic` maps receiver and params to PrimitiveKind (instead of type name)
+* [ ] BaseNamespaceSymbol searches for correct symbols
 * [ ] IntrinsicLookup checks signatures
-* [ ] Replace entire BaseModuleSymbol with axl text :)).
+* [ ] Replace entire BaseNamespaceSymbol with axl text :)).
 
 # Little proposals
-- LSP: Make Serial (see Omnisharp) and weave CancellationToken to avoid concurrency awkwardness.
+* LSP: Make Serial (see Omnisharp) and weave CancellationToken to avoid concurrency awkwardness.
 * Axl: Named arguments as `callee(parameter = value, param2 = value2)`
 
 # Proposals

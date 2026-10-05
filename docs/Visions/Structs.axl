@@ -1,0 +1,52 @@
+﻿struct Vec2 
+{
+    // Fields can be marked pub. Private by default.
+    pub x: F64;
+    pub y: F64;
+    
+    // Static funs
+    pub static fun Splat(v: F64): Vec2 
+        = Vec2(x = v, y = v);
+    // Initialization through named parameters (to make sure that fields can be reordered)
+
+
+    // Normal funs cannot mutate the struct.
+    // Self is explicit as well as implicit.
+    pub fun Dot(other: Vec2): F64 
+            = self.x * other.x + y * other.y;
+
+    // Var funs allow mutating the struct itself.
+    pub var fun Scale(factor: F64) 
+    {
+        x = x * factor;
+        y = y * factor;
+    }
+    
+    // ---- Stretch goals:
+     // Funs without parenthesis will be getters.
+        // Use as vec.Length;
+        pub fun Length: F64 
+            = sqrt(x * x + y * y);
+            
+    // Default values are possible.
+    pub y: F64 = 0.0;
+    
+    // Static constants with const initializers
+    pub static let Zero 
+         = Vec2(x=0, y=0);
+}
+
+
+struct Email 
+{
+    // Private fields are not accessible from the outside world
+    value: string
+
+    pub fun Value: String = value;
+
+    pub static fun Parse(text: String): Email? 
+    {
+        if (!text.Contains("@")) return null
+        return Email(value = text)
+    }
+}

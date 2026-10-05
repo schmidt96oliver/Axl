@@ -1,0 +1,12 @@
+﻿//@run
+//= A
+//= AB
+
+// || only evaluates the right operand, if the first one is true.
+
+if (A() || B()) { }
+PrintLine();
+if (!A() || B()) { }
+
+fun A(): Bool { Print("A"); return true; }
+fun B(): Bool { Print("B"); return true; }
