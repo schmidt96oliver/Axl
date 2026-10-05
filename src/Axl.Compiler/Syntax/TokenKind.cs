@@ -20,6 +20,8 @@ public enum TokenKind
     BreakKw,
     ContinueKw,
     UsingKw,
+    StructKw,
+    PubKw,
     
     // --- Literals
     NumberLiteral,

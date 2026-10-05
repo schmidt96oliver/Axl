@@ -80,7 +80,9 @@ public sealed class LexerTests
 
     [Fact]
     public void Keywords()
-        => InlineSnapshot.Validate(NoWhitespace("let fun var namespace return if else while break continue true false using"), """
+        => InlineSnapshot.Validate(NoWhitespace("struct pub let fun var namespace return if else while break continue true false using"), """
+            - StructKw: "struct"
+            - PubKw: "pub"
             - LetKw: "let"
             - FunKw: "fun"
             - VarKw: "var"

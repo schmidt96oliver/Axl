@@ -28,6 +28,8 @@ public enum SyntaxKind
     // Declarations
     NamespaceDecl,
     FunDecl,
+    FieldDecl,
+    StructDecl,
     
     // Literals
     TrueLiteral,
@@ -64,5 +66,6 @@ public enum SyntaxKind
     TypeAnnotationClause,
     InitializerClause,
     FunBody,
-    ConditionClause
+    ConditionClause,
+    StructBody,
 }

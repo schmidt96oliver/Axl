@@ -1,13 +1,13 @@
 ﻿
 # Top-Level
 
-File            = (Stmt | UsingDirective | NamespaceDecl | Member)*
+File            = (Stmt | UsingDirective | NamespaceDecl | FnDecl | StructDecl)*
 
 NamespaceDecl      = "namespace" TypeName ";"
 UsingDirective  = "using" TypeName ";"
 
 ## Member Declarations
-MemberDecl       = FnDecl
+MemberDecl       = FnDecl | StructDecl
                 
 FunDecl           = "fun" IdName ParamList TypeAnnotation? FunBody
 FunBody          = "=>" Expr ";"
@@ -16,6 +16,10 @@ FunBody          = "=>" Expr ";"
 ParamList       = "(" ")"
                 | "(" Param ("," Param)* ")"
 Param           = IdName TypeAnnotation?
+
+StructDecl      = "struct" IdName (StructBody | ";")
+StructBody      = "{" FieldDecl* "}"
+FieldDecl       = "pub"? IdName TypeAnnotation ";"
 
 ## Statements
 Stmt        = ExprStmt
@@ -41,7 +45,7 @@ Expr        = BlockExpr
             | GetMember
             | AssignExpr
 
-BlockExpr   = "{" (Stmt | Member)* "}"
+BlockExpr   = "{" (Stmt | FnDecl)* "}"
 
 IfExpr      = "if" (Expr) Expr (";"? "else" Expr)
 

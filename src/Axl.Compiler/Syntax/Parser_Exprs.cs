@@ -305,7 +305,7 @@ public partial class Parser
             return _scanner.Close(block, SyntaxKind.BlockExpr);
         }
 
-        var blockAnchor = anchor | FirstSet.NonExprStmt | FirstSet.Member
+        var blockAnchor = anchor | FirstSet.NonExprStmt | TokenKind.FunKw
                           | TokenKind.CloseBrace | TokenKind.Semicolon;
 
         foreach (var _ in _scanner.MustEatEachIteration())
@@ -313,8 +313,8 @@ public partial class Parser
             // --- Statement or FunDecl
             if (_scanner.IsAt(FirstSet.Stmt))
                 EatStmt(blockAnchor);
-            else if (_scanner.IsAt(FirstSet.Member))
-                EatMember(blockAnchor);
+            else if (_scanner.IsAt(TokenKind.FunKw))
+                EatFunDecl(blockAnchor);
             
             // --- lone ";" special case
             else if (_scanner.IsAt(TokenKind.Semicolon))

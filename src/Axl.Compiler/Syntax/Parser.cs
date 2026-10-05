@@ -49,14 +49,16 @@ public partial class Parser
         // Don't anchor on namespace or using, because these are expected at
         // the start of a file, and it makes sense to eat them as garbage
         // inside each grammar.
-        var fileAnchor = Anchor.From(FirstSet.Member) | FirstSet.NonExprStmt;
+        var fileAnchor = Anchor.Forced | TokenKind.FunKw | TokenKind.StructKw | FirstSet.NonExprStmt;
 
         foreach (var _ in _scanner.MustEatEachIteration())
         {
             if (_scanner.IsAt(FirstSet.Stmt))
                 EatStmt(fileAnchor | TokenKind.Semicolon);
-            else if (_scanner.IsAt(FirstSet.Member))
-                EatMember(fileAnchor);
+            else if (_scanner.IsAt(TokenKind.FunKw))
+                EatFunDecl(fileAnchor);
+            else if (_scanner.IsAt(TokenKind.StructKw))
+                EatStructDecl(fileAnchor);
             else if (_scanner.IsAt(TokenKind.NamespaceKw))
                 EatNamespaceDecl();
             else if (_scanner.IsAt(TokenKind.UsingKw))
@@ -70,7 +72,8 @@ public partial class Parser
                 var recoverAnchor = Anchor.From(FirstSet.Stmt)
                                     | TokenKind.NamespaceKw
                                     | TokenKind.UsingKw
-                                    | FirstSet.Member 
+                                    | TokenKind.FunKw
+                                    | TokenKind.StructKw
                                     | TokenKind.Semicolon;
                 var recovered = RecoverToAndReport(recoverAnchor, ExpectedSyntax.Stmt);
 

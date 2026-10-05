@@ -36,11 +36,6 @@ public partial class Parser
         public static readonly TokenSet Stmt = Expr | NonExprStmt;
 
         
-        public static readonly TokenSet FnDecl = TokenSet.Of(TokenKind.FunKw);
-
-        public static readonly TokenSet Member = FnDecl;
-
-        
         public static readonly TokenSet StringPart = TokenSet.Of(
             TokenKind.StringStart, TokenKind.StringText, TokenKind.StringEnd);
 
@@ -48,5 +43,6 @@ public partial class Parser
         public static readonly TokenSet StringContinuation = TokenSet.Of(
             TokenKind.StringText, TokenKind.StringEnd, TokenKind.OpenBrace);
 
+        public static readonly TokenSet FieldDecl = TokenSet.Of(TokenKind.PubKw, TokenKind.Identifier);
     }
 }

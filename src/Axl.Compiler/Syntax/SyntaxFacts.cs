@@ -16,6 +16,8 @@ public static class SyntaxFacts
         TokenKind.ContinueKw => "continue",
         TokenKind.UsingKw => "using",
         TokenKind.LetKw => "let",
+        TokenKind.StructKw => "struct",
+        TokenKind.PubKw => "pub",
     
         // --- Literals
         TokenKind.StringStart => "\"",
@@ -80,6 +82,8 @@ public static class SyntaxFacts
             "using" => TokenKind.UsingKw,
             "var" => TokenKind.VarKw,
             "let" => TokenKind.LetKw,
+            "struct" => TokenKind.StructKw,
+            "pub" => TokenKind.PubKw,
 
             _ => null
         };

@@ -15,12 +15,12 @@ public readonly struct ExpectedSyntax
     public static readonly ExpectedSyntax Expr = new("an expression");
     public static readonly ExpectedSyntax Stmt = new("a statement");
     public static readonly ExpectedSyntax TypeName = new("a type name");
-    public static readonly ExpectedSyntax Member = new("a member ('fun')");
     public static readonly ExpectedSyntax ParamList = new("parameters ('(')");
     public static readonly ExpectedSyntax String = new("a string");
     public static readonly ExpectedSyntax Param = new("a parameter");
     public static readonly ExpectedSyntax NamespaceName = new("a namespace name");
-    public static readonly ExpectedSyntax? Block = new("a block");
+    public static readonly ExpectedSyntax Block = new("a block");
+    public static readonly ExpectedSyntax FieldName = new("a field name");
     
     private ExpectedSyntax(string description)
         => DisplayName = description;
@@ -35,7 +35,6 @@ public readonly struct ExpectedSyntax
     /// </summary>
     public string DisplayName { get; }
 
-    
 
 
     public override string ToString() => DisplayName;

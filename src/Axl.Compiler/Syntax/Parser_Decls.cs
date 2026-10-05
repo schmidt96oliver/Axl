@@ -7,14 +7,72 @@ namespace Axl.Compiler.Syntax;
 
 public partial class Parser
 {
-    private MarkClose EatMember(Anchor anchor)
+    private MarkClose EatStructDecl(Anchor anchor)
     {
-        Debug.Assert(_scanner.IsAt(FirstSet.Member));
+        var structDecl = _scanner.Open();
+        _scanner.EatKnown(TokenKind.StructKw);
 
-        if (_scanner.IsAt(TokenKind.FunKw))
-            return EatFunDecl(anchor);
+        EnsureIdName();
 
-        throw new UnreachableException($"{nameof(FirstSet.Member)} too large");
+        if (_scanner.IsAt(TokenKind.Semicolon))
+            _scanner.Eat();
+        else
+            EnsureStructBody(anchor);
+
+        return _scanner.Close(structDecl, SyntaxKind.StructDecl);
+    }
+
+    private MarkClose EnsureStructBody(Anchor anchor)
+    {
+        var body = _scanner.Open();
+        EnsureToken(TokenKind.OpenBrace);
+
+        var bodyAnchor = anchor | TokenKind.PubKw | TokenKind.CloseBrace | TokenKind.Semicolon;
+        
+        foreach (var _ in _scanner.MustEatEachIteration())
+        {
+            // --- Field
+            if (_scanner.IsAt(FirstSet.FieldDecl))
+                EatFieldDecl();
+
+            // --- lone ";" special case
+            else if (_scanner.IsAt(TokenKind.Semicolon))
+                _scanner.EatIntoGarbageAndReport(ExpectedSyntax.Stmt);
+            
+            // --- Closing tokens
+            else if (_scanner.IsAt(TokenKind.CloseBrace))
+                break;
+            else if (_scanner.IsAt(anchor))
+                break;
+
+            // --- Garbage
+            else
+            {
+                var recovered = RecoverToAndReport(bodyAnchor | FirstSet.FieldDecl, ExpectedSyntax.Stmt);
+
+                // If it's followed by a ';', eat it into an error silently.
+                if (recovered && _scanner.IsAt(TokenKind.Semicolon))
+                    _scanner.EatInto(SyntaxKind.Garbage);
+            }
+        }
+        
+        EnsureToken(TokenKind.CloseBrace);
+        return _scanner.Close(body, SyntaxKind.StructBody);
+    }
+
+    private MarkClose EatFieldDecl()
+    {
+        Debug.Assert(_scanner.IsAt(FirstSet.FieldDecl));
+
+        var field = _scanner.Open();
+        
+        if (_scanner.IsAt(TokenKind.PubKw))
+            _scanner.Eat();
+
+        EnsureIdName(ExpectedSyntax.FieldName);
+        EnsureTypeAnnotation();
+        EnsureToken(TokenKind.Semicolon);
+        return _scanner.Close(field, SyntaxKind.FieldDecl);
     }
 
     private MarkClose EatNamespaceDecl()
