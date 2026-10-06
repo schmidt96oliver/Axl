@@ -1,0 +1,14 @@
+﻿//@check
+
+struct A { pub X: I32; pub Y: F64; }
+
+// Names are required
+let a = A(10,       //~error InvalidFieldName
+          10);      //~error InvalidFieldName
+          
+// Names must refer to fields
+let a = A(Blupp = 10);  //~error InvalidFieldName
+          
+// All fields must be specified
+let a = A(X = 10);      //~error MissingFieldInitializers
+let a = A(Y = 1.1);     //~error MissingFieldInitializers

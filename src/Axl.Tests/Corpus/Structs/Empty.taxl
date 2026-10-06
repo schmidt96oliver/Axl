@@ -1,0 +1,8 @@
+﻿//@check
+
+// Structs don't need to declare fields. They can be empty.
+// In that case, they only have one valid value.
+
+struct Empty;
+
+let e = Empty();

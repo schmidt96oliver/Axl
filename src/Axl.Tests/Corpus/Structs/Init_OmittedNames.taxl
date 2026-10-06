@@ -1,0 +1,11 @@
+﻿//@check
+
+struct A { pub X: I32; pub Y: F64; }
+
+// Names can be omitted, if value text is equal to the field name
+let X = 10;
+let Y = 1.1;
+let a = A(X, Y = 1.1);
+let a = A(X, Y);
+let a = A(X = 10, Y);
+let a = A(X = 10, Y = 1.1);

@@ -355,4 +355,42 @@ public partial record Diagnostic
         private string GetCycleString()
             => string.Join(" -> ", FieldPath.Select(field => $"'{field.Owner.Name}.{field.Name}: {field.Type.Name}'"));
     }
+
+    public sealed record InvalidFieldName(StructSymbol Struct, ArgSyntax ArgSyntax, FieldSymbol? Field = null) : Error
+    {
+        public override ImmutableArray<SourceLocation> Locations => [ArgSyntax.Name?.Location ?? ArgSyntax.Location];
+
+        public override string Message => Field is not null
+            ? $"Field {Struct.Name}.{Field.Name} is private."
+            : ArgSyntax.Name is null
+                ? "Field name must be specified."
+                : $"'{Struct.Name}' has no field with name '{ ArgSyntax.Name!.Text }'.";
+    }
+
+    public sealed record MissingFieldInitializers(
+        ImmutableArray<FieldSymbol> MissingFields,
+        ArgListSyntax ArgListSyntax) : Error
+    {
+        public override ImmutableArray<SourceLocation> Locations => [ArgListSyntax.Location];
+        public override string Message => $"All fields must be initialized. Missing are {GetFieldNameString()}.";
+
+        private string GetFieldNameString()
+            => MissingFields.Length == 1
+                ? $"'{MissingFields[0].Name}'"
+                : $"{string.Join(", ", MissingFields[..^1].Select(f => f.Name))} and '{MissingFields[^1].Name}'";
+    }
+
+    public record FieldAlreadyInitialized(ArgSyntax ArgSyntax, FieldSymbol Field) : Error
+    {
+        public override ImmutableArray<SourceLocation> Locations => [ArgSyntax.IsNamed ? ArgSyntax.Name!.Location : ArgSyntax.Location];
+        public override string Message => $"Field '{Field.Name}' is already initialized.";
+    }
+
+    public sealed record CannotInitializePrimitive(SyntaxNode StructRefSyntax) : Error
+    {
+        public override ImmutableArray<SourceLocation> Locations
+            => [StructRefSyntax.Location];
+
+        public override string Message => $"'{StructRefSyntax.Text}' cannot be initialized, because it is a primitive type.";
+    }
 }

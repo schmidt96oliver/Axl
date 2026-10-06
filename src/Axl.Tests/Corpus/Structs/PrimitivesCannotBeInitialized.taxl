@@ -1,0 +1,11 @@
+﻿//@check
+
+// Since primitives have no fields and internal memory
+// representation, defining a struct initializer for
+// them does not make sense.
+
+let p = I32();      //~error CannotInitializePrimitive
+let p = I64();      //~error CannotInitializePrimitive
+let p = F32();      //~error CannotInitializePrimitive
+let p = F64();      //~error CannotInitializePrimitive
+let p = Bool();     //~error CannotInitializePrimitive

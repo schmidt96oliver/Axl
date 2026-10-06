@@ -1,0 +1,8 @@
+﻿//@check
+
+struct A { pub X: I32; pub Y: F64; }
+
+// Fields are typechecked
+let a = A(X = 1.1, Y = 1.1);        //~error TypeMismatch
+let a = A(X = 1, Y = true);         //~error TypeMismatch
+let a = A(X = "Hello", Y = 1.1);    //~error TypeMismatch

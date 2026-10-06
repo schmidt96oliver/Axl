@@ -1,0 +1,11 @@
+﻿//@check
+
+// All initialized fields must be public. That in turn means that
+// any struct with private fields cannot be initialized from the
+// outside.
+
+struct B { X: I32; }
+struct C { X: I32; pub Y: Bool; }
+
+let b = B(X = 10);                  //~error InvalidFieldName
+let b = C(X = 10, Y = true);        //~error InvalidFieldName

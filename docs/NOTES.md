@@ -3,8 +3,11 @@
 
 **Next:** 
 
-* bind initialization
+* fix: "Garbage is not yet supported"
+
 * bind field access
+
+* implement interpreter
 
 # Roadmap
 
@@ -32,16 +35,17 @@
 One type (maybe struct) inside scripts.
 * [x] Fields, pub/default private
 * [ ] Initialization 
-  * [ ] Fields must be named arguments (Can be omitted, if param name is the same as argument)
-  * [ ] Reject, if any field is private
-  * [ ] Reject for primitves
+  * [x] Fields must be named arguments (Can be omitted, if param name is the same as argument)
+  * [x] Reject, if any field is private
+  * [x] Reject for primitves
 * [ ] Fields access and assignment through `var`
   * [ ] rejected through `let`
   * [ ] chained assignment mutates in place through `var`, rejected through `let`
 * [ ] Copy semantics
 * [x] Cyclic references in fields are disallowed. Also nested.
 * [x] Cannot shadow funs, variables
-* [ ] Empty structs; Unit is non-primitive empty struct; braces not required
+* [ ] Empty structs; Unit is non-primitive empty struct; braces not required 
+  * [ ] Enhance Empty.taxl with fun examples :)
 
 * [ ] `var`/non-var methods
   * [ ] only `pub` can be called from outside

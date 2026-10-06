@@ -974,6 +974,9 @@ public sealed class Binder
     private BoundValue BindCall(CallExprSyntax syntax)
     {
         var callee = BindExpr(syntax.Callee);
+        if (callee is BoundTypeRef { Type: StructSymbol } structRef)
+            return BindStructInit((StructSymbol)structRef.Type, syntax, structRef.Syntax!);
+        
         var arguments = syntax.ArgumentExprs.Select(BindValue).ToImmutableArray();
 
         //TODO: Implement named arguments
@@ -1097,5 +1100,75 @@ public sealed class Binder
                IsAssignableTo(receiver.Type, fun.ReceiverType);
     }
 
+    private BoundValue BindStructInit(StructSymbol @struct, CallExprSyntax syntax, SyntaxNode structRefSyntax)
+    {
+        var uninitializedFields = @struct.Fields.ToList();
+        var fieldInits = ImmutableArray.CreateBuilder<BoundFieldInit>();
+
+        var hadError = false;
+        foreach (var argSyntax in syntax.ArgList.Arguments)
+        {
+            var boundFieldInit = BindFieldInitializer(@struct, argSyntax) as BoundFieldInit;
+            if (boundFieldInit is null)
+            {
+                hadError = true;
+                continue;
+            }
+
+            if (!uninitializedFields.Contains(boundFieldInit.Field))
+            {
+                hadError = true;
+                _diagnostics.ReportError(new Diagnostic.FieldAlreadyInitialized(argSyntax, boundFieldInit.Field));
+                continue;
+            }
+
+            uninitializedFields.Remove(boundFieldInit.Field);
+            fieldInits.Add(boundFieldInit);
+        }
+
+        if (hadError)
+            return new BoundError(syntax);
+
+        if (uninitializedFields.Count > 0)
+        {
+            _diagnostics.ReportError(new Diagnostic.MissingFieldInitializers([.. uninitializedFields], syntax.ArgList));
+            return new BoundError(syntax);
+        }
+
+        if (@struct.IsPrimitive)
+        {
+            _diagnostics.ReportError(new Diagnostic.CannotInitializePrimitive(structRefSyntax));
+            return new BoundError(syntax);
+        }
+        
+        return new BoundStructInit(@struct, fieldInits.ToImmutable(), syntax);
+    }
+
+    private BoundValue BindFieldInitializer(StructSymbol @struct, ArgSyntax argSyntax)
+    {
+        var value = BindValue(argSyntax.Expr);
+
+        var field = @struct.Fields.FirstOrDefault(field => argSyntax.IsNamed
+            ? field.Name.SequenceEqual(argSyntax.Name!.Text)
+            : field.Name.SequenceEqual(argSyntax.Text));
+
+        if (field is null)
+        {
+            _diagnostics.ReportError(new Diagnostic.InvalidFieldName(@struct, argSyntax));
+            return new BoundError(argSyntax);
+        }
+        
+        if (!field.IsPub)
+        {
+            _diagnostics.ReportError(new Diagnostic.InvalidFieldName(@struct, argSyntax, field));
+            return new BoundError(argSyntax);
+        }
+
+        if (!CheckTypeAndReportMismatch(value, field.Type))
+            return new BoundError(argSyntax);
+
+        return new BoundFieldInit(field, value, argSyntax);
+    }
+    
     #endregion
 }
