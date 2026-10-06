@@ -4,21 +4,8 @@ namespace Axl.Compiler.Symbols;
 
 public closed class NamespaceOrTypeSymbol(string name) : Symbol(name)
 {
-    public ImmutableArray<Symbol> Members
-    {
-        get
-        {
-            Guard.IsState(!field.IsDefault);
-            return field;
-        }
-        internal set
-        {
-            // Set exactly once during construction.
-            Guard.IsState(field.IsDefault);
-            field = value;
-        }
-    }
-    
+    public abstract ImmutableArray<Symbol> Members { get; }
+
     public Symbol? LookupMember(string name)
         => name is ""
             ? null

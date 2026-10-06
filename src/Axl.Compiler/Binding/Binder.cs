@@ -122,7 +122,7 @@ public sealed class Binder
         //TODO: Move to BindFunBody, so that everything follows the same logic.
         var returnStmt = new BoundReturn(null);
         block = new BoundBlock([.. block.Stmts, returnStmt], block.LocalMembers, block.Type, block.Syntax);
-        scriptFun.Body = block;
+        scriptFun.SetBody(block);
 
         return new BoundFile(scriptFun, diagnostics.Drain(), semanticSideTable);
     }
@@ -253,7 +253,7 @@ public sealed class Binder
         foreach (var duplicateArray in duplicateArrays)
             _diagnostics.ReportError(new Diagnostic.AlreadyDeclared(duplicateArray));
 
-        structSymbol.Members = members;
+        structSymbol.SetMembers(members);
     }
 
     private FieldSymbol BindField(StructSymbol structSymbol, FieldDeclSyntax syntax)
@@ -338,8 +338,8 @@ public sealed class Binder
                 _diagnostics.ReportError(new Diagnostic.MissingReturn(body.Syntax!, funDecl.ReturnTypeAnnotation!));
             }
         }
-        
-        funSymbol.Body = body;
+
+        funSymbol.SetBody(body);
     }
 
     private BoundBlock BindFunBodyBlock(FunSymbol fun, Binder funBinder)
@@ -864,7 +864,7 @@ public sealed class Binder
             return new BoundError(syntax);
         }
 
-        var type = CheckTypeAndReportMismatch(value, target.Type)
+        TypeSymbol type = CheckTypeAndReportMismatch(value, target.Type)
             ? _base.Unit
             : ErrorTypeSymbol.Instance;
         return new BoundAssign(target, value, type, syntax);

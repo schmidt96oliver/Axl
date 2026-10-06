@@ -6,22 +6,25 @@ namespace Axl.Compiler.Symbols;
 
 public sealed class BaseNamespaceSymbol : NamespaceSymbol
 {
-    public TypeSymbol I32 { get; }
-    public TypeSymbol I64 { get; }
-    public TypeSymbol F32 { get; }
-    public TypeSymbol F64 { get; }
-    public TypeSymbol String { get; }
-    public TypeSymbol Bool { get; }
-    public TypeSymbol Unit { get; }
+    public override ImmutableArray<Symbol> Members { get; }
 
-    public TypeSymbol DefaultIntType => I32;
-    public TypeSymbol DefaultFloatType => F64;
+    public StructSymbol I32 { get; }
+    public StructSymbol I64 { get; }
+    public StructSymbol F32 { get; }
+    public StructSymbol F64 { get; }
+    public StructSymbol String { get; }
+    public StructSymbol Bool { get; }
+    public StructSymbol Unit { get; }
+
+    public StructSymbol DefaultIntType => I32;
+    public StructSymbol DefaultFloatType => F64;
 
 
     public BaseNamespaceSymbol()
         : base("Base")
     {
         //TODO: Make Unit non-primitive
+        //TODO: String should not be a struct, probably :D
         
         Bool = new StructSymbol("Bool", isPrimitive: true);
         String = new StructSymbol("String", isPrimitive: true);
@@ -33,14 +36,14 @@ public sealed class BaseNamespaceSymbol : NamespaceSymbol
         
         // Bool members need to be generated first, because
         // generation will look for ! operator.
-        Bool.Members = AddRemainingMembers(GetBoolMembers());
+        Bool.SetMembers(AddRemainingMembers(GetBoolMembers()));
         
-        I32.Members = AddRemainingMembers(GetI32Members());
-        I64.Members = AddRemainingMembers(GetI64Members());
-        F32.Members = AddRemainingMembers(GetF32Members());
-        F64.Members = AddRemainingMembers(GetF64Members());
-        String.Members = AddRemainingMembers(GetStringMembers());
-        Unit.Members = AddRemainingMembers(GetUnitMembers());
+        I32.SetMembers(AddRemainingMembers(GetI32Members()));
+        I64.SetMembers(AddRemainingMembers(GetI64Members()));
+        F32.SetMembers(AddRemainingMembers(GetF32Members()));
+        F64.SetMembers(AddRemainingMembers(GetF64Members()));
+        String.SetMembers(AddRemainingMembers(GetStringMembers()));
+        Unit.SetMembers(AddRemainingMembers(GetUnitMembers()));
 
         var funs = GeneratePrintFuns(I32, I64, F32, F64, Bool);
         Members = [I32, I64, F32, F64, Bool, String, Unit, .. funs];

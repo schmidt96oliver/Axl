@@ -1,8 +1,13 @@
-﻿namespace Axl.Compiler.Symbols;
+﻿using System.Collections.Immutable;
+
+namespace Axl.Compiler.Symbols;
 
 public sealed class NeverTypeSymbol : TypeSymbol
 {
-    public static NeverTypeSymbol Instance = new();
+    public static readonly NeverTypeSymbol Instance = new();
+    
+    public override ImmutableArray<Symbol> Members => [];
+    
     
     private NeverTypeSymbol()
         : base(name: "Never")

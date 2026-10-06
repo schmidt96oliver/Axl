@@ -25,22 +25,7 @@ public sealed class FunSymbol : Symbol
 
     private FunBody? _body;
 
-    public FunBody Body
-    {
-        get
-        {
-            Guard.IsState(_body is not null, "Body has not been bound yet.");
-            return _body.Value;
-        }
-
-        // Body is only set during construction (intrinsics, generated) or
-        // during binding. So the binder needs to ensure, that it is set.
-        internal set
-        {
-            Guard.IsState(_body is null, "Cannot set body twice.");
-            _body = value;
-        }
-    }
+    public FunBody Body => _body ?? throw new InvalidOperationException($"Body of '{Name}' not bound yet.");
     
 
     public FunSymbol(string name,
@@ -57,12 +42,20 @@ public sealed class FunSymbol : Symbol
         DeclarationSyntax = declarationSyntax;
 
         if (body is not null)
-            Body = body.Value;
+            SetBody(body.Value);
         
         // Set parameter owners
         foreach (var parameter in Parameters)
             parameter.Owner = this;
     }
 
-    
+    /// <summary>
+    /// Bodies must be bound after declaring all funs, so this must be two phases.
+    /// Must be set exactly once during binding.
+    /// </summary>
+    internal void SetBody(FunBody body)
+    {
+        Guard.IsState(_body is null, $"Body of '{Name}' already bound.");
+        _body = body;
+    }
 }
