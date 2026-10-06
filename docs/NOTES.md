@@ -3,7 +3,6 @@
 
 **Next:** 
 
-* check cyclic self-references (recursive)
 * bind initialization
 * bind field access
 
@@ -40,7 +39,7 @@ One type (maybe struct) inside scripts.
   * [ ] rejected through `let`
   * [ ] chained assignment mutates in place through `var`, rejected through `let`
 * [ ] Copy semantics
-* [ ] Cyclic references in fields are disallowed. Also nested.
+* [x] Cyclic references in fields are disallowed. Also nested.
 * [x] Cannot shadow funs, variables
 * [ ] Empty structs; Unit is non-primitive empty struct; braces not required
 

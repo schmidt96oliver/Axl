@@ -1,0 +1,13 @@
+﻿//@check
+
+// Recursive struct layouts would lead to infinite size, so they must be rejected.
+
+struct Test { X: Test; }    //~error RecursiveStructLayout
+    
+struct A { X: B; }          //~error RecursiveStructLayout
+struct B { Z: A; }          //~error RecursiveStructLayout
+
+struct W { X: X; }          //~error RecursiveStructLayout
+struct X { X: Y; }          //~error RecursiveStructLayout
+struct Y { X: Z; }          //~error RecursiveStructLayout
+struct Z { X: W; }          //~error RecursiveStructLayout

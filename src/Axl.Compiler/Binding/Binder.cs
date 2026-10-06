@@ -195,7 +195,9 @@ public sealed class Binder
         foreach (var structSymbol in structs)
             BindStructMembers(structSymbol);
 
-        //TODO: Check self-referential fields
+        foreach (var structSymbol in structs)
+            CheckRecursiveStructLayout(structSymbol);
+        
         //TODO: Bind struct method/static method bodies here
 
         return structs;
@@ -233,8 +235,30 @@ public sealed class Binder
             _semanticSideTable.AddResolvedSymbol(syntax.Name.Location, symbol);
         return symbol;
     }
-    
 
+
+    private void CheckRecursiveStructLayout(StructSymbol symbol)
+    {
+        Recurse(symbol, []);
+        return;
+        
+        void Recurse(StructSymbol current, FieldSymbol[] path)
+        {
+            foreach (var field in current.Members.OfType<FieldSymbol>())
+            {
+                if (field.Type is not StructSymbol fieldStructType)
+                    continue;
+
+                if (fieldStructType == symbol)
+                {
+                    _diagnostics.ReportError(new Diagnostic.RecursiveStructLayout(symbol, [.. path, field]));
+                }
+                else
+                    Recurse(fieldStructType, [.. path, field]);
+            }
+        }
+    }
+    
     private void CheckDuplicateDeclarations(ImmutableArray<Symbol> declared)
     {
         var symbolsByName = declared
