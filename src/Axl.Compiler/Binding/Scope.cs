@@ -1,4 +1,5 @@
-﻿using Axl.Compiler.Symbols;
+﻿using System.Collections.Immutable;
+using Axl.Compiler.Symbols;
 
 namespace Axl.Compiler.Binding;
 
@@ -7,6 +8,11 @@ public sealed class Scope(Scope? parent = null)
     private readonly List<Symbol> _declaredSymbols = [];
     
     public Scope? Parent { get; } = parent;
+
+    /// <summary>
+    /// All symbols that have been declared in this scope.
+    /// </summary>
+    public ImmutableArray<Symbol> DeclaredHere => [.. _declaredSymbols];
 
 
     /// <summary>

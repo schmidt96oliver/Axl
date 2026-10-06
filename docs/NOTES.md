@@ -3,10 +3,6 @@
 
 **Next:** 
 
-* Structs are standalone, no outside context
-  * BindStructs (decl -> members -> bodies) -> BindFunSymbols -> CheckDeclarationNames -> BindBodies
-* BoundBlock only local funs; BoundFile has Structs
-
 * check cyclic self-references (recursive)
 * bind initialization
 * bind field access
