@@ -3,10 +3,7 @@
 
 **Next:** 
 
-* fix: "Garbage is not yet supported"
 * CannotInitPrimitive report on `Base._I32_` (BoundSymbol needs ref)
-
-* Make Unit non-primitive empty struct
 
 # Roadmap
 
@@ -43,7 +40,7 @@ One type (maybe struct) inside scripts.
 * [x] Copy semantics
 * [x] Cyclic references in fields are disallowed. Also nested.
 * [x] Cannot shadow funs, variables
-* [ ] Empty structs; Unit is non-primitive empty struct; braces not required 
+* [x] Empty structs; Unit is non-primitive empty struct; braces not required 
   * [ ] Enhance Empty.taxl with fun examples :)
 
 * [ ] `var`/non-var methods

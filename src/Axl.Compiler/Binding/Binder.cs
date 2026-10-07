@@ -131,7 +131,7 @@ public sealed class Binder
 
         var types = binder.BindStructs([.. syntax.Children.OfType<StructDeclSyntax>()]);
         var block = binder.BindBlockBody(
-            [.. syntax.Children.OfType<SyntaxNode>().Where(node => node is not StructDeclSyntax)], syntax);
+            [.. syntax.SyntaxNodes().Where(node => node is not StructDeclSyntax)], syntax);
 
         //TODO: Move to BindFunBody, so that everything follows the same logic.
         var returnStmt = new BoundReturn(null);
@@ -699,7 +699,7 @@ public sealed class Binder
     {
         _scope = new Scope(parent: _scope);
 
-        var block = BindBlockBody([.. syntax.Children.OfType<SyntaxNode>()], syntax);
+        var block = BindBlockBody([.. syntax.SyntaxNodes()], syntax);
         
         _scope = _scope.Parent!;
         return block;
