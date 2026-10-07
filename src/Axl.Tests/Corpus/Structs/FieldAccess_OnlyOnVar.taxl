@@ -1,0 +1,18 @@
+﻿//@check
+
+// Fields can only be mutated directly through var bindings.
+
+struct Test { pub X: I32; }
+fun Make(): Test = Test(X = 0);
+
+// Does not mutate through let
+let t = Test(X = 0);
+t.X = 10;       //~error CannotAssign
+
+// Does not mutate through temp values
+Test(X = 0).X = 10; //~error CannotAssign
+Make().X = 10;      //~error CannotAssign
+
+// Mutation allowed through var
+var t = Make();
+t.X = 20;

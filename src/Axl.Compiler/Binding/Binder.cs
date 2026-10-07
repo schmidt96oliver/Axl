@@ -59,6 +59,26 @@ public sealed class Binder
 
         return true;
     }
+
+    private bool IsVisible(Symbol symbol)
+    {
+        //TODO: Implement proper owner lookup
+        
+        // This will need to walk up owners of _fun, to see if
+        // symbol is a member of something that owns _fun.
+        return symbol is FieldSymbol { IsPub: true };
+    }
+
+    private bool CheckVisibility(Symbol symbol, SyntaxNode syntax)
+    {
+        if (!IsVisible(symbol))
+        {
+            _diagnostics.ReportError(new Diagnostic.NotVisible(symbol, syntax));
+            return false;
+        }
+
+        return true;
+    }
     
     
     private FunSymbol? LookupMethod(TypeSymbol instanceType, string name, ImmutableArray<TypeSymbol> argumentTypes)
@@ -963,12 +983,20 @@ public sealed class Binder
             {
                 FunSymbol fun => new BoundFunRef(fun, receiver: value, syntax),
                 FunGroupSymbol funGroup => new BoundFunGroupRef(funGroup, receiver: value, syntax),
-                FieldSymbol => throw new NotImplementedException(),     //TODO: Implement field access
+                FieldSymbol field => BindFieldAccess(value, field, syntax),
                 
                 VariableSymbol or NamespaceSymbol => throw new UnreachableException("Variables and namespaces are not type members."),
                 TypeSymbol => throw new UnreachableException(),
             };
         }
+    }
+
+    private BoundValue BindFieldAccess(BoundValue value, FieldSymbol field, GetMemberExprSyntax syntax)
+    {
+        if (!CheckVisibility(field, syntax.Member))
+            return new BoundError(syntax);
+
+        return new BoundFieldAccess(value, field, syntax);
     }
 
     private BoundValue BindCall(CallExprSyntax syntax)

@@ -44,6 +44,7 @@ public static class DivergenceAnalyzer
                     
                     BoundFieldInit boundFieldInit => boundFieldInit.Value.IsDiverging,
                     BoundStructInit boundStructInit => boundStructInit.FieldInits.Any(get_IsDiverging),
+                    BoundFieldAccess boundFieldAccess => boundFieldAccess.Receiver.IsDiverging,
                 };
             }
         }

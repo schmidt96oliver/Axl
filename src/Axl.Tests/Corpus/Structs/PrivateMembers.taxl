@@ -1,0 +1,10 @@
+﻿//@check
+
+// Private members are not visible from the outside.
+
+struct Test { X: I32; }
+
+//TODO: Add initializer when methods arrive
+var t: Test;        //~error MissingInitializer
+t.X = 10;           //~error NotVisible
+Print(t.X);         //~error NotVisible

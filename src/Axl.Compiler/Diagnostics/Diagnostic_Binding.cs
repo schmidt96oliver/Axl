@@ -393,4 +393,15 @@ public partial record Diagnostic
 
         public override string Message => $"'{StructRefSyntax.Text}' cannot be initialized, because it is a primitive type.";
     }
+
+    public sealed record NotVisible(Symbol Symbol, SyntaxNode Syntax) : Error
+    {
+        public override ImmutableArray<SourceLocation> Locations => [Syntax.Location];
+
+        public override string Message => Symbol switch
+        {
+            FieldSymbol fieldSymbol => $"Field '{fieldSymbol.Owner.Name}.{fieldSymbol.Name}' is private.", 
+            _ => $"'{Symbol.Name}' is not visible in this context."
+        };
+    }
 }

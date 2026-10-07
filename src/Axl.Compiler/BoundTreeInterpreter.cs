@@ -211,7 +211,7 @@ public sealed class BoundTreeInterpreter
         BoundContinue => throw new ContinueException(),
         BoundReturn boundReturn => EvaluateReturn(boundReturn),
         
-        BoundFieldInit or BoundStructInit => throw new NotImplementedException(),
+        BoundFieldInit or BoundStructInit or BoundFieldAccess => throw new NotImplementedException(),
         
         BoundError => throw new UnreachableException(),
     };

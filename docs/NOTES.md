@@ -4,8 +4,7 @@
 **Next:** 
 
 * fix: "Garbage is not yet supported"
-
-* bind field access
+* CannotInitPrimitive report on `Base._I32_` (BoundSymbol needs ref)
 
 * implement interpreter
 
@@ -39,7 +38,7 @@ One type (maybe struct) inside scripts.
   * [x] Reject, if any field is private
   * [x] Reject for primitves
 * [ ] Fields access and assignment through `var`
-  * [ ] rejected through `let`
+  * [x] rejected through `let`
   * [ ] chained assignment mutates in place through `var`, rejected through `let`
 * [ ] Copy semantics
 * [x] Cyclic references in fields are disallowed. Also nested.
@@ -55,6 +54,7 @@ One type (maybe struct) inside scripts.
   * [ ] `var fun` can only be called through `var`. Also nested cases.
   * [ ] implicit `self`
   * [ ] local funs become methods as well (`self` is captured)
+  * [ ] Can see private fields
 
 * [ ] `static fun`s
   * [ ] only `pub` can be called from outside
