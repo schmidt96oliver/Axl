@@ -2,6 +2,7 @@
 using System.Data;
 using System.Diagnostics;
 using System.Globalization;
+using System.Runtime.InteropServices;
 using System.Text;
 using Axl.Compiler.Binding.BoundTree;
 using Axl.Compiler.Diagnostics;
@@ -23,6 +24,8 @@ public sealed class BoundTreeInterpreter
     {
         public object Value { get; } = value;
     }
+
+    private sealed record StructValue(Dictionary<FieldSymbol, object> FieldValues);
 
 
     private readonly TextWriter _output;
@@ -195,7 +198,7 @@ public sealed class BoundTreeInterpreter
     private object Evaluate(BoundValue value) => value switch
     {
         BoundSelf => _env.Receiver ?? throw new UnreachableException(),
-        BoundVariable boundVariableRef => _env[boundVariableRef.Variable],
+        BoundVariable boundVariableRef => CopyOrAlias(GetPlaceRef(boundVariableRef)),
         BoundConst boundConst => boundConst.Value.Value!,
         
         BoundAnd boundAnd => EvaluateAnd(boundAnd),
@@ -211,10 +214,61 @@ public sealed class BoundTreeInterpreter
         BoundContinue => throw new ContinueException(),
         BoundReturn boundReturn => EvaluateReturn(boundReturn),
         
-        BoundFieldInit or BoundStructInit or BoundFieldAccess => throw new NotImplementedException(),
+        BoundStructInit structInit => EvaluateStructInit(structInit),
+        BoundFieldAccess fieldAccess => EvaluateFieldAccess(fieldAccess),
         
-        BoundError => throw new UnreachableException(),
+        BoundFieldInit or BoundError => throw new UnreachableException(),
     };
+
+    private object EvaluateFieldAccess(BoundFieldAccess fieldAccess)
+    {
+        // When just accessing fields, we don't need to copy the receiver.
+        var fieldRef = fieldAccess.IsPlace
+            ? GetPlaceRef(fieldAccess)
+            : ((StructValue)Evaluate(fieldAccess.Receiver)).FieldValues[fieldAccess.Field];
+        
+        return CopyOrAlias(fieldRef);
+    }
+
+    private ref object GetPlaceRef(BoundValue placeValue)
+    {
+        switch (placeValue)
+        {
+            case BoundVariable boundVar:
+                return ref CollectionsMarshal.GetValueRefOrNullRef(_env, boundVar.Variable);
+            case BoundFieldAccess boundField:
+                var receiver = (StructValue)GetPlaceRef(boundField.Receiver);
+                return ref CollectionsMarshal.GetValueRefOrNullRef(receiver.FieldValues, boundField.Field);
+            default:
+                throw new UnreachableException("Given value is not a place.");
+        }
+    }
+
+    private object CopyOrAlias(object value)
+    {
+        if (value is StructValue structValue)
+        {
+            var fieldValues = new Dictionary<FieldSymbol, object>();
+            foreach (var originalValueByField in structValue.FieldValues)
+            {
+                fieldValues.Add(originalValueByField.Key,
+                    CopyOrAlias(originalValueByField.Value));
+            }
+
+            return new StructValue(fieldValues);
+        }
+
+        return value;
+    }
+    
+    private object EvaluateStructInit(BoundStructInit structInit)
+    {
+        var fieldValues = new Dictionary<FieldSymbol, object>();
+        foreach (var fieldInit in structInit.FieldInits)
+            fieldValues[fieldInit.Field] = Evaluate(fieldInit.Value);
+
+        return new StructValue(fieldValues);
+    }
 
     private object EvaluateReturn(BoundReturn boundReturn)
     {
@@ -227,9 +281,7 @@ public sealed class BoundTreeInterpreter
 
     private object EvaluateAssign(BoundAssign boundAssign)
     {
-        if (boundAssign.Target is not BoundVariable boundVar) throw new UnreachableException();
-        
-        _env[boundVar.Variable] = Evaluate(boundAssign.Value);
+        GetPlaceRef(boundAssign.Target) = Evaluate(boundAssign.Value);
         return _unitValue;
     }
 

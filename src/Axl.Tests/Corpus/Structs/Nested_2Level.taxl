@@ -1,0 +1,22 @@
+﻿//@run
+//= 1 2
+//= 2 3
+
+// Nested structs are deep-copied and mutate in place.
+
+struct Outer { pub Inner: Inner; }
+struct Inner { pub Value: I32; }
+
+var a = Outer(Inner = Inner(Value = 0));
+a.Inner.Value = 1;
+
+var b = a;
+b.Inner.Value = 2;
+
+PrintLine("{a.Inner.Value} {b.Inner.Value}");
+
+// Assigning just the inner part
+a.Inner = b.Inner;
+b.Inner.Value = 3;
+
+PrintLine("{a.Inner.Value} {b.Inner.Value}");

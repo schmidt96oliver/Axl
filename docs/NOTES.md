@@ -6,8 +6,6 @@
 * fix: "Garbage is not yet supported"
 * CannotInitPrimitive report on `Base._I32_` (BoundSymbol needs ref)
 
-* implement interpreter
-
 # Roadmap
 
 ## 1. Running scripts (no funs)
@@ -33,14 +31,14 @@
 ## 3. Structs (in script)
 One type (maybe struct) inside scripts.
 * [x] Fields, pub/default private
-* [ ] Initialization 
+* [x] Initialization 
   * [x] Fields must be named arguments (Can be omitted, if param name is the same as argument)
   * [x] Reject, if any field is private
   * [x] Reject for primitves
-* [ ] Fields access and assignment through `var`
+* [x] Fields access and assignment through `var`
   * [x] rejected through `let`
-  * [ ] chained assignment mutates in place through `var`, rejected through `let`
-* [ ] Copy semantics
+  * [x] chained assignment mutates in place through `var`, rejected through `let`
+* [x] Copy semantics
 * [x] Cyclic references in fields are disallowed. Also nested.
 * [x] Cannot shadow funs, variables
 * [ ] Empty structs; Unit is non-primitive empty struct; braces not required 
