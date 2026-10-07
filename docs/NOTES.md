@@ -3,8 +3,6 @@
 
 **Next:** 
 
-* CannotInitPrimitive report on `Base._I32_` (BoundSymbol needs ref)
-
 # Roadmap
 
 ## 1. Running scripts (no funs)

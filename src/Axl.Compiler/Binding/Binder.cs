@@ -838,11 +838,11 @@ public sealed class Binder
         
         return symbol switch
         {
-            NamespaceSymbol boundNamespace => new BoundNamespaceRef(boundNamespace, syntax),
-            TypeSymbol type => new BoundTypeRef(type, syntax),
+            NamespaceSymbol boundNamespace => new BoundNamespaceRef(boundNamespace, syntax, syntax),
+            TypeSymbol type => new BoundTypeRef(type, syntax, syntax),
 
-            FunSymbol fun => new BoundFunRef(fun, receiver: null, syntax),
-            FunGroupSymbol funGroup => new BoundFunGroupRef(funGroup, receiver: null, syntax),
+            FunSymbol fun => new BoundFunRef(fun, receiver: null, syntax, syntax),
+            FunGroupSymbol funGroup => new BoundFunGroupRef(funGroup, receiver: null, syntax, syntax),
 
             VariableSymbol variableSymbol => BindVariable(variableSymbol),
             FieldSymbol => throw new UnreachableException("Fields can only be accessed through types."),
@@ -935,11 +935,11 @@ public sealed class Binder
 
             return memberSymbol switch
             {
-                NamespaceSymbol @namespace => new BoundNamespaceRef(@namespace, syntax),
-                TypeSymbol type => new BoundTypeRef(type, syntax),
+                NamespaceSymbol @namespace => new BoundNamespaceRef(@namespace, syntax, syntax.Member),
+                TypeSymbol type => new BoundTypeRef(type, syntax, syntax.Member),
 
-                FunSymbol fun => new BoundFunRef(fun, receiver: null, syntax),
-                FunGroupSymbol funGroup => new BoundFunGroupRef(funGroup, receiver: null, syntax),
+                FunSymbol fun => new BoundFunRef(fun, receiver: null, syntax, syntax.Member),
+                FunGroupSymbol funGroup => new BoundFunGroupRef(funGroup, receiver: null, syntax, syntax.Member),
 
                 VariableSymbol => throw new UnreachableException("Variables are not members."),
                 FieldSymbol => throw new UnreachableException("Already handled.")
@@ -981,8 +981,8 @@ public sealed class Binder
 
             return memberSymbol switch
             {
-                FunSymbol fun => new BoundFunRef(fun, receiver: value, syntax),
-                FunGroupSymbol funGroup => new BoundFunGroupRef(funGroup, receiver: value, syntax),
+                FunSymbol fun => new BoundFunRef(fun, receiver: value, syntax, syntax.Member),
+                FunGroupSymbol funGroup => new BoundFunGroupRef(funGroup, receiver: value, syntax, syntax.Member),
                 FieldSymbol field => BindFieldAccess(value, field, syntax),
                 
                 VariableSymbol or NamespaceSymbol => throw new UnreachableException("Variables and namespaces are not type members."),
@@ -1003,7 +1003,7 @@ public sealed class Binder
     {
         var callee = BindExpr(syntax.Callee);
         if (callee is BoundTypeRef { Type: StructSymbol } structRef)
-            return BindStructInit((StructSymbol)structRef.Type, syntax, structRef.Syntax!);
+            return BindStructInit((StructSymbol)structRef.Type, syntax, structRef.MemberSyntax!);
         
         var arguments = syntax.ArgumentExprs.Select(BindValue).ToImmutableArray();
 
