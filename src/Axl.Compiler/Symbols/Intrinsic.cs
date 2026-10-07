@@ -42,7 +42,6 @@ public enum Intrinsic
     EqualsBool,
     ToStringBool,
     
-    EqualsUnit,
     EqualsString,
     
     Print

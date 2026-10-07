@@ -138,4 +138,8 @@ public sealed class FunBuilder(BaseNamespaceSymbol baseNamespace)
             })
         ], baseNamespace.String));
     }
+
+    public BoundValue True()
+        => Set(new BoundConst(true, baseNamespace.Bool));
+
 }

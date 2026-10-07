@@ -23,7 +23,6 @@ public sealed class BaseNamespaceSymbol : NamespaceSymbol
     public BaseNamespaceSymbol()
         : base("Base")
     {
-        //TODO: Make Unit non-primitive
         //TODO: String should not be a struct, probably :D
         
         Bool = new StructSymbol("Bool", isPrimitive: true);
@@ -32,7 +31,7 @@ public sealed class BaseNamespaceSymbol : NamespaceSymbol
         I64 = new StructSymbol("I64", isPrimitive: true);
         F32 = new StructSymbol("F32", isPrimitive: true);
         F64 = new StructSymbol("F64", isPrimitive: true);
-        Unit = new StructSymbol("Unit", isPrimitive: true);
+        Unit = new StructSymbol("Unit", isPrimitive: false);
         
         // Bool members need to be generated first, because
         // generation will look for ! operator.
@@ -111,11 +110,14 @@ public sealed class BaseNamespaceSymbol : NamespaceSymbol
         new FunSymbol("ToString", receiverType: Bool, parameters: [], returnType: String, body: Intrinsic.ToStringBool),
     ];
 
-    private ImmutableArray<Symbol> GetUnitMembers() =>
-    [
-        new FunSymbol(SyntaxFacts.GetText(TokenKind.DoubleEqual)!, receiverType: Unit,
-            parameters: [new ParameterSymbol("right", Unit)], returnType: Bool, body: Intrinsic.EqualsUnit),
-    ];
+    private ImmutableArray<Symbol> GetUnitMembers()
+    {
+        var equal = new FunBuilder(this);
+        equal.Receiver(Unit);
+        equal.Param("right", Unit);
+        equal.Return(equal.True());
+        return [equal.ToFun(TokenKind.DoubleEqual)];
+    }
 
     private ImmutableArray<Symbol> GetStringMembers() =>
     [

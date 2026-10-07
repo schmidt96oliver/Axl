@@ -30,7 +30,7 @@ public sealed class BoundTreeInterpreter
 
     private readonly TextWriter _output;
     private Environment _env = new(null);
-    private readonly object _unitValue = new();
+    private readonly object _emptyStruct = new StructValue(FieldValues: []);
 
     private BoundTreeInterpreter(TextWriter output)
     {
@@ -92,7 +92,7 @@ public sealed class BoundTreeInterpreter
         if (intrinsic is Intrinsic.Print)
         {
             _output.Write(args[0].ToString());
-            return _unitValue;
+            return _emptyStruct;
         }
         
         return intrinsic switch
@@ -132,7 +132,6 @@ public sealed class BoundTreeInterpreter
                 Intrinsic.NotBool => !(bool)receiver!,
                 Intrinsic.EqualsBool => (bool)receiver! == (bool)args[0],
 
-                Intrinsic.EqualsUnit => true,
                 Intrinsic.EqualsString => (string)receiver! == (string)args[0],
 
                 Intrinsic.ToStringI32 or Intrinsic.ToStringI64 => receiver!.ToString()!,
@@ -248,6 +247,10 @@ public sealed class BoundTreeInterpreter
     {
         if (value is StructValue structValue)
         {
+            // If it has no fields, there is nothing to copy.
+            if (structValue.FieldValues.Count == 0)
+                return structValue;
+            
             var fieldValues = new Dictionary<FieldSymbol, object>();
             foreach (var originalValueByField in structValue.FieldValues)
             {
@@ -263,6 +266,9 @@ public sealed class BoundTreeInterpreter
     
     private object EvaluateStructInit(BoundStructInit structInit)
     {
+        if (structInit.FieldInits.Length == 0)
+            return _emptyStruct;
+        
         var fieldValues = new Dictionary<FieldSymbol, object>();
         foreach (var fieldInit in structInit.FieldInits)
             fieldValues[fieldInit.Field] = Evaluate(fieldInit.Value);
@@ -274,7 +280,7 @@ public sealed class BoundTreeInterpreter
     {
         var value = boundReturn.Value is not null
             ? Evaluate(boundReturn.Value)
-            : _unitValue;
+            : _emptyStruct;
         
         throw new ReturnException(value);
     }
@@ -282,14 +288,14 @@ public sealed class BoundTreeInterpreter
     private object EvaluateAssign(BoundAssign boundAssign)
     {
         GetPlaceRef(boundAssign.Target) = Evaluate(boundAssign.Value);
-        return _unitValue;
+        return _emptyStruct;
     }
 
     private object EvaluateBlock(BoundBlock boundBlock)
     {
         foreach (var stmt in boundBlock.Stmts)
             Run(stmt);
-        return _unitValue;
+        return _emptyStruct;
     }
 
     private object EvaluateOr(BoundOr boundOr)

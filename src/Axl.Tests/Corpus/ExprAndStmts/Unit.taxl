@@ -1,0 +1,25 @@
+﻿//@run
+//= true
+//= true
+//= true
+//= true
+//= true
+//= true
+//= true
+
+// Unit can be instantiated implicitly (blocks, funs) or
+// explicitly through struct initializer. They are all
+// equal.
+
+PrintLine(Unit() == { });
+PrintLine(Impl() == { });
+PrintLine(Annotated() == Unit());
+PrintLine(Impl() == ExplA());
+PrintLine(ExplA() == Unit());
+PrintLine(ExplA() == ExplB());
+PrintLine(ExplB() == Annotated());
+
+fun Impl() { }
+fun Annotated(): Unit { }
+fun ExplA(): Unit = Unit();
+fun ExplB(): Unit = { };
