@@ -1185,18 +1185,13 @@ public sealed class Binder
             _diagnostics.ReportError(new Diagnostic.InvalidFieldName(@struct, argSyntax));
             return new BoundError(argSyntax);
         }
-        
-        if (!field.IsPub)
-        {
-            _diagnostics.ReportError(new Diagnostic.InvalidFieldName(@struct, argSyntax, field));
-            return new BoundError(argSyntax);
-        }
 
-        if (!CheckTypeAndReportMismatch(value, field.Type))
+        if (!CheckVisibility(field, argSyntax.IsNamed ? argSyntax.Name! : argSyntax) ||
+            !CheckTypeAndReportMismatch(value, field.Type))
             return new BoundError(argSyntax);
 
         return new BoundFieldInit(field, value, argSyntax);
     }
-    
+
     #endregion
 }
