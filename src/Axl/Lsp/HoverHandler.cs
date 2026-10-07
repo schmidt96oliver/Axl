@@ -44,7 +44,7 @@ public class HoverHandler : HoverHandlerBase
         NamespaceSymbol => "namespace",
         FunSymbol fun => $"fun {fun.Name}{GetParameterText(fun)}{GetFunAnnotationText(fun)}",
         FunGroupSymbol funGroup => $"fun group {funGroup.Name}",
-        FieldSymbol field => $"field {field.Owner.Name}.{field.Name}: {field.Type.Name}",
+        FieldSymbol field => $"field {field.Parent.Name}.{field.Name}: {field.Type.Name}",
         _ => "??? Hover not implemented"
     };
 

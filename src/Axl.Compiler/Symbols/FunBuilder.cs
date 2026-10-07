@@ -10,35 +10,57 @@ namespace Axl.Compiler.Symbols;
 /// <summary>
 /// Provides ergonomic methods to generate a function with body.
 /// </summary>
-public sealed class FunBuilder(BaseNamespaceSymbol baseNamespace)
+public sealed class FunBuilder
 {
     private readonly List<ParameterSymbol> _parameters = [];
-    private TypeSymbol? _receiverType = null;
-    private TypeSymbol? _returnType = null;
+    private FunSymbol _fun;
+    private readonly BaseNamespaceSymbol _baseNamespace;
     private BoundStmt? _last = null;
     private bool _isFinished = false;
+
+
+    private FunBuilder(FunSymbol fun, BaseNamespaceSymbol baseNamespace)
+    {
+        _fun = fun;
+        _baseNamespace = baseNamespace;
+    }
+    
+
+    public static FunBuilder Method(string name, Symbol parent, TypeSymbol receiverType, BaseNamespaceSymbol baseNamespace,
+        TypeSymbol? returnType = null, bool isPublic = true)
+    {
+        var fun = new FunSymbol(name, parent, isPublic, receiverType, returnType ?? baseNamespace.Unit);
+        return new FunBuilder(fun, baseNamespace);
+    }
+
+    public static FunBuilder Method(TokenKind tokenName, Symbol parent, TypeSymbol receiverType,
+        BaseNamespaceSymbol baseNamespace, TypeSymbol? returnType = null, bool isPublic = true)
+        => Method(name: SyntaxFacts.GetText(tokenName) ??
+                        throw new ArgumentException($"{nameof(tokenName)} has no token text.", nameof(tokenName)),
+            parent, receiverType, baseNamespace, returnType, isPublic);
+
+    public static FunBuilder Static(string name, Symbol parent,
+        BaseNamespaceSymbol baseNamespace, TypeSymbol? returnType = null, bool isPublic = true)
+    {
+        var fun = new FunSymbol(name, parent, isPublic, null, returnType ?? baseNamespace.Unit);
+        return new FunBuilder(fun, baseNamespace);
+    }
 
     public BoundSelf Self
     {
         get
         {
-            Guard.IsState(_receiverType is not null);
-            return new BoundSelf(_receiverType);
+            Guard.IsState(_fun.ReceiverType is not null);
+            return new BoundSelf(_fun.ReceiverType);
         }
     }
 
     public BoundVariable Arg0
         => new(_parameters[0]);
 
-    public void Receiver(TypeSymbol type)
-    {
-        Guard.IsState(_receiverType is null);
-        _receiverType = type;
-    }
-
     public void Param(string name, TypeSymbol type)
     {
-        var paramSymbol = new ParameterSymbol(name, type);
+        var paramSymbol = new ParameterSymbol(name, _fun, type);
         _parameters.Add(paramSymbol);
     }
 
@@ -52,7 +74,7 @@ public sealed class FunBuilder(BaseNamespaceSymbol baseNamespace)
 
     public BoundCall StaticCall(FunSymbol fun, params ImmutableArray<BoundValue> arguments)
     {
-        Guard.IsState(_receiverType is null);
+        Guard.MustBe(fun.ReceiverType is null);
         Guard.MustBe(arguments.Select(arg => arg.Type).SequenceEqual(fun.ParameterTypes));
 
         return Set(new BoundCall(fun, null, [.. arguments]));
@@ -60,16 +82,14 @@ public sealed class FunBuilder(BaseNamespaceSymbol baseNamespace)
     
     public BoundReturn Return(BoundValue? expr = null)
     {
-        var exprType = expr?.Type ?? baseNamespace.Unit;
-        _returnType ??= exprType;
-
-        Guard.MustBe(exprType == _returnType);
+        var exprType = expr?.Type ?? _baseNamespace.Unit;
+        Guard.MustBe(_fun.ReturnType == exprType);
         return Set(new BoundReturn(expr));
     }
 
     public BoundBlock Block(params ImmutableArray<BoundStmt> stmts)
     {
-        return Set(new BoundBlock(stmts, [], baseNamespace.Unit));
+        return Set(new BoundBlock(stmts, [], _baseNamespace.Unit));
     }
 
     private T Set<T>(T expr)
@@ -79,19 +99,15 @@ public sealed class FunBuilder(BaseNamespaceSymbol baseNamespace)
         return expr;
     }
 
-    public FunSymbol ToFun(string name)
+    public FunSymbol ToFun()
     {
         Guard.IsState(!_isFinished);
 
         var body = GetBody();
-        if (_returnType is null)
-            throw new InvalidOperationException("Missing return."); 
-        
-        return new FunSymbol(name, _receiverType, [.. _parameters], _returnType, body);
+        _fun.SetParameters([.. _parameters]);
+        _fun.SetBody(body);
+        return _fun;
     }
-    
-    public FunSymbol ToFun(TokenKind tokenName)
-        => ToFun(SyntaxFacts.GetText(tokenName) ?? throw new ArgumentException($"{nameof(tokenName)} has no token text.", nameof(tokenName)));
 
     private BoundBlock GetBody()
     {
@@ -105,7 +121,7 @@ public sealed class FunBuilder(BaseNamespaceSymbol baseNamespace)
 
         if (!_last.IsDiverging)
         {
-            if (_returnType is null || _returnType == baseNamespace.Unit)
+            if (_fun.ReturnType == _baseNamespace.Unit)
             {
                 var block = (BoundBlock)_last;
                 Block([.. block.Stmts, Return()]);
@@ -120,8 +136,8 @@ public sealed class FunBuilder(BaseNamespaceSymbol baseNamespace)
 
     public BoundValue Or(BoundValue left, BoundValue right)
     {
-        Guard.MustBe(left.Type == baseNamespace.Bool && right.Type == baseNamespace.Bool);
-        return Set(new BoundOr(left, right, baseNamespace.Bool));
+        Guard.MustBe(left.Type == _baseNamespace.Bool && right.Type == _baseNamespace.Bool);
+        return Set(new BoundOr(left, right, _baseNamespace.Bool));
     }
 
 
@@ -129,17 +145,17 @@ public sealed class FunBuilder(BaseNamespaceSymbol baseNamespace)
     
     public BoundStringExpr String(params ImmutableArray<StringPart> parts)
     {
-        Guard.IsState(parts.All(part => part is not BoundValue expr || expr.Type == baseNamespace.String));
+        Guard.IsState(parts.All(part => part is not BoundValue expr || expr.Type == _baseNamespace.String));
         return Set(new BoundStringExpr([
             .. parts.Select(part => part switch
             {
                 BoundValue expr => expr,
-                string str => new BoundConst(str, baseNamespace.String)
+                string str => new BoundConst(str, _baseNamespace.String)
             })
-        ], baseNamespace.String));
+        ], _baseNamespace.String));
     }
 
     public BoundValue True()
-        => Set(new BoundConst(true, baseNamespace.Bool));
+        => Set(new BoundConst(true, _baseNamespace.Bool));
 
 }

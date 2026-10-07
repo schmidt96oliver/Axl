@@ -3,27 +3,17 @@
 
 **Next:** 
 
+* test: StructInit evaluation order
+
+* visibility tests are added; test for methods :)
+
+* overload resolution: filter visibility
+
+* add leaking private members to worklist somewhere or do it :D
+
+* cleanup FunBuilder (Const instead of True())
+
 # Roadmap
-
-## 1. Running scripts (no funs)
-* [x] Intrinsic Print
-* [x] Scripts bind
-* [x] Duck-typed ToString
-* [x] Bind methods
-* [x] `let` binding
-* [x] Treewalking Interpreter on BoundTree
-* [x] Taxl Run tests
-
-## 2. Funs (in script)
-* [x] Forward-declaration of funs
-* [x] Binding of fun bodies
-* [x] Overloads
-* [x] Local funs
-* [x] Reject shadowing of funs on same scope
-* [x] Reject captured variables
-* [x] Definite Return Analysis (needs MIR or ad-hoc)
-* [x] Compiler generated versions of `!=, <=, >, >=` from `==, <`
-* [ ] Named arguments
 
 ## 3. Structs (in script)
 One type (maybe struct) inside scripts.
@@ -42,6 +32,7 @@ One type (maybe struct) inside scripts.
   * [ ] Enhance Empty.taxl with fun examples :)
 
 * [ ] `var`/non-var methods
+  * [ ] Reject `pub, var` on free funs
   * [ ] only `pub` can be called from outside
   * [ ] explicit `self`
   * [ ] reject field mutation in non-var context
@@ -66,12 +57,6 @@ Stretch goals
 
 * Pointers to structs: Only of `self` and chained fields
 * private means: Only visible inside struct body
-* Rules achieved by: BoundSelf.IsPlace = true; BoundSelf.IsAssignable = is var fun
-* bind eager
-    1. BindStructSymbol declaration
-    2. BindStructMembers
-       1. Bind all member (fields, funs, nested structs) declarations
-       2. Bind all member (struct / fun) bodies
 
 ## 4. Namespaces and multiple files
 * [ ] Namespaces visible anywhere
@@ -193,3 +178,27 @@ Possibly add or change:
 * Extension syntax: `fun Type.ExtensionMethod()` instead of `extend() { }` block.
 
 * Static/Private/Public members: Maybe with `public: `, `private: `, `static: ` similar to C++.
+
+# Archive
+
+## 1. Running scripts (no funs)
+
+* [x] Intrinsic Print
+* [x] Scripts bind
+* [x] Duck-typed ToString
+* [x] Bind methods
+* [x] `let` binding
+* [x] Treewalking Interpreter on BoundTree
+* [x] Taxl Run tests
+
+## 2. Funs (in script)
+
+* [x] Forward-declaration of funs
+* [x] Binding of fun bodies
+* [x] Overloads
+* [x] Local funs
+* [x] Reject shadowing of funs on same scope
+* [x] Reject captured variables
+* [x] Definite Return Analysis (needs MIR or ad-hoc)
+* [x] Compiler generated versions of `!=, <=, >, >=` from `==, <`
+* [ ] Named arguments

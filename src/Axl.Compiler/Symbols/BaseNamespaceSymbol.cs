@@ -1,5 +1,6 @@
 ﻿using System.Collections.Immutable;
 using System.Diagnostics;
+using System.Reflection.Metadata;
 using Axl.Compiler.Syntax;
 
 namespace Axl.Compiler.Symbols;
@@ -20,18 +21,18 @@ public sealed class BaseNamespaceSymbol : NamespaceSymbol
     public StructSymbol DefaultFloatType => F64;
 
 
-    public BaseNamespaceSymbol()
-        : base("Base")
+    public BaseNamespaceSymbol(Symbol parent)
+        : base("Base", parent)
     {
         //TODO: String should not be a struct, probably :D
         
-        Bool = new StructSymbol("Bool", isPrimitive: true);
-        String = new StructSymbol("String", isPrimitive: true);
-        I32 = new StructSymbol("I32", isPrimitive: true);
-        I64 = new StructSymbol("I64", isPrimitive: true);
-        F32 = new StructSymbol("F32", isPrimitive: true);
-        F64 = new StructSymbol("F64", isPrimitive: true);
-        Unit = new StructSymbol("Unit", isPrimitive: false);
+        Bool = new StructSymbol("Bool", this, isPublic: true, isPrimitive: true);
+        String = new StructSymbol("String", this, isPublic: true, isPrimitive: true);
+        I32 = new StructSymbol("I32", this, isPublic: true, isPrimitive: true);
+        I64 = new StructSymbol("I64", this, isPublic: true, isPrimitive: true);
+        F32 = new StructSymbol("F32", this, isPublic: true, isPrimitive: true);
+        F64 = new StructSymbol("F64", this, isPublic: true, isPrimitive: true);
+        Unit = new StructSymbol("Unit", this, isPublic: true, isPrimitive: false);
         
         // Bool members need to be generated first, because
         // generation will look for ! operator.
@@ -55,23 +56,25 @@ public sealed class BaseNamespaceSymbol : NamespaceSymbol
         var printLineFuns = ImmutableArray.CreateBuilder<FunSymbol>();
         
         var print = new FunSymbol("Print", 
+            parent: this,
+            isPublic: true,
             receiverType: null, 
-            parameters: [new ParameterSymbol("text", String)],
             returnType: Unit, 
             body: Intrinsic.Print);
+        print.SetParameters([new ParameterSymbol("text", print, String)]);
         printFuns.Add(print);
 
         // PrintLine = Print("{arg}\n")
-        var b = new FunBuilder(this);
+        var b = FunBuilder.Static("PrintLine", this, this);
         b.Param("text", String);
         b.StaticCall(print, b.String(b.Arg0, "\n"));
-        var printLine = b.ToFun("PrintLine");
+        var printLine = b.ToFun();
         printLineFuns.Add(printLine);
         
         // PrintLine() = Print("\n")
-        b = new FunBuilder(this);
+        b = FunBuilder.Static("PrintLine", this, this);
         b.StaticCall(print, b.String("\n"));
-        printLineFuns.Add(b.ToFun("PrintLine"));
+        printLineFuns.Add(b.ToFun());
 
         // Generate Print(T) and PrintLine(T) for all 
         // T that have T.ToString()
@@ -84,138 +87,164 @@ public sealed class BaseNamespaceSymbol : NamespaceSymbol
                 continue;
             }
 
-            var typePrint = new FunBuilder(this);
+            var typePrint = FunBuilder.Static("Print", this, this);
             typePrint.Param("arg", type);
             typePrint.StaticCall(print, typePrint.InstanceCall(toString, typePrint.Arg0));
-            printFuns.Add(typePrint.ToFun("Print"));
+            printFuns.Add(typePrint.ToFun());
             
-            var typePrintLine = new FunBuilder(this);
+            var typePrintLine = FunBuilder.Static("PrintLine", this, this);
             typePrintLine.Param("arg", type);
             typePrintLine.StaticCall(printLine, typePrintLine.InstanceCall(toString, typePrintLine.Arg0));
-            printLineFuns.Add(typePrintLine.ToFun("PrintLine"));
+            printLineFuns.Add(typePrintLine.ToFun());
         }
 
-        var printGroup = new FunGroupSymbol("Print", printFuns.DrainToImmutable());
-        var printLineGroup = new FunGroupSymbol("PrintLine", printLineFuns.DrainToImmutable());
+        var printGroup = new FunGroupSymbol("Print", this, printFuns.DrainToImmutable());
+        var printLineGroup = new FunGroupSymbol("PrintLine", this, printLineFuns.DrainToImmutable());
         return [printGroup, printLineGroup];
     }
 
-
+    private FunSymbol IntrinsicMethodNoParam(string name, TypeSymbol type, TypeSymbol returnType,
+        Intrinsic intrinsic)
+    {
+        var fun = new FunSymbol(name, parent: type, isPublic: true, receiverType: type,
+            returnType, body: intrinsic);
+        fun.SetParameters([]);
+        return fun;
+    }
+    
+    private FunSymbol IntrinsicMethodNoParam(TokenKind tokenName, TypeSymbol type, TypeSymbol returnType,
+        Intrinsic intrinsic)
+    {
+        return IntrinsicMethodNoParam(SyntaxFacts.GetText(tokenName)!, type, returnType, intrinsic);
+    }
+    private FunSymbol IntrinsicMethodSingleParam(string name, TypeSymbol type, TypeSymbol returnType,
+        Intrinsic intrinsic)
+    {
+        var fun = new FunSymbol(name, parent: type, isPublic: true, receiverType: type,
+            returnType, body: intrinsic);
+        fun.SetParameters([new ParameterSymbol("right", fun, type)]);
+        return fun;
+    }
+    
+    private FunSymbol IntrinsicMethodSingleParam(TokenKind tokenName, TypeSymbol type, TypeSymbol returnType,
+        Intrinsic intrinsic)
+    {
+        return IntrinsicMethodSingleParam(SyntaxFacts.GetText(tokenName)!, type, returnType, intrinsic);
+    }
+    
+    
     private ImmutableArray<Symbol> GetBoolMembers() =>
     [
-        new FunSymbol(SyntaxFacts.GetText(TokenKind.Bang)!, receiverType: Bool, parameters: [], returnType: Bool, body: Intrinsic.NotBool),
-        new FunSymbol(SyntaxFacts.GetText(TokenKind.DoubleEqual)!, receiverType: Bool,
-            parameters: [new ParameterSymbol("right", Bool)], returnType: Bool, body: Intrinsic.EqualsBool),
+        IntrinsicMethodNoParam(TokenKind.Bang, Bool, returnType: Bool, Intrinsic.NotBool),
+        IntrinsicMethodSingleParam(TokenKind.DoubleEqual, Bool, returnType: Bool, Intrinsic.EqualsBool),
 
-        new FunSymbol("ToString", receiverType: Bool, parameters: [], returnType: String, body: Intrinsic.ToStringBool),
+        IntrinsicMethodNoParam("ToString", Bool, returnType: String, Intrinsic.ToStringBool),
     ];
 
     private ImmutableArray<Symbol> GetUnitMembers()
     {
-        var equal = new FunBuilder(this);
-        equal.Receiver(Unit);
+        var equal = FunBuilder.Method(TokenKind.DoubleEqual, Unit, receiverType: Unit,
+            this, returnType: Bool);
         equal.Param("right", Unit);
         equal.Return(equal.True());
-        return [equal.ToFun(TokenKind.DoubleEqual)];
+        return [equal.ToFun()];
     }
 
     private ImmutableArray<Symbol> GetStringMembers() =>
     [
-        new FunSymbol(SyntaxFacts.GetText(TokenKind.DoubleEqual)!, receiverType: String,
-            parameters: [new ParameterSymbol("right", String)], returnType: Bool, body: Intrinsic.EqualsString),
+        IntrinsicMethodSingleParam(TokenKind.DoubleEqual, String, returnType: Bool, Intrinsic.EqualsString),
     ];
 
     private ImmutableArray<Symbol> GetI32Members() =>
     [
-        new FunGroupSymbol(SyntaxFacts.GetText(TokenKind.Minus)!, [
-            new FunSymbol(SyntaxFacts.GetText(TokenKind.Minus)!, receiverType: I32, parameters: [], returnType: I32, body: Intrinsic.NegateI32),
-            new FunSymbol(SyntaxFacts.GetText(TokenKind.Minus)!, receiverType: I32,
-                parameters: [new ParameterSymbol("right", I32)], returnType: I32, body: Intrinsic.SubtractI32),
+        new FunGroupSymbol(SyntaxFacts.GetText(TokenKind.Minus)!, I32, [
+            IntrinsicMethodNoParam(TokenKind.Minus, I32, returnType: I32, Intrinsic.NegateI32),
+            IntrinsicMethodSingleParam(TokenKind.Minus, I32, returnType: I32, Intrinsic.SubtractI32),
         ]),
 
-        new FunSymbol(SyntaxFacts.GetText(TokenKind.Plus)!, receiverType: I32,
-            parameters: [new ParameterSymbol("right", I32)], returnType: I32, body: Intrinsic.AddI32),
+        IntrinsicMethodSingleParam(TokenKind.Plus, I32,
+            returnType: I32, Intrinsic.AddI32),
 
-        new FunSymbol(SyntaxFacts.GetText(TokenKind.Star)!, receiverType: I32,
-            parameters: [new ParameterSymbol("right", I32)], returnType: I32, body: Intrinsic.MultiplyI32),
-        new FunSymbol(SyntaxFacts.GetText(TokenKind.Slash)!, receiverType: I32,
-            parameters: [new ParameterSymbol("right", I32)], returnType: I32, body: Intrinsic.DivideI32),
+        IntrinsicMethodSingleParam(TokenKind.Star, I32,
+            returnType: I32, Intrinsic.MultiplyI32),
+        IntrinsicMethodSingleParam(TokenKind.Slash, I32,
+            returnType: I32, Intrinsic.DivideI32),
 
-        new FunSymbol(SyntaxFacts.GetText(TokenKind.DoubleEqual)!, receiverType: I32,
-            parameters: [new ParameterSymbol("right", I32)], returnType: Bool, body: Intrinsic.EqualsI32),
-        new FunSymbol(SyntaxFacts.GetText(TokenKind.LessThan)!, receiverType: I32,
-            parameters: [new ParameterSymbol("right", I32)], returnType: Bool, body: Intrinsic.LessThanI32),
+        IntrinsicMethodSingleParam(TokenKind.DoubleEqual, I32,
+            returnType: Bool, Intrinsic.EqualsI32),
+        IntrinsicMethodSingleParam(TokenKind.LessThan, I32,
+            returnType: Bool, Intrinsic.LessThanI32),
 
-        new FunSymbol("ToString", receiverType: I32, parameters: [], returnType: String, body: Intrinsic.ToStringI32),
+        IntrinsicMethodNoParam("ToString", I32, returnType: String, Intrinsic.ToStringI32),
     ];
 
     private ImmutableArray<Symbol> GetI64Members() =>
     [
-        new FunGroupSymbol(SyntaxFacts.GetText(TokenKind.Minus)!, [
-            new FunSymbol(SyntaxFacts.GetText(TokenKind.Minus)!, receiverType: I64, parameters: [], returnType: I64, body: Intrinsic.NegateI64),
-            new FunSymbol(SyntaxFacts.GetText(TokenKind.Minus)!, receiverType: I64,
-                parameters: [new ParameterSymbol("right", I64)], returnType: I64, body: Intrinsic.SubtractI64),
+        new FunGroupSymbol(SyntaxFacts.GetText(TokenKind.Minus)!, I64, [
+            IntrinsicMethodNoParam(TokenKind.Minus, I64, returnType: I64, Intrinsic.NegateI64),
+            IntrinsicMethodSingleParam(TokenKind.Minus, I64,
+                returnType: I64, Intrinsic.SubtractI64),
         ]),
 
-        new FunSymbol(SyntaxFacts.GetText(TokenKind.Plus)!, receiverType: I64,
-            parameters: [new ParameterSymbol("right", I64)], returnType: I64, body: Intrinsic.AddI64),
-        new FunSymbol(SyntaxFacts.GetText(TokenKind.Star)!, receiverType: I64,
-            parameters: [new ParameterSymbol("right", I64)], returnType: I64, body: Intrinsic.MultiplyI64),
-        new FunSymbol(SyntaxFacts.GetText(TokenKind.Slash)!, receiverType: I64,
-            parameters: [new ParameterSymbol("right", I64)], returnType: I64, body: Intrinsic.DivideI64),
+        IntrinsicMethodSingleParam(TokenKind.Plus, I64,
+            returnType: I64, Intrinsic.AddI64),
+        IntrinsicMethodSingleParam(TokenKind.Star, I64,
+            returnType: I64, Intrinsic.MultiplyI64),
+        IntrinsicMethodSingleParam(TokenKind.Slash, I64,
+            returnType: I64, Intrinsic.DivideI64),
 
-        new FunSymbol(SyntaxFacts.GetText(TokenKind.DoubleEqual)!, receiverType: I64,
-            parameters: [new ParameterSymbol("right", I64)], returnType: Bool, body: Intrinsic.EqualsI64),
-        new FunSymbol(SyntaxFacts.GetText(TokenKind.LessThan)!, receiverType: I64,
-            parameters: [new ParameterSymbol("right", I64)], returnType: Bool, body: Intrinsic.LessThanI64),
+        IntrinsicMethodSingleParam(TokenKind.DoubleEqual, I64,
+            returnType: Bool, Intrinsic.EqualsI64),
+        IntrinsicMethodSingleParam(TokenKind.LessThan, I64,
+            returnType: Bool, Intrinsic.LessThanI64),
 
-        new FunSymbol("ToString", receiverType: I64, parameters: [], returnType: String, body: Intrinsic.ToStringI64),
+        IntrinsicMethodNoParam("ToString", I64, returnType: String, Intrinsic.ToStringI64),
     ];
 
     private ImmutableArray<Symbol> GetF32Members() =>
     [
-        new FunGroupSymbol(SyntaxFacts.GetText(TokenKind.Minus)!, [
-            new FunSymbol(SyntaxFacts.GetText(TokenKind.Minus)!, receiverType: F32, parameters: [], returnType: F32, body: Intrinsic.NegateF32),
-            new FunSymbol(SyntaxFacts.GetText(TokenKind.Minus)!, receiverType: F32,
-                parameters: [new ParameterSymbol("right", F32)], returnType: F32, body: Intrinsic.SubtractF32),
+        new FunGroupSymbol(SyntaxFacts.GetText(TokenKind.Minus)!, F32, [
+            IntrinsicMethodNoParam(TokenKind.Minus, F32, returnType: F32, Intrinsic.NegateF32),
+            IntrinsicMethodSingleParam(TokenKind.Minus,
+                F32, returnType: F32, Intrinsic.SubtractF32),
         ]),
 
-        new FunSymbol(SyntaxFacts.GetText(TokenKind.Plus)!, receiverType: F32,
-            parameters: [new ParameterSymbol("right", F32)], returnType: F32, body: Intrinsic.AddF32),
-        new FunSymbol(SyntaxFacts.GetText(TokenKind.Star)!, receiverType: F32,
-            parameters: [new ParameterSymbol("right", F32)], returnType: F32, body: Intrinsic.MultiplyF32),
-        new FunSymbol(SyntaxFacts.GetText(TokenKind.Slash)!, receiverType: F32,
-            parameters: [new ParameterSymbol("right", F32)], returnType: F32, body: Intrinsic.DivideF32),
+        IntrinsicMethodSingleParam(TokenKind.Plus,
+            F32, returnType: F32, Intrinsic.AddF32),
+        IntrinsicMethodSingleParam(TokenKind.Star,
+            F32, returnType: F32, Intrinsic.MultiplyF32),
+        IntrinsicMethodSingleParam(TokenKind.Slash,
+            F32, returnType: F32, Intrinsic.DivideF32),
 
-        new FunSymbol(SyntaxFacts.GetText(TokenKind.DoubleEqual)!, receiverType: F32,
-            parameters: [new ParameterSymbol("right", F32)], returnType: Bool, body: Intrinsic.EqualsF32),
-        new FunSymbol(SyntaxFacts.GetText(TokenKind.LessThan)!, receiverType: F32,
-            parameters: [new ParameterSymbol("right", F32)], returnType: Bool, body: Intrinsic.LessThanF32),
+        IntrinsicMethodSingleParam(TokenKind.DoubleEqual,
+            F32, returnType: Bool, Intrinsic.EqualsF32),
+        IntrinsicMethodSingleParam(TokenKind.LessThan,
+            F32, returnType: Bool, Intrinsic.LessThanF32),
 
-        new FunSymbol("ToString", receiverType: F32, parameters: [], returnType: String, body: Intrinsic.ToStringF32),
+        IntrinsicMethodNoParam("ToString", F32, returnType: String, Intrinsic.ToStringF32),
     ];
 
     private ImmutableArray<Symbol> GetF64Members() =>
     [
-        new FunGroupSymbol(SyntaxFacts.GetText(TokenKind.Minus)!, [
-            new FunSymbol(SyntaxFacts.GetText(TokenKind.Minus)!, receiverType: F64, parameters: [], returnType: F64, body: Intrinsic.NegateF64),
-            new FunSymbol(SyntaxFacts.GetText(TokenKind.Minus)!, receiverType: F64,
-                parameters: [new ParameterSymbol("right", F64)], returnType: F64, body: Intrinsic.SubtractF64),
+        new FunGroupSymbol(SyntaxFacts.GetText(TokenKind.Minus)!, F64, [
+            IntrinsicMethodNoParam(TokenKind.Minus, F64, returnType: F64, Intrinsic.NegateF64),
+            IntrinsicMethodSingleParam(TokenKind.Minus, F64,
+                returnType: F64, Intrinsic.SubtractF64),
         ]),
 
-        new FunSymbol(SyntaxFacts.GetText(TokenKind.Plus)!, receiverType: F64,
-            parameters: [new ParameterSymbol("right", F64)], returnType: F64, body: Intrinsic.AddF64),
-        new FunSymbol(SyntaxFacts.GetText(TokenKind.Star)!, receiverType: F64,
-            parameters: [new ParameterSymbol("right", F64)], returnType: F64, body: Intrinsic.MultiplyF64),
-        new FunSymbol(SyntaxFacts.GetText(TokenKind.Slash)!, receiverType: F64,
-            parameters: [new ParameterSymbol("right", F64)], returnType: F64, body: Intrinsic.DivideF64),
+        IntrinsicMethodSingleParam(TokenKind.Plus, F64,
+            returnType: F64, Intrinsic.AddF64),
+        IntrinsicMethodSingleParam(TokenKind.Star, F64,
+            returnType: F64, Intrinsic.MultiplyF64),
+        IntrinsicMethodSingleParam(TokenKind.Slash, F64,
+            returnType: F64, Intrinsic.DivideF64),
 
-        new FunSymbol(SyntaxFacts.GetText(TokenKind.DoubleEqual)!, receiverType: F64,
-            parameters: [new ParameterSymbol("right", F64)], returnType: Bool, body: Intrinsic.EqualsF64),
-        new FunSymbol(SyntaxFacts.GetText(TokenKind.LessThan)!, receiverType: F64,
-            parameters: [new ParameterSymbol("right", F64)], returnType: Bool, body: Intrinsic.LessThanF64),
+        IntrinsicMethodSingleParam(TokenKind.DoubleEqual, F64,
+            returnType: Bool, Intrinsic.EqualsF64),
+        IntrinsicMethodSingleParam(TokenKind.LessThan, F64,
+            returnType: Bool, Intrinsic.LessThanF64),
 
-        new FunSymbol("ToString", receiverType: F64, parameters: [], returnType: String, body: Intrinsic.ToStringF64),
+        IntrinsicMethodNoParam("ToString", F64, returnType: String, Intrinsic.ToStringF64),
     ];
 
 
@@ -254,21 +283,19 @@ public sealed class BaseNamespaceSymbol : NamespaceSymbol
     private FunSymbol GenerateNotEqual(FunSymbol equal, FunSymbol notFun)
     {
         Debug.Assert(equal.ReceiverType is not null);
-        
-        var b = new FunBuilder(this);
-        b.Receiver(equal.ReceiverType);
+
+        var b = FunBuilder.Method(TokenKind.BangEqual, equal.Parent!, equal.ReceiverType, this, returnType: Bool);
         b.Param("right", equal.ParameterTypes[0]);
         b.Return(b.InstanceCall(notFun, b.InstanceCall(equal, b.Self, b.Arg0)));
-        return b.ToFun(TokenKind.BangEqual);
+        return b.ToFun();
     }
 
     private FunSymbol GenerateGreaterThan(FunSymbol lessThan)
     {
-        var b = new FunBuilder(this);
-        b.Receiver(lessThan.ParameterTypes[0]);
+        var b = FunBuilder.Method(TokenKind.GreaterThan, lessThan.Parent!, lessThan.ParameterTypes[0], this, returnType: Bool);
         b.Param("right", lessThan.ReceiverType!);
         b.Return(b.InstanceCall(lessThan, b.Arg0, b.Self));
-        return b.ToFun(TokenKind.GreaterThan);
+        return b.ToFun();
     }
 
     private FunSymbol GenerateComparisonOrEqual(FunSymbol comparison, FunSymbol equal, TokenKind name)
@@ -280,10 +307,10 @@ public sealed class BaseNamespaceSymbol : NamespaceSymbol
         Debug.Assert(comparison.ReceiverType == equal.ReceiverType
                      && comparison.ParameterTypes.SequenceEqual(equal.ParameterTypes));
         
-        var b = new FunBuilder(this);
-        b.Receiver(comparison.ReceiverType);
+        var b = FunBuilder.Method(name, comparison.Parent!, comparison.ReceiverType, this,
+            returnType: Bool);
         b.Param("right", comparison.ParameterTypes[0]);
         b.Return(b.Or(b.InstanceCall(comparison, b.Self, b.Arg0), b.InstanceCall(equal, b.Self, b.Arg0)));
-        return b.ToFun(name);
+        return b.ToFun();
     }
 }

@@ -13,13 +13,12 @@ namespace Axl.Compiler;
 public class Compilation
 {
     public SyntaxTree SyntaxTree { get; }
-    public BaseNamespaceSymbol BaseNamespace { get; }
 
     public BoundFile BoundFile
     {
         get
         {
-            field ??= Binder.BindFile(SyntaxTree.FileSyntax, BaseNamespace);
+            field ??= Binder.BindFile(SyntaxTree.FileSyntax);
             return field;
         }
     }
@@ -38,7 +37,6 @@ public class Compilation
     private Compilation(SyntaxTree syntaxTree)
     {
         SyntaxTree = syntaxTree;
-        BaseNamespace = new BaseNamespaceSymbol();
     }
 
     public static Compilation From(SyntaxTree syntaxTree)

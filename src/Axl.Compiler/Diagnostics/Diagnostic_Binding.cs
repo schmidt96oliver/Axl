@@ -353,7 +353,7 @@ public partial record Diagnostic
         public override string Message => $"Struct '{StructSymbol.Name}' has a cycle in it's layout. The cycle is through fields {GetCycleString()}";
 
         private string GetCycleString()
-            => string.Join(" -> ", FieldPath.Select(field => $"'{field.Owner.Name}.{field.Name}: {field.Type.Name}'"));
+            => string.Join(" -> ", FieldPath.Select(field => $"'{field.Parent!.Name}.{field.Name}: {field.Type.Name}'"));
     }
 
     public sealed record InvalidFieldName(StructSymbol Struct, ArgSyntax ArgSyntax, FieldSymbol? Field = null) : Error
@@ -400,7 +400,7 @@ public partial record Diagnostic
 
         public override string Message => Symbol switch
         {
-            FieldSymbol fieldSymbol => $"Field '{fieldSymbol.Owner.Name}.{fieldSymbol.Name}' is private.", 
+            FieldSymbol fieldSymbol => $"Field '{fieldSymbol.Parent!.Name}.{fieldSymbol.Name}' is private.", 
             _ => $"'{Symbol.Name}' is not visible in this context."
         };
     }

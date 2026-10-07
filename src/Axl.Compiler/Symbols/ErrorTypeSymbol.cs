@@ -7,7 +7,7 @@ public sealed class ErrorTypeSymbol : TypeSymbol
     public static readonly ErrorTypeSymbol Instance = new();
     
     private ErrorTypeSymbol()
-        : base(name: "???")
+        : base(name: "???", parent: null, isPublic: true)
     {
         
     }

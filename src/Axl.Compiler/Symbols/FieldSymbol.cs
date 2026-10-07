@@ -2,10 +2,15 @@
 
 namespace Axl.Compiler.Symbols;
 
-public sealed class FieldSymbol(string name, bool isPub, StructSymbol owner, TypeSymbol type, FieldDeclSyntax? declarationSyntax = null) : Symbol(name)
+public sealed class FieldSymbol(
+    string name,
+    StructSymbol parent,
+    bool isPublic,
+    TypeSymbol type,
+    FieldDeclSyntax? declarationSyntax = null)
+    : Symbol(name, parent)
 {
-    public bool IsPub { get; } = isPub;
-    public StructSymbol Owner { get; } = owner;
+    public override bool IsPublic { get; } = isPublic;
 
     public TypeSymbol Type { get; } = type;
     public FieldDeclSyntax? DeclarationSyntax { get; } = declarationSyntax;

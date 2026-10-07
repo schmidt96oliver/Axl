@@ -1,5 +1,4 @@
-﻿using System.Collections;
-using System.Collections.Immutable;
+﻿using System.Collections.Immutable;
 using System.Diagnostics;
 using System.Globalization;
 using Axl.Compiler.Binding.BoundTree;
@@ -61,13 +60,8 @@ public sealed class Binder
     }
 
     private bool IsVisible(Symbol symbol)
-    {
-        //TODO: Implement proper owner lookup
-        
-        // This will need to walk up owners of _fun, to see if
-        // symbol is a member of something that owns _fun.
-        return symbol is FieldSymbol { IsPub: true };
-    }
+        => _fun.AncestorsAndSelf().Contains(symbol.Scope);
+    
 
     private bool CheckVisibility(Symbol symbol, SyntaxNode syntax)
     {
@@ -120,9 +114,17 @@ public sealed class Binder
         return global;
     }
 
-    public static BoundFile BindFile(FileSyntax syntax, BaseNamespaceSymbol baseNamespace)
+    public static BoundFile BindFile(FileSyntax syntax)
     {
-        var scriptFun = new FunSymbol("", null, [], baseNamespace.Unit);
+        var rootNamespace = new RootNamespaceSymbol();
+        var baseNamespace = rootNamespace.BaseNamespace;
+        
+        var scriptFun = new FunSymbol(name: "", 
+            parent: rootNamespace,
+            isPublic: false,
+            receiverType: null, 
+            returnType: baseNamespace.Unit);
+        scriptFun.SetParameters([]);
 
         var diagnostics = new DiagnosticBag();
         var semanticSideTable = new SemanticSideTable();
@@ -157,7 +159,7 @@ public sealed class Binder
             {
                 [] => throw new UnreachableException(),
                 [var single] => single,
-                var multiple => new FunGroupSymbol(funGrp.Key, multiple)
+                var multiple => new FunGroupSymbol(funGrp.Key, _fun, multiple)
             }))
             .ToImmutableArray();
         
@@ -169,12 +171,22 @@ public sealed class Binder
 
     private FunSymbol BindFunSymbol(FunDeclSyntax syntax)
     {
-        var parameters = syntax.Parameters
-            .Select(BindParameter)
-            .ToImmutableArray();
         var returnType = syntax.ReturnTypeAnnotation is not null
             ? BindType(syntax.ReturnTypeAnnotation)
             : _base.Unit;
+        
+        var funSymbol = new FunSymbol(syntax.Name.Identifier,
+            parent: _fun,
+            receiverType: null,
+            isPublic: false,
+            returnType: returnType,
+            declarationSyntax: syntax);
+        
+        var parameters = syntax.Parameters
+            .Select(paramSyntax => BindParameter(paramSyntax, funSymbol))
+            .ToImmutableArray();
+        
+        funSymbol.SetParameters(parameters);
 
         // Report duplicate parameter errors only on parameters
         // with a non-empty name.
@@ -187,20 +199,15 @@ public sealed class Binder
             _diagnostics.ReportError(new Diagnostic.DuplicateParameters(duplicateGroup));
         }
 
-        var funSymbol = new FunSymbol(syntax.Name.Identifier,
-            receiverType: null,
-            parameters: parameters,
-            returnType: returnType,
-            declarationSyntax: syntax);
-
         _funSymbolsByDecl.Add(syntax, funSymbol);
         _semanticSideTable.AddResolvedSymbol(syntax.Name.Location, funSymbol);
         return funSymbol;
     }
 
-    private ParameterSymbol BindParameter(ParamSyntax syntax)
+    private ParameterSymbol BindParameter(ParamSyntax syntax, FunSymbol parent)
     {
         var symbol = new ParameterSymbol(syntax.Name.Identifier,
+            parent,
             BindType(syntax.TypeAnnotation),
             syntax);
         _semanticSideTable.AddResolvedSymbol(syntax.Name.Location, symbol);
@@ -225,7 +232,8 @@ public sealed class Binder
 
     private StructSymbol BindStructSymbol(StructDeclSyntax syntax)
     {
-        var symbol = new StructSymbol(syntax.Name.Identifier, isPrimitive: false, syntax);
+        var symbol = new StructSymbol(syntax.Name.Identifier,
+            parent: _fun, isPublic: false, isPrimitive: false, syntax);
         if (symbol.Name.Length > 0)
         {
             _scope.Declare(symbol);
@@ -250,7 +258,7 @@ public sealed class Binder
     {
         var isPub = syntax.PubKw is not null;
         var type = BindType(syntax.TypeExpr);
-        var symbol = new FieldSymbol(syntax.Name.Token.Identifier, isPub, structSymbol, type, syntax);
+        var symbol = new FieldSymbol(syntax.Name.Token.Identifier, structSymbol, isPub, type, syntax);
         if (symbol.Name.Length > 0)
             _semanticSideTable.AddResolvedSymbol(syntax.Name.Location, symbol);
         return symbol;
@@ -434,7 +442,7 @@ public sealed class Binder
         }
         
         var isReadOnly = syntax.VarOrLetKwToken.Kind is TokenKind.LetKw;
-        var variable = new VariableSymbol(syntax.Name.Identifier, isReadOnly, variableType, _fun);
+        var variable = new VariableSymbol(syntax.Name.Identifier, _fun, isReadOnly, variableType);
         _scope.Declare(variable);
         _semanticSideTable.AddResolvedSymbol(syntax.Name.Location, variable);
     
@@ -835,6 +843,15 @@ public sealed class Binder
         var symbol = _scope.Lookup(syntax.Token.Identifier);
         if (symbol is not null)
             _semanticSideTable.AddResolvedSymbol(syntax.Location, symbol);
+
+        if (symbol is null)
+        {
+            _diagnostics.ReportError(new Diagnostic.UndefinedName(syntax));
+            return new BoundError(syntax);
+        }
+        
+        if (!CheckVisibility(symbol, syntax))
+            return new BoundError(syntax);
         
         return symbol switch
         {
@@ -846,27 +863,19 @@ public sealed class Binder
 
             VariableSymbol variableSymbol => BindVariable(variableSymbol),
             FieldSymbol => throw new UnreachableException("Fields can only be accessed through types."),
-            
-            null => BindUndefinedName()
         };
 
         BoundNode BindVariable(VariableSymbol variable)
         {
             // Captured variables need to be rejected.
 
-            if (variable.Owner != _fun)
+            if (variable.Parent != _fun)
             {
                 _diagnostics.ReportError(new Diagnostic.CannotCapture(syntax));
                 return new BoundError(syntax);
             }
 
             return new BoundVariable(variable, syntax);
-        }
-
-        BoundError BindUndefinedName()
-        {
-            _diagnostics.ReportError(new Diagnostic.UndefinedName(syntax));
-            return new BoundError(syntax);
         }
     }
 
@@ -925,6 +934,9 @@ public sealed class Binder
                 return new BoundError(syntax);
             }
 
+            if (!CheckVisibility(memberSymbol, syntax))
+                return new BoundError(syntax);
+            
             if (memberSymbol is FieldSymbol)
             {
                 _diagnostics.ReportError(new Diagnostic.CannotAccessFieldWithoutReceiver(syntax.Member, (FieldSymbol)memberSymbol));
@@ -970,6 +982,9 @@ public sealed class Binder
                 return new BoundError(syntax);
             }
 
+            if (!CheckVisibility(memberSymbol, syntax))
+                return new BoundError(syntax);
+            
             _semanticSideTable.AddResolvedSymbol(syntax.Member.Location, memberSymbol);
 
             if (memberSymbol is TypeSymbol)

@@ -1,38 +1,13 @@
 ﻿namespace Axl.Compiler.Symbols;
 
-public class VariableSymbol : Symbol
+public class VariableSymbol(string name, FunSymbol parent, bool isReadOnly, TypeSymbol type)
+    : Symbol(name, parent)
 {
-    public bool IsReadOnly { get; }
-    public TypeSymbol Type { get; }
+    public bool IsReadOnly { get; } = isReadOnly;
+    public TypeSymbol Type { get; } = type;
 
-    public FunSymbol Owner
-    {
-        get
-        {
-            Guard.IsState(field is not null, "Owner has not been set.");
-            return field;
-        }
-        set
-        {
-            Guard.IsState(field is null, "Owner has already been set.");
-            field = value;
-        }
-    }
-
-    
     /// <summary>
-    /// Leaves <see cref="Owner"/> unassigned, so it must be assigned manually.
+    /// Variables are always private inside their fun body.
     /// </summary>
-    protected VariableSymbol(string name, bool isReadOnly, TypeSymbol type)
-        : base(name)
-    {
-        IsReadOnly = isReadOnly;
-        Type = type;
-    }
-
-    public VariableSymbol(string name, bool isReadOnly, TypeSymbol type, FunSymbol owner) 
-        : this(name, isReadOnly, type)
-    {
-        Owner = owner;
-    }
+    public override bool IsPublic => false;
 }

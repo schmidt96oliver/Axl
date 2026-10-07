@@ -8,6 +8,8 @@ public union FunBody(Intrinsic, BoundBlock);
 
 public sealed class FunSymbol : Symbol
 {
+    public override bool IsPublic { get; }
+
     /// <summary>
     /// The <see cref="TypeSymbol"/> this fun gets as an implicit
     /// 'self' argument. If this fun is a method, <see cref="ReceiverType"/>
@@ -15,10 +17,13 @@ public sealed class FunSymbol : Symbol
     /// method is free or a static member.
     /// </summary>
     public TypeSymbol? ReceiverType { get; }
-    
-    public ImmutableArray<ParameterSymbol> Parameters { get; }
-    
-    public ImmutableArray<TypeSymbol> ParameterTypes { get; }
+
+    private ImmutableArray<ParameterSymbol>? _parameters;
+    public ImmutableArray<ParameterSymbol> Parameters => _parameters ?? throw new InvalidOperationException(
+        $"Parameters of '{Name}' not bound yet.");
+
+
+    public ImmutableArray<TypeSymbol> ParameterTypes => [.. Parameters.Select(parameter => parameter.Type)];
     
     public TypeSymbol ReturnType { get; }
     public FunDeclSyntax? DeclarationSyntax { get; }
@@ -29,24 +34,20 @@ public sealed class FunSymbol : Symbol
     
 
     public FunSymbol(string name,
+        Symbol parent,
+        bool isPublic,
         TypeSymbol? receiverType,
-        ImmutableArray<ParameterSymbol> parameters,
         TypeSymbol returnType,
         FunBody? body = null,
-        FunDeclSyntax? declarationSyntax = null) : base(name)
+        FunDeclSyntax? declarationSyntax = null) : base(name, parent)
     {
+        IsPublic = isPublic;
         ReceiverType = receiverType;
-        Parameters = parameters;
-        ParameterTypes = [.. parameters.Select(parameter => parameter.Type)];
         ReturnType = returnType;
         DeclarationSyntax = declarationSyntax;
 
         if (body is not null)
             SetBody(body.Value);
-        
-        // Set parameter owners
-        foreach (var parameter in Parameters)
-            parameter.Owner = this;
     }
 
     /// <summary>
@@ -57,5 +58,11 @@ public sealed class FunSymbol : Symbol
     {
         Guard.IsState(_body is null, $"Body of '{Name}' already bound.");
         _body = body;
+    }
+
+    internal void SetParameters(ImmutableArray<ParameterSymbol> parameters)
+    {
+        Guard.IsState(_parameters is null, $"Parameters of '{Name}' already bound.");
+        _parameters = parameters;
     }
 }
