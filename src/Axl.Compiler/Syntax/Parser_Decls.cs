@@ -90,10 +90,20 @@ public partial class Parser
 
     private MarkClose EatFunDecl(Anchor anchor)
     {
-        Debug.Assert(_scanner.IsAt(TokenKind.FunKw));
+        Debug.Assert(_scanner.IsAt(FirstSet.FunDecl));
 
         var fnDecl = _scanner.Open();
 
+        _scanner.EatIfPresent(TokenKind.PubKw);
+        _scanner.EatIfPresent(TokenKind.StaticKw);
+        _scanner.EatIfPresent(TokenKind.VarKw);
+
+        if (!_scanner.IsAt(TokenKind.FunKw))
+        {
+            _scanner.ReportMissingTokenHere(TokenKind.FunKw);
+            return _scanner.Close(fnDecl, SyntaxKind.Garbage);
+        }
+        
         _scanner.EatKnown(TokenKind.FunKw);
         EnsureIdName();
 

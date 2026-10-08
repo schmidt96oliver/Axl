@@ -320,10 +320,18 @@ public partial class Parser
 
         foreach (var _ in _scanner.MustEatEachIteration())
         {
+            if (_scanner.IsAt(TokenKind.VarKw))
+            {
+                if (_scanner.Peek(1).Kind is TokenKind.StaticKw or TokenKind.FunKw)
+                    EatFunDecl(blockAnchor);
+                else
+                    EatStmt(blockAnchor);
+            }
+            
             // --- Statement or FunDecl
-            if (_scanner.IsAt(FirstSet.Stmt))
+            else if (_scanner.IsAt(FirstSet.Stmt))
                 EatStmt(blockAnchor);
-            else if (_scanner.IsAt(TokenKind.FunKw))
+            else if (_scanner.IsAt(FirstSet.FunDecl))
                 EatFunDecl(blockAnchor);
             
             // --- lone ";" special case

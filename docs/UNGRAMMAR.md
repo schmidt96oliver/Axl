@@ -9,7 +9,7 @@ UsingDirective  = "using" TypeName ";"
 ## Member Declarations
 MemberDecl       = FnDecl | StructDecl
                 
-FunDecl           = "fun" IdName ParamList TypeAnnotation? FunBody
+FunDecl          = "pub"? "static"? "var"? "fun" IdName ParamList TypeAnnotation? FunBody
 FunBody          = "=>" Expr ";"
                 | BlockExpr
 

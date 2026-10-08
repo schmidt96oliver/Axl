@@ -171,6 +171,21 @@ public sealed class Binder
 
     private FunSymbol BindFunSymbol(FunDeclSyntax syntax)
     {
+        // Check modifiers
+        if (syntax.PubKw is not null)
+        {
+            _diagnostics.ReportError(new Diagnostic.InvalidModifier(syntax.PubKw, _fun));
+        }
+
+        // Static can be allowed on local funs. It just doesn't make a difference :D
+        
+        if (syntax.VarKw is not null)
+        {
+            _diagnostics.ReportError(new Diagnostic.InvalidModifier(syntax.VarKw, _fun));
+        }
+        
+        //TODO: Take static into account
+        
         var returnType = syntax.ReturnTypeAnnotation is not null
             ? BindType(syntax.ReturnTypeAnnotation)
             : _base.Unit;

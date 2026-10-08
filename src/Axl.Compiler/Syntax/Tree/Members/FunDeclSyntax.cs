@@ -5,6 +5,15 @@ namespace Axl.Compiler.Syntax.Tree;
 public sealed class FunDeclSyntax(ImmutableArray<SyntaxElement> children)
     : SyntaxNode(SyntaxKind.FunDecl, children)
 {
+    public Token? PubKw 
+        => Children.OfType<Token>().FirstOrDefault(child => child is { Kind: TokenKind.PubKw });
+
+    public Token? StaticKw 
+        => Children.OfType<Token>().FirstOrDefault(child => child is { Kind: TokenKind.StaticKw });
+
+    public Token? VarKw 
+        => Children.OfType<Token>().FirstOrDefault(child => child is { Kind: TokenKind.VarKw });
+    
     public IdentifierToken Name => Children.FirstOfType<IdNameSyntax>().Token;
 
     public ParamListSyntax ParameterList => Children.FirstOfType<ParamListSyntax>();
@@ -17,6 +26,7 @@ public sealed class FunDeclSyntax(ImmutableArray<SyntaxElement> children)
     
     public FunBodySyntax Body => Children.FirstOfType<FunBodySyntax>();
 }
+
 public sealed class FunBodySyntax(ImmutableArray<SyntaxElement> children)
     : SyntaxNode(SyntaxKind.FunBody, children)
 {

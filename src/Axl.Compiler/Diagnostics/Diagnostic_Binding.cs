@@ -404,4 +404,15 @@ public partial record Diagnostic
             _ => $"'{Symbol.Name}' is not accessible because of its protection level."
         };
     }
+
+    public sealed record InvalidModifier(Token Syntax, Symbol BindingOwner) : Error
+    {
+        public override ImmutableArray<SourceLocation> Locations => [Syntax.Location];
+
+        public override string Message => BindingOwner switch
+        {
+            FunSymbol => $"'{Syntax.Text}' modifier is not valid on local funs.",
+            _ => $"'{Syntax.Text}' modifier is not valid here.",
+        };
+    }
 }

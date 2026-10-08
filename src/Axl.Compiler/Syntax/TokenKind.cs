@@ -22,6 +22,7 @@ public enum TokenKind
     UsingKw,
     StructKw,
     PubKw,
+    StaticKw,
     
     // --- Literals
     NumberLiteral,

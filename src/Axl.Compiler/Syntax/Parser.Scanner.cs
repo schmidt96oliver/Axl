@@ -206,6 +206,12 @@ public partial class Parser
             var token = Eat();
             Debug.Assert(token.Kind == knownKind);
         }
+
+        public void EatIfPresent(TokenKind kind)
+        {
+            if (IsAt(kind))
+                Eat();
+        }
         
         /// <summary>
         /// Eats the next token and rewrites its <see cref="TokenKind"/>

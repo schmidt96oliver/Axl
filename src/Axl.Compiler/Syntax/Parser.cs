@@ -53,9 +53,18 @@ public partial class Parser
 
         foreach (var _ in _scanner.MustEatEachIteration())
         {
-            if (_scanner.IsAt(FirstSet.Stmt))
+            // A few keywords need to be disambiguated.
+            if (_scanner.IsAt(TokenKind.VarKw))
+            {
+                if (_scanner.Peek(1).Kind is TokenKind.StaticKw or TokenKind.FunKw)
+                    EatFunDecl(fileAnchor);
+                else
+                    EatStmt(fileAnchor | TokenKind.Semicolon);
+            }
+            
+            else if (_scanner.IsAt(FirstSet.Stmt))
                 EatStmt(fileAnchor | TokenKind.Semicolon);
-            else if (_scanner.IsAt(TokenKind.FunKw))
+            else if (_scanner.IsAt(FirstSet.FunDecl))
                 EatFunDecl(fileAnchor);
             else if (_scanner.IsAt(TokenKind.StructKw))
                 EatStructDecl(fileAnchor);

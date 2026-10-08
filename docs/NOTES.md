@@ -3,6 +3,8 @@
 
 **Next:** 
 
+* move Binder._fun to _owner ? (allow Struct and Fun)
+
 * visibility tests are added; test for methods :)
 * Duck-types methods (StringExpr, operators)
   * private operator/ToString; Duck typed must check for accessibility

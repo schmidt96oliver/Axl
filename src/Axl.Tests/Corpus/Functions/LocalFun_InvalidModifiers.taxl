@@ -1,0 +1,21 @@
+﻿//@check
+
+pub fun A() { }  //~error InvalidModifier
+var fun B() { }  //~error InvalidModifier
+pub                 //~error InvalidModifier
+    var fun C() { }  //~error InvalidModifier
+
+{
+    pub fun A() { }  //~error InvalidModifier
+    var fun B() { }  //~error InvalidModifier
+    pub                 //~error InvalidModifier
+        var fun C() { }  //~error InvalidModifier
+}
+
+fun Local()
+{
+    pub fun A() { }  //~error InvalidModifier
+    var fun B() { }  //~error InvalidModifier
+    pub                 //~error InvalidModifier
+        var fun C() { }  //~error InvalidModifier
+}

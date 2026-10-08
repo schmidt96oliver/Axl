@@ -44,5 +44,8 @@ public partial class Parser
             TokenKind.StringText, TokenKind.StringEnd, TokenKind.OpenBrace);
 
         public static readonly TokenSet FieldDecl = TokenSet.Of(TokenKind.PubKw, TokenKind.Identifier);
+
+        public static readonly TokenSet FunDecl =
+            TokenSet.Of(TokenKind.PubKw, TokenKind.StaticKw, TokenKind.VarKw, TokenKind.FunKw);
     }
 }
