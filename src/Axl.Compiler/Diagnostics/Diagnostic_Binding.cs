@@ -84,6 +84,8 @@ public partial record Diagnostic
             => BoundTarget switch
             {
                 BoundValue { IsPlace: false } => "Cannot assign to a temporary value.",
+                BoundValue { IsPlace: true, IsAssignable: false } value when GetFirstPlace(value) is BoundSelf
+                    => "Cannot mutate self, because this fun is not 'var'. Consider declaring it 'var'.",
                 BoundValue { IsPlace: true, IsAssignable: false } => "Cannot assign to through 'let' binding.",
                 
                 BoundFunGroupRef boundFunGroup => $"Cannot assign to '{boundFunGroup.FunGroup.Name}', because it is a group of overloaded funs.",
@@ -93,6 +95,12 @@ public partial record Diagnostic
                 
                 BoundStmt => throw new UnreachableException("Non-value stmts can never be in assignment target position.")
             };
+
+        private static BoundValue GetFirstPlace(BoundValue value) => value switch
+        {
+            BoundFieldAccess fieldAccess => GetFirstPlace(fieldAccess.Receiver),
+            _ => value
+        };
     }
 
     public sealed record CannotMutateReceiver(BoundValue Receiver, FunSymbol Fun, SyntaxNode FunSyntax) : Error

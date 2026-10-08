@@ -3,9 +3,7 @@
 
 **Next:** 
 
-* test var fun chained mutate
 * disallow `self = ...`
-* self mutate CannotAssign message "Cannot assign to self from non-var fun"
 
 * Duck-types methods (StringExpr, operators)
   * private operator/ToString; Duck typed must check for accessibility
