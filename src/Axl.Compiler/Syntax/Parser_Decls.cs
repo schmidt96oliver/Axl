@@ -31,9 +31,19 @@ public partial class Parser
         
         foreach (var _ in _scanner.MustEatEachIteration())
         {
-            // --- Field
-            if (_scanner.IsAt(FirstSet.FieldDecl))
+            if (_scanner.IsAt(TokenKind.PubKw))
+            {
+                if (_scanner.Peek(1).Kind is TokenKind.VarKw or TokenKind.StaticKw or TokenKind.FunKw)
+                    EatFunDecl(bodyAnchor);
+                else
+                    EatFieldDecl();
+            }
+            
+            // --- Members
+            else if (_scanner.IsAt(FirstSet.FieldDecl))
                 EatFieldDecl();
+            else if (_scanner.IsAt(FirstSet.FunDecl))
+                EatFunDecl(bodyAnchor);
 
             // --- lone ";" special case
             else if (_scanner.IsAt(TokenKind.Semicolon))

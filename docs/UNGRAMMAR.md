@@ -18,7 +18,7 @@ ParamList       = "(" ")"
 Param           = IdName TypeAnnotation?
 
 StructDecl      = "struct" IdName (StructBody | ";")
-StructBody      = "{" FieldDecl* "}"
+StructBody      = "{" (FieldDecl | FunDecl)* "}"
 FieldDecl       = "pub"? IdName TypeAnnotation ";"
 
 ## Statements
