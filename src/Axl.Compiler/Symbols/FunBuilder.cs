@@ -89,7 +89,7 @@ public sealed class FunBuilder
 
     public BoundBlock Block(params ImmutableArray<BoundStmt> stmts)
     {
-        return Set(new BoundBlock(stmts, [], _baseNamespace.Unit));
+        return Set(new BoundBlock(stmts, [], [], _baseNamespace.Unit));
     }
 
     private T Set<T>(T expr)

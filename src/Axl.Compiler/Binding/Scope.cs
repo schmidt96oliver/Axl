@@ -3,18 +3,31 @@ using Axl.Compiler.Symbols;
 
 namespace Axl.Compiler.Binding;
 
-public sealed class Scope(Scope? parent = null)
+public sealed class Scope
 {
-    private readonly List<Symbol> _declaredSymbols = [];
-    
-    public Scope? Parent { get; } = parent;
+    public Scope? Parent { get; }
 
     /// <summary>
     /// All symbols that have been declared in this scope.
     /// </summary>
-    public ImmutableArray<Symbol> DeclaredHere => [.. _declaredSymbols];
+    public ImmutableArray<Symbol> VisibleHere { get; }
 
 
+    private Scope(Scope? parent, ImmutableArray<Symbol> visibleHere)
+    {
+        Parent = parent;
+        VisibleHere = visibleHere;
+    }
+
+    public static Scope Root(params IEnumerable<Symbol> visibleSymbols)
+        => new Scope(null, [.. visibleSymbols]);
+    
+    public Scope Nested(params IEnumerable<Symbol> visibleSymbols)
+        => new Scope(this, [.. visibleSymbols]);
+    
+    public Scope Adjacent(params IEnumerable<Symbol> visibleSymbols)
+        => new Scope(Parent, [..VisibleHere, .. visibleSymbols]);
+    
     /// <summary>
     /// Returns the last symbol with the specified name that
     /// is declared on this scope. Or <c>null</c>, if <paramref name="name"/>
@@ -25,7 +38,7 @@ public sealed class Scope(Scope? parent = null)
         // Last declared symbol is first, since it might shadow
         // symbols declared before.
         
-        return _declaredSymbols.LastOrDefault(symbol => symbol.Name.SequenceEqual(name));
+        return VisibleHere.LastOrDefault(symbol => symbol.Name.SequenceEqual(name));
     }
     
     /// <summary>
@@ -36,8 +49,5 @@ public sealed class Scope(Scope? parent = null)
     public Symbol? Lookup(string name)
         => LookupHere(name) ?? Parent?.Lookup(name);
 
-    public void Declare(params IEnumerable<Symbol> symbol)
-    {
-        _declaredSymbols.AddRange(symbol);
-    }
+    
 }

@@ -17,12 +17,6 @@
 * Binder cleanup: Lookup of symbols through common Lookup(...) method
   * with LookupResult that has the reason and candidates
   * Common LookupFailed diagnostics that uses LookupResult
-* Binder cleanup: ImmutableScope
-  * Binder instance = Full context (Scope, Owner, InLoop)
-  * Scope is _not_ mutable, also not its bindings; visible symbols are defined a instantiation time
-  * Provide `Scope.AdjacentWithDeclarations(...)`, `Scope.NestedWithDeclarations`
-  * Provide `Binder(Binder previous, .. updated state)`
-  * Block after VarDecl instantiates new Binder and runs that
 
 * how to handle multiple declarations?
   * Where do they report unecessary diagnostics? => At least struct init for duped fields

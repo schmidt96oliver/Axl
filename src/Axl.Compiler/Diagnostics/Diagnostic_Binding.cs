@@ -300,7 +300,7 @@ public partial record Diagnostic
         public override string Message => $"Cannot capture variable '{Syntax.Token.Identifier}' from outside of this fun.";
     }
 
-    public sealed record MissingReturn(SyntaxNode BlockSyntax, ExprSyntax ReturnTypeAnnotationSyntax) : Error
+    public sealed record MissingReturn(SyntaxNode BlockSyntax) : Error
     {
         public override ImmutableArray<SourceLocation> Locations
         {
@@ -319,9 +319,6 @@ public partial record Diagnostic
 
         public override string Message
             => "Not all code-paths return a value.";
-
-        public override ImmutableArray<LabeledSourceLocation> Related
-            => [new(ReturnTypeAnnotationSyntax.Location, "Return type declared here.")];
     }
 
     public sealed record CannotAccessThroughInstance(IdNameSyntax MemberSyntax, TypeSymbol ParentSymbol) : Error
