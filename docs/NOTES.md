@@ -42,7 +42,7 @@ One type (maybe struct) inside scripts.
   * [x] only `pub` can be called from outside
   * [x] explicit `self`
   * [x] reject field mutation in non-var context
-  * [ ] non-var can only call non-var methods through `self`
+  * [x] non-var can only call non-var methods through `self`
   * [x] `var fun` can only be called through `var`. Also nested cases.
   * [ ] implicit `self`
   * [ ] local funs become methods as well (`self` is captured)
@@ -62,7 +62,6 @@ Stretch goals
 * [ ] Nested structs (beware access through instance: `instance.SubType` must be rejected)
 
 * Pointers to structs: Only of `self` and chained fields
-* private means: Only visible inside struct body
 
 ## 4. Namespaces and multiple files
 * [ ] Namespaces visible anywhere

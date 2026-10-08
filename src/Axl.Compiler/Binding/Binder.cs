@@ -1220,7 +1220,7 @@ public sealed class Binder
         if (fun is { IsMutatingReceiver: true, ReceiverType: not null })
         {
             Debug.Assert(receiver is not null);
-            if (!receiver.IsPlace || !receiver.IsAssignable)
+            if (!receiver.IsPlace || !receiver.IsMutablePlace)
             {
                 _diagnostics.ReportError(new Diagnostic.CannotMutateReceiver(receiver, fun, funSyntax));
                 return null;

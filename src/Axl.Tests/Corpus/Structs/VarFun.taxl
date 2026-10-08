@@ -7,9 +7,18 @@ struct Test
     pub X: I32;
     pub Inner: Inner;
     
-    pub var fun Mutate() { }
+    pub var fun Mutate() 
+    { 
+        // Mutating from a var fun is allowed
+        self.Mutate();
+        self.Inner.Mutate();
+    }
     
-    pub fun Derive() { }
+    pub fun Derive() 
+    { 
+        self.Mutate();          //~error CannotMutateReceiver
+        self.Inner.Mutate();    //~error CannotMutateReceiver
+    }
     
     pub static fun Make(): Test
         = Test(X = 10, Inner = Inner(Y = 1));
