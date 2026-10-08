@@ -20,6 +20,9 @@
   * with LookupResult that has the reason and candidates
   * Common LookupFailed diagnostics that uses LookupResult
 
+* how to handle multiple declarations?
+  * Where do they report unecessary diagnostics? => At least struct init for duped fields
+
 # Roadmap
 
 ## 3. Structs (in script)

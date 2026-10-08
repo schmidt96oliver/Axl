@@ -1,0 +1,13 @@
+﻿//@check
+
+// Fixed Bug: With duplicate declarations, access to the duplicated name would
+//            crash the compiler, because LookupMember expected single declaration.
+
+struct Test 
+{
+    pub X: I32;         //~error AlreadyDeclared
+    pub X: I32;         //~error AlreadyDeclared
+}
+
+let t: Test = Test(X = 1);      //~error MissingFieldInitializers
+t.X;

@@ -10,5 +10,5 @@ public closed class NamespaceOrTypeSymbol(string name, Symbol? owner)
     public Symbol? LookupMember(string name)
         => name is ""
             ? null
-            : Members.SingleOrDefault(symbol => symbol.Name == name);
+            : Members.FirstOrDefault(symbol => symbol.Name == name);
 }
