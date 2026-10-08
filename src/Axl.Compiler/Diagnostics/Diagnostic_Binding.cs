@@ -471,4 +471,10 @@ public partial record Diagnostic
             }
         }
     }
+
+    public sealed record FieldNotAccessibleInStaticContext(FieldSymbol Field, SyntaxNode Syntax) : Error
+    {
+        public override ImmutableArray<SourceLocation> Locations => [Syntax.Location];
+        public override string Message => $"Field '{Field.Name}' cannot be accessed from static context.";
+    }
 }

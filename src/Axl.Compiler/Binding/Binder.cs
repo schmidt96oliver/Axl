@@ -163,9 +163,6 @@ public sealed class Binder
             }))
             .ToImmutableArray();
         
-        foreach (var symbol in singleOrGroupSymbols)
-            _scope.Declare(symbol);
-
         return singleOrGroupSymbols;
     }
 
@@ -256,21 +253,24 @@ public sealed class Binder
         foreach (var structSymbol in structs)
             CheckRecursiveStructLayout(structSymbol);
 
+        // Bind method bodies
         for (var i = 0; i < structs.Length; i++)
         {
-            var binder = structBinders[i];
-            var symbol = structs[i];
+            // Bind struct body with all static members in scope
+            
+            var structSymbol = structs[i];
+            var bodyScope = new Scope(_scope);
+            bodyScope.Declare(structSymbol.Members.OfType<FunSymbol>().Where(memberFun => memberFun.ReceiverType is null));
+            var bodyBinder = new Binder(structSymbol, bodyScope, _base, _diagnostics, _semanticSideTable);
 
-            var funs = symbol.Members
+            var funs = structSymbol.Members
                 .OfType<FunSymbol>()
-                .Concat(symbol.Members
+                .Concat(structSymbol.Members
                     .OfType<FunGroupSymbol>()
                     .SelectMany(grp => grp.Funs));
 
             foreach (var fun in funs)
-            {
-                binder.BindFunBody(fun.DeclarationSyntax!);
-            }
+                bodyBinder.BindFunBody(fun);
         }
 
         return structs;
@@ -315,6 +315,7 @@ public sealed class Binder
         var symbol = new FieldSymbol(syntax.Name.Token.Identifier, structSymbol, isPub, type, syntax);
         if (symbol.Name.Length > 0)
             _semanticSideTable.AddResolvedSymbol(syntax.Name.Location, symbol);
+        
         return symbol;
     }
 
@@ -397,15 +398,28 @@ public sealed class Binder
     #endregion
     
     
-    private void BindFunBody(FunDeclSyntax funDecl)
+    private void BindFunBody(FunSymbol funSymbol)
     {
-        var funSymbol = _funSymbolsByDecl[funDecl];
-        
-        var funScope = new Scope(parent: _scope);
-        foreach (var param in funSymbol.Parameters)
-            funScope.Declare(param);
+        var funDecl = funSymbol.DeclarationSyntax!;
 
-        var funBinder = new Binder(funSymbol, funScope, _base, _diagnostics, _semanticSideTable);
+        // Scope order: Enclosing -> Receiver members (for implicit self) -> Parameters -> Locals
+        var selfScope = new Scope(_scope);
+        if (funSymbol.OwningType is not null &&
+            funSymbol.ReceiverType == funSymbol.OwningType)
+        {
+            // Declare fields and methods for implicit self
+            selfScope.Declare(funSymbol.OwningType.Members.OfType<FieldSymbol>());
+            selfScope.Declare(funSymbol.OwningType.Members.OfType<FunSymbol>()
+                .Where(memberFun => memberFun.ReceiverType == funSymbol.OwningType));
+        }
+        else
+            selfScope = _scope;
+
+        var parameterScope = new Scope(parent: selfScope);
+        foreach (var param in funSymbol.Parameters)
+            parameterScope.Declare(param);
+
+        var funBinder = new Binder(funSymbol, parameterScope, _base, _diagnostics, _semanticSideTable);
 
         var body = funBinder.BindFunBodyBlock(funSymbol);
         
@@ -774,6 +788,7 @@ public sealed class Binder
     private BoundBlock BindBlockBody(ImmutableArray<SyntaxNode> childNodes, SyntaxNode syntaxRef)
     {
         var funs = BindFuns(childNodes.OfType<FunDeclSyntax>());
+        _scope.Declare(funs);
         
         CheckDuplicateDeclarations(_scope.DeclaredHere);
 
@@ -786,7 +801,7 @@ public sealed class Binder
                     stmts.Add(BindStmt(stmt));
                     break;
                 case FunDeclSyntax funDecl:
-                    BindFunBody(funDecl);
+                    BindFunBody(_funSymbolsByDecl[funDecl]);
                     break;
 
                 case StructDeclSyntax:
@@ -929,17 +944,32 @@ public sealed class Binder
         
         if (!CheckAccessibility(symbol, syntax))
             return new BoundError(syntax);
-        
+
+        // If possible, bind implicit self
+        BoundSelf? receiver = null;
+        var selfType = _owner.OwningType;
+        if (selfType is not null
+            && ((symbol is FunSymbol symbolFun && symbolFun.ReceiverType == selfType) || symbol is FieldSymbol)
+            && symbol.Owner == selfType)
+        {
+            receiver = _owner is FunSymbol fun
+                ? fun.ReceiverType == selfType 
+                    ? new BoundSelf(selfType, fun.IsMutatingReceiver)
+                    : null 
+                : new BoundSelf(selfType, mutatable: false);
+        }
+
         return symbol switch
         {
             NamespaceSymbol boundNamespace => new BoundNamespaceRef(boundNamespace, syntax, syntax),
             TypeSymbol type => new BoundTypeRef(type, syntax, syntax),
 
-            FunSymbol fun => new BoundFunRef(fun, receiver: null, syntax, syntax),
-            FunGroupSymbol funGroup => new BoundFunGroupRef(funGroup, receiver: null, syntax, syntax),
+            FunSymbol fun => new BoundFunRef(fun, receiver, syntax, syntax),
+            FunGroupSymbol funGroup => new BoundFunGroupRef(funGroup, receiver, syntax, syntax),
 
             VariableSymbol variableSymbol => BindVariable(variableSymbol),
-            FieldSymbol => throw new UnreachableException("Fields can only be accessed through types."),
+            FieldSymbol fieldSymbol => BindFieldAccess(receiver,
+                fieldSymbol, syntax),
         };
 
         BoundNode BindVariable(VariableSymbol variable)
@@ -1083,12 +1113,20 @@ public sealed class Binder
         }
     }
 
-    private BoundValue BindFieldAccess(BoundValue value, FieldSymbol field, GetMemberExprSyntax syntax)
+    private BoundValue BindFieldAccess(BoundValue? receiver, FieldSymbol field, SyntaxNode syntax)
     {
-        if (!CheckAccessibility(field, syntax.Member))
+        if (receiver is null)
+        {
+            _diagnostics.ReportError(new Diagnostic.FieldNotAccessibleInStaticContext(field, syntax));
+            return new BoundError(syntax);
+        }
+        
+        if (!CheckAccessibility(field, syntax: syntax is GetMemberExprSyntax getMemberExprSyntax
+                ? getMemberExprSyntax.Member
+                : syntax))
             return new BoundError(syntax);
 
-        return new BoundFieldAccess(value, field, syntax);
+        return new BoundFieldAccess(receiver, field, syntax);
     }
 
     private BoundValue BindCall(CallExprSyntax syntax)

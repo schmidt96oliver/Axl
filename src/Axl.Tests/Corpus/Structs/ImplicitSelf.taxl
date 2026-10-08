@@ -1,0 +1,24 @@
+﻿//@run
+//= 012
+
+struct Test 
+{
+    X: I32;
+
+    pub var fun Set(x: I32)
+    { X = x; }
+    
+    pub fun Get(): I32 = X;
+    
+    pub fun Calc(): I32
+        = Get() * 2;
+    
+    pub static fun Make(x: I32): Test
+        = Test(X = x);
+}
+
+var t = Test.Make(0);
+Print(t.Get());
+t.Set(1);
+Print(t.Get());
+Print(t.Calc());

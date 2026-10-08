@@ -2,8 +2,28 @@
 
 struct Test 
 {
-    pub static fun Static() { }
-    pub fun Method() { }
+    pub X: I32;
+
+    pub static fun Static() 
+    { 
+        // static members are visible implicitly
+        Static();
+        Method();       //~error UndefinedName
+        
+        let a = X;      //~error UndefinedName
+        let a = self;   //~error InvalidSelfRef
+        let a = self.X; //~error InvalidSelfRef
+    }
+    pub fun Method() 
+    { 
+        // Both static and instance members are visible implicitly
+        Static();
+        Method();
+        
+        let a = X;
+        let a = self;
+        let a = self.X;
+    }
     
     pub static var fun StaticVar() { }      //~error StaticFunCannotBeVar
 }
@@ -11,7 +31,7 @@ struct Test
 Test.Method();   //~error CannotCallWithoutReceiver
 Test.Static();
 
-let t = Test();
+let t = Test(X = 1);
 t.Method();
 t.Static();              //~error CannotCallWithReceiver
 

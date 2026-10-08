@@ -36,10 +36,8 @@ public sealed class Scope(Scope? parent = null)
     public Symbol? Lookup(string name)
         => LookupHere(name) ?? Parent?.Lookup(name);
 
-    public void Declare(Symbol symbol)
+    public void Declare(params IEnumerable<Symbol> symbol)
     {
-        _declaredSymbols.Add(symbol);
+        _declaredSymbols.AddRange(symbol);
     }
-
-    
 }

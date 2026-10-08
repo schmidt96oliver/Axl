@@ -11,13 +11,23 @@ struct Test
     { 
         // Mutating from a var fun is allowed
         self.Mutate();
+        Mutate();
         self.Inner.Mutate();
+        Inner.Mutate();
+        
+        X = 10;
+        self.X = 10;
     }
     
     pub fun Derive() 
     { 
         self.Mutate();          //~error CannotMutateReceiver
+        Mutate();               //~error CannotMutateReceiver
         self.Inner.Mutate();    //~error CannotMutateReceiver
+        Inner.Mutate();         //~error CannotMutateReceiver
+        
+        X = 10;                 //~error CannotAssign
+        self.X = 10;            //~error CannotAssign
     }
     
     pub static fun Make(): Test
