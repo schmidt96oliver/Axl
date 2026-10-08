@@ -353,7 +353,7 @@ public partial record Diagnostic
         public override string Message => $"Struct '{StructSymbol.Name}' has a cycle in it's layout. The cycle is through fields {GetCycleString()}";
 
         private string GetCycleString()
-            => string.Join(" -> ", FieldPath.Select(field => $"'{field.Parent!.Name}.{field.Name}: {field.Type.Name}'"));
+            => string.Join(" -> ", FieldPath.Select(field => $"'{field.Owner!.Name}.{field.Name}: {field.Type.Name}'"));
     }
 
     public sealed record InvalidFieldName(StructSymbol Struct, ArgSyntax ArgSyntax, FieldSymbol? Field = null) : Error
@@ -394,14 +394,14 @@ public partial record Diagnostic
         public override string Message => $"'{StructRefSyntax.Text}' cannot be initialized, because it is a primitive type.";
     }
 
-    public sealed record NotVisible(Symbol Symbol, SyntaxNode Syntax) : Error
+    public sealed record NotAccessible(Symbol Symbol, SyntaxNode Syntax) : Error
     {
         public override ImmutableArray<SourceLocation> Locations => [Syntax.Location];
 
         public override string Message => Symbol switch
         {
-            FieldSymbol fieldSymbol => $"Field '{fieldSymbol.Parent!.Name}.{fieldSymbol.Name}' is private.", 
-            _ => $"'{Symbol.Name}' is not visible in this context."
+            FieldSymbol fieldSymbol => $"Field '{fieldSymbol.Owner!.Name}.{fieldSymbol.Name}' not accessible, because it is private.", 
+            _ => $"'{Symbol.Name}' is not accessible because of its protection level."
         };
     }
 }

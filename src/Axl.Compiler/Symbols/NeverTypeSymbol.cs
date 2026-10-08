@@ -10,7 +10,7 @@ public sealed class NeverTypeSymbol : TypeSymbol
     
     
     private NeverTypeSymbol()
-        : base(name: "Never", parent: null, isPublic: true)
+        : base(name: "Never", owner: null, isPublic: true)
     {
         
     }

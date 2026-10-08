@@ -2,8 +2,8 @@
 
 namespace Axl.Compiler.Symbols;
 
-public sealed class ParameterSymbol(string name, FunSymbol parent, TypeSymbol type, ParamSyntax? declarationSyntax = null) 
-    : VariableSymbol(name, parent, isReadOnly: true, type)
+public sealed class ParameterSymbol(string name, FunSymbol owner, TypeSymbol type, ParamSyntax? declarationSyntax = null) 
+    : VariableSymbol(name, owner, isReadOnly: true, type)
 {
     public ParamSyntax? DeclarationSyntax { get; } = declarationSyntax;
 }

@@ -4,11 +4,11 @@ namespace Axl.Compiler.Symbols;
 
 public sealed class FieldSymbol(
     string name,
-    StructSymbol parent,
+    StructSymbol owner,
     bool isPublic,
     TypeSymbol type,
     FieldDeclSyntax? declarationSyntax = null)
-    : Symbol(name, parent)
+    : Symbol(name, owner)
 {
     public override bool IsPublic { get; } = isPublic;
 

@@ -5,8 +5,8 @@ namespace Axl.Compiler.Symbols;
 /// <summary>
 /// Two or more <see cref="FunSymbol"/>s with the same name.
 /// </summary>
-public sealed class FunGroupSymbol(string name, Symbol parent, ImmutableArray<FunSymbol> funs) 
-    : Symbol(name, parent)
+public sealed class FunGroupSymbol(string name, Symbol owner, ImmutableArray<FunSymbol> funs) 
+    : Symbol(name, owner)
 {
     public ImmutableArray<FunSymbol> Funs { get; } = funs.Length >= 2
         ? funs

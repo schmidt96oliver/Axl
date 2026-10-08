@@ -1,10 +1,9 @@
 ﻿//@check
 
-// Private members are not visible from the outside.
+// Private members are not accessible from the outside.
 
 struct Test { X: I32; }
 
-//TODO: Add initializer when methods arrive
-var t: Test;        //~error MissingInitializer
-t.X = 10;           //~error NotVisible
-Print(t.X);         //~error NotVisible
+var t: Test = Test(X = 1);        //~error NotAccessible
+t.X = 10;           //~error NotAccessible
+Print(t.X);         //~error NotAccessible

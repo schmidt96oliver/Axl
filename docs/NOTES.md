@@ -3,15 +3,21 @@
 
 **Next:** 
 
-* test: StructInit evaluation order
+* test: StructInit evaluation order; operator evaluation order (esp. derived ones, >, >=)
 
 * visibility tests are added; test for methods :)
+* Duck-types methods (StringExpr, operators)
+  * private operator/ToString; Duck typed must check for accessibility
+  * Add WellKnownNames for common access point of names
 
 * overload resolution: filter visibility
 
 * add leaking private members to worklist somewhere or do it :D
 
 * cleanup FunBuilder (Const instead of True())
+* Binder cleanup: Lookup of symbols through common Lookup(...) method
+  * with LookupResult that has the reason and candidates
+  * Common LookupFailed diagnostics that uses LookupResult
 
 # Roadmap
 

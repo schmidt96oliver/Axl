@@ -2,8 +2,8 @@
 
 namespace Axl.Compiler.Symbols;
 
-public closed class NamespaceOrTypeSymbol(string name, Symbol? parent) 
-    : Symbol(name, parent)
+public closed class NamespaceOrTypeSymbol(string name, Symbol? owner) 
+    : Symbol(name, owner)
 {
     public abstract ImmutableArray<Symbol> Members { get; }
 

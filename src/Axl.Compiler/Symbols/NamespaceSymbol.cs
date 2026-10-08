@@ -1,7 +1,7 @@
 ﻿namespace Axl.Compiler.Symbols;
 
-public closed class NamespaceSymbol(string name, Symbol? parent)
-    : NamespaceOrTypeSymbol(name, parent)
+public closed class NamespaceSymbol(string name, Symbol? owner)
+    : NamespaceOrTypeSymbol(name, owner)
 {
     /// <summary>
     /// Namespaces are always public.

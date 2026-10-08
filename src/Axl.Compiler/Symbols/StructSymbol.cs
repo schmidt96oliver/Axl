@@ -5,11 +5,11 @@ namespace Axl.Compiler.Symbols;
 
 public sealed class StructSymbol(
     string name,
-    Symbol parent,
+    Symbol owner,
     bool isPublic,
     bool isPrimitive,
     StructDeclSyntax? declSyntax = null)
-    : TypeSymbol(name, parent, isPublic)
+    : TypeSymbol(name, owner, isPublic)
 {
     /// <summary>
     /// Whether this structs memory representation is internal.

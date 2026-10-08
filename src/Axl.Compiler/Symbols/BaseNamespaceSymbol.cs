@@ -21,8 +21,8 @@ public sealed class BaseNamespaceSymbol : NamespaceSymbol
     public StructSymbol DefaultFloatType => F64;
 
 
-    public BaseNamespaceSymbol(Symbol parent)
-        : base("Base", parent)
+    public BaseNamespaceSymbol(Symbol owner)
+        : base("Base", owner)
     {
         //TODO: String should not be a struct, probably :D
         
@@ -56,7 +56,7 @@ public sealed class BaseNamespaceSymbol : NamespaceSymbol
         var printLineFuns = ImmutableArray.CreateBuilder<FunSymbol>();
         
         var print = new FunSymbol("Print", 
-            parent: this,
+            owner: this,
             isPublic: true,
             receiverType: null, 
             returnType: Unit, 
@@ -106,7 +106,7 @@ public sealed class BaseNamespaceSymbol : NamespaceSymbol
     private FunSymbol IntrinsicMethodNoParam(string name, TypeSymbol type, TypeSymbol returnType,
         Intrinsic intrinsic)
     {
-        var fun = new FunSymbol(name, parent: type, isPublic: true, receiverType: type,
+        var fun = new FunSymbol(name, owner: type, isPublic: true, receiverType: type,
             returnType, body: intrinsic);
         fun.SetParameters([]);
         return fun;
@@ -120,7 +120,7 @@ public sealed class BaseNamespaceSymbol : NamespaceSymbol
     private FunSymbol IntrinsicMethodSingleParam(string name, TypeSymbol type, TypeSymbol returnType,
         Intrinsic intrinsic)
     {
-        var fun = new FunSymbol(name, parent: type, isPublic: true, receiverType: type,
+        var fun = new FunSymbol(name, owner: type, isPublic: true, receiverType: type,
             returnType, body: intrinsic);
         fun.SetParameters([new ParameterSymbol("right", fun, type)]);
         return fun;
@@ -284,7 +284,7 @@ public sealed class BaseNamespaceSymbol : NamespaceSymbol
     {
         Debug.Assert(equal.ReceiverType is not null);
 
-        var b = FunBuilder.Method(TokenKind.BangEqual, equal.Parent!, equal.ReceiverType, this, returnType: Bool);
+        var b = FunBuilder.Method(TokenKind.BangEqual, equal.Owner!, equal.ReceiverType, this, returnType: Bool);
         b.Param("right", equal.ParameterTypes[0]);
         b.Return(b.InstanceCall(notFun, b.InstanceCall(equal, b.Self, b.Arg0)));
         return b.ToFun();
@@ -292,7 +292,7 @@ public sealed class BaseNamespaceSymbol : NamespaceSymbol
 
     private FunSymbol GenerateGreaterThan(FunSymbol lessThan)
     {
-        var b = FunBuilder.Method(TokenKind.GreaterThan, lessThan.Parent!, lessThan.ParameterTypes[0], this, returnType: Bool);
+        var b = FunBuilder.Method(TokenKind.GreaterThan, lessThan.Owner!, lessThan.ParameterTypes[0], this, returnType: Bool);
         b.Param("right", lessThan.ReceiverType!);
         b.Return(b.InstanceCall(lessThan, b.Arg0, b.Self));
         return b.ToFun();
@@ -307,7 +307,7 @@ public sealed class BaseNamespaceSymbol : NamespaceSymbol
         Debug.Assert(comparison.ReceiverType == equal.ReceiverType
                      && comparison.ParameterTypes.SequenceEqual(equal.ParameterTypes));
         
-        var b = FunBuilder.Method(name, comparison.Parent!, comparison.ReceiverType, this,
+        var b = FunBuilder.Method(name, comparison.Owner!, comparison.ReceiverType, this,
             returnType: Bool);
         b.Param("right", comparison.ParameterTypes[0]);
         b.Return(b.Or(b.InstanceCall(comparison, b.Self, b.Arg0), b.InstanceCall(equal, b.Self, b.Arg0)));

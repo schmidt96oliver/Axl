@@ -34,12 +34,12 @@ public sealed class FunSymbol : Symbol
     
 
     public FunSymbol(string name,
-        Symbol parent,
+        Symbol owner,
         bool isPublic,
         TypeSymbol? receiverType,
         TypeSymbol returnType,
         FunBody? body = null,
-        FunDeclSyntax? declarationSyntax = null) : base(name, parent)
+        FunDeclSyntax? declarationSyntax = null) : base(name, owner)
     {
         IsPublic = isPublic;
         ReceiverType = receiverType;

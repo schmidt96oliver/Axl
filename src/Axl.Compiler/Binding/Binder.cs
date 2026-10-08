@@ -59,15 +59,15 @@ public sealed class Binder
         return true;
     }
 
-    private bool IsVisible(Symbol symbol)
-        => _fun.AncestorsAndSelf().Contains(symbol.Scope);
+    private bool IsAccessible(Symbol symbol)
+        => _fun.SelfAndOwners().Contains(symbol.AccessibleWithin);
     
 
-    private bool CheckVisibility(Symbol symbol, SyntaxNode syntax)
+    private bool CheckAccessibility(Symbol symbol, SyntaxNode syntax)
     {
-        if (!IsVisible(symbol))
+        if (!IsAccessible(symbol))
         {
-            _diagnostics.ReportError(new Diagnostic.NotVisible(symbol, syntax));
+            _diagnostics.ReportError(new Diagnostic.NotAccessible(symbol, syntax));
             return false;
         }
 
@@ -120,7 +120,7 @@ public sealed class Binder
         var baseNamespace = rootNamespace.BaseNamespace;
         
         var scriptFun = new FunSymbol(name: "", 
-            parent: rootNamespace,
+            owner: rootNamespace,
             isPublic: false,
             receiverType: null, 
             returnType: baseNamespace.Unit);
@@ -176,7 +176,7 @@ public sealed class Binder
             : _base.Unit;
         
         var funSymbol = new FunSymbol(syntax.Name.Identifier,
-            parent: _fun,
+            owner: _fun,
             receiverType: null,
             isPublic: false,
             returnType: returnType,
@@ -233,7 +233,7 @@ public sealed class Binder
     private StructSymbol BindStructSymbol(StructDeclSyntax syntax)
     {
         var symbol = new StructSymbol(syntax.Name.Identifier,
-            parent: _fun, isPublic: false, isPrimitive: false, syntax);
+            owner: _fun, isPublic: false, isPrimitive: false, syntax);
         if (symbol.Name.Length > 0)
         {
             _scope.Declare(symbol);
@@ -850,7 +850,7 @@ public sealed class Binder
             return new BoundError(syntax);
         }
         
-        if (!CheckVisibility(symbol, syntax))
+        if (!CheckAccessibility(symbol, syntax))
             return new BoundError(syntax);
         
         return symbol switch
@@ -869,7 +869,7 @@ public sealed class Binder
         {
             // Captured variables need to be rejected.
 
-            if (variable.Parent != _fun)
+            if (variable.Owner != _fun)
             {
                 _diagnostics.ReportError(new Diagnostic.CannotCapture(syntax));
                 return new BoundError(syntax);
@@ -934,7 +934,7 @@ public sealed class Binder
                 return new BoundError(syntax);
             }
 
-            if (!CheckVisibility(memberSymbol, syntax))
+            if (!CheckAccessibility(memberSymbol, syntax))
                 return new BoundError(syntax);
             
             if (memberSymbol is FieldSymbol)
@@ -982,7 +982,7 @@ public sealed class Binder
                 return new BoundError(syntax);
             }
 
-            if (!CheckVisibility(memberSymbol, syntax))
+            if (!CheckAccessibility(memberSymbol, syntax))
                 return new BoundError(syntax);
             
             _semanticSideTable.AddResolvedSymbol(syntax.Member.Location, memberSymbol);
@@ -1008,7 +1008,7 @@ public sealed class Binder
 
     private BoundValue BindFieldAccess(BoundValue value, FieldSymbol field, GetMemberExprSyntax syntax)
     {
-        if (!CheckVisibility(field, syntax.Member))
+        if (!CheckAccessibility(field, syntax.Member))
             return new BoundError(syntax);
 
         return new BoundFieldAccess(value, field, syntax);
@@ -1201,7 +1201,7 @@ public sealed class Binder
             return new BoundError(argSyntax);
         }
 
-        if (!CheckVisibility(field, argSyntax.IsNamed ? argSyntax.Name! : argSyntax) ||
+        if (!CheckAccessibility(field, argSyntax.IsNamed ? argSyntax.Name! : argSyntax) ||
             !CheckTypeAndReportMismatch(value, field.Type))
             return new BoundError(argSyntax);
 

@@ -5,9 +5,9 @@ namespace Axl.Compiler.Symbols;
 public class RootNamespaceSymbol : NamespaceSymbol
 {
     public RootNamespaceSymbol() 
-        : base(name: "", parent: null)
+        : base(name: "", owner: null)
     {
-        BaseNamespace = new BaseNamespaceSymbol(parent: this);
+        BaseNamespace = new BaseNamespaceSymbol(owner: this);
     }
 
     public BaseNamespaceSymbol BaseNamespace { get; }

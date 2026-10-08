@@ -1,7 +1,7 @@
 ﻿namespace Axl.Compiler.Symbols;
 
-public class VariableSymbol(string name, FunSymbol parent, bool isReadOnly, TypeSymbol type)
-    : Symbol(name, parent)
+public class VariableSymbol(string name, FunSymbol owner, bool isReadOnly, TypeSymbol type)
+    : Symbol(name, owner)
 {
     public bool IsReadOnly { get; } = isReadOnly;
     public TypeSymbol Type { get; } = type;
