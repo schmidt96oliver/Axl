@@ -1,0 +1,22 @@
+﻿//@run
+//= ABCD
+//= DBCA
+//= BCDA
+
+// Arguments of struct initializers are evaluated in the order they are written.
+
+let a = Test(A = A(), B = B(), C = C(), D = D());
+PrintLine();
+
+let a = Test(D = D(), B = B(), C = C(), A = A());
+PrintLine();
+
+let a = Test(B = B(), C = C(), D = D(), A = A());
+PrintLine();
+
+struct Test { pub A: I32; pub B: I32; pub C: I32; pub D: I32; }
+
+fun A(): I32 { Print("A"); return 0; }
+fun B(): I32 { Print("B"); return 0; }
+fun C(): I32 { Print("C"); return 0; }
+fun D(): I32 { Print("D"); return 0; }

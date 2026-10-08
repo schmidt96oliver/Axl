@@ -1,0 +1,27 @@
+﻿//@run
+//= AB
+//= AB
+//= AB
+//= AB
+//= AB
+//= AB
+//= AB
+//= AB
+//= AB
+//= AB
+
+// Operators evaluate left to right always
+
+fun A(): I32 { Print("A"); return 1; }
+fun B(): I32 { PrintLine("B"); return 1; }
+
+let a = A() + B();
+let a = A() - B();
+let a = A() * B();
+let a = A() / B();
+let a = A() == B();
+let a = A() != B();
+let a = A() < B();
+let a = A() <= B();
+let a = A() > B();
+let a = A() >= B();

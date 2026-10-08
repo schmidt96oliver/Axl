@@ -3,8 +3,6 @@
 
 **Next:** 
 
-* test: StructInit evaluation order; operator evaluation order (esp. derived ones, >, >=)
-
 * visibility tests are added; test for methods :)
 * Duck-types methods (StringExpr, operators)
   * private operator/ToString; Duck typed must check for accessibility
