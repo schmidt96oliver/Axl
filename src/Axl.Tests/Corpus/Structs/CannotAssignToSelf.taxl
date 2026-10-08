@@ -1,0 +1,9 @@
+﻿//@check
+
+struct Test 
+{
+    pub var fun Var()
+    { self = 10; }      //~error CannotAssign
+    pub fun NonVar()
+    { self = 10; }      //~error CannotAssign
+}

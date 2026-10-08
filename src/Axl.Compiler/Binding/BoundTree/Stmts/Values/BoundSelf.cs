@@ -12,8 +12,13 @@ public sealed class BoundSelf(TypeSymbol type, bool mutatable = false, SyntaxNod
     public override bool IsPlace => true;
 
     /// <summary>
-    /// Assignability depends on context: For 'var fun', it is mutable,
+    /// Mutability depends on context: For 'var fun' it is mutable,
     /// for 'fun', it is not.
     /// </summary>
-    public override bool IsAssignable => mutatable;
+    public override bool IsMutablePlace => mutatable;
+
+    /// <summary>
+    /// Self is never directly assignable to.
+    /// </summary>
+    public override bool IsAssignable => false;
 }

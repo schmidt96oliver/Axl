@@ -17,7 +17,12 @@ public sealed class BoundVariable(VariableSymbol variable, SyntaxNode? syntax = 
     public override bool IsPlace => true;
 
     /// <summary>
+    /// A variable is mutable, if it came from a 'var' binding.
+    /// </summary>
+    public override bool IsMutablePlace => !Variable.IsReadOnly;
+
+    /// <summary>
     /// A variable is assignable, if it came from a 'var' binding.
     /// </summary>
-    public override bool IsAssignable => !Variable.IsReadOnly;
+    public override bool IsAssignable => IsMutablePlace;
 }

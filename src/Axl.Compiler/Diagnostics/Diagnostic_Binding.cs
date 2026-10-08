@@ -83,11 +83,15 @@ public partial record Diagnostic
         public override string Message
             => BoundTarget switch
             {
-                BoundValue { IsPlace: false } => "Cannot assign to a temporary value.",
-                BoundValue { IsPlace: true, IsAssignable: false } value when GetFirstPlace(value) is BoundSelf
-                    => "Cannot mutate self, because this fun is not 'var'. Consider declaring it 'var'.",
-                BoundValue { IsPlace: true, IsAssignable: false } => "Cannot assign to through 'let' binding.",
-                
+                BoundSelf => "Cannot assign to 'self' directly.",
+                BoundValue { IsPlace: false } 
+                    => "Cannot assign to a temporary value.",
+                BoundValue { IsPlace: true, IsMutablePlace: false } value when GetFirstPlace(value) is BoundSelf
+                    => "Cannot mutate through 'self', because this fun is not 'var'. Consider declaring it 'var'.",
+                BoundValue { IsPlace: true, IsMutablePlace: false } 
+                    => "Cannot assign to through 'let' binding.",
+                BoundValue => "Cannot assign this for unknown reason.",
+                    
                 BoundFunGroupRef boundFunGroup => $"Cannot assign to '{boundFunGroup.FunGroup.Name}', because it is a group of overloaded funs.",
                 BoundFunRef boundFun => $"Cannot assign to '{boundFun.Fun.Name}', because it is a function.",
                 BoundNamespaceRef boundNamespace => $"Cannot assign to '{boundNamespace.Namespace.Name}', because it is a namespace.",

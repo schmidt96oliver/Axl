@@ -16,5 +16,10 @@ public closed class BoundValue(TypeSymbol type, SyntaxNode? syntax = null) : Bou
     /// Whether this value refers to a writable storage location.
     /// If <c>true</c>, if implies that <see cref="IsPlace"/> is <c>true</c>.
     /// </summary>
+    public virtual bool IsMutablePlace => false;
+    
+    /// <summary>
+    /// Whether this value can directly be assigned to.
+    /// </summary>
     public virtual bool IsAssignable => false;
 }

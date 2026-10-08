@@ -10,14 +10,19 @@ public sealed class BoundFieldAccess(BoundValue receiver, FieldSymbol field, Syn
     public FieldSymbol Field { get; } = field;
 
     /// <summary>
-    /// A field itself is a storage location. For the value to be a storage
+    /// A field itself is a storage location. For the entire value to be a storage
     /// location, its receiver must be a storage location as well.
     /// </summary>
     public override bool IsPlace => Receiver.IsPlace;
-    
+
     /// <summary>
     /// Same as <see cref="IsPlace"/>. A field can only be mutated through
     /// an assignable receiver.
     /// </summary>
-    public override bool IsAssignable => Receiver.IsAssignable;
+    public override bool IsMutablePlace => Receiver.IsMutablePlace;
+
+    /// <summary>
+    /// Fields can be assigned to if they are mutable.
+    /// </summary>
+    public override bool IsAssignable => IsMutablePlace;
 }

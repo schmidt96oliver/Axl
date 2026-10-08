@@ -3,8 +3,6 @@
 
 **Next:** 
 
-* disallow `self = ...`
-
 * Duck-types methods (StringExpr, operators)
   * private operator/ToString; Duck typed must check for accessibility
   * Add WellKnownNames for common access point of names
@@ -42,8 +40,8 @@ One type (maybe struct) inside scripts.
 * [ ] `var`/non-var methods
   * [x] Reject `pub, var` on free funs
   * [x] only `pub` can be called from outside
-  * [ ] explicit `self`
-  * [ ] reject field mutation in non-var context
+  * [x] explicit `self`
+  * [x] reject field mutation in non-var context
   * [ ] non-var can only call non-var methods through `self`
   * [x] `var fun` can only be called through `var`. Also nested cases.
   * [ ] implicit `self`
