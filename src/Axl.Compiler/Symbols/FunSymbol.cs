@@ -18,6 +18,11 @@ public sealed class FunSymbol : Symbol
     /// </summary>
     public TypeSymbol? ReceiverType { get; }
 
+    /// <summary>
+    /// Whether this fun is allowed to mutate its receiver.
+    /// </summary>
+    public bool IsMutatingReceiver { get; }
+    
     private ImmutableArray<ParameterSymbol>? _parameters;
     public ImmutableArray<ParameterSymbol> Parameters => _parameters ?? throw new InvalidOperationException(
         $"Parameters of '{Name}' not bound yet.");
@@ -38,12 +43,14 @@ public sealed class FunSymbol : Symbol
         bool isPublic,
         TypeSymbol? receiverType,
         TypeSymbol returnType,
+        bool isMutatingReceiver = false,
         FunBody? body = null,
         FunDeclSyntax? declarationSyntax = null) : base(name, owner)
     {
         IsPublic = isPublic;
         ReceiverType = receiverType;
         ReturnType = returnType;
+        IsMutatingReceiver = isMutatingReceiver;
         DeclarationSyntax = declarationSyntax;
 
         if (body is not null)

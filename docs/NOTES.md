@@ -3,7 +3,7 @@
 
 **Next:** 
 
-* move Binder._fun to _owner ? (allow Struct and Fun)
+* test var fun chained mutate
 
 * visibility tests are added; test for methods :)
 * Duck-types methods (StringExpr, operators)

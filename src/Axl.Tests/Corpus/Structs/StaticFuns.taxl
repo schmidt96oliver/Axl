@@ -1,0 +1,18 @@
+﻿//@check
+
+struct Test 
+{
+    pub static fun Static() { }
+    pub fun Method() { }
+    
+    pub static var fun StaticVar() { }      //~error StaticFunCannotBeVar
+}
+
+Test.Method();   //~error CannotCallWithoutReceiver
+Test.Static();
+
+let t = Test();
+t.Method();
+t.Static();              //~error CannotCallWithReceiver
+
+Test.StaticVar();

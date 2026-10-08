@@ -2,8 +2,18 @@
 
 // Private members are not accessible from the outside.
 
-struct Test { X: I32; }
+struct Test 
+{ 
+    X: I32; 
+    fun Private() { }
+    var fun VarPrivate() { }
+    static fun StaticPrivate() { }
+}
 
 var t: Test = Test(X = 1);        //~error NotAccessible
 t.X = 10;           //~error NotAccessible
+t.Private();        //~error NotAccessible
+t.VarPrivate();     //~error NotAccessible
 Print(t.X);         //~error NotAccessible
+
+Test.StaticPrivate();       //~error NotAccessible

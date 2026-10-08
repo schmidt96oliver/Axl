@@ -1,0 +1,23 @@
+﻿//@run
+//= 1234
+
+struct Test 
+{
+    pub fun A()
+        = Print("1");
+        
+    pub static fun A(i: I32)
+        = Print("2");
+    
+    pub var fun A(f: F32)
+        = Print("3");
+        
+    pub fun A(a: String, b: String)
+        = Print("4");
+}
+
+var t = Test();
+t.A();
+Test.A(1);
+t.A(1.1f32);
+t.A("", "");

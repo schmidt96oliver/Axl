@@ -1,0 +1,46 @@
+﻿//@check
+
+// Var funs follow the same rules as field assignment (since they assign fields :D).
+
+struct Test
+{
+    pub X: I32;
+    pub Inner: Inner;
+    
+    pub var fun Mutate() { }
+    
+    pub fun Derive() { }
+    
+    pub static fun Make(): Test
+        = Test(X = 10, Inner = Inner(Y = 1));
+}
+
+struct Inner 
+{
+    pub Y: I32;
+    
+    pub var fun Mutate() { }
+}
+
+fun Make(): Test
+    = Test(X = 10, Inner = Inner(Y = 1));
+
+// Not through let bindings
+let t = Test(X = 10, Inner = Inner(Y = 1));
+t.Mutate();                 //~error CannotMutateReceiver
+t.Inner.Mutate();           //~error CannotMutateReceiver
+
+// Not through temps
+Test(X = 10, Inner = Inner(Y = 1)).Mutate();        //~error CannotMutateReceiver
+Test(X = 10, Inner = Inner(Y = 1)).Inner.Mutate();  //~error CannotMutateReceiver
+
+Test.Make().Mutate();       //~error CannotMutateReceiver
+Test.Make().Inner.Mutate(); //~error CannotMutateReceiver
+
+Make().Mutate();       //~error CannotMutateReceiver
+Make().Inner.Mutate(); //~error CannotMutateReceiver
+
+// Through var is allowed
+var t = t;
+t.Mutate();
+t.Inner.Mutate();

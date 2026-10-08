@@ -3,7 +3,7 @@ using Axl.Compiler.Syntax;
 
 namespace Axl.Compiler.Binding.BoundTree;
 
-public sealed class BoundFunRef(FunSymbol fun, BoundValue? receiver, SyntaxNode? syntax, SyntaxNode? memberSyntax)
+public sealed class BoundFunRef(FunSymbol fun, BoundValue? receiver, SyntaxNode syntax, SyntaxNode memberSyntax)
     : BoundNode(syntax)
 {
     public FunSymbol Fun { get; } = fun;
@@ -15,5 +15,5 @@ public sealed class BoundFunRef(FunSymbol fun, BoundValue? receiver, SyntaxNode?
     /// E.g. in `Base.I32`, <see cref="MemberSyntax"/> refers to `I32`,
     /// while <see cref="Syntax"/> refers to `Base.I32`.
     /// </summary>
-    public SyntaxNode? MemberSyntax { get; } = memberSyntax;
+    public SyntaxNode MemberSyntax { get; } = memberSyntax;
 }

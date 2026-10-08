@@ -95,6 +95,18 @@ public partial record Diagnostic
             };
     }
 
+    public sealed record CannotMutateReceiver(BoundValue Receiver, FunSymbol Fun, SyntaxNode FunSyntax) : Error
+    {
+        public override ImmutableArray<SourceLocation> Locations => [FunSyntax.Location];
+
+        public override string Message => Receiver switch
+        {
+            { IsPlace: false } => $"'{Fun.Name}' is a var fun, but '{Receiver.Type.Name}' cannot be mutated through a temporary value.",
+            { IsPlace: true, IsAssignable: false } => $"'{Fun.Name}' is a var fun, but '{Receiver.Type.Name}' cannot be mutated through a 'let' binding.",
+            _ => throw new UnreachableException()
+        };
+    }
+
     public sealed record BreakOrContinueOutsideLoop(ExprSyntax Syntax) : Error
     {
         public override ImmutableArray<SourceLocation> Locations => [Syntax.SyntaxElements().First().Location];
@@ -178,7 +190,7 @@ public partial record Diagnostic
             => $"The integral is too big to fit into '{TargetType.Name}'.";
     }
 
-    public sealed record CannotCallWithoutReceiver(string FunName, bool IsOverloaded, ExprSyntax Syntax) : Error
+    public sealed record CannotCallWithoutReceiver(string FunName, bool IsOverloaded, SyntaxNode Syntax) : Error
     {
         public override ImmutableArray<SourceLocation> Locations => [Syntax.Location];
         public override string Message => IsOverloaded
@@ -186,7 +198,7 @@ public partial record Diagnostic
             : $"'{FunName}' is a method. It cannot be called from a static context.";
     }
     
-    public sealed record CannotCallWithReceiver(string FunName, bool IsOverloaded, ExprSyntax Syntax) : Error
+    public sealed record CannotCallWithReceiver(string FunName, bool IsOverloaded, SyntaxNode Syntax) : Error
     {
         public override ImmutableArray<SourceLocation> Locations => [Syntax.Location];
         public override string Message => IsOverloaded
@@ -414,5 +426,14 @@ public partial record Diagnostic
             FunSymbol => $"'{Syntax.Text}' modifier is not valid on local funs.",
             _ => $"'{Syntax.Text}' modifier is not valid here.",
         };
+    }
+
+
+    public sealed record StaticFunCannotBeVar(Token VarKwSyntax, IdentifierToken FunName) : Error
+    {
+        public override ImmutableArray<SourceLocation> Locations => [VarKwSyntax.Location];
+
+        public override string Message =>
+            $"'{FunName}' cannot be declared '{VarKwSyntax.Text}', because it is static.";
     }
 }
