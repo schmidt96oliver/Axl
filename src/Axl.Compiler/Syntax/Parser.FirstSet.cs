@@ -20,6 +20,7 @@ public partial class Parser
             TokenKind.TrueKw, TokenKind.FalseKw,
             TokenKind.NumberLiteral,
             TokenKind.Identifier,
+            TokenKind.SelfKw,
             TokenKind.StringStart,
             TokenKind.OpenParen,
             TokenKind.Minus, TokenKind.Bang,

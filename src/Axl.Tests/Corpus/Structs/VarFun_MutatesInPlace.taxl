@@ -1,0 +1,32 @@
+﻿//@run
+//= (0, 0) (1, 0) (1, 2)
+
+struct Test 
+{
+    X: I32;
+    pub Inner: Inner;
+    
+    pub static fun Make(x: I32): Test
+        = Test(X = x, Inner = Inner(Value = x));
+    
+    pub fun Get(): I32
+        = self.X;
+    
+    pub var fun Set(x: I32)
+        = self.X = x;
+}
+
+struct Inner
+{
+    pub Value: I32;
+    
+    pub var fun Set(val: I32)
+        = self.Value = val;
+}
+
+var t = Test.Make(0);
+Print("({t.Get()}, {t.Inner.Value}) ");
+t.Set(1);
+Print("({t.Get()}, {t.Inner.Value}) ");
+t.Inner.Set(2);
+Print("({t.Get()}, {t.Inner.Value}) ");

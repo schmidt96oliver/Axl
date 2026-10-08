@@ -98,6 +98,8 @@ public partial class Parser
                 return EnsureIdName();
             case TokenKind.NumberLiteral:
                 return _scanner.EatInto(SyntaxKind.NumberLiteral);
+            case TokenKind.SelfKw:
+                return _scanner.EatInto(SyntaxKind.Self);
 
             case TokenKind.TrueKw:
                 return _scanner.EatInto(SyntaxKind.TrueLiteral);

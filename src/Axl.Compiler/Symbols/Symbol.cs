@@ -16,6 +16,9 @@ public closed class Symbol(string name, Symbol? owner)
         ? Owner?.AccessibleWithin ?? this
         : Owner ?? this;
 
+    public TypeSymbol? OwningType 
+        => SelfAndOwners().OfType<TypeSymbol>().FirstOrDefault();
+
     /// <summary>
     /// Iterates through all owners starting with this symbol.
     /// </summary>

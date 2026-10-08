@@ -14,7 +14,7 @@ public sealed class BoundTreeInterpreter
 {
     private sealed class Environment(object? receiver) : Dictionary<VariableSymbol, object>()
     {
-        public object? Receiver { get; } = receiver;
+        public object? Receiver = receiver;
     }
     
     private sealed class BreakException : Exception;
@@ -196,7 +196,7 @@ public sealed class BoundTreeInterpreter
 
     private object Evaluate(BoundValue value) => value switch
     {
-        BoundSelf => _env.Receiver ?? throw new UnreachableException(),
+        BoundSelf boundSelf => CopyOrAlias(GetPlaceRef(boundSelf)),
         BoundVariable boundVariableRef => CopyOrAlias(GetPlaceRef(boundVariableRef)),
         BoundConst boundConst => boundConst.Value.Value!,
         
@@ -238,6 +238,8 @@ public sealed class BoundTreeInterpreter
             case BoundFieldAccess boundField:
                 var receiver = (StructValue)GetPlaceRef(boundField.Receiver);
                 return ref CollectionsMarshal.GetValueRefOrNullRef(receiver.FieldValues, boundField.Field);
+            case BoundSelf:
+                return ref _env.Receiver!;
             default:
                 throw new UnreachableException("Given value is not a place.");
         }
@@ -322,7 +324,11 @@ public sealed class BoundTreeInterpreter
     
     private object EvaluateCall(BoundCall boundCall)
     {
-        var receiver = boundCall.Receiver is not null ? Evaluate(boundCall.Receiver) : null;
+        var receiver = boundCall.Receiver is not null
+            ? boundCall.Receiver.IsPlace
+                ? GetPlaceRef(boundCall.Receiver)
+                : Evaluate(boundCall.Receiver)
+            : null;
         var args = boundCall.Arguments.Select(Evaluate).ToImmutableArray();
         
         return Call(boundCall.Fun, receiver, args);

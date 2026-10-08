@@ -1,0 +1,20 @@
+﻿//@run
+//= 1 2
+
+struct Test 
+{
+    pub X: I32;
+    
+    pub var fun MutateAndReturn(): Test
+    {
+        self.X = 1;
+        return self;
+    }
+}
+
+var t = Test(X = 0);
+var b = t.MutateAndReturn();
+b.X = 2;
+
+Print("{t.X} ");
+Print("{b.X} ");

@@ -4,8 +4,9 @@
 **Next:** 
 
 * test var fun chained mutate
+* disallow `self = ...`
+* self mutate CannotAssign message "Cannot assign to self from non-var fun"
 
-* visibility tests are added; test for methods :)
 * Duck-types methods (StringExpr, operators)
   * private operator/ToString; Duck typed must check for accessibility
   * Add WellKnownNames for common access point of names
@@ -38,18 +39,18 @@ One type (maybe struct) inside scripts.
   * [ ] Enhance Empty.taxl with fun examples :)
 
 * [ ] `var`/non-var methods
-  * [ ] Reject `pub, var` on free funs
-  * [ ] only `pub` can be called from outside
+  * [x] Reject `pub, var` on free funs
+  * [x] only `pub` can be called from outside
   * [ ] explicit `self`
   * [ ] reject field mutation in non-var context
   * [ ] non-var can only call non-var methods through `self`
-  * [ ] `var fun` can only be called through `var`. Also nested cases.
+  * [x] `var fun` can only be called through `var`. Also nested cases.
   * [ ] implicit `self`
   * [ ] local funs become methods as well (`self` is captured)
-  * [ ] Can see private fields
+  * [x] Can see private fields
 
-* [ ] `static fun`s
-  * [ ] only `pub` can be called from outside
+* [x] `static fun`s
+  * [x] only `pub` can be called from outside
 * [ ] User-declared operators + generation of `!=, <=, >, >=` from `==, <`
 * [ ] User-declared ToString
 

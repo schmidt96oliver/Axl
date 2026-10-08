@@ -19,6 +19,7 @@ public static class SyntaxFacts
         TokenKind.StructKw => "struct",
         TokenKind.PubKw => "pub",
         TokenKind.StaticKw => "static",
+        TokenKind.SelfKw => "self",
     
         // --- Literals
         TokenKind.StringStart => "\"",
@@ -86,6 +87,7 @@ public static class SyntaxFacts
             "struct" => TokenKind.StructKw,
             "pub" => TokenKind.PubKw,
             "static" => TokenKind.StaticKw,
+            "self" => TokenKind.SelfKw,
 
             _ => null
         };

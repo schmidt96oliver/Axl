@@ -8,6 +8,10 @@ struct Test
     fun Private() { }
     var fun VarPrivate() { }
     static fun StaticPrivate() { }
+    
+    // Private members are valid inside the body
+    pub static fun Make(): Test
+        = Test(X = 1);  
 }
 
 var t: Test = Test(X = 1);        //~error NotAccessible

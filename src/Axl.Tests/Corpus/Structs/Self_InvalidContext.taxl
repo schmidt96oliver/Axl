@@ -1,0 +1,23 @@
+﻿//@check
+
+// Positioning of self
+
+let a = self;       //~error InvalidSelfRef
+{ let a = self; }   //~error InvalidSelfRef
+fun A() = self;     //~error InvalidSelfRef
+    
+    
+struct Test
+{
+    static fun A()
+    { let a = self; }       //~error InvalidSelfRef
+    
+    fun B()
+    {
+        let a = self;       // VALID
+        fun Local()
+        {
+            let a = self;   //~error InvalidSelfRef
+        }
+    }
+}

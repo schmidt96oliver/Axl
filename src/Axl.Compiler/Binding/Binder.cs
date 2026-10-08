@@ -255,8 +255,23 @@ public sealed class Binder
 
         foreach (var structSymbol in structs)
             CheckRecursiveStructLayout(structSymbol);
-        
-        //TODO: Bind struct method/static method bodies here
+
+        for (var i = 0; i < structs.Length; i++)
+        {
+            var binder = structBinders[i];
+            var symbol = structs[i];
+
+            var funs = symbol.Members
+                .OfType<FunSymbol>()
+                .Concat(symbol.Members
+                    .OfType<FunGroupSymbol>()
+                    .SelectMany(grp => grp.Funs));
+
+            foreach (var fun in funs)
+            {
+                binder.BindFunBody(fun.DeclarationSyntax!);
+            }
+        }
 
         return structs;
     }
@@ -520,6 +535,7 @@ public sealed class Binder
     {
         GetMemberExprSyntax getMemberExprSyntax => BindGetMember(getMemberExprSyntax),
         IdNameSyntax idNameSyntax => BindIdName(idNameSyntax),
+        SelfSyntax selfSyntax => BindSelf(selfSyntax),
         CallExprSyntax callExprSyntax => BindCall(callExprSyntax),
         
         // Strings and Literals
@@ -878,8 +894,24 @@ public sealed class Binder
     
     #endregion
     
-    #region Names, Assign, Call, GetMember
+    #region Names, Self, Assign, Call, GetMember
 
+    private BoundNode BindSelf(SelfSyntax syntax)
+    {
+        if (_owner is not FunSymbol funOwner ||
+            funOwner.ReceiverType is null ||
+            funOwner.ReceiverType != _owner.OwningType ||
+            _owner.OwningType is null  || 
+            _owner.Owner != _owner.OwningType)
+        {
+            // Currently, self in local funs of methods are rejected.
+            _diagnostics.ReportError(new Diagnostic.InvalidSelfRef(syntax, _owner));
+            return new BoundError(syntax);
+        }
+
+        return new BoundSelf(funOwner.ReceiverType, funOwner.IsMutatingReceiver, syntax);
+    }
+    
     private BoundNode BindIdName(IdNameSyntax syntax)
     {
         if (syntax.Token.IsMissing)

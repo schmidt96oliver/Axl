@@ -436,4 +436,27 @@ public partial record Diagnostic
         public override string Message =>
             $"'{FunName}' cannot be declared '{VarKwSyntax.Text}', because it is static.";
     }
+
+    public sealed record InvalidSelfRef(SelfSyntax Syntax, Symbol BindingOwner) : Error
+    {
+        public override ImmutableArray<SourceLocation> Locations => [Syntax.Location];
+
+        public override string Message
+        {
+            get
+            {
+                if (BindingOwner is FunSymbol { ReceiverType: null }
+                    || BindingOwner.OwningType is null)
+                    return "Cannot access self in static context.";
+
+                if (BindingOwner is FunSymbol fun && fun.ReceiverType != BindingOwner.OwningType)
+                    return "Weirdly enough, receiver of this fun has different type than its owning type.";
+                
+                if (BindingOwner.Owner != BindingOwner.OwningType)
+                    return "Cannot access self from local funs of methods.";
+
+                return "Cannot access self for some reason.";
+            }
+        }
+    }
 }
