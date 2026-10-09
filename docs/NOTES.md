@@ -3,7 +3,7 @@
 
 **Next:** 
 
-* implicit self inside nested local funs
+* LSP: Highlighting after "//=" highlights too much
 
 * bind implicit self for fun groups (needs to go to overload resolution)
 

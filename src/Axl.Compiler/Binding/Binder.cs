@@ -202,6 +202,8 @@ public sealed class Binder
 
     private FunSymbol BindFunSymbol(FunDeclSyntax syntax)
     {
+        Guard.IsState(_owner is FunSymbol or TypeSymbol, $"{nameof(BindFunSymbol)} only valid on types or funs.");
+
         // --- Bind declaration
         var isPublic = false;
         if (syntax.PubKw is not null)
@@ -212,28 +214,53 @@ public sealed class Binder
                 isPublic = true;
         }
 
-        TypeSymbol? receiverType = null;
-        if (syntax.StaticKw is null)
-            receiverType = _owner as TypeSymbol;
-
+        TypeSymbol? receiverType;
         var isMutatingReceiver = false;
-        if (syntax.VarKw is not null)
+        
+        if (_owner is FunSymbol ownerFun)
         {
-            if (_owner is not StructSymbol)
-                _diagnostics.ReportError(new Diagnostic.InvalidModifier(syntax.VarKw, _owner));
-            else if (receiverType is null)
-                _diagnostics.ReportError(new Diagnostic.StaticFunCannotBeVar(syntax.VarKw, syntax.Name));
-            else
-                isMutatingReceiver = true;
-        }
+            // This is a local fun.
+            // Static is not valid. It is just inherited from its parent.
+            if (syntax.StaticKw is not null)
+                _diagnostics.ReportError(new Diagnostic.InvalidModifier(syntax.StaticKw, _owner));
+            receiverType = ownerFun.ReceiverType;
 
+            if (syntax.VarKw is not null)
+            {
+                // Var on local funs is only allowed, if its parent is var.
+                if (receiverType is null)
+                    _diagnostics.ReportError(new Diagnostic.InvalidModifier(syntax.VarKw, _owner));
+                else if (!ownerFun.IsMutatingReceiver)
+                    _diagnostics.ReportError(new Diagnostic.InvalidModifier(syntax.VarKw, _owner)); //TODO: Better diagnostic
+                else
+                    isMutatingReceiver = true;
+            }
+        }
+        else if (_owner is TypeSymbol ownerType)
+        {
+            // This fun is on a type
+            if (syntax.StaticKw is not null)
+            {
+                if (syntax.VarKw is not null)
+                    _diagnostics.ReportError(new Diagnostic.StaticFunCannotBeVar(syntax.VarKw, syntax.Name));
+                receiverType = null;
+            }
+            else
+            {
+                receiverType = ownerType;
+                isMutatingReceiver = syntax.VarKw is not null;
+            }
+        }
+        else
+            throw new UnreachableException();
+        
         var funSymbol = new FunSymbol(syntax.Name.Identifier,
             owner: _owner,
             isPublic,
             receiverType,
             isMutatingReceiver,
             declarationSyntax: syntax);
-        
+
         // Bind signature
         var signatureBinder = NestedBinderWithOwner(funSymbol);
         var returnType = syntax.ReturnTypeAnnotation is not null
@@ -930,9 +957,8 @@ public sealed class Binder
     {
         if (_owner is not FunSymbol funOwner ||
             funOwner.ReceiverType is null ||
-            funOwner.ReceiverType != _owner.OwningType ||
-            _owner.OwningType is null  || 
-            _owner.Owner != _owner.OwningType)
+            _owner.OwningType is null ||
+            funOwner.ReceiverType != _owner.OwningType)
         {
             // Currently, self in local funs of methods are rejected.
             _diagnostics.ReportError(new Diagnostic.InvalidSelfRef(syntax, _owner));
@@ -964,8 +990,7 @@ public sealed class Binder
         BoundSelf? receiver = null;
         var selfType = _owner.OwningType;
         if (selfType is not null
-            && ((symbol is FunSymbol symbolFun && symbolFun.ReceiverType == selfType) || symbol is FieldSymbol)
-            && symbol.Owner == selfType)
+            && ((symbol is FunSymbol symbolFun && symbolFun.ReceiverType == selfType) || symbol is FieldSymbol))
         {
             receiver = _owner is FunSymbol fun
                 ? fun.ReceiverType == selfType 

@@ -1,0 +1,88 @@
+﻿//@check
+
+// Local funs of struct funs inherit their static-ness, can be declared var
+// if their parent is var and can access self (explicitly or implicitly).
+// Local funs can be called, but not through self.
+
+struct Test
+{
+    Field: I32;
+    
+    pub fun NonVar()
+    {
+        // Can be called normally
+        NonVarLocal();
+        
+        // But not through self
+        self.NonVarLocal();   //~error UndefinedMember
+        
+        fun NonVarLocal()
+        {
+            // Field can be accessed through implicit and explicit self
+            Print(self.Field);
+            Print(Field);
+            
+            // But not mutated without var
+            Field = 1;      //~error CannotAssign
+        }
+        
+        // Local fun cannot be var, if its parent is not var
+        var fun VarLocal()  //~error InvalidModifier
+        { 
+            var fun InnerMost() { }     //~error InvalidModifier
+        }     
+        
+        static fun StaticFun() {}   //~error InvalidModifier 
+    }
+    
+    pub var fun Var()
+    {
+        VarLocal();
+        self.Local();   //~error UndefinedMember
+    
+        var fun VarLocal()
+        {
+            // Can mutate field
+            Field = 2;
+            self.Field = 2;
+            
+            var fun VarInnerMost()
+            {
+                // Can mutate field
+                Field = 2;
+                self.Field = 2;
+            }
+            
+            fun NonVarInnerMost()
+            {
+                // Can mutate field
+                Field = 2;          //~error CannotAssign
+                self.Field = 2;     //~error CannotAssign
+                
+                // Non-var local fun cannot call adjacent var fun
+                VarInnerMost();     //~error CannotMutateReceiver
+                
+                var fun Var()       //~error InvalidModifier
+                {
+                    Field = 2;          //~error CannotAssign
+                    self.Field = 2;     //~error CannotAssign
+                }
+            }
+        }
+    }
+    
+    pub static fun Static()
+    {
+        fun Local()
+        {
+            Print(Field);       //~error FieldNotAccessibleInStaticContext
+            Print(self.Field);  //~error InvalidSelfRef
+            
+            var fun Local2() { }    //~error InvalidModifier
+            static fun Local3() { } //~error InvalidModifier
+        }
+        
+        var fun VarLocal() { }          //~error InvalidModifier
+        static fun StaticLocal() { }    //~error InvalidModifier
+    }
+}

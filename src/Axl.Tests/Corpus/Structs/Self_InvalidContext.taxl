@@ -17,7 +17,7 @@ struct Test
         let a = self;       // VALID
         fun Local()
         {
-            let a = self;   //~error InvalidSelfRef
+            let a = self;   // VALID in local funs
         }
     }
 }
