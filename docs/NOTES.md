@@ -3,6 +3,12 @@
 
 **Next:** 
 
+* test: `fun A(A: A)`
+* test shadowing Global -> Script Funs -> Script locals -> Struct Static -> Struct Impl -> Params -> Locals
+* test script funs, script locals in structs
+
+* Bind fun+structs together; then add Signature
+
 * bind implicit self for fun groups (needs to go to overload resolution)
 
 * Duck-types methods (StringExpr, operators)
@@ -20,6 +26,8 @@
 
 * how to handle multiple declarations?
   * Where do they report unecessary diagnostics? => At least struct init for duped fields
+
+* refactor: BoundTree verifies correctness in its constructor. As a safety net. Remove from FunBuilder
 
 # Roadmap
 
@@ -46,7 +54,7 @@ One type (maybe struct) inside scripts.
   * [x] reject field mutation in non-var context
   * [x] non-var can only call non-var methods through `self`
   * [x] `var fun` can only be called through `var`. Also nested cases.
-  * [ ] implicit `self`
+  * [x] implicit `self`
   * [ ] local funs become methods as well (`self` is captured)
   * [x] Can see private fields
 

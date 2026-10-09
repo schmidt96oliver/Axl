@@ -1,0 +1,22 @@
+﻿using Axl.Compiler;
+using Axl.Compiler.Syntax;
+using Axl.Compiler.Text;
+using Meziantou.Framework.InlineSnapshotTesting;
+
+namespace Axl.Tests.Binding;
+
+public class BrokenInput
+{
+    private string Diagnostics(string input)
+    {
+        var source = SourceText.From(input);
+        var compilation = Compilation.From(Parser.Parse(source));
+        return new Dump(source)
+            .Add(compilation.Diagnostics)
+            .ToString();
+    }
+
+    [Fact]
+    public void ScriptLocalFunWithoutName()
+        => InlineSnapshot.Validate(Diagnostics("fun"), "ERROR MissingToken@[3, 3): Expected an identifier.");
+}

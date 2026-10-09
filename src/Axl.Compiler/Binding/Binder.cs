@@ -163,9 +163,7 @@ public sealed class Binder
     {
         var funs = syntaxes.Select(BindFunSymbol).ToImmutableArray();
 
-        // Puts funs with the same name into a FunGroupSymbol
         var singleOrGroupSymbols = funs
-            .Where(fun => fun.Name.Length > 0)
             .GroupBy(fun => fun.Name)
             .Select(funGrp => (Symbol)(funGrp.ToImmutableArray() switch
             {
