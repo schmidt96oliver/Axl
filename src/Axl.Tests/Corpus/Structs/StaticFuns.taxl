@@ -8,9 +8,9 @@ struct Test
     { 
         // static members are visible implicitly
         Static();
-        Method();       //~error UndefinedName
+        Method();       //~error CannotCallWithoutReceiver
         
-        let a = X;      //~error UndefinedName
+        let a = X;      //~error FieldNotAccessibleInStaticContext
         let a = self;   //~error InvalidSelfRef
         let a = self.X; //~error InvalidSelfRef
     }

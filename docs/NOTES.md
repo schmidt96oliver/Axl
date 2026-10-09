@@ -3,7 +3,7 @@
 
 **Next:** 
 
-* Bind fun+structs together; then add Signature
+* implicit self inside nested local funs
 
 * bind implicit self for fun groups (needs to go to overload resolution)
 

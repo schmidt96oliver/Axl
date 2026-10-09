@@ -13,10 +13,11 @@ namespace Axl.Compiler.Symbols;
 public sealed class FunBuilder
 {
     private readonly List<ParameterSymbol> _parameters = [];
-    private FunSymbol _fun;
+    private readonly FunSymbol _fun;
     private readonly BaseNamespaceSymbol _baseNamespace;
     private BoundStmt? _last = null;
     private bool _isFinished = false;
+    private TypeSymbol? _returnType = null;
 
 
     private FunBuilder(FunSymbol fun, BaseNamespaceSymbol baseNamespace)
@@ -27,22 +28,22 @@ public sealed class FunBuilder
     
 
     public static FunBuilder Method(string name, Symbol parent, TypeSymbol receiverType, BaseNamespaceSymbol baseNamespace,
-        TypeSymbol? returnType = null, bool isPublic = true)
+        bool isPublic = true)
     {
-        var fun = new FunSymbol(name, parent, isPublic, receiverType, returnType ?? baseNamespace.Unit);
+        var fun = new FunSymbol(name, parent, isPublic, receiverType, isMutatingReceiver: false);
         return new FunBuilder(fun, baseNamespace);
     }
 
     public static FunBuilder Method(TokenKind tokenName, Symbol parent, TypeSymbol receiverType,
-        BaseNamespaceSymbol baseNamespace, TypeSymbol? returnType = null, bool isPublic = true)
+        BaseNamespaceSymbol baseNamespace, bool isPublic = true)
         => Method(name: SyntaxFacts.GetText(tokenName) ??
                         throw new ArgumentException($"{nameof(tokenName)} has no token text.", nameof(tokenName)),
-            parent, receiverType, baseNamespace, returnType, isPublic);
+            parent, receiverType, baseNamespace, isPublic);
 
     public static FunBuilder Static(string name, Symbol parent,
-        BaseNamespaceSymbol baseNamespace, TypeSymbol? returnType = null, bool isPublic = true)
+        BaseNamespaceSymbol baseNamespace, bool isPublic = true)
     {
-        var fun = new FunSymbol(name, parent, isPublic, null, returnType ?? baseNamespace.Unit);
+        var fun = new FunSymbol(name, parent, isPublic, null, isMutatingReceiver: false);
         return new FunBuilder(fun, baseNamespace);
     }
 
@@ -83,13 +84,14 @@ public sealed class FunBuilder
     public BoundReturn Return(BoundValue? expr = null)
     {
         var exprType = expr?.Type ?? _baseNamespace.Unit;
-        Guard.MustBe(_fun.ReturnType == exprType);
+        Guard.MustBe(_returnType is null || _returnType == exprType);
+        _returnType = exprType;
         return Set(new BoundReturn(expr));
     }
 
     public BoundBlock Block(params ImmutableArray<BoundStmt> stmts)
     {
-        return Set(new BoundBlock(stmts, [], [], _baseNamespace.Unit));
+        return Set(new BoundBlock(stmts, [], _baseNamespace.Unit));
     }
 
     private T Set<T>(T expr)
@@ -102,15 +104,23 @@ public sealed class FunBuilder
     public FunSymbol ToFun()
     {
         Guard.IsState(!_isFinished);
-
+        
         var body = GetBody();
-        _fun.SetParameters([.. _parameters]);
+        Debug.Assert(_returnType is not null);
+        
+        _fun.SetParametersAndReturnType([.. _parameters], _returnType);
         _fun.SetBody(body);
         return _fun;
     }
 
     private BoundBlock GetBody()
     {
+        if (_returnType is null)
+        {
+            Guard.IsState(_last is BoundValue or null);
+            Return(_last as BoundValue);
+        }
+        
         if (_last is null)
             Return();
         Debug.Assert(_last is not null);
@@ -121,7 +131,7 @@ public sealed class FunBuilder
 
         if (!_last.IsDiverging)
         {
-            if (_fun.ReturnType == _baseNamespace.Unit)
+            if (_returnType == _baseNamespace.Unit || _returnType is null)
             {
                 var block = (BoundBlock)_last;
                 Block([.. block.Stmts, Return()]);

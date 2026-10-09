@@ -29,32 +29,29 @@ public sealed class FunSymbol : Symbol
 
 
     public ImmutableArray<TypeSymbol> ParameterTypes => [.. Parameters.Select(parameter => parameter.Type)];
-    
-    public TypeSymbol ReturnType { get; }
+
+    private TypeSymbol? _returnType;
+    public TypeSymbol ReturnType => _returnType ?? throw new InvalidOperationException($"{nameof(ReturnType)} of '{Name}' not bound yet.");
     public FunDeclSyntax? DeclarationSyntax { get; }
 
     private FunBody? _body;
 
-    public FunBody Body => _body ?? throw new InvalidOperationException($"Body of '{Name}' not bound yet.");
+    public FunBody Body => _body ?? throw new InvalidOperationException($"{nameof(Body)} of '{Name}' not bound yet.");
     
 
     public FunSymbol(string name,
         Symbol owner,
         bool isPublic,
         TypeSymbol? receiverType,
-        TypeSymbol returnType,
-        bool isMutatingReceiver = false,
-        FunBody? body = null,
+        bool isMutatingReceiver,
         FunDeclSyntax? declarationSyntax = null) : base(name, owner)
     {
+        Guard.MustBe(!isMutatingReceiver || receiverType is not null);
+        
         IsPublic = isPublic;
         ReceiverType = receiverType;
-        ReturnType = returnType;
         IsMutatingReceiver = isMutatingReceiver;
         DeclarationSyntax = declarationSyntax;
-
-        if (body is not null)
-            SetBody(body.Value);
     }
 
     /// <summary>
@@ -67,9 +64,10 @@ public sealed class FunSymbol : Symbol
         _body = body;
     }
 
-    internal void SetParameters(ImmutableArray<ParameterSymbol> parameters)
+    internal void SetParametersAndReturnType(ImmutableArray<ParameterSymbol> parameters, TypeSymbol returnType)
     {
-        Guard.IsState(_parameters is null, $"Parameters of '{Name}' already bound.");
+        Guard.IsState(_parameters is null && _returnType is null, $"{nameof(Parameters)} or {nameof(ReturnType)} of '{Name}' already bound.");
         _parameters = parameters;
+        _returnType = returnType;
     }
 }
