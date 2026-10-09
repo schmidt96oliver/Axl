@@ -29,25 +29,42 @@ public sealed class Scope
         => new Scope(Parent, [..VisibleHere, .. visibleSymbols]);
     
     /// <summary>
-    /// Returns the last symbol with the specified name that
-    /// is declared on this scope. Or <c>null</c>, if <paramref name="name"/>
-    /// is not declared.
+    /// Returns all symbols visible inside only this scope that
+    /// match the specified <paramref name="name"/>. First result
+    /// is the closest result.
     /// </summary>
-    public Symbol? LookupHere(string name)
+    public ImmutableArray<Symbol> LookupHere(string name)
     {
-        // Last declared symbol is first, since it might shadow
-        // symbols declared before.
+        // Variables can be shadowed inside the same scope,
+        // so only the last variable with that name should
+        // be added to the result list.
         
-        return VisibleHere.LastOrDefault(symbol => symbol.Name.SequenceEqual(name));
+        var result = ImmutableArray.CreateBuilder<Symbol>();
+        foreach (var symbol in VisibleHere.Reverse().Where(s => s.Name == name))
+        {
+            if (symbol is VariableSymbol)
+            {
+                var hasVariableWithSameName = result
+                    .OfType<VariableSymbol>()
+                    .Any(s => s.Name == symbol.Name);
+                if (!hasVariableWithSameName)
+                    result.Add(symbol);
+            }
+            else
+                result.Add(symbol);
+        }
+        
+        return result.DrainToImmutable();
     }
-    
-    /// <summary>
-    /// Returns the last symbol with the specified name that
-    /// is declared on this or any parent scope.
-    /// Or <c>null</c>, if <paramref name="name"/> is not declared.
-    /// </summary>
-    public Symbol? Lookup(string name)
-        => LookupHere(name) ?? Parent?.Lookup(name);
 
-    
+    /// <summary>
+    /// Returns all symbols visible from this scope (including
+    /// symbols visible in parent scopes) matching the
+    /// specified <paramref name="name"/>. The first result
+    /// is the closest to this scope.
+    /// </summary>
+    public ImmutableArray<Symbol> Lookup(string name)
+        => Parent is not null
+            ? [.. LookupHere(name), .. Parent.Lookup(name)]
+            : LookupHere(name);
 }

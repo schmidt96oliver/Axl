@@ -3,7 +3,7 @@ using Axl.Compiler.Syntax;
 
 namespace Axl.Compiler.Binding.BoundTree;
 
-public sealed class BoundSelf(TypeSymbol type, bool mutatable = false, SyntaxNode? syntax = null)
+public sealed class BoundSelf(TypeSymbol type, bool mutable = false, SyntaxNode? syntax = null)
     : BoundValue(type, syntax)
 {
     /// <summary>
@@ -15,7 +15,7 @@ public sealed class BoundSelf(TypeSymbol type, bool mutatable = false, SyntaxNod
     /// Mutability depends on context: For 'var fun' it is mutable,
     /// for 'fun', it is not.
     /// </summary>
-    public override bool IsMutablePlace => mutatable;
+    public override bool IsMutablePlace => mutable;
 
     /// <summary>
     /// Self is never directly assignable to.

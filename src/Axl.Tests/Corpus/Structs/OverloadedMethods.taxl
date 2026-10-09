@@ -15,7 +15,7 @@ struct Test
     pub fun A(a: String, b: String)
         = Print("4");
 }
-
+  
 var t = Test();
 t.A();
 Test.A(1);

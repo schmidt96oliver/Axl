@@ -4,10 +4,10 @@
 struct Test 
 {
     X: I32;
-    pub Inner: Inner;
+    pub Inn: Inner;
     
     pub static fun Make(x: I32): Test
-        = Test(X = x, Inner = Inner(Value = x));
+        = Test(X = x, Inn = Inner(Value = x));
     
     pub fun Get(): I32
         = self.X;
@@ -25,8 +25,8 @@ struct Inner
 }
 
 var t = Test.Make(0);
-Print("({t.Get()}, {t.Inner.Value}) ");
+Print("({t.Get()}, {t.Inn.Value}) ");
 t.Set(1);
-Print("({t.Get()}, {t.Inner.Value}) ");
-t.Inner.Set(2);
-Print("({t.Get()}, {t.Inner.Value}) ");
+Print("({t.Get()}, {t.Inn.Value}) ");
+t.Inn.Set(2);
+Print("({t.Get()}, {t.Inn.Value}) ");

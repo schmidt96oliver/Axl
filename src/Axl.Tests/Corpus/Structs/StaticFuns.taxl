@@ -8,9 +8,9 @@ struct Test
     { 
         // static members are visible implicitly
         Static();
-        Method();       //~error CannotCallWithoutReceiver
+        Method();       //~error InstanceMemberNotAccessibleFromStaticContext
         
-        let a = X;      //~error FieldNotAccessibleInStaticContext
+        let a = X;      //~error InstanceMemberNotAccessibleFromStaticContext
         let a = self;   //~error InvalidSelfRef
         let a = self.X; //~error InvalidSelfRef
     }
@@ -28,11 +28,11 @@ struct Test
     pub static var fun StaticVar() { }      //~error StaticFunCannotBeVar
 }
 
-Test.Method();   //~error CannotCallWithoutReceiver
+Test.Method();   //~error InstanceMemberNotAccessibleFromStaticContext
 Test.Static();
-
+ 
 let t = Test(X = 1);
 t.Method();
-t.Static();              //~error CannotCallWithReceiver
+t.Static();              //~error CannotAccessThroughInstance
 
 Test.StaticVar();

@@ -5,4 +5,4 @@
 
 struct Test { pub X: I32; }
 
-fun Bar(a: Test.X) { }      //~error CannotAccessFieldWithoutReceiver
+fun Bar(a: Test.X) { }      //~error InstanceMemberNotAccessibleFromStaticContext

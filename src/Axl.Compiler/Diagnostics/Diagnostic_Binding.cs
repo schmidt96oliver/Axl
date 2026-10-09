@@ -92,7 +92,7 @@ public partial record Diagnostic
                     => "Cannot assign to through 'let' binding.",
                 BoundValue => "Cannot assign this for unknown reason.",
                     
-                BoundFunGroupRef boundFunGroup => $"Cannot assign to '{boundFunGroup.FunGroup.Name}', because it is a group of overloaded funs.",
+                BoundFunGroupRef boundFunGroup => $"Cannot assign to '{boundFunGroup.Name}', because it is a group of overloaded funs.",
                 BoundFunRef boundFun => $"Cannot assign to '{boundFun.Fun.Name}', because it is a function.",
                 BoundNamespaceRef boundNamespace => $"Cannot assign to '{boundNamespace.Namespace.Name}', because it is a namespace.",
                 BoundTypeRef boundType => $"Cannot assign to '{boundType.Type.Name}', because it is a type.",
@@ -146,12 +146,22 @@ public partial record Diagnostic
             => $"Both 'if' and 'else' branches must have the same type. Got '{First.Type.Name}' and '{Second.Type.Name}'.";
     }
 
-    public sealed record UndefinedMember(IdNameSyntax MemberSyntax, Symbol OwnerSymbol) : Error
+    public sealed record UndefinedMember(BoundNode Left, IdNameSyntax MemberSyntax) : Error
     {
         public override ImmutableArray<SourceLocation> Locations => [MemberSyntax.Location];
 
-        public override string Message =>
-            $"'{OwnerSymbol.Name}' has no member '{MemberSyntax.Token.Identifier}'.";
+        public override string Message => Left switch
+        {
+            BoundValue value => $"'{value.Type.Name}' has no member '{MemberSyntax.Token.Identifier}'.",
+            BoundTypeRef type => $"'{type.Type.Name}' has no member '{MemberSyntax.Token.Identifier}'.",
+            BoundNamespaceRef ns => $"'{ns.Namespace.Name}' has no member '{MemberSyntax.Token.Identifier}'.",
+
+            BoundFunGroupRef funGroup =>
+                $"'{funGroup.Name}' is a group of overloaded function and does not have members.",
+            BoundFunRef fun => $"'{fun.Fun.Name}' is a function and does not have members.",
+
+            BoundStmt => $"Undefined member '{MemberSyntax.Token.Identifier}'.",
+        };
 
     }
 
@@ -202,22 +212,6 @@ public partial record Diagnostic
             => $"The integral is too big to fit into '{TargetType.Name}'.";
     }
 
-    public sealed record CannotCallWithoutReceiver(string FunName, bool IsOverloaded, SyntaxNode Syntax) : Error
-    {
-        public override ImmutableArray<SourceLocation> Locations => [Syntax.Location];
-        public override string Message => IsOverloaded
-            ? $"All overloads of '{FunName}' are methods. They cannot be called from a static context."
-            : $"'{FunName}' is a method. It cannot be called from a static context.";
-    }
-    
-    public sealed record CannotCallWithReceiver(string FunName, bool IsOverloaded, SyntaxNode Syntax) : Error
-    {
-        public override ImmutableArray<SourceLocation> Locations => [Syntax.Location];
-        public override string Message => IsOverloaded
-            ? $"All overloads of '{FunName}' are static. They cannot be called from an instance."
-            : $"'{FunName}' is static. It cannot be called from an instance.";
-    }
-
     public sealed record DuplicateFunDeclarations(ImmutableArray<FunSymbol> Duplicates) : Error
     {
         public override ImmutableArray<SourceLocation> Locations
@@ -246,7 +240,7 @@ public partial record Diagnostic
         public override string Message => $"Duplicate parameter '{Duplicates[0].Name}'.";
     }
 
-    public sealed record CannotResolveFun(ArgListSyntax Syntax, string FunName, ImmutableArray<FunSymbol> Candidates, ImmutableArray<TypeSymbol> ArgumentTypes) : Error
+    public sealed record CannotResolveFun(ArgListSyntax Syntax, string FunName, ImmutableArray<BoundFunRef> Candidates, ImmutableArray<TypeSymbol> ArgumentTypes) : Error
     {
         public override ImmutableArray<SourceLocation> Locations
         {
@@ -273,10 +267,10 @@ public partial record Diagnostic
         {
             return string.Join('\n', Candidates.Take(5).Select(Single));
             
-            string Single(FunSymbol fun)
-                => string.Concat(fun.ReceiverType is null ? "static fun " : "fun ",
+            string Single(BoundFunRef funRef)
+                => string.Concat(funRef.Fun.ReceiverType is null ? "static fun " : "fun ",
                     $"'{FunName} '",
-                    GetTypeListString(fun.ParameterTypes));
+                    GetTypeListString(funRef.Fun.ParameterTypes));
         }
     }
 
@@ -294,10 +288,10 @@ public partial record Diagnostic
         public override string Message => "Return value is missing.";
     }
 
-    public sealed record CannotCapture(IdNameSyntax Syntax) : Error
+    public sealed record CannotCapture(SyntaxNode Syntax) : Error
     {
         public override ImmutableArray<SourceLocation> Locations => [Syntax.Location];
-        public override string Message => $"Cannot capture variable '{Syntax.Token.Identifier}' from outside of this fun.";
+        public override string Message => $"Cannot capture variable '{Syntax.Text}' from outside of this fun.";
     }
 
     public sealed record MissingReturn(SyntaxNode BlockSyntax) : Error
@@ -321,10 +315,10 @@ public partial record Diagnostic
             => "Not all code-paths return a value.";
     }
 
-    public sealed record CannotAccessThroughInstance(IdNameSyntax MemberSyntax, TypeSymbol ParentSymbol) : Error
+    public sealed record CannotAccessThroughInstance(SyntaxNode MemberSyntax) : Error
     {
         public override ImmutableArray<SourceLocation> Locations => [MemberSyntax.Location];
-        public override string Message => $"Cannot access nested type '{MemberSyntax.Token.Identifier}' through a value. Use '{ParentSymbol.Name}.{MemberSyntax.Token.Identifier}' instead.";
+        public override string Message => $"Cannot access static member '{MemberSyntax.Text}' through an instance.";
     }
 
     public sealed record NotAValue(BoundNode BoundNode) : Error
@@ -337,12 +331,6 @@ public partial record Diagnostic
     {
         public override ImmutableArray<SourceLocation> Locations => [BoundNode.Syntax!.Location];
         public override string Message => $"Expected a value.";
-    }
-
-    public sealed record CannotAccessFieldWithoutReceiver(SyntaxNode Syntax, FieldSymbol FieldSymbol) : Error
-    {
-        public override ImmutableArray<SourceLocation> Locations => [Syntax.Location];
-        public override string Message => $"Cannot access field '{FieldSymbol.Name}' in static context.";
     }
 
     public sealed record AlreadyDeclared(ImmutableArray<Symbol> OffendingSymbols) : Error
@@ -469,9 +457,9 @@ public partial record Diagnostic
         }
     }
 
-    public sealed record FieldNotAccessibleInStaticContext(FieldSymbol Field, SyntaxNode Syntax) : Error
+    public sealed record InstanceMemberNotAccessibleFromStaticContext(string FieldName, SyntaxNode Syntax) : Error
     {
         public override ImmutableArray<SourceLocation> Locations => [Syntax.Location];
-        public override string Message => $"Field '{Field.Name}' cannot be accessed from static context.";
+        public override string Message => $"Instance member '{FieldName}' cannot be accessed from static context.";
     }
 }

@@ -52,8 +52,7 @@ public sealed class BaseNamespaceSymbol : NamespaceSymbol
 
     private ImmutableArray<Symbol> GeneratePrintFuns(params ReadOnlySpan<TypeSymbol> types)
     {
-        var printFuns = ImmutableArray.CreateBuilder<FunSymbol>();
-        var printLineFuns = ImmutableArray.CreateBuilder<FunSymbol>();
+        var funs = ImmutableArray.CreateBuilder<Symbol>();
         
         var print = new FunSymbol("Print", 
             owner: this,
@@ -62,19 +61,19 @@ public sealed class BaseNamespaceSymbol : NamespaceSymbol
             isMutatingReceiver: false);
         print.SetParametersAndReturnType([new ParameterSymbol("text", print, String)], Unit);
         print.SetBody(Intrinsic.Print);
-        printFuns.Add(print);
+        funs.Add(print);
 
         // PrintLine = Print("{arg}\n")
         var b = FunBuilder.Static("PrintLine", this, this);
         b.Param("text", String);
         b.StaticCall(print, b.String(b.Arg0, "\n"));
         var printLine = b.ToFun();
-        printLineFuns.Add(printLine);
+        funs.Add(printLine);
         
         // PrintLine() = Print("\n")
         b = FunBuilder.Static("PrintLine", this, this);
         b.StaticCall(print, b.String("\n"));
-        printLineFuns.Add(b.ToFun());
+        funs.Add(b.ToFun());
 
         // Generate Print(T) and PrintLine(T) for all 
         // T that have T.ToString()
@@ -90,17 +89,15 @@ public sealed class BaseNamespaceSymbol : NamespaceSymbol
             var typePrint = FunBuilder.Static("Print", this, this);
             typePrint.Param("arg", type);
             typePrint.StaticCall(print, typePrint.InstanceCall(toString, typePrint.Arg0));
-            printFuns.Add(typePrint.ToFun());
+            funs.Add(typePrint.ToFun());
             
             var typePrintLine = FunBuilder.Static("PrintLine", this, this);
             typePrintLine.Param("arg", type);
             typePrintLine.StaticCall(printLine, typePrintLine.InstanceCall(toString, typePrintLine.Arg0));
-            printLineFuns.Add(typePrintLine.ToFun());
+            funs.Add(typePrintLine.ToFun());
         }
 
-        var printGroup = new FunGroupSymbol("Print", this, printFuns.DrainToImmutable());
-        var printLineGroup = new FunGroupSymbol("PrintLine", this, printLineFuns.DrainToImmutable());
-        return [printGroup, printLineGroup];
+        return funs.DrainToImmutable();
     }
 
     private FunSymbol IntrinsicMethodNoParam(string name, TypeSymbol type, TypeSymbol returnType,
@@ -156,10 +153,10 @@ public sealed class BaseNamespaceSymbol : NamespaceSymbol
 
     private ImmutableArray<Symbol> GetI32Members() =>
     [
-        new FunGroupSymbol(SyntaxFacts.GetText(TokenKind.Minus)!, I32, [
-            IntrinsicMethodNoParam(TokenKind.Minus, I32, returnType: I32, Intrinsic.NegateI32),
-            IntrinsicMethodSingleParam(TokenKind.Minus, I32, returnType: I32, Intrinsic.SubtractI32),
-        ]),
+
+        IntrinsicMethodNoParam(TokenKind.Minus, I32, returnType: I32, Intrinsic.NegateI32),
+        IntrinsicMethodSingleParam(TokenKind.Minus, I32, returnType: I32, Intrinsic.SubtractI32),
+
 
         IntrinsicMethodSingleParam(TokenKind.Plus, I32,
             returnType: I32, Intrinsic.AddI32),
@@ -179,11 +176,11 @@ public sealed class BaseNamespaceSymbol : NamespaceSymbol
 
     private ImmutableArray<Symbol> GetI64Members() =>
     [
-        new FunGroupSymbol(SyntaxFacts.GetText(TokenKind.Minus)!, I64, [
-            IntrinsicMethodNoParam(TokenKind.Minus, I64, returnType: I64, Intrinsic.NegateI64),
-            IntrinsicMethodSingleParam(TokenKind.Minus, I64,
-                returnType: I64, Intrinsic.SubtractI64),
-        ]),
+
+        IntrinsicMethodNoParam(TokenKind.Minus, I64, returnType: I64, Intrinsic.NegateI64),
+        IntrinsicMethodSingleParam(TokenKind.Minus, I64,
+            returnType: I64, Intrinsic.SubtractI64),
+
 
         IntrinsicMethodSingleParam(TokenKind.Plus, I64,
             returnType: I64, Intrinsic.AddI64),
@@ -202,11 +199,11 @@ public sealed class BaseNamespaceSymbol : NamespaceSymbol
 
     private ImmutableArray<Symbol> GetF32Members() =>
     [
-        new FunGroupSymbol(SyntaxFacts.GetText(TokenKind.Minus)!, F32, [
-            IntrinsicMethodNoParam(TokenKind.Minus, F32, returnType: F32, Intrinsic.NegateF32),
-            IntrinsicMethodSingleParam(TokenKind.Minus,
-                F32, returnType: F32, Intrinsic.SubtractF32),
-        ]),
+
+        IntrinsicMethodNoParam(TokenKind.Minus, F32, returnType: F32, Intrinsic.NegateF32),
+        IntrinsicMethodSingleParam(TokenKind.Minus,
+            F32, returnType: F32, Intrinsic.SubtractF32),
+
 
         IntrinsicMethodSingleParam(TokenKind.Plus,
             F32, returnType: F32, Intrinsic.AddF32),
@@ -225,11 +222,11 @@ public sealed class BaseNamespaceSymbol : NamespaceSymbol
 
     private ImmutableArray<Symbol> GetF64Members() =>
     [
-        new FunGroupSymbol(SyntaxFacts.GetText(TokenKind.Minus)!, F64, [
-            IntrinsicMethodNoParam(TokenKind.Minus, F64, returnType: F64, Intrinsic.NegateF64),
-            IntrinsicMethodSingleParam(TokenKind.Minus, F64,
-                returnType: F64, Intrinsic.SubtractF64),
-        ]),
+
+        IntrinsicMethodNoParam(TokenKind.Minus, F64, returnType: F64, Intrinsic.NegateF64),
+        IntrinsicMethodSingleParam(TokenKind.Minus, F64,
+            returnType: F64, Intrinsic.SubtractF64),
+
 
         IntrinsicMethodSingleParam(TokenKind.Plus, F64,
             returnType: F64, Intrinsic.AddF64),

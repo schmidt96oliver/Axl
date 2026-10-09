@@ -3,15 +3,27 @@
 
 **Next:** 
 
-* rework: Diagnostic messages for modifiers & static/non-static context
+* test: FunGroup A -> A in nested scope with same signatures
 
-* bind implicit self for fun groups (needs to go to overload resolution)
+* Regression: ForwardDeclared.taxl + LocalFun_ShadowsOuterFun
+  => Bring lookup walk to binder; have it stop on nested scopes
+  * It seems, Lookup should just resolve funs either way and possibly insert implicit self
+  * SelectCallee then filters by Receiver, Arity, Matching Arguments, Mutability, Accessibility
+  * that way, better errors can be reported
+  * or it failed results get passed into SelectCallee
+
+* rework: Unable to resolve overloaded fun (private, static, var) gives weird error messages
+
+* send LookupResult to SelectCallee for improved error messages?
+* test: overload resolution must respect accessibility (should work)
+* test: implicit self for fun groups (should work)
+
+* rework: Diagnostic messages for modifiers & static/non-static context
 
 * Duck-types methods (StringExpr, operators)
   * private operator/ToString; Duck typed must check for accessibility
   * Add WellKnownNames for common access point of names
 
-* overload resolution: filter visibility
 
 * add leaking private members to worklist somewhere or do it :D
 
