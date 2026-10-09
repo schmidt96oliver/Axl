@@ -3,7 +3,7 @@
 
 **Next:** 
 
-* LSP: Highlighting after "//=" highlights too much
+* rework: Diagnostic messages for modifiers & static/non-static context
 
 * bind implicit self for fun groups (needs to go to overload resolution)
 

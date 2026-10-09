@@ -67,7 +67,8 @@ public sealed class TaxlParser(SourceText sourceText, DiagnosticBag diagnostics)
             .Select(i => trimmedLineLocations[i])
             .Select(lineLocation => lineLocation.SourceText.GetLocationFromLength(lineLocation.Start, 3))
             .ToImmutableArray();
-        var range = SourceRange.FromTo(trimmedLineLocations[0].Range, trimmedLineLocations[^1].Range);
+        var range = SourceRange.FromTo(trimmedLineLocations[expectationLineIndices[0]].Range, trimmedLineLocations[
+            expectationLineIndices[^1]].Range);
         var location = trimmedLineLocations[0].SourceText.GetLocation(range);
 
         return new Expectation(expectationText, location, prefixLocations);

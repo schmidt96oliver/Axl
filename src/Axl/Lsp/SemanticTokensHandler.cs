@@ -161,7 +161,7 @@ public class SemanticTokensHandler(ILanguageServerFacade facade) : SemanticToken
         var text = commentToken.Text;
         
         // --- Fragment headlines
-        if (text.StartsWith("//---") || text.StartsWith("//==="))
+        if (text.StartsWith("//---"))
         {
             builder.Push(startLine, startColumn, length: Math.Min(5, commentToken.FullRange.Length),
                 (SemanticTokenType?)SemanticTokenType.Decorator);
