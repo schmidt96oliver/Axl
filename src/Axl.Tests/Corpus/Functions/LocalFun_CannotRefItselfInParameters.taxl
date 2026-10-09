@@ -1,0 +1,10 @@
+﻿//@check
+
+// A fun name is itself not visible to
+// its parameters.
+
+fun Local(Local: Local,     //~error UndefinedName
+              b: Other)     //~error UndefinedName
+{ }
+
+fun Other() { }

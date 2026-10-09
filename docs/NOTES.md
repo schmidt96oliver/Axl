@@ -3,10 +3,6 @@
 
 **Next:** 
 
-* test: `fun A(A: A)`
-* test shadowing Global -> Script Funs -> Script locals -> Struct Static -> Struct Impl -> Params -> Locals
-* test script funs, script locals in structs
-
 * Bind fun+structs together; then add Signature
 
 * bind implicit self for fun groups (needs to go to overload resolution)

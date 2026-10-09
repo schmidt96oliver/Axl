@@ -1,0 +1,19 @@
+﻿//@check
+
+// A struct on a script does not see anything that is
+// declared on the script. Structs in scripts are self-contained
+// that way, because they cannot capture state. A script
+// is just like a local fun that allows types on top.
+
+let a = 1;
+
+fun OuterFun() { }
+
+struct Test 
+{
+    fun Test()
+    {
+        OuterFun();     //~error UndefinedName
+        let b = a;      //~error UndefinedName
+    }
+}

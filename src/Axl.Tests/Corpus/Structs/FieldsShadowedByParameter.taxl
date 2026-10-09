@@ -1,0 +1,18 @@
+﻿//@run
+//= 21
+
+struct Test 
+{
+    pub Field: I32;
+
+    pub fun Test(Field: F64)
+    {
+        Print(Field);
+        
+        let Field = 1;
+        Print(Field);
+    }
+}
+
+let t = Test(Field = 0);
+t.Test(2.0);
