@@ -1,5 +1,6 @@
 ﻿using System.Collections.Immutable;
 using System.Diagnostics;
+using Axl.Compiler.Binding;
 using Axl.Compiler.Binding.BoundTree;
 using Axl.Compiler.Symbols;
 using Axl.Compiler.Syntax;
@@ -92,7 +93,7 @@ public partial record Diagnostic
                     => "Cannot assign to through 'let' binding.",
                 BoundValue => "Cannot assign this for unknown reason.",
                     
-                BoundFunGroupRef boundFunGroup => $"Cannot assign to '{boundFunGroup.Name}', because it is a group of overloaded funs.",
+                BoundFunGroup boundFunGroup => $"Cannot assign to '{boundFunGroup.Name}', because it is a group of overloaded funs.",
                 BoundFunRef boundFun => $"Cannot assign to '{boundFun.Fun.Name}', because it is a function.",
                 BoundNamespaceRef boundNamespace => $"Cannot assign to '{boundNamespace.Namespace.Name}', because it is a namespace.",
                 BoundTypeRef boundType => $"Cannot assign to '{boundType.Type.Name}', because it is a type.",
@@ -156,7 +157,7 @@ public partial record Diagnostic
             BoundTypeRef type => $"'{type.Type.Name}' has no member '{MemberSyntax.Token.Identifier}'.",
             BoundNamespaceRef ns => $"'{ns.Namespace.Name}' has no member '{MemberSyntax.Token.Identifier}'.",
 
-            BoundFunGroupRef funGroup =>
+            BoundFunGroup funGroup =>
                 $"'{funGroup.Name}' is a group of overloaded function and does not have members.",
             BoundFunRef fun => $"'{fun.Fun.Name}' is a function and does not have members.",
 
@@ -200,7 +201,7 @@ public partial record Diagnostic
             BoundTypeRef boundTypeRef => $"Cannot call '{boundTypeRef.Type.Name}', because it is a type.",
             BoundValue => $"Expected a function.",
 
-            BoundFunGroupRef or BoundFunRef or BoundStmt => throw new UnreachableException(),
+            BoundFunGroup or BoundFunRef or BoundStmt => throw new UnreachableException(),
         };
     }
 
@@ -240,7 +241,7 @@ public partial record Diagnostic
         public override string Message => $"Duplicate parameter '{Duplicates[0].Name}'.";
     }
 
-    public sealed record CannotResolveFun(ArgListSyntax Syntax, string FunName, ImmutableArray<BoundFunRef> Candidates, ImmutableArray<TypeSymbol> ArgumentTypes) : Error
+    public sealed record CannotResolveFun(ArgListSyntax Syntax, string FunName, ImmutableArray<FunSymbol> Candidates, ImmutableArray<TypeSymbol> ArgumentTypes) : Error
     {
         public override ImmutableArray<SourceLocation> Locations
         {
@@ -267,10 +268,10 @@ public partial record Diagnostic
         {
             return string.Join('\n', Candidates.Take(5).Select(Single));
             
-            string Single(BoundFunRef funRef)
-                => string.Concat(funRef.Fun.ReceiverType is null ? "static fun " : "fun ",
+            string Single(FunSymbol funRef)
+                => string.Concat(funRef.ReceiverType is null ? "static fun " : "fun ",
                     $"'{FunName} '",
-                    GetTypeListString(funRef.Fun.ParameterTypes));
+                    GetTypeListString(funRef.ParameterTypes));
         }
     }
 
@@ -461,5 +462,11 @@ public partial record Diagnostic
     {
         public override ImmutableArray<SourceLocation> Locations => [Syntax.Location];
         public override string Message => $"Instance member '{FieldName}' cannot be accessed from static context.";
+    }
+
+    public sealed record AmbiguousReference(Binder.LookupResult LookupResult, IdNameSyntax Syntax) : Error
+    {
+        public override ImmutableArray<SourceLocation> Locations => [Syntax.Location];
+        public override string Message => $"'{Syntax.Text}' is ambiguous here.";
     }
 }

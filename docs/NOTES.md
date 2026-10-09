@@ -3,20 +3,26 @@
 
 **Next:** 
 
+See Claude for never lookup logic
+* CLEANUP: Everything is spread out.
+  * [ ] Think about Lookup(On) and LookupResult
+  * [ ] Think about BoundFunGroup
+  * [ ] Think about BindOverloadedFun
+  * [ ] Think about BindCall that 
+    * (a) inserts implicit self (maybe it can ride along)
+    * (b) checks receiver types
+    * (c) checks mutability
+    * Might go to CheckCallee
+  * [ ] Think about BindLookupResult. Is it a useful abstraction?
+
 * test: FunGroup A -> A in nested scope with same signatures
 
-* Regression: ForwardDeclared.taxl + LocalFun_ShadowsOuterFun
-  => Bring lookup walk to binder; have it stop on nested scopes
-  * It seems, Lookup should just resolve funs either way and possibly insert implicit self
-  * SelectCallee then filters by Receiver, Arity, Matching Arguments, Mutability, Accessibility
-  * that way, better errors can be reported
-  * or it failed results get passed into SelectCallee
+* test: Overloads (private, static, var) gives weird? error messages
 
-* rework: Unable to resolve overloaded fun (private, static, var) gives weird error messages
-
-* send LookupResult to SelectCallee for improved error messages?
 * test: overload resolution must respect accessibility (should work)
 * test: implicit self for fun groups (should work)
+
+* refactor: Probably scope logic can go into Binder. Remove Scope
 
 * rework: Diagnostic messages for modifiers & static/non-static context
 
@@ -28,9 +34,6 @@
 * add leaking private members to worklist somewhere or do it :D
 
 * cleanup FunBuilder (Const instead of True())
-* Binder cleanup: Lookup of symbols through common Lookup(...) method
-  * with LookupResult that has the reason and candidates
-  * Common LookupFailed diagnostics that uses LookupResult
 
 * how to handle multiple declarations?
   * Where do they report unecessary diagnostics? => At least struct init for duped fields
