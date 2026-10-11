@@ -18,6 +18,19 @@ public sealed class Binder
     
     private readonly Scope _scope;
     private readonly bool _inLoop = false;
+
+    private BoundSelf? ImplicitSelf
+    {
+        get
+        {
+            if (_owner is not FunSymbol ownerFun) return null;
+            if (ownerFun.ReceiverType is null) return null;
+            Debug.Assert(ownerFun.ReceiverType == ownerFun.OwningType,
+                "A funs receiver should always be its owning type. Extensions differ, but are not implemented yet.");
+            return new BoundSelf(ownerFun.ReceiverType, mutable: ownerFun.IsMutatingReceiver);
+        }
+    }
+    
     
     private Binder(Symbol owner, Scope scope, bool inLoop, BaseNamespaceSymbol @base, DiagnosticBag diagnosticBag, SemanticSideTable semanticSideTable)
     {
@@ -978,17 +991,14 @@ public sealed class Binder
 
     private BoundNode BindSelf(SelfSyntax syntax)
     {
-        if (_owner is not FunSymbol funOwner ||
-            funOwner.ReceiverType is null ||
-            _owner.OwningType is null ||
-            funOwner.ReceiverType != _owner.OwningType)
+        if (ImplicitSelf?.WithSyntax(syntax) is not { } boundSelf)
         {
             // Currently, self in local funs of methods are rejected.
             _diagnostics.ReportError(new Diagnostic.InvalidSelfRef(syntax, _owner));
             return new BoundError(syntax);
         }
 
-        return new BoundSelf(funOwner.ReceiverType, funOwner.IsMutatingReceiver, syntax);
+        return boundSelf;
     }
 
     private BoundNode BindSymbol(Symbol symbol, SyntaxNode syntax, bool allowImplicitSelf, BoundValue? receiver)
@@ -1015,8 +1025,7 @@ public sealed class Binder
 
             case FieldSymbol field:
             {
-                var inInstance = (_owner as FunSymbol)?.ReceiverType is not null;
-                var fieldReceiver = receiver ?? (allowImplicitSelf && inInstance ? TryBindImplicitSelf() : null);
+                var fieldReceiver = receiver ?? (allowImplicitSelf ? ImplicitSelf : null);
                 if (fieldReceiver is null)
                 {
                     _diagnostics.ReportError(new Diagnostic.InstanceMemberNotAccessibleFromStaticContext(field.Name, syntax));
@@ -1033,14 +1042,6 @@ public sealed class Binder
                 throw new UnreachableException(
                     $"Unknown symbol type {symbol.GetType().Name} in {nameof(BindSymbol)}.");
         }
-    }
-
-    private BoundSelf? TryBindImplicitSelf()
-    {
-        if (_owner.OwningType is null) return null;
-        if (_owner is not FunSymbol ownerFun) return null;
-
-        return new BoundSelf(_owner.OwningType, mutable: ownerFun.IsMutatingReceiver);
     }
 
     private BoundNode BindIdName(IdNameSyntax syntax)
@@ -1206,8 +1207,7 @@ public sealed class Binder
                 return new BoundError(syntax);
             }
 
-            var inInstance = (_owner as FunSymbol)?.ReceiverType is not null;
-            var implicitSelf = funGroup.AllowImplicitSelf && inInstance ? TryBindImplicitSelf() : null;
+            var implicitSelf = funGroup.AllowImplicitSelf ? ImplicitSelf : null;
             
             var receiver = funGroup.Receiver ??
                            (boundOverload.ReceiverType is not null ? implicitSelf : null);

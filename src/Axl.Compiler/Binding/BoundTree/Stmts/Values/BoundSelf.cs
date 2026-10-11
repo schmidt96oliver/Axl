@@ -21,4 +21,8 @@ public sealed class BoundSelf(TypeSymbol type, bool mutable = false, SyntaxNode?
     /// Self is never directly assignable to.
     /// </summary>
     public override bool IsAssignable => false;
+
+
+    public BoundSelf WithSyntax(SyntaxNode syntax)
+        => new(Type, IsMutablePlace, syntax);
 }
