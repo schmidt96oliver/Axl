@@ -94,7 +94,6 @@ public partial record Diagnostic
                 BoundValue => "Cannot assign this for unknown reason.",
                     
                 BoundFunGroup boundFunGroup => $"Cannot assign to '{boundFunGroup.Name}', because it is a group of overloaded funs.",
-                BoundFunRef boundFun => $"Cannot assign to '{boundFun.Fun.Name}', because it is a function.",
                 BoundNamespaceRef boundNamespace => $"Cannot assign to '{boundNamespace.Namespace.Name}', because it is a namespace.",
                 BoundTypeRef boundType => $"Cannot assign to '{boundType.Type.Name}', because it is a type.",
                 
@@ -159,7 +158,6 @@ public partial record Diagnostic
 
             BoundFunGroup funGroup =>
                 $"'{funGroup.Name}' is a group of overloaded function and does not have members.",
-            BoundFunRef fun => $"'{fun.Fun.Name}' is a function and does not have members.",
 
             BoundStmt => $"Undefined member '{MemberSyntax.Token.Identifier}'.",
         };
@@ -172,7 +170,7 @@ public partial record Diagnostic
         public override string Message => $"Cannot convert from type '{From.Name}' to '{To.Name}'.";
     }
 
-    public sealed record ArityMismatch(ArgListSyntax Syntax, string FunName, int? ParameterCount, int ArgumentCount) : Error
+    public sealed record ArityMismatch(ArgListSyntax Syntax, ImmutableArray<FunSymbol> FunCandidates, int ArgumentCount) : Error
     {
         public override ImmutableArray<SourceLocation> Locations
         {
@@ -186,9 +184,9 @@ public partial record Diagnostic
             }
         }
 
-        public override string Message => ParameterCount is int parameterCount
-            ? $"'{FunName}' has {parameterCount} parameter(s), but was called with {ArgumentCount} argument(s)."
-            : $"'{FunName}' has no overload that takes {ArgumentCount} parameter(s).";
+        public override string Message => FunCandidates.Length == 1
+            ? $"'{FunCandidates[0].Name}' has {FunCandidates[0].Parameters.Length} parameter(s), but was called with {ArgumentCount} argument(s)."
+            : $"No overload of '{FunCandidates[0].Name}' takes {ArgumentCount} parameter(s).";
     }
 
     public sealed record CannotCall(BoundNode BoundCallee) : Error
@@ -201,7 +199,7 @@ public partial record Diagnostic
             BoundTypeRef boundTypeRef => $"Cannot call '{boundTypeRef.Type.Name}', because it is a type.",
             BoundValue => $"Expected a function.",
 
-            BoundFunGroup or BoundFunRef or BoundStmt => throw new UnreachableException(),
+            BoundFunGroup or BoundStmt => throw new UnreachableException(),
         };
     }
 

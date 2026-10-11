@@ -1028,6 +1028,7 @@ public sealed class Binder
                 var fieldReceiver = receiver ?? (allowImplicitSelf ? ImplicitSelf : null);
                 if (fieldReceiver is null)
                 {
+                    //TODO: StaticMismatch? Or FieldNotAccessibleOnStaticContext
                     _diagnostics.ReportError(new Diagnostic.InstanceMemberNotAccessibleFromStaticContext(field.Name, syntax));
                     return new BoundError(syntax);
                 }
@@ -1058,6 +1059,7 @@ public sealed class Binder
     {
         if (lookupResult.Viability is LookupViability.NotFound)
         {
+            //TODO: Unify them into one error?
             if (left is null)
                 _diagnostics.ReportError(new Diagnostic.UndefinedName(syntax));
             else
@@ -1073,9 +1075,14 @@ public sealed class Binder
             return new BoundError(syntax);
         }
         
+        //TODO: Move Implicit self here or in specified method :)
+        
         if (lookupResult.Symbols.All(s => s is FunSymbol))
         {
-            return new BoundFunGroup([.. lookupResult.Symbols.OfType<FunSymbol>()], allowImplicitSelf: left is null, receiver: left as BoundValue, syntax);
+            return new BoundFunGroup([.. lookupResult.Symbols.OfType<FunSymbol>()],
+                receiver: left is not null ? left as BoundValue : ImplicitSelf,
+                isReceiverImplicit: left is null,
+                syntax);
         }
 
         // It's viable now
@@ -1119,7 +1126,7 @@ public sealed class Binder
 
         return left switch
         {
-            BoundFunGroup or BoundFunRef => BindUndefinedMember(),
+            BoundFunGroup => BindUndefinedMember(),
 
             BoundNamespaceRef boundNamespaceRef => BindNamespaceOrTypeMember(boundNamespaceRef.Namespace),
             BoundTypeRef boundTypeRef => BindNamespaceOrTypeMember(boundTypeRef.Type),
@@ -1186,106 +1193,135 @@ public sealed class Binder
         if (hasNamedArg)
             return new BoundError(syntax);
         
-        if (callee is not (BoundFunRef or BoundFunGroup))
+        if (callee is not BoundFunGroup calleeFunGroup)
         {
             if (callee is not BoundError)
                 _diagnostics.ReportError(new Diagnostic.CannotCall(callee));
             return new BoundError(syntax);
         }
 
-        BoundFunRef funRef;
-        if (callee is BoundFunRef) funRef = (BoundFunRef)callee;
-        else
-        {
-            var funGroup = (BoundFunGroup)callee;
-            var boundOverload = BindFunOverload(funGroup, arguments, syntax);
-            if (boundOverload is null)
-                return new BoundError(syntax);
+        var argumentTypes = arguments.Select(arg => arg.Type).ToImmutableArray();
+        var resolutionResult = ResolveFunGroup(calleeFunGroup, argumentTypes);
 
-            var implicitSelf = funGroup.AllowImplicitSelf ? ImplicitSelf : null;
-            
-            var receiver = funGroup.Receiver ??
-                           (boundOverload.ReceiverType is not null ? implicitSelf : null);
-            funRef = new BoundFunRef(boundOverload, receiver, funGroup.Syntax!, funGroup.Syntax!);
-        }
-
-        // Test receiver match and mutability
-        var fun = funRef.Fun;
-        if (fun.ReceiverType != funRef.Receiver?.Type)
+        // If arguments had an error, report arity mismatch, because that is possible.
+        // All other errors should be silent.
+        if (resolutionResult.Viability > FunCandidateViability.ArityMismatch && argumentTypes.OfType<ErrorTypeSymbol>().Any())
+            return new BoundError(syntax);
+        
+        if (resolutionResult.Viability < FunCandidateViability.Viable)
         {
-            if (fun.ReceiverType is null)
-                _diagnostics.ReportError(new Diagnostic.CannotAccessThroughInstance(funRef.MemberSyntax));
-            else
-                _diagnostics.ReportError(new Diagnostic.InstanceMemberNotAccessibleFromStaticContext(fun.Name, funRef.MemberSyntax));
+            switch (resolutionResult.Viability)
+            {
+                case FunCandidateViability.ArityMismatch:
+                    _diagnostics.ReportError(new Diagnostic.ArityMismatch(syntax.ArgList, resolutionResult.Candidates,
+                        arguments.Length));
+                    break;
+                case FunCandidateViability.ParameterTypeMismatch:
+                    if (resolutionResult.Candidates.Length > 1)
+                    {
+                        _diagnostics.ReportError(new Diagnostic.CannotResolveFun(syntax.ArgList, calleeFunGroup.Name,
+                            resolutionResult.Candidates,
+                            argumentTypes));
+                    }
+                    else
+                    {
+                        // Just recheck and report TypeMismatch everywhere
+                        var reportedTypeMismatch = arguments.Zip(resolutionResult.Candidates[0].ParameterTypes,
+                            CheckTypeAndReportMismatch).Any();
+                        Debug.Assert(reportedTypeMismatch);
+                    }
+
+                    break;
+                case FunCandidateViability.StaticMismatch:
+                    if (calleeFunGroup.Receiver is null)
+                        _diagnostics.ReportError(new Diagnostic.InstanceMemberNotAccessibleFromStaticContext(calleeFunGroup.Name, calleeFunGroup.Syntax!));
+                    else
+                        _diagnostics.ReportError(
+                            new Diagnostic.CannotAccessThroughInstance(calleeFunGroup.Syntax!));
+                    break;
+                case FunCandidateViability.ReceiverMismatch:
+                    throw new NotImplementedException("No nested types yet, so this is not possible");
+                case FunCandidateViability.MutatingMismatch:
+                    _diagnostics.ReportError(new Diagnostic.CannotMutateReceiver(calleeFunGroup.Receiver!,
+                        calleeFunGroup.Candidates[0], calleeFunGroup.Syntax!));
+                    break;
+            }
+
             return new BoundError(syntax);
         }
+        
+        Debug.Assert(resolutionResult.Viability is FunCandidateViability.Viable);
 
-        if (funRef.Receiver is not null &&
-            fun.IsMutatingReceiver && !funRef.Receiver.IsMutablePlace)
+        if (resolutionResult.Candidates.Length > 1)
         {
-            _diagnostics.ReportError(new Diagnostic.CannotMutateReceiver(funRef.Receiver, fun, funRef.MemberSyntax));
+            _diagnostics.ReportError(new Diagnostic.CannotResolveFun(syntax.ArgList, calleeFunGroup.Name,
+                resolutionResult.Candidates, argumentTypes));
             return new BoundError(syntax);
         }
         
-        return new BoundCall(funRef.Fun, funRef.Receiver, arguments, syntax);
-    }
+        Debug.Assert(resolutionResult.Candidates.Length == 1);
 
-    private FunSymbol? BindFunOverload(BoundFunGroup funGroup, ImmutableArray<BoundValue> arguments,
-        CallExprSyntax callSyntax)
-    {
-        var candidates = funGroup.Candidates.ToList();
-        var funName = funGroup.Name;
+        var fun = resolutionResult.Candidates[0];
+        var receiver = fun.IsStatic && calleeFunGroup.IsReceiverImplicit ? null : calleeFunGroup.Receiver;
         
-        // Filter arity
-        candidates.RemoveAll(fun => fun.Parameters.Length != arguments.Length);
-        if (candidates.Count == 0)
-        {
-            _diagnostics.ReportError(new Diagnostic.ArityMismatch(callSyntax.ArgList,
-                funName,
-                ParameterCount: funGroup.Candidates.Length == 1 ? (funGroup.Candidates[0]).Parameters.Length : null,
-                ArgumentCount: arguments.Length));
-            return null;
-        }
-
-        // If argument have an error, only check arity and don't go deeper.
-        // It cannot be resolved without valid types.
-        if (arguments.Any(arg => arg.Type is ErrorTypeSymbol))
-            return null;
-        
-        // Filter assignable arguments
-        if (candidates.Count == 1)
-        {
-            // Only one candidate left, so report TypeMismatch errors.
-            var hadError = false;
-            for (var i = 0; i < arguments.Length; i++)
-            {
-                if (arguments[i].Type is ErrorTypeSymbol ||
-                    !CheckTypeAndReportMismatch(arguments[i], candidates[0].Parameters[i].Type))
-                {
-                    hadError = true;
-                }
-            }
-            if (hadError)
-                return null;
-        }
-        else
-        {
-            // Multiple candidates to select from, so report CannotResolveFun.
-            var candidatesWithMatchingArity = candidates.ToImmutableArray();
-            candidates.RemoveAll(fun => Enumerable.Range(0, arguments.Length)
-                .Any(i => !IsAssignableTo(arguments[i].Type, fun.ParameterTypes[i])));
-            if (candidates.Count != 1)
-            {
-                _diagnostics.ReportError(new Diagnostic.CannotResolveFun(callSyntax.ArgList, funName,
-                    candidatesWithMatchingArity, [.. arguments.Select(arg => arg.Type)]));
-                return null;
-            }
-        }
-
-        return candidates[0];
+        return new BoundCall(resolutionResult.Candidates[0], receiver, arguments, syntax);
     }
     
+    private enum FunCandidateViability
+    {
+        ArityMismatch,
+        ParameterTypeMismatch,
+        StaticMismatch,
+        ReceiverMismatch,
+        MutatingMismatch,
+        Viable
+    }
 
+    private FunCandidateViability CheckFunCandidate(FunSymbol fun, BoundValue? receiver, ImmutableArray<TypeSymbol> argumentTypes)
+    {
+        if (fun.Parameters.Length != argumentTypes.Length)
+            return FunCandidateViability.ArityMismatch;
+
+        if (!argumentTypes.Zip(fun.ParameterTypes, IsAssignableTo).All(x => x))
+            return FunCandidateViability.ParameterTypeMismatch;
+
+        if (receiver is null && !fun.IsStatic || receiver is not null && fun.IsStatic)
+            return FunCandidateViability.StaticMismatch;
+
+        if (receiver is not null && fun.ReceiverType != receiver.Type)
+            return FunCandidateViability.ReceiverMismatch;
+
+        if (fun.IsMutatingReceiver && receiver is not null && !receiver.IsMutablePlace)
+            return FunCandidateViability.MutatingMismatch;
+
+        return FunCandidateViability.Viable;
+    }
+
+    private record OverloadResolutionResult(FunCandidateViability Viability, ImmutableArray<FunSymbol> Candidates);
+    
+    private OverloadResolutionResult ResolveFunGroup(BoundFunGroup funGroup, ImmutableArray<TypeSymbol> argumentTypes)
+    {
+        var candidates = ImmutableArray.CreateBuilder<FunSymbol>();
+        var currentViability = FunCandidateViability.ArityMismatch;
+
+        foreach (var fun in funGroup.Candidates)
+        {
+            var receiver = fun.IsStatic && funGroup.IsReceiverImplicit ? null : funGroup.Receiver;
+            var viability = CheckFunCandidate(fun, receiver, argumentTypes);
+            if (viability == currentViability)
+                candidates.Add(fun);
+            if (viability > currentViability)
+            {
+                currentViability = viability;
+                candidates.Clear();
+                candidates.Add(fun);
+            }
+        }
+
+        return new OverloadResolutionResult(currentViability, candidates.DrainToImmutable());
+    }
+    
+    
     private BoundValue BindStructInit(StructSymbol @struct, CallExprSyntax syntax, SyntaxNode structRefSyntax)
     {
         var uninitializedFields = @struct.Fields.ToList();

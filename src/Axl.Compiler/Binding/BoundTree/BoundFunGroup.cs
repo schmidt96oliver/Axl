@@ -4,12 +4,21 @@ using Axl.Compiler.Syntax;
 
 namespace Axl.Compiler.Binding.BoundTree;
 
-public sealed class BoundFunGroup(ImmutableArray<FunSymbol> candidates, bool allowImplicitSelf, BoundValue? receiver, SyntaxNode syntax)
+/// <summary>
+/// Candidate fun symbols that go into overload resolution. They are all accessible
+/// but have not been checked, for callability.
+/// </summary>
+public sealed class BoundFunGroup(ImmutableArray<FunSymbol> candidates, BoundValue? receiver, bool isReceiverImplicit, SyntaxNode syntax)
     : BoundNode(syntax)
 {
     public ImmutableArray<FunSymbol> Candidates { get; } = candidates;
-    public bool AllowImplicitSelf { get; } = allowImplicitSelf;
     public BoundValue? Receiver { get; } = receiver;
+    
+    /// <summary>
+    /// Whether <see cref="Receiver"/> can be dropped, if the corresponding
+    /// fun is static.
+    /// </summary>
+    public bool IsReceiverImplicit { get; } = isReceiverImplicit;
 
     public string Name => Candidates[0].Name;
 }

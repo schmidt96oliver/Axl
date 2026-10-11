@@ -3,7 +3,27 @@
 
 **Next:** 
 
-See Claude for never lookup logic
+*Current*: Rework lookup and overload resolution logic. Remove FunGroupSymbol; respect rules
+           for overloads, operators and duck-typed methods.
+
+* Implement errors for ArityMismatch, ParameterTypeMismatch (maybe CannotResolve), 
+  StaticMismatch, ReceiverMismatch, AmbiguousOverload, AmbiguousName, CannotResolveOverload
+  * *NotAccessible* takes all candidates; "No members with name {} is accessible."
+* BoundFunGroup syntax is what exactly? :D Syntax + MemberSyntax
+
+* "MutatingMismatch" better name?
+
+* BindField: Should report ReceiverMismatch (Field on enclosing type)
+
+* Duck-types methods must respect rules (StringExpr, operators)
+    * private operator/ToString; Duck typed must check for accessibility
+    * Add WellKnownNames for common access point of names
+    * maybe go through Lookup -> CheckFunViability -> ResolveFunGroup, ... ?
+
+* Scope logic: Shadowed var is removed from scope.
+  * ? Add param "Allow shadowing" or method "AddShadowedVariable"
+
+See Claude for newer lookup logic
 * CLEANUP: Everything is spread out.
   * [ ] Think about Lookup(On) and LookupResult
   * [ ] Think about BoundFunGroup
@@ -15,7 +35,10 @@ See Claude for never lookup logic
     * Might go to CheckCallee
   * [ ] Think about BindLookupResult. Is it a useful abstraction?
 
-* test: FunGroup A -> A in nested scope with same signatures
+
+* test: Lookup/overload ladder; each viability level should eat the ones before:
+  NotFound < NotAccessible < ArityMismatch < ParameterTypeMismatch < StaticMismatch < ReceiverMismatch < MutatingMismatch < Valid
+* test: Overload resolution on script, local funs, types that respects the ladder (maybe unify existing tests)
 
 * test: Overloads (private, static, var) gives weird? error messages
 
@@ -25,13 +48,15 @@ See Claude for never lookup logic
 * refactor: Probably scope logic can go into Binder. Remove Scope
 
 * rework: Diagnostic messages for modifiers & static/non-static context
-
-* Duck-types methods (StringExpr, operators)
-  * private operator/ToString; Duck typed must check for accessibility
-  * Add WellKnownNames for common access point of names
+* refactor: Add SymbolPrinter to unify symbol display in diagnostics and LSP
 
 
-* add leaking private members to worklist somewhere or do it :D
+
+
+* For *nested structs*:
+    * test: FunGroup A -> A in nested scope with same signatures
+    * test: ReceiverMismatch "Cannot access instance member on enclosing type.". Check what C# gives
+  * add leaking private members to worklist somewhere or do it :D
 
 * cleanup FunBuilder (Const instead of True())
 

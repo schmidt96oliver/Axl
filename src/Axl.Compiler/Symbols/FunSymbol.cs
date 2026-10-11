@@ -37,7 +37,8 @@ public sealed class FunSymbol : Symbol
     private FunBody? _body;
 
     public FunBody Body => _body ?? throw new InvalidOperationException($"{nameof(Body)} of '{Name}' not bound yet.");
-    
+    public bool IsStatic => ReceiverType is null;
+
 
     public FunSymbol(string name,
         Symbol owner,
