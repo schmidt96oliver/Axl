@@ -1065,11 +1065,6 @@ public sealed class Binder
             
             return new BoundError(syntax);
         }
-        
-        if (lookupResult.Symbols.All(s => s is FunSymbol))
-        {
-            return new BoundFunGroup(lookupResult, allowImplicitSelf: left is null, receiver: left as BoundValue, syntax);
-        }
 
         if (lookupResult.Viability is LookupViability.NotAccessible)
         {
@@ -1078,6 +1073,11 @@ public sealed class Binder
             return new BoundError(syntax);
         }
         
+        if (lookupResult.Symbols.All(s => s is FunSymbol))
+        {
+            return new BoundFunGroup([.. lookupResult.Symbols.OfType<FunSymbol>()], allowImplicitSelf: left is null, receiver: left as BoundValue, syntax);
+        }
+
         // It's viable now
         if (lookupResult.Symbols.Length > 1)
         {
@@ -1201,11 +1201,6 @@ public sealed class Binder
             var boundOverload = BindFunOverload(funGroup, arguments, syntax);
             if (boundOverload is null)
                 return new BoundError(syntax);
-            if (callee is BoundFunGroup { LookupResult.Viability: LookupViability.NotAccessible })
-            {
-                _diagnostics.ReportError(new Diagnostic.NotAccessible(boundOverload, funGroup.Syntax!));
-                return new BoundError(syntax);
-            }
 
             var implicitSelf = funGroup.AllowImplicitSelf ? ImplicitSelf : null;
             
@@ -1238,7 +1233,7 @@ public sealed class Binder
     private FunSymbol? BindFunOverload(BoundFunGroup funGroup, ImmutableArray<BoundValue> arguments,
         CallExprSyntax callSyntax)
     {
-        var candidates = funGroup.LookupResult.Symbols.OfType<FunSymbol>().ToList();
+        var candidates = funGroup.Candidates.ToList();
         var funName = funGroup.Name;
         
         // Filter arity
@@ -1247,8 +1242,7 @@ public sealed class Binder
         {
             _diagnostics.ReportError(new Diagnostic.ArityMismatch(callSyntax.ArgList,
                 funName,
-                ParameterCount: funGroup.LookupResult.Symbols.Length == 1 ? ((FunSymbol)funGroup.LookupResult
-                    .Symbols[0]).Parameters.Length : null,
+                ParameterCount: funGroup.Candidates.Length == 1 ? (funGroup.Candidates[0]).Parameters.Length : null,
                 ArgumentCount: arguments.Length));
             return null;
         }
