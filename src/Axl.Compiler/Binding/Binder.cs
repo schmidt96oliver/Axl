@@ -1259,9 +1259,9 @@ public sealed class Binder
                 }
 
                 // Just recheck and report TypeMismatch everywhere
-                var reportedTypeMismatch = arguments.Zip(result.Candidates[0].ParameterTypes,
-                    CheckType).Any();
-                Debug.Assert(reportedTypeMismatch);
+                for (var i = 0; i < arguments.Length; i++)
+                    CheckType(arguments[i], result.Candidates[0].ParameterTypes[i]);
+                
                 return new BoundError(syntax);
             
             case FunCandidateViability.StaticMismatch:

@@ -1,0 +1,20 @@
+﻿//@check
+
+let a: Bool = true;
+Print(a);
+
+A(true, 1, ""); 
+A("", 1, "");       //~error TypeMismatch
+A(true, 1.1, "");   //~error TypeMismatch
+A(true, 1, false);  //~error TypeMismatch
+
+A("", 1,            //~error TypeMismatch
+    false);         //~error TypeMismatch
+A("",               //~error TypeMismatch
+    1.1,            //~error TypeMismatch
+    false);         //~error TypeMismatch
+
+fun A(a: Bool, b: I32, c: String)
+{
+
+}
