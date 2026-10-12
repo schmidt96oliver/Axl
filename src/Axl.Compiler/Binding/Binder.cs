@@ -105,20 +105,6 @@ public sealed class Binder
     }
 
 
-    private FunSymbol? LookupMethod(TypeSymbol instanceType, string name, ImmutableArray<TypeSymbol> argumentTypes)
-    {
-        if (argumentTypes.OfType<ErrorTypeSymbol>().Any())
-            return null;
-
-        return instanceType
-            .LookupMembers(name)
-            .OfType<FunSymbol>()
-            .FirstOrDefault(fun => fun is { ReceiverType: not null } &&
-                                   IsAssignableTo(instanceType, fun.ReceiverType) &&
-                                   fun.ParameterTypes.SequenceEqual(argumentTypes));
-    }
-
-
     private BoundError BindError(SyntaxNode syntax, Diagnostic.Error error)
     {
         _diagnostics.ReportError(error);
@@ -719,7 +705,7 @@ public sealed class Binder
     #region Operators and Assignment
 
     private BoundValue BindUnary(UnaryExprSyntax syntax)
-        => BindOperatorCall(syntax.Operator.Text.ToString(), receiver: BindValue(syntax.Operand), arguments: [], syntax);
+        => BindSynthesizedOperatorCall(BindValue(syntax.Operand), syntax.Operator.Text.ToString(), [], syntax);
     
     private BoundValue BindBinary(BinaryExprSyntax syntax)
     {
@@ -731,27 +717,39 @@ public sealed class Binder
         var left = BindValue(syntax.Left);
         var right = BindValue(syntax.Right);
 
-        return BindOperatorCall(syntax.Operator.Text.ToString(), receiver: left, arguments: [right], syntax);
+        return BindSynthesizedOperatorCall(left, syntax.Operator.Text.ToString(), [right], syntax);
     }
-    
-    private BoundValue BindOperatorCall(string operatorName, BoundValue receiver, ImmutableArray<BoundValue> arguments, SyntaxNode syntax)
+
+    private BoundValue BindSynthesizedOperatorCall(BoundValue receiver, string operatorName,
+        ImmutableArray<BoundValue> arguments, SyntaxNode syntax)
     {
+        var argTypes = arguments.Select(arg => arg.Type).ToImmutableArray();
+        
         if (receiver.Type is ErrorTypeSymbol ||
             arguments.Any(arg => arg.Type is ErrorTypeSymbol))
         {
             return new BoundError(syntax);
         }
 
-        var operatorFun = LookupMethod(receiver.Type, operatorName, [.. arguments.Select(expr => expr.Type)]);
-        if (operatorFun is null)
-        {
-            return BindError(syntax, new Diagnostic.UndefinedOperator(operatorName,
-                [receiver.Type, .. arguments.Select(arg => arg.Type)], syntax));
-        }
+        var lookup = LookupMembers(receiver.Type, operatorName);
+        if (lookup.Viability is LookupViability.NotFound or LookupViability.NotAccessible)
+            return BindError(syntax, new Diagnostic.UndefinedOperator(receiver, operatorName, argTypes));
 
-        return new BoundCall(operatorFun, receiver, arguments, syntax);
+        var funCandidates = lookup.Symbols.OfType<FunSymbol>().ToImmutableArray();
+        if (funCandidates.Length == 0)
+            return BindError(syntax, new Diagnostic.UndefinedOperator(receiver, operatorName, argTypes));
+
+        var funGroup = new BoundFunGroup(funCandidates, receiver);
+        var resolution = ResolveFunGroup(funGroup, argumentTypes: [.. arguments.Select(arg => arg.Type)]);
+        if (resolution.Viability < FunCandidateViability.Viable || resolution.Candidates.Length > 1)
+            return BindError(syntax, new Diagnostic.UndefinedOperator(receiver, operatorName, argTypes));
+
+        Debug.Assert(resolution.Candidates.Length == 1);
+
+        return new BoundCall(resolution.Candidates[0], receiver, arguments, syntax);
+
     }
-
+    
     private BoundValue BindBooleanOperator(BinaryExprSyntax syntax)
     {
         Debug.Assert(syntax.Operator.Kind is TokenKind.DoubleAmpersand or TokenKind.DoubleVerticalBar);

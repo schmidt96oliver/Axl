@@ -6,10 +6,6 @@
 *Current*: Rework lookup and overload resolution logic. Remove FunGroupSymbol; respect rules
            for overloads, operators and ToString.
 
-* Duck-types methods must respect rules (StringExpr, operators)
-    * private operator/ToString; Duck typed must check for accessibility
-    * test: Field "ToString"
-
 * Implement errors for ArityMismatch, ParameterTypeMismatch (maybe CannotResolve), 
   StaticMismatch, ReceiverMismatch, AmbiguousOverload, AmbiguousName, CannotResolveOverload
   * *NotAccessible* takes all candidates; "No members with name {} is accessible."
@@ -19,13 +15,14 @@
 
 * test: Overload resolution
   * ladder: each viability level should eat the ones before:
+  
     NotFound < NotAccessible < ArityMismatch < ParameterTypeMismatch < StaticMismatch < ReceiverMismatch < CannotMutate < Valid
   * on script, local funs, types
   * error messages
   * implicit self for fun groups
 
 * Rename "GetMemberExpr" -> "MemberAccessExpr". Feels cleaner.
-
+* Rename "BoundAnd/Or" -> "BoundLogicAnd/Or" for conciseness
 
 * *refactor*: cleanup FunBuilder
   * Const instead of True()
@@ -71,6 +68,8 @@ One type (maybe struct) inside scripts.
 * [x] `static fun`s
   * [x] only `pub` can be called from outside
 * [ ] User-declared operators + generation of `!=, <=, >, >=` from `==, <`
+  * [ ] They must respect accessibility and overload resolution rules
+  * [ ] As well overloaded
 * [ ] User-declared ToString
 
 Stretch goals

@@ -47,23 +47,23 @@ public partial record Diagnostic
             => $"Undefined name '{Syntax.Token.Identifier}'.";
     }
 
-    public sealed record UndefinedOperator(string OperatorName, ImmutableArray<TypeSymbol> OperandTypes, SyntaxNode Syntax) : Error
+    public sealed record UndefinedOperator(BoundValue Receiver, string OperatorName, ImmutableArray<TypeSymbol> OperandTypes) : Error
     {
         public override ImmutableArray<SourceLocation> Locations
         {
             get
             {
-                if (Syntax is ExprStmtSyntax)
+                if (Receiver.Syntax is ExprStmtSyntax)
                 {
                     // Do not mark the semicolon at the end.
-                    var nonSemicolonElements = Syntax.SyntaxElements()
+                    var nonSemicolonElements = Receiver.Syntax.SyntaxElements()
                         .TakeWhile(el => el is not Token { Kind: TokenKind.Semicolon })
                         .ToList();
                     var range = SourceRange.FromTo(nonSemicolonElements[0].Range!.Value, nonSemicolonElements[^1].Range!.Value);
-                    return [Syntax.Tree.SourceText.GetLocation(range)];
+                    return [Receiver.Syntax.Tree.SourceText.GetLocation(range)];
                 }
 
-                return [Syntax.Location];
+                return [Receiver.Syntax!.Location];
             }
         }
 
