@@ -18,7 +18,10 @@ public sealed class Binder
     
     private readonly Scope _scope;
     private readonly bool _inLoop = false;
-    
+
+    private TypeSymbol? InstanceType { get; }
+
+
     private Binder(Symbol owner, Scope scope, bool inLoop, BaseNamespaceSymbol @base, DiagnosticBag diagnosticBag, SemanticSideTable semanticSideTable)
     {
         _base = @base;
@@ -28,8 +31,20 @@ public sealed class Binder
         _scope = scope;
         _owner = owner;
         _inLoop = inLoop;
+
+        InstanceType = GetInstanceType(owner);
+    }
+    
+    private static TypeSymbol? GetInstanceType(Symbol owner)
+    {
+        if (owner is not FunSymbol ownerFun) return null;
+        if (ownerFun.ReceiverType is null) return null;
+        Debug.Assert(ownerFun.ReceiverType == ownerFun.OwningType,
+            "A funs receiver should always be its owning type. Extensions differ, but are not implemented yet.");
+        return ownerFun.ReceiverType;
     }
 
+    
     private Binder NestedBinderWithOwner(Symbol owner)
         => new(owner, _scope.Nested(), inLoop: false,
             _base, _diagnostics, _semanticSideTable);
@@ -47,10 +62,6 @@ public sealed class Binder
             _base, _diagnostics, _semanticSideTable);
     
     
-    /// <summary>
-    /// Whether a value of type <paramref name="source"/> can be
-    /// assigned to a target of type <paramref name="target"/>.
-    /// </summary>
     private static bool IsAssignableTo(TypeSymbol source, TypeSymbol target)
     {
         // Errors are silent
@@ -62,7 +73,7 @@ public sealed class Binder
         return source == target;
     }
 
-    private bool CheckTypeAndReportMismatch(BoundValue value, TypeSymbol expected)
+    private bool CheckType(BoundValue value, TypeSymbol expected)
     {
         if (!IsAssignableTo(value.Type, expected))
         {
@@ -75,10 +86,10 @@ public sealed class Binder
         return true;
     }
 
+    
     private bool IsAccessible(Symbol symbol)
         => _owner.SelfAndOwners().Contains(symbol.AccessibleWithin);
     
-
     private bool CheckAccessibility(Symbol symbol, SyntaxNode syntax)
     {
         if (!IsAccessible(symbol))
@@ -89,41 +100,54 @@ public sealed class Binder
 
         return true;
     }
-    
-    
-    private FunSymbol? LookupMethod(TypeSymbol instanceType, string name, ImmutableArray<TypeSymbol> argumentTypes)
+
+
+    private BoundError BindError(SyntaxNode syntax, Diagnostic.Error error)
     {
-        if (argumentTypes.OfType<ErrorTypeSymbol>().Any())
-            return null;
-        
-        var symbol = instanceType.LookupMember(name);
-        var fun = symbol switch
+        _diagnostics.ReportError(error);
+        return new BoundError(syntax);
+    }
+    
+
+    #region Lookup
+
+    private LookupViability GetViability(Symbol symbol)
+        => IsAccessible(symbol) ? LookupViability.Viable : LookupViability.NotAccessible;
+
+    private LookupResult LookupName(string name)
+    {
+        var result = new LookupResult();
+
+        for (var scope = _scope; scope != null; scope = scope.Parent)
         {
-            FunSymbol funSymbol => funSymbol,
-            FunGroupSymbol funGroupSymbol => funGroupSymbol.LookupFun(instanceType, argumentTypes),
-            _ => null
-        };
-        
-        if (fun is { ReceiverType: not null } &&
-            IsAssignableTo(instanceType, fun.ReceiverType) &&
-            fun.ParameterTypes.SequenceEqual(argumentTypes))
-        {
-            return fun;
+            var here = new LookupResult();
+            foreach (var s in scope.Lookup(name))
+            {
+                Debug.Assert(s.Name == name);
+                here.MergeSingle(s, GetViability(s));
+            }
+
+            result.MergeWith(here);
+
+            if (result.Viability == LookupViability.Viable)
+                break;
         }
 
-        return null;
+        Debug.Assert(result.Symbols.All(s => s.Name == name));
+        return result;
     }
 
-    private static ImmutableArray<FunSymbol> ExpandFunGroups(ImmutableArray<Symbol> groupedLocalFuns)
-        =>
-        [
-            .. groupedLocalFuns.SelectMany(symbol => symbol switch
-            {
-                FunSymbol fun => [fun],
-                FunGroupSymbol grp => grp.Funs,
-                _ => []
-            })
-        ];
+    private LookupResult LookupMembers(NamespaceOrTypeSymbol parent, string name)
+    {
+        var result = new LookupResult();
+
+        foreach (var s in parent.LookupMembers(name))
+            result.MergeSingle(s, GetViability(s));
+
+        return result;
+    }
+    
+    #endregion
     
     
     #region File and Script
@@ -162,15 +186,14 @@ public sealed class Binder
         var withTypesBinder = NestedBinderWithVisibleSymbols(localTypes);
 
         // Bind local funs
-        var groupedLocalFuns = withTypesBinder.BindFuns(syntax.Children.OfType<FunDeclSyntax>());
-        var localFuns = ExpandFunGroups(groupedLocalFuns);
-        withTypesBinder.CheckDuplicateDeclarations([.. localTypes, .. groupedLocalFuns]);
-        var withTypesAndLocalFunsBinder = withTypesBinder.AdjacentBinderWithVisibleSymbols(groupedLocalFuns);
+        var localFuns = withTypesBinder.BindFuns(syntax.Children.OfType<FunDeclSyntax>());
+        withTypesBinder.CheckDuplicateDeclarations([.. localTypes, .. localFuns]);
+        var withTypesAndLocalFunsBinder = withTypesBinder.AdjacentBinderWithVisibleSymbols(localFuns);
 
         var stmts = withTypesAndLocalFunsBinder.BindStmtsAndLocalFunBodies(
             [.. syntax.SyntaxNodes().Where(node => node is not StructDeclSyntax)], localFuns);
         
-        var block = new BoundBlock(stmts, groupedLocalFuns, _base.Unit, syntax);
+        var block = new BoundBlock(stmts, localFuns, _base.Unit, syntax);
         
         // Insert unit return if necessary
         if (!block.IsDiverging)
@@ -183,21 +206,9 @@ public sealed class Binder
     
     #region Funs and Structs
 
-    private ImmutableArray<Symbol> BindFuns(IEnumerable<FunDeclSyntax> syntaxes)
+    private ImmutableArray<FunSymbol> BindFuns(IEnumerable<FunDeclSyntax> syntaxes)
     {
-        var funs = syntaxes.Select(BindFunSymbol).ToImmutableArray();
-
-        var singleOrGroupSymbols = funs
-            .GroupBy(fun => fun.Name)
-            .Select(funGrp => (Symbol)(funGrp.ToImmutableArray() switch
-            {
-                [] => throw new UnreachableException(),
-                [var single] => single,
-                var multiple => new FunGroupSymbol(funGrp.Key, _owner, multiple)
-            }))
-            .ToImmutableArray();
-        
-        return singleOrGroupSymbols;
+        return [.. syntaxes.Select(BindFunSymbol)];
     }
 
     private FunSymbol BindFunSymbol(FunDeclSyntax syntax)
@@ -288,7 +299,7 @@ public sealed class Binder
         if (syntax.IsExpressionBodied)
         {
             var expr = withParametersBinder.BindValue(syntax.Expr);
-            if (!CheckTypeAndReportMismatch(expr, fun.ReturnType))
+            if (!CheckType(expr, fun.ReturnType))
                 expr = new BoundError(syntax.Expr);
 
             return new BoundBlock([new BoundReturn(expr)], [], _base.Unit);
@@ -362,11 +373,7 @@ public sealed class Binder
             var structSymbol = structs[i];
             var withStructMembersBinder = inStructBinders[i].NestedBinderWithVisibleSymbols(structSymbol.Members);
             
-            var funs = structSymbol.Members
-                .OfType<FunSymbol>()
-                .Concat(structSymbol.Members
-                    .OfType<FunGroupSymbol>()
-                    .SelectMany(grp => grp.Funs));
+            var funs = structSymbol.Members.OfType<FunSymbol>();
 
             foreach (var fun in funs)
             {
@@ -449,28 +456,22 @@ public sealed class Binder
 
         foreach (var duplicateArray in symbolsByName.Where(duplicates => duplicates.Length > 1))
         {
-            // For FunGroups, report each fun individually
-            var toReport = duplicateArray
-                .SelectMany(IEnumerable<Symbol> (symbol)
-                    => symbol is FunGroupSymbol funGroup
-                        ? funGroup.Funs
-                        : [symbol])
-                .ToImmutableArray();
+            // For multiple funs, we still need to check their signatures.
+            // If anything non-fun is on the duplicate list, we know its an error.
+            if (duplicateArray.Any(s => s is not FunSymbol))
+            {
+                _diagnostics.ReportError(new Diagnostic.AlreadyDeclared(duplicateArray));
+                continue;
+            }
             
-            _diagnostics.ReportError(new Diagnostic.AlreadyDeclared(toReport));
-        }
-        
-        foreach (var funGroup in symbolsByName
-                     .Where(grp => grp is [FunGroupSymbol])
-                     .Select(grp => (FunGroupSymbol)grp[0]))
-        {
-            CheckDuplicateDeclarationsInFunGroup(funGroup);
+            // Now it is all funs and we need to check the signatures
+            CheckDuplicateDeclarationsInFunGroup([.. duplicateArray.Select(s => (FunSymbol)s)]);
         }
     }
 
-    private void CheckDuplicateDeclarationsInFunGroup(FunGroupSymbol funGroup)
+    private void CheckDuplicateDeclarationsInFunGroup(IEnumerable<FunSymbol> funsWithSameName)
     {
-        var remaining = funGroup.Funs.ToList();
+        var remaining = funsWithSameName.ToList();
         while (remaining.Count > 0)
         {
             var first = remaining[0];
@@ -527,16 +528,13 @@ public sealed class Binder
         else
         {
             // Check type
-            CheckTypeAndReportMismatch(boundInitializer, variableType);
+            CheckType(boundInitializer, variableType);
         }
 
         // Accept shadowing only if it's another variable.
-        var lookupResult = _scope.LookupHere(syntax.Name.Identifier);
+        var lookupResult = _scope.Lookup(syntax.Name.Identifier).FirstOrDefault();
         if (lookupResult is not (null or VariableSymbol))
-        {
-            _diagnostics.ReportError(new Diagnostic.CannotShadow(lookupResult, syntax.Name));
-            return new BoundError(syntax);
-        }
+            return BindError(syntax, new Diagnostic.CannotShadow(lookupResult, syntax.Name));
         
         var isReadOnly = syntax.VarOrLetKwToken.Kind is TokenKind.LetKw;
         var variable = new VariableSymbol(
@@ -552,10 +550,7 @@ public sealed class Binder
     private BoundValue BindVarDeclInitializer(VarDeclSyntax syntax)
     {
         if (syntax.Initializer is null)
-        {
-            _diagnostics.ReportError(new Diagnostic.MissingInitializer(syntax));
-            return new BoundError();    
-        }
+            return BindError(syntax, new Diagnostic.MissingInitializer(syntax));
     
         return BindValue(syntax.Initializer);
     }
@@ -570,6 +565,7 @@ public sealed class Binder
     
     #endregion
 
+    
     private BoundNode BindExpr(ExprSyntax syntax) => syntax switch
     {
         GetMemberExprSyntax getMemberExprSyntax => BindGetMember(getMemberExprSyntax),
@@ -603,10 +599,7 @@ public sealed class Binder
     {
         var bound = BindExpr(syntax);
         if (bound is not BoundValue value)
-        {
-            _diagnostics.ReportError(new Diagnostic.NotAValue(bound));
-            return new BoundError(syntax);
-        }
+            return BindError(syntax, new Diagnostic.NotAValue(bound));
 
         return value;
     }
@@ -624,8 +617,68 @@ public sealed class Binder
         return typeRef.Type;
     }
     
-    #region Literals and Strings
+    
+    #region Literals and Strings and Self
 
+    private BoundNode BindSelf(SelfSyntax syntax)
+    {
+        if (InstanceType is null)
+            return BindError(syntax, new Diagnostic.InvalidSelfRef(syntax, _owner));
+
+        return new BoundSelf(InstanceType, (_owner as FunSymbol)!.IsMutatingReceiver, syntax);
+    }
+
+    private BoundValue BindNumberLiteral(NumberLiteralSyntax syntax)
+    {
+        var type = syntax.Token.Suffix switch
+        {
+            NumberLiteralSuffix.I32 => _base.I32,
+            NumberLiteralSuffix.I64 => _base.I64,
+            NumberLiteralSuffix.F32 => _base.F32,
+            NumberLiteralSuffix.F64 => _base.F64,
+
+            _ => syntax.Token.HasDecimalPoint ? _base.DefaultFloatType : _base.DefaultIntType
+        };
+
+        // Literals like "1.1i32" need to be rejected.
+        if (syntax.Token.HasDecimalPoint &&
+            type != _base.F32 && type != _base.F64)
+        {
+            return BindError(syntax, new Diagnostic.SuffixInvalidForDecimalNumber(syntax));
+        }
+
+        if (type == _base.I32)
+        {
+            if (!int.TryParse(syntax.Token.Body, out var value))
+                return BindError(syntax, new Diagnostic.NumberTooBig(syntax, type));
+
+            return new BoundConst(value, type, syntax);
+        }
+
+        if (type == _base.I64)
+        {
+            if (!long.TryParse(syntax.Token.Body, out var value))
+                return BindError(syntax, new Diagnostic.NumberTooBig(syntax, type));
+
+            return new BoundConst(value, type, syntax);
+        }
+
+        if (type == _base.F32)
+        {
+            var value = float.Parse(syntax.Token.Body, CultureInfo.InvariantCulture);
+            return new BoundConst(value, type, syntax);
+        }
+
+        if (type == _base.F64)
+        {
+            var value = double.Parse(syntax.Token.Body, CultureInfo.InvariantCulture);
+            return new BoundConst(value, type, syntax);
+        }
+
+        throw new UnreachableException();
+    }
+    
+    
     private BoundStringExpr BindString(StringExprSyntax syntax)
     {
         var parts = syntax.Parts.Select(BindStringPart).ToImmutableArray();
@@ -656,84 +709,42 @@ public sealed class Binder
 
         if (IsAssignableTo(boundExpr.Type, _base.String))
             return boundExpr;
-        
-        // Try to find duck-typed ToString
-        if (LookupMethod(boundExpr.Type, "ToString", []) is FunSymbol toStringFun
-            && IsAssignableTo(toStringFun.ReturnType, _base.String))
-        {
-            return new BoundCall(toStringFun, receiver: boundExpr, arguments: [], syntax.Expr);
-        }
-        
-        // Could not convert to string
-        _diagnostics.ReportError(new Diagnostic.CannotConvert(syntax.Expr, From: boundExpr.Type, To: _base.String));
-        return new BoundError(syntax);
+
+        return BindSynthesizedToStringCall(boundExpr, syntax);
     }
 
-    private BoundValue BindNumberLiteral(NumberLiteralSyntax syntax)
+    private BoundValue BindSynthesizedToStringCall(BoundValue receiver, SyntaxNode syntax)
     {
-        var type = syntax.Token.Suffix switch
-        {
-            NumberLiteralSuffix.I32 => _base.I32,
-            NumberLiteralSuffix.I64 => _base.I64,
-            NumberLiteralSuffix.F32 => _base.F32,
-            NumberLiteralSuffix.F64 => _base.F64,
-    
-            _ => syntax.Token.HasDecimalPoint ? _base.DefaultFloatType : _base.DefaultIntType
-        };
-        
-        // Literals like "1.1i32" need to be rejected.
-        if (syntax.Token.HasDecimalPoint &&
-            type != _base.F32 && type != _base.F64)
-        {
-            _diagnostics.ReportError(new Diagnostic.SuffixInvalidForDecimalNumber(syntax));
+        if (receiver.Type is ErrorTypeSymbol)
             return new BoundError(syntax);
-        }
-
-        if (type == _base.I32)
-        {
-            if (!int.TryParse(syntax.Token.Body, out var value))
-            {
-                // The number literal is too big to fit inside an int/i32.
-                _diagnostics.ReportError(new Diagnostic.NumberTooBig(syntax, type));
-                return new BoundError(syntax);
-            }
-
-            return new BoundConst(value, type, syntax);
-        }
-
-        if (type == _base.I64)
-        {
-            if (!long.TryParse(syntax.Token.Body, out var value))
-            {
-                // The number literal is too big to fit inside an long/i64.
-                _diagnostics.ReportError(new Diagnostic.NumberTooBig(syntax, type));
-                return new BoundError(syntax);
-            }
-
-            return new BoundConst(value, type, syntax);
-        }
-
-        if (type == _base.F32)
-        {
-            var value = float.Parse(syntax.Token.Body, CultureInfo.InvariantCulture);
-            return new BoundConst(value, type, syntax);
-        }
         
-        if (type == _base.F64)
-        {
-            var value = double.Parse(syntax.Token.Body, CultureInfo.InvariantCulture);
-            return new BoundConst(value, type, syntax);
-        }
+        var lookup = LookupMembers(receiver.Type, "ToString");
+        if (lookup.Viability is LookupViability.NotFound or LookupViability.NotAccessible)
+            return BindError(syntax, new Diagnostic.CannotConvertToString(receiver, lookup));
 
-        throw new UnreachableException();
+        var funCandidates = lookup.Symbols.OfType<FunSymbol>().ToImmutableArray();
+        if (funCandidates.Length == 0)
+            return BindError(syntax, new Diagnostic.CannotConvertToString(receiver, lookup));
+        
+        var funGroup = new BoundFunGroup(funCandidates, receiver);
+        var resolution = ResolveFunGroup(funGroup, argumentTypes: []);
+        if (resolution.Viability < FunCandidateViability.Viable || resolution.Candidates.Length > 1)
+            return BindError(syntax, new Diagnostic.CannotConvertToString(receiver, lookup));
+        
+        Debug.Assert(resolution.Candidates.Length == 1);
+        
+        if (!IsAssignableTo(resolution.Candidates[0].ReturnType, _base.String))
+            return BindError(syntax, new Diagnostic.CannotConvertToString(receiver, lookup));
+        
+        return new BoundCall(resolution.Candidates[0], receiver, arguments: [], syntax);
     }
-    
+
     #endregion
-    
-    #region Operators
+
+    #region Operators and Assignment
 
     private BoundValue BindUnary(UnaryExprSyntax syntax)
-        => BindOperatorCall(syntax.Operator.Text.ToString(), receiver: BindValue(syntax.Operand), arguments: [], syntax);
+        => BindSynthesizedOperatorCall(BindValue(syntax.Operand), syntax.Operator.Text.ToString(), [], syntax);
     
     private BoundValue BindBinary(BinaryExprSyntax syntax)
     {
@@ -745,29 +756,39 @@ public sealed class Binder
         var left = BindValue(syntax.Left);
         var right = BindValue(syntax.Right);
 
-        return BindOperatorCall(syntax.Operator.Text.ToString(), receiver: left, arguments: [right], syntax);
+        return BindSynthesizedOperatorCall(left, syntax.Operator.Text.ToString(), [right], syntax);
     }
-    
-    private BoundValue BindOperatorCall(string operatorName, BoundValue receiver, ImmutableArray<BoundValue> arguments, SyntaxNode syntax)
+
+    private BoundValue BindSynthesizedOperatorCall(BoundValue receiver, string operatorName,
+        ImmutableArray<BoundValue> arguments, SyntaxNode syntax)
     {
+        var argTypes = arguments.Select(arg => arg.Type).ToImmutableArray();
+        
         if (receiver.Type is ErrorTypeSymbol ||
             arguments.Any(arg => arg.Type is ErrorTypeSymbol))
         {
             return new BoundError(syntax);
         }
 
-        var operatorFun = LookupMethod(receiver.Type, operatorName, [.. arguments.Select(expr => expr.Type)]);
-        if (operatorFun is null)
-        {
-            _diagnostics.ReportError(
-                new Diagnostic.UndefinedOperator(operatorName,
-                    [receiver.Type, .. arguments.Select(arg => arg.Type)], syntax));
-            return new BoundError(syntax);
-        }
+        var lookup = LookupMembers(receiver.Type, operatorName);
+        if (lookup.Viability is LookupViability.NotFound or LookupViability.NotAccessible)
+            return BindError(syntax, new Diagnostic.UndefinedOperator(receiver, operatorName, argTypes));
 
-        return new BoundCall(operatorFun, receiver, arguments, syntax);
+        var funCandidates = lookup.Symbols.OfType<FunSymbol>().ToImmutableArray();
+        if (funCandidates.Length == 0)
+            return BindError(syntax, new Diagnostic.UndefinedOperator(receiver, operatorName, argTypes));
+
+        var funGroup = new BoundFunGroup(funCandidates, receiver);
+        var resolution = ResolveFunGroup(funGroup, argumentTypes: [.. arguments.Select(arg => arg.Type)]);
+        if (resolution.Viability < FunCandidateViability.Viable || resolution.Candidates.Length > 1)
+            return BindError(syntax, new Diagnostic.UndefinedOperator(receiver, operatorName, argTypes));
+
+        Debug.Assert(resolution.Candidates.Length == 1);
+
+        return new BoundCall(resolution.Candidates[0], receiver, arguments, syntax);
+
     }
-
+    
     private BoundValue BindBooleanOperator(BinaryExprSyntax syntax)
     {
         Debug.Assert(syntax.Operator.Kind is TokenKind.DoubleAmpersand or TokenKind.DoubleVerticalBar);
@@ -782,8 +803,8 @@ public sealed class Binder
         }
     
         // Type-check against bool
-        if (!CheckTypeAndReportMismatch(left, _base.Bool) ||
-            !CheckTypeAndReportMismatch(right, _base.Bool))
+        if (!CheckType(left, _base.Bool) ||
+            !CheckType(right, _base.Bool))
         {
             return new BoundError(syntax);
         }
@@ -794,6 +815,27 @@ public sealed class Binder
             return new BoundOr(left, right, _base.Bool, syntax);
     
         throw new UnreachableException();
+    }
+
+    private BoundValue BindAssign(BinaryExprSyntax syntax)
+    {
+        Debug.Assert(syntax.Operator.Kind is TokenKind.Equal);
+
+        var target = BindValue(syntax.Left);
+        var value = BindValue(syntax.Right);
+
+        if (target is BoundError)
+            return new BoundError(syntax);
+        if (value.Type is ErrorTypeSymbol)
+            return new BoundAssign(target, value, ErrorTypeSymbol.Instance, syntax);
+
+        if (!target.IsPlace || !target.IsAssignable)
+            return BindError(syntax, new Diagnostic.CannotAssign(target));
+
+        TypeSymbol type = CheckType(value, target.Type)
+            ? _base.Unit
+            : ErrorTypeSymbol.Instance;
+        return new BoundAssign(target, value, type, syntax);
     }
     
     #endregion
@@ -807,13 +849,12 @@ public sealed class Binder
         
         var inBlockBinder = NestedBinderWithVisibleSymbols();
         
-        var groupedLocalFuns = inBlockBinder.BindFuns(syntax.Children.OfType<FunDeclSyntax>());
-        var localFuns = ExpandFunGroups(groupedLocalFuns);
-        inBlockBinder.CheckDuplicateDeclarations(groupedLocalFuns);
-        inBlockBinder = inBlockBinder.AdjacentBinderWithVisibleSymbols(groupedLocalFuns);
+        var localFuns = inBlockBinder.BindFuns(syntax.Children.OfType<FunDeclSyntax>());
+        inBlockBinder.CheckDuplicateDeclarations([.. localFuns]);
+        inBlockBinder = inBlockBinder.AdjacentBinderWithVisibleSymbols(localFuns);
         
         var stmts = inBlockBinder.BindStmtsAndLocalFunBodies([.. syntax.SyntaxNodes()], localFuns);
-        return new BoundBlock(stmts, groupedLocalFuns, _base.Unit, syntax);
+        return new BoundBlock(stmts, localFuns, _base.Unit, syntax);
     }
 
     private ImmutableArray<BoundStmt> BindStmtsAndLocalFunBodies(ImmutableArray<SyntaxNode> childNodes, ImmutableArray<FunSymbol> localFuns)
@@ -861,7 +902,7 @@ public sealed class Binder
     private BoundValue BindCondition(ExprSyntax syntax)
     {
         var condition = BindValue(syntax);
-        if (!CheckTypeAndReportMismatch(condition, expected: _base.Bool))
+        if (!CheckType(condition, expected: _base.Bool))
             condition = new BoundError(syntax);
 
         return condition;
@@ -893,10 +934,7 @@ public sealed class Binder
     {
         var elseSyntax = ifSyntax.ElseBody;
         if (elseSyntax is null)
-        {
-            _diagnostics.ReportError(new Diagnostic.MissingElse(ifSyntax));
-            return new BoundError();
-        }
+            return BindError(ifSyntax, new Diagnostic.MissingElse(ifSyntax));
 
         return BindValue(elseSyntax);
     }
@@ -918,10 +956,7 @@ public sealed class Binder
         Debug.Assert(syntax is BreakExprSyntax or ContinueExprSyntax);
         
         if (!_inLoop)
-        {
-            _diagnostics.ReportError(new Diagnostic.BreakOrContinueOutsideLoop(syntax));
-            return new BoundError(syntax);
-        }
+            return BindError(syntax, new Diagnostic.BreakOrContinueOutsideLoop(syntax));
     
         return syntax is BreakExprSyntax
             ? new BoundBreak(syntax)
@@ -937,7 +972,7 @@ public sealed class Binder
 
         if (expr is not null)
         {
-            if (!CheckTypeAndReportMismatch(expr, fun.ReturnType))
+            if (!CheckType(expr, fun.ReturnType))
                 expr = new BoundError(syntax.Expr);
         }
         else if (fun.ReturnType != _base.Unit)
@@ -950,379 +985,317 @@ public sealed class Binder
     }
     
     #endregion
-    
-    #region Names, Self, Assign, Call, GetMember
 
-    private BoundNode BindSelf(SelfSyntax syntax)
-    {
-        if (_owner is not FunSymbol funOwner ||
-            funOwner.ReceiverType is null ||
-            _owner.OwningType is null ||
-            funOwner.ReceiverType != _owner.OwningType)
-        {
-            // Currently, self in local funs of methods are rejected.
-            _diagnostics.ReportError(new Diagnostic.InvalidSelfRef(syntax, _owner));
-            return new BoundError(syntax);
-        }
-
-        return new BoundSelf(funOwner.ReceiverType, funOwner.IsMutatingReceiver, syntax);
-    }
+    #region Names and Member access
     
     private BoundNode BindIdName(IdNameSyntax syntax)
     {
         if (syntax.Token.IsMissing)
             return new BoundError(syntax);
 
-        var symbol = _scope.Lookup(syntax.Token.Identifier);
-        if (symbol is not null)
-            _semanticSideTable.AddResolvedSymbol(syntax.Location, symbol);
+        var lookupResult = LookupName(syntax.Token.Identifier);
 
-        if (symbol is null)
+        if (lookupResult.Viability is LookupViability.NotFound)
+            return BindError(syntax, new Diagnostic.UndefinedName(syntax));
+
+        if (lookupResult.Viability is LookupViability.NotAccessible)
+            //TODO: Should I really just pick the first one?
+            return BindError(syntax, new Diagnostic.NotAccessible(lookupResult.Symbols[0], syntax));
+
+        if (lookupResult.Symbols.All(s => s is FunSymbol))
+            return new BoundFunGroup([.. lookupResult.Symbols.Cast<FunSymbol>()], SynthesizeFunGroupReceiver(), syntax);
+
+        // It's viable now
+        if (lookupResult.Symbols.Length > 1)
+            return BindError(syntax, new Diagnostic.AmbiguousReference(lookupResult, syntax));
+
+        _semanticSideTable.AddResolvedSymbol(syntax.Location, lookupResult.Symbols[0]);
+        return lookupResult.Symbols[0] switch
         {
-            _diagnostics.ReportError(new Diagnostic.UndefinedName(syntax));
-            return new BoundError(syntax);
-        }
-        
-        if (!CheckAccessibility(symbol, syntax))
-            return new BoundError(syntax);
-
-        // If possible, bind implicit self
-        BoundSelf? receiver = null;
-        var selfType = _owner.OwningType;
-        if (selfType is not null
-            && ((symbol is FunSymbol symbolFun && symbolFun.ReceiverType == selfType) || symbol is FieldSymbol))
-        {
-            receiver = _owner is FunSymbol fun
-                ? fun.ReceiverType == selfType 
-                    ? new BoundSelf(selfType, fun.IsMutatingReceiver)
-                    : null 
-                : new BoundSelf(selfType, mutatable: false);
-        }
-
-        return symbol switch
-        {
-            NamespaceSymbol boundNamespace => new BoundNamespaceRef(boundNamespace, syntax, syntax),
-            TypeSymbol type => new BoundTypeRef(type, syntax, syntax),
-
-            FunSymbol fun => new BoundFunRef(fun, receiver, syntax, syntax),
-            FunGroupSymbol funGroup => new BoundFunGroupRef(funGroup, receiver, syntax, syntax),
-
-            VariableSymbol variableSymbol => BindVariable(variableSymbol),
-            FieldSymbol fieldSymbol => BindFieldAccess(receiver,
-                fieldSymbol, syntax),
+            NamespaceSymbol @namespace => new BoundNamespaceRef(@namespace, syntax),
+            TypeSymbol type => new BoundTypeRef(type, syntax),
+            
+            VariableSymbol variable => BindVariable(variable, syntax),
+            FunSymbol => BindFunGroup(lookupResult, SynthesizeFunGroupReceiver(), syntax),
+            FieldSymbol field => BindFieldAccess(field, SynthesizeReceiver(field, syntax), syntax)
         };
-
-        BoundNode BindVariable(VariableSymbol variable)
-        {
-            // Captured variables need to be rejected.
-
-            if (variable.Owner != _owner)
-            {
-                _diagnostics.ReportError(new Diagnostic.CannotCapture(syntax));
-                return new BoundError(syntax);
-            }
-
-            return new BoundVariable(variable, syntax);
-        }
-    }
-
-    private BoundValue BindAssign(BinaryExprSyntax syntax)
-    {
-        Debug.Assert(syntax.Operator.Kind is TokenKind.Equal);
-        
-        var target = BindValue(syntax.Left);
-        var value = BindValue(syntax.Right);
-
-        if (target is BoundError) 
-            return new BoundError(syntax);
-        if (value.Type is ErrorTypeSymbol)
-            return new BoundAssign(target, value, ErrorTypeSymbol.Instance, syntax);
-        
-        if (!target.IsPlace || !target.IsAssignable)
-        {
-            _diagnostics.ReportError(new Diagnostic.CannotAssign(target));
-            return new BoundError(syntax);
-        }
-
-        TypeSymbol type = CheckTypeAndReportMismatch(value, target.Type)
-            ? _base.Unit
-            : ErrorTypeSymbol.Instance;
-        return new BoundAssign(target, value, type, syntax);
     }
 
     private BoundNode BindGetMember(GetMemberExprSyntax syntax)
     {
         var left = BindExpr(syntax.Left);
 
-        return left switch
+        if (syntax.Member.Token.IsMissing)
+            return new BoundError(syntax.Member);
+        if (left is BoundFunGroup)
         {
-            BoundFunGroupRef boundFunGroupRef => BindUndefined(boundFunGroupRef.FunGroup),
-                BoundFunRef boundFunRef => BindUndefined(boundFunRef.Fun),
-
-            BoundNamespaceRef boundNamespaceRef => BindNamespaceOrTypeMember(boundNamespaceRef.Namespace),
-            BoundTypeRef boundTypeRef => BindNamespaceOrTypeMember(boundTypeRef.Type),
-
-            BoundValue boundValue => BindValueMember(boundValue),
-
-            BoundStmt => throw new UnreachableException("Stmt can never be the left side of GetMember.")
-        };
-
-        BoundNode BindNamespaceOrTypeMember(NamespaceOrTypeSymbol parent)
-        {
-            if (syntax.Member.Token.IsMissing)
-                return new BoundError(syntax);
-
-            var memberName = syntax.Member.Token.Identifier;
-            var memberSymbol = parent.LookupMember(memberName);
-
-            if (memberSymbol is null)
-            {
-                _diagnostics.ReportError(new Diagnostic.UndefinedMember(syntax.Member, parent));
-                return new BoundError(syntax);
-            }
-
-            if (!CheckAccessibility(memberSymbol, syntax.Member))
-                return new BoundError(syntax);
-            
-            if (memberSymbol is FieldSymbol)
-            {
-                _diagnostics.ReportError(new Diagnostic.CannotAccessFieldWithoutReceiver(syntax.Member, (FieldSymbol)memberSymbol));
-                return new BoundError(syntax);
-            }
-
-            _semanticSideTable.AddResolvedSymbol(syntax.Member.Location, memberSymbol);
-
-            return memberSymbol switch
-            {
-                NamespaceSymbol @namespace => new BoundNamespaceRef(@namespace, syntax, syntax.Member),
-                TypeSymbol type => new BoundTypeRef(type, syntax, syntax.Member),
-
-                FunSymbol fun => new BoundFunRef(fun, receiver: null, syntax, syntax.Member),
-                FunGroupSymbol funGroup => new BoundFunGroupRef(funGroup, receiver: null, syntax, syntax.Member),
-
-                VariableSymbol => throw new UnreachableException("Variables are not members."),
-                FieldSymbol => throw new UnreachableException("Already handled.")
-            };
-        }
-
-        BoundNode BindUndefined(Symbol parent)
-        {
-            _diagnostics.ReportError(new Diagnostic.UndefinedMember(syntax.Member, parent));
-            return new BoundError(syntax);
-        }
-
-        BoundNode BindValueMember(BoundValue value)
-        {
-            var type = value.Type;
-            if (type is ErrorTypeSymbol)
-                return new BoundError(syntax.Member);
-
-            if (syntax.Member.Token.IsMissing)
-                return new BoundError(syntax);
-
-            var memberName = syntax.Member.Token.Identifier;
-            var memberSymbol = type.LookupMember(memberName);
-
-            if (memberSymbol is null)
-            {
-                _diagnostics.ReportError(new Diagnostic.UndefinedMember(syntax.Member, type));
-                return new BoundError(syntax);
-            }
-
-            if (!CheckAccessibility(memberSymbol, syntax.Member))
-                return new BoundError(syntax);
-            
-            _semanticSideTable.AddResolvedSymbol(syntax.Member.Location, memberSymbol);
-
-            if (memberSymbol is TypeSymbol)
-            {
-                // Tried access of a nested type, which must not be accessed through a value.
-                _diagnostics.ReportError(new Diagnostic.CannotAccessThroughInstance(syntax.Member, type));
-                return new BoundError(syntax);
-            }
-
-            return memberSymbol switch
-            {
-                FunSymbol fun => new BoundFunRef(fun, receiver: value, syntax, syntax.Member),
-                FunGroupSymbol funGroup => new BoundFunGroupRef(funGroup, receiver: value, syntax, syntax.Member),
-                FieldSymbol field => BindFieldAccess(value, field, syntax),
-                
-                VariableSymbol or NamespaceSymbol => throw new UnreachableException("Variables and namespaces are not type members."),
-                TypeSymbol => throw new UnreachableException(),
-            };
-        }
-    }
-
-    private BoundValue BindFieldAccess(BoundValue? receiver, FieldSymbol field, SyntaxNode syntax)
-    {
-        if (receiver is null)
-        {
-            _diagnostics.ReportError(new Diagnostic.FieldNotAccessibleInStaticContext(field, syntax));
-            return new BoundError(syntax);
+            // A fun group cannot have members
+            return BindError(syntax, new Diagnostic.UndefinedMember(left, syntax.Member));
         }
         
-        if (!CheckAccessibility(field, syntax: syntax is GetMemberExprSyntax getMemberExprSyntax
-                ? getMemberExprSyntax.Member
-                : syntax))
-            return new BoundError(syntax);
+        NamespaceOrTypeSymbol namespaceOrType = left switch
+        {
+            BoundNamespaceRef boundNamespaceRef => boundNamespaceRef.Namespace,
+            BoundTypeRef boundTypeRef => boundTypeRef.Type,
+            BoundValue value => value.Type,
+            BoundFunGroup => throw new UnreachableException("Fun group handled above."),
+            BoundStmt => throw new UnreachableException("Stmt can never be the left side of member access."),
+        };
+        if (namespaceOrType is ErrorTypeSymbol)
+            return new BoundError(syntax.Member);
 
-        return new BoundFieldAccess(receiver, field, syntax);
+        var memberName = syntax.Member.Text.ToString();
+        var lookupResult = LookupMembers(namespaceOrType, memberName);
+
+        if (lookupResult.Viability is LookupViability.NotFound)
+            return BindError(syntax, new Diagnostic.UndefinedMember(left, syntax.Member));
+
+        if (lookupResult.Viability is LookupViability.NotAccessible)
+            //TODO: Should I really just pick the first one?
+            return BindError(syntax, new Diagnostic.NotAccessible(lookupResult.Symbols[0], syntax.Member));
+        
+        if (lookupResult.Symbols.All(s => s is FunSymbol))
+            return new BoundFunGroup([.. lookupResult.Symbols.Cast<FunSymbol>()], receiver: left as BoundValue, syntax.Member);
+
+        // It's viable now
+        if (lookupResult.Symbols.Length > 1)
+            return BindError(syntax, new Diagnostic.AmbiguousReference(lookupResult, syntax.Member));
+
+        _semanticSideTable.AddResolvedSymbol(syntax.Location, lookupResult.Symbols[0]);
+        return lookupResult.Symbols[0] switch
+        {
+            NamespaceSymbol @namespace => new BoundNamespaceRef(@namespace, syntax.Member),
+            TypeSymbol type => new BoundTypeRef(type, syntax.Member),
+
+            VariableSymbol => throw new UnreachableException("Variables are never members."),
+            FunSymbol => BindFunGroup(lookupResult, receiver: left as BoundValue, syntax.Member),
+            FieldSymbol field => BindFieldAccess(field, receiver: left, syntax.Member),
+        };
     }
 
+
+    private BoundValue SynthesizeReceiver(FieldSymbol field, SyntaxNode syntax)
+    {
+        if (InstanceType is null)
+            return BindError(syntax, new Diagnostic.InstanceMemberNotAccessibleFromStaticContext(field.Name, syntax));
+        
+
+        if (InstanceType != field.OwningType)
+        {
+            //TODO: Report ReceiverMismatch
+            throw new NotImplementedException();
+        }
+
+        return new BoundSelf(InstanceType, mutable: (_owner as FunSymbol)!.IsMutatingReceiver);
+    }
+    
+    private BoundSelf? SynthesizeFunGroupReceiver()
+    {
+        if (InstanceType is null)
+            return null;
+        return new BoundSelf(InstanceType, mutable: (_owner as FunSymbol)!.IsMutatingReceiver);
+    }
+
+
+    private BoundNode BindVariable(VariableSymbol variable, IdNameSyntax syntax)
+    {
+        // Variables could be captured from outside, which is forbidden.
+
+        if (variable.Owner != _owner)
+            return BindError(syntax, new Diagnostic.CannotCapture(syntax));
+
+        return new BoundVariable(variable, syntax);
+    }
+
+    private BoundNode BindFunGroup(LookupResult lookupResult, BoundValue? receiver, IdNameSyntax syntax)
+    {
+        if (lookupResult.Symbols.Any(s => s is not FunSymbol))
+        {
+            Debug.Assert(lookupResult.Symbols.Length > 1);
+            return BindError(syntax, new Diagnostic.AmbiguousReference(lookupResult, syntax));
+        }
+
+        return new BoundFunGroup(lookupResult.Symbols.CastArray<FunSymbol>(), receiver, syntax);
+    }
+
+    private BoundNode BindFieldAccess(FieldSymbol field, BoundNode receiver, IdNameSyntax syntax)
+    {
+        if (receiver is not BoundValue valueReceiver)
+            //TODO: Error cannot be accessed from type?
+            return BindError(syntax, new Diagnostic.InstanceMemberNotAccessibleFromStaticContext(field.Name, syntax));
+        
+        return new BoundFieldAccess(valueReceiver, field, syntax);
+    }
+    
+    #endregion
+    
+    
+    #region Call and Struct Initializer
+
+    private enum FunCandidateViability
+    {
+        ArityMismatch,
+        ParameterTypeMismatch,
+        StaticMismatch,
+        ReceiverMismatch,
+        CannotMutate,
+        Viable
+    }
+
+    private record OverloadResolutionResult(FunCandidateViability Viability, ImmutableArray<FunSymbol> Candidates);
+
+    private static FunCandidateViability CheckFunCandidate(FunSymbol fun, BoundValue? receiver,
+        ImmutableArray<TypeSymbol> argumentTypes)
+    {
+        if (fun.Parameters.Length != argumentTypes.Length)
+            return FunCandidateViability.ArityMismatch;
+
+        if (!argumentTypes.Zip(fun.ParameterTypes, IsAssignableTo).All(x => x))
+            return FunCandidateViability.ParameterTypeMismatch;
+
+        if (receiver is null && !fun.IsStatic || receiver is not null && fun.IsStatic)
+            return FunCandidateViability.StaticMismatch;
+
+        if (receiver is not null && fun.ReceiverType != receiver.Type)
+            return FunCandidateViability.ReceiverMismatch;
+
+        if (fun.IsMutatingReceiver && receiver is not null && !receiver.IsMutablePlace)
+            return FunCandidateViability.CannotMutate;
+
+        return FunCandidateViability.Viable;
+    }
+
+    private static OverloadResolutionResult ResolveFunGroup(BoundFunGroup funGroup,
+        ImmutableArray<TypeSymbol> argumentTypes)
+    {
+        var candidates = ImmutableArray.CreateBuilder<FunSymbol>();
+        var currentViability = FunCandidateViability.ArityMismatch;
+
+        foreach (var fun in funGroup.Candidates)
+        {
+            var receiver = fun.IsStatic && funGroup.IsReceiverImplicit ? null : funGroup.Receiver;
+            var viability = CheckFunCandidate(fun, receiver, argumentTypes);
+            if (viability == currentViability)
+                candidates.Add(fun);
+            if (viability > currentViability)
+            {
+                currentViability = viability;
+                candidates.Clear();
+                candidates.Add(fun);
+            }
+        }
+
+        return new OverloadResolutionResult(currentViability, candidates.DrainToImmutable());
+    }
+
+    
     private BoundValue BindCall(CallExprSyntax syntax)
     {
         var callee = BindExpr(syntax.Callee);
-        if (callee is BoundTypeRef { Type: StructSymbol } structRef)
-            return BindStructInit((StructSymbol)structRef.Type, syntax, structRef.MemberSyntax);
+        if (callee is BoundError)
+            return new BoundError(syntax);
+        if (callee is BoundTypeRef typeRef)
+            return BindTypeInit(typeRef, syntax);
         
         var arguments = syntax.ArgumentExprs.Select(BindValue).ToImmutableArray();
 
         //TODO: Implement named arguments
-        var hasNamedArg = false;
-        foreach (var argSyntax in syntax.ArgList.Arguments)
+        if (syntax.ArgList.Arguments.Any(argSyntax => argSyntax.IsNamed))
         {
-            if (argSyntax.IsNamed)
-            {
-                hasNamedArg = true;
-                _diagnostics.ReportError(new Diagnostic.UnsupportedFeature(argSyntax, "Named arguments are not yet implemented."));
-            }
+            return BindError(syntax,
+                new Diagnostic.UnsupportedFeature(syntax.ArgList, "Named arguments are not yet implemented."));
         }
 
-        if (hasNamedArg)
+        if (callee is not BoundFunGroup calleeFunGroup)
+            return BindError(syntax, new Diagnostic.CannotCall(callee));
+
+        var argumentTypes = arguments.Select(arg => arg.Type).ToImmutableArray();
+        var resolutionResult = ResolveFunGroup(calleeFunGroup, argumentTypes);
+        if (calleeFunGroup.Syntax is not null && resolutionResult.Candidates.Length == 1)
+            _semanticSideTable.AddResolvedSymbol(calleeFunGroup.Syntax.Location, resolutionResult.Candidates[0]);
+
+        // If arguments had an error, report arity mismatch, because that is possible.
+        // All other errors should be silent.
+        if (resolutionResult.Viability > FunCandidateViability.ArityMismatch && 
+            argumentTypes.OfType<ErrorTypeSymbol>().Any())
             return new BoundError(syntax);
         
-        ImmutableArray<FunSymbol> calleeCandidates;
-        BoundValue? receiver;
-        SyntaxNode funSyntax;
+        if (resolutionResult.Viability < FunCandidateViability.Viable)
+            return BindOverloadResolutionError(resolutionResult, calleeFunGroup, arguments, syntax);
+        
+        Debug.Assert(resolutionResult.Viability is FunCandidateViability.Viable);
 
-        if (callee is BoundFunRef boundFunRef)
+        if (resolutionResult.Candidates.Length > 1)
         {
-            calleeCandidates = [boundFunRef.Fun];
-            receiver = boundFunRef.Receiver;
-            funSyntax = boundFunRef.MemberSyntax;
-        }
-        else if (callee is BoundFunGroupRef boundFunGroupRef)
-        {
-            calleeCandidates = boundFunGroupRef.FunGroup.Funs;
-            receiver = boundFunGroupRef.Receiver;
-            funSyntax = boundFunGroupRef.MemberSyntax;
-        }
-        else
-        {
-            if (callee is not BoundError)
-                _diagnostics.ReportError(new Diagnostic.CannotCall(callee));
-            return new BoundError(syntax);
+            return BindError(syntax, new Diagnostic.CannotResolveFun(syntax.ArgList, calleeFunGroup.Name,
+                resolutionResult.Candidates, argumentTypes));
         }
         
-        var funName = calleeCandidates[0].Name;
-        Debug.Assert(calleeCandidates.All(fun => fun.Name == funName));
+        Debug.Assert(resolutionResult.Candidates.Length == 1);
 
-        return SelectCallee(calleeCandidates, receiver, arguments, funName, syntax, funSyntax) is { } selectedFun
-            ? new BoundCall(selectedFun, receiver, arguments, syntax)
-            : new BoundError(syntax);
+        var fun = resolutionResult.Candidates[0];
+        var receiver = fun.IsStatic && calleeFunGroup.IsReceiverImplicit ? null : calleeFunGroup.Receiver;
+        
+        return new BoundCall(resolutionResult.Candidates[0], receiver, arguments, syntax);
     }
 
-    private FunSymbol? SelectCallee(ImmutableArray<FunSymbol> initialCandidates, BoundValue? receiver, ImmutableArray<BoundValue> arguments,
-        string funName, CallExprSyntax callSyntax, SyntaxNode funSyntax)
+    private BoundError BindOverloadResolutionError(OverloadResolutionResult result,
+        BoundFunGroup callee,
+        ImmutableArray<BoundValue> arguments, 
+        CallExprSyntax syntax)
     {
-        // Filter based on receiver 
-        var candidates = initialCandidates
-            .Where(AreReceiversCompatible)
-            .ToList();
-        if (candidates.Count == 0)
+        switch (result.Viability)
         {
-            // Either all are static and called with a receiver or vice versa.
-            if (initialCandidates[0].ReceiverType is not null)
-            {
-                _diagnostics.ReportError(new Diagnostic.CannotCallWithoutReceiver(funName, 
-                    IsOverloaded: initialCandidates.Length > 1,
-                    funSyntax));
-            }
-            else
-            {
-                _diagnostics.ReportError(new Diagnostic.CannotCallWithReceiver(funName,
-                    IsOverloaded: initialCandidates.Length > 1,
-                    funSyntax));
-            }
-            return null;
-        }
-        
-        // Filter arity
-        candidates.RemoveAll(fun => fun.Parameters.Length != arguments.Length);
-        if (candidates.Count == 0)
-        {
-            _diagnostics.ReportError(new Diagnostic.ArityMismatch(callSyntax.ArgList,
-                funName,
-                ParameterCount: initialCandidates.Length == 1 ? initialCandidates[0].Parameters.Length : null,
-                ArgumentCount: arguments.Length));
-            return null;
-        }
+            case FunCandidateViability.ArityMismatch:
+                return BindError(syntax, new Diagnostic.ArityMismatch(syntax.ArgList, result.Candidates,
+                    arguments.Length));
 
-        // If argument have an error, only check arity and don't go deeper.
-        // It cannot be resolved without valid types.
-        if (arguments.Any(arg => arg.Type is ErrorTypeSymbol))
-            return null;
-        
-        // Filter assignable arguments
-        if (candidates.Count == 1)
-        {
-            // Only one candidate left, so report TypeMismatch errors.
-            var hadError = false;
-            for (var i = 0; i < arguments.Length; i++)
-            {
-                if (arguments[i].Type is ErrorTypeSymbol ||
-                    !CheckTypeAndReportMismatch(arguments[i], candidates[0].Parameters[i].Type))
+            case FunCandidateViability.ParameterTypeMismatch:
+                if (result.Candidates.Length > 1)
                 {
-                    hadError = true;
+                    return BindError(syntax, new Diagnostic.CannotResolveFun(syntax.ArgList, callee.Name,
+                        result.Candidates,
+                        [.. arguments.Select(arg => arg.Type)]));
                 }
-            }
-            if (hadError)
-                return null;
-        }
-        else
-        {
-            // Multiple candidates to select from, so report CannotResolveFun.
-            var candidatesWithMatchingArity = candidates.ToImmutableArray();
-            candidates.RemoveAll(fun => Enumerable.Range(0, arguments.Length)
-                .Any(i => !IsAssignableTo(arguments[i].Type, fun.ParameterTypes[i])));
-            if (candidates.Count != 1)
-            {
-                _diagnostics.ReportError(new Diagnostic.CannotResolveFun(callSyntax.ArgList, funName,
-                    candidatesWithMatchingArity, [.. arguments.Select(arg => arg.Type)]));
-                return null;
-            }
+
+                // Just recheck and report TypeMismatch everywhere
+                for (var i = 0; i < arguments.Length; i++)
+                    CheckType(arguments[i], result.Candidates[0].ParameterTypes[i]);
+                
+                return new BoundError(syntax);
+            
+            case FunCandidateViability.StaticMismatch:
+                return callee.Receiver is null
+                    ? BindError(syntax,
+                        new Diagnostic.InstanceMemberNotAccessibleFromStaticContext(callee.Name,
+                            callee.Syntax!))
+                    : BindError(syntax, new Diagnostic.CannotAccessThroughInstance(callee.Syntax!));
+
+            case FunCandidateViability.ReceiverMismatch:
+                throw new NotImplementedException("No nested types yet, so this is not possible");
+                
+            case FunCandidateViability.CannotMutate:
+                return BindError(syntax, new Diagnostic.CannotMutateReceiver(callee.Receiver!,
+                    callee.Candidates[0], callee.Syntax!));
+                
         }
 
-        // Check receiver mutation
-        var candidate = candidates[0];
-        if (candidate is { IsMutatingReceiver: true, ReceiverType: not null })
-        {
-            Debug.Assert(receiver is not null);
-            if (!receiver.IsPlace || !receiver.IsMutablePlace)
-            {
-                _diagnostics.ReportError(new Diagnostic.CannotMutateReceiver(receiver, candidate, funSyntax));
-                return null;
-            }
-        }
-        
-        return candidates[0];
-
-        bool AreReceiversCompatible(FunSymbol fun)
-            => receiver is null && fun.ReceiverType is null ||
-               receiver is not null && fun.ReceiverType is not null &&
-               IsAssignableTo(receiver.Type, fun.ReceiverType);
+        throw new UnreachableException(
+            $"Unknown {nameof(FunCandidateViability)}.{result.Viability} in {nameof(BindOverloadResolutionError)}.");
     }
 
-    private BoundValue BindStructInit(StructSymbol @struct, CallExprSyntax syntax, SyntaxNode structRefSyntax)
+    private BoundValue BindTypeInit(BoundTypeRef typeRef, CallExprSyntax syntax)
     {
+        if (typeRef.Type is not StructSymbol @struct || @struct.IsPrimitive)
+            return BindError(syntax, new Diagnostic.CannotInitialize(typeRef));
+
         var uninitializedFields = @struct.Fields.ToList();
         var fieldInits = ImmutableArray.CreateBuilder<BoundFieldInit>();
 
         var hadError = false;
         foreach (var argSyntax in syntax.ArgList.Arguments)
         {
-            var boundFieldInit = BindFieldInitializer(@struct, argSyntax) as BoundFieldInit;
-            if (boundFieldInit is null)
+            if (BindFieldInitializer(@struct, argSyntax) is not BoundFieldInit boundFieldInit)
             {
                 hadError = true;
                 continue;
@@ -1343,17 +1316,8 @@ public sealed class Binder
             return new BoundError(syntax);
 
         if (uninitializedFields.Count > 0)
-        {
-            _diagnostics.ReportError(new Diagnostic.MissingFieldInitializers([.. uninitializedFields], syntax.ArgList));
-            return new BoundError(syntax);
-        }
+            return BindError(syntax, new Diagnostic.MissingFieldInitializers([.. uninitializedFields], syntax.ArgList));
 
-        if (@struct.IsPrimitive)
-        {
-            _diagnostics.ReportError(new Diagnostic.CannotInitializePrimitive(structRefSyntax));
-            return new BoundError(syntax);
-        }
-        
         return new BoundStructInit(@struct, fieldInits.ToImmutable(), syntax);
     }
 
@@ -1366,13 +1330,10 @@ public sealed class Binder
             : field.Name.SequenceEqual(argSyntax.Text));
 
         if (field is null)
-        {
-            _diagnostics.ReportError(new Diagnostic.InvalidFieldName(@struct, argSyntax));
-            return new BoundError(argSyntax);
-        }
-
+            return BindError(argSyntax, new Diagnostic.InvalidFieldName(@struct, argSyntax));
+        
         if (!CheckAccessibility(field, argSyntax.IsNamed ? argSyntax.Name! : argSyntax) ||
-            !CheckTypeAndReportMismatch(value, field.Type))
+            !CheckType(value, field.Type))
             return new BoundError(argSyntax);
 
         return new BoundFieldInit(field, value, argSyntax);

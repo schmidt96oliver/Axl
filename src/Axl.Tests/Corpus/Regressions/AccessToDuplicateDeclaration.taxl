@@ -10,4 +10,4 @@ struct Test
 }
 
 let t: Test = Test(X = 1);      //~error MissingFieldInitializers
-t.X;
+t.X;                    //~error AmbiguousReference

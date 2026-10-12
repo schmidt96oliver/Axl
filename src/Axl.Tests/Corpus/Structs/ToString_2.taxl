@@ -1,0 +1,20 @@
+﻿//@run
+//= A B
+
+struct Single
+{
+    pub fun ToString(): String = "A";
+}
+struct Overloaded
+{
+    pub static fun ToString(a: I32): String = "XX";
+
+    pub fun ToString(): String = "B";
+        
+    pub var fun ToString(c: String): String = "XX";
+}
+
+let t = Single();
+Print("{t} ");
+let t = Overloaded();
+Print("{t} ");

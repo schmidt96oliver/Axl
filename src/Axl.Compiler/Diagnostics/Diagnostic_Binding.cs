@@ -1,5 +1,6 @@
 ﻿using System.Collections.Immutable;
 using System.Diagnostics;
+using Axl.Compiler.Binding;
 using Axl.Compiler.Binding.BoundTree;
 using Axl.Compiler.Symbols;
 using Axl.Compiler.Syntax;
@@ -46,23 +47,23 @@ public partial record Diagnostic
             => $"Undefined name '{Syntax.Token.Identifier}'.";
     }
 
-    public sealed record UndefinedOperator(string OperatorName, ImmutableArray<TypeSymbol> OperandTypes, SyntaxNode Syntax) : Error
+    public sealed record UndefinedOperator(BoundValue Receiver, string OperatorName, ImmutableArray<TypeSymbol> OperandTypes) : Error
     {
         public override ImmutableArray<SourceLocation> Locations
         {
             get
             {
-                if (Syntax is ExprStmtSyntax)
+                if (Receiver.Syntax is ExprStmtSyntax)
                 {
                     // Do not mark the semicolon at the end.
-                    var nonSemicolonElements = Syntax.SyntaxElements()
+                    var nonSemicolonElements = Receiver.Syntax.SyntaxElements()
                         .TakeWhile(el => el is not Token { Kind: TokenKind.Semicolon })
                         .ToList();
                     var range = SourceRange.FromTo(nonSemicolonElements[0].Range!.Value, nonSemicolonElements[^1].Range!.Value);
-                    return [Syntax.Tree.SourceText.GetLocation(range)];
+                    return [Receiver.Syntax.Tree.SourceText.GetLocation(range)];
                 }
 
-                return [Syntax.Location];
+                return [Receiver.Syntax!.Location];
             }
         }
 
@@ -92,8 +93,7 @@ public partial record Diagnostic
                     => "Cannot assign to through 'let' binding.",
                 BoundValue => "Cannot assign this for unknown reason.",
                     
-                BoundFunGroupRef boundFunGroup => $"Cannot assign to '{boundFunGroup.FunGroup.Name}', because it is a group of overloaded funs.",
-                BoundFunRef boundFun => $"Cannot assign to '{boundFun.Fun.Name}', because it is a function.",
+                BoundFunGroup boundFunGroup => $"Cannot assign to '{boundFunGroup.Name}', because it is a group of overloaded funs.",
                 BoundNamespaceRef boundNamespace => $"Cannot assign to '{boundNamespace.Namespace.Name}', because it is a namespace.",
                 BoundTypeRef boundType => $"Cannot assign to '{boundType.Type.Name}', because it is a type.",
                 
@@ -146,22 +146,38 @@ public partial record Diagnostic
             => $"Both 'if' and 'else' branches must have the same type. Got '{First.Type.Name}' and '{Second.Type.Name}'.";
     }
 
-    public sealed record UndefinedMember(IdNameSyntax MemberSyntax, Symbol OwnerSymbol) : Error
+    public sealed record UndefinedMember(BoundNode Left, IdNameSyntax MemberSyntax) : Error
     {
         public override ImmutableArray<SourceLocation> Locations => [MemberSyntax.Location];
 
-        public override string Message =>
-            $"'{OwnerSymbol.Name}' has no member '{MemberSyntax.Token.Identifier}'.";
+        public override string Message => Left switch
+        {
+            BoundValue value => $"'{value.Type.Name}' has no member '{MemberSyntax.Token.Identifier}'.",
+            BoundTypeRef type => $"'{type.Type.Name}' has no member '{MemberSyntax.Token.Identifier}'.",
+            BoundNamespaceRef ns => $"'{ns.Namespace.Name}' has no member '{MemberSyntax.Token.Identifier}'.",
+
+            BoundFunGroup funGroup =>
+                $"'{funGroup.Name}' is a group of overloaded function and does not have members.",
+
+            BoundStmt => $"Undefined member '{MemberSyntax.Token.Identifier}'.",
+        };
 
     }
 
-    public sealed record CannotConvert(ExprSyntax Syntax, TypeSymbol From, TypeSymbol To) : Error
+    public sealed record CannotConvertToString(BoundValue Node, LookupResult LookupResult) : Error
     {
-        public override ImmutableArray<SourceLocation> Locations => [Syntax.Location];
-        public override string Message => $"Cannot convert from type '{From.Name}' to '{To.Name}'.";
+        public override ImmutableArray<SourceLocation> Locations => [Node.Syntax!.Location];
+
+        public override string Message
+            => LookupResult.Viability switch
+            {
+                LookupViability.NotAccessible =>
+                    $"Cannot convert type '{Node.Type.Name}' to 'String', because 'ToString' is not accessible due to its protection level.",
+                _ => $"Cannot convert type '{Node.Type.Name}' to 'String', because it does not declare a valid 'ToString' method.",
+            };
     }
 
-    public sealed record ArityMismatch(ArgListSyntax Syntax, string FunName, int? ParameterCount, int ArgumentCount) : Error
+    public sealed record ArityMismatch(ArgListSyntax Syntax, ImmutableArray<FunSymbol> FunCandidates, int ArgumentCount) : Error
     {
         public override ImmutableArray<SourceLocation> Locations
         {
@@ -175,9 +191,9 @@ public partial record Diagnostic
             }
         }
 
-        public override string Message => ParameterCount is int parameterCount
-            ? $"'{FunName}' has {parameterCount} parameter(s), but was called with {ArgumentCount} argument(s)."
-            : $"'{FunName}' has no overload that takes {ArgumentCount} parameter(s).";
+        public override string Message => FunCandidates.Length == 1
+            ? $"'{FunCandidates[0].Name}' has {FunCandidates[0].Parameters.Length} parameter(s), but was called with {ArgumentCount} argument(s)."
+            : $"No overload of '{FunCandidates[0].Name}' takes {ArgumentCount} parameter(s).";
     }
 
     public sealed record CannotCall(BoundNode BoundCallee) : Error
@@ -190,7 +206,7 @@ public partial record Diagnostic
             BoundTypeRef boundTypeRef => $"Cannot call '{boundTypeRef.Type.Name}', because it is a type.",
             BoundValue => $"Expected a function.",
 
-            BoundFunGroupRef or BoundFunRef or BoundStmt => throw new UnreachableException(),
+            BoundFunGroup or BoundStmt => throw new UnreachableException(),
         };
     }
 
@@ -200,22 +216,6 @@ public partial record Diagnostic
 
         public override string Message
             => $"The integral is too big to fit into '{TargetType.Name}'.";
-    }
-
-    public sealed record CannotCallWithoutReceiver(string FunName, bool IsOverloaded, SyntaxNode Syntax) : Error
-    {
-        public override ImmutableArray<SourceLocation> Locations => [Syntax.Location];
-        public override string Message => IsOverloaded
-            ? $"All overloads of '{FunName}' are methods. They cannot be called from a static context."
-            : $"'{FunName}' is a method. It cannot be called from a static context.";
-    }
-    
-    public sealed record CannotCallWithReceiver(string FunName, bool IsOverloaded, SyntaxNode Syntax) : Error
-    {
-        public override ImmutableArray<SourceLocation> Locations => [Syntax.Location];
-        public override string Message => IsOverloaded
-            ? $"All overloads of '{FunName}' are static. They cannot be called from an instance."
-            : $"'{FunName}' is static. It cannot be called from an instance.";
     }
 
     public sealed record DuplicateFunDeclarations(ImmutableArray<FunSymbol> Duplicates) : Error
@@ -273,10 +273,10 @@ public partial record Diagnostic
         {
             return string.Join('\n', Candidates.Take(5).Select(Single));
             
-            string Single(FunSymbol fun)
-                => string.Concat(fun.ReceiverType is null ? "static fun " : "fun ",
+            string Single(FunSymbol funRef)
+                => string.Concat(funRef.ReceiverType is null ? "static fun " : "fun ",
                     $"'{FunName} '",
-                    GetTypeListString(fun.ParameterTypes));
+                    GetTypeListString(funRef.ParameterTypes));
         }
     }
 
@@ -294,10 +294,10 @@ public partial record Diagnostic
         public override string Message => "Return value is missing.";
     }
 
-    public sealed record CannotCapture(IdNameSyntax Syntax) : Error
+    public sealed record CannotCapture(SyntaxNode Syntax) : Error
     {
         public override ImmutableArray<SourceLocation> Locations => [Syntax.Location];
-        public override string Message => $"Cannot capture variable '{Syntax.Token.Identifier}' from outside of this fun.";
+        public override string Message => $"Cannot capture variable '{Syntax.Text}' from outside of this fun.";
     }
 
     public sealed record MissingReturn(SyntaxNode BlockSyntax) : Error
@@ -321,10 +321,10 @@ public partial record Diagnostic
             => "Not all code-paths return a value.";
     }
 
-    public sealed record CannotAccessThroughInstance(IdNameSyntax MemberSyntax, TypeSymbol ParentSymbol) : Error
+    public sealed record CannotAccessThroughInstance(SyntaxNode MemberSyntax) : Error
     {
         public override ImmutableArray<SourceLocation> Locations => [MemberSyntax.Location];
-        public override string Message => $"Cannot access nested type '{MemberSyntax.Token.Identifier}' through a value. Use '{ParentSymbol.Name}.{MemberSyntax.Token.Identifier}' instead.";
+        public override string Message => $"Cannot access static member '{MemberSyntax.Text}' through an instance.";
     }
 
     public sealed record NotAValue(BoundNode BoundNode) : Error
@@ -337,12 +337,6 @@ public partial record Diagnostic
     {
         public override ImmutableArray<SourceLocation> Locations => [BoundNode.Syntax!.Location];
         public override string Message => $"Expected a value.";
-    }
-
-    public sealed record CannotAccessFieldWithoutReceiver(SyntaxNode Syntax, FieldSymbol FieldSymbol) : Error
-    {
-        public override ImmutableArray<SourceLocation> Locations => [Syntax.Location];
-        public override string Message => $"Cannot access field '{FieldSymbol.Name}' in static context.";
     }
 
     public sealed record AlreadyDeclared(ImmutableArray<Symbol> OffendingSymbols) : Error
@@ -407,12 +401,14 @@ public partial record Diagnostic
         public override string Message => $"Field '{Field.Name}' is already initialized.";
     }
 
-    public sealed record CannotInitializePrimitive(SyntaxNode StructRefSyntax) : Error
+    public sealed record CannotInitialize(BoundTypeRef TypeRef) : Error
     {
         public override ImmutableArray<SourceLocation> Locations
-            => [StructRefSyntax.Location];
+            => [TypeRef.Syntax!.Location];
 
-        public override string Message => $"'{StructRefSyntax.Text}' cannot be initialized, because it is a primitive type.";
+        public override string Message => TypeRef.Type is StructSymbol { IsPrimitive: true } ?
+            $"'{TypeRef.Type.Name}' cannot be initialized, because it is a primitive type."
+            : $"'{TypeRef.Type.Name}' cannot be initialized.";
     }
 
     public sealed record NotAccessible(Symbol Symbol, SyntaxNode Syntax) : Error
@@ -469,9 +465,15 @@ public partial record Diagnostic
         }
     }
 
-    public sealed record FieldNotAccessibleInStaticContext(FieldSymbol Field, SyntaxNode Syntax) : Error
+    public sealed record InstanceMemberNotAccessibleFromStaticContext(string FieldName, SyntaxNode Syntax) : Error
     {
         public override ImmutableArray<SourceLocation> Locations => [Syntax.Location];
-        public override string Message => $"Field '{Field.Name}' cannot be accessed from static context.";
+        public override string Message => $"Instance member '{FieldName}' cannot be accessed from static context.";
+    }
+
+    public sealed record AmbiguousReference(LookupResult LookupResult, IdNameSyntax Syntax) : Error
+    {
+        public override ImmutableArray<SourceLocation> Locations => [Syntax.Location];
+        public override string Message => $"'{Syntax.Text}' is ambiguous here.";
     }
 }

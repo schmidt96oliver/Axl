@@ -6,12 +6,12 @@ namespace Axl.Compiler.Binding.BoundTree;
 
 public sealed class BoundBlock(
     ImmutableArray<BoundStmt> stmts,
-    ImmutableArray<Symbol> localFuns,
+    ImmutableArray<FunSymbol> localFuns,
     TypeSymbol type,
     SyntaxNode? syntax = null) : BoundValue(type, syntax)
 {
     public ImmutableArray<BoundStmt> Stmts { get; } = stmts;
-    public ImmutableArray<Symbol> LocalFuns { get; } = localFuns;
+    public ImmutableArray<FunSymbol> LocalFuns { get; } = localFuns;
 
     /// <summary>
     /// Returns this block with <paramref name="additionalStmts"/> attached. Does

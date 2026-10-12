@@ -75,7 +75,7 @@ struct Test
     {
         fun Local()
         {
-            Print(Field);       //~error FieldNotAccessibleInStaticContext
+            Print(Field);       //~error InstanceMemberNotAccessibleFromStaticContext
             Print(self.Field);  //~error InvalidSelfRef
             
             var fun Local2() { }    //~error InvalidModifier

@@ -28,26 +28,28 @@ public sealed class Scope
     public Scope Adjacent(params IEnumerable<Symbol> visibleSymbols)
         => new Scope(Parent, [..VisibleHere, .. visibleSymbols]);
     
-    /// <summary>
-    /// Returns the last symbol with the specified name that
-    /// is declared on this scope. Or <c>null</c>, if <paramref name="name"/>
-    /// is not declared.
-    /// </summary>
-    public Symbol? LookupHere(string name)
+    public ImmutableArray<Symbol> Lookup(string name)
     {
-        // Last declared symbol is first, since it might shadow
-        // symbols declared before.
+        // Variables can be shadowed inside the same scope,
+        // so only the last variable with that name should
+        // be added to the result list.
         
-        return VisibleHere.LastOrDefault(symbol => symbol.Name.SequenceEqual(name));
+        var result = ImmutableArray.CreateBuilder<Symbol>();
+        foreach (var symbol in VisibleHere.Reverse().Where(s => s.Name == name))
+        {
+            if (symbol is VariableSymbol)
+            {
+                var hasVariableWithSameName = result
+                    .OfType<VariableSymbol>()
+                    .Any(s => s.Name == symbol.Name);
+                if (!hasVariableWithSameName)
+                    result.Add(symbol);
+            }
+            else
+                result.Add(symbol);
+        }
+        
+        return result.DrainToImmutable();
     }
-    
-    /// <summary>
-    /// Returns the last symbol with the specified name that
-    /// is declared on this or any parent scope.
-    /// Or <c>null</c>, if <paramref name="name"/> is not declared.
-    /// </summary>
-    public Symbol? Lookup(string name)
-        => LookupHere(name) ?? Parent?.Lookup(name);
 
-    
 }

@@ -5,15 +5,15 @@
 struct Test
 {
     pub X: I32;
-    pub Inner: Inner;
-    
+    pub Inn: Inner;
+   
     pub var fun Mutate() 
     { 
         // Mutating from a var fun is allowed
         self.Mutate();
         Mutate();
-        self.Inner.Mutate();
-        Inner.Mutate();
+        self.Inn.Mutate();
+        Inn.Mutate();
         
         X = 10;
         self.X = 10;
@@ -23,15 +23,15 @@ struct Test
     { 
         self.Mutate();          //~error CannotMutateReceiver
         Mutate();               //~error CannotMutateReceiver
-        self.Inner.Mutate();    //~error CannotMutateReceiver
-        Inner.Mutate();         //~error CannotMutateReceiver
+        self.Inn.Mutate();    //~error CannotMutateReceiver
+        Inn.Mutate();         //~error CannotMutateReceiver
         
         X = 10;                 //~error CannotAssign
         self.X = 10;            //~error CannotAssign
     }
     
     pub static fun Make(): Test
-        = Test(X = 10, Inner = Inner(Y = 1));
+        = Test(X = 10, Inn = Inner(Y = 1));
 }
 
 struct Inner 
@@ -42,24 +42,24 @@ struct Inner
 }
 
 fun Make(): Test
-    = Test(X = 10, Inner = Inner(Y = 1));
+    = Test(X = 10, Inn = Inner(Y = 1));
 
 // Not through let bindings
-let t = Test(X = 10, Inner = Inner(Y = 1));
+let t = Test(X = 10, Inn = Inner(Y = 1));
 t.Mutate();                 //~error CannotMutateReceiver
-t.Inner.Mutate();           //~error CannotMutateReceiver
+t.Inn.Mutate();           //~error CannotMutateReceiver
 
 // Not through temps
-Test(X = 10, Inner = Inner(Y = 1)).Mutate();        //~error CannotMutateReceiver
-Test(X = 10, Inner = Inner(Y = 1)).Inner.Mutate();  //~error CannotMutateReceiver
+Test(X = 10, Inn = Inner(Y = 1)).Mutate();        //~error CannotMutateReceiver
+Test(X = 10, Inn = Inner(Y = 1)).Inn.Mutate();  //~error CannotMutateReceiver
 
 Test.Make().Mutate();       //~error CannotMutateReceiver
-Test.Make().Inner.Mutate(); //~error CannotMutateReceiver
+Test.Make().Inn.Mutate(); //~error CannotMutateReceiver
 
 Make().Mutate();       //~error CannotMutateReceiver
-Make().Inner.Mutate(); //~error CannotMutateReceiver
+Make().Inn.Mutate(); //~error CannotMutateReceiver
 
 // Through var is allowed
 var t = t;
 t.Mutate();
-t.Inner.Mutate();
+t.Inn.Mutate();

@@ -7,8 +7,10 @@ public closed class NamespaceOrTypeSymbol(string name, Symbol? owner)
 {
     public abstract ImmutableArray<Symbol> Members { get; }
 
-    public Symbol? LookupMember(string name)
-        => name is ""
-            ? null
-            : Members.FirstOrDefault(symbol => symbol.Name == name);
+    /// <summary>
+    /// Returns all members that match the specified <paramref name="name"/>
+    /// in no particular order.
+    /// </summary>
+    public ImmutableArray<Symbol> LookupMembers(string name)
+        => [.. Members.Where(s => s.Name == name)];
 }
