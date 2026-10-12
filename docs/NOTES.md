@@ -10,10 +10,6 @@
     * private operator/ToString; Duck typed must check for accessibility
     * test: Field "ToString"
 
-* Add resolved symbols    
-
-* use BindError everywhere
-
 * Implement errors for ArityMismatch, ParameterTypeMismatch (maybe CannotResolve), 
   StaticMismatch, ReceiverMismatch, AmbiguousOverload, AmbiguousName, CannotResolveOverload
   * *NotAccessible* takes all candidates; "No members with name {} is accessible."

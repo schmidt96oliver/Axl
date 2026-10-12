@@ -1040,6 +1040,7 @@ public sealed class Binder
         if (lookupResult.Symbols.Length > 1)
             return BindError(syntax, new Diagnostic.AmbiguousReference(lookupResult, syntax));
 
+        _semanticSideTable.AddResolvedSymbol(syntax.Location, lookupResult.Symbols[0]);
         return lookupResult.Symbols[0] switch
         {
             NamespaceSymbol @namespace => new BoundNamespaceRef(@namespace, syntax),
@@ -1091,6 +1092,7 @@ public sealed class Binder
         if (lookupResult.Symbols.Length > 1)
             return BindError(syntax, new Diagnostic.AmbiguousReference(lookupResult, syntax.Member));
 
+        _semanticSideTable.AddResolvedSymbol(syntax.Location, lookupResult.Symbols[0]);
         return lookupResult.Symbols[0] switch
         {
             NamespaceSymbol @namespace => new BoundNamespaceRef(@namespace, syntax.Member),
@@ -1192,7 +1194,7 @@ public sealed class Binder
 
         var argumentTypes = arguments.Select(arg => arg.Type).ToImmutableArray();
         var resolutionResult = ResolveFunGroup(calleeFunGroup, argumentTypes);
-
+        
         // If arguments had an error, report arity mismatch, because that is possible.
         // All other errors should be silent.
         if (resolutionResult.Viability > FunCandidateViability.ArityMismatch && argumentTypes.OfType<ErrorTypeSymbol>().Any())
@@ -1203,38 +1205,37 @@ public sealed class Binder
             switch (resolutionResult.Viability)
             {
                 case FunCandidateViability.ArityMismatch:
-                    _diagnostics.ReportError(new Diagnostic.ArityMismatch(syntax.ArgList, resolutionResult.Candidates,
+                    return BindError(syntax, new Diagnostic.ArityMismatch(syntax.ArgList, resolutionResult.Candidates,
                         arguments.Length));
-                    break;
+
                 case FunCandidateViability.ParameterTypeMismatch:
                     if (resolutionResult.Candidates.Length > 1)
                     {
-                        _diagnostics.ReportError(new Diagnostic.CannotResolveFun(syntax.ArgList, calleeFunGroup.Name,
+                        return BindError(syntax, new Diagnostic.CannotResolveFun(syntax.ArgList, calleeFunGroup.Name,
                             resolutionResult.Candidates,
                             argumentTypes));
                     }
-                    else
-                    {
-                        // Just recheck and report TypeMismatch everywhere
-                        var reportedTypeMismatch = arguments.Zip(resolutionResult.Candidates[0].ParameterTypes,
-                            CheckTypeAndReportMismatch).Any();
-                        Debug.Assert(reportedTypeMismatch);
-                    }
+
+                    // Just recheck and report TypeMismatch everywhere
+                    var reportedTypeMismatch = arguments.Zip(resolutionResult.Candidates[0].ParameterTypes,
+                        CheckTypeAndReportMismatch).Any();
+                    Debug.Assert(reportedTypeMismatch);
 
                     break;
                 case FunCandidateViability.StaticMismatch:
-                    if (calleeFunGroup.Receiver is null)
-                        _diagnostics.ReportError(new Diagnostic.InstanceMemberNotAccessibleFromStaticContext(calleeFunGroup.Name, calleeFunGroup.Syntax!));
-                    else
-                        _diagnostics.ReportError(
-                            new Diagnostic.CannotAccessThroughInstance(calleeFunGroup.Syntax!));
-                    break;
+                    return calleeFunGroup.Receiver is null
+                        ? BindError(syntax,
+                            new Diagnostic.InstanceMemberNotAccessibleFromStaticContext(calleeFunGroup.Name,
+                                calleeFunGroup.Syntax!))
+                        : BindError(syntax, new Diagnostic.CannotAccessThroughInstance(calleeFunGroup.Syntax!));
+
                 case FunCandidateViability.ReceiverMismatch:
                     throw new NotImplementedException("No nested types yet, so this is not possible");
+                
                 case FunCandidateViability.CannotMutate:
-                    _diagnostics.ReportError(new Diagnostic.CannotMutateReceiver(calleeFunGroup.Receiver!,
+                    return BindError(syntax, new Diagnostic.CannotMutateReceiver(calleeFunGroup.Receiver!,
                         calleeFunGroup.Candidates[0], calleeFunGroup.Syntax!));
-                    break;
+                
             }
 
             return new BoundError(syntax);
@@ -1287,7 +1288,7 @@ public sealed class Binder
     }
 
     public record OverloadResolutionResult(FunCandidateViability Viability, ImmutableArray<FunSymbol> Candidates);
-    
+
     private OverloadResolutionResult ResolveFunGroup(BoundFunGroup funGroup, ImmutableArray<TypeSymbol> argumentTypes)
     {
         var candidates = ImmutableArray.CreateBuilder<FunSymbol>();
@@ -1307,10 +1308,13 @@ public sealed class Binder
             }
         }
 
+        if (funGroup.Syntax is not null && candidates.Count == 1)
+            _semanticSideTable.AddResolvedSymbol(funGroup.Syntax.Location, candidates[0]);
+
         return new OverloadResolutionResult(currentViability, candidates.DrainToImmutable());
     }
-    
-    
+
+
     private BoundValue BindStructInit(StructSymbol @struct, CallExprSyntax syntax, SyntaxNode structRefSyntax)
     {
         var uninitializedFields = @struct.Fields.ToList();
