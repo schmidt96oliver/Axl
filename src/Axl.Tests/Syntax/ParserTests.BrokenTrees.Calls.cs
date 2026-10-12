@@ -44,7 +44,7 @@ public partial class ParserTests
                     · · · · · IdName 'a'
                     · · · · · '+'
                     · · · · · CallExpr
-                    · · · · · · GetMemberExpr
+                    · · · · · · MemberAccessExpr
                     · · · · · · · IdName 'b'
                     · · · · · · · '.'
                     · · · · · · · IdName 'c'

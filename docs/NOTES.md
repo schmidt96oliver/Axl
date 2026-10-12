@@ -3,11 +3,6 @@
 
 **Next:** 
 
-* Rename "BoundFieldAccess" -> "BoundField". It's shorter and more precise (since it can be a place) 
-
-* Rename "GetMemberExpr" -> "MemberAccessExpr". Feels cleaner.
-* Rename "BoundAnd/Or" -> "BoundLogicAnd/Or" for conciseness
-
 * *refactor*: cleanup FunBuilder
   * Const instead of True()
 

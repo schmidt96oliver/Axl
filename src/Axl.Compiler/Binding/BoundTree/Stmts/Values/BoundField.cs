@@ -3,7 +3,7 @@ using Axl.Compiler.Syntax;
 
 namespace Axl.Compiler.Binding.BoundTree;
 
-public sealed class BoundFieldAccess(BoundValue receiver, FieldSymbol field, SyntaxNode? syntax = null)
+public sealed class BoundField(BoundValue receiver, FieldSymbol field, SyntaxNode? syntax = null)
     : BoundValue(field.Type, syntax)
 {
     public BoundValue Receiver { get; } = receiver;

@@ -383,7 +383,7 @@ public partial class ParserTests
 
                     ExprStmt
                     · CallExpr
-                    · · GetMemberExpr
+                    · · MemberAccessExpr
                     · · · IdName 'Standard'
                     · · · '.'
                     · · · IdName 'PrintLine'

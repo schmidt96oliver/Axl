@@ -42,7 +42,7 @@ Expr        = BlockExpr
             | Literal | IdName | StringExpr
             | Group | Binary | Unary
             | Call
-            | GetMember
+            | MemberAccess
             | AssignExpr
 
 BlockExpr   = "{" (Stmt | FnDecl)* "}"
@@ -59,7 +59,7 @@ Literal     = "true" | "false"
 Binary      = Expr ("+"|"-"|"*"|"/"|"<"|"<="|">"|">="  |"=="|"!=" |"and"|"or") Expr
 Unary       = ("-" | "not") Expr
 
-GetMember   = Expr "." IdName
+MemberAccess= Expr "." IdName
 Call        = Expr ArgList
 
 ArgList     = "(" ")"
@@ -76,7 +76,7 @@ Return      = "return" Expr?
 
 ## Type Names
 TypeName        = IdName | (TypeName ("." IdName))
-> Deliberately a subset of GetMember. And the parser produces a GetMemberExpr
+> Deliberately a subset of MemberAccess. And the parser produces a MemberAccess
 
 TypeAnnotation  = ":" TypeName
 

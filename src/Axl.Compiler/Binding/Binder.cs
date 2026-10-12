@@ -568,7 +568,7 @@ public sealed class Binder
     
     private BoundNode BindExpr(ExprSyntax syntax) => syntax switch
     {
-        GetMemberExprSyntax getMemberExprSyntax => BindGetMember(getMemberExprSyntax),
+        MemberAccessExprSyntax memberAccessExprSyntax => BindMemberAccess(memberAccessExprSyntax),
         IdNameSyntax idNameSyntax => BindIdName(idNameSyntax),
         SelfSyntax selfSyntax => BindSelf(selfSyntax),
         CallExprSyntax callExprSyntax => BindCall(callExprSyntax),
@@ -749,7 +749,7 @@ public sealed class Binder
     private BoundValue BindBinary(BinaryExprSyntax syntax)
     {
         if (syntax.Operator.Kind is TokenKind.DoubleAmpersand or TokenKind.DoubleVerticalBar)
-            return BindBooleanOperator(syntax);
+            return BindLogicOperator(syntax);
         if (syntax.Operator.Kind == TokenKind.Equal)
             return BindAssign(syntax);
         
@@ -789,7 +789,7 @@ public sealed class Binder
 
     }
     
-    private BoundValue BindBooleanOperator(BinaryExprSyntax syntax)
+    private BoundValue BindLogicOperator(BinaryExprSyntax syntax)
     {
         Debug.Assert(syntax.Operator.Kind is TokenKind.DoubleAmpersand or TokenKind.DoubleVerticalBar);
     
@@ -810,9 +810,9 @@ public sealed class Binder
         }
     
         if (syntax.Operator.Kind is TokenKind.DoubleAmpersand)
-            return new BoundAnd(left, right, _base.Bool, syntax);
+            return new BoundLogicAnd(left, right, _base.Bool, syntax);
         if (syntax.Operator.Kind is TokenKind.DoubleVerticalBar)
-            return new BoundOr(left, right, _base.Bool, syntax);
+            return new BoundLogicOr(left, right, _base.Bool, syntax);
     
         throw new UnreachableException();
     }
@@ -1016,11 +1016,11 @@ public sealed class Binder
             
             VariableSymbol variable => BindVariable(variable, syntax),
             FunSymbol => BindFunGroup(lookupResult, SynthesizeFunGroupReceiver(), syntax),
-            FieldSymbol field => BindFieldAccess(field, SynthesizeReceiver(field, syntax), syntax)
+            FieldSymbol field => BindField(field, SynthesizeReceiver(field, syntax), syntax)
         };
     }
 
-    private BoundNode BindGetMember(GetMemberExprSyntax syntax)
+    private BoundNode BindMemberAccess(MemberAccessExprSyntax syntax)
     {
         var left = BindExpr(syntax.Left);
 
@@ -1067,7 +1067,7 @@ public sealed class Binder
 
             VariableSymbol => throw new UnreachableException("Variables are never members."),
             FunSymbol => BindFunGroup(lookupResult, receiver: left, syntax.Member),
-            FieldSymbol field => BindFieldAccess(field, receiver: left, syntax.Member),
+            FieldSymbol field => BindField(field, receiver: left, syntax.Member),
         };
     }
 
@@ -1112,14 +1112,14 @@ public sealed class Binder
         return new BoundFunGroup(lookupResult.Symbols.CastArray<FunSymbol>(), receiver, syntax);
     }
 
-    private BoundNode BindFieldAccess(FieldSymbol field, BoundNode? receiver, IdNameSyntax syntax)
+    private BoundNode BindField(FieldSymbol field, BoundNode? receiver, IdNameSyntax syntax)
     {
         if (receiver is null)
             return BindError(syntax, new Diagnostic.InstanceMemberInStaticContext(field, _owner, syntax));
         if (receiver is not BoundValue valueReceiver)
             return BindError(syntax, new Diagnostic.InstanceMemberThroughType(field, syntax));
         
-        return new BoundFieldAccess(valueReceiver, field, syntax);
+        return new BoundField(valueReceiver, field, syntax);
     }
     
     #endregion

@@ -200,13 +200,13 @@ public sealed class BoundTreeInterpreter
         BoundVariable boundVariableRef => CopyOrAlias(GetPlaceRef(boundVariableRef)),
         BoundConst boundConst => boundConst.Value.Value!,
         
-        BoundAnd boundAnd => EvaluateAnd(boundAnd),
+        BoundLogicAnd boundAnd => EvaluateAnd(boundAnd),
         BoundAssign boundAssign => EvaluateAssign(boundAssign),
         BoundBlock boundBlock => EvaluateBlock(boundBlock),
         BoundCall boundCall => EvaluateCall(boundCall),
         BoundIfExpr boundIfExpr => EvaluateIf(boundIfExpr),
         
-        BoundOr boundOr => EvaluateOr(boundOr),
+        BoundLogicOr boundOr => EvaluateOr(boundOr),
         BoundStringExpr boundStringExpr => string.Concat(boundStringExpr.Parts.Select(part => (string)Evaluate(part))),
         
         BoundBreak => throw new BreakException(),
@@ -214,17 +214,17 @@ public sealed class BoundTreeInterpreter
         BoundReturn boundReturn => EvaluateReturn(boundReturn),
         
         BoundStructInit structInit => EvaluateStructInit(structInit),
-        BoundFieldAccess fieldAccess => EvaluateFieldAccess(fieldAccess),
+        BoundField field => EvaluateField(field),
         
         BoundFieldInit or BoundError => throw new UnreachableException(),
     };
 
-    private object EvaluateFieldAccess(BoundFieldAccess fieldAccess)
+    private object EvaluateField(BoundField field)
     {
         // When just accessing fields, we don't need to copy the receiver.
-        var fieldRef = fieldAccess.IsPlace
-            ? GetPlaceRef(fieldAccess)
-            : ((StructValue)Evaluate(fieldAccess.Receiver)).FieldValues[fieldAccess.Field];
+        var fieldRef = field.IsPlace
+            ? GetPlaceRef(field)
+            : ((StructValue)Evaluate(field.Receiver)).FieldValues[field.Field];
         
         return CopyOrAlias(fieldRef);
     }
@@ -235,7 +235,7 @@ public sealed class BoundTreeInterpreter
         {
             case BoundVariable boundVar:
                 return ref CollectionsMarshal.GetValueRefOrNullRef(_env, boundVar.Variable);
-            case BoundFieldAccess boundField:
+            case BoundField boundField:
                 var receiver = (StructValue)GetPlaceRef(boundField.Receiver);
                 return ref CollectionsMarshal.GetValueRefOrNullRef(receiver.FieldValues, boundField.Field);
             case BoundSelf:
@@ -300,18 +300,18 @@ public sealed class BoundTreeInterpreter
         return _emptyStruct;
     }
 
-    private object EvaluateOr(BoundOr boundOr)
+    private object EvaluateOr(BoundLogicOr boundLogicOr)
     {
-        var left = (bool)Evaluate(boundOr.Left);
+        var left = (bool)Evaluate(boundLogicOr.Left);
         if (left) return true;
-        return Evaluate(boundOr.Right);
+        return Evaluate(boundLogicOr.Right);
     }
     
-    private object EvaluateAnd(BoundAnd boundAnd)
+    private object EvaluateAnd(BoundLogicAnd boundLogicAnd)
     {
-        var left = (bool)Evaluate(boundAnd.Left);
+        var left = (bool)Evaluate(boundLogicAnd.Left);
         if (!left) return false;
-        return Evaluate(boundAnd.Right);
+        return Evaluate(boundLogicAnd.Right);
     }
 
     private object EvaluateIf(BoundIfExpr boundIfExpr)

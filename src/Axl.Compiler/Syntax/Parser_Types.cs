@@ -8,7 +8,7 @@ public partial class Parser
 {
     private MarkClose EnsureTypeName(ExpectedSyntax? expectedSyntax = null)
     {
-        // Parse into a GetMemberExpr, because it works exactly the same way.
+        // Parse into a MemberAccessExpr, because it works exactly the same way.
         // It just needs to be a subset, so not all expressions are allowed in
         // type position.
 
@@ -19,10 +19,10 @@ public partial class Parser
             if (!_scanner.IsAt(TokenKind.Dot))
                 break;
 
-            var getMember = _scanner.OpenBefore(lhs);
+            var memberAccess = _scanner.OpenBefore(lhs);
             _scanner.EatKnown(TokenKind.Dot);
             EnsureIdName();
-            lhs = _scanner.Close(getMember, SyntaxKind.GetMemberExpr);
+            lhs = _scanner.Close(memberAccess, SyntaxKind.MemberAccessExpr);
         }
 
         return lhs;

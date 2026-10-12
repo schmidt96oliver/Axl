@@ -2,8 +2,8 @@
 
 namespace Axl.Compiler.Syntax.Tree;
 
-public sealed class GetMemberExprSyntax(ImmutableArray<SyntaxElement> children)
-    : ExprSyntax(SyntaxKind.GetMemberExpr, children)
+public sealed class MemberAccessExprSyntax(ImmutableArray<SyntaxElement> children)
+    : ExprSyntax(SyntaxKind.MemberAccessExpr, children)
 {
     public ExprSyntax Left => Children.FirstOfType<ExprSyntax>();
 

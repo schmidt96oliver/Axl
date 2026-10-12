@@ -33,8 +33,8 @@ public static class DivergenceAnalyzer
                     BoundWhile => false,
                     BoundCall boundCall => boundCall.Receiver?.IsDiverging == true ||
                                            boundCall.Arguments.Any(get_IsDiverging),
-                    BoundAnd boundAnd => boundAnd.Left.IsDiverging,
-                    BoundOr boundOr => boundOr.Left.IsDiverging,
+                    BoundLogicAnd boundAnd => boundAnd.Left.IsDiverging,
+                    BoundLogicOr boundOr => boundOr.Left.IsDiverging,
                     BoundIfExpr boundIfExpr => boundIfExpr.Condition.IsDiverging ||
                                                (boundIfExpr.Then.IsDiverging && boundIfExpr.Else.IsDiverging),
                     BoundIfStmt boundIfStmt => boundIfStmt.Condition.IsDiverging ||
@@ -44,7 +44,7 @@ public static class DivergenceAnalyzer
                     
                     BoundFieldInit boundFieldInit => boundFieldInit.Value.IsDiverging,
                     BoundStructInit boundStructInit => boundStructInit.FieldInits.Any(get_IsDiverging),
-                    BoundFieldAccess boundFieldAccess => boundFieldAccess.Receiver.IsDiverging,
+                    BoundField boundField => boundField.Receiver.IsDiverging,
                 };
             }
         }

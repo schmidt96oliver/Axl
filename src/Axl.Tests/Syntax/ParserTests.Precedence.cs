@@ -45,16 +45,16 @@ public partial class ParserTests
             => InlineSnapshot.Validate(SExpr("!1 == 2 || !3 + 4 != 5;"), "(((! 1) == 2) || (((! 3) + 4) != 5))");
 
         [Fact]
-        public void GetMember_1()
+        public void MemberAccess_1()
             => InlineSnapshot.Validate(SExpr("a.b.c;"), "((a . b) . c)");
         [Fact]
-        public void GetMember_2()
+        public void MemberAccess_2()
             => InlineSnapshot.Validate(SExpr("1+a.b;"), "(1 + (a . b))");
         [Fact]
-        public void GetMember_3()
+        public void MemberAccess_3()
             => InlineSnapshot.Validate(SExpr("1+4*a.b;"), "(1 + (4 * (a . b)))");
         [Fact]
-        public void GetMember_4()
+        public void MemberAccess_4()
             => InlineSnapshot.Validate(SExpr("-a.b;"), "(- (a . b))");
         
         [Fact]
@@ -97,7 +97,7 @@ public partial class ParserTests
                 · · · · '*'
                 · · · · NumberLiteral '3'
                 · · '!='
-                · · GetMemberExpr
+                · · MemberAccessExpr
                 · · · IdName 'a'
                 · · · '.'
                 · · · IdName 'b'

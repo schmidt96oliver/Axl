@@ -150,11 +150,11 @@ public partial class Parser
         var expr = _scanner.OpenBefore(lhs);
         switch (_scanner.Peek().Kind)
         {
-            // --- GetMember
+            // --- MemberAccess
             case TokenKind.Dot:
                 _scanner.EatKnown(TokenKind.Dot);
                 EnsureIdName();
-                return _scanner.Close(expr, SyntaxKind.GetMemberExpr);
+                return _scanner.Close(expr, SyntaxKind.MemberAccessExpr);
 
             // --- Call
             case TokenKind.OpenParen:

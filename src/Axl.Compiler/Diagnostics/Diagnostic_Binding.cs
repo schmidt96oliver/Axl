@@ -95,7 +95,7 @@ public partial record Diagnostic
 
         private static BoundValue GetFirstPlace(BoundValue value) => value switch
         {
-            BoundFieldAccess fieldAccess => GetFirstPlace(fieldAccess.Receiver),
+            BoundField field => GetFirstPlace(field.Receiver),
             _ => value
         };
     }
@@ -121,7 +121,7 @@ public partial record Diagnostic
 
         private static BoundValue GetFirstPlace(BoundValue value) => value switch
         {
-            BoundFieldAccess fieldAccess => GetFirstPlace(fieldAccess.Receiver),
+            BoundField field => GetFirstPlace(field.Receiver),
             _ => value
         };
     }

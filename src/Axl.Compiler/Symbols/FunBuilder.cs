@@ -147,7 +147,7 @@ public sealed class FunBuilder
     public BoundValue Or(BoundValue left, BoundValue right)
     {
         Guard.MustBe(left.Type == _baseNamespace.Bool && right.Type == _baseNamespace.Bool);
-        return Set(new BoundOr(left, right, _baseNamespace.Bool));
+        return Set(new BoundLogicOr(left, right, _baseNamespace.Bool));
     }
 
 

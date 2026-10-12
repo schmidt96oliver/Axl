@@ -60,7 +60,7 @@ public partial class ParserTests
                 · · · Arg
                 · · · · IdName 'name'
                 · · · · '='
-                · · · · GetMemberExpr
+                · · · · MemberAccessExpr
                 · · · · · CallExpr
                 · · · · · · IdName 'A'
                 · · · · · · ArgList '(' ')'

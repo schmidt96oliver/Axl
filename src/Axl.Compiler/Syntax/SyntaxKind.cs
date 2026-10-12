@@ -47,7 +47,7 @@ public enum SyntaxKind
     BinaryExpr,
     UnaryExpr,
     CallExpr,
-    GetMemberExpr,
+    MemberAccessExpr,
     
     BreakExpr,
     ContinueExpr,
