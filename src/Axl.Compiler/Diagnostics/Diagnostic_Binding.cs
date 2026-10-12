@@ -164,10 +164,17 @@ public partial record Diagnostic
 
     }
 
-    public sealed record CannotConvert(ExprSyntax Syntax, TypeSymbol From, TypeSymbol To) : Error
+    public sealed record CannotConvertToString(BoundValue Node, Binder.LookupResult LookupResult) : Error
     {
-        public override ImmutableArray<SourceLocation> Locations => [Syntax.Location];
-        public override string Message => $"Cannot convert from type '{From.Name}' to '{To.Name}'.";
+        public override ImmutableArray<SourceLocation> Locations => [Node.Syntax!.Location];
+
+        public override string Message
+            => LookupResult?.Viability switch
+            {
+                Binder.LookupViability.NotAccessible =>
+                    $"Cannot convert type '{Node.Type.Name}' to 'String', because 'ToString' is not accessible due to its protection level.",
+                _ => $"Cannot convert type '{Node.Type.Name}' to 'String', because it does not declare a valid 'ToString' method.",
+            };
     }
 
     public sealed record ArityMismatch(ArgListSyntax Syntax, ImmutableArray<FunSymbol> FunCandidates, int ArgumentCount) : Error

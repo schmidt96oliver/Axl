@@ -8,7 +8,7 @@ namespace Axl.Compiler.Binding.BoundTree;
 /// Candidate fun symbols that go into overload resolution. They are all accessible
 /// but have not been checked, for callability.
 /// </summary>
-public sealed class BoundFunGroup(ImmutableArray<FunSymbol> candidates, BoundValue? receiver, SyntaxNode syntax)
+public sealed class BoundFunGroup(ImmutableArray<FunSymbol> candidates, BoundValue? receiver, SyntaxNode? syntax = null)
     : BoundNode(syntax)
 {
     public ImmutableArray<FunSymbol> Candidates { get; } = candidates;

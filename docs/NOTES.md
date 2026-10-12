@@ -4,65 +4,44 @@
 **Next:** 
 
 *Current*: Rework lookup and overload resolution logic. Remove FunGroupSymbol; respect rules
-           for overloads, operators and duck-typed methods.
+           for overloads, operators and ToString.
+
+* Duck-types methods must respect rules (StringExpr, operators)
+    * private operator/ToString; Duck typed must check for accessibility
+    * test: Field "ToString"
+
+* Add resolved symbols    
+
+* use BindError everywhere
 
 * Implement errors for ArityMismatch, ParameterTypeMismatch (maybe CannotResolve), 
   StaticMismatch, ReceiverMismatch, AmbiguousOverload, AmbiguousName, CannotResolveOverload
   * *NotAccessible* takes all candidates; "No members with name {} is accessible."
+  * BinderDiagnosticBag might help
 
-* BindField: Should report ReceiverMismatch (Field on enclosing type)
+* Rename "BoundFieldAccess" -> "BoundField". It's shorter and more precise (since it can be a place) 
 
-* Duck-types methods must respect rules (StringExpr, operators)
-    * private operator/ToString; Duck typed must check for accessibility
-    * Add WellKnownNames for common access point of names
-    * maybe go through Lookup -> CheckFunViability -> ResolveFunGroup, ... ?
+* test: Overload resolution
+  * ladder: each viability level should eat the ones before:
+    NotFound < NotAccessible < ArityMismatch < ParameterTypeMismatch < StaticMismatch < ReceiverMismatch < CannotMutate < Valid
+  * on script, local funs, types
+  * error messages
+  * implicit self for fun groups
 
-* Scope logic: Shadowed var is removed from scope.
-  * ? Add param "Allow shadowing" or method "AddShadowedVariable"
-
-See Claude for newer lookup logic
-* CLEANUP: Everything is spread out.
-  * [ ] Think about Lookup(On) and LookupResult
-  * [ ] Think about BoundFunGroup
-  * [ ] Think about BindOverloadedFun
-  * [ ] Think about BindCall that 
-    * (a) inserts implicit self (maybe it can ride along)
-    * (b) checks receiver types
-    * (c) checks mutability
-    * Might go to CheckCallee
-  * [ ] Think about BindLookupResult. Is it a useful abstraction?
+* Rename "GetMemberExpr" -> "MemberAccessExpr". Feels cleaner.
 
 
-* test: Lookup/overload ladder; each viability level should eat the ones before:
-  NotFound < NotAccessible < ArityMismatch < ParameterTypeMismatch < StaticMismatch < ReceiverMismatch < MutatingMismatch < Valid
-* test: Overload resolution on script, local funs, types that respects the ladder (maybe unify existing tests)
+* *refactor*: cleanup FunBuilder
+  * Const instead of True()
 
-* test: Overloads (private, static, var) gives weird? error messages
-
-* test: overload resolution must respect accessibility (should work)
-* test: implicit self for fun groups (should work)
-
-* refactor: Probably scope logic can go into Binder. Remove Scope
-
-* rework: Diagnostic messages for modifiers & static/non-static context
-* refactor: Add SymbolPrinter to unify symbol display in diagnostics and LSP
-
-
-
-
-* For *nested structs*:
-    * test: FunGroup A -> A in nested scope with same signatures
-    * test: ReceiverMismatch "Cannot access instance member on enclosing type.". Check what C# gives
-  * add leaking private members to worklist somewhere or do it :D
-
-* cleanup FunBuilder (Const instead of True())
+* *refactor*: Scope into Binder --or-- derived scope classes (InNamespaceOrTypeScope, InFunScope, LocalScope)
+  * LocalScope.AdjacentWithVariable(...) asserts no local fun; LocalScope has localFuns and variables
+* *refactor*: SymbolPrinter to unify symbol display in diagnostics and LSP
+* *refactor*: BoundTree verifies correctness in its constructor. As a safety net. Remove from FunBuilder
+* *refactor*: Bind string expr into string.Concat
 
 * how to handle multiple declarations?
   * Where do they report unecessary diagnostics? => At least struct init for duped fields
-
-* refactor: BoundTree verifies correctness in its constructor. As a safety net. Remove from FunBuilder
-
-* refactor: Bind string expr into string.Concat
 
 # Roadmap
 
@@ -82,7 +61,7 @@ One type (maybe struct) inside scripts.
 * [x] Empty structs; Unit is non-primitive empty struct; braces not required 
   * [ ] Enhance Empty.taxl with fun examples :)
 
-* [ ] `var`/non-var methods
+* [x] Methods
   * [x] Reject `pub, var` on free funs
   * [x] only `pub` can be called from outside
   * [x] explicit `self`
@@ -90,7 +69,7 @@ One type (maybe struct) inside scripts.
   * [x] non-var can only call non-var methods through `self`
   * [x] `var fun` can only be called through `var`. Also nested cases.
   * [x] implicit `self`
-  * [ ] local funs become methods as well (`self` is captured)
+  * [x] local funs become methods as well (`self` is captured)
   * [x] Can see private fields
 
 * [x] `static fun`s
@@ -104,9 +83,10 @@ Stretch goals
 * [ ] `static let` constants
 * [ ] `@derive(==)` and `@derive(ToString)`
 * [ ] Overloaded construction
-* [ ] Nested structs (beware access through instance: `instance.SubType` must be rejected)
-
-* Pointers to structs: Only of `self` and chained fields
+* [ ] Nested structs
+  * [ ] Access of enclosing types instance methods and fields rejected (ReceiverMismatch)
+  * [ ] Access of nested type through instance rejected
+  * [ ] Private nested type leaking through public fun rejected
 
 ## 4. Namespaces and multiple files
 * [ ] Namespaces visible anywhere
@@ -126,6 +106,7 @@ Stretch goals
 # Little proposals
 * LSP: Make Serial (see Omnisharp) and weave CancellationToken to avoid concurrency awkwardness.
 * Axl: Named arguments as `callee(parameter = value, param2 = value2)`
+* Axl: Target-typed number literals or implicit conversion (interacts with overload resolution heavily)
 
 # Proposals
 ## LSP-Work: Completion Context
@@ -193,6 +174,11 @@ Currently, all operators must be declared on the type. It is enough to declared
 the language with less boilerplate. Care needs to be taken to (1) allow overwritten
 declarations for speed and (2) maybe lint operators that can be generated. Also
 `==` and `ToString` could be generated from fields.
+
+## Axl: Lambdas with inference
+* Fun type expression to name fun types
+* Lambdas with full type annotations
+* Parameter and return inference (interacts with overload resolution; required tentative argument binding into scrap diagnostic bag)
 
 # Design and feature ideas
 ## From https://core-lang.dev/design.html

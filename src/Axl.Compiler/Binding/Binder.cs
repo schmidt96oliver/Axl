@@ -638,16 +638,39 @@ public sealed class Binder
 
         if (IsAssignableTo(boundExpr.Type, _base.String))
             return boundExpr;
+
+        return BindSynthesizedToStringCall(boundExpr, syntax);
+    }
+
+    private BoundValue BindSynthesizedToStringCall(BoundValue receiver, SyntaxNode syntax)
+    {
+        if (receiver.Type is ErrorTypeSymbol)
+            return new BoundError(syntax);
         
-        // Try to find duck-typed ToString
-        if (LookupMethod(boundExpr.Type, "ToString", []) is FunSymbol toStringFun
-            && IsAssignableTo(toStringFun.ReturnType, _base.String))
-        {
-            return new BoundCall(toStringFun, receiver: boundExpr, arguments: [], syntax.Expr);
-        }
+        var lookup = LookupMembers(receiver.Type, "ToString");
+        if (lookup.Viability is LookupViability.NotFound or LookupViability.NotAccessible)
+            return BindError(syntax, new Diagnostic.CannotConvertToString(receiver, lookup));
+
+        var funCandidates = lookup.Symbols.OfType<FunSymbol>().ToImmutableArray();
+        if (funCandidates.Length == 0)
+            return BindError(syntax, new Diagnostic.CannotConvertToString(receiver, lookup));
         
-        // Could not convert to string
-        _diagnostics.ReportError(new Diagnostic.CannotConvert(syntax.Expr, From: boundExpr.Type, To: _base.String));
+        var funGroup = new BoundFunGroup(funCandidates, receiver);
+        var resolution = ResolveFunGroup(funGroup, argumentTypes: []);
+        if (resolution.Viability < FunCandidateViability.Viable || resolution.Candidates.Length > 1)
+            return BindError(syntax, new Diagnostic.CannotConvertToString(receiver, lookup));
+        
+        Debug.Assert(resolution.Candidates.Length == 1);
+        
+        if (!IsAssignableTo(resolution.Candidates[0].ReturnType, _base.String))
+            return BindError(syntax, new Diagnostic.CannotConvertToString(receiver, lookup));
+        
+        return new BoundCall(resolution.Candidates[0], receiver, arguments: [], syntax);
+    }
+
+    private BoundError BindError(SyntaxNode syntax, Diagnostic.Error error)
+    {
+        _diagnostics.ReportError(error);
         return new BoundError(syntax);
     }
 
@@ -722,7 +745,7 @@ public sealed class Binder
     }
     
     #endregion
-    
+
     #region Operators and Assignment
 
     private BoundValue BindUnary(UnaryExprSyntax syntax)
@@ -1303,7 +1326,7 @@ public sealed class Binder
         return new BoundCall(resolutionResult.Candidates[0], receiver, arguments, syntax);
     }
     
-    private enum FunCandidateViability
+    public enum FunCandidateViability
     {
         ArityMismatch,
         ParameterTypeMismatch,
@@ -1333,7 +1356,7 @@ public sealed class Binder
         return FunCandidateViability.Viable;
     }
 
-    private record OverloadResolutionResult(FunCandidateViability Viability, ImmutableArray<FunSymbol> Candidates);
+    public record OverloadResolutionResult(FunCandidateViability Viability, ImmutableArray<FunSymbol> Candidates);
     
     private OverloadResolutionResult ResolveFunGroup(BoundFunGroup funGroup, ImmutableArray<TypeSymbol> argumentTypes)
     {

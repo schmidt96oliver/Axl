@@ -1,0 +1,51 @@
+﻿//@check
+
+// ToString is duck-typed but requires a valid ToString method.
+
+struct Private
+{
+    fun ToString(): String
+        = "";
+}
+struct Static
+{
+    pub static fun ToString(): String
+        = "";
+}
+struct Var
+{
+    pub var fun ToString(): String
+        = "";
+}
+struct Params
+{
+    pub fun ToString(i: I32): String
+        = "";
+}
+struct ReturnType
+{
+    pub fun ToString(): I32
+        = 1;
+}
+struct Field
+{
+    pub ToString: I32;
+}
+
+let t = Private();
+Print("{t}");       //~error CannotConvertToString
+
+let t = Static();
+Print("{t}");       //~error CannotConvertToString
+
+let t = Var();
+Print("{t}");       //~error CannotConvertToString
+
+let t = Params();
+Print("{t}");       //~error CannotConvertToString
+
+let t = ReturnType();
+Print("{t}");       //~error CannotConvertToString
+
+let t = Field(ToString = 1);
+Print("{t}");       //~error CannotConvertToString
