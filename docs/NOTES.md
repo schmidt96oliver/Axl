@@ -9,9 +9,6 @@
 * Implement errors for ArityMismatch, ParameterTypeMismatch (maybe CannotResolve), 
   StaticMismatch, ReceiverMismatch, AmbiguousOverload, AmbiguousName, CannotResolveOverload
   * *NotAccessible* takes all candidates; "No members with name {} is accessible."
-* BoundFunGroup syntax is what exactly? :D Syntax + MemberSyntax
-
-* "MutatingMismatch" better name?
 
 * BindField: Should report ReceiverMismatch (Field on enclosing type)
 

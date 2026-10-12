@@ -1069,8 +1069,8 @@ public sealed class Binder
 
         return lookupResult.Symbols[0] switch
         {
-            NamespaceSymbol @namespace => new BoundNamespaceRef(@namespace, syntax, syntax),
-            TypeSymbol type => new BoundTypeRef(type, syntax, syntax),
+            NamespaceSymbol @namespace => new BoundNamespaceRef(@namespace, syntax),
+            TypeSymbol type => new BoundTypeRef(type, syntax),
             
             VariableSymbol variable => BindVariable(variable, syntax),
             FunSymbol => BindFunGroup(lookupResult, SynthesizeFunGroupReceiver(), syntax),
@@ -1083,12 +1083,12 @@ public sealed class Binder
         var left = BindExpr(syntax.Left);
 
         if (syntax.Member.Token.IsMissing)
-            return new BoundError(syntax);
+            return new BoundError(syntax.Member);
         if (left is BoundFunGroup)
         {
             // A fun group cannot have members
             _diagnostics.ReportError(new Diagnostic.UndefinedMember(left, syntax.Member));
-            return new BoundError(syntax);
+            return new BoundError(syntax.Member);
         }
         
         NamespaceOrTypeSymbol namespaceOrType = left switch
@@ -1100,7 +1100,7 @@ public sealed class Binder
             BoundStmt => throw new UnreachableException("Stmt can never be the left side of member access."),
         };
         if (namespaceOrType is ErrorTypeSymbol)
-            return new BoundError(syntax);
+            return new BoundError(syntax.Member);
 
         var memberName = syntax.Member.Text.ToString();
         var lookupResult = LookupMembers(namespaceOrType, memberName);
@@ -1108,14 +1108,14 @@ public sealed class Binder
         if (lookupResult.Viability is LookupViability.NotFound)
         {
             _diagnostics.ReportError(new Diagnostic.UndefinedMember(left, syntax.Member));
-            return new BoundError(syntax);
+            return new BoundError(syntax.Member);
         }
 
         if (lookupResult.Viability is LookupViability.NotAccessible)
         {
             //TODO: Should I really just pick the first one?
             _diagnostics.ReportError(new Diagnostic.NotAccessible(lookupResult.Symbols[0], syntax.Member));
-            return new BoundError(syntax);
+            return new BoundError(syntax.Member);
         }
 
         if (lookupResult.Symbols.All(s => s is FunSymbol))
@@ -1125,13 +1125,13 @@ public sealed class Binder
         if (lookupResult.Symbols.Length > 1)
         {
             _diagnostics.ReportError(new Diagnostic.AmbiguousReference(lookupResult, syntax.Member));
-            return new BoundError(syntax);
+            return new BoundError(syntax.Member);
         }
 
         return lookupResult.Symbols[0] switch
         {
-            NamespaceSymbol @namespace => new BoundNamespaceRef(@namespace, syntax, syntax),
-            TypeSymbol type => new BoundTypeRef(type, syntax, syntax),
+            NamespaceSymbol @namespace => new BoundNamespaceRef(@namespace, syntax.Member),
+            TypeSymbol type => new BoundTypeRef(type, syntax.Member),
 
             VariableSymbol => throw new UnreachableException("Variables are never members."),
             FunSymbol => BindFunGroup(lookupResult, receiver: left as BoundValue, syntax.Member),
@@ -1211,7 +1211,7 @@ public sealed class Binder
     {
         var callee = BindExpr(syntax.Callee);
         if (callee is BoundTypeRef { Type: StructSymbol } structRef)
-            return BindStructInit((StructSymbol)structRef.Type, syntax, structRef.MemberSyntax);
+            return BindStructInit((StructSymbol)structRef.Type, syntax, structRef.Syntax!);
         
         var arguments = syntax.ArgumentExprs.Select(BindValue).ToImmutableArray();
 
@@ -1277,7 +1277,7 @@ public sealed class Binder
                     break;
                 case FunCandidateViability.ReceiverMismatch:
                     throw new NotImplementedException("No nested types yet, so this is not possible");
-                case FunCandidateViability.MutatingMismatch:
+                case FunCandidateViability.CannotMutate:
                     _diagnostics.ReportError(new Diagnostic.CannotMutateReceiver(calleeFunGroup.Receiver!,
                         calleeFunGroup.Candidates[0], calleeFunGroup.Syntax!));
                     break;
@@ -1309,7 +1309,7 @@ public sealed class Binder
         ParameterTypeMismatch,
         StaticMismatch,
         ReceiverMismatch,
-        MutatingMismatch,
+        CannotMutate,
         Viable
     }
 
@@ -1328,7 +1328,7 @@ public sealed class Binder
             return FunCandidateViability.ReceiverMismatch;
 
         if (fun.IsMutatingReceiver && receiver is not null && !receiver.IsMutablePlace)
-            return FunCandidateViability.MutatingMismatch;
+            return FunCandidateViability.CannotMutate;
 
         return FunCandidateViability.Viable;
     }
