@@ -65,6 +65,8 @@ See Claude for newer lookup logic
 
 * refactor: BoundTree verifies correctness in its constructor. As a safety net. Remove from FunBuilder
 
+* refactor: Bind string expr into string.Concat
+
 # Roadmap
 
 ## 3. Structs (in script)

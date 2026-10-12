@@ -22,7 +22,5 @@ public sealed class BoundSelf(TypeSymbol type, bool mutable = false, SyntaxNode?
     /// </summary>
     public override bool IsAssignable => false;
 
-
-    public BoundSelf WithSyntax(SyntaxNode syntax)
-        => new(Type, IsMutablePlace, syntax);
+    public bool IsImplicit => Syntax is null;
 }
