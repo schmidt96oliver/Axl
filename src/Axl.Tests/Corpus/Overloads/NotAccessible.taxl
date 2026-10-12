@@ -1,0 +1,10 @@
+﻿//@check
+
+struct Test
+{
+    fun A() { }
+    fun A(i: I32) { }
+} 
+
+let t = Test();
+t.A();              //~error NotAccessible

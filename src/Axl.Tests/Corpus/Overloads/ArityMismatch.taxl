@@ -1,0 +1,16 @@
+﻿//@check
+
+// Private funs are not visible
+
+struct Test
+{
+    fun A() { }
+    pub fun A(i: I32) 
+    { 
+        A();        // Here it's valid
+        A(1, 1);    //~error ArityMismatch
+    }
+} 
+
+let t = Test();
+t.A();              //~error ArityMismatch

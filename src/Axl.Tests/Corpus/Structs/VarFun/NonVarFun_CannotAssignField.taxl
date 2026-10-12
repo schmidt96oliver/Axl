@@ -1,0 +1,14 @@
+﻿//@check
+
+// Non-var funs cannot assign to fields.
+
+struct Test
+{
+    pub X: I32;
+   
+    pub fun NonVar() 
+    { 
+        X = 10;                 //~error CannotAssign
+        self.X = 10;            //~error CannotAssign
+    }
+}

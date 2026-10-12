@@ -1,0 +1,8 @@
+﻿//@check
+      
+// Currently overloads can only be ambiguous, if a parameter has type 'Never'.
+
+A(return);              //~error AmbiguousCall
+
+fun A(a: I32) { }
+fun A(a: String) { }

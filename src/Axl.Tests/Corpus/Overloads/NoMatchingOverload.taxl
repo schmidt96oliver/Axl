@@ -1,0 +1,11 @@
+﻿//@check
+
+struct Test
+{
+    fun A() { }
+    pub fun A(i: I32) { }   
+    pub fun A(f: F32) { A(1.1); }       //~error NoMatchingOverload
+} 
+
+let t = Test();
+t.A(1.1);              //~error NoMatchingOverload

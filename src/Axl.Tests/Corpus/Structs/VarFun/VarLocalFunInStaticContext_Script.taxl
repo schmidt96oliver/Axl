@@ -1,0 +1,11 @@
+﻿//@check
+
+// 'var' is not allowed on script level.
+
+var fun Local() { }        //~error VarLocalFunInStaticContext
+{ var fun Local() { } }    //~error VarLocalFunInStaticContext
+
+fun Outer()
+{
+    var fun Local() { }     //~error VarLocalFunInStaticContext
+}

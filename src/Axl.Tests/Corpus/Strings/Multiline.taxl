@@ -1,9 +1,0 @@
-﻿//@run
-//= ABCD
-
-// Empty interpolations can be used to define strings across multiple lines.
-
-Print("A{
-    }B{
-    }C{
-    }D");

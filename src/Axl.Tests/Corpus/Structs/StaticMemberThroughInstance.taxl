@@ -1,0 +1,13 @@
+﻿//@check
+      
+// Static members may not be accessed through instances.
+
+struct Test 
+{
+    pub static fun Static() { }
+
+    fun Method() { self.Static(); }     //~error StaticMemberThroughInstance
+}
+
+let t = Test();
+t.Static();     //~error StaticMemberThroughInstance

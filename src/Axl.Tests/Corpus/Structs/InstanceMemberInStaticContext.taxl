@@ -1,0 +1,23 @@
+﻿//@check
+
+// Instance members (fields, methods, ...) can not be accessed from 
+// static funs on the type, because there is no implicit self available.
+
+struct Test
+{
+    pub Field: I32;
+    
+    fun Method() { }
+    
+    static fun Inner()
+    {  
+        let f = Field;          //~error InstanceMemberInStaticContext
+        Method();               //~error InstanceMemberInStaticContext
+        
+        fun Local()
+        {
+            let f = Field;          //~error InstanceMemberInStaticContext
+            Method();               //~error InstanceMemberInStaticContext
+        }
+    }
+}

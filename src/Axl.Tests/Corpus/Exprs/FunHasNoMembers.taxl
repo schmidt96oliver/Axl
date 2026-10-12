@@ -1,0 +1,9 @@
+﻿//@check
+
+Print.A;        //~error FunHasNoMembers
+Fun.A;          //~error FunHasNoMembers
+A.A;            //~error FunHasNoMembers
+
+fun Fun() { }
+fun A() { }
+fun A(b: I32) { }

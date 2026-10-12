@@ -1,0 +1,26 @@
+﻿//@check
+
+// Members must only be declared once. Funs can be overloaded though.
+
+struct Test
+{
+    pub X: I32;     //~error AlreadyDeclared
+    X : I32;        //~error AlreadyDeclared
+    
+    pub Y: I32;     //~error AlreadyDeclared
+    pub Y: F64;     //~error AlreadyDeclared
+    
+    pub Z: I32;         //~error AlreadyDeclared
+    pub fun Z() { }     //~error AlreadyDeclared
+    
+    pub fun A() { }         //~error DuplicateFunDeclarations
+    pub static fun A() { }  //~error DuplicateFunDeclarations
+    pub var fun A() { }     //~error DuplicateFunDeclarations
+    
+    pub fun B() { }
+    pub fun B(i: I32) { }
+    
+    pub fun C() { }                 //~error AlreadyDeclared
+    pub static fun C(i: I32) { }    //~error AlreadyDeclared
+    pub C: I32;                     //~error AlreadyDeclared
+}

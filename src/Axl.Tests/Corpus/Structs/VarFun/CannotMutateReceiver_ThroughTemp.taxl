@@ -1,0 +1,34 @@
+﻿//@check
+
+// Var funs can not be called through let bindings.
+
+struct Test
+{
+    pub X: I32;
+    pub Inn: Inner;
+   
+    pub var fun Mutate() { }
+    
+    pub static fun Make(): Test 
+        = Test(X = 1, Inn = Inner(Y = 1));
+}
+
+struct Inner 
+{
+    pub Y: I32;
+    
+    pub var fun Mutate() { }
+}
+
+fun Make(): Test 
+    = Test(X = 1, Inn = Inner(Y = 1));
+
+// Not through temps
+Test(X = 10, Inn = Inner(Y = 1)).Mutate();        //~error CannotMutateReceiver
+Test(X = 10, Inn = Inner(Y = 1)).Inn.Mutate();  //~error CannotMutateReceiver
+
+Test.Make().Mutate();       //~error CannotMutateReceiver
+Test.Make().Inn.Mutate(); //~error CannotMutateReceiver
+
+Make().Mutate();       //~error CannotMutateReceiver
+Make().Inn.Mutate(); //~error CannotMutateReceiver

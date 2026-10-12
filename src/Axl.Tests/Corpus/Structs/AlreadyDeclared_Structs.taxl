@@ -1,0 +1,8 @@
+﻿//@check
+
+// Structs may not be declared multiple times, independent of
+// their content. 
+
+struct A;                //~error AlreadyDeclared
+struct A { X: I32; }     //~error AlreadyDeclared
+struct A { Y: F64; }     //~error AlreadyDeclared

@@ -1,0 +1,15 @@
+﻿//@check
+
+// Local funs inherit the receiver, but cannot be called through
+// an explicit self reference.
+
+struct Test
+{
+    pub fun NonVar()
+    {
+        self.NonVarLocal();   //~error UndefinedMember
+        
+        fun Local()
+        { }
+    }
+}

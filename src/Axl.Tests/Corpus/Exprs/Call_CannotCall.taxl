@@ -1,0 +1,9 @@
+﻿//@check
+
+(1)(1);     //~error CannotCall
+(1 + 2)();  //~error CannotCall
+     
+Base();     //~error CannotCall
+
+let a = 1;
+a(1);          //~error CannotCall

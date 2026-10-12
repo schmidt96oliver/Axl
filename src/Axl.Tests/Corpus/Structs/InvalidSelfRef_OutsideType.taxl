@@ -1,0 +1,13 @@
+﻿//@check
+
+// 'self' is not available outside of types.
+
+let a = self;       //~error InvalidSelfRef
+{ let a = self; }   //~error InvalidSelfRef
+fun A() = self;     //~error InvalidSelfRef
+
+fun Local()
+{
+    var a = 1;
+    a = self;   //~error InvalidSelfRef
+}

@@ -3,20 +3,7 @@
 
 **Next:** 
 
-* Implement errors for ArityMismatch, ParameterTypeMismatch (maybe CannotResolve), 
-  StaticMismatch, ReceiverMismatch, AmbiguousOverload, AmbiguousName, CannotResolveOverload
-  * *NotAccessible* takes all candidates; "No members with name {} is accessible."
-  * BinderDiagnosticBag might help
-
 * Rename "BoundFieldAccess" -> "BoundField". It's shorter and more precise (since it can be a place) 
-
-* test: Overload resolution
-  * ladder: each viability level should eat the ones before:
-  
-    NotFound < NotAccessible < ArityMismatch < ParameterTypeMismatch < StaticMismatch < ReceiverMismatch < CannotMutate < Valid
-  * on script, local funs, types
-  * error messages
-  * implicit self for fun groups
 
 * Rename "GetMemberExpr" -> "MemberAccessExpr". Feels cleaner.
 * Rename "BoundAnd/Or" -> "BoundLogicAnd/Or" for conciseness
@@ -67,7 +54,7 @@ One type (maybe struct) inside scripts.
 * [ ] User-declared operators + generation of `!=, <=, >, >=` from `==, <`
   * [ ] They must respect accessibility and overload resolution rules
   * [ ] As well overloaded
-* [ ] User-declared ToString
+* [x] User-declared ToString
 
 Stretch goals
 * [ ] Getter funs

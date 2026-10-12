@@ -1,0 +1,10 @@
+﻿//@check
+
+// In struct initializers, argument names must refer to fields.
+// They can be replaced by variables with the same name.
+
+struct A { pub X: I32; pub Y: F64; }
+
+let a = A(Blupp = 10);  //~error UndefinedField
+let a = A(A = 10);      //~error UndefinedField
+let a = A(A2_3 = 10);   //~error UndefinedField

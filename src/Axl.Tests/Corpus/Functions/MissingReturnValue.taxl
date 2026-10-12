@@ -1,0 +1,8 @@
+﻿//@check
+
+// Return must specify a return value, if return type is not Unit.
+
+fun A(): I32
+{
+    return;     //~error MissingReturnValue
+}

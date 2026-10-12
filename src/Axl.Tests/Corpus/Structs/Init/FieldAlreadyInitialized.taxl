@@ -1,0 +1,7 @@
+﻿//@check
+
+// Fields cannot be initialized multiple times.
+struct A { pub X: I32; }
+
+let a = A(X = 10, 
+          X = 10);      //~error FieldAlreadyInitialized

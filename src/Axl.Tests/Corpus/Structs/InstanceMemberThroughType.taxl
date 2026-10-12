@@ -1,0 +1,22 @@
+﻿//@check
+
+// Instance members (fields, methods, ...) can not be accessed
+// through the type itself.
+
+struct Test
+{
+    pub Field: I32;
+    
+    pub fun Method() { }
+    
+    static fun Inner()
+    {
+        let f = Test.Field;     //~error InstanceMemberThroughType
+        Test.Method();          //~error InstanceMemberThroughType
+    }
+}
+
+let f = Test.Field;     //~error InstanceMemberThroughType
+Test.Method();          //~error InstanceMemberThroughType
+
+fun Foo(a: Test.Field) { }      //~error InstanceMemberThroughType

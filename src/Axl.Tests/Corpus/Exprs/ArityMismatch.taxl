@@ -1,0 +1,8 @@
+﻿//@check
+    
+// Print accepts one parameter.
+    
+Test({ }, 1);     //~error ArityMismatch
+Test();        //~error ArityMismatch
+
+fun Test(arg: String) { }

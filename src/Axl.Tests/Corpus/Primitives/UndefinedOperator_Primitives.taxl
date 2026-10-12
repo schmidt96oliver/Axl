@@ -1,0 +1,6 @@
+﻿//@check
+
+let a = 1i32 + 1i64;        //~error UndefinedOperator
+let a = Unit() + Unit();    //~error UndefinedOperator
+let a = -true;              //~error UndefinedOperator
+let a = !1;                 //~error UndefinedOperator

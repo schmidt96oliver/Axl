@@ -1,0 +1,23 @@
+﻿//@check
+
+// Assignment has type unit.
+
+// It is naturally rejected as condition in if or while. 
+// This prevents the common C-style pitfall.
+
+var a = 2;
+if (a = 3)    { }  //~error TypeMismatch
+while (a = 3) { }  //~error TypeMismatch
+
+// They can also not be chained.
+// Kotlin, Rust, ... use the same approach and argue that
+// chained assignment is hard to reason about, which is fair.
+
+// Importantly, chaining only produces _one_ error.
+
+var a = 0;
+var b = 0;
+var c = 0;
+
+a = b = 2;      //~error TypeMismatch
+a = b = c = 2;  //~error TypeMismatch

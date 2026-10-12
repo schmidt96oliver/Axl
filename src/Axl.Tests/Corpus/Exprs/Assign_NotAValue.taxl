@@ -1,0 +1,7 @@
+﻿//@check
+    
+// Right side must be a value.
+
+var a = Base;               //~error NotAValue
+var a = Base.I32;           //~error NotAValue
+var a = Base.I32.ToString;  //~error NotAValue

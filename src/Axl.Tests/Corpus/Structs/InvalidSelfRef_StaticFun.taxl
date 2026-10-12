@@ -1,0 +1,21 @@
+﻿//@check
+
+// 'self' is not available on static funs. Local funs of static funs
+// are static as well.
+
+struct Test 
+{
+    pub X: I32;
+
+    pub static fun Static() 
+    { 
+        let a = self;   //~error InvalidSelfRef
+        let a = self.X; //~error InvalidSelfRef
+        
+        fun Local()
+        {
+            let a = self;   //~error InvalidSelfRef
+            let a = self.X; //~error InvalidSelfRef
+        }
+    }
+}

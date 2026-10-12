@@ -1,0 +1,22 @@
+﻿//@run
+//= 1 2.1
+//= 1 1.1
+//= 2 1.1
+//= 2 2.1
+
+struct A { pub X: I32; pub Y: F64; }
+
+// Names can be omitted, if value text is equal to the field name
+let X = 1;
+let Y = 1.1;
+let a = A(X, Y = 2.1);
+PrintLine("{a.X} {a.Y}");
+
+let a = A(X, Y);
+PrintLine("{a.X} {a.Y}");
+
+let a = A(X = 2, Y);
+PrintLine("{a.X} {a.Y}");
+
+let a = A(X = 2, Y = 2.1);
+PrintLine("{a.X} {a.Y}");

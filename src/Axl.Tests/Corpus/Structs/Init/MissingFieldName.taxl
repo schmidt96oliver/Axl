@@ -1,0 +1,14 @@
+﻿//@check
+
+// In struct initializers, all fields must be named.
+
+struct A { pub X: I32; pub Y: F64; }
+
+let a = A(10,       //~error MissingFieldName
+          10);      //~error MissingFieldName
+let a = A(X = 10,   
+          10);      //~error MissingFieldName
+let a = A(Y = 1.1,   
+          10);      //~error MissingFieldName
+let a = A(1.1,      //~error MissingFieldName
+          X = 10);  

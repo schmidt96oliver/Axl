@@ -1,0 +1,9 @@
+﻿//@check
+
+// Fields can only be mutated directly through var bindings.
+
+struct Test { pub X: I32; }
+
+// Does not mutate through let
+let t = Test(X = 0);
+t.X = 10;       //~error CannotAssign

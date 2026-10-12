@@ -1,4 +1,5 @@
 using System.Collections.Immutable;
+using System.Net;
 using Axl.Compiler;
 using OmniSharp.Extensions.LanguageServer.Protocol;
 using OmniSharp.Extensions.LanguageServer.Protocol.Models;
@@ -22,9 +23,25 @@ public static class DiagnosticConverter
     public static IEnumerable<LspDiagnostic> Convert(IEnumerable<AxlDiagnostic> diagnostics)
         => diagnostics.SelectMany(Convert);
 
-    // Every underline carries the full message.
+
     private static IEnumerable<LspDiagnostic> Convert(AxlDiagnostic diagnostic)
-        => diagnostic.Locations.Select((location, i) => new LspDiagnostic
+    {
+        var msg = diagnostic.Hint is null
+            ? diagnostic.Message
+            : $"{diagnostic.Message}\nHint: {diagnostic.Hint}"; 
+        var msgLines = msg.Split('\n');
+
+        // This is a workaround to displaying multiple lines: We display
+        // each line as one related info without link, because Rider with LSP4IJ
+        // cannot display multiple lines. If I ever try VSCode, it might work better.
+        
+        var msgCtd = msgLines[1..].Select(line => new DiagnosticRelatedInformation
+        {
+            Location = null!,
+            Message = WebUtility.HtmlEncode(line)
+        });
+
+        return diagnostic.Locations.Select((location, i) => new LspDiagnostic
         {
             Severity = diagnostic.DefaultSeverity switch
             {
@@ -34,25 +51,24 @@ public static class DiagnosticConverter
             },
 
             // Add the hint to message. Lsp has no specification for hints.
-            Message = diagnostic.Hint is null
-                ? diagnostic.Message
-                : $"{diagnostic.Message}\nHint: {diagnostic.Hint}",
+            Message = msgLines[0],
 
             Code = new DiagnosticCode(diagnostic.Id),
 
             Range = location.ToLsp(),
 
-            RelatedInformation = RelatedInformation(diagnostic, exceptLocation: i),
+            RelatedInformation = new([..msgCtd, .. RelatedInformation(diagnostic, exceptLocation: i)]),
         });
-
+    }
+    
     /// <summary>
     /// The other locations at fault, followed by the merely explaining ones.
     /// The siblings have no label of their own, so they borrow the message -
     /// that's what they read as when one underline links to the next.
     /// </summary>
-    private static Container<DiagnosticRelatedInformation> RelatedInformation(
+    private static IEnumerable<DiagnosticRelatedInformation> RelatedInformation(
         AxlDiagnostic diagnostic, int exceptLocation)
-        => new(diagnostic.Locations
+        => diagnostic.Locations
             .Where((_, i) => i != exceptLocation)
             .Select(location => new Compiler.Diagnostics.LabeledSourceLocation(location, diagnostic.LocationLabel))
             .Concat(diagnostic.Related)
@@ -67,5 +83,5 @@ public static class DiagnosticConverter
                     Uri = DocumentUri.FromFileSystemPath(label.Location.SourceText.FileName!)
                 },
                 Message = label.Label
-            }));
+            });
 }

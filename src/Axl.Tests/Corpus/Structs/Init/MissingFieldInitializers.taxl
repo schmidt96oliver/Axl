@@ -1,0 +1,10 @@
+﻿//@check
+
+// All fields must be initialized.
+
+struct A { pub X: I32; pub Y: F64; }
+
+// All fields must be specified
+let a = A();            //~error MissingFieldInitializers
+let a = A(X = 10);      //~error MissingFieldInitializers
+let a = A(Y = 1.1);     //~error MissingFieldInitializers

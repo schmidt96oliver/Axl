@@ -1,0 +1,28 @@
+﻿//@check
+
+// 'static' is never a valid modifier for local funs.
+// Receiver is inherited from the enclosing fun.
+
+static fun C() { }  //~error InvalidLocalFunModifier
+  
+{ 
+    static fun C() { }  //~error InvalidLocalFunModifier
+}
+
+fun Local()
+{
+    static fun C() { }  //~error InvalidLocalFunModifier
+}
+
+struct Test
+{
+    fun Normal() 
+    {
+        static fun Static() { }     //~error InvalidLocalFunModifier
+    }
+    
+    static fun Static()
+    {
+        static fun Static() { }     //~error InvalidLocalFunModifier
+    }
+}
