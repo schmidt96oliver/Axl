@@ -164,14 +164,14 @@ public partial record Diagnostic
 
     }
 
-    public sealed record CannotConvertToString(BoundValue Node, Binder.LookupResult LookupResult) : Error
+    public sealed record CannotConvertToString(BoundValue Node, LookupResult LookupResult) : Error
     {
         public override ImmutableArray<SourceLocation> Locations => [Node.Syntax!.Location];
 
         public override string Message
-            => LookupResult?.Viability switch
+            => LookupResult.Viability switch
             {
-                Binder.LookupViability.NotAccessible =>
+                LookupViability.NotAccessible =>
                     $"Cannot convert type '{Node.Type.Name}' to 'String', because 'ToString' is not accessible due to its protection level.",
                 _ => $"Cannot convert type '{Node.Type.Name}' to 'String', because it does not declare a valid 'ToString' method.",
             };
@@ -401,12 +401,14 @@ public partial record Diagnostic
         public override string Message => $"Field '{Field.Name}' is already initialized.";
     }
 
-    public sealed record CannotInitializePrimitive(SyntaxNode StructRefSyntax) : Error
+    public sealed record CannotInitialize(BoundTypeRef TypeRef) : Error
     {
         public override ImmutableArray<SourceLocation> Locations
-            => [StructRefSyntax.Location];
+            => [TypeRef.Syntax!.Location];
 
-        public override string Message => $"'{StructRefSyntax.Text}' cannot be initialized, because it is a primitive type.";
+        public override string Message => TypeRef.Type is StructSymbol { IsPrimitive: true } ?
+            $"'{TypeRef.Type.Name}' cannot be initialized, because it is a primitive type."
+            : $"'{TypeRef.Type.Name}' cannot be initialized.";
     }
 
     public sealed record NotAccessible(Symbol Symbol, SyntaxNode Syntax) : Error
@@ -469,7 +471,7 @@ public partial record Diagnostic
         public override string Message => $"Instance member '{FieldName}' cannot be accessed from static context.";
     }
 
-    public sealed record AmbiguousReference(Binder.LookupResult LookupResult, IdNameSyntax Syntax) : Error
+    public sealed record AmbiguousReference(LookupResult LookupResult, IdNameSyntax Syntax) : Error
     {
         public override ImmutableArray<SourceLocation> Locations => [Syntax.Location];
         public override string Message => $"'{Syntax.Text}' is ambiguous here.";

@@ -34,7 +34,7 @@ public sealed class Binder
 
         InstanceType = GetInstanceType(owner);
     }
-
+    
     private static TypeSymbol? GetInstanceType(Symbol owner)
     {
         if (owner is not FunSymbol ownerFun) return null;
@@ -44,6 +44,7 @@ public sealed class Binder
         return ownerFun.ReceiverType;
     }
 
+    
     private Binder NestedBinderWithOwner(Symbol owner)
         => new(owner, _scope.Nested(), inLoop: false,
             _base, _diagnostics, _semanticSideTable);
@@ -61,10 +62,6 @@ public sealed class Binder
             _base, _diagnostics, _semanticSideTable);
     
     
-    /// <summary>
-    /// Whether a value of type <paramref name="source"/> can be
-    /// assigned to a target of type <paramref name="target"/>.
-    /// </summary>
     private static bool IsAssignableTo(TypeSymbol source, TypeSymbol target)
     {
         // Errors are silent
@@ -76,7 +73,7 @@ public sealed class Binder
         return source == target;
     }
 
-    private bool CheckTypeAndReportMismatch(BoundValue value, TypeSymbol expected)
+    private bool CheckType(BoundValue value, TypeSymbol expected)
     {
         if (!IsAssignableTo(value.Type, expected))
         {
@@ -89,10 +86,10 @@ public sealed class Binder
         return true;
     }
 
+    
     private bool IsAccessible(Symbol symbol)
         => _owner.SelfAndOwners().Contains(symbol.AccessibleWithin);
     
-
     private bool CheckAccessibility(Symbol symbol, SyntaxNode syntax)
     {
         if (!IsAccessible(symbol))
@@ -112,6 +109,47 @@ public sealed class Binder
     }
     
 
+    #region Lookup
+
+    private LookupViability GetViability(Symbol symbol)
+        => IsAccessible(symbol) ? LookupViability.Viable : LookupViability.NotAccessible;
+
+    private LookupResult LookupName(string name)
+    {
+        var result = new LookupResult();
+
+        for (var scope = _scope; scope != null; scope = scope.Parent)
+        {
+            var here = new LookupResult();
+            foreach (var s in scope.Lookup(name))
+            {
+                Debug.Assert(s.Name == name);
+                here.MergeSingle(s, GetViability(s));
+            }
+
+            result.MergeWith(here);
+
+            if (result.Viability == LookupViability.Viable)
+                break;
+        }
+
+        Debug.Assert(result.Symbols.All(s => s.Name == name));
+        return result;
+    }
+
+    private LookupResult LookupMembers(NamespaceOrTypeSymbol parent, string name)
+    {
+        var result = new LookupResult();
+
+        foreach (var s in parent.LookupMembers(name))
+            result.MergeSingle(s, GetViability(s));
+
+        return result;
+    }
+    
+    #endregion
+    
+    
     #region File and Script
 
     public static BoundFile BindFile(FileSyntax syntax)
@@ -261,7 +299,7 @@ public sealed class Binder
         if (syntax.IsExpressionBodied)
         {
             var expr = withParametersBinder.BindValue(syntax.Expr);
-            if (!CheckTypeAndReportMismatch(expr, fun.ReturnType))
+            if (!CheckType(expr, fun.ReturnType))
                 expr = new BoundError(syntax.Expr);
 
             return new BoundBlock([new BoundReturn(expr)], [], _base.Unit);
@@ -490,11 +528,11 @@ public sealed class Binder
         else
         {
             // Check type
-            CheckTypeAndReportMismatch(boundInitializer, variableType);
+            CheckType(boundInitializer, variableType);
         }
 
         // Accept shadowing only if it's another variable.
-        var lookupResult = _scope.LookupHere(syntax.Name.Identifier).FirstOrDefault();
+        var lookupResult = _scope.Lookup(syntax.Name.Identifier).FirstOrDefault();
         if (lookupResult is not (null or VariableSymbol))
             return BindError(syntax, new Diagnostic.CannotShadow(lookupResult, syntax.Name));
         
@@ -527,6 +565,7 @@ public sealed class Binder
     
     #endregion
 
+    
     private BoundNode BindExpr(ExprSyntax syntax) => syntax switch
     {
         GetMemberExprSyntax getMemberExprSyntax => BindGetMember(getMemberExprSyntax),
@@ -578,8 +617,68 @@ public sealed class Binder
         return typeRef.Type;
     }
     
+    
     #region Literals and Strings and Self
 
+    private BoundNode BindSelf(SelfSyntax syntax)
+    {
+        if (InstanceType is null)
+            return BindError(syntax, new Diagnostic.InvalidSelfRef(syntax, _owner));
+
+        return new BoundSelf(InstanceType, (_owner as FunSymbol)!.IsMutatingReceiver, syntax);
+    }
+
+    private BoundValue BindNumberLiteral(NumberLiteralSyntax syntax)
+    {
+        var type = syntax.Token.Suffix switch
+        {
+            NumberLiteralSuffix.I32 => _base.I32,
+            NumberLiteralSuffix.I64 => _base.I64,
+            NumberLiteralSuffix.F32 => _base.F32,
+            NumberLiteralSuffix.F64 => _base.F64,
+
+            _ => syntax.Token.HasDecimalPoint ? _base.DefaultFloatType : _base.DefaultIntType
+        };
+
+        // Literals like "1.1i32" need to be rejected.
+        if (syntax.Token.HasDecimalPoint &&
+            type != _base.F32 && type != _base.F64)
+        {
+            return BindError(syntax, new Diagnostic.SuffixInvalidForDecimalNumber(syntax));
+        }
+
+        if (type == _base.I32)
+        {
+            if (!int.TryParse(syntax.Token.Body, out var value))
+                return BindError(syntax, new Diagnostic.NumberTooBig(syntax, type));
+
+            return new BoundConst(value, type, syntax);
+        }
+
+        if (type == _base.I64)
+        {
+            if (!long.TryParse(syntax.Token.Body, out var value))
+                return BindError(syntax, new Diagnostic.NumberTooBig(syntax, type));
+
+            return new BoundConst(value, type, syntax);
+        }
+
+        if (type == _base.F32)
+        {
+            var value = float.Parse(syntax.Token.Body, CultureInfo.InvariantCulture);
+            return new BoundConst(value, type, syntax);
+        }
+
+        if (type == _base.F64)
+        {
+            var value = double.Parse(syntax.Token.Body, CultureInfo.InvariantCulture);
+            return new BoundConst(value, type, syntax);
+        }
+
+        throw new UnreachableException();
+    }
+    
+    
     private BoundStringExpr BindString(StringExprSyntax syntax)
     {
         var parts = syntax.Parts.Select(BindStringPart).ToImmutableArray();
@@ -640,66 +739,6 @@ public sealed class Binder
         return new BoundCall(resolution.Candidates[0], receiver, arguments: [], syntax);
     }
 
-    
-
-    private BoundValue BindNumberLiteral(NumberLiteralSyntax syntax)
-    {
-        var type = syntax.Token.Suffix switch
-        {
-            NumberLiteralSuffix.I32 => _base.I32,
-            NumberLiteralSuffix.I64 => _base.I64,
-            NumberLiteralSuffix.F32 => _base.F32,
-            NumberLiteralSuffix.F64 => _base.F64,
-    
-            _ => syntax.Token.HasDecimalPoint ? _base.DefaultFloatType : _base.DefaultIntType
-        };
-        
-        // Literals like "1.1i32" need to be rejected.
-        if (syntax.Token.HasDecimalPoint &&
-            type != _base.F32 && type != _base.F64)
-        {
-            return BindError(syntax, new Diagnostic.SuffixInvalidForDecimalNumber(syntax));
-        }
-
-        if (type == _base.I32)
-        {
-            if (!int.TryParse(syntax.Token.Body, out var value))
-                return BindError(syntax, new Diagnostic.NumberTooBig(syntax, type));
-
-            return new BoundConst(value, type, syntax);
-        }
-
-        if (type == _base.I64)
-        {
-            if (!long.TryParse(syntax.Token.Body, out var value))
-                return BindError(syntax, new Diagnostic.NumberTooBig(syntax, type));
-
-            return new BoundConst(value, type, syntax);
-        }
-
-        if (type == _base.F32)
-        {
-            var value = float.Parse(syntax.Token.Body, CultureInfo.InvariantCulture);
-            return new BoundConst(value, type, syntax);
-        }
-        
-        if (type == _base.F64)
-        {
-            var value = double.Parse(syntax.Token.Body, CultureInfo.InvariantCulture);
-            return new BoundConst(value, type, syntax);
-        }
-
-        throw new UnreachableException();
-    }
-
-    private BoundNode BindSelf(SelfSyntax syntax)
-    {
-        if (InstanceType is null)
-            return BindError(syntax, new Diagnostic.InvalidSelfRef(syntax, _owner));
-
-        return new BoundSelf(InstanceType, (_owner as FunSymbol)!.IsMutatingReceiver, syntax);
-    }
-    
     #endregion
 
     #region Operators and Assignment
@@ -764,8 +803,8 @@ public sealed class Binder
         }
     
         // Type-check against bool
-        if (!CheckTypeAndReportMismatch(left, _base.Bool) ||
-            !CheckTypeAndReportMismatch(right, _base.Bool))
+        if (!CheckType(left, _base.Bool) ||
+            !CheckType(right, _base.Bool))
         {
             return new BoundError(syntax);
         }
@@ -793,7 +832,7 @@ public sealed class Binder
         if (!target.IsPlace || !target.IsAssignable)
             return BindError(syntax, new Diagnostic.CannotAssign(target));
 
-        TypeSymbol type = CheckTypeAndReportMismatch(value, target.Type)
+        TypeSymbol type = CheckType(value, target.Type)
             ? _base.Unit
             : ErrorTypeSymbol.Instance;
         return new BoundAssign(target, value, type, syntax);
@@ -863,7 +902,7 @@ public sealed class Binder
     private BoundValue BindCondition(ExprSyntax syntax)
     {
         var condition = BindValue(syntax);
-        if (!CheckTypeAndReportMismatch(condition, expected: _base.Bool))
+        if (!CheckType(condition, expected: _base.Bool))
             condition = new BoundError(syntax);
 
         return condition;
@@ -933,7 +972,7 @@ public sealed class Binder
 
         if (expr is not null)
         {
-            if (!CheckTypeAndReportMismatch(expr, fun.ReturnType))
+            if (!CheckType(expr, fun.ReturnType))
                 expr = new BoundError(syntax.Expr);
         }
         else if (fun.ReturnType != _base.Unit)
@@ -947,74 +986,6 @@ public sealed class Binder
     
     #endregion
 
-    
-    public enum LookupViability
-    {
-        NotFound,
-        NotAccessible,
-        Viable
-    }
-
-    public class LookupResult
-    {
-        public LookupViability Viability { get; private set; } = LookupViability.NotFound;
-
-        public ImmutableArray<Symbol> Symbols { get; private set; } = [];
-
-        public void AddIfEqualOrBetter(Symbol symbol, LookupViability viability)
-        {
-            if (viability > Viability)
-            {
-                Viability = viability;
-                Symbols = [symbol];
-            }
-            else if (viability == Viability)
-                Symbols = [.. Symbols, symbol];
-        }
-
-        public void MergeIfBetter(LookupResult other)
-        {
-            if (other.Viability > Viability)
-            {
-                Viability = other.Viability;
-                Symbols = other.Symbols;
-            }
-        }
-    }
-
-    private LookupViability GetViability(Symbol symbol)
-        => IsAccessible(symbol) ? LookupViability.Viable : LookupViability.NotAccessible;
-    
-    private LookupResult LookupName(string name)
-    {
-        var result = new LookupResult(); // NotFound
-
-        for (var scope = _scope; scope != null; scope = scope.Parent)
-        {
-            var here = new LookupResult();
-            foreach (var s in scope.LookupHere(name))
-                here.AddIfEqualOrBetter(s, GetViability(s));
-
-            result.MergeIfBetter(here);
-
-            if (result.Viability == LookupViability.Viable)
-                break; // found something usable, stop
-        }
-
-        return result;
-    }
-
-    private LookupResult LookupMembers(NamespaceOrTypeSymbol parent, string name)
-    {
-        var result = new LookupResult(); // NotFound
-
-        foreach (var s in parent.LookupMembers(name))
-            result.AddIfEqualOrBetter(s, GetViability(s));
-
-        return result;
-    }
-
-    
     #region Names and Member access
     
     private BoundNode BindIdName(IdNameSyntax syntax)
@@ -1161,101 +1132,7 @@ public sealed class Binder
     
     #region Call and Struct Initializer
 
-    private BoundValue BindCall(CallExprSyntax syntax)
-    {
-        var callee = BindExpr(syntax.Callee);
-        if (callee is BoundTypeRef { Type: StructSymbol } structRef)
-            return BindStructInit((StructSymbol)structRef.Type, syntax, structRef.Syntax!);
-        
-        var arguments = syntax.ArgumentExprs.Select(BindValue).ToImmutableArray();
-
-        //TODO: Implement named arguments
-        var hasNamedArg = false;
-        foreach (var argSyntax in syntax.ArgList.Arguments)
-        {
-            if (argSyntax.IsNamed)
-            {
-                hasNamedArg = true;
-                _diagnostics.ReportError(new Diagnostic.UnsupportedFeature(argSyntax, "Named arguments are not yet implemented."));
-            }
-        }
-
-        if (hasNamedArg)
-            return new BoundError(syntax);
-        
-        if (callee is not BoundFunGroup calleeFunGroup)
-        {
-            if (callee is not BoundError)
-                _diagnostics.ReportError(new Diagnostic.CannotCall(callee));
-            return new BoundError(syntax);
-        }
-
-        var argumentTypes = arguments.Select(arg => arg.Type).ToImmutableArray();
-        var resolutionResult = ResolveFunGroup(calleeFunGroup, argumentTypes);
-        
-        // If arguments had an error, report arity mismatch, because that is possible.
-        // All other errors should be silent.
-        if (resolutionResult.Viability > FunCandidateViability.ArityMismatch && argumentTypes.OfType<ErrorTypeSymbol>().Any())
-            return new BoundError(syntax);
-        
-        if (resolutionResult.Viability < FunCandidateViability.Viable)
-        {
-            switch (resolutionResult.Viability)
-            {
-                case FunCandidateViability.ArityMismatch:
-                    return BindError(syntax, new Diagnostic.ArityMismatch(syntax.ArgList, resolutionResult.Candidates,
-                        arguments.Length));
-
-                case FunCandidateViability.ParameterTypeMismatch:
-                    if (resolutionResult.Candidates.Length > 1)
-                    {
-                        return BindError(syntax, new Diagnostic.CannotResolveFun(syntax.ArgList, calleeFunGroup.Name,
-                            resolutionResult.Candidates,
-                            argumentTypes));
-                    }
-
-                    // Just recheck and report TypeMismatch everywhere
-                    var reportedTypeMismatch = arguments.Zip(resolutionResult.Candidates[0].ParameterTypes,
-                        CheckTypeAndReportMismatch).Any();
-                    Debug.Assert(reportedTypeMismatch);
-
-                    break;
-                case FunCandidateViability.StaticMismatch:
-                    return calleeFunGroup.Receiver is null
-                        ? BindError(syntax,
-                            new Diagnostic.InstanceMemberNotAccessibleFromStaticContext(calleeFunGroup.Name,
-                                calleeFunGroup.Syntax!))
-                        : BindError(syntax, new Diagnostic.CannotAccessThroughInstance(calleeFunGroup.Syntax!));
-
-                case FunCandidateViability.ReceiverMismatch:
-                    throw new NotImplementedException("No nested types yet, so this is not possible");
-                
-                case FunCandidateViability.CannotMutate:
-                    return BindError(syntax, new Diagnostic.CannotMutateReceiver(calleeFunGroup.Receiver!,
-                        calleeFunGroup.Candidates[0], calleeFunGroup.Syntax!));
-                
-            }
-
-            return new BoundError(syntax);
-        }
-        
-        Debug.Assert(resolutionResult.Viability is FunCandidateViability.Viable);
-
-        if (resolutionResult.Candidates.Length > 1)
-        {
-            return BindError(syntax, new Diagnostic.CannotResolveFun(syntax.ArgList, calleeFunGroup.Name,
-                resolutionResult.Candidates, argumentTypes));
-        }
-        
-        Debug.Assert(resolutionResult.Candidates.Length == 1);
-
-        var fun = resolutionResult.Candidates[0];
-        var receiver = fun.IsStatic && calleeFunGroup.IsReceiverImplicit ? null : calleeFunGroup.Receiver;
-        
-        return new BoundCall(resolutionResult.Candidates[0], receiver, arguments, syntax);
-    }
-    
-    public enum FunCandidateViability
+    private enum FunCandidateViability
     {
         ArityMismatch,
         ParameterTypeMismatch,
@@ -1265,7 +1142,10 @@ public sealed class Binder
         Viable
     }
 
-    private FunCandidateViability CheckFunCandidate(FunSymbol fun, BoundValue? receiver, ImmutableArray<TypeSymbol> argumentTypes)
+    private record OverloadResolutionResult(FunCandidateViability Viability, ImmutableArray<FunSymbol> Candidates);
+
+    private static FunCandidateViability CheckFunCandidate(FunSymbol fun, BoundValue? receiver,
+        ImmutableArray<TypeSymbol> argumentTypes)
     {
         if (fun.Parameters.Length != argumentTypes.Length)
             return FunCandidateViability.ArityMismatch;
@@ -1285,9 +1165,8 @@ public sealed class Binder
         return FunCandidateViability.Viable;
     }
 
-    public record OverloadResolutionResult(FunCandidateViability Viability, ImmutableArray<FunSymbol> Candidates);
-
-    private OverloadResolutionResult ResolveFunGroup(BoundFunGroup funGroup, ImmutableArray<TypeSymbol> argumentTypes)
+    private static OverloadResolutionResult ResolveFunGroup(BoundFunGroup funGroup,
+        ImmutableArray<TypeSymbol> argumentTypes)
     {
         var candidates = ImmutableArray.CreateBuilder<FunSymbol>();
         var currentViability = FunCandidateViability.ArityMismatch;
@@ -1306,23 +1185,117 @@ public sealed class Binder
             }
         }
 
-        if (funGroup.Syntax is not null && candidates.Count == 1)
-            _semanticSideTable.AddResolvedSymbol(funGroup.Syntax.Location, candidates[0]);
-
         return new OverloadResolutionResult(currentViability, candidates.DrainToImmutable());
     }
 
-
-    private BoundValue BindStructInit(StructSymbol @struct, CallExprSyntax syntax, SyntaxNode structRefSyntax)
+    
+    private BoundValue BindCall(CallExprSyntax syntax)
     {
+        var callee = BindExpr(syntax.Callee);
+        if (callee is BoundError)
+            return new BoundError(syntax);
+        if (callee is BoundTypeRef typeRef)
+            return BindTypeInit(typeRef, syntax);
+        
+        var arguments = syntax.ArgumentExprs.Select(BindValue).ToImmutableArray();
+
+        //TODO: Implement named arguments
+        if (syntax.ArgList.Arguments.Any(argSyntax => argSyntax.IsNamed))
+        {
+            return BindError(syntax,
+                new Diagnostic.UnsupportedFeature(syntax.ArgList, "Named arguments are not yet implemented."));
+        }
+
+        if (callee is not BoundFunGroup calleeFunGroup)
+            return BindError(syntax, new Diagnostic.CannotCall(callee));
+
+        var argumentTypes = arguments.Select(arg => arg.Type).ToImmutableArray();
+        var resolutionResult = ResolveFunGroup(calleeFunGroup, argumentTypes);
+        if (calleeFunGroup.Syntax is not null && resolutionResult.Candidates.Length == 1)
+            _semanticSideTable.AddResolvedSymbol(calleeFunGroup.Syntax.Location, resolutionResult.Candidates[0]);
+
+        // If arguments had an error, report arity mismatch, because that is possible.
+        // All other errors should be silent.
+        if (resolutionResult.Viability > FunCandidateViability.ArityMismatch && 
+            argumentTypes.OfType<ErrorTypeSymbol>().Any())
+            return new BoundError(syntax);
+        
+        if (resolutionResult.Viability < FunCandidateViability.Viable)
+            return BindOverloadResolutionError(resolutionResult, calleeFunGroup, arguments, syntax);
+        
+        Debug.Assert(resolutionResult.Viability is FunCandidateViability.Viable);
+
+        if (resolutionResult.Candidates.Length > 1)
+        {
+            return BindError(syntax, new Diagnostic.CannotResolveFun(syntax.ArgList, calleeFunGroup.Name,
+                resolutionResult.Candidates, argumentTypes));
+        }
+        
+        Debug.Assert(resolutionResult.Candidates.Length == 1);
+
+        var fun = resolutionResult.Candidates[0];
+        var receiver = fun.IsStatic && calleeFunGroup.IsReceiverImplicit ? null : calleeFunGroup.Receiver;
+        
+        return new BoundCall(resolutionResult.Candidates[0], receiver, arguments, syntax);
+    }
+
+    private BoundError BindOverloadResolutionError(OverloadResolutionResult result,
+        BoundFunGroup callee,
+        ImmutableArray<BoundValue> arguments, 
+        CallExprSyntax syntax)
+    {
+        switch (result.Viability)
+        {
+            case FunCandidateViability.ArityMismatch:
+                return BindError(syntax, new Diagnostic.ArityMismatch(syntax.ArgList, result.Candidates,
+                    arguments.Length));
+
+            case FunCandidateViability.ParameterTypeMismatch:
+                if (result.Candidates.Length > 1)
+                {
+                    return BindError(syntax, new Diagnostic.CannotResolveFun(syntax.ArgList, callee.Name,
+                        result.Candidates,
+                        [.. arguments.Select(arg => arg.Type)]));
+                }
+
+                // Just recheck and report TypeMismatch everywhere
+                var reportedTypeMismatch = arguments.Zip(result.Candidates[0].ParameterTypes,
+                    CheckType).Any();
+                Debug.Assert(reportedTypeMismatch);
+                return new BoundError(syntax);
+            
+            case FunCandidateViability.StaticMismatch:
+                return callee.Receiver is null
+                    ? BindError(syntax,
+                        new Diagnostic.InstanceMemberNotAccessibleFromStaticContext(callee.Name,
+                            callee.Syntax!))
+                    : BindError(syntax, new Diagnostic.CannotAccessThroughInstance(callee.Syntax!));
+
+            case FunCandidateViability.ReceiverMismatch:
+                throw new NotImplementedException("No nested types yet, so this is not possible");
+                
+            case FunCandidateViability.CannotMutate:
+                return BindError(syntax, new Diagnostic.CannotMutateReceiver(callee.Receiver!,
+                    callee.Candidates[0], callee.Syntax!));
+                
+        }
+
+        throw new UnreachableException(
+            $"Unknown {nameof(FunCandidateViability)}.{result.Viability} in {nameof(BindOverloadResolutionError)}.");
+    }
+
+    private BoundValue BindTypeInit(BoundTypeRef typeRef, CallExprSyntax syntax)
+    {
+        if (typeRef.Type is not StructSymbol @struct || @struct.IsPrimitive)
+            return BindError(syntax, new Diagnostic.CannotInitialize(typeRef));
+
         var uninitializedFields = @struct.Fields.ToList();
         var fieldInits = ImmutableArray.CreateBuilder<BoundFieldInit>();
 
         var hadError = false;
         foreach (var argSyntax in syntax.ArgList.Arguments)
         {
-            var boundFieldInit = BindFieldInitializer(@struct, argSyntax) as BoundFieldInit;
-            if (boundFieldInit is null)
+            if (BindFieldInitializer(@struct, argSyntax) is not BoundFieldInit boundFieldInit)
             {
                 hadError = true;
                 continue;
@@ -1345,9 +1318,6 @@ public sealed class Binder
         if (uninitializedFields.Count > 0)
             return BindError(syntax, new Diagnostic.MissingFieldInitializers([.. uninitializedFields], syntax.ArgList));
 
-        if (@struct.IsPrimitive)
-            return BindError(syntax, new Diagnostic.CannotInitializePrimitive(structRefSyntax));
-        
         return new BoundStructInit(@struct, fieldInits.ToImmutable(), syntax);
     }
 
@@ -1363,7 +1333,7 @@ public sealed class Binder
             return BindError(argSyntax, new Diagnostic.InvalidFieldName(@struct, argSyntax));
         
         if (!CheckAccessibility(field, argSyntax.IsNamed ? argSyntax.Name! : argSyntax) ||
-            !CheckTypeAndReportMismatch(value, field.Type))
+            !CheckType(value, field.Type))
             return new BoundError(argSyntax);
 
         return new BoundFieldInit(field, value, argSyntax);

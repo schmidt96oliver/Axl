@@ -28,12 +28,7 @@ public sealed class Scope
     public Scope Adjacent(params IEnumerable<Symbol> visibleSymbols)
         => new Scope(Parent, [..VisibleHere, .. visibleSymbols]);
     
-    /// <summary>
-    /// Returns all symbols visible inside only this scope that
-    /// match the specified <paramref name="name"/>. First result
-    /// is the closest result.
-    /// </summary>
-    public ImmutableArray<Symbol> LookupHere(string name)
+    public ImmutableArray<Symbol> Lookup(string name)
     {
         // Variables can be shadowed inside the same scope,
         // so only the last variable with that name should
@@ -57,14 +52,4 @@ public sealed class Scope
         return result.DrainToImmutable();
     }
 
-    /// <summary>
-    /// Returns all symbols visible from this scope (including
-    /// symbols visible in parent scopes) matching the
-    /// specified <paramref name="name"/>. The first result
-    /// is the closest to this scope.
-    /// </summary>
-    public ImmutableArray<Symbol> Lookup(string name)
-        => Parent is not null
-            ? [.. LookupHere(name), .. Parent.Lookup(name)]
-            : LookupHere(name);
 }

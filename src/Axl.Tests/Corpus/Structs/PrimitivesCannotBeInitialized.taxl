@@ -4,8 +4,8 @@
 // representation, defining a struct initializer for
 // them does not make sense.
 
-let p = I32();      //~error CannotInitializePrimitive
-let p = I64();      //~error CannotInitializePrimitive
-let p = F32();      //~error CannotInitializePrimitive
-let p = F64();      //~error CannotInitializePrimitive
-let p = Bool();     //~error CannotInitializePrimitive
+let p = I32();      //~error CannotInitialize
+let p = I64();      //~error CannotInitialize
+let p = F32();      //~error CannotInitialize
+let p = F64();      //~error CannotInitialize
+let p = Bool();     //~error CannotInitialize
