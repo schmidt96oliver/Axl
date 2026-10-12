@@ -31,29 +31,9 @@ public class HoverHandler : HoverHandlerBase
 
         return Task.FromResult<Hover?>(new Hover
         {
-            Contents = new MarkedStringsOrMarkupContent(GetHoverText(symbol)), 
+            Contents = new MarkedStringsOrMarkupContent(symbol.FullDisplayName), 
             Range = node.Location.ToLsp()
         });
     }
 
-    private string GetHoverText(Symbol symbol) => symbol switch
-    {
-        VariableSymbol{IsReadOnly: false} variable => $"var {variable.Name}: {variable.Type.Name}",
-        VariableSymbol{IsReadOnly: true} variable => $"let {variable.Name}: {variable.Type.Name}",
-        TypeSymbol type => $"type {type.Name}",
-        NamespaceSymbol => "namespace",
-        FunSymbol fun => $"fun {fun.Name}{GetParameterText(fun)}{GetFunAnnotationText(fun)}",
-        FieldSymbol field => $"field {field.Owner.Name}.{field.Name}: {field.Type.Name}",
-        _ => "??? Hover not implemented"
-    };
-
-    private string GetParameterText(FunSymbol fun)
-        => $"({string.Join(", ", fun.Parameters.Select(param => $"{param.Name}: {param.Type.Name}"))})";
-
-    private string GetFunAnnotationText(FunSymbol fun)
-        => fun.Body is Intrinsic intrinsic
-            ? $" @intrinsic {intrinsic.ToString()}"
-            : fun.DeclarationSyntax is null
-                ? " generated"
-                : "";
 }

@@ -1222,7 +1222,7 @@ public sealed class Binder
         Debug.Assert(resolutionResult.Viability is FunCandidateViability.Viable);
 
         if (resolutionResult.Candidates.Length > 1)
-            return BindError(syntax, new Diagnostic.AmbiguousCall(resolutionResult.Candidates, argumentTypes, calleeFunGroup.Syntax!));
+            return BindError(syntax, new Diagnostic.AmbiguousCall(resolutionResult.Candidates, calleeFunGroup.Syntax!));
         
         Debug.Assert(resolutionResult.Candidates.Length == 1);
         

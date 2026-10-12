@@ -272,7 +272,6 @@ public partial record Diagnostic
 
     public sealed record AmbiguousCall(
         ImmutableArray<FunSymbol> Candidates,
-        ImmutableArray<TypeSymbol> ArgumentTypes,
         SyntaxNode Syntax) : Error
     {
         public override ImmutableArray<SourceLocation> Locations =>
