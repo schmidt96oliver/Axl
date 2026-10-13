@@ -6,9 +6,6 @@
 * *refactor*: cleanup FunBuilder
   * Const instead of True()
 
-* *refactor*: Scope into Binder --or-- derived scope classes (InNamespaceOrTypeScope, InFunScope, LocalScope)
-  * LocalScope.AdjacentWithVariable(...) asserts no local fun; LocalScope has localFuns and variables
-* *refactor*: BoundTree verifies correctness in its constructor. As a safety net. Remove from FunBuilder
 * *refactor*: Bind string expr into string.Concat
 
 * how to handle multiple declarations?

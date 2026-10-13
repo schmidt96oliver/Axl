@@ -2,6 +2,7 @@
 using System.Diagnostics;
 using System.Globalization;
 using Axl.Compiler.Binding.BoundTree;
+using Axl.Compiler.Binding.Scopes;
 using Axl.Compiler.Diagnostics;
 using Axl.Compiler.Symbols;
 using Axl.Compiler.Syntax;
@@ -11,59 +12,58 @@ namespace Axl.Compiler.Binding;
 
 public sealed class Binder
 {
+    private readonly Scope _scope;
     private readonly DiagnosticBag _diagnostics;
     private readonly SemanticSideTable _semanticSideTable;
-    private readonly BaseNamespaceSymbol _base;
-    private readonly Symbol _owner;
     
-    private readonly Scope _scope;
-    private readonly bool _inLoop = false;
+    #region Comfort Stuff
 
-    private TypeSymbol? InstanceType { get; }
+    public StructSymbol Bool => _scope.BaseNamespace.Bool;
+    
+    public StructSymbol String => _scope.BaseNamespace.String;
+    
+    public StructSymbol Unit => _scope.BaseNamespace.Unit;
 
 
-    private Binder(Symbol owner, Scope scope, bool inLoop, BaseNamespaceSymbol @base, DiagnosticBag diagnosticBag, SemanticSideTable semanticSideTable)
+    public Binder WithOutput(DiagnosticBag diagnosticBag, SemanticSideTable semanticSideTable)
+        => new(_scope, diagnosticBag, semanticSideTable);
+
+    public Binder WithScope(Scope scope)
+        => new(scope, _diagnostics, _semanticSideTable);
+    
+    public Binder EnterFunSignature(FunSymbol fun)
+        => WithScope(new FunSignatureScope(_scope, fun));
+
+    public Binder EnterFunBody()
     {
-        _base = @base;
+        Guard.IsState(_scope.Owner is FunSymbol);
+        return WithScope(new FunBodyScope(_scope));
+    }
+
+    public Binder EnterTypeHeader(TypeSymbol type)
+        => WithScope(new TypeHeaderScope(_scope, type));
+    
+    public Binder EnterTypeBody()
+        => WithScope(new TypeBodyScope(_scope));
+
+    public Binder EnterBlock(ImmutableArray<Symbol> localMembers)
+        => WithScope(new BlockScope(_scope, localMembers));
+
+    public Binder WithAdditionalFlags(BindingFlags flags)
+        => WithScope(new FlagsScope(_scope, _scope.Flags | flags));
+    
+    #endregion
+
+    
+    private Binder(Scope scope, DiagnosticBag diagnosticBag, SemanticSideTable semanticSideTable)
+    {
         _diagnostics = diagnosticBag;
         _semanticSideTable = semanticSideTable;
 
         _scope = scope;
-        _owner = owner;
-        _inLoop = inLoop;
-
-        InstanceType = GetInstanceType(owner);
-    }
-    
-    private static TypeSymbol? GetInstanceType(Symbol owner)
-    {
-        if (owner is not FunSymbol ownerFun) return null;
-        if (ownerFun.ReceiverType is null) return null;
-        Debug.Assert(ownerFun.ReceiverType == ownerFun.OwningType,
-            "A funs receiver should always be its owning type. Extensions differ, but are not implemented yet.");
-        return ownerFun.ReceiverType;
     }
 
-
-    private Binder BinderWith(DiagnosticBag diagnosticBag, SemanticSideTable semanticSideTable)
-        => new(_owner, _scope, _inLoop, _base, diagnosticBag, semanticSideTable);
-    
-    private Binder NestedBinderWithOwner(Symbol owner)
-        => new(owner, _scope.Nested(), inLoop: false,
-            _base, _diagnostics, _semanticSideTable);
-    
-    private Binder NestedBinderWithVisibleSymbols(params IEnumerable<Symbol> visibleSymbols)
-        => new(_owner, _scope.Nested(visibleSymbols), _inLoop,
-            _base, _diagnostics, _semanticSideTable);
-    
-    private Binder NestedBinderInLoop()
-        => new(_owner, _scope.Nested(), inLoop: true,
-            _base, _diagnostics, _semanticSideTable);
-    
-    private Binder AdjacentBinderWithVisibleSymbols(params IEnumerable<Symbol> visibleSymbols)
-        => new(_owner, _scope.Adjacent(visibleSymbols), _inLoop,
-            _base, _diagnostics, _semanticSideTable);
-    
+   
     
     private static bool IsAssignableTo(TypeSymbol source, TypeSymbol target)
     {
@@ -88,14 +88,10 @@ public sealed class Binder
 
         return true;
     }
-
-    
-    private bool IsAccessible(Symbol symbol)
-        => _owner.SelfAndOwners().Contains(symbol.AccessibleWithin);
     
     private bool CheckAccessibility(Symbol symbol, SyntaxNode syntax)
     {
-        if (!IsAccessible(symbol))
+        if (!_scope.IsAccessible(symbol))
         {
             _diagnostics.ReportError(new Diagnostic.NotAccessible([symbol], syntax));
             return false;
@@ -123,7 +119,7 @@ public sealed class Binder
     
     private LookupViability GetViability(Symbol symbol, LookupOptions options)
     {
-        if (!IsAccessible(symbol)) 
+        if (!_scope.IsAccessible(symbol)) 
             return LookupViability.NotAccessible;
 
         if (options is LookupOptions.OnlyType && symbol is not TypeSymbol)
@@ -138,7 +134,7 @@ public sealed class Binder
     {
         var result = new LookupResult();
 
-        for (var scope = _scope; scope != null; scope = scope.Parent)
+        for (var scope = _scope; scope != null; scope = scope.EnclosingScope)
         {
             var here = new LookupResult();
             foreach (var s in scope.Lookup(name))
@@ -178,12 +174,7 @@ public sealed class Binder
         var semanticSideTable = new SemanticSideTable();
         
         var rootNamespace = new RootNamespaceSymbol();
-        var baseNamespace = rootNamespace.BaseNamespace;
-
-        var globalBinder = new Binder(owner: rootNamespace, 
-            Scope.Root([baseNamespace, .. baseNamespace.Members]), 
-            inLoop: false,
-            baseNamespace,  diagnostics, semanticSideTable);
+        var rootBinder = new Binder(new RootScope(rootNamespace), diagnostics, semanticSideTable);
         
         var scriptFun = new FunSymbol(name: "", 
             owner: rootNamespace,
@@ -191,30 +182,20 @@ public sealed class Binder
             receiverType: null,
             isMutatingReceiver: false);
 
-        var scriptBinder = globalBinder.NestedBinderWithOwner(scriptFun);
-        scriptFun.SetParametersAndReturnType([], baseNamespace.Unit);
-        scriptFun.SetBody(scriptBinder.BindScriptBody(syntax, out var localTypes));
+        scriptFun.SetParametersAndReturnType([], rootBinder.Unit);
+        scriptFun.SetBody(rootBinder.EnterFunSignature(scriptFun).BindScriptBody(syntax, out var localTypes));
         
         return new BoundFile(scriptFun, localTypes, diagnostics.Drain(), semanticSideTable);
     }
 
     private BoundBlock BindScriptBody(FileSyntax syntax, out ImmutableArray<TypeSymbol> localTypes)
     {
-        // Bind structs entirely with current scope, so that they
-        // don't see any locals or local funs
-        localTypes = BindStructs(syntax.Children.OfType<StructDeclSyntax>()).CastArray<TypeSymbol>();
-        var withTypesBinder = NestedBinderWithVisibleSymbols(localTypes);
-
-        // Bind local funs
-        var localFuns = withTypesBinder.BindFuns(syntax.Children.OfType<FunDeclSyntax>());
-        withTypesBinder.CheckDuplicateDeclarations([.. localTypes, .. localFuns]);
-        var withTypesAndLocalFunsBinder = withTypesBinder.AdjacentBinderWithVisibleSymbols(localFuns);
-
-        var stmts = withTypesAndLocalFunsBinder.BindStmtsAndLocalFunBodies(
+        var localMembers = BindScriptLocalTypesAndFuns(syntax, out var localFuns, out localTypes);
+        
+        var stmts = EnterBlock(localMembers).BindStmtsAndLocalFunBodies(
             [.. syntax.SyntaxNodes().Where(node => node is not StructDeclSyntax)], localFuns);
-        
-        var block = new BoundBlock(stmts, localFuns, _base.Unit, syntax);
-        
+        var block = new BoundBlock(stmts, localFuns, Unit, syntax);
+
         // Insert unit return if necessary
         if (!block.IsDiverging)
             block = block.WithAdditionalStmts(new BoundReturn(null));
@@ -222,24 +203,65 @@ public sealed class Binder
         return block;
     }
     
+    private ImmutableArray<TypeSymbol> BindScriptLocalTypes(FileSyntax syntax)
+    {
+        // Bind structs fully on their own block that will
+        // be thrown away, so they can't see what else is 
+        // on the script scope.
+        
+        // Because of dependencies, bind first all symbols, then all members,
+        // then all bodies.
+        var structs = syntax.Children.OfType<StructDeclSyntax>().Select(BindStructSymbol).ToImmutableArray();
+
+        var scriptBodyBinder = EnterBlock(structs.CastArray<Symbol>());
+        foreach (var @struct in structs)
+            @struct.SetMembers(scriptBodyBinder.EnterTypeHeader(@struct).BindStructMembers(@struct.DeclarationSyntax!));
+        foreach (var @struct in structs)
+            scriptBodyBinder.EnterTypeHeader(@struct).BindStructBody(@struct);
+
+        return structs.CastArray<TypeSymbol>();
+    }
+
+    private ImmutableArray<Symbol> BindScriptLocalTypesAndFuns(FileSyntax syntax,
+        out ImmutableArray<FunSymbol> localFuns, out ImmutableArray<TypeSymbol> localTypes)
+    {
+        // Types are standalone inside a script, they don't see any locals.
+        // Local funs signatures must see those types, but don't need to see
+        // each other. Finally, stmts are bound on the _same_ block as types
+        // and local funs are visibile on, because variable declaration will
+        // test against that (CannotShadow local fun / local type).
+
+        localTypes = BindScriptLocalTypes(syntax);
+
+        var funSignatureBinder = EnterBlock(localTypes.CastArray<Symbol>());
+
+        localFuns =
+        [
+            .. syntax.Children.OfType<FunDeclSyntax>()
+                .Select(funSignatureBinder.BindFunSymbol)
+        ];
+
+        ImmutableArray<Symbol> localMembers = [.. localTypes, .. localFuns];
+
+        CheckDuplicateDeclarations(localMembers);
+        return localMembers;
+    }
+    
     #endregion
     
     #region Funs and Structs
 
-    private ImmutableArray<FunSymbol> BindFuns(IEnumerable<FunDeclSyntax> syntaxes)
-    {
-        return [.. syntaxes.Select(BindFunSymbol)];
-    }
-
     private FunSymbol BindFunSymbol(FunDeclSyntax syntax)
     {
-        Guard.IsState(_owner is FunSymbol or TypeSymbol, $"{nameof(BindFunSymbol)} only valid on types or funs.");
+        Guard.IsState(_scope.OwnerAsFun is not null || _scope.OwnerAsType is not null, $"{nameof(BindFunSymbol)} only valid on types or funs.");
 
+        var isLocalFun = _scope.OwnerAsFun is not null;
+        
         // --- Bind declaration
         var isPublic = false;
         if (syntax.PubKw is not null)
         {
-            if (_owner is not TypeSymbol)
+            if (isLocalFun)
                 _diagnostics.ReportError(new Diagnostic.InvalidLocalFunModifier(syntax.PubKw));
             else
                 isPublic = true;
@@ -248,26 +270,26 @@ public sealed class Binder
         TypeSymbol? receiverType;
         var isMutatingReceiver = false;
         
-        if (_owner is FunSymbol ownerFun)
+        if (isLocalFun)
         {
             // This is a local fun.
             // Static is not valid. It is just inherited from its parent.
             if (syntax.StaticKw is not null)
                 _diagnostics.ReportError(new Diagnostic.InvalidLocalFunModifier(syntax.StaticKw));
-            receiverType = ownerFun.ReceiverType;
+            receiverType = _scope.OwnerAsFun!.ReceiverType;
 
             if (syntax.VarKw is not null)
             {
                 // Var on local funs is only allowed, if its parent is var.
                 if (receiverType is null)
                     _diagnostics.ReportError(new Diagnostic.VarLocalFunInStaticContext(syntax.VarKw));
-                else if (!ownerFun.IsMutatingReceiver)
+                else if (!_scope.OwnerAsFun!.IsMutatingReceiver)
                     _diagnostics.ReportError(new Diagnostic.VarLocalFunInNonVarFun(syntax.VarKw));
                 else
                     isMutatingReceiver = true;
             }
         }
-        else if (_owner is TypeSymbol ownerType)
+        else
         {
             // This fun is on a type
             if (syntax.StaticKw is not null)
@@ -278,25 +300,23 @@ public sealed class Binder
             }
             else
             {
-                receiverType = ownerType;
+                receiverType = _scope.OwnerAsType!;
                 isMutatingReceiver = syntax.VarKw is not null;
             }
         }
-        else
-            throw new UnreachableException();
         
         var funSymbol = new FunSymbol(syntax.Name.Identifier,
-            owner: _owner,
+            owner: _scope.Owner,
             isPublic,
             receiverType,
             isMutatingReceiver,
             declarationSyntax: syntax);
 
         // Bind signature
-        var signatureBinder = NestedBinderWithOwner(funSymbol);
+        var signatureBinder = EnterFunSignature(funSymbol);
         var returnType = syntax.ReturnTypeAnnotation is not null
             ? signatureBinder.BindType(syntax.ReturnTypeAnnotation)
-            : _base.Unit;
+            : Unit;
         var parameters = signatureBinder.BindParameters(syntax.ParameterList);
         funSymbol.SetParametersAndReturnType(parameters, returnType);
 
@@ -306,10 +326,10 @@ public sealed class Binder
 
     private BoundBlock BindFunBody(FunBodySyntax syntax)
     {
-        if (_owner is not FunSymbol fun)
+        if (_scope.OwnerAsFun is not FunSymbol fun)
             throw new InvalidOperationException($"{nameof(BindFunBody)} only valid on funs.");
 
-        var withParametersBinder = AdjacentBinderWithVisibleSymbols(fun.Parameters);
+        var bodyBinder = EnterFunBody();
 
         // --- Empty body
         if (syntax.Expr is null)
@@ -318,21 +338,21 @@ public sealed class Binder
         // --- Expression body
         if (syntax.IsExpressionBodied)
         {
-            var expr = withParametersBinder.BindValue(syntax.Expr);
+            var expr = bodyBinder.BindValue(syntax.Expr);
             if (!CheckType(expr, fun.ReturnType))
                 expr = new BoundError(syntax.Expr);
 
-            return new BoundBlock([new BoundReturn(expr)], [], _base.Unit);
+            return new BoundBlock([new BoundReturn(expr)], [], Unit);
         }
 
         // --- Block body
         Debug.Assert(syntax.Expr is BlockExprSyntax);
-        var block = withParametersBinder.BindBlock((BlockExprSyntax)syntax.Expr);
+        var block = bodyBinder.BindBlock((BlockExprSyntax)syntax.Expr);
 
         // Check that all code-paths return a value
         if (!block.IsDiverging)
         {
-            if (fun.ReturnType == _base.Unit)
+            if (fun.ReturnType == Unit)
                 block = block.WithAdditionalStmts(new BoundReturn(null));
             else
                 _diagnostics.ReportError(new Diagnostic.MissingReturn(block.Syntax!));
@@ -362,54 +382,34 @@ public sealed class Binder
     
     private ParameterSymbol BindParameter(ParamSyntax syntax)
     {
-        if (_owner is not FunSymbol fun)
+        if (_scope.OwnerAsFun is null)
             throw new InvalidOperationException($"{nameof(BindParameter)} only valid on funs.");
 
         var type = BindType(syntax.TypeAnnotation);
-        var symbol = new ParameterSymbol(syntax.Name.Identifier, fun, type, syntax);
+        var symbol = new ParameterSymbol(syntax.Name.Identifier, _scope.OwnerAsFun!, type, syntax);
         _semanticSideTable.AddResolvedSymbol(syntax.Name.Location, symbol);
         return symbol;
     }
 
-    
-    private ImmutableArray<StructSymbol> BindStructs(IEnumerable<StructDeclSyntax> syntaxes)
+    private void BindStructBody(StructSymbol symbol)
     {
-        var structs = syntaxes.Select(BindStructSymbol).ToImmutableArray();
-        var withStructsBinder = NestedBinderWithVisibleSymbols(structs);
-        var inStructBinders = structs
-            .Select(withStructsBinder.NestedBinderWithOwner)
-            .ToImmutableArray();
+        CheckRecursiveStructLayout(symbol);
         
-        for (var i = 0; i < structs.Length; i++)
-            structs[i].SetMembers(inStructBinders[i].BindStructMembers(structs[i].DeclarationSyntax!));
+        var typeBinder = EnterTypeBody();
 
-        foreach (var structSymbol in structs)
-            CheckRecursiveStructLayout(structSymbol);
+        var funs = symbol.Members.OfType<FunSymbol>();
 
-        // Bind method bodies
-        for (var i = 0; i < structs.Length; i++)
+        foreach (var fun in funs)
         {
-            // Bind struct body with all static members in scope
-            var structSymbol = structs[i];
-            var withStructMembersBinder = inStructBinders[i].NestedBinderWithVisibleSymbols(structSymbol.Members);
-            
-            var funs = structSymbol.Members.OfType<FunSymbol>();
-
-            foreach (var fun in funs)
-            {
-                Debug.Assert(fun.DeclarationSyntax is not null);
-                var funBodyBinder = withStructMembersBinder.NestedBinderWithOwner(fun);
-                fun.SetBody(funBodyBinder.BindFunBody(fun.DeclarationSyntax.Body));
-            }
+            Debug.Assert(fun.DeclarationSyntax is not null);
+            fun.SetBody(typeBinder.EnterFunSignature(fun).BindFunBody(fun.DeclarationSyntax.Body));
         }
-
-        return structs;
     }
 
     private StructSymbol BindStructSymbol(StructDeclSyntax syntax)
     {
         var symbol = new StructSymbol(syntax.Name.Identifier,
-            owner: _owner, isPublic: false, isPrimitive: false, syntax);
+            owner: _scope.Owner, isPublic: false, isPrimitive: false, syntax);
         if (symbol.Name.Length > 0)
             _semanticSideTable.AddResolvedSymbol(syntax.Name.Location, symbol);
         return symbol;
@@ -421,8 +421,10 @@ public sealed class Binder
             .OfType<FieldDeclSyntax>()
             .Select(Symbol (fieldSyntax) => BindFieldSymbol(fieldSyntax))
             .ToImmutableArray() ?? [];
-        var funs = BindFuns(syntax.Body?.Children
-            .OfType<FunDeclSyntax>() ?? []);
+        var funs = syntax.Body?.Children
+            .OfType<FunDeclSyntax>()
+            .Select(BindFunSymbol)
+            .ToImmutableArray() ?? [];
 
         ImmutableArray<Symbol> members = [.. fields, .. funs];
         CheckDuplicateDeclarations(members);
@@ -431,7 +433,7 @@ public sealed class Binder
 
     private FieldSymbol BindFieldSymbol(FieldDeclSyntax syntax)
     {
-        if (_owner is not StructSymbol structSymbol)
+        if (_scope.Owner is not StructSymbol structSymbol)
             throw new InvalidOperationException("Can only bind fields inside structs.");
         
         var isPub = syntax.PubKw is not null;
@@ -559,7 +561,7 @@ public sealed class Binder
         var isReadOnly = syntax.VarOrLetKwToken.Kind is TokenKind.LetKw;
         var variable = new VariableSymbol(
             syntax.Name.Identifier, 
-            _owner as FunSymbol ?? throw new InvalidOperationException("Values can only be bound on fun bodies."),
+            _scope.OwnerAsFun ?? throw new InvalidOperationException("Values can only be bound on fun bodies."),
             isReadOnly, 
             variableType);
         _semanticSideTable.AddResolvedSymbol(syntax.Name.Location, variable);
@@ -578,7 +580,7 @@ public sealed class Binder
     private BoundStmt BindWhile(WhileStmtSyntax syntax)
     {
         var condition = BindCondition(syntax.Condition);
-        var body = NestedBinderInLoop().BindValue(syntax.Body);
+        var body = WithAdditionalFlags(BindingFlags.InsideLoop).BindValue(syntax.Body);
         
         return new BoundWhile(condition, body, syntax);
     }
@@ -595,8 +597,8 @@ public sealed class Binder
         
         // Strings and Literals
         NumberLiteralSyntax numberLiteralSyntax => BindNumberLiteral(numberLiteralSyntax),
-        TrueLiteralSyntax => new BoundConst(value: true, type: _base.Bool, syntax),
-        FalseLiteralSyntax => new BoundConst(value: false, type: _base.Bool, syntax),
+        TrueLiteralSyntax => new BoundConst(value: true, type: Bool, syntax),
+        FalseLiteralSyntax => new BoundConst(value: false, type: Bool, syntax),
         StringExprSyntax stringExprSyntax => BindString(stringExprSyntax),
         
         // Operators
@@ -646,32 +648,32 @@ public sealed class Binder
 
     private BoundNode BindSelf(SelfSyntax syntax)
     {
-        if (InstanceType is null)
+        if (_scope.InstanceType is null)
             return BindError(syntax, new Diagnostic.InvalidSelfRef(syntax));
 
-        return new BoundSelf(InstanceType, (_owner as FunSymbol)!.IsMutatingReceiver, syntax);
+        return new BoundSelf(_scope.InstanceType, _scope.OwnerAsFun!.IsMutatingReceiver, syntax);
     }
 
     private BoundValue BindNumberLiteral(NumberLiteralSyntax syntax)
     {
         var type = syntax.Token.Suffix switch
         {
-            NumberLiteralSuffix.I32 => _base.I32,
-            NumberLiteralSuffix.I64 => _base.I64,
-            NumberLiteralSuffix.F32 => _base.F32,
-            NumberLiteralSuffix.F64 => _base.F64,
+            NumberLiteralSuffix.I32 => _scope.BaseNamespace.I32,
+            NumberLiteralSuffix.I64 => _scope.BaseNamespace.I64,
+            NumberLiteralSuffix.F32 => _scope.BaseNamespace.F32,
+            NumberLiteralSuffix.F64 => _scope.BaseNamespace.F64,
 
-            _ => syntax.Token.HasDecimalPoint ? _base.DefaultFloatType : _base.DefaultIntType
+            _ => syntax.Token.HasDecimalPoint ? _scope.BaseNamespace.DefaultFloatType : _scope.BaseNamespace.DefaultIntType
         };
 
         // Literals like "1.1i32" need to be rejected.
         if (syntax.Token.HasDecimalPoint &&
-            type != _base.F32 && type != _base.F64)
+            type != _scope.BaseNamespace.F32 && type != _scope.BaseNamespace.F64)
         {
             return BindError(syntax, new Diagnostic.SuffixInvalidForDecimalNumber(syntax));
         }
 
-        if (type == _base.I32)
+        if (type == _scope.BaseNamespace.I32)
         {
             if (!int.TryParse(syntax.Token.Body, out var value))
                 return BindError(syntax, new Diagnostic.NumberTooBig(type, syntax));
@@ -679,7 +681,7 @@ public sealed class Binder
             return new BoundConst(value, type, syntax);
         }
 
-        if (type == _base.I64)
+        if (type == _scope.BaseNamespace.I64)
         {
             if (!long.TryParse(syntax.Token.Body, out var value))
                 return BindError(syntax, new Diagnostic.NumberTooBig(type, syntax));
@@ -687,13 +689,13 @@ public sealed class Binder
             return new BoundConst(value, type, syntax);
         }
 
-        if (type == _base.F32)
+        if (type == _scope.BaseNamespace.F32)
         {
             var value = float.Parse(syntax.Token.Body, CultureInfo.InvariantCulture);
             return new BoundConst(value, type, syntax);
         }
 
-        if (type == _base.F64)
+        if (type == _scope.BaseNamespace.F64)
         {
             var value = double.Parse(syntax.Token.Body, CultureInfo.InvariantCulture);
             return new BoundConst(value, type, syntax);
@@ -708,15 +710,15 @@ public sealed class Binder
         var parts = syntax.Parts.Select(BindStringPart).ToImmutableArray();
     
         if (parts.Length == 0)
-            parts = [new BoundConst("", _base.String, syntax)];
+            parts = [new BoundConst("", String, syntax)];
         
-        return new BoundStringExpr(parts, _base.String, syntax);
+        return new BoundStringExpr(parts, String, syntax);
     }
     
     private BoundValue BindStringPart(StringPartSyntax syntax)
         => syntax switch
         {
-            StringTextSyntax textSyntax => new BoundConst(textSyntax.TextToken.ProcessedText, _base.String, syntax),
+            StringTextSyntax textSyntax => new BoundConst(textSyntax.TextToken.ProcessedText, String, syntax),
             StringInterpolationSyntax interpolationSyntax => BindStringInterpolation(interpolationSyntax),
         };
     
@@ -726,16 +728,16 @@ public sealed class Binder
         {
             // Empty interpolation means nothing will be added, which is equivalent
             // to an empty text const.
-            return new BoundConst("", _base.String, syntax);
+            return new BoundConst("", String, syntax);
         }
                 
         var boundExpr = BindValue(syntax.Expr);
 
-        if (IsAssignableTo(boundExpr.Type, _base.String))
+        if (IsAssignableTo(boundExpr.Type, String))
             return boundExpr;
 
         if (TryBindMethodCall(boundExpr, "ToString", [], syntax) is not BoundCall boundCall
-            || boundCall.Type != _base.String)
+            || boundCall.Type != String)
         {
             return BindError(syntax, new Diagnostic.CannotConvertToString(boundExpr));
         }
@@ -791,16 +793,16 @@ public sealed class Binder
         }
     
         // Type-check against bool
-        if (!CheckType(left, _base.Bool) ||
-            !CheckType(right, _base.Bool))
+        if (!CheckType(left, Bool) ||
+            !CheckType(right, Bool))
         {
             return new BoundError(syntax);
         }
     
         if (syntax.Operator.Kind is TokenKind.DoubleAmpersand)
-            return new BoundLogicAnd(left, right, _base.Bool, syntax);
+            return new BoundLogicAnd(left, right, Bool, syntax);
         if (syntax.Operator.Kind is TokenKind.DoubleVerticalBar)
-            return new BoundLogicOr(left, right, _base.Bool, syntax);
+            return new BoundLogicOr(left, right, Bool, syntax);
     
         throw new UnreachableException();
     }
@@ -821,7 +823,7 @@ public sealed class Binder
             return BindError(syntax, new Diagnostic.CannotAssign(target));
 
         TypeSymbol type = CheckType(value, target.Type)
-            ? _base.Unit
+            ? Unit
             : ErrorTypeSymbol.Instance;
         return new BoundAssign(target, value, type, syntax);
     }
@@ -832,21 +834,20 @@ public sealed class Binder
     
     private BoundBlock BindBlock(BlockExprSyntax syntax)
     {
-        // Bind types here, because script binding runs through here as well.
-        // Bind first types, then funs, then the body.
-        
-        var inBlockBinder = NestedBinderWithVisibleSymbols();
-        
-        var localFuns = inBlockBinder.BindFuns(syntax.Children.OfType<FunDeclSyntax>());
-        inBlockBinder.CheckDuplicateDeclarations([.. localFuns]);
-        inBlockBinder = inBlockBinder.AdjacentBinderWithVisibleSymbols(localFuns);
+        var localFuns = syntax.Children.OfType<FunDeclSyntax>().Select(BindFunSymbol).ToImmutableArray();
+        CheckDuplicateDeclarations([.. localFuns]);
+
+        var inBlockBinder = EnterBlock([.. localFuns]);
         
         var stmts = inBlockBinder.BindStmtsAndLocalFunBodies([.. syntax.SyntaxNodes()], localFuns);
-        return new BoundBlock(stmts, localFuns, _base.Unit, syntax);
+        return new BoundBlock(stmts, localFuns, Unit, syntax);
     }
 
     private ImmutableArray<BoundStmt> BindStmtsAndLocalFunBodies(ImmutableArray<SyntaxNode> childNodes, ImmutableArray<FunSymbol> localFuns)
     {
+        if (_scope is not BlockScope blockScope)
+            throw new InvalidOperationException("Must be on block scope.");
+
         var stmts = ImmutableArray.CreateBuilder<BoundStmt>();
         for (var i = 0; i < childNodes.Length; i++)
         {
@@ -861,7 +862,7 @@ public sealed class Binder
                         // Create an adjacent scope and continue from there.
                         if (i + 1 < childNodes.Length)
                         {
-                            var adjacentBinder = AdjacentBinderWithVisibleSymbols(boundVarDecl.Variable);
+                            var adjacentBinder = WithScope(blockScope.WithVariable(boundVarDecl.Variable));
                             stmts.AddRange(adjacentBinder.BindStmtsAndLocalFunBodies(childNodes[(i + 1)..], localFuns));
                         }
                         
@@ -871,7 +872,7 @@ public sealed class Binder
 
                 case FunDeclSyntax funDeclSyntax:
                     var localFunSymbol = localFuns.Single(fun => fun.DeclarationSyntax == funDeclSyntax);
-                    var localFunBinder = NestedBinderWithOwner(localFunSymbol);
+                    var localFunBinder = EnterFunSignature(localFunSymbol);
                     localFunSymbol.SetBody(localFunBinder.BindFunBody(funDeclSyntax.Body));
                     break;
 
@@ -890,7 +891,7 @@ public sealed class Binder
     private BoundValue BindCondition(ExprSyntax syntax)
     {
         var condition = BindValue(syntax);
-        if (!CheckType(condition, expected: _base.Bool))
+        if (!CheckType(condition, expected: Bool))
             condition = new BoundError(syntax);
 
         return condition;
@@ -943,7 +944,7 @@ public sealed class Binder
     {
         Debug.Assert(syntax is BreakExprSyntax or ContinueExprSyntax);
         
-        if (!_inLoop)
+        if (!_scope.IsInsideLoop)
             return BindError(syntax, new Diagnostic.BreakOrContinueOutsideLoop(syntax));
     
         return syntax is BreakExprSyntax
@@ -953,7 +954,7 @@ public sealed class Binder
 
     private BoundValue BindReturn(ReturnExprSyntax syntax)
     {
-        if (_owner is not FunSymbol fun)
+        if (_scope.OwnerAsFun is not FunSymbol fun)
             throw new InvalidOperationException("Values can only be bound on fun bodies.");
         
         var expr = syntax.Expr is not null ? BindValue(syntax.Expr) : null;
@@ -963,7 +964,7 @@ public sealed class Binder
             if (!CheckType(expr, fun.ReturnType))
                 expr = new BoundError(syntax.Expr);
         }
-        else if (fun.ReturnType != _base.Unit)
+        else if (fun.ReturnType != Unit)
         {
             _diagnostics.ReportError(new Diagnostic.MissingReturnValue(fun, syntax));
             expr = new BoundError();
@@ -1110,9 +1111,9 @@ public sealed class Binder
     
     private BoundSelf? SynthesizeFunGroupReceiver()
     {
-        if (InstanceType is null)
+        if (_scope.InstanceType is null)
             return null;
-        return new BoundSelf(InstanceType, mutable: (_owner as FunSymbol)!.IsMutatingReceiver);
+        return new BoundSelf(_scope.InstanceType, mutable: _scope.OwnerAsFun!.IsMutatingReceiver);
     }
 
 
@@ -1120,7 +1121,7 @@ public sealed class Binder
     {
         // Variables could be captured from outside, which is forbidden.
 
-        if (variable.Owner != _owner)
+        if (variable.Owner != _scope.Owner)
             return BindError(syntax, new Diagnostic.CannotCapture(syntax));
 
         return new BoundVariable(variable, syntax);
@@ -1154,21 +1155,21 @@ public sealed class Binder
         {
             // Field was bound as a plain name.
             // It can be interpreted as type (if possible) or with an implicit self.
-            if (InstanceType is null)
+            if (_scope.InstanceType is null)
             {
                 return asTypeRef is null
-                    ? BindError(syntax, new Diagnostic.InstanceMemberInStaticContext(field, _owner, syntax))
+                    ? BindError(syntax, new Diagnostic.InstanceMemberInStaticContext(field, _scope.Owner, syntax))
                     : asTypeRef;
             }
 
-            if (InstanceType != field.OwningType)
+            if (_scope.InstanceType != field.OwningType)
             {
                 return asTypeRef is null
-                    ? BindError(syntax, new Diagnostic.MemberOfEnclosingType(field, InstanceType, syntax))
+                    ? BindError(syntax, new Diagnostic.MemberOfEnclosingType(field, _scope.InstanceType, syntax))
                     : asTypeRef;
             }
 
-            receiver = new BoundSelf(InstanceType, mutable: (_owner as FunSymbol)!.IsMutatingReceiver);    
+            receiver = new BoundSelf(_scope.InstanceType, mutable: _scope.OwnerAsFun!.IsMutatingReceiver);    
         }
 
         if (receiver is not BoundValue valueReceiver)
@@ -1311,7 +1312,7 @@ public sealed class Binder
             {
                 null => new Diagnostic.InstanceMemberInStaticContext(
                     fun,
-                    _owner,
+                    _scope.Owner,
                     funSyntax),
                 not BoundValue => new Diagnostic.InstanceMemberThroughType(
                     fun,
@@ -1331,13 +1332,13 @@ public sealed class Binder
 
             if (fun.ReceiverType != valueReceiver.Type)
             {
-                _diagnostics.ReportError(new Diagnostic.MemberOfEnclosingType(fun, InstanceType!, funSyntax));
+                _diagnostics.ReportError(new Diagnostic.MemberOfEnclosingType(fun, _scope.InstanceType!, funSyntax));
                 return false;
             }
 
             if (fun.IsMutatingReceiver && !valueReceiver.IsMutablePlace)
             {
-                _diagnostics.ReportError(new Diagnostic.CannotMutateReceiver(valueReceiver, fun, _owner, funSyntax));
+                _diagnostics.ReportError(new Diagnostic.CannotMutateReceiver(valueReceiver, fun, _scope.Owner, funSyntax));
                 return false;
             }
         }
@@ -1418,7 +1419,7 @@ public sealed class Binder
         // own error. Note that it cannot attach meaningful information
         // to the sidetable anyway. Since we discard, syntax nodes don't
         // matter expect for the final call bind.
-        var resolutionBinder = BinderWith(DiagnosticBag.Discard, new SemanticSideTable());
+        var resolutionBinder = WithOutput(DiagnosticBag.Discard, new SemanticSideTable());
         var singleFun = resolutionBinder.BindSingleFunInGroup(funGroup, arguments, syntax);
         if (singleFun is null)
             return null;
