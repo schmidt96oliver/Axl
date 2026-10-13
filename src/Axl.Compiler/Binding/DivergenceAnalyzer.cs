@@ -21,6 +21,8 @@ public static class DivergenceAnalyzer
                 
                 return boundStmt switch
                 {
+                    BoundValueOrTypeRef valueOrType => valueOrType.AsValue.IsDiverging,
+                    
                     BoundAssign boundAssign => boundAssign.Value.IsDiverging,
                     BoundBlock boundBlock => boundBlock.Stmts.Any(get_IsDiverging),
                     BoundBreak or BoundContinue => throw new UnreachableException(

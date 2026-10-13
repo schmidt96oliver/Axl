@@ -14,8 +14,6 @@
 * how to handle multiple declarations?
   * Where do they report unecessary diagnostics? => At least struct init for duped fields
 
-* axl: Color.Color with static member
-
 # Roadmap
 
 ## 3. Structs (in script)

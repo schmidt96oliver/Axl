@@ -9,6 +9,10 @@ public class LookupResult
 
     public ImmutableArray<Symbol> Symbols { get; private set; } = [];
 
+    public Symbol? SingleViable 
+        => Viability is LookupViability.Viable && Symbols.Length == 1 ? Symbols[0] : null;
+    
+    
     public void MergeSingle(Symbol symbol, LookupViability viability)
     {
         if (viability > Viability)

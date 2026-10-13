@@ -1,0 +1,53 @@
+﻿//@run
+//= Static
+//= 1
+//= Method
+//= 2
+//= Static
+
+// If the name of a field is equal to its type, it
+// can be interpreted as both, depending on context.
+
+var t = Test.New();
+t.Output();
+Test.Static();
+
+struct Test
+{
+    pub Color: Color;
+    
+    pub var fun Output()
+    {
+        // Access of static members interpret the left side
+        // as the type, rather than the field.
+        Color.StaticPrint();
+        
+        // Access of instance members interpret the left side
+        // as the field, rather than the type.
+        PrintLine(Color.Field);
+        Color.MethodPrint();
+        
+        // Assignment is on the field as well.
+        Color = Color(Field = 2);
+        PrintLine(Color.Field);
+    }
+    
+    pub static fun Static()
+    {
+        // From a static context, it is always interpreted
+        // as the type (if ambiguous).
+        Color.StaticPrint();
+    }
+    
+    pub static fun New(): Test
+        = Test(Color = Color(Field = 1));
+} 
+
+struct Color 
+{ 
+    pub Field: I32; 
+    pub static fun StaticPrint() 
+        = PrintLine("Static"); 
+    pub fun MethodPrint()
+        = PrintLine("Method");
+}

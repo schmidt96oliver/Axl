@@ -196,6 +196,8 @@ public sealed class BoundTreeInterpreter
 
     private object Evaluate(BoundValue value) => value switch
     {
+        BoundValueOrTypeRef valueOrType => Evaluate(valueOrType.AsValue),
+        
         BoundSelf boundSelf => CopyOrAlias(GetPlaceRef(boundSelf)),
         BoundVariable boundVariableRef => CopyOrAlias(GetPlaceRef(boundVariableRef)),
         BoundConst boundConst => boundConst.Value.Value!,

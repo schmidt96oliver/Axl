@@ -7,9 +7,13 @@ namespace Axl.Compiler.Binding.BoundTree;
 /// A reference to a <see cref="VariableSymbol"/>. Note that failed lookups
 /// are represented as <see cref="BoundError"/>.
 /// </summary>
-public sealed class BoundVariable(VariableSymbol variable, SyntaxNode? syntax = null) : BoundValue(variable.Type, syntax)
+public sealed class BoundVariable(VariableSymbol variable, SyntaxNode? syntax = null) 
+    : BoundValue(variable.Type, syntax), IBoundSymbolRef
 {
     public VariableSymbol Variable { get; } = variable;
+    
+    /// <inheritdoc />
+    public Symbol Symbol => Variable;
 
     /// <summary>
     /// A variable always refers to a storage location.
@@ -25,4 +29,5 @@ public sealed class BoundVariable(VariableSymbol variable, SyntaxNode? syntax = 
     /// A variable is assignable, if it came from a 'var' binding.
     /// </summary>
     public override bool IsAssignable => IsMutablePlace;
+
 }

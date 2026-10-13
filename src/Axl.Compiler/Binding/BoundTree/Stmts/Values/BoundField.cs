@@ -4,11 +4,14 @@ using Axl.Compiler.Syntax;
 namespace Axl.Compiler.Binding.BoundTree;
 
 public sealed class BoundField(BoundValue receiver, FieldSymbol field, SyntaxNode? syntax = null)
-    : BoundValue(field.Type, syntax)
+    : BoundValue(field.Type, syntax), IBoundSymbolRef
 {
     public BoundValue Receiver { get; } = receiver;
     public FieldSymbol Field { get; } = field;
 
+    /// <inheritdoc />
+    public Symbol Symbol => Field;
+    
     /// <summary>
     /// A field itself is a storage location. For the entire value to be a storage
     /// location, its receiver must be a storage location as well.
@@ -25,4 +28,6 @@ public sealed class BoundField(BoundValue receiver, FieldSymbol field, SyntaxNod
     /// Fields can be assigned to if they are mutable.
     /// </summary>
     public override bool IsAssignable => IsMutablePlace;
+
+    
 }

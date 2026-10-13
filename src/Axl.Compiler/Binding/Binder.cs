@@ -416,7 +416,7 @@ public sealed class Binder
     {
         var fields = syntax.Body?.Children
             .OfType<FieldDeclSyntax>()
-            .Select(Symbol (fieldSyntax) => BindField(fieldSyntax))
+            .Select(Symbol (fieldSyntax) => BindFieldSymbol(fieldSyntax))
             .ToImmutableArray() ?? [];
         var funs = BindFuns(syntax.Body?.Children
             .OfType<FunDeclSyntax>() ?? []);
@@ -426,7 +426,7 @@ public sealed class Binder
         return members;
     }
 
-    private FieldSymbol BindField(FieldDeclSyntax syntax)
+    private FieldSymbol BindFieldSymbol(FieldDeclSyntax syntax)
     {
         if (_owner is not StructSymbol structSymbol)
             throw new InvalidOperationException("Can only bind fields inside structs.");
@@ -615,6 +615,8 @@ public sealed class Binder
     private BoundValue BindValue(ExprSyntax syntax)
     {
         var bound = BindExpr(syntax, LookupOptions.Any);
+        if (bound is BoundValueOrTypeRef valueOrType)
+            return valueOrType.AsValue;
         if (bound is not BoundValue value)
             return BindError(syntax, new Diagnostic.NotAValue(bound));
 
@@ -624,6 +626,8 @@ public sealed class Binder
     private TypeSymbol BindType(ExprSyntax syntax)
     {
         var bound = BindExpr(syntax, LookupOptions.OnlyType);
+        if (bound is BoundValueOrTypeRef valueOrType)
+            return valueOrType.AsTypeRef.Type;
         if (bound is not BoundTypeRef typeRef)
         {
             if (bound is not BoundError)
@@ -1018,37 +1022,42 @@ public sealed class Binder
         if (lookupResult.Viability is LookupViability.NotAccessible)
             return BindError(syntax, new Diagnostic.NotAccessible(lookupResult.Symbols, syntax));
 
-        if (lookupResult.Symbols.All(s => s is FunSymbol))
-            return new BoundFunGroup([.. lookupResult.Symbols.Cast<FunSymbol>()], SynthesizeFunGroupReceiver(), syntax);
-
-        // It's viable now
+        var symbol = lookupResult.Symbols[0];
+        if (symbol is FunSymbol)
+            return BindFunGroup(lookupResult, SynthesizeFunGroupReceiver(), syntax);
+        
         if (lookupResult.Symbols.Length > 1)
             return BindError(syntax, new Diagnostic.AmbiguousReference(lookupResult, syntax));
 
-        _semanticSideTable.AddResolvedSymbol(syntax.Location, lookupResult.Symbols[0]);
-        var boundSymbol = lookupResult.Symbols[0] switch
+        var boundSymbol = symbol switch
         {
             NamespaceSymbol @namespace => new BoundNamespaceRef(@namespace, syntax),
             TypeSymbol type => new BoundTypeRef(type, syntax),
             
             VariableSymbol variable => BindVariable(variable, syntax),
             FunSymbol => BindFunGroup(lookupResult, SynthesizeFunGroupReceiver(), syntax),
-            FieldSymbol field => BindField(field, SynthesizeReceiver(field, syntax), syntax)
+            FieldSymbol field => BindFieldAccess(field, null, syntax)
         };
 
+        // Note that the symbol that was bound might differ from the symbol
+        // we found, because e.g. field access might do another lookup for
+        // a type of the same name.
+        if (boundSymbol is IBoundSymbolRef symbolRef)
+            _semanticSideTable.AddResolvedSymbol(syntax.Location, symbolRef.Symbol);
+            
         if (lookupResult.Viability is LookupViability.WrongKind)
-            return BindBadIdName(boundSymbol, lookupOptions);
+            return BindIdNameWithWrongKind(boundSymbol, lookupOptions);
 
         return boundSymbol;
     }
 
-    private BoundError BindBadIdName(BoundNode boundNode, LookupOptions lookupOptions)
+    private BoundError BindIdNameWithWrongKind(BoundNode boundNode, LookupOptions lookupOptions)
         => lookupOptions switch
         {
             { } when boundNode is BoundError error => error,
             LookupOptions.MustBeCallable => BindError(boundNode.Syntax!, new Diagnostic.CannotCall(boundNode)),
             LookupOptions.OnlyType => BindError(boundNode.Syntax!, new Diagnostic.NotAType(boundNode)),
-            _ => throw new UnreachableException($"{nameof(LookupOptions)}.{lookupOptions} is unknown to {nameof(BindBadIdName)}")
+            _ => throw new UnreachableException($"{nameof(LookupOptions)}.{lookupOptions} is unknown to {nameof(BindIdNameWithWrongKind)}")
         };
     
 
@@ -1058,17 +1067,20 @@ public sealed class Binder
 
         if (syntax.Member.Token.IsMissing)
             return new BoundError(syntax.Member);
-        if (left is BoundFunGroup)
-        {
-            // A fun group cannot have members
-            return BindError(syntax, new Diagnostic.FunHasNoMembers((BoundFunGroup)left, syntax.Member));
-        }
+        
+        // A fun group cannot have members
+        if (left is BoundFunGroup leftAsFunGroup)
+            return BindError(syntax, new Diagnostic.FunHasNoMembers(leftAsFunGroup, syntax.Member));
         
         NamespaceOrTypeSymbol namespaceOrType = left switch
         {
+            // Note that BoundValueOrTypeRef goes through BoundValue here
+            // and returns it's type.
+            BoundValue value => value.Type,
+            
             BoundNamespaceRef boundNamespaceRef => boundNamespaceRef.Namespace,
             BoundTypeRef boundTypeRef => boundTypeRef.Type,
-            BoundValue value => value.Type,
+            
             BoundFunGroup => throw new UnreachableException("Fun group handled above."),
             BoundStmt => throw new UnreachableException("Stmt can never be the left side of member access."),
         };
@@ -1084,35 +1096,49 @@ public sealed class Binder
         if (lookupResult.Viability is LookupViability.NotAccessible)
             return BindError(syntax, new Diagnostic.NotAccessible(lookupResult.Symbols, syntax.Member));
         
-        if (lookupResult.Symbols.All(s => s is FunSymbol))
-            return new BoundFunGroup([.. lookupResult.Symbols.Cast<FunSymbol>()], receiver: left, syntax.Member);
+        var symbol = lookupResult.Symbols[0];
+        if (symbol is FunSymbol)
+            return BindFunGroup(lookupResult, receiver: left, syntax.Member);
 
-        // It's viable now
         if (lookupResult.Symbols.Length > 1)
             return BindError(syntax, new Diagnostic.AmbiguousReference(lookupResult, syntax.Member));
-
-        _semanticSideTable.AddResolvedSymbol(syntax.Location, lookupResult.Symbols[0]);
-        return lookupResult.Symbols[0] switch
+        
+        var receiver = ReplaceBoundValueOrTypeRef(left, symbol);
+        _semanticSideTable.AddResolvedSymbol(syntax.Location, symbol);
+        
+        return symbol switch
         {
             NamespaceSymbol @namespace => new BoundNamespaceRef(@namespace, syntax.Member),
             TypeSymbol type => new BoundTypeRef(type, syntax.Member),
 
             VariableSymbol => throw new UnreachableException("Variables are never members."),
-            FunSymbol => BindFunGroup(lookupResult, receiver: left, syntax.Member),
-            FieldSymbol field => BindField(field, receiver: left, syntax.Member),
+            FunSymbol => throw new UnreachableException("Handled above"),
+            FieldSymbol field => BindFieldAccess(field, receiver, syntax.Member),
         };
     }
 
-
-    private BoundValue SynthesizeReceiver(FieldSymbol field, SyntaxNode syntax)
+    private BoundNode ReplaceBoundValueOrTypeRef(BoundNode receiver, Symbol symbol)
     {
-        if (InstanceType is null)
-            return BindError(syntax, new Diagnostic.InstanceMemberInStaticContext(field, _owner, syntax));
-        
-        if (InstanceType != field.OwningType)
-            return BindError(syntax, new Diagnostic.MemberOfEnclosingType(field, InstanceType, syntax));
+        if (receiver is not BoundValueOrTypeRef valueOrType)
+            return receiver;
 
-        return new BoundSelf(InstanceType, mutable: (_owner as FunSymbol)!.IsMutatingReceiver);
+        BoundNode replaced = symbol switch
+        {
+            // Fields are instance members.
+            // Variables should not be here, but for resilience, return as value anyway.
+            FieldSymbol or VariableSymbol => valueOrType.AsValue,
+            
+            // Funs can be static or instance members.
+            FunSymbol fun => fun.IsStatic ? valueOrType.AsTypeRef : valueOrType.AsValue,
+            
+            // Types are always accessed through the type.
+            NamespaceOrTypeSymbol => valueOrType.AsTypeRef,
+        };
+
+        if (replaced is IBoundSymbolRef symbolRef)
+            _semanticSideTable.AddResolvedSymbol(replaced.Syntax!.Location, symbolRef.Symbol);
+
+        return replaced;
     }
     
     private BoundSelf? SynthesizeFunGroupReceiver()
@@ -1141,19 +1167,50 @@ public sealed class Binder
             return BindError(syntax, new Diagnostic.AmbiguousReference(lookupResult, syntax));
         }
 
-        return new BoundFunGroup(lookupResult.Symbols.CastArray<FunSymbol>(), receiver, syntax);
+        return new BoundFunGroup([.. lookupResult.Symbols.Cast<FunSymbol>()], receiver, syntax);
     }
 
-    private BoundNode BindField(FieldSymbol field, BoundNode? receiver, IdNameSyntax syntax)
+    private BoundNode BindFieldAccess(FieldSymbol field, BoundNode? receiver, IdNameSyntax syntax)
     {
+        // A field name could still be interpreted as a type ref if
+        // the field is named after its type.
+        BoundTypeRef? asTypeRef = null;
+        if (syntax.Text.SequenceEqual(field.Type.Name))
+        {
+            // Try to bind it as type as well.
+            var typeLookup = LookupName(syntax.Text.ToString(), LookupOptions.OnlyType);
+            if (typeLookup.SingleViable is TypeSymbol type)
+                asTypeRef = new BoundTypeRef(type, syntax);
+        }
+
         if (receiver is null)
-            return BindError(syntax, new Diagnostic.InstanceMemberInStaticContext(field, _owner, syntax));
+        {
+            // Field was bound as a plain name.
+            // It can be interpreted as type (if possible) or with an implicit self.
+            if (InstanceType is null)
+            {
+                return asTypeRef is null
+                    ? BindError(syntax, new Diagnostic.InstanceMemberInStaticContext(field, _owner, syntax))
+                    : asTypeRef;
+            }
+
+            if (InstanceType != field.OwningType)
+            {
+                return asTypeRef is null
+                    ? BindError(syntax, new Diagnostic.MemberOfEnclosingType(field, InstanceType, syntax))
+                    : asTypeRef;
+            }
+
+            receiver = new BoundSelf(InstanceType, mutable: (_owner as FunSymbol)!.IsMutatingReceiver);    
+        }
+
         if (receiver is not BoundValue valueReceiver)
             return BindError(syntax, new Diagnostic.InstanceMemberThroughType(field, syntax));
-        
-        return new BoundField(valueReceiver, field, syntax);
+
+        var asField = new BoundField(valueReceiver, field, syntax);
+        return asTypeRef is not null ? new BoundValueOrTypeRef(asField, asTypeRef) : asField;
     }
-    
+
     #endregion
     
     
@@ -1171,7 +1228,7 @@ public sealed class Binder
 
     private record OverloadResolutionResult(FunCandidateViability Viability, ImmutableArray<FunSymbol> Candidates);
 
-    private static FunCandidateViability CheckFunCandidate(FunSymbol fun, BoundNode? receiver,
+    private FunCandidateViability CheckFunCandidate(FunSymbol fun, BoundNode? receiver,
         ImmutableArray<TypeSymbol> argumentTypes)
     {
         if (fun.Parameters.Length != argumentTypes.Length)
@@ -1180,20 +1237,26 @@ public sealed class Binder
         if (!argumentTypes.Zip(fun.ParameterTypes, IsAssignableTo).All(x => x))
             return FunCandidateViability.ParameterTypeMismatch;
 
-        var isContextStatic = receiver is (null or not BoundValue);
+        // For BoundValueOrTypeRef, context can be static or not, depending
+        // on the fun.
+        var actualReceiver = receiver is BoundValueOrTypeRef valueOrType
+            ? fun.IsStatic ? valueOrType.AsTypeRef : valueOrType.AsValue
+            : receiver;
+        
+        var isContextStatic = actualReceiver is (null or not BoundValue);
         if (isContextStatic != fun.IsStatic)
             return FunCandidateViability.StaticMismatch;
 
-        if (!isContextStatic && fun.ReceiverType != ((BoundValue)receiver!).Type)
+        if (!isContextStatic && fun.ReceiverType != ((BoundValue)actualReceiver!).Type)
             return FunCandidateViability.ReceiverMismatch;
 
-        if (!isContextStatic && fun.IsMutatingReceiver && !((BoundValue)receiver!).IsMutablePlace)
+        if (!isContextStatic && fun.IsMutatingReceiver && !((BoundValue)actualReceiver!).IsMutablePlace)
             return FunCandidateViability.CannotMutate;
 
         return FunCandidateViability.Viable;
     }
 
-    private static OverloadResolutionResult ResolveFunGroup(BoundFunGroup funGroup,
+    private OverloadResolutionResult ResolveFunGroup(BoundFunGroup funGroup,
         ImmutableArray<TypeSymbol> argumentTypes)
     {
         var candidates = ImmutableArray.CreateBuilder<FunSymbol>();
@@ -1261,7 +1324,11 @@ public sealed class Binder
         Debug.Assert(resolutionResult.Candidates.Length == 1);
         
         var fun = resolutionResult.Candidates[0];
-        var receiver = fun.IsStatic && calleeFunGroup.IsReceiverImplicit ? null : calleeFunGroup.Receiver as BoundValue;
+        var receiver = fun.IsStatic && calleeFunGroup.IsReceiverImplicit
+            ? null
+            : calleeFunGroup.Receiver is not null
+                ? ReplaceBoundValueOrTypeRef(calleeFunGroup.Receiver, fun) as BoundValue
+                : null;
         
         return new BoundCall(resolutionResult.Candidates[0], receiver, arguments, syntax);
     }

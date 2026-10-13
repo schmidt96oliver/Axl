@@ -78,19 +78,22 @@ public partial record Diagnostic
             => BoundTarget switch
             {
                 BoundSelf => "Cannot assign to 'self' directly.",
-                BoundValue { IsPlace: false } 
+                BoundValue { IsPlace: false }
                     => "Cannot assign to a temporary value.",
                 BoundValue { IsPlace: true, IsMutablePlace: false } value when GetFirstPlace(value) is BoundSelf
                     => "Cannot mutate through 'self', because this fun is not 'var'. Consider declaring it 'var'.",
-                BoundValue { IsPlace: true, IsMutablePlace: false } 
+                BoundValue { IsPlace: true, IsMutablePlace: false }
                     => "Cannot assign to through 'let' binding.",
                 BoundValue => "Cannot assign this for unknown reason.",
-                    
-                BoundFunGroup boundFunGroup => $"Cannot assign to '{boundFunGroup.Name}', because it is a group of overloaded funs.",
-                BoundNamespaceRef boundNamespace => $"Cannot assign to '{boundNamespace.Namespace.Name}', because it is a namespace.",
+
+                BoundFunGroup boundFunGroup =>
+                    $"Cannot assign to '{boundFunGroup.Name}', because it is a group of overloaded funs.",
+                BoundNamespaceRef boundNamespace =>
+                    $"Cannot assign to '{boundNamespace.Namespace.Name}', because it is a namespace.",
                 BoundTypeRef boundType => $"Cannot assign to '{boundType.Type.Name}', because it is a type.",
-                
-                BoundStmt => throw new UnreachableException("Non-value stmts can never be in assignment target position.")
+
+                BoundStmt => throw new UnreachableException(
+                    "Non-value stmts can never be in assignment target position.")
             };
 
         private static BoundValue GetFirstPlace(BoundValue value) => value switch
@@ -206,9 +209,8 @@ public partial record Diagnostic
         public override string Message => BoundCallee switch
         {
             BoundValue value => $"A value of type '{value.Type.Name}' cannot be called.",
-            BoundNamespaceRef ns => $"Namespace '{ns.Namespace.Name}' cannot be called.",
             
-            BoundTypeRef type => $"Type '{type.Type.Name}' cannot be called.",
+            IBoundSymbolRef symbolRef => $"{symbolRef.Symbol.ShortDisplayName.Capitalize()} cannot be called.",
             BoundFunGroup fun => $"Fun '{fun.Name}' cannot be called.",
             BoundStmt => "A statement cannot be called.",
         };
@@ -361,11 +363,9 @@ public partial record Diagnostic
         public override string Message => BoundNode switch
         {
             BoundValue value => $"Expected a type, but got value of type '{value.Type.Name}'.",
-            BoundNamespaceRef ns => $"Expected a type, but got namespace '{ns.Namespace.Name}'.",
+            IBoundSymbolRef symbolRef => $"Expected a type, but got {symbolRef.Symbol.ShortDisplayName}.",
             BoundFunGroup funGroup => $"Expected a type, but got fun '{funGroup.Name}'.",
             
-            // TypeRef should of course not report. To be resilient, just include it.
-            BoundTypeRef type => $"Expected a type, but got namespace '{type.Type.Name}'.",
             BoundStmt => "Expected a type, but got a statement.",
         };
 
