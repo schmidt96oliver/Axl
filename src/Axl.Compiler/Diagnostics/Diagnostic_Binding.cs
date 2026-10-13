@@ -171,19 +171,13 @@ public partial record Diagnostic
 
     }
 
-    public sealed record CannotConvertToString(BoundValue Node, LookupResult LookupResult) : Error
+    public sealed record CannotConvertToString(BoundValue Node) : Error
     {
         public override ImmutableArray<SourceLocation> Locations => [Node.Syntax!.Location];
 
         public override string Message
-            => LookupResult.Viability switch
-            {
-                LookupViability.NotAccessible =>
-                    $"Cannot use '{Node.Type.Name}' in a string, because its 'ToString' is private.",
-                
-                _ =>
-                    $"Cannot use '{Node.Type.Name}' in a string, because it it has no 'ToString()' returning 'String'.",
-            };
+            => $"Cannot use '{Node.Type.Name}' in a string, because it it has no 'pub fun ToString()' returning 'String'.";
+        
     }
 
     public sealed record ArityMismatch(ImmutableArray<FunSymbol> Candidates, int ArgumentCount, SyntaxNode Syntax) : Error

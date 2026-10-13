@@ -4,10 +4,24 @@ namespace Axl.Compiler.Diagnostics;
 
 public sealed class DiagnosticBag
 {
-    private readonly ImmutableArray<Diagnostic>.Builder _diagnostics = ImmutableArray.CreateBuilder<Diagnostic>();
+    public static readonly DiagnosticBag Discard = new(isDiscard: true);
+    
+    private readonly ImmutableArray<Diagnostic>.Builder? _diagnostics = ImmutableArray.CreateBuilder<Diagnostic>();
     private bool _isDrained = false;
     
     public bool HasError { get; private set; }
+
+    public DiagnosticBag() 
+        : this(isDiscard: false)
+    {
+        
+    }
+
+    private DiagnosticBag(bool isDiscard)
+    {
+        if (!isDiscard)
+            _diagnostics = ImmutableArray.CreateBuilder<Diagnostic>();
+    }
     
     
     public ImmutableArray<Diagnostic> Drain()
@@ -15,7 +29,7 @@ public sealed class DiagnosticBag
         Guard.IsState(!_isDrained);
         
         _isDrained = true;
-        return _diagnostics.DrainToImmutable();
+        return _diagnostics?.DrainToImmutable() ?? [];
     }
     
     public void DrainInto(DiagnosticBag bag)
@@ -24,8 +38,11 @@ public sealed class DiagnosticBag
         
         _isDrained = true;
         
-        bag.AddRange(_diagnostics);
-        _diagnostics.Clear();
+        if (_diagnostics is not null)
+        {
+            bag.AddRange(_diagnostics);
+            _diagnostics.Clear();
+        }
     }
     
 
@@ -33,7 +50,7 @@ public sealed class DiagnosticBag
     {
         Guard.IsState(!_isDrained);
 
-        _diagnostics.Add(error);
+        _diagnostics?.Add(error);
         HasError = true;
     }
 
@@ -41,14 +58,14 @@ public sealed class DiagnosticBag
     {
         Guard.IsState(!_isDrained);
         
-        _diagnostics.Add(lint);
+        _diagnostics?.Add(lint);
     }
 
     public void AddRange(IEnumerable<Diagnostic> diagnostics)
-     => _diagnostics.AddRange(diagnostics);
+     => _diagnostics?.AddRange(diagnostics);
     
     public void AddRange(ImmutableArray<Diagnostic> diagnostics)
-     => _diagnostics.AddRange(diagnostics);
+     => _diagnostics?.AddRange(diagnostics);
 
     
     
