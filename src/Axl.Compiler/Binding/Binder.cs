@@ -111,10 +111,27 @@ public sealed class Binder
 
     #region Lookup
 
-    private LookupViability GetViability(Symbol symbol)
-        => IsAccessible(symbol) ? LookupViability.Viable : LookupViability.NotAccessible;
+    private enum LookupOptions
+    {
+        Any,
+        OnlyType,
+        MustBeCallable,
+    }
+    
+    private LookupViability GetViability(Symbol symbol, LookupOptions options)
+    {
+        if (!IsAccessible(symbol)) 
+            return LookupViability.NotAccessible;
 
-    private LookupResult LookupName(string name)
+        if (options is LookupOptions.OnlyType && symbol is not TypeSymbol)
+            return LookupViability.WrongKind;
+        if (options is LookupOptions.MustBeCallable && symbol is not (TypeSymbol or FunSymbol))
+            return LookupViability.WrongKind;
+
+        return LookupViability.Viable;
+    }
+
+    private LookupResult LookupName(string name, LookupOptions options)
     {
         var result = new LookupResult();
 
@@ -124,7 +141,7 @@ public sealed class Binder
             foreach (var s in scope.Lookup(name))
             {
                 Debug.Assert(s.Name == name);
-                here.MergeSingle(s, GetViability(s));
+                here.MergeSingle(s, GetViability(s, options));
             }
 
             result.MergeWith(here);
@@ -142,7 +159,7 @@ public sealed class Binder
         var result = new LookupResult();
 
         foreach (var s in parent.LookupMembers(name))
-            result.MergeSingle(s, GetViability(s));
+            result.MergeSingle(s, GetViability(s, LookupOptions.Any));
 
         return result;
     }
@@ -566,10 +583,10 @@ public sealed class Binder
     #endregion
 
     
-    private BoundNode BindExpr(ExprSyntax syntax) => syntax switch
+    private BoundNode BindExpr(ExprSyntax syntax, LookupOptions lookupOptions) => syntax switch
     {
         MemberAccessExprSyntax memberAccessExprSyntax => BindMemberAccess(memberAccessExprSyntax),
-        IdNameSyntax idNameSyntax => BindIdName(idNameSyntax),
+        IdNameSyntax idNameSyntax => BindIdName(idNameSyntax, lookupOptions),
         SelfSyntax selfSyntax => BindSelf(selfSyntax),
         CallExprSyntax callExprSyntax => BindCall(callExprSyntax),
         
@@ -597,7 +614,7 @@ public sealed class Binder
 
     private BoundValue BindValue(ExprSyntax syntax)
     {
-        var bound = BindExpr(syntax);
+        var bound = BindExpr(syntax, LookupOptions.Any);
         if (bound is not BoundValue value)
             return BindError(syntax, new Diagnostic.NotAValue(bound));
 
@@ -606,7 +623,7 @@ public sealed class Binder
 
     private TypeSymbol BindType(ExprSyntax syntax)
     {
-        var bound = BindExpr(syntax);
+        var bound = BindExpr(syntax, LookupOptions.OnlyType);
         if (bound is not BoundTypeRef typeRef)
         {
             if (bound is not BoundError)
@@ -988,12 +1005,12 @@ public sealed class Binder
 
     #region Names and Member access
     
-    private BoundNode BindIdName(IdNameSyntax syntax)
+    private BoundNode BindIdName(IdNameSyntax syntax, LookupOptions lookupOptions)
     {
         if (syntax.Token.IsMissing)
             return new BoundError(syntax);
 
-        var lookupResult = LookupName(syntax.Token.Identifier);
+        var lookupResult = LookupName(syntax.Token.Identifier, lookupOptions);
 
         if (lookupResult.Viability is LookupViability.NotFound)
             return BindError(syntax, new Diagnostic.UndefinedName(syntax));
@@ -1009,7 +1026,7 @@ public sealed class Binder
             return BindError(syntax, new Diagnostic.AmbiguousReference(lookupResult, syntax));
 
         _semanticSideTable.AddResolvedSymbol(syntax.Location, lookupResult.Symbols[0]);
-        return lookupResult.Symbols[0] switch
+        var boundSymbol = lookupResult.Symbols[0] switch
         {
             NamespaceSymbol @namespace => new BoundNamespaceRef(@namespace, syntax),
             TypeSymbol type => new BoundTypeRef(type, syntax),
@@ -1018,11 +1035,26 @@ public sealed class Binder
             FunSymbol => BindFunGroup(lookupResult, SynthesizeFunGroupReceiver(), syntax),
             FieldSymbol field => BindField(field, SynthesizeReceiver(field, syntax), syntax)
         };
+
+        if (lookupResult.Viability is LookupViability.WrongKind)
+            return BindBadIdName(boundSymbol, lookupOptions);
+
+        return boundSymbol;
     }
+
+    private BoundError BindBadIdName(BoundNode boundNode, LookupOptions lookupOptions)
+        => lookupOptions switch
+        {
+            { } when boundNode is BoundError error => error,
+            LookupOptions.MustBeCallable => BindError(boundNode.Syntax!, new Diagnostic.CannotCall(boundNode)),
+            LookupOptions.OnlyType => BindError(boundNode.Syntax!, new Diagnostic.NotAType(boundNode)),
+            _ => throw new UnreachableException($"{nameof(LookupOptions)}.{lookupOptions} is unknown to {nameof(BindBadIdName)}")
+        };
+    
 
     private BoundNode BindMemberAccess(MemberAccessExprSyntax syntax)
     {
-        var left = BindExpr(syntax.Left);
+        var left = BindExpr(syntax.Left, LookupOptions.Any);
 
         if (syntax.Member.Token.IsMissing)
             return new BoundError(syntax.Member);
@@ -1187,9 +1219,8 @@ public sealed class Binder
     
     private BoundValue BindCall(CallExprSyntax syntax)
     {
-        var callee = BindExpr(syntax.Callee);
-        if (callee is BoundError)
-            return new BoundError(syntax);
+        var callee = BindExpr(syntax.Callee, LookupOptions.MustBeCallable);
+        
         if (callee is BoundTypeRef typeRef)
             return BindTypeInit(typeRef, syntax);
         
@@ -1202,6 +1233,9 @@ public sealed class Binder
                 new Diagnostic.UnsupportedFeature(syntax.ArgList, "Named arguments are not yet implemented."));
         }
 
+        if (callee is BoundError)
+            return new BoundError(syntax);
+        
         if (callee is not BoundFunGroup calleeFunGroup)
             return BindError(syntax, new Diagnostic.CannotCall(callee));
 

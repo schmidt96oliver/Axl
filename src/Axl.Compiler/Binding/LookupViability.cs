@@ -3,6 +3,7 @@
 public enum LookupViability
 {
     NotFound,
+    WrongKind,
     NotAccessible,
     Viable
 }

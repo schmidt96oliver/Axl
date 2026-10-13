@@ -1,0 +1,26 @@
+﻿//@check
+
+// Types only find types and calls only find callables, which
+// means that the struct initializer below actually refers to
+// 'Color' instead of the field.
+
+struct Test
+{
+    pub Color: Color;
+    
+    pub fun Output(p: Color)
+    {
+        let b: Color = Color(Field = 1);
+        
+        let Color = 1;
+        
+        let b: Color = Color(Field = 1);
+        
+        fun Local(param: Color) 
+        { 
+            let b: Color = Color(Field = 1);
+        }
+    }
+} 
+
+struct Color { pub Field: I32; }
