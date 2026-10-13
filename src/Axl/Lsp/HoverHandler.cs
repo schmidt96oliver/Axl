@@ -24,15 +24,15 @@ public class HoverHandler : HoverHandlerBase
             return Task.FromResult<Hover?>(null);
         
         var index = compilation.SyntaxTree.SourceText.Lines[request.Position.Line].Start + request.Position.Character;
-        var node = compilation.SyntaxNodeAt(compilation.SyntaxTree.SourceText.GetLocationFromLength(index, 0));
-        var symbol = compilation.BoundFile.SemanticSideTable.TryGetSymbol(node.Location);
+        var token = compilation.TokenAt(compilation.SyntaxTree.SourceText.GetLocationFromLength(index, 0));
+        var symbol = compilation.BoundFile.SemanticSideTable.TryGetSymbol(token.Location);
         if (symbol is null)
             return Task.FromResult<Hover?>(null);
 
         return Task.FromResult<Hover?>(new Hover
         {
             Contents = new MarkedStringsOrMarkupContent(symbol.FullDisplayName), 
-            Range = node.Location.ToLsp()
+            Range = token.Location.ToLsp()
         });
     }
 

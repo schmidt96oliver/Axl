@@ -64,4 +64,25 @@ public class Compilation
             currentNode = nextNode;
         }
     }
+
+    public Token TokenAt(SourceLocation location)
+    {
+        SyntaxElement current = SyntaxTree.FileSyntax;
+        Debug.Assert(current.FullRange.Contains(location.Range));
+
+        while (true)
+        {
+            if (current is Token token)
+            {
+                Debug.Assert(token.FullRange.Contains(location.Range));
+                return token;
+            }
+            
+            var nextNode = (current as SyntaxNode)!
+                .Children
+                .Single(child => child.Range?.Contains(location.Range) == true);
+
+            current = nextNode;
+        }
+    }
 }
