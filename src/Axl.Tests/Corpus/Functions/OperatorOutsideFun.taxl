@@ -1,0 +1,30 @@
+﻿//@check
+
+// Operator cannot be declared on scripts or as local funs.
+
+fun +() { }     //~error OperatorOutsideType
+fun -() { }     //~error OperatorOutsideType
+fun !() { }     //~error OperatorOutsideType
+fun *() { }     //~error OperatorOutsideType
+fun /() { }     //~error OperatorOutsideType
+fun ==() { }    //~error OperatorOutsideType
+fun !=() { }    //~error OperatorOutsideType
+fun <() { }     //~error OperatorOutsideType
+fun <=() { }    //~error OperatorOutsideType
+fun >() { }     //~error OperatorOutsideType
+fun >=() { }    //~error OperatorOutsideType
+
+fun Local()
+{
+    fun +() { }     //~error OperatorOutsideType
+    fun -() { }     //~error OperatorOutsideType
+    fun !() { }     //~error OperatorOutsideType
+    fun *() { }     //~error OperatorOutsideType
+    fun /() { }     //~error OperatorOutsideType
+    fun ==() { }    //~error OperatorOutsideType
+    fun !=() { }    //~error OperatorOutsideType
+    fun <() { }     //~error OperatorOutsideType
+    fun <=() { }    //~error OperatorOutsideType
+    fun >() { }     //~error OperatorOutsideType
+    fun >=() { }    //~error OperatorOutsideType
+}

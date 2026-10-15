@@ -6,12 +6,14 @@
 **Source-declared operators**
 
 - [x] Parse FunNames
-- [ ] Reject Operators on local/script funs
+- [x] Reject Operators on local/script
+- [ ] Reject Operators on static funs
 - [ ] Reject static, var keywords
 - [ ] Allow only single parameter for binary ops and no parameter for unary ops
 - [ ] Respect accessibility
 - [ ] Generate `!=` from `==` if not present
 - [ ] Generate `<=, >, >=` from `<` if not present
+  - [ ] ComparisonNotDerivable, because <=(RIGHT) needs ==(RIGHT), SELF.>(RIGHT) needs RIGHT.<(SELF)
 - [ ] Allow overloads
 
 

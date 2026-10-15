@@ -255,63 +255,10 @@ public sealed class Binder
     {
         Guard.IsState(_scope.OwnerAsFun is not null || _scope.OwnerAsType is not null, $"{nameof(BindFunSymbol)} only valid on types or funs.");
 
-        var isLocalFun = _scope.OwnerAsFun is not null;
+        var funSymbol = _scope.OwnerAsFun is not null
+            ? BindLocalFunSymbol(syntax)
+            : BindTypeFunSymbol(syntax);
         
-        // --- Bind declaration
-        var isPublic = false;
-        if (syntax.PubKw is not null)
-        {
-            if (isLocalFun)
-                _diagnostics.ReportError(new Diagnostic.InvalidLocalFunModifier(syntax.PubKw));
-            else
-                isPublic = true;
-        }
-
-        TypeSymbol? receiverType;
-        var isMutatingReceiver = false;
-        
-        if (isLocalFun)
-        {
-            // This is a local fun.
-            // Static is not valid. It is just inherited from its parent.
-            if (syntax.StaticKw is not null)
-                _diagnostics.ReportError(new Diagnostic.InvalidLocalFunModifier(syntax.StaticKw));
-            receiverType = _scope.OwnerAsFun!.ReceiverType;
-
-            if (syntax.VarKw is not null)
-            {
-                // Var on local funs is only allowed, if its parent is var.
-                if (receiverType is null)
-                    _diagnostics.ReportError(new Diagnostic.VarLocalFunInStaticContext(syntax.VarKw));
-                else if (!_scope.OwnerAsFun!.IsMutatingReceiver)
-                    _diagnostics.ReportError(new Diagnostic.VarLocalFunInNonVarFun(syntax.VarKw));
-                else
-                    isMutatingReceiver = true;
-            }
-        }
-        else
-        {
-            // This fun is on a type
-            if (syntax.StaticKw is not null)
-            {
-                if (syntax.VarKw is not null)
-                    _diagnostics.ReportError(new Diagnostic.StaticFunCannotBeVar(syntax.VarKw, syntax.Name.Text.ToString()));
-                receiverType = null;
-            }
-            else
-            {
-                receiverType = _scope.OwnerAsType!;
-                isMutatingReceiver = syntax.VarKw is not null;
-            }
-        }
-        
-        var funSymbol = new FunSymbol(syntax.Name.Text.ToString(),
-            owner: _scope.Owner,
-            isPublic,
-            receiverType,
-            isMutatingReceiver,
-            declarationSyntax: syntax);
-
         // Bind signature
         var signatureBinder = EnterFunSignature(funSymbol);
         var returnType = syntax.ReturnTypeAnnotation is not null
@@ -322,6 +269,67 @@ public sealed class Binder
 
         _semanticSideTable.AddResolvedSymbol(syntax.Name.Location, funSymbol);
         return funSymbol;
+    }
+
+    private FunSymbol BindLocalFunSymbol(FunDeclSyntax syntax)
+    {
+        Debug.Assert(_scope.OwnerAsFun is not null);
+
+        // 'Pub' and 'static' are not allowed
+        if (syntax.PubKw is not null)
+            _diagnostics.ReportError(new Diagnostic.InvalidLocalFunModifier(syntax.PubKw));
+
+        if (syntax.StaticKw is not null)
+            _diagnostics.ReportError(new Diagnostic.InvalidLocalFunModifier(syntax.StaticKw));
+
+        // Operators are not allowed.
+        // They can be declared though, since they are not callable anyway.
+        if (syntax.IsOperatorName)
+            _diagnostics.ReportError(new Diagnostic.OperatorOutsideType(syntax.Name));
+        
+        var receiverType = _scope.OwnerAsFun.ReceiverType;
+        var isMutatingReceiver = false;
+
+        if (syntax.VarKw is not null)
+        {
+            // Var on local funs is only allowed, if its parent is var.
+            if (receiverType is null)
+                _diagnostics.ReportError(new Diagnostic.VarLocalFunInStaticContext(syntax.VarKw));
+            else if (!_scope.OwnerAsFun!.IsMutatingReceiver)
+                _diagnostics.ReportError(new Diagnostic.VarLocalFunInNonVarFun(syntax.VarKw));
+            else
+                isMutatingReceiver = true;
+        }
+
+        return new FunSymbol(syntax.Name.Text.ToString(),
+            owner: _scope.Owner,
+            isPublic: false,
+            receiverType,
+            isMutatingReceiver,
+            declarationSyntax: syntax);
+    }
+
+    private FunSymbol BindTypeFunSymbol(FunDeclSyntax syntax)
+    {
+        Debug.Assert(_scope.OwnerAsType is not null);
+        
+        var isPublic = syntax.PubKw is not null;
+
+        var receiverType = syntax.StaticKw is not null ? null : _scope.OwnerAsType;
+        var isMutatingReceiver = syntax.VarKw is not null;
+
+        if (receiverType is null && isMutatingReceiver)
+        {
+            _diagnostics.ReportError(new Diagnostic.StaticFunCannotBeVar(syntax.VarKw!, syntax.Name.Text.ToString()));
+            isMutatingReceiver = false;
+        }
+
+        return new FunSymbol(syntax.Name.Text.ToString(),
+            owner: _scope.Owner,
+            isPublic,
+            receiverType,
+            isMutatingReceiver,
+            declarationSyntax: syntax);
     }
 
     private BoundBlock BindFunBody(FunBodySyntax syntax)
