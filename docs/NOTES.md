@@ -3,7 +3,18 @@
 
 # Now
 
+* Compilation exposes `Namespaces` and `Scripts` it declares. They can be accessed from
+  other Compilations.
+
+* Compilation (= one project) is one of
+  * Project (stdlib) with `project.axlproj` and dependencies
+    * Cyclic dependency graphs must be rejected (?? What happens if not ??)
+  * Taxl (many files), only stdlib referenced
+  * Free *.axl script. One file, only stdlib referenced
+
 # Questions / Little ones
+
+* Can SourceLocation offer comfort methods for creation rather than forcing through SourceText.GetLocation?
 
 * refactor: cleanup FunBuilder (Const instead of True())
 
@@ -15,10 +26,17 @@
 # Milestones
 
 ## 4. Namespaces and multiple files
-* [ ] Namespaces visible anywhere
-* [ ] `pub` visibility on fun/struct
-* [ ] Taxl handles multiple files
-* [ ] LSP manages Compilation objects
+* [ ] Taxl file splitter + LSP Project abstraction (handles AxlLocation <-> LspLocation)
+* [ ] Compilation takes multiple files
+* [ ] Namespaces
+  * [ ] Open across same compilation
+  * [ ] Free funs + structs
+  * [ ] `pub` and private visibility in namespaces
+* [ ] Project files
+  * [ ] Dependencies
+  * [ ] Cyclic dependencies rejected
+  * [ ] Namespaces cannot be added to if in another Compilation
+  * [ ] LSP automatically opens referenced Compilations
 * [ ] Using directives
 
 ## 5. `Base` namespace as Axl-Code

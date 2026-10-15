@@ -12,6 +12,7 @@ public sealed class TestFile
     
     public Directive Directive { get; }
     public Expectation? Expectation { get; }
+    public ImmutableArray<Fragment> Fragments { get; }
 
     public ImmutableArray<DiagnosticAnnotation> Annotations { get; }
 
@@ -49,12 +50,14 @@ public sealed class TestFile
     private TestFile(SourceText sourceText, 
         Directive directive,
         Expectation? expectation,
+        ImmutableArray<Fragment> fragments,
         ImmutableArray<DiagnosticAnnotation> annotations,
         ImmutableArray<Diagnostic> diagnostics)
     {
         SourceText = sourceText;
         Directive = directive;
         Expectation = expectation;
+        Fragments = fragments;
         Annotations = annotations;
         Diagnostics = diagnostics;
     }
@@ -68,7 +71,8 @@ public sealed class TestFile
         var directive = parser.ParseDirective();
         var expectation = parser.ParseExpectation();
         var annotations = parser.ParseAnnotations();
+        var fragments = parser.ParseFragments();
         
-        return new TestFile(sourceText, directive, expectation, annotations, diagnostics.Drain());
+        return new TestFile(sourceText, directive, expectation, fragments, annotations, diagnostics.Drain());
     }
 }

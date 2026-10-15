@@ -155,72 +155,40 @@ public sealed class TaxlParser(SourceText sourceText, DiagnosticBag diagnostics)
     }
     
     
-    #region Old Fragment logic
+    public ImmutableArray<Fragment> ParseFragments()
+    {
+        // Fragments are separated by "//---" that must start the line (modulo whitespace).
+        // A fragment contains everything starting with the delimiter up
+        // to, but excluding, the next delimiter.
+        
+        if (sourceText.Lines.Length == 0)
+            return [new Fragment(sourceText.GetLocation(SourceRange.FromLength(0, sourceText.Length)))];
+        
+        var splitLines = Enumerable.Range(0, sourceText.Lines.Length)
+            .Where(i => sourceText.GetText(sourceText.Lines[i].Range).TrimStart().StartsWith("//---"))
+            .ToList();
+        
+        // The very first line must start a fragment.
+        if (splitLines.Count == 0 || splitLines[0] != 0)
+            splitLines.Insert(0, 0);
+        
+        var fragments = ImmutableArray.CreateBuilder<Fragment>();
+        
+        for (var i = 0; i < splitLines.Count; i++)
+        {
+            // Fragment ends on the line before the next delimiter
+            // or on the last line.
+            var firstLine = splitLines[i];
+            var lastLine = i + 1 < splitLines.Count
+                ? splitLines[i + 1] - 1
+                : sourceText.Lines.Length - 1;
+            
+            var range = SourceRange.FromTo(sourceText.Lines[firstLine].RangeWithLineBreak, sourceText.Lines[lastLine].RangeWithLineBreak);
+            var location = sourceText.GetLocation(range);
+            
+            fragments.Add(new Fragment(location));
+        }
     
-    // Kept here for future reference, when i'm building the file splitter again.
-    
-    // public ImmutableArray<Fragment> ParseFragments()
-    // {
-    //     if (sourceText.Lines.Length == 0)
-    //         return [new Fragment(SourceFileView.Whole(sourceText), "", false, [])];
-    //     
-    //     var delimiterIndices = sourceText.Lines
-    //         .Where(line => sourceText.GetText(line.Range).TrimStart() is
-    //             ['/', '/', '-', '-', '-', ..] or ['/', '/', '=', '=', '=', ..])
-    //         .Select(line => line.LineNumber)
-    //         .ToList();
-    //     
-    //     if (delimiterIndices.Count == 0)
-    //         return [ParseFragment(0, sourceText.Lines.Length - 1)];
-    //
-    //     var fragments = ImmutableArray.CreateBuilder<Fragment>();
-    //     
-    //     // First fragment has no delimiter
-    //     if (delimiterIndices[0] > 0)
-    //     {
-    //         var fragment = ParseFragment(0, delimiterIndices[0] - 1);
-    //         fragments.Add(fragment);
-    //     }
-    //     
-    //     for (var i = 0; i < delimiterIndices.Count; i++)
-    //     {
-    //         var firstLine = delimiterIndices[i];
-    //         var lastLine = i + 1 < delimiterIndices.Count
-    //             ? delimiterIndices[i + 1] - 1
-    //             : sourceText.Lines.Length - 1;
-    //         
-    //         var fragment = ParseFragment(firstLine, lastLine);
-    //         fragments.Add(fragment);
-    //     }
-    //
-    //     return fragments.DrainToImmutable();
-    // }
-    // private Fragment ParseFragment(int firstLine, int lastLine)
-    // {
-    //     Debug.Assert(firstLine <= lastLine && firstLine >= 0 && lastLine < sourceText.Lines.Length);
-    //
-    //     // Get sourceText view
-    //     var firstIndex = sourceText.Lines[firstLine].Range.First;
-    //     var endIndex = sourceText.Lines[lastLine].Range.End;
-    //
-    //     var range = SourceRange.FromBounds(firstIndex, endIndex);
-    //     var sourceView = new SourceFileView(sourceText, range);
-    //     
-    //     // Read headline
-    //     var headlineText = sourceText.GetText(sourceText.Lines[firstLine].Range).TrimStart();
-    //     var name = headlineText.StartsWith("//===") || headlineText.StartsWith("//---")
-    //         ? headlineText[5..].Trim().ToString()
-    //         : "";
-    //     
-    //     var isOutput = headlineText.StartsWith("//===");
-    //     if (isOutput)   
-    //         return new Fragment(sourceView, name, isOutput, []);
-    //     
-    //     // Parse annotations
-    //     var annotations = ParseAnnotations(sourceView);
-    //     return new Fragment(sourceView, name, IsOutput: false, annotations);
-    // }
-    //
-
-    #endregion
+        return fragments.DrainToImmutable();
+    }
 }

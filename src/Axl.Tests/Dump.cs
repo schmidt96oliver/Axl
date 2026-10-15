@@ -1,4 +1,5 @@
-﻿using System.Text;
+﻿using System.Collections.Immutable;
+using System.Text;
 using Axl.Compiler.Diagnostics;
 using Axl.Compiler.Syntax;
 using Axl.Compiler.Testing;
@@ -242,6 +243,17 @@ public class Dump(SourceText sourceText)
         {
             _builder.AppendLine(
                 $"//~ {annotation.Kind.ToString().ToLower()}@l.{annotation.LineNumber}: \"{annotation.Id}\"");
+        }
+
+        return this;
+    }
+    
+    public Dump AddFragments(ImmutableArray<Fragment> fragments)
+    {
+        foreach (var frag in fragments)
+        {
+            _builder.AppendLine("---------------------");
+            _builder.Append(frag.Location.Text.ToString());
         }
 
         return this;
