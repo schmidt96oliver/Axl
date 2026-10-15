@@ -770,6 +770,10 @@ public sealed class Binder
     {
         if (TryBindMethodCall(receiver, @operator.Text.ToString(), arguments, syntax) is not BoundCall boundCall)
         {
+            // If any operand had an error, stay silent.
+            if (receiver.Type is ErrorTypeSymbol || arguments.Any(arg => arg.Type is ErrorTypeSymbol))
+                return new BoundError(syntax);
+            
             return BindError(syntax, new Diagnostic.UndefinedOperator(
                 @operator,
                 [receiver.Type, .. arguments.Select(arg => arg.Type)]));

@@ -1,0 +1,34 @@
+﻿//@check
+
+// If any operand has an error, UndefinedOperator must be silent.
+
+let a = Blupp       //~error UndefinedName
+        +           // does NOT report UndefinedOperator
+        Blupp;      //~error UndefinedName
+        
+let a = Blupp       //~error UndefinedName
+        ==          // does NOT report UndefinedOperator
+        Blupp;      //~error UndefinedName
+        
+let a = Blupp       //~error UndefinedName
+        !=          // does NOT report UndefinedOperator
+        Blupp;      //~error UndefinedName
+
+let a = 1       
+        -           // does NOT report UndefinedOperator
+        Blupp;      //~error UndefinedName
+        
+let a = Blupp       //~error UndefinedName
+        *           // does NOT report UndefinedOperator
+        1.2;        
+        
+let a = Blupp       //~error UndefinedName
+        <           // does NOT report UndefinedOperator
+        1.2;        
+        
+let a = Blupp       //~error UndefinedName
+        >=          // does NOT report UndefinedOperator
+        1.2;        
+        
+let a = -Blupp;     //~error UndefinedName
+let a = !Blupp;     //~error UndefinedName

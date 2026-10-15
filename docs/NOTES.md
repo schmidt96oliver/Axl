@@ -17,8 +17,6 @@
 
 # Questions / Little ones
 
-* UndefinedOperator Error leads to more errors
-
 * refactor: cleanup FunBuilder (Const instead of True())
 
 * ?? Should StringExpr bind to string.Concat?
