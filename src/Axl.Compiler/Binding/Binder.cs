@@ -177,6 +177,7 @@ public sealed class Binder
         var rootBinder = new Binder(new RootScope(rootNamespace), diagnostics, semanticSideTable);
         
         var scriptFun = new FunSymbol(name: "", 
+            isOperator: false,
             owner: rootNamespace,
             isPublic: false,
             receiverType: null,
@@ -266,6 +267,9 @@ public sealed class Binder
             : Unit;
         var parameters = signatureBinder.BindParameters(syntax.ParameterList);
         funSymbol.SetParametersAndReturnType(parameters, returnType);
+        
+        if (funSymbol.IsOperator)
+            CheckOperatorSignature(funSymbol, syntax);
 
         _semanticSideTable.AddResolvedSymbol(syntax.Name.Location, funSymbol);
         return funSymbol;
@@ -302,6 +306,7 @@ public sealed class Binder
         }
 
         return new FunSymbol(syntax.Name.Text.ToString(),
+            isOperator: false,
             owner: _scope.Owner,
             isPublic: false,
             receiverType,
@@ -313,23 +318,54 @@ public sealed class Binder
     {
         Debug.Assert(_scope.OwnerAsType is not null);
         
+        var name = syntax.Name.Text.ToString();
+        
         var isPublic = syntax.PubKw is not null;
-
         var receiverType = syntax.StaticKw is not null ? null : _scope.OwnerAsType;
         var isMutatingReceiver = syntax.VarKw is not null;
 
         if (receiverType is null && isMutatingReceiver)
         {
-            _diagnostics.ReportError(new Diagnostic.StaticFunCannotBeVar(syntax.VarKw!, syntax.Name.Text.ToString()));
+            _diagnostics.ReportError(new Diagnostic.StaticFunCannotBeVar(syntax.VarKw!, name));
             isMutatingReceiver = false;
         }
+        
+        if (syntax.IsOperatorName && receiverType is null)
+            _diagnostics.ReportError(new Diagnostic.OperatorCannotBeStatic(name, syntax.StaticKw!));
+        if (syntax.IsOperatorName && isMutatingReceiver)
+            _diagnostics.ReportError(new Diagnostic.OperatorCannotBeVar(name, syntax.VarKw!));
 
-        return new FunSymbol(syntax.Name.Text.ToString(),
+        var funSymbol = new FunSymbol(name,
+            isOperator: syntax.IsOperatorName,
             owner: _scope.Owner,
             isPublic,
             receiverType,
             isMutatingReceiver,
             declarationSyntax: syntax);
+        
+        return funSymbol;
+    }
+
+    private void CheckOperatorSignature(FunSymbol funSymbol, FunDeclSyntax syntax)
+    {
+        var opToken = syntax.Name.Token;
+        var isUnary = SyntaxFacts.IsUnaryOperator(opToken.Kind);
+        var isBinary = SyntaxFacts.IsBinaryOperator(opToken.Kind);
+        Debug.Assert(isUnary || isBinary);
+
+        // Declared operator must match unary/binary
+        var isParamCountValid = (isUnary, isBinary, funSymbol.Parameters.Length) is
+            (true, true, 0 or 1) or (true, false, 0) or (false, true, 1);
+        
+        if (!isParamCountValid)
+            _diagnostics.ReportError(new Diagnostic.WrongOperatorParameterCount(funSymbol));
+        
+        // Comparison operators must return bool
+        if (SyntaxFacts.IsComparisonOperator(opToken.Kind) && 
+            funSymbol.ReturnType != Bool && funSymbol.ReturnType is not ErrorTypeSymbol)
+        {
+            _diagnostics.ReportError(new Diagnostic.WrongOperatorReturnType(funSymbol, Bool));
+        }
     }
 
     private BoundBlock BindFunBody(FunBodySyntax syntax)

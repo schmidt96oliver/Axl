@@ -1,0 +1,50 @@
+﻿//@check
+
+// Parameter count must match unary/binary operator, because
+// everything else would not be found by operator resolution.
+// It wouldn't hurt to allow it, but it does not make any sense.
+
+struct Test
+{
+    pub fun +() { }                 //~error WrongOperatorParameterCount
+    pub fun +(a: I32, b: I32) { }   //~error WrongOperatorParameterCount
+    
+    pub fun -(a: I32, b: I32) { }   //~error WrongOperatorParameterCount
+    pub fun !(a: I32, b: I32) { }   //~error WrongOperatorParameterCount
+
+    pub fun *() { }                 //~error WrongOperatorParameterCount
+    pub fun *(a: I32, b: I32) { }   //~error WrongOperatorParameterCount
+    
+    pub fun /() { }                 //~error WrongOperatorParameterCount
+    pub fun /(a: I32, b: I32) { }   //~error WrongOperatorParameterCount
+    
+    pub fun <(): Bool               //~error WrongOperatorParameterCount
+        = false;
+    pub fun <(a: I32, b: I32): Bool //~error WrongOperatorParameterCount
+        = false;
+    
+    pub fun <=(): Bool               //~error WrongOperatorParameterCount
+        = false;
+    pub fun <=(a: I32, b: I32): Bool //~error WrongOperatorParameterCount
+        = false;
+    
+    pub fun >(): Bool               //~error WrongOperatorParameterCount
+        = false;
+    pub fun >(a: I32, b: I32): Bool //~error WrongOperatorParameterCount
+        = false;
+    
+    pub fun >=(): Bool               //~error WrongOperatorParameterCount
+        = false;
+    pub fun >=(a: I32, b: I32): Bool //~error WrongOperatorParameterCount
+        = false;
+    
+    pub fun ==(): Bool               //~error WrongOperatorParameterCount
+        = false;
+    pub fun ==(a: I32, b: I32): Bool //~error WrongOperatorParameterCount
+        = false;
+    
+    pub fun !=(): Bool               //~error WrongOperatorParameterCount
+        = false;
+    pub fun !=(a: I32, b: I32): Bool //~error WrongOperatorParameterCount
+        = false;
+}

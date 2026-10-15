@@ -58,7 +58,7 @@ Literal     = "true" | "false"
             | NumberLiteral
 
 Binary      = Expr ("+"|"-"|"*"|"/"|"<"|"<="|">"|">="  |"=="|"!=" |"&&"|"||") Expr
-Unary       = ("-" | "not") Expr
+Unary       = ("-" | "!") Expr
 
 MemberAccess= Expr "." IdName
 Call        = Expr ArgList

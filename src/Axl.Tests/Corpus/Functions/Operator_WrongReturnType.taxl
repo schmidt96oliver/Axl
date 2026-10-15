@@ -1,0 +1,58 @@
+﻿//@check
+
+// All comparison operators must return true, everything else would be very unexpected.
+// No error should be reported, if there already is one.
+
+struct NoReturnTypes
+{
+    pub fun <(left: I32)            //~error WrongOperatorReturnType
+        = { };
+    pub fun <=(left: I32)           //~error WrongOperatorReturnType
+        = { };
+    pub fun >(left: I32)            //~error WrongOperatorReturnType
+        = { };
+    pub fun >=(left: I32)           //~error WrongOperatorReturnType
+        = { };
+    pub fun ==(left: I32)           //~error WrongOperatorReturnType
+        = { };
+    pub fun !=(left: I32)           //~error WrongOperatorReturnType
+        = { };
+}
+
+struct UnitReturn
+{
+    pub fun <(left: I32): Unit            //~error WrongOperatorReturnType
+        = { };
+    pub fun <=(left: I32): Unit           //~error WrongOperatorReturnType
+        = { };
+    pub fun >(left: I32): Unit            //~error WrongOperatorReturnType
+        = { };
+    pub fun >=(left: I32): Unit           //~error WrongOperatorReturnType
+        = { };
+    pub fun ==(left: I32): Unit           //~error WrongOperatorReturnType
+        = { };
+    pub fun !=(left: I32): Unit           //~error WrongOperatorReturnType
+        = { };
+}
+
+struct StringReturn
+{
+    pub fun <(left: I32): String            //~error WrongOperatorReturnType
+        = "";
+    pub fun <=(left: I32): String           //~error WrongOperatorReturnType
+        = "";
+    pub fun >(left: I32): String            //~error WrongOperatorReturnType
+        = "";
+    pub fun >=(left: I32): String           //~error WrongOperatorReturnType
+        = "";
+    pub fun ==(left: I32): String           //~error WrongOperatorReturnType
+        = "";
+    pub fun !=(left: I32): String           //~error WrongOperatorReturnType
+        = "";
+}
+
+struct ErrorReturn
+{
+    pub fun <(left: I32): Bla               //~error UndefinedName
+        = "";
+}

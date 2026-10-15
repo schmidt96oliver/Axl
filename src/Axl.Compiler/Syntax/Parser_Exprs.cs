@@ -7,6 +7,14 @@ namespace Axl.Compiler.Syntax;
 
 public partial class Parser
 {
+    /// <summary>
+    /// The operator the current operand expression is nested under. The token is
+    /// carried along, so diagnostics can point at both sides of a conflict. The
+    /// precedence cannot be derived from the token alone, since prefix and infix
+    /// operators share spellings.
+    /// </summary>
+    private readonly record struct LeftOperator(Precedence Precedence, Token Token);
+    
     private MarkClose EnsureExpr(Anchor anchor)
         => EnsureExpr(left: null, anchor);
     
@@ -23,8 +31,8 @@ public partial class Parser
         {
             // --- Read operator and check precedence
             var opToken = _scanner.Peek();
-            var infixPrecedence = PrecedenceTable.TryGetInfixPrecedence(opToken.Kind);
-            var postfixPrecedence = PrecedenceTable.TryGetPostfixPrecedence(opToken.Kind);
+            var infixPrecedence = SyntaxFacts.TryGetInfixPrecedence(opToken.Kind);
+            var postfixPrecedence = SyntaxFacts.TryGetPostfixPrecedence(opToken.Kind);
             if (infixPrecedence is null && postfixPrecedence is null)
                 break;
             Debug.Assert(infixPrecedence is null || postfixPrecedence is null, "Operator is both infix and postfix. This might trap something here.");
@@ -33,11 +41,11 @@ public partial class Parser
             Debug.Assert(opPrecedence is not null);
 
             var precedenceComparison = left is LeftOperator actualLeft
-                ? PrecedenceTable.Compare(actualLeft.Precedence, opPrecedence.Value)
-                : PrecedenceComparison.RightBindsTighter;
+                ? PrecedenceComparison.Compare(actualLeft.Precedence, opPrecedence.Value)
+                : PrecedenceComparisonResult.RightBindsTighter;
 
             // --- Ambiguous?
-            if (precedenceComparison is PrecedenceComparison.Ambiguous)
+            if (precedenceComparison is PrecedenceComparisonResult.Ambiguous)
             {
                 // For the precedence to be ambiguous, we must be on a tail,
                 // so we never drop an ambiguous operator.
@@ -50,7 +58,7 @@ public partial class Parser
             }
 
             // --- Correct binding power?
-            if (precedenceComparison is PrecedenceComparison.LeftBindsTighter)
+            if (precedenceComparison is PrecedenceComparisonResult.LeftBindsTighter)
             {
                 // The left side bind tighter, so we stop here and let the enclosing
                 // loop handle that operator.
@@ -136,7 +144,7 @@ public partial class Parser
         var openMark = _scanner.Open();
         var token = _scanner.Eat();
 
-        if (PrecedenceTable.TryGetPrefixPrecedence(token.Kind) is Precedence prefixPrecedence)
+        if (SyntaxFacts.TryGetPrefixPrecedence(token.Kind) is Precedence prefixPrecedence)
         {
             EnsureExprRhs(new LeftOperator(prefixPrecedence, token), anchor, out var wasAmbiguous);
             return _scanner.Close(openMark, wasAmbiguous ? SyntaxKind.ErrorExpr : SyntaxKind.UnaryExpr);
@@ -197,14 +205,14 @@ public partial class Parser
             // Peek and check if next token is
             // an operator with ambiguous comparison.
             var nextOpToken = _scanner.Peek();
-            if (PrecedenceTable.TryGetInfixPrecedence(nextOpToken.Kind)
+            if (SyntaxFacts.TryGetInfixPrecedence(nextOpToken.Kind)
                 is not Precedence nextOpPrecedence)
             {
                 break;
             }
 
-            if (PrecedenceTable.Compare(previousOperatorPrecedence, nextOpPrecedence)
-                is not PrecedenceComparison.Ambiguous)
+            if (PrecedenceComparison.Compare(previousOperatorPrecedence, nextOpPrecedence)
+                is not PrecedenceComparisonResult.Ambiguous)
             {
                 break;
             }

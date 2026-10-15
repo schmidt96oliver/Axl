@@ -1,0 +1,24 @@
+﻿//@check
+
+// Operator cannot be declared static, because they use self as their left argument.
+
+struct Test
+{
+    pub static fun -(right: I32) { }        //~error OperatorCannotBeStatic
+    pub static fun !() { }                  //~error OperatorCannotBeStatic
+    pub static fun +(right: I32) { }        //~error OperatorCannotBeStatic
+    pub static fun *(right: I32) { }        //~error OperatorCannotBeStatic
+    pub static fun /(right: I32) { }        //~error OperatorCannotBeStatic
+    pub static fun <(right: I32): Bool      //~error OperatorCannotBeStatic
+        = false;  
+    pub static fun <=(right: I32): Bool     //~error OperatorCannotBeStatic
+        = false;  
+    pub static fun >(right: I32): Bool      //~error OperatorCannotBeStatic
+        = false;  
+    pub static fun >=(right: I32): Bool     //~error OperatorCannotBeStatic
+        = false;  
+    pub static fun ==(right: I32): Bool     //~error OperatorCannotBeStatic
+        = false;  
+    pub static fun !=(right: I32): Bool     //~error OperatorCannotBeStatic
+        = false;  
+}

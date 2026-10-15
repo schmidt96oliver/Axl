@@ -7,17 +7,19 @@
 
 - [x] Parse FunNames
 - [x] Reject Operators on local/script
-- [ ] Reject Operators on static funs
-- [ ] Reject static, var keywords
-- [ ] Allow only single parameter for binary ops and no parameter for unary ops
-- [ ] Respect accessibility
+- [x] Reject Operators on static funs
+- [x] Reject static, var keywords
+- [x] Allow only single parameter for binary ops and no parameter for unary ops
+- [x] Respect accessibility
 - [ ] Generate `!=` from `==` if not present
 - [ ] Generate `<=, >, >=` from `<` if not present
   - [ ] ComparisonNotDerivable, because <=(RIGHT) needs ==(RIGHT), SELF.>(RIGHT) needs RIGHT.<(SELF)
-- [ ] Allow overloads
+- [x] Allow overloads
 
 
 # Questions / Little ones
+
+* ?? Taxl expectation: Can I collect across entire doc? For `Operators.taxl`, its useful to have expected output next to PrintLine
 
 * refactor: cleanup FunBuilder (Const instead of True())
 

@@ -98,4 +98,45 @@ public static class SyntaxFacts
 
     public static bool IsTrivia(TokenKind kind)
         => kind is TokenKind.Whitespace or TokenKind.Comment;
+
+    public static bool IsBinaryOperator(TokenKind kind)
+        => TryGetInfixPrecedence(kind) is not null;
+
+    public static bool IsUnaryOperator(TokenKind kind)
+        => TryGetPrefixPrecedence(kind) is not null;
+
+    public static bool IsComparisonOperator(TokenKind kind)
+        => kind is TokenKind.DoubleEqual or TokenKind.BangEqual or TokenKind.LessThan or TokenKind.LessThanEqual
+            or TokenKind.GreaterThan or TokenKind.GreaterThanEqual;
+
+    public static Precedence? TryGetPrefixPrecedence(TokenKind kind)
+        => kind switch
+        {
+            TokenKind.Minus => Precedence.Negate,
+            TokenKind.Bang => Precedence.LogicNot,
+            _ => null
+        };
+
+    public static Precedence? TryGetInfixPrecedence(TokenKind kind) => kind switch
+    {
+        TokenKind.Star or TokenKind.Slash => Precedence.Factor,
+        TokenKind.Plus or TokenKind.Minus => Precedence.Sum,
+
+        TokenKind.LessThan or TokenKind.LessThanEqual or TokenKind.GreaterThan or TokenKind.GreaterThanEqual
+            or TokenKind.DoubleEqual or TokenKind.BangEqual => Precedence.Comparison,
+
+        TokenKind.DoubleAmpersand => Precedence.LogicAnd,
+        TokenKind.DoubleVerticalBar => Precedence.LogicOr,
+
+        TokenKind.Equal => Precedence.Assign,
+
+        _ => null
+    };
+
+    public static Precedence? TryGetPostfixPrecedence(TokenKind kind) => kind switch
+    {
+        TokenKind.Dot => Precedence.Dot,
+        TokenKind.OpenParen => Precedence.ArgList,
+        _ => null,
+    };
 }

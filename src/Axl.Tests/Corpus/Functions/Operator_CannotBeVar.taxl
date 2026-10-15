@@ -1,0 +1,25 @@
+﻿//@check
+
+// Operator cannot be declared var, because mutation of the underlying
+// struct would (a) be unexpected and (b) not visible under copying.
+
+struct Test
+{
+    pub var fun -(right: I32) { }        //~error OperatorCannotBeVar
+    pub var fun !() { }                  //~error OperatorCannotBeVar
+    pub var fun +(right: I32) { }        //~error OperatorCannotBeVar
+    pub var fun *(right: I32) { }        //~error OperatorCannotBeVar
+    pub var fun /(right: I32) { }        //~error OperatorCannotBeVar
+    pub var fun <(right: I32): Bool      //~error OperatorCannotBeVar
+        = false;  
+    pub var fun <=(right: I32): Bool     //~error OperatorCannotBeVar
+        = false;  
+    pub var fun >(right: I32): Bool      //~error OperatorCannotBeVar
+        = false;  
+    pub var fun >=(right: I32): Bool     //~error OperatorCannotBeVar
+        = false;  
+    pub var fun ==(right: I32): Bool     //~error OperatorCannotBeVar
+        = false;  
+    pub var fun !=(right: I32): Bool     //~error OperatorCannotBeVar
+        = false;  
+}

@@ -30,7 +30,8 @@ public sealed class FunBuilder
     public static FunBuilder Method(string name, Symbol parent, TypeSymbol receiverType, BaseNamespaceSymbol baseNamespace,
         bool isPublic = true)
     {
-        var fun = new FunSymbol(name, parent, isPublic, receiverType, isMutatingReceiver: false);
+        var isOperator = !char.IsAsciiLetter(name[0]);
+        var fun = new FunSymbol(name, isOperator, parent, isPublic, receiverType, isMutatingReceiver: false);
         return new FunBuilder(fun, baseNamespace);
     }
 
@@ -43,7 +44,7 @@ public sealed class FunBuilder
     public static FunBuilder Static(string name, Symbol parent,
         BaseNamespaceSymbol baseNamespace, bool isPublic = true)
     {
-        var fun = new FunSymbol(name, parent, isPublic, null, isMutatingReceiver: false);
+        var fun = new FunSymbol(name, isOperator: false, parent, isPublic, null, isMutatingReceiver: false);
         return new FunBuilder(fun, baseNamespace);
     }
 

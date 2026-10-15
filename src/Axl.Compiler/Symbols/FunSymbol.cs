@@ -1,5 +1,6 @@
 ﻿using System.Collections.Immutable;
 using Axl.Compiler.Binding.BoundTree;
+using Axl.Compiler.Syntax;
 using Axl.Compiler.Syntax.Tree;
 
 namespace Axl.Compiler.Symbols;
@@ -22,7 +23,9 @@ public sealed class FunSymbol : Symbol
     /// Whether this fun is allowed to mutate its receiver.
     /// </summary>
     public bool IsMutatingReceiver { get; }
-    
+
+    public bool IsOperator { get; }
+
     private ImmutableArray<ParameterSymbol>? _parameters;
     public ImmutableArray<ParameterSymbol> Parameters => _parameters ?? throw new InvalidOperationException(
         $"Parameters of '{Name}' not bound yet.");
@@ -41,6 +44,7 @@ public sealed class FunSymbol : Symbol
 
 
     public FunSymbol(string name,
+        bool isOperator,
         Symbol owner,
         bool isPublic,
         TypeSymbol? receiverType,
@@ -48,7 +52,8 @@ public sealed class FunSymbol : Symbol
         FunDeclSyntax? declarationSyntax = null) : base(name, owner)
     {
         Guard.MustBe(!isMutatingReceiver || receiverType is not null);
-        
+
+        IsOperator = isOperator;
         IsPublic = isPublic;
         ReceiverType = receiverType;
         IsMutatingReceiver = isMutatingReceiver;

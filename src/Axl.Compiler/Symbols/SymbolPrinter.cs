@@ -4,22 +4,31 @@ public static class SymbolPrinter
 {
     extension(Symbol symbol)
     {
+        public string KindName => symbol switch
+        {
+            ErrorTypeSymbol => "error",
+
+            ParameterSymbol => "parameter",
+            VariableSymbol => "variable",
+            FieldSymbol => "field",
+
+            FunSymbol { IsOperator: false } => "fun",
+            FunSymbol { IsOperator: true } => "operator",
+
+            NamespaceSymbol => "namespace",
+            StructSymbol => "struct",
+            TypeSymbol => "type",
+        };
+        
         /// <summary>
         /// A string like <c>fun 'A'</c>.
         /// </summary>
         public string ShortDisplayName => symbol switch
         {
             ErrorTypeSymbol => "error",
-            
-            ParameterSymbol => $"parameter '{symbol.Name}'",
-            VariableSymbol => $"variable '{symbol.Name}'",
             FieldSymbol fieldSymbol => $"field '{fieldSymbol.OwningType?.Name ?? "???"}.{fieldSymbol.Name}'",
             
-            FunSymbol => $"fun '{symbol.Name}'",
-            
-            NamespaceSymbol => $"namespace '{symbol.Name}'",
-            StructSymbol => $"struct '{symbol.Name}'",
-            TypeSymbol => $"type '{symbol.Name}'",
+            _ => $"{symbol.KindName} '{symbol.Name}'"
         };
 
         public string FullDisplayName => symbol switch
@@ -29,12 +38,9 @@ public static class SymbolPrinter
             VariableSymbol { IsReadOnly: true } variable => $"let {variable.Name}: {variable.Type.Name}",
             FieldSymbol fieldSymbol => $"field {fieldSymbol.Owner?.Name ?? "???"}.{fieldSymbol.Name}: {fieldSymbol.Type.Name}",
             
-            NamespaceSymbol ns => $"namespace {ns.Name}",
-            StructSymbol @struct => $"struct {@struct.Name}",
-            TypeSymbol type => $"type {type.Name}",
+            NamespaceOrTypeSymbol => $"{symbol.KindName} {symbol.Name}",
             
-            FunSymbol fun => $"fun {fun.Name}{ GetParameterText(fun) }{ GetFunAnnotationText(fun) }",
-            _ => "??? Hover not implemented"
+            FunSymbol fun => $"{fun.KindName} {fun.Name}{ GetParameterText(fun) }{ GetFunAnnotationText(fun) }",
         };
 
         private static string GetParameterText(FunSymbol fun)
@@ -50,7 +56,7 @@ public static class SymbolPrinter
 
     extension(FunSymbol fun)
     {
-        public string DisplayNameWithParameterTypes => $"fun {fun.Name}({ fun.ParameterTypes.TypeListString })";
+        public string DisplayNameWithParameterTypes => $"{fun.KindName} {fun.Name}({fun.ParameterTypes.TypeListString})";
     }
 
     extension(IEnumerable<TypeSymbol> types)

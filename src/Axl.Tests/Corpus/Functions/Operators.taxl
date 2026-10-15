@@ -1,0 +1,80 @@
+﻿//@run
+//= (-1, -1)
+//= (-2, -2)
+//= (3, 3)
+//= (-1, -1)
+//= (2, 2)
+//= (1.5, 1.5)
+//= (0.5, 0.5)
+//= (0.5, 0.5)
+//= true
+//= true
+//= false
+//= false
+//= false
+//= true
+
+// Operators are source-declarable and accepts overloads.
+// Note that this is not a faithful Vec2 implementation :D.
+
+struct Vec2
+{
+    pub X: F64;
+    pub Y: F64;
+    
+    pub fun +(right: Vec2): Vec2
+        = Vec2(X = self.X + right.X, Y = self.Y + right.Y);
+        
+    pub fun -(right: Vec2): Vec2
+        = Vec2(X = self.X - right.X, Y = self.Y - right.Y);
+    pub fun -(): Vec2
+        = Vec2(X = -self.X, Y = -self.Y);
+    pub fun !(): Vec2
+        = Vec2(X = -self.X, Y = -self.Y);
+        
+    pub fun *(right: Vec2): Vec2
+        = Vec2(X = self.X * right.X, Y = self.Y * right.Y);
+    pub fun *(right: F64): Vec2
+        = Vec2(X = self.X * right, Y = self.Y * right);
+        
+    pub fun /(right: Vec2): Vec2
+        = Vec2(X = self.X / right.X, Y = self.Y / right.Y);
+    pub fun /(right: F64): Vec2
+        = Vec2(X = self.X / right, Y = self.Y / right);
+        
+    pub fun ==(right: Vec2): Bool
+        = self.X == right.X && self.Y == right.Y;
+        
+    pub fun !=(right: Vec2): Bool = !(self == right);
+    
+    pub fun <(right: Vec2): Bool
+        = self.X < right.X && self.Y < right.Y;
+    pub fun <=(right: Vec2): Bool
+        = self < right || self == right;
+    pub fun >(right: Vec2): Bool
+        = right < self;
+    pub fun >=(right: Vec2): Bool
+        = self > right || self == right;
+        
+    pub fun ToString(): String
+        = "({X}, {Y})";
+}
+
+let a = Vec2(X = 1.0, Y = 1.0);
+let b = Vec2(X = 2.0, Y = 2.0);
+
+PrintLine("{-a}");
+PrintLine("{!b}");
+PrintLine("{a + b}");
+PrintLine("{a - b}");
+PrintLine("{a * b}");
+PrintLine("{a * 1.5}");
+PrintLine("{a / b}");
+PrintLine("{a / 2.0}");
+
+PrintLine("{a < b}");
+PrintLine("{a <= b}");
+PrintLine("{a > b}");
+PrintLine("{a >= b}");
+PrintLine("{a == b}");
+PrintLine("{a != b}");

@@ -552,4 +552,63 @@ public partial record Diagnostic
         /// <inheritdoc />
         public override string Message => $"Operator ‘{Syntax.Text}’ can only be declared inside a type.";
     }
+
+    public sealed record OperatorCannotBeStatic(string FunName, Token Syntax) : Error
+    {
+        /// <inheritdoc />
+        public override ImmutableArray<SourceLocation> Locations => [Syntax.Location];
+
+        /// <inheritdoc />
+        public override string Message =>
+            $"Operator ‘{FunName}’ cannot be ‘static’. It is called on a value and uses ‘self’ as its left operand.";
+    }
+
+    public sealed record OperatorCannotBeVar(string FunName, Token Syntax) : Error
+    {
+        /// <inheritdoc />
+        public override ImmutableArray<SourceLocation> Locations => [Syntax.Location];
+
+        /// <inheritdoc />
+        public override string Message =>
+            $"Operator ‘{FunName}’ cannot be ‘var’.";
+    }
+
+    public sealed record WrongOperatorParameterCount(FunSymbol Fun) : Error
+    {
+        /// <inheritdoc />
+        public override ImmutableArray<SourceLocation> Locations => [Fun.DeclarationSyntax!.ParameterList.Location];
+
+        /// <inheritdoc />
+        public override string Message
+        {
+            get
+            {
+                var isUnary = SyntaxFacts.IsUnaryOperator(Fun.DeclarationSyntax!.Name.Token.Kind);
+                var isBinary = SyntaxFacts.IsBinaryOperator(Fun.DeclarationSyntax!.Name.Token.Kind);
+                return (isUnary, isBinary) switch
+                {
+                    (true, true) =>
+                        $"Operator ‘{Fun.Name}’ must take 0 parameters (unary) or 1 parameter (binary), but takes {Fun.Parameters.Length}.",
+                    (true, false) =>
+                        $"Unary operator ‘{Fun.Name}’ must take 0 parameters, but takes {Fun.Parameters.Length}.",
+                    (false, true) =>
+                        $"Binary operator ‘{Fun.Name}’ must take 1 parameter, but takes {Fun.Parameters.Length}.",
+                    _ => $"Wrong parameter count for operator ‘{Fun.Name}’."
+                };
+            }
+        }
+    }
+
+    public sealed record WrongOperatorReturnType(FunSymbol Fun, TypeSymbol Expected) : Error
+    {
+        /// <inheritdoc />
+        public override ImmutableArray<SourceLocation> Locations =>
+        [
+            Fun.DeclarationSyntax!.ReturnTypeAnnotation?.Location ?? Fun.DeclarationSyntax!.Name.Location
+        ];
+
+        /// <inheritdoc />
+        public override string Message => 
+            $"Operator ‘{Fun.Name}’ must return ´{Expected.Name}´, but returns ’{Fun.ReturnType.Name}’.";
+    }
 }

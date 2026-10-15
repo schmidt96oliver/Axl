@@ -1,0 +1,21 @@
+﻿//@check
+
+// Accessibility of operators is respected.
+
+struct Vec2
+{
+    pub X: F64;
+    pub Y: F64;
+    
+    fun +(right: Vec2): Vec2
+        = Vec2(X = X + right.X, Y = Y * right.Y);
+        
+    fun Check(): Vec2
+    {
+        let a = Vec2(X = 1.0, Y = 1.0);
+        return a + a;
+    }
+}
+
+let a = Vec2(X = 1.0, Y = 1.0);
+let a = a + a;          //~error UndefinedOperator
