@@ -1,7 +1,6 @@
 ﻿using System.Collections.Immutable;
 using System.Diagnostics;
 using System.Text;
-using System.Text.RegularExpressions;
 using Axl.Compiler.Diagnostics;
 using Axl.Compiler.Text;
 
@@ -183,6 +182,7 @@ public sealed class Lexer
                 break;
 
             // --- Symbols
+            // !!! When adding symbols, also update SyntaxFacts.IsOperator !!!
             case '.':
                 scanner.AddToken(TokenKind.Dot);
                 break;

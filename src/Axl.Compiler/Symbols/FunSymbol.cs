@@ -24,7 +24,7 @@ public sealed class FunSymbol : Symbol
     /// </summary>
     public bool IsMutatingReceiver { get; }
 
-    public bool IsOperator { get; }
+    public bool IsOperator => SyntaxFacts.IsOperator(Name);
 
     private ImmutableArray<ParameterSymbol>? _parameters;
     public ImmutableArray<ParameterSymbol> Parameters => _parameters ?? throw new InvalidOperationException(
@@ -44,7 +44,6 @@ public sealed class FunSymbol : Symbol
 
 
     public FunSymbol(string name,
-        bool isOperator,
         Symbol owner,
         bool isPublic,
         TypeSymbol? receiverType,
@@ -53,7 +52,6 @@ public sealed class FunSymbol : Symbol
     {
         Guard.MustBe(!isMutatingReceiver || receiverType is not null);
 
-        IsOperator = isOperator;
         IsPublic = isPublic;
         ReceiverType = receiverType;
         IsMutatingReceiver = isMutatingReceiver;

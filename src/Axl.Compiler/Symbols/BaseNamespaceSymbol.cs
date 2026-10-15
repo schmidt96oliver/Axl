@@ -55,7 +55,6 @@ public sealed class BaseNamespaceSymbol : NamespaceSymbol
         var funs = ImmutableArray.CreateBuilder<Symbol>();
         
         var print = new FunSymbol("Print", 
-            isOperator: false,
             owner: this,
             isPublic: true,
             receiverType: null, 
@@ -104,8 +103,7 @@ public sealed class BaseNamespaceSymbol : NamespaceSymbol
     private FunSymbol IntrinsicMethodNoParam(string name, TypeSymbol type, TypeSymbol returnType,
         Intrinsic intrinsic)
     {
-        var isOperator = !char.IsAsciiLetter(name[0]);
-        var fun = new FunSymbol(name, isOperator, owner: type, isPublic: true, receiverType: type, isMutatingReceiver: false);
+        var fun = new FunSymbol(name, owner: type, isPublic: true, receiverType: type, isMutatingReceiver: false);
         fun.SetParametersAndReturnType([], returnType);
         fun.SetBody(intrinsic);
         return fun;
@@ -119,8 +117,7 @@ public sealed class BaseNamespaceSymbol : NamespaceSymbol
     private FunSymbol IntrinsicMethodSingleParam(string name, TypeSymbol type, TypeSymbol returnType,
         Intrinsic intrinsic)
     {
-        var isOperator = !char.IsAsciiLetter(name[0]);
-        var fun = new FunSymbol(name, isOperator, owner: type, isPublic: true, receiverType: type, isMutatingReceiver: false);
+        var fun = new FunSymbol(name, owner: type, isPublic: true, receiverType: type, isMutatingReceiver: false);
         fun.SetParametersAndReturnType([new ParameterSymbol("right", fun, type)], returnType);
         fun.SetBody(intrinsic);
         return fun;

@@ -3,34 +3,16 @@
 
 # Now
 
-**Source-declared operators**
-
-- [x] Parse FunNames
-- [x] Reject Operators on local/script
-- [x] Reject Operators on static funs
-- [x] Reject static, var keywords
-- [x] Allow only single parameter for binary ops and no parameter for unary ops
-- [x] Respect accessibility
-- [ ] Generate `!=` from `==` if not present
-- [ ] Generate `<=, >, >=` from `<` if not present
-  - [ ] ComparisonNotDerivable, because <=(RIGHT) needs ==(RIGHT), SELF.>(RIGHT) needs RIGHT.<(SELF)
-- [x] Allow overloads
-
-
 # Questions / Little ones
-
-* ?? Taxl expectation: Can I collect across entire doc? For `Operators.taxl`, its useful to have expected output next to PrintLine
 
 * refactor: cleanup FunBuilder (Const instead of True())
 
 * ?? Should StringExpr bind to string.Concat?
 * ?? Should all duplicates be added to members? Leads to unecessary AmbiguousRef errors.
 
+* bug: LSP folding range + don't collapse taxl directives
 
 # Milestones
-
-## 3. Structs (in script)
-* [ ] Source-declared operators
 
 ## 4. Namespaces and multiple files
 * [ ] Namespaces visible anywhere
@@ -70,14 +52,3 @@
 
 * refactor: Rework syntax tree; Trivia to Tokens; Concrete SyntaxNode construction
 * refactor: Single sealed Token class (Id => .Text; StringText => .EscapedText lazy on every token; NumLiteral => Split Number + Suffix)
-
-# Little proposals
-
-
-# Proposals
-## Axl: Lambdas with inference
-* Fun type expression to name fun types
-* Lambdas with full type annotations
-* Parameter and return inference (interacts with overload resolution; required tentative argument binding into scrap diagnostic bag)
-
-# Design and feature ideas

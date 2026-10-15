@@ -109,6 +109,9 @@ public static class SyntaxFacts
         => kind is TokenKind.DoubleEqual or TokenKind.BangEqual or TokenKind.LessThan or TokenKind.LessThanEqual
             or TokenKind.GreaterThan or TokenKind.GreaterThanEqual;
 
+    public static bool IsOperator(string text)
+        => text is "+" or "-" or "*" or "/" or "!" or "==" or "!=" or "<" or ">" or "<=" or ">=" or "&&" or "||";
+    
     public static Precedence? TryGetPrefixPrecedence(TokenKind kind)
         => kind switch
         {

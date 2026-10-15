@@ -177,7 +177,6 @@ public sealed class Binder
         var rootBinder = new Binder(new RootScope(rootNamespace), diagnostics, semanticSideTable);
         
         var scriptFun = new FunSymbol(name: "", 
-            isOperator: false,
             owner: rootNamespace,
             isPublic: false,
             receiverType: null,
@@ -306,7 +305,6 @@ public sealed class Binder
         }
 
         return new FunSymbol(syntax.Name.Text.ToString(),
-            isOperator: false,
             owner: _scope.Owner,
             isPublic: false,
             receiverType,
@@ -336,7 +334,6 @@ public sealed class Binder
             _diagnostics.ReportError(new Diagnostic.OperatorCannotBeVar(name, syntax.VarKw!));
 
         var funSymbol = new FunSymbol(name,
-            isOperator: syntax.IsOperatorName,
             owner: _scope.Owner,
             isPublic,
             receiverType,
@@ -348,6 +345,11 @@ public sealed class Binder
 
     private void CheckOperatorSignature(FunSymbol funSymbol, FunDeclSyntax syntax)
     {
+        // Local funs already get an error if they are operators,
+        // so be silent.
+        if (funSymbol.Owner is FunSymbol)
+            return;
+        
         var opToken = syntax.Name.Token;
         var isUnary = SyntaxFacts.IsUnaryOperator(opToken.Kind);
         var isBinary = SyntaxFacts.IsBinaryOperator(opToken.Kind);
