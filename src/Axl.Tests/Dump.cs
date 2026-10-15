@@ -253,7 +253,7 @@ public class Dump(SourceText sourceText)
         foreach (var frag in fragments)
         {
             _builder.AppendLine("---------------------");
-            _builder.Append(frag.Location.Text.ToString());
+            _builder.Append(frag.LocationInTestFile.Text.ToString());
         }
 
         return this;

@@ -3,6 +3,18 @@
 
 # Now
 
+* move NonEmpty logic to diagnostics only
+
+* Test mapping to testfile
+* Test evaluator
+* Test LSP mapping
+
+
+* Cleanup SemanticTokens (build (AxlLocation, SemanticToken) then map)
+* Cleanup diagnostics
+* Can SourceLocation offer comfort methods for creation rather than forcing through SourceText.GetLocation?
+
+
 * Compilation exposes `Namespaces` and `Scripts` it declares. They can be accessed from
   other Compilations.
 
@@ -14,8 +26,7 @@
 
 # Questions / Little ones
 
-* Can SourceLocation offer comfort methods for creation rather than forcing through SourceText.GetLocation?
-
+* ?? Should I get rid of RootNamespace?
 * refactor: cleanup FunBuilder (Const instead of True())
 
 * ?? Should StringExpr bind to string.Concat?

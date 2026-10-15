@@ -12,35 +12,62 @@ namespace Axl.Compiler;
 
 public class Compilation
 {
-    public SyntaxTree SyntaxTree { get; }
-
-    public BoundFile BoundFile
-    {
-        get
-        {
-            field ??= Binder.BindFile(SyntaxTree.FileSyntax);
-            return field;
-        }
-    }
+    private readonly Dictionary<SyntaxTree, BoundScript> _boundScripts = [];
     
+    public ImmutableArray<SyntaxTree> SyntaxTrees { get; }
+
     public ImmutableArray<Diagnostic> Diagnostics
     {
         get
         {
             if (field.IsDefault)
-                field = [.. SyntaxTree.Diagnostics, .. BoundFile.Diagnostics];
+                field = [..SyntaxTrees.SelectMany(tree => tree.Diagnostics), .. Scripts.SelectMany(boundFile => boundFile.Diagnostics)];
             return field;
         }
     }
 
-    
-    private Compilation(SyntaxTree syntaxTree)
+    public ImmutableArray<BoundScript> Scripts
     {
-        SyntaxTree = syntaxTree;
+        get
+        {
+            if (field.IsDefault)
+                field = [.. SyntaxTrees.Select(GetBoundScript)];
+            return field;
+        }
     }
 
-    public static Compilation From(SyntaxTree syntaxTree)
-        => new(syntaxTree);
+    public RootNamespaceSymbol RootNamespace { get; }
+
+
+    private Compilation(ImmutableArray<SyntaxTree> syntaxTrees)
+    {
+        SyntaxTrees = syntaxTrees;
+        RootNamespace = new RootNamespaceSymbol();
+    }
+
+    public static Compilation From(params IEnumerable<SourceText> texts)
+    {
+        var trees = texts.Select(Parser.Parse).ToImmutableArray();
+        return new Compilation(trees);
+    }
+
+
+    public BoundScript GetBoundScript(SyntaxTree tree)
+    {
+        if (!_boundScripts.TryGetValue(tree, out var boundFile))
+        {
+            boundFile = Binder.BindFile(tree.FileSyntax, RootNamespace);
+            _boundScripts.Add(tree, boundFile);
+        }
+
+        return boundFile;
+    }
+
+    public SyntaxTree GetSyntaxTree(SourceText text)
+    {
+        return SyntaxTrees.FirstOrDefault(tree => tree.SourceText == text)
+               ?? throw new ArgumentException($"Syntax tree for given {nameof(text)} does not exit.", nameof(text));
+    }
 
 
     /// <summary>
@@ -49,7 +76,7 @@ public class Compilation
     /// </summary>
     public SyntaxNode SyntaxNodeAt(SourceLocation location)
     {
-        SyntaxNode currentNode = SyntaxTree.FileSyntax;
+        SyntaxNode currentNode = GetSyntaxTree(location.SourceText).FileSyntax;
         Debug.Assert(currentNode.FullRange.Contains(location.Range));
 
         while (true)
@@ -65,9 +92,9 @@ public class Compilation
         }
     }
 
-    public Token TokenAt(SourceLocation location)
+    public Token GetTokenAt(SourceLocation location)
     {
-        SyntaxElement current = SyntaxTree.FileSyntax;
+        SyntaxElement current = GetSyntaxTree(location.SourceText).FileSyntax;
         Debug.Assert(current.FullRange.Contains(location.Range));
 
         while (true)

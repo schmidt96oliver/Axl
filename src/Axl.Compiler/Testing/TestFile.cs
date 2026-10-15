@@ -26,11 +26,7 @@ public sealed class TestFile
     {
         get
         {
-            if (field is null)
-            {
-                var tree = Parser.Parse(SourceText);
-                field = Compilation.From(tree);
-            }
+            field ??= Compilation.From(Fragments.Select(frag => frag.SourceText));
             return field;
         }
     }
@@ -74,5 +70,44 @@ public sealed class TestFile
         var fragments = parser.ParseFragments();
         
         return new TestFile(sourceText, directive, expectation, fragments, annotations, diagnostics.Drain());
+    }
+
+
+    /// <summary>
+    /// Returns <paramref name="location"/> relative to <see cref="SourceText"/>.
+    /// Expects that <paramref name="location"/> refers to this test file or
+    /// one of its fragments.
+    /// </summary>
+    public SourceLocation MapToTestFile(SourceLocation location)
+    {
+        if (ReferenceEquals(location.SourceText, SourceText))
+            return location;
+
+        var fragment = Fragments.SingleOrDefault(frag => frag.LocalLocation.Contains(location))
+            ?? throw new ArgumentException($"The given {nameof(location)} does not reference this {nameof(TestFile)} or a fragment thereof.", nameof(location));
+        var range = SourceRange.FromLength(location.Start + fragment.LocationInTestFile.Start, location.Length);
+        return new SourceLocation(SourceText, range);
+    }
+
+    /// <summary>
+    /// Returns the given <paramref name="location"/> relative to the
+    /// appropriate fragment. Expects that <paramref name="location"/>
+    /// refers to this test file or one of its fragments.
+    /// </summary>
+    public SourceLocation MapToFragment(SourceLocation location)
+    {
+        if (Fragments.Any(f => f.SourceText == location.SourceText))
+            return location;
+        
+        if (location.SourceText != SourceText)
+        {
+            throw new ArgumentException(
+                $"The given {nameof(location)} does not reference this {nameof(TestFile)} or a fragment thereof.",
+                nameof(location));
+        }
+
+        var fragment = Fragments.Single(f => f.LocationInTestFile.Contains(location));
+        var range = SourceRange.FromLength(location.Start - fragment.LocationInTestFile.Start, location.Length);
+        return new SourceLocation(fragment.SourceText, range);
     }
 }

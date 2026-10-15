@@ -27,9 +27,12 @@ public readonly record struct SourceLocation
     /// <summary>
     /// Only constructed through <see cref="SourceText.GetLocation"/>.
     /// </summary>
-    internal SourceLocation(SourceText sourceText, SourceRange range)
+    public SourceLocation(SourceText sourceText, SourceRange range)
     {
         SourceText = sourceText;
         Range = range;
     }
+
+    public bool Contains(SourceLocation location)
+        => SourceText == location.SourceText && Range.Contains(location.Range);
 }

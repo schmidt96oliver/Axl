@@ -3,6 +3,7 @@ using Axl.Compiler.Symbols;
 using Axl.Compiler.Syntax;
 using Axl.Compiler.Testing;
 using Axl.Compiler.Text;
+using OmniSharp.Extensions.LanguageServer.Protocol;
 using OmniSharp.Extensions.LanguageServer.Protocol.Client.Capabilities;
 using OmniSharp.Extensions.LanguageServer.Protocol.Document;
 using OmniSharp.Extensions.LanguageServer.Protocol.Models;
@@ -38,28 +39,26 @@ public class SemanticTokensHandler(ILanguageServerFacade facade) : SemanticToken
     protected override Task Tokenize(SemanticTokensBuilder builder, ITextDocumentIdentifierParams identifier,
         CancellationToken cancellationToken)
     {
-        var compilation = DocumentStore.GetCompilation(identifier.TextDocument.Uri);
-        if (compilation is null)
+        var uri = identifier.TextDocument.Uri;
+        var project = ProjectStore.TryGetProject(uri);
+        if (project is null)
             return Task.CompletedTask;
 
         // Push diagnostics
         facade.TextDocument.PublishDiagnostics(new PublishDiagnosticsParams
         {
-            Uri = identifier.TextDocument.Uri,
-            Diagnostics = new(DiagnosticConverter.Convert(compilation.Diagnostics)
-                .Concat(DocumentStore.TryGetTestFile(identifier.TextDocument.Uri) is {} testFile ?
-                    DiagnosticConverter.Convert(testFile.Diagnostics) : []))
+            Uri = uri,
+            Diagnostics = project.GetDiagnostics(uri)
         });
 
-        TokenizeTree(builder, compilation, DocumentStore.TryGetTestFile(identifier.TextDocument.Uri));
-
+        TokenizeFile(builder, uri, project);
 
         return Task.CompletedTask;
     }
 
-    private void TokenizeTree(SemanticTokensBuilder builder, Compilation compilation, TestFile? testFile)
+    private void TokenizeFile(SemanticTokensBuilder builder, DocumentUri uri, IProject project)
     {
-        var tree = compilation.SyntaxTree;
+        foreach (var tree in project.GetSyntaxTrees(uri))
         foreach (var token in EnumerateTokens(tree.FileSyntax))
         {
             if (token.FullRange.Length == 0)
@@ -67,24 +66,21 @@ public class SemanticTokensHandler(ILanguageServerFacade facade) : SemanticToken
             if (token.FullRange.Start >= tree.SourceText.Length)
                 continue;
 
-            var location = token.Location;
+            var lspLocation = project.TryMapToLsp(token.Location);
             switch (token.Kind)
             {
                 case TokenKind.Comment:
                 {
-                    if (testFile is not null)
-                        TokenizeTaxlComment(token, testFile, location.StartLine, location.StartColumn, builder);
+                    if (project is TaxlProject taxlProject)
+                        TokenizeTaxlComment(token, taxlProject.TestFile, lspLocation, builder);
                     else
-                    {
-                        builder.Push(location.StartLine, location.StartColumn, token.FullRange.Length,
-                            (SemanticTokenType?)SemanticTokenType.Comment);
-                    }
+                        builder.Push(lspLocation.Range, (SemanticTokenType?)SemanticTokenType.Comment);
 
                     break;
                 }
                 
                 case TokenKind.Identifier:
-                    var semanticTokenType = compilation.BoundFile.SemanticSideTable.TryGetSymbol(location) switch
+                    var semanticTokenType = project.Compilation.GetBoundScript(tree).SemanticSideTable.TryGetSymbol(token.Location) switch
                     {
                         TypeSymbol => SemanticTokenType.Type,
                         VariableSymbol => SemanticTokenType.Variable,
@@ -93,13 +89,12 @@ public class SemanticTokensHandler(ILanguageServerFacade facade) : SemanticToken
                     };
                     
                     if (semanticTokenType is not null)
-                        builder.Push(location.StartLine, location.StartColumn, token.FullRange.Length, semanticTokenType);
+                        builder.Push(lspLocation.Range, semanticTokenType);
                     break;
 
                 case TokenKind.StringStart:
                 case TokenKind.StringEnd:
-                    builder.Push(location.StartLine, location.StartColumn, token.FullRange.Length,
-                        (SemanticTokenType?)SemanticTokenType.String);
+                    builder.Push(lspLocation.Range, (SemanticTokenType?)SemanticTokenType.String);
                     break;
 
                 case TokenKind.StringText:
@@ -116,15 +111,15 @@ public class SemanticTokensHandler(ILanguageServerFacade facade) : SemanticToken
                         // Push string text before
                         if (i > stringTokenStart)
                         {
-                            builder.Push(location.StartLine,
-                                @char: location.StartColumn + stringTokenStart,
+                            builder.Push(lspLocation.Range.Start.Line,
+                                @char: lspLocation.Range.Start.Character + stringTokenStart,
                                 length: i - stringTokenStart,
                                 (SemanticTokenType?)SemanticTokenType.String);
                         }
 
                         // Push escape
-                        builder.Push(location.StartLine,
-                            @char: location.StartColumn + i,
+                        builder.Push(lspLocation.Range.Start.Line,
+                            @char: lspLocation.Range.Start.Character + i,
                             length: i + 1 < text.Length ? 2 : 1,
                             (SemanticTokenType?)SemanticTokenType.Regexp);
 
@@ -136,8 +131,8 @@ public class SemanticTokensHandler(ILanguageServerFacade facade) : SemanticToken
                     // Push rest string
                     if (text.Length > stringTokenStart)
                     {
-                        builder.Push(location.StartLine,
-                            @char: location.StartColumn + stringTokenStart,
+                        builder.Push(lspLocation.Range.Start.Line,
+                            @char: lspLocation.Range.Start.Character + stringTokenStart,
                             length: text.Length - stringTokenStart,
                             (SemanticTokenType?)SemanticTokenType.String);
                     }
@@ -147,23 +142,20 @@ public class SemanticTokensHandler(ILanguageServerFacade facade) : SemanticToken
 
                 default:
                     if (SyntaxFacts.IsKeyword(token.Kind))
-                    {
-                        builder.Push(location.StartLine, location.StartColumn, token.FullRange.Length,
-                            (SemanticTokenType?)SemanticTokenType.Keyword);
-                    }
+                        builder.Push(lspLocation.Range, (SemanticTokenType?)SemanticTokenType.Keyword);
                     break;
             }
         }
     }
 
-    private void TokenizeTaxlComment(Token commentToken, TestFile testFile, int startLine, int startColumn, SemanticTokensBuilder builder)
+    private void TokenizeTaxlComment(Token commentToken, TestFile testFile, Location lspLocation, SemanticTokensBuilder builder)
     {
         var text = commentToken.Text;
         
         // --- Fragment headlines
         if (text.StartsWith("//---"))
         {
-            builder.Push(startLine, startColumn, length: Math.Min(5, commentToken.FullRange.Length),
+            builder.Push(lspLocation.Range.Start.Line, lspLocation.Range.Start.Character, length: Math.Min(5, commentToken.FullRange.Length),
                 (SemanticTokenType?)SemanticTokenType.Decorator);
             return;
         }
@@ -173,18 +165,17 @@ public class SemanticTokensHandler(ILanguageServerFacade facade) : SemanticToken
         if (decoratorLength <= 0)
         {
             // Entire length is just a comment
-            builder.Push(startLine, startColumn, commentToken.FullRange.Length,
-                (SemanticTokenType?)SemanticTokenType.Comment);
+            builder.Push(lspLocation.Range, (SemanticTokenType?)SemanticTokenType.Comment);
         }
         
-        builder.Push(startLine, startColumn, decoratorLength,
+        builder.Push(lspLocation.Range.Start.Line, lspLocation.Range.Start.Character, decoratorLength,
             (SemanticTokenType?)SemanticTokenType.Decorator);
         
         if (restIsString && decoratorLength < commentToken.FullRange.Length)
         {
-            var restStart = startColumn + decoratorLength;
+            var restStart = lspLocation.Range.Start.Character + decoratorLength;
             var restLength = commentToken.FullRange.Length - decoratorLength;
-            builder.Push(startLine, restStart, restLength,
+            builder.Push(lspLocation.Range.Start.Line, restStart, restLength,
                 (SemanticTokenType?)SemanticTokenType.String);
         }
     }

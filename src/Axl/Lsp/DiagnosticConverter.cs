@@ -20,11 +20,11 @@ namespace Axl.Lsp;
 /// </remarks>
 public static class DiagnosticConverter
 {
-    public static IEnumerable<LspDiagnostic> Convert(IEnumerable<AxlDiagnostic> diagnostics)
-        => diagnostics.SelectMany(Convert);
+    public static IEnumerable<LspDiagnostic> Convert(IEnumerable<AxlDiagnostic> diagnostics, DocumentUri uri)
+        => diagnostics.SelectMany(d => Convert(d, uri));
 
 
-    private static IEnumerable<LspDiagnostic> Convert(AxlDiagnostic diagnostic)
+    private static IEnumerable<LspDiagnostic> Convert(AxlDiagnostic diagnostic, DocumentUri uri)
     {
         var msg = diagnostic.Hint is null
             ? diagnostic.Message
@@ -41,47 +41,39 @@ public static class DiagnosticConverter
             Message = WebUtility.HtmlEncode(line)
         });
 
-        return diagnostic.Locations.Select((location, i) => new LspDiagnostic
-        {
-            Severity = diagnostic.DefaultSeverity switch
+        return diagnostic.Locations.Select(ProjectStore.TryMapToLsp)
+            .Where(lspLocation => lspLocation is not null && lspLocation.Uri == uri)
+            .Select((location, i) => new LspDiagnostic
             {
-                AxlSeverity.Error => DiagnosticSeverity.Error,
-                AxlSeverity.Warning => DiagnosticSeverity.Warning,
-                _ => DiagnosticSeverity.Information
-            },
+                Severity = diagnostic.DefaultSeverity switch
+                {
+                    AxlSeverity.Error => DiagnosticSeverity.Error,
+                    AxlSeverity.Warning => DiagnosticSeverity.Warning,
+                    _ => DiagnosticSeverity.Information
+                },
 
-            // Add the hint to message. Lsp has no specification for hints.
-            Message = msgLines[0],
+                // Add the hint to message. Lsp has no specification for hints.
+                Message = msgLines[0],
 
-            Code = new DiagnosticCode(diagnostic.Id),
+                Code = new DiagnosticCode(diagnostic.Id),
 
-            Range = location.ToLsp(),
+                Range = location!.Range,
 
-            RelatedInformation = new([..msgCtd, .. RelatedInformation(diagnostic, exceptLocation: i)]),
-        });
+                RelatedInformation = new([.. msgCtd, .. RelatedInformation(diagnostic, exceptLocation: i)]),
+            });
     }
     
-    /// <summary>
-    /// The other locations at fault, followed by the merely explaining ones.
-    /// The siblings have no label of their own, so they borrow the message -
-    /// that's what they read as when one underline links to the next.
-    /// </summary>
     private static IEnumerable<DiagnosticRelatedInformation> RelatedInformation(
         AxlDiagnostic diagnostic, int exceptLocation)
         => diagnostic.Locations
             .Where((_, i) => i != exceptLocation)
-            .Select(location => new Compiler.Diagnostics.LabeledSourceLocation(location, diagnostic.LocationLabel))
+            .Select(axlLocation => new Compiler.Diagnostics.LabeledSourceLocation(axlLocation, diagnostic.LocationLabel))
             .Concat(diagnostic.Related)
-            // Only publish related infos, if the SourceFile has a file system
-            // path. Otherwise, we don't know where to point.
-            .Where(label => label.Location.SourceText.FileName is not null)
-            .Select(label => new DiagnosticRelatedInformation
+            .Select(label => (LspLocation: ProjectStore.TryMapToLsp(label.Location), Message: label.Label))
+            .Where(lspLocationAndMessage => lspLocationAndMessage.LspLocation is not null)
+            .Select(lspLocationAndMessage => new DiagnosticRelatedInformation
             {
-                Location = new Location
-                {
-                    Range = label.Location.ToLsp(),
-                    Uri = DocumentUri.FromFileSystemPath(label.Location.SourceText.FileName!)
-                },
-                Message = label.Label
+                Location = lspLocationAndMessage.LspLocation!,
+                Message = lspLocationAndMessage.Message
             });
 }

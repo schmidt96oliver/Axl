@@ -5,7 +5,7 @@ using System.Runtime.CompilerServices;
 
 namespace Axl.Compiler;
 
-internal static class Guard
+public static class Guard
 {
     /// <summary>
     /// Throws <see cref="ArgumentOutOfRangeException"/> if <paramref name="condition"/> is <c>false</c>.

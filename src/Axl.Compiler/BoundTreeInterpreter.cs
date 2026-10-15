@@ -38,17 +38,17 @@ public sealed class BoundTreeInterpreter
     }
     
     
-    public static void Run(BoundFile file, TextWriter output)
+    public static void Run(BoundScript script, TextWriter output)
     {
-        PrintDiagnostics(output, file.Diagnostics);
-        if (file.Diagnostics.Any(diag => diag is Diagnostic.Error))
+        PrintDiagnostics(output, script.Diagnostics);
+        if (script.Diagnostics.Any(diag => diag is Diagnostic.Error))
             return;
         
         var interpreter = new BoundTreeInterpreter(output);
 
         try
         {
-            interpreter.Call(file.ScriptFun, null, []);
+            interpreter.Call(script.ScriptFun, null, []);
         }
         catch (ReturnException) {}
     }

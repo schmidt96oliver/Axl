@@ -1,4 +1,5 @@
 ﻿using Axl.Compiler.Symbols;
+using Axl.Compiler.Text;
 using OmniSharp.Extensions.LanguageServer.Protocol.Client.Capabilities;
 using OmniSharp.Extensions.LanguageServer.Protocol.Document;
 using OmniSharp.Extensions.LanguageServer.Protocol.Models;
@@ -16,23 +17,25 @@ public class HoverHandler : HoverHandlerBase
 
     public override Task<Hover?> Handle(HoverParams request, CancellationToken cancellationToken)
     {
-        var compilation = DocumentStore.GetCompilation(request.TextDocument.Uri);
-        if (compilation is null)
+        var uri = request.TextDocument.Uri;
+        var project = ProjectStore.TryGetProject(uri);
+        if (project?.TryMapToAxl(uri, request.Position) is not SourceLocation location) 
             return Task.FromResult<Hover?>(null);
+
+        var token = project.Compilation.GetTokenAt(location);
+        var symbol = project.Compilation.GetBoundScript(token.Tree).SemanticSideTable.TryGetSymbol(token.Location);
         
-        if (request.Position.Line < 0 || request.Position.Line >= compilation.SyntaxTree.SourceText.Lines.Length)
-            return Task.FromResult<Hover?>(null);
-        
-        var index = compilation.SyntaxTree.SourceText.Lines[request.Position.Line].Start + request.Position.Character;
-        var token = compilation.TokenAt(compilation.SyntaxTree.SourceText.GetLocationFromLength(index, 0));
-        var symbol = compilation.BoundFile.SemanticSideTable.TryGetSymbol(token.Location);
         if (symbol is null)
             return Task.FromResult<Hover?>(null);
 
+        var lspLocation = project.TryMapToLsp(token.Location);
+        if (lspLocation.Uri != uri)
+            return Task.FromResult<Hover?>(null);
+        
         return Task.FromResult<Hover?>(new Hover
         {
             Contents = new MarkedStringsOrMarkupContent(symbol.FullDisplayName), 
-            Range = token.Location.ToLsp()
+            Range = lspLocation.Range
         });
     }
 

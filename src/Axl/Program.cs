@@ -1,7 +1,7 @@
-using Axl;
 using Axl.Compiler;
-using Axl.Compiler.Syntax;
 using Axl.Compiler.Text;
+
+var testFilePath = Path.Combine("..", "..", "..", "..", "src", "Axl", "test.taxl");
 
 switch (args[0])
 {
@@ -9,15 +9,18 @@ switch (args[0])
         await Axl.Lsp.Lsp.RunAsync();
         break;
     
-    case "play":
-        UiPlayground.Run();
-        break;
-
     case "run":
     {
-        var sourceText = SourceText.LoadFile(UiPlayground.TestFilePath);
-        var compilation = Compilation.From(Parser.Parse(sourceText));
-        BoundTreeInterpreter.Run(compilation.BoundFile, Console.Out);
+        var sourceText = SourceText.LoadFile(testFilePath);
+        var compilation = Compilation.From(sourceText);
+
+        if (compilation.SyntaxTrees.Length != 1)
+        {
+            Console.WriteLine($"Compilation has {compilation.SyntaxTrees.Length} files, but can only run 1.");
+            return;
+        }
+        
+        BoundTreeInterpreter.Run(compilation.GetBoundScript(compilation.SyntaxTrees[0]), Console.Out);
         break;
     }
     

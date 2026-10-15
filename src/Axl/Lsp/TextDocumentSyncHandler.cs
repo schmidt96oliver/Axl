@@ -24,7 +24,7 @@ public class TextDocumentSyncHandler : TextDocumentSyncHandlerBase
 
     public override Task<Unit> Handle(DidOpenTextDocumentParams request, CancellationToken cancellationToken)
     {
-        DocumentStore.Load(request.TextDocument.Uri, request.TextDocument.Text);
+        ProjectStore.Load(request.TextDocument.Uri, request.TextDocument.Text);
         return Unit.Task;
     }
 
@@ -33,20 +33,20 @@ public class TextDocumentSyncHandler : TextDocumentSyncHandlerBase
         // Full sync: the last content change carries the whole document.
         var text = request.ContentChanges.LastOrDefault()?.Text;
         if (text is not null) 
-            DocumentStore.Load(request.TextDocument.Uri, text);
+            ProjectStore.Load(request.TextDocument.Uri, text);
         return Unit.Task;
     }
 
     public override Task<Unit> Handle(DidSaveTextDocumentParams request, CancellationToken cancellationToken)
     {
         if (request.Text is not null) 
-            DocumentStore.Load(request.TextDocument.Uri, request.Text);
+            ProjectStore.Load(request.TextDocument.Uri, request.Text);
         return Unit.Task;
     }
 
     public override Task<Unit> Handle(DidCloseTextDocumentParams request, CancellationToken cancellationToken)
     {
-        DocumentStore.Remove(request.TextDocument.Uri);
+        ProjectStore.Unload(request.TextDocument.Uri);
         return Unit.Task;
     }
 }

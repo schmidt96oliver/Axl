@@ -19,12 +19,12 @@ public class FoldingRangeHandler : FoldingRangeHandlerBase
     public override Task<Container<FoldingRange>?> Handle(FoldingRangeRequestParam request,
         CancellationToken cancellationToken)
     {
-        var compilation = DocumentStore.GetCompilation(request.TextDocument.Uri);
-        if (compilation is null)
+        var uri = request.TextDocument.Uri;
+        var project = ProjectStore.TryGetProject(uri);
+        if (project is null)
             return Task.FromResult<Container<FoldingRange>?>(null);
 
-        var container = Container.From(GetFoldingRanges(compilation.SyntaxTree));
-            
+        var container = Container.From(project.GetSyntaxTrees(uri).SelectMany(GetFoldingRanges));
         return Task.FromResult(container)!;
     }
 

@@ -44,7 +44,7 @@ public sealed class Evaluator
         {
             var message = "Invalid test file!\n" + string.Join('\n',
                 testFile.Diagnostics.Select(diagnostic =>
-                    $"l.{diagnostic.Locations[0].StartLine}: {diagnostic.Message}"));
+                    $"l.{testFile.MapToTestFile(diagnostic.Locations[0]).StartLine}: {diagnostic.Message}"));
             return Evaluation.Failed(message);
         }
         
@@ -116,7 +116,7 @@ public sealed class Evaluator
     {
         var table = new Dictionary<int, DiagnosticId>();
         foreach (var diagnostic in _testFile.Compilation.Diagnostics)
-        foreach (var location in diagnostic.Locations)
+        foreach (var location in diagnostic.Locations.Select(_testFile.MapToTestFile))
         {
             var line = location.StartLine;
             if (line != location.EndLine)
@@ -145,7 +145,14 @@ public sealed class Evaluator
         }
 
         var output = new StringWriter();
-        BoundTreeInterpreter.Run(_testFile.Compilation.BoundFile, output);
+        var compilation = _testFile.Compilation;
+        if (compilation.Scripts.Length != 1)
+        {
+            _failedChecks.Add(new FailedCheck(0, $"Test file must have 1 script to execut, got {compilation.Scripts.Length}."));
+            return;
+        }
+        
+        BoundTreeInterpreter.Run(compilation.Scripts[0], output);
         
         var actualOutput = Normalize(output.ToString());
         var expectedOutput = Normalize(_testFile.Expectation.Text);

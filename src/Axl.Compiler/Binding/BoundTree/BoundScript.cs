@@ -4,7 +4,7 @@ using Axl.Compiler.Symbols;
 
 namespace Axl.Compiler.Binding.BoundTree;
 
-public sealed class BoundFile(FunSymbol scriptFun, ImmutableArray<TypeSymbol> types, ImmutableArray<Diagnostic> diagnostics, SemanticSideTable semanticSideTable)
+public sealed class BoundScript(FunSymbol scriptFun, ImmutableArray<TypeSymbol> types, ImmutableArray<Diagnostic> diagnostics, SemanticSideTable semanticSideTable)
 {
     public FunSymbol ScriptFun { get; } = scriptFun;
     public ImmutableArray<TypeSymbol> Types { get; } = types;

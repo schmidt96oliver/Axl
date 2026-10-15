@@ -168,12 +168,11 @@ public sealed class Binder
     
     #region File and Script
 
-    public static BoundFile BindFile(FileSyntax syntax)
+    public static BoundScript BindFile(FileSyntax syntax, RootNamespaceSymbol rootNamespace)
     {
         var diagnostics = new DiagnosticBag();
         var semanticSideTable = new SemanticSideTable();
         
-        var rootNamespace = new RootNamespaceSymbol();
         var rootBinder = new Binder(new RootScope(rootNamespace), diagnostics, semanticSideTable);
         
         var scriptFun = new FunSymbol(name: "", 
@@ -185,7 +184,7 @@ public sealed class Binder
         scriptFun.SetParametersAndReturnType([], rootBinder.Unit);
         scriptFun.SetBody(rootBinder.EnterFunSignature(scriptFun).BindScriptBody(syntax, out var localTypes));
         
-        return new BoundFile(scriptFun, localTypes, diagnostics.Drain(), semanticSideTable);
+        return new BoundScript(scriptFun, localTypes, diagnostics.Drain(), semanticSideTable);
     }
 
     private BoundBlock BindScriptBody(FileSyntax syntax, out ImmutableArray<TypeSymbol> localTypes)
