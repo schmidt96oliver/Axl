@@ -21,7 +21,7 @@ public partial class ParserTests
 
                     FunDecl
                     · 'fun'
-                    · IdName 'a'
+                    · FunName 'a'
                     · ParamList '(' ')'
                     · FunBody
                     · · BlockExpr
@@ -48,7 +48,7 @@ public partial class ParserTests
 
                     FunDecl
                     · 'fun'
-                    · IdName 'a'
+                    · FunName 'a'
                     · ParamList '(' ')'
                     · FunBody
                     · · BlockExpr
@@ -78,7 +78,7 @@ public partial class ParserTests
 
                     FunDecl
                     · 'fun'
-                    · IdName 'a'
+                    · FunName 'a'
                     · ParamList '(' ')'
                     · FunBody
                     · · BlockExpr
@@ -109,7 +109,7 @@ public partial class ParserTests
 
                     FunDecl
                     · 'fun'
-                    · IdName 'a'
+                    · FunName 'a'
                     · ParamList '(' ')'
                     · FunBody
                     · · BlockExpr
@@ -144,7 +144,7 @@ public partial class ParserTests
 
                     FunDecl
                     · 'fun'
-                    · IdName 'a'
+                    · FunName 'a'
                     · ParamList '(' ')'
                     · FunBody
                     · · BlockExpr
@@ -178,7 +178,7 @@ public partial class ParserTests
 
                     FunDecl
                     · 'fun'
-                    · IdName 'a'
+                    · FunName 'a'
                     · ParamList '(' ')'
                     · FunBody
                     · · BlockExpr
@@ -213,7 +213,7 @@ public partial class ParserTests
 
                     FunDecl
                     · 'fun'
-                    · IdName 'a'
+                    · FunName 'a'
                     · ParamList '(' ')'
                     · FunBody
                     · · BlockExpr
@@ -247,7 +247,7 @@ public partial class ParserTests
 
                     FunDecl
                     · 'fun'
-                    · IdName 'a'
+                    · FunName 'a'
                     · ParamList '(' ')'
                     · FunBody
                     · · BlockExpr
@@ -285,7 +285,7 @@ public partial class ParserTests
 
                     FunDecl
                     · 'fun'
-                    · IdName 'a'
+                    · FunName 'a'
                     · ParamList '(' ')'
                     · FunBody
                     · · BlockExpr

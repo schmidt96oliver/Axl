@@ -16,7 +16,7 @@ public partial class ParserTests
 
                     FunDecl
                     · 'fun'
-                    · IdName 'Foo'
+                    · FunName 'Foo'
                     · ParamList
                     · · '('
                     · · ??')'
@@ -31,7 +31,7 @@ public partial class ParserTests
 
                     FunDecl
                     · 'fun'
-                    · IdName 'Foo'
+                    · FunName 'Foo'
                     · ParamList
                     · · '('
                     · · ??')'
@@ -49,7 +49,7 @@ public partial class ParserTests
 
                     FunDecl
                     · 'fun'
-                    · IdName 'Foo'
+                    · FunName 'Foo'
                     · ParamList
                     · · '('
                     · · ??')'
@@ -66,7 +66,7 @@ public partial class ParserTests
 
                     FunDecl
                     · 'fun'
-                    · IdName 'Foo'
+                    · FunName 'Foo'
                     · ParamList
                     · · '('
                     · · Param
@@ -87,7 +87,7 @@ public partial class ParserTests
 
                     FunDecl
                     · 'fun'
-                    · IdName 'Foo'
+                    · FunName 'Foo'
                     · ParamList
                     · · '('
                     · · Param
@@ -116,7 +116,7 @@ public partial class ParserTests
 
                     FunDecl
                     · 'fun'
-                    · IdName 'Foo'
+                    · FunName 'Foo'
                     · ParamList
                     · · '('
                     · · Param
@@ -143,7 +143,7 @@ public partial class ParserTests
 
                     FunDecl
                     · 'fun'
-                    · IdName 'Foo'
+                    · FunName 'Foo'
                     · ParamList
                     · · '('
                     · · Param
@@ -173,7 +173,7 @@ public partial class ParserTests
 
                     FunDecl
                     · 'fun'
-                    · IdName 'Foo'
+                    · FunName 'Foo'
                     · ParamList
                     · · '('
                     · · Param
@@ -202,7 +202,7 @@ public partial class ParserTests
 
                     FunDecl
                     · 'fun'
-                    · IdName 'Foo'
+                    · FunName 'Foo'
                     · ParamList
                     · · '('
                     · · Param
@@ -233,7 +233,7 @@ public partial class ParserTests
 
                     FunDecl
                     · 'fun'
-                    · IdName 'Foo'
+                    · FunName 'Foo'
                     · ParamList
                     · · '('
                     · · Param
@@ -266,7 +266,7 @@ public partial class ParserTests
 
                     FunDecl
                     · 'fun'
-                    · IdName 'Foo'
+                    · FunName 'Foo'
                     · ParamList
                     · · '('
                     · · Param
@@ -295,7 +295,7 @@ public partial class ParserTests
 
                     FunDecl
                     · 'fun'
-                    · IdName 'Foo'
+                    · FunName 'Foo'
                     · ParamList
                     · · '('
                     · · Param
@@ -324,7 +324,7 @@ public partial class ParserTests
 
                     FunDecl
                     · 'fun'
-                    · IdName 'Foo'
+                    · FunName 'Foo'
                     · ParamList
                     · · '('
                     · · Param
@@ -366,7 +366,7 @@ public partial class ParserTests
 
                     FunDecl
                     · 'fun'
-                    · IdName 'A'
+                    · FunName 'A'
                     · ParamList
                     · · '('
                     · · Param
@@ -388,7 +388,7 @@ public partial class ParserTests
 
                     FunDecl
                     · 'fun'
-                    · IdName 'A'
+                    · FunName 'A'
                     · ParamList
                     · · '('
                     · · Param
@@ -411,7 +411,7 @@ public partial class ParserTests
 
                     FunDecl
                     · 'fun'
-                    · IdName 'Foo'
+                    · FunName 'Foo'
                     · ParamList
                     · · '('
                     · · Param
@@ -444,7 +444,7 @@ public partial class ParserTests
 
                     FunDecl
                     · 'fun'
-                    · IdName 'Foo'
+                    · FunName 'Foo'
                     · ParamList
                     · · '('
                     · · Param
@@ -484,7 +484,7 @@ public partial class ParserTests
 
                     FunDecl
                     · 'fun'
-                    · IdName 'Foo'
+                    · FunName 'Foo'
                     · ParamList
                     · · '('
                     · · Param
@@ -514,7 +514,7 @@ public partial class ParserTests
 
                     FunDecl
                     · 'fun'
-                    · IdName 'A'
+                    · FunName 'A'
                     · ParamList
                     · · ??'('
                     · · ??')'
@@ -530,7 +530,7 @@ public partial class ParserTests
 
                     FunDecl
                     · 'fun'
-                    · IdName 'A'
+                    · FunName 'A'
                     · ParamList
                     · · ??'('
                     · · ??')'
@@ -548,7 +548,7 @@ public partial class ParserTests
 
                     FunDecl
                     · 'fun'
-                    · IdName 'A'
+                    · FunName 'A'
                     · ParamList
                     · · ??'('
                     · · ??')'
@@ -571,7 +571,7 @@ public partial class ParserTests
 
                     FunDecl
                     · 'fun'
-                    · IdName 'Foo'
+                    · FunName 'Foo'
                     · ParamList
                     · · '('
                     · · Param
@@ -603,7 +603,7 @@ public partial class ParserTests
 
                     FunDecl
                     · 'fun'
-                    · IdName 'Foo'
+                    · FunName 'Foo'
                     · ParamList
                     · · '('
                     · · Garbage '@@'
@@ -635,7 +635,7 @@ public partial class ParserTests
 
                     FunDecl
                     · 'fun'
-                    · IdName 'Foo'
+                    · FunName 'Foo'
                     · ParamList
                     · · '('
                     · · Garbage '@@'
@@ -673,7 +673,7 @@ public partial class ParserTests
 
                     FunDecl
                     · 'fun'
-                    · IdName 'Foo'
+                    · FunName 'Foo'
                     · ParamList
                     · · '('
                     · · Garbage '@@'
@@ -698,7 +698,7 @@ public partial class ParserTests
 
                     FunDecl
                     · 'fun'
-                    · IdName 'Foo'
+                    · FunName 'Foo'
                     · ParamList
                     · · '('
                     · · Garbage '@@'
@@ -732,7 +732,7 @@ public partial class ParserTests
 
                     FunDecl
                     · 'fun'
-                    · IdName 'Foo'
+                    · FunName 'Foo'
                     · ParamList
                     · · '('
                     · · Param
@@ -767,7 +767,7 @@ public partial class ParserTests
 
                     FunDecl
                     · 'fun'
-                    · IdName 'Foo'
+                    · FunName 'Foo'
                     · ParamList
                     · · '('
                     · · Garbage '@@'
@@ -807,7 +807,7 @@ public partial class ParserTests
 
                     FunDecl
                     · 'fun'
-                    · IdName 'Foo'
+                    · FunName 'Foo'
                     · ParamList
                     · · '('
                     · · Garbage '@@'

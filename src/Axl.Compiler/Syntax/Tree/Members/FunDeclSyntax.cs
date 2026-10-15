@@ -14,7 +14,9 @@ public sealed class FunDeclSyntax(ImmutableArray<SyntaxElement> children)
     public Token? VarKw 
         => Children.OfType<Token>().FirstOrDefault(child => child is { Kind: TokenKind.VarKw });
     
-    public IdentifierToken Name => Children.FirstOfType<IdNameSyntax>().Token;
+    public FunNameSyntax Name => Children.FirstOfType<FunNameSyntax>();
+
+    public bool IsOperatorName => Name.Token.Kind is not TokenKind.Identifier;
 
     public ParamListSyntax ParameterList => Children.FirstOfType<ParamListSyntax>();
     

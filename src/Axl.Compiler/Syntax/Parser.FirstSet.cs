@@ -48,5 +48,10 @@ public partial class Parser
 
         public static readonly TokenSet FunDecl =
             TokenSet.Of(TokenKind.PubKw, TokenKind.StaticKw, TokenKind.VarKw, TokenKind.FunKw);
+
+        public static readonly TokenSet FunName = TokenSet.Of(TokenKind.Identifier,
+            TokenKind.Plus, TokenKind.Minus, TokenKind.Star, TokenKind.Slash,
+            TokenKind.LessThan, TokenKind.LessThanEqual, TokenKind.GreaterThan, TokenKind.GreaterThanEqual,
+            TokenKind.DoubleEqual, TokenKind.BangEqual, TokenKind.Bang);
     }
 }

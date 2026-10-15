@@ -18,5 +18,5 @@ public class BrokenInput
 
     [Fact]
     public void ScriptLocalFunWithoutName()
-        => InlineSnapshot.Validate(Diagnostics("fun"), "ERROR MissingToken@[3, 3): Expected an identifier.");
+        => InlineSnapshot.Validate(Diagnostics("fun"), "ERROR MissingToken@[3, 3): Expected a fun name.");
 }

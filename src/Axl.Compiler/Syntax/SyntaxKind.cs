@@ -68,5 +68,6 @@ public enum SyntaxKind
     FunBody,
     ConditionClause,
     StructBody,
-    Self
+    Self,
+    FunName
 }

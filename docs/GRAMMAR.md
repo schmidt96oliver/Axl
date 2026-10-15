@@ -9,7 +9,8 @@ UsingDirective  = "using" TypeName ";"
 ## Member Declarations
 MemberDecl       = FnDecl | StructDecl
                 
-FunDecl          = "pub"? "static"? "var"? "fun" IdName ParamList TypeAnnotation? FunBody
+FunDecl          = "pub"? "static"? "var"? "fun" FunName ParamList TypeAnnotation? FunBody
+FunName          = Identifier | "+" | "-" | "*" | "/" | "<" | "<=" | ">" | ">=" |"==" | "!=" | "!"
 FunBody          = "=>" Expr ";"
                 | BlockExpr
 
@@ -56,7 +57,7 @@ Group       = "(" Expr ")"
 Literal     = "true" | "false"
             | NumberLiteral
 
-Binary      = Expr ("+"|"-"|"*"|"/"|"<"|"<="|">"|">="  |"=="|"!=" |"and"|"or") Expr
+Binary      = Expr ("+"|"-"|"*"|"/"|"<"|"<="|">"|">="  |"=="|"!=" |"&&"|"||") Expr
 Unary       = ("-" | "not") Expr
 
 MemberAccess= Expr "." IdName

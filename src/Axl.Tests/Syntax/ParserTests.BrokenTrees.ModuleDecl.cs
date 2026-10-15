@@ -31,7 +31,7 @@ public partial class ParserTests
 
                     FunDecl
                     · 'fun'
-                    · IdName 'A'
+                    · FunName 'A'
                     · ParamList '(' ')'
                     · FunBody
                     · · BlockExpr

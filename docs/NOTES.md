@@ -5,7 +5,7 @@
 
 **Source-declared operators**
 
-- [ ] Parse FunNames
+- [x] Parse FunNames
 - [ ] Reject Operators on local/script funs
 - [ ] Reject static, var keywords
 - [ ] Allow only single parameter for binary ops and no parameter for unary ops

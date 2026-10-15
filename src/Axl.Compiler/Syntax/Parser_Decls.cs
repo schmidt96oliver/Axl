@@ -115,7 +115,7 @@ public partial class Parser
         }
         
         _scanner.EatKnown(TokenKind.FunKw);
-        EnsureIdName();
+        EnsureFunName();
 
         EnsureParamList(anchor | TokenKind.OpenBrace | TokenKind.Colon |
                         TokenKind.Semicolon | TokenKind.Equal);
@@ -126,6 +126,16 @@ public partial class Parser
         EnsureFunBody(anchor);
 
         return _scanner.Close(fnDecl, SyntaxKind.FunDecl);
+    }
+
+    private MarkClose EnsureFunName()
+    {
+        var funName = _scanner.Open();
+        if (_scanner.IsAt(FirstSet.FunName))
+            _scanner.Eat();
+        else
+            EnsureToken(TokenKind.Identifier, ExpectedSyntax.FunName);
+        return _scanner.Close(funName, SyntaxKind.FunName);
     }
 
     private MarkClose EnsureFunBody(Anchor anchor)

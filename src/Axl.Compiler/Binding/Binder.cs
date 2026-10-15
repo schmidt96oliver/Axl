@@ -305,7 +305,7 @@ public sealed class Binder
             }
         }
         
-        var funSymbol = new FunSymbol(syntax.Name.Identifier,
+        var funSymbol = new FunSymbol(syntax.Name.Text.ToString(),
             owner: _scope.Owner,
             isPublic,
             receiverType,
@@ -615,6 +615,7 @@ public sealed class Binder
         
         // Error
         ErrorExprSyntax errorExprSyntax => new BoundError(errorExprSyntax),
+        FunNameSyntax => throw new UnreachableException(),
     };
 
     private BoundValue BindValue(ExprSyntax syntax)
