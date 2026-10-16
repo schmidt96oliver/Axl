@@ -26,9 +26,6 @@ public interface IProject
     /// </summary>
     public SourceLocation? TryMapToAxl(Location location);
 
-    public SourceLocation? TryMapToAxl(DocumentUri uri, Position position)
-        => TryMapToAxl(new Location { Uri = uri, Range = new Range(position, position) });
-    
     /// <summary>
     /// Whether this project contains the given document <paramref name="uri"/>
     /// </summary>

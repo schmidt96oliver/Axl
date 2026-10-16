@@ -3,17 +3,17 @@
 
 # Now
 
-* move NonEmpty logic to diagnostics only
+* LSP: Rework diagnostics
+  * ?? Maybe use pull diagnostics
+  * move NonEmpty logic to diagnostics only; remove from general handler
 
-* Test mapping to testfile
-* Test evaluator
-* Test LSP mapping
+* LSP: FoldingRangeHandler
+  * It needs to resepect Project mapping correctly
+  * fold fragments
+  * don't fold exepctation/directives
+  * bug: folds too much
 
-
-* Cleanup SemanticTokens (build (AxlLocation, SemanticToken) then map)
-* Cleanup diagnostics
-* Can SourceLocation offer comfort methods for creation rather than forcing through SourceText.GetLocation?
-
+--------
 
 * Compilation exposes `Namespaces` and `Scripts` it declares. They can be accessed from
   other Compilations.
@@ -26,13 +26,13 @@
 
 # Questions / Little ones
 
+* refactor: Remove SourceText.GetLocation, replace with SourceLocation.From***
+
 * ?? Should I get rid of RootNamespace?
 * refactor: cleanup FunBuilder (Const instead of True())
 
 * ?? Should StringExpr bind to string.Concat?
 * ?? Should all duplicates be added to members? Leads to unecessary AmbiguousRef errors.
-
-* bug: LSP folding range + don't collapse taxl directives
 
 # Milestones
 

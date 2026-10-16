@@ -18,18 +18,22 @@ public class HoverHandler : HoverHandlerBase
     public override Task<Hover?> Handle(HoverParams request, CancellationToken cancellationToken)
     {
         var uri = request.TextDocument.Uri;
+
+        if (ProjectStore.TryMapToAxl(uri, request.Position) is not SourceLocation axlLocation)
+            return Task.FromResult<Hover?>(null);
+        
         var project = ProjectStore.TryGetProject(uri);
-        if (project?.TryMapToAxl(uri, request.Position) is not SourceLocation location) 
+        if (project is null)
             return Task.FromResult<Hover?>(null);
 
-        var token = project.Compilation.GetTokenAt(location);
+        var token = project.Compilation.GetTokenAt(axlLocation);
         var symbol = project.Compilation.GetBoundScript(token.Tree).SemanticSideTable.TryGetSymbol(token.Location);
         
         if (symbol is null)
             return Task.FromResult<Hover?>(null);
 
-        var lspLocation = project.TryMapToLsp(token.Location);
-        if (lspLocation.Uri != uri)
+        var lspLocation = ProjectStore.TryMapToLsp(token.Location);
+        if (lspLocation is null || lspLocation.Uri != uri)
             return Task.FromResult<Hover?>(null);
         
         return Task.FromResult<Hover?>(new Hover

@@ -1,6 +1,7 @@
 ﻿using Axl.Compiler.Text;
 using OmniSharp.Extensions.LanguageServer.Protocol;
 using OmniSharp.Extensions.LanguageServer.Protocol.Models;
+using Range = OmniSharp.Extensions.LanguageServer.Protocol.Models.Range;
 
 namespace Axl.Lsp;
 
@@ -92,4 +93,7 @@ public static class ProjectStore
             return project.TryMapToAxl(lspLocation);
         return OpenProjects.FirstOrDefault(p => p.HasDocument(lspLocation.Uri))?.TryMapToAxl(lspLocation);
     }
+
+    public static SourceLocation? TryMapToAxl(DocumentUri uri, Position position)
+        => TryMapToAxl(new Location { Uri = uri, Range = new Range(position, position) });
 }
