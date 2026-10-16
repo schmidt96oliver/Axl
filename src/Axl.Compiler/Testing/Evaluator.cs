@@ -1,6 +1,5 @@
 ﻿using System.Diagnostics;
 using Axl.Compiler.Diagnostics;
-using Axl.Compiler.Syntax.Tree;
 
 namespace Axl.Compiler.Testing;
 
@@ -9,6 +8,12 @@ public sealed class Evaluator
     private readonly record struct FailedCheck(int LineNumber, string Message)
     {
         public override string ToString() => $"l.{LineNumber}: {Message}";
+    }
+
+    private enum DiagnosticKind
+    {
+        Error,
+        Lint,
     }
     
     private readonly record struct DiagnosticId(DiagnosticKind Kind, string Id)
@@ -39,23 +44,18 @@ public sealed class Evaluator
                 $"l.{diagnostic.Locations[0].StartLine}: {diagnostic.Message}"));
             return Evaluation.Unsupported(message);
         }
-        
-        if (testFile.Diagnostics.Any())
-        {
-            var message = "Invalid test file!\n" + string.Join('\n',
-                testFile.Diagnostics.Select(diagnostic =>
-                    $"l.{testFile.MapToTestFile(diagnostic.Locations[0]).StartLine}: {diagnostic.Message}"));
-            return Evaluation.Failed(message);
-        }
+
+        if (!testFile.Validate(out var errorMessage))
+            return Evaluation.Failed($"Invalid taxl file: {errorMessage}");
         
         var evaluator = new Evaluator(testFile);
         evaluator.CheckDiagnostics();
-        switch (testFile.Directive.Kind)
+        switch (testFile.Kind)
         {
-            case DirectiveKind.Check:
+            case TestKind.Check:
                 break;
 
-            case DirectiveKind.Run:
+            case TestKind.Run:
                 evaluator.CheckExpectedOutput();
                 break;
 
@@ -102,12 +102,17 @@ public sealed class Evaluator
 
     private Dictionary<int, DiagnosticId> GetExpectedDiagnostics()
     {
-        var diagnosticAnnotations = _testFile.Annotations
-            .OfType<DiagnosticAnnotation>();
+        var annotations = _testFile.Annotations
+            .Where(a => a.Kind is AnnotationKind.ExpectError or AnnotationKind.ExpectLint);
         
         var table = new Dictionary<int, DiagnosticId>();
-        foreach (var annotation in diagnosticAnnotations)
-            table.Add(annotation.LineNumber, new DiagnosticId(annotation.Kind, annotation.Id));
+        foreach (var annotation in annotations)
+        {
+            var lineNumber = annotation.Prefix.StartLine;
+            var kind = annotation.Kind is AnnotationKind.ExpectError ? DiagnosticKind.Error : DiagnosticKind.Lint;
+            var id = annotation.Text.Text.Trim().ToString();
+            table.Add(lineNumber, new DiagnosticId(kind, id));
+        }
 
         return table;
     }
@@ -138,7 +143,10 @@ public sealed class Evaluator
     
     private void CheckExpectedOutput()
     {
-        if (_testFile.Expectation is null)
+        var expectedOutput = Normalize(_testFile.Annotations
+            .Where(a => a.Kind is AnnotationKind.ExpectOutput)
+            .Select(a => a.Text.Text.ToString()));
+        if (expectedOutput is "")
         {
             _failedChecks.Add(new FailedCheck(0, "Missing expected output."));
             return;
@@ -155,12 +163,11 @@ public sealed class Evaluator
         BoundTreeInterpreter.Run(compilation.Scripts[0], output);
         
         var actualOutput = Normalize(output.ToString());
-        var expectedOutput = Normalize(_testFile.Expectation.Text);
 
         if (actualOutput != expectedOutput)
         {
             var message = $"Output was '{actualOutput}', but expected '{expectedOutput}'.";
-            _failedChecks.Add(new FailedCheck(_testFile.Expectation.Location.StartLine, message));
+            _failedChecks.Add(new FailedCheck(0, message));
         }
     }
 
@@ -169,6 +176,8 @@ public sealed class Evaluator
     /// with '\n'. Used for comparing output.
     /// </summary>
     private string Normalize(string input)
-        => string.Join('\n', input.Split('\n').Select(line => line.Trim())).Trim();
+        => Normalize(input.Split('\n'));
 
+    private string Normalize(IEnumerable<string> lines)
+        => string.Join('\n', lines.Select(line => line.Trim())).Trim();
 }

@@ -104,45 +104,28 @@ public class SemanticTokensHandler : SemanticTokensHandlerBase
         var tokenLocationInTestFile = testFile.MapToTestFile(token.Location);
 
         // Fragment headlines
-        if (testFile.Fragments.Any(f => f.LocationInTestFile.StartLine == tokenLocationInTestFile.StartLine) &&
+        if (testFile.Fragments.Any(f => f.Location.StartLine == tokenLocationInTestFile.StartLine) &&
             text.StartsWith("//---"))
         {
             yield return (tokenLocationInTestFile.FromLengthInside(0, "//---".Length), SemanticTokenType.Decorator);
             yield break;
         }
 
-        // Directive
-        if (tokenLocationInTestFile.Contains(testFile.Directive.Location))
-        {
-            yield return (testFile.Directive.Location, SemanticTokenType.Decorator);
-            yield break;
-        }
-
-        // Annotations
-        var annotation = testFile.Annotations
-            .FirstOrDefault(annotation => tokenLocationInTestFile.Contains(annotation.PrefixLocation));
+        // Annotation
+        var annotation = testFile.Annotations.FirstOrDefault(a => tokenLocationInTestFile.Contains(a.Prefix));
         if (annotation is not null)
         {
-            yield return (annotation.PrefixLocation, SemanticTokenType.Decorator);
+            yield return (annotation.Prefix, SemanticTokenType.Decorator);
+
+            if (annotation.Kind is AnnotationKind.ExpectOutput
+                && tokenLocationInTestFile.Contains(annotation.Text))
+            {
+                yield return (annotation.Text, SemanticTokenType.String);
+            }
+            
             yield break;
         }
-
-        // Expectation
-        foreach (var expectationPrefix in testFile.Expectation?.PrefixLocations ?? [])
-        {
-            if (!tokenLocationInTestFile.Contains(expectationPrefix))
-                continue;
-
-            yield return (expectationPrefix, SemanticTokenType.Decorator);
-
-            // Everything thereafter is string
-            yield return (SourceLocation.FromBounds(testFile.SourceText,
-                    expectationPrefix.End, tokenLocationInTestFile.End),
-                SemanticTokenType.String);
-
-            yield break;
-        }
-
+        
         yield return (tokenLocationInTestFile, SemanticTokenType.Comment);
         yield break;
     }

@@ -78,7 +78,6 @@ public sealed class TaxlProject : IProject
         => uri == Uri
             ?
             [
-                .. DiagnosticConverter.Convert(TestFile.Diagnostics, uri),
                 .. DiagnosticConverter.Convert(Compilation.Diagnostics, uri)
             ]
             : [];

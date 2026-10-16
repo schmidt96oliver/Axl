@@ -1,18 +1,4 @@
 ﻿//@run
-//= (-1, -1)
-//= (-2, -2)
-//= (3, 3)
-//= (-1, -1)
-//= (2, 2)
-//= (1.5, 1.5)
-//= (0.5, 0.5)
-//= (0.5, 0.5)
-//= true
-//= true
-//= false
-//= false
-//= false
-//= true
 
 // Operators are source-declarable and accepts overloads.
 // Note that this is not a faithful Vec2 implementation :D.
@@ -64,17 +50,43 @@ let a = Vec2(X = 1.0, Y = 1.0);
 let b = Vec2(X = 2.0, Y = 2.0);
 
 PrintLine("{-a}");
+//= (-1, -1)
+
 PrintLine("{!b}");
+//= (-2, -2)
+
 PrintLine("{a + b}");
+//= (3, 3)
+
 PrintLine("{a - b}");
+//= (-1, -1)
+
 PrintLine("{a * b}");
+//= (2, 2)
+
 PrintLine("{a * 1.5}");
+//= (1.5, 1.5)
+
 PrintLine("{a / b}");
+//= (0.5, 0.5)
+
 PrintLine("{a / 2.0}");
+//= (0.5, 0.5)
 
 PrintLine("{a < b}");
+//= true
+
 PrintLine("{a <= b}");
+//= true
+
 PrintLine("{a > b}");
+//= false
+
 PrintLine("{a >= b}");
+//= false
+
 PrintLine("{a == b}");
+//= false
+
 PrintLine("{a != b}");
+//= true

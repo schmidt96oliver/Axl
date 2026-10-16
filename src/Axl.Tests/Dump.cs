@@ -235,27 +235,16 @@ public class Dump(SourceText sourceText)
 
     public Dump Add(TestFile testFile)
     {
-        _builder.AppendLine($"Directive: {testFile.Directive?.Kind.ToString() ?? "???"}");
-        if (testFile.Expectation is not null)
-            _builder.AppendLine($"Expectation: \"{testFile.Expectation.Text}\"");
-
+        _builder.AppendLine($"Kind: {testFile.Kind}");
         foreach (var annotation in testFile.Annotations)
-        {
-            _builder.AppendLine(
-                $"//~ {annotation.Kind.ToString().ToLower()}@l.{annotation.LineNumber}: \"{annotation.Id}\"");
-        }
+            _builder.AppendLine($"{annotation.Kind} \"{annotation.Prefix.Text}\": \"{annotation.Text.Text}\"");
 
-        return this;
-    }
-    
-    public Dump AddFragments(ImmutableArray<Fragment> fragments)
-    {
-        foreach (var frag in fragments)
+        foreach (var fragment in testFile.Fragments)
         {
-            _builder.AppendLine("---------------------");
-            _builder.Append(frag.LocationInTestFile.Text.ToString());
+            _builder.AppendLine($"----- Fragment -----");
+            _builder.Append(fragment.Location.Text);
         }
-
+        
         return this;
     }
 

@@ -2,9 +2,14 @@
 
 namespace Axl.Compiler.Testing;
 
-public sealed record Fragment(SourceLocation LocationInTestFile)
+public sealed record Fragment(SourceLocation Location)
 {
-    public SourceText SourceText { get; } = SourceText.From(LocationInTestFile.Text.ToString());
-
-    public SourceLocation LocalLocation => SourceText.GetLocation(SourceText.Range);
+    public SourceText SourceText
+    {
+        get
+        {
+            field ??= SourceText.From(Location.Text.ToString());
+            return field;
+        }
+    }
 }

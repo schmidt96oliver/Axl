@@ -67,4 +67,7 @@ public readonly record struct SourceLocation
         var range = SourceRange.FromBounds(start, end);
         return new SourceLocation(sourceText, range);
     }
+
+    public static SourceLocation EmptyAfter(SourceLocation location)
+        => new(location.SourceText, SourceRange.EmptyAfter(location.Range));
 }
