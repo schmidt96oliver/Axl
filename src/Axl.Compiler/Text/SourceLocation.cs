@@ -1,4 +1,6 @@
-﻿namespace Axl.Compiler.Text;
+﻿using System.Diagnostics;
+
+namespace Axl.Compiler.Text;
 
 /// <summary>
 /// Range of text inside <see cref="Text.SourceText"/> including
@@ -35,4 +37,34 @@ public readonly record struct SourceLocation
 
     public bool Contains(SourceLocation location)
         => SourceText == location.SourceText && Range.Contains(location.Range);
+
+    public SourceLocation FromLengthInside(int start, int length)
+    {
+        Guard.MustBe(start >= 0);
+        Guard.MustBe(start + length <= Length);
+
+        var range = SourceRange.FromLength(start + Start, length);
+        Debug.Assert(Range.Contains(range));
+        return new SourceLocation(SourceText, range);
+    }
+
+    public SourceLocation FromBoundsInside(int start, int end)
+    {
+        Guard.MustBe(start >= 0);
+        Guard.MustBe(start <= end);
+        Guard.MustBe(end <= Length);
+
+        var range = SourceRange.FromBounds(start + Start, end + Start);
+        Debug.Assert(Range.Contains(range));
+        return new SourceLocation(SourceText, range);
+    }
+
+    public static SourceLocation FromBounds(SourceText sourceText, int start, int end)
+    {
+        Guard.MustBe(start >= 0);
+        Guard.MustBe(end <= sourceText.Length);
+
+        var range = SourceRange.FromBounds(start, end);
+        return new SourceLocation(sourceText, range);
+    }
 }

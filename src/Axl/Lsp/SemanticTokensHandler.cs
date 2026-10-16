@@ -11,7 +11,7 @@ using OmniSharp.Extensions.LanguageServer.Protocol.Server;
 
 namespace Axl.Lsp;
 
-public class SemanticTokensHandler(ILanguageServerFacade facade) : SemanticTokensHandlerBase
+public class SemanticTokensHandler : SemanticTokensHandlerBase
 {
     protected override SemanticTokensRegistrationOptions CreateRegistrationOptions(SemanticTokensCapability capability,
         ClientCapabilities clientCapabilities)
@@ -29,13 +29,19 @@ public class SemanticTokensHandler(ILanguageServerFacade facade) : SemanticToken
                     SemanticTokenType.Regexp,
                     SemanticTokenType.Namespace,
                     SemanticTokenType.Variable,
-                    SemanticTokenType.Type),
+                    SemanticTokenType.Type,
+                    SemanticTokenType.Method),
                 TokenModifiers = []
             },
             Full = true
         };
     }
 
+    protected override Task<SemanticTokensDocument> GetSemanticTokensDocument(ITextDocumentIdentifierParams @params,
+        CancellationToken cancellationToken)
+        => Task.FromResult(new SemanticTokensDocument(RegistrationOptions.Legend));
+    
+    
     protected override Task Tokenize(SemanticTokensBuilder builder, ITextDocumentIdentifierParams identifier,
         CancellationToken cancellationToken)
     {
@@ -44,174 +50,28 @@ public class SemanticTokensHandler(ILanguageServerFacade facade) : SemanticToken
         if (project is null)
             return Task.CompletedTask;
 
-        // Push diagnostics
-        facade.TextDocument.PublishDiagnostics(new PublishDiagnosticsParams
+        var semanticTokens = project
+            .GetSyntaxTrees(uri)
+            .SelectMany(tree => EnumerateTokens(tree.FileSyntax))
+            .SelectMany(token => Single(token, project));
+        
+        foreach (var (axlLocation, semanticToken) in semanticTokens)
         {
-            Uri = uri,
-            Diagnostics = project.GetDiagnostics(uri)
-        });
+            cancellationToken.ThrowIfCancellationRequested();
+            if (axlLocation.Length == 0)
+                continue;
+            
+            var lspLocation = ProjectStore.TryMapToLsp(axlLocation);
+            if (lspLocation is null || lspLocation.Uri != uri)
+                continue;
 
-        TokenizeFile(builder, uri, project);
+            builder.Push(lspLocation.Range, (SemanticTokenType?)semanticToken);
+        }
 
         return Task.CompletedTask;
     }
 
-    private void TokenizeFile(SemanticTokensBuilder builder, DocumentUri uri, IProject project)
-    {
-        foreach (var tree in project.GetSyntaxTrees(uri))
-        foreach (var token in EnumerateTokens(tree.FileSyntax))
-        {
-            if (token.FullRange.Length == 0)
-                continue;
-            if (token.FullRange.Start >= tree.SourceText.Length)
-                continue;
-
-            var lspLocation = project.TryMapToLsp(token.Location);
-            switch (token.Kind)
-            {
-                case TokenKind.Comment:
-                {
-                    if (project is TaxlProject taxlProject)
-                        TokenizeTaxlComment(token, taxlProject.TestFile, lspLocation, builder);
-                    else
-                        builder.Push(lspLocation.Range, (SemanticTokenType?)SemanticTokenType.Comment);
-
-                    break;
-                }
-                
-                case TokenKind.Identifier:
-                    var semanticTokenType = project.Compilation.GetBoundScript(tree).SemanticSideTable.TryGetSymbol(token.Location) switch
-                    {
-                        TypeSymbol => SemanticTokenType.Type,
-                        VariableSymbol => SemanticTokenType.Variable,
-                        NamespaceOrTypeSymbol => SemanticTokenType.Namespace,
-                        _ => (SemanticTokenType?)null
-                    };
-                    
-                    if (semanticTokenType is not null)
-                        builder.Push(lspLocation.Range, semanticTokenType);
-                    break;
-
-                case TokenKind.StringStart:
-                case TokenKind.StringEnd:
-                    builder.Push(lspLocation.Range, (SemanticTokenType?)SemanticTokenType.String);
-                    break;
-
-                case TokenKind.StringText:
-                {
-                    // Partition the string text into escape and non-escape
-                    var text = tree.SourceText.GetText(token.FullRange);
-
-                    var stringTokenStart = 0;
-                    for (var i = 0; i < text.Length; i++)
-                    {
-                        if (text[i] is not '\\')
-                            continue;
-
-                        // Push string text before
-                        if (i > stringTokenStart)
-                        {
-                            builder.Push(lspLocation.Range.Start.Line,
-                                @char: lspLocation.Range.Start.Character + stringTokenStart,
-                                length: i - stringTokenStart,
-                                (SemanticTokenType?)SemanticTokenType.String);
-                        }
-
-                        // Push escape
-                        builder.Push(lspLocation.Range.Start.Line,
-                            @char: lspLocation.Range.Start.Character + i,
-                            length: i + 1 < text.Length ? 2 : 1,
-                            (SemanticTokenType?)SemanticTokenType.Regexp);
-
-                        if (i + 1 < text.Length)
-                            i++;
-                        stringTokenStart = i + 1;
-                    }
-
-                    // Push rest string
-                    if (text.Length > stringTokenStart)
-                    {
-                        builder.Push(lspLocation.Range.Start.Line,
-                            @char: lspLocation.Range.Start.Character + stringTokenStart,
-                            length: text.Length - stringTokenStart,
-                            (SemanticTokenType?)SemanticTokenType.String);
-                    }
-
-                    break;
-                }
-
-                default:
-                    if (SyntaxFacts.IsKeyword(token.Kind))
-                        builder.Push(lspLocation.Range, (SemanticTokenType?)SemanticTokenType.Keyword);
-                    break;
-            }
-        }
-    }
-
-    private void TokenizeTaxlComment(Token commentToken, TestFile testFile, Location lspLocation, SemanticTokensBuilder builder)
-    {
-        var text = commentToken.Text;
-        
-        // --- Fragment headlines
-        if (text.StartsWith("//---"))
-        {
-            builder.Push(lspLocation.Range.Start.Line, lspLocation.Range.Start.Character, length: Math.Min(5, commentToken.FullRange.Length),
-                (SemanticTokenType?)SemanticTokenType.Decorator);
-            return;
-        }
-
-        // Directives and annotations
-        var decoratorLength = GetTaxlCommentDecoratorLength(commentToken.FullRange, testFile, out var restIsString);
-        if (decoratorLength <= 0)
-        {
-            // Entire length is just a comment
-            builder.Push(lspLocation.Range, (SemanticTokenType?)SemanticTokenType.Comment);
-        }
-        
-        builder.Push(lspLocation.Range.Start.Line, lspLocation.Range.Start.Character, decoratorLength,
-            (SemanticTokenType?)SemanticTokenType.Decorator);
-        
-        if (restIsString && decoratorLength < commentToken.FullRange.Length)
-        {
-            var restStart = lspLocation.Range.Start.Character + decoratorLength;
-            var restLength = commentToken.FullRange.Length - decoratorLength;
-            builder.Push(lspLocation.Range.Start.Line, restStart, restLength,
-                (SemanticTokenType?)SemanticTokenType.String);
-        }
-    }
-    
-    private int GetTaxlCommentDecoratorLength(SourceRange commentRange, TestFile testFile, out bool restIsString)
-    {
-        restIsString = false;
-        
-        // Directive?
-        if (commentRange.Contains(testFile.Directive.Location.Range))
-            return commentRange.Length;
-        
-        // Expectation?
-        if (testFile.Expectation is not null && testFile.Expectation.Location.Range.Contains(commentRange))
-        {
-            SourceLocation? prefixLocation = testFile.Expectation.PrefixLocations.FirstOrDefault(l => commentRange.Contains(l.Range));
-            if (prefixLocation is SourceLocation loc)
-            {
-                restIsString = true;
-                return loc.Length;
-            }
-            
-            return 0;
-        }
-
-        // An annotation?
-        var annotation = testFile.Annotations
-            .FirstOrDefault(annotation => annotation.FullLocation.Range == commentRange);
-        if (annotation is not null)
-            return annotation.PrefixLocation.Length;
-        
-        // Nothing
-        return 0;
-    }
-    
-    private IEnumerable<Token> EnumerateTokens(SyntaxElement element)
+    private static IEnumerable<Token> EnumerateTokens(SyntaxElement element)
     {
         if (element is Token token)
             yield return token;
@@ -222,8 +82,121 @@ public class SemanticTokensHandler(ILanguageServerFacade facade) : SemanticToken
         }
     }
 
-    protected override Task<SemanticTokensDocument> GetSemanticTokensDocument(ITextDocumentIdentifierParams @params, CancellationToken cancellationToken)
+    
+    private IEnumerable<(SourceLocation, SemanticTokenType)> Single(Token token, IProject project)
+        => token.Kind switch
+        {
+            TokenKind.Comment when project is TaxlProject { TestFile: var testFile }
+                => SingleTaxlComment(token, testFile),
+            TokenKind.Comment => [(token.Location, SemanticTokenType.Comment)],
+            TokenKind.Identifier => SingleIdentifier(token, project),
+
+            TokenKind.StringStart or TokenKind.StringEnd => [(token.Location, SemanticTokenType.String)],
+            TokenKind.StringText => SingleStringText(token),
+            
+            _ when SyntaxFacts.IsKeyword(token.Kind) => [(token.Location, SemanticTokenType.Keyword)],
+            _ => []
+        };
+
+    private static IEnumerable<(SourceLocation, SemanticTokenType)> SingleTaxlComment(Token token, TestFile testFile)
     {
-        return Task.FromResult(new SemanticTokensDocument(RegistrationOptions.Legend));
+        var text = token.Text.ToString();
+        var tokenLocationInTestFile = testFile.MapToTestFile(token.Location);
+
+        // Fragment headlines
+        if (testFile.Fragments.Any(f => f.LocationInTestFile.StartLine == tokenLocationInTestFile.StartLine) &&
+            text.StartsWith("//---"))
+        {
+            yield return (tokenLocationInTestFile.FromLengthInside(0, "//---".Length), SemanticTokenType.Decorator);
+            yield break;
+        }
+
+        // Directive
+        if (tokenLocationInTestFile.Contains(testFile.Directive.Location))
+        {
+            yield return (testFile.Directive.Location, SemanticTokenType.Decorator);
+            yield break;
+        }
+
+        // Annotations
+        var annotation = testFile.Annotations
+            .FirstOrDefault(annotation => tokenLocationInTestFile.Contains(annotation.PrefixLocation));
+        if (annotation is not null)
+        {
+            yield return (annotation.PrefixLocation, SemanticTokenType.Decorator);
+            yield break;
+        }
+
+        // Expectation
+        foreach (var expectationPrefix in testFile.Expectation?.PrefixLocations ?? [])
+        {
+            if (!tokenLocationInTestFile.Contains(expectationPrefix))
+                continue;
+
+            yield return (expectationPrefix, SemanticTokenType.Decorator);
+
+            // Everything thereafter is string
+            yield return (SourceLocation.FromBounds(testFile.SourceText,
+                    expectationPrefix.End, tokenLocationInTestFile.End),
+                SemanticTokenType.String);
+
+            yield break;
+        }
+
+        yield return (tokenLocationInTestFile, SemanticTokenType.Comment);
+        yield break;
+    }
+
+    private static IEnumerable<(SourceLocation, SemanticTokenType)> SingleIdentifier(Token token, IProject project)
+    {
+        var symbol = project.Compilation.GetBoundScript(token.Tree).SemanticSideTable.TryGetSymbol(token.Location);
+
+        return symbol switch
+        {
+            TypeSymbol => [(token.Location, SemanticTokenType.Type)],
+            VariableSymbol => [(token.Location, SemanticTokenType.Variable)],
+            NamespaceOrTypeSymbol => [(token.Location, SemanticTokenType.Namespace)],
+            FunSymbol => [(token.Location, SemanticTokenType.Method)],
+            _ => []
+        };
+    }
+
+    private static IEnumerable<(SourceLocation, SemanticTokenType)> SingleStringText(Token token)
+    {
+        // String text has escapes that are highlighted differently.
+        // So we partition the string text.
+        // Currently, there is no way to get valid escapes, so just
+        // highlight everything after a `\`.
+        
+        var text = token.Text.ToString();
+
+        var stringTokenStart = 0;
+        for (var i = 0; i < text.Length; i++)
+        {
+            if (text[i] is not '\\')
+                continue;
+
+            // String before
+            if (i > stringTokenStart)
+            {
+                yield return (token.Location.FromLengthInside(stringTokenStart, length: i - stringTokenStart),
+                    SemanticTokenType.String);
+            }
+
+            // Escape
+            yield return (token.Location.FromLengthInside(i, length: i + 1 < text.Length ? 2 : 1),
+                SemanticTokenType.Regexp);
+            
+            if (i + 1 < text.Length)
+                i++;
+            stringTokenStart = i + 1;
+        }
+
+        // Push rest string
+        if (text.Length > stringTokenStart)
+        {
+            yield return (token.Location.FromLengthInside(stringTokenStart, length: text.Length - stringTokenStart),
+                SemanticTokenType.String);
+        }
     }
 }
