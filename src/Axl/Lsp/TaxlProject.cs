@@ -32,7 +32,25 @@ public sealed class TaxlProject : IProject
         return new TaxlProject(uri, testFile);
     }
 
+    
+    /// <inheritdoc />
+    public bool HasDocument(DocumentUri uri)
+        => Uri == uri;
 
+    /// <inheritdoc />
+    public void UpdateDocument(DocumentUri uri, string text)
+    {
+        if (uri != Uri) return;
+
+        var testFile = TestFile.From(SourceText.From(text, uri.GetFileSystemPath()));
+        TestFile = testFile;
+    }
+
+    /// <inheritdoc />
+    public ImmutableArray<SyntaxTree> GetSyntaxTrees(DocumentUri uri)
+        => Uri == uri ? Compilation.SyntaxTrees : [];
+    
+    
     /// <inheritdoc />
     public Location? TryMapToLsp(SourceLocation location)
     {
@@ -63,32 +81,5 @@ public sealed class TaxlProject : IProject
         var locationInTestFile = new SourceLocation(TestFile.SourceText, rangeInTestFile);
         var locationInFragment = TestFile.MapToFragment(locationInTestFile);
         return locationInFragment;
-    }
-
-    /// <inheritdoc />
-    public bool HasDocument(DocumentUri uri)
-        => Uri == uri;
-
-    /// <inheritdoc />
-    public ImmutableArray<SyntaxTree> GetSyntaxTrees(DocumentUri uri)
-        => Uri == uri ? Compilation.SyntaxTrees : [];
-
-    /// <inheritdoc />
-    public ImmutableArray<Diagnostic> GetDiagnostics(DocumentUri uri)
-        => uri == Uri
-            ?
-            [
-                .. DiagnosticConverter.Convert(Compilation.Diagnostics, uri)
-            ]
-            : [];
-    
-
-    /// <inheritdoc />
-    public void UpdateDocument(DocumentUri uri, string text)
-    {
-        if (uri != Uri) return;
-
-        var testFile = TestFile.From(SourceText.From(text, uri.GetFileSystemPath()));
-        TestFile = testFile;
     }
 }

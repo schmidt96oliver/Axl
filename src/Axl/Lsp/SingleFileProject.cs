@@ -29,6 +29,22 @@ public sealed class SingleFileProject : IProject
         var compilation = Compilation.From(sourceText);
         return new SingleFileProject(uri, compilation);
     }
+
+
+    /// <inheritdoc />
+    public bool HasDocument(DocumentUri uri)
+        => Uri == uri;
+
+    /// <inheritdoc />
+    public void UpdateDocument(DocumentUri uri, string text)
+    {
+        if (uri != Uri) return;
+        Compilation = Compilation.From(SourceText.From(text, uri.GetFileSystemPath()));
+    }
+
+    /// <inheritdoc />
+    public ImmutableArray<SyntaxTree> GetSyntaxTrees(DocumentUri uri)
+        => Uri == uri ? Compilation.SyntaxTrees : [];
     
     
     /// <inheritdoc />
@@ -54,24 +70,5 @@ public sealed class SingleFileProject : IProject
             return null;
         
         return new SourceLocation(SourceText, range);
-    }
-
-    /// <inheritdoc />
-    public bool HasDocument(DocumentUri uri)
-        => Uri == uri;
-
-    /// <inheritdoc />
-    public ImmutableArray<SyntaxTree> GetSyntaxTrees(DocumentUri uri)
-        => Uri == uri ? Compilation.SyntaxTrees : [];
-
-    /// <inheritdoc />
-    public ImmutableArray<Diagnostic> GetDiagnostics(DocumentUri uri)
-        => Uri == uri ? [.. DiagnosticConverter.Convert(Compilation.Diagnostics, uri)] : [];
-
-    /// <inheritdoc />
-    public void UpdateDocument(DocumentUri uri, string text)
-    {
-        if (uri != Uri) return;
-        Compilation = Compilation.From(SourceText.From(text, uri.GetFileSystemPath()));
     }
 }

@@ -9,7 +9,7 @@ namespace Axl.Lsp;
 
 using AxlDiagnostic = Compiler.Diagnostics.Diagnostic;
 
-public class DocumentDiagnosticHandler : DocumentDiagnosticHandlerBase
+public class DiagnosticHandler : DocumentDiagnosticHandlerBase
 {
     /// <inheritdoc />
     protected override DiagnosticsRegistrationOptions CreateRegistrationOptions(DiagnosticClientCapabilities capability,
