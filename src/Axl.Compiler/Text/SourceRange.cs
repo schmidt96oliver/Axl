@@ -68,6 +68,15 @@ public readonly record struct SourceRange
     public bool Contains(SourceRange range)
         => range.Start >= Start && range.End <= End;
 
+    public SourceRange this[Range range]
+    {
+        get
+        {
+            var (offset, length) = range.GetOffsetAndLength(Length);
+            return new SourceRange(Start + offset, length);
+        }
+    }
+    
     /// <summary>
     /// Whether the given ranges are sequential without overlaps or gaps and range
     /// the entire <see cref="SourceRange"/>.

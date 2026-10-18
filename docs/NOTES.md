@@ -9,10 +9,6 @@
   * don't fold exepctation/directives
   * bug: folds too much
 
-* refactor: Remove SourceText.GetLocation, replace with SourceLocation.From***
-  * Implement `this[Range]` for SourceLocation and SourceRange
-  * Maybe implicit conversion from Range `1..2` to SourceRange
-
 --------
 
 * Compilation exposes `Namespaces` and `Scripts` it declares. They can be accessed from

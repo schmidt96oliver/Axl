@@ -41,7 +41,7 @@ public partial record Diagnostic
     public sealed record SuffixInvalidForDecimalNumber(NumberLiteralSyntax NumberLiteralSyntax) : Error
     {
         public override ImmutableArray<SourceLocation> Locations 
-            => [NumberLiteralSyntax.Tree.SourceText.GetLocation(NumberLiteralSyntax.Token.SuffixRange)];
+            => [NumberLiteralSyntax.Location];
 
         public override string Message
             => $"Suffix ‘{NumberLiteralSyntax.Token.Suffix.ToString().ToLower()}‘ describes an integral type. Expected a type that describes a decimal number.";
@@ -226,8 +226,8 @@ public partial record Diagnostic
             [
                 .. Duplicates.Where(fun => fun.DeclarationSyntax is not null)
                     .Select(fun =>
-                        fun.DeclarationSyntax!.Location.SourceText.GetLocation(SourceRange.FromTo(fun.DeclarationSyntax!.Name.Location.Range,
-                            fun.DeclarationSyntax!.ParameterList.Location.Range)))
+                        SourceLocation.FromTo(fun.DeclarationSyntax!.Name.Location,
+                            fun.DeclarationSyntax!.ParameterList.Location))
             ];
 
         public override string LocationLabel => "Also declared here.";

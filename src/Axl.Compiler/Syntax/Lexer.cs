@@ -334,7 +334,7 @@ public sealed class Lexer
                 // this will never be read. The block is still valid.
                 
                 scanner.DiagnosticBag.ReportError(new Diagnostic.UnknownNumberSuffix(
-                    scanner.SourceText.GetLocation(suffixRange)));
+                    new SourceLocation(scanner.SourceText, suffixRange)));
             }
             
             scanner.AddNumberLiteralWithSuffix(bodyBuilder.ToString(), suffix, suffixRange);
@@ -409,7 +409,7 @@ public sealed class Lexer
                         // Eof and newline will end the entire string, so we need to stop here.
                         // '\' will be discarded (not included in ProcessedText).
                         scanner.DiagnosticBag.ReportError(new Diagnostic.UnknownEscapeSequence(
-                            scanner.SourceText.GetLocationFromLength(scanner.NextIndex - 1, 1)));
+                            SourceLocation.FromLength(scanner.SourceText, scanner.NextIndex - 1, 1)));
                         goto case '\0';
                     }
 
@@ -442,7 +442,7 @@ public sealed class Lexer
                             // Report error. The escaped sequence will not be part of the
                             // processed text.
                             scanner.DiagnosticBag.ReportError(new Diagnostic.UnknownEscapeSequence(
-                                scanner.SourceText.GetLocationFromLength(scanner.NextIndex - 2, 2)));
+                                SourceLocation.FromLength(scanner.SourceText, scanner.NextIndex - 2, 2)));
                             break;
                     }
 

@@ -26,37 +26,12 @@ public readonly record struct SourceLocation
     public SourceRange Range { get; }
     
     
-    /// <summary>
-    /// Only constructed through <see cref="SourceText.GetLocation"/>.
-    /// </summary>
     public SourceLocation(SourceText sourceText, SourceRange range)
     {
+        Guard.MustBe(sourceText.Range.Contains(range));
+        
         SourceText = sourceText;
         Range = range;
-    }
-
-    public bool Contains(SourceLocation location)
-        => SourceText == location.SourceText && Range.Contains(location.Range);
-
-    public SourceLocation FromLengthInside(int start, int length)
-    {
-        Guard.MustBe(start >= 0);
-        Guard.MustBe(start + length <= Length);
-
-        var range = SourceRange.FromLength(start + Start, length);
-        Debug.Assert(Range.Contains(range));
-        return new SourceLocation(SourceText, range);
-    }
-
-    public SourceLocation FromBoundsInside(int start, int end)
-    {
-        Guard.MustBe(start >= 0);
-        Guard.MustBe(start <= end);
-        Guard.MustBe(end <= Length);
-
-        var range = SourceRange.FromBounds(start + Start, end + Start);
-        Debug.Assert(Range.Contains(range));
-        return new SourceLocation(SourceText, range);
     }
 
     public static SourceLocation FromBounds(SourceText sourceText, int start, int end)
@@ -67,7 +42,30 @@ public readonly record struct SourceLocation
         var range = SourceRange.FromBounds(start, end);
         return new SourceLocation(sourceText, range);
     }
+    public static SourceLocation FromLength(SourceText sourceText, int start, int length)
+    {
+        Guard.MustBe(start >= 0);
+        Guard.MustBe(start + length <= sourceText.Length);
+
+        var range = SourceRange.FromLength(start, length);
+        return new SourceLocation(sourceText, range);
+    }
 
     public static SourceLocation EmptyAfter(SourceLocation location)
         => new(location.SourceText, SourceRange.EmptyAfter(location.Range));
+    
+    public static SourceLocation EmptyBefore(SourceLocation location)
+        => new(location.SourceText, SourceRange.EmptyBefore(location.Range));
+
+    public static SourceLocation FromTo(SourceLocation from, SourceLocation to)
+    {
+        Guard.MustBe(from.SourceText == to.SourceText);
+        return new SourceLocation(from.SourceText, SourceRange.FromTo(from.Range, to.Range));
+    }
+    
+
+    public bool Contains(SourceLocation location)
+        => SourceText == location.SourceText && Range.Contains(location.Range);
+
+    public SourceLocation this[Range range] => new (SourceText, Range[range]);
 }

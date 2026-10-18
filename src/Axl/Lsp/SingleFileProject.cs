@@ -53,7 +53,7 @@ public sealed class SingleFileProject : IProject
         if (location.Range.TryGetAxlRange(SourceText) is not { } range)
             return null;
         
-        return SourceText.GetLocation(range);
+        return new SourceLocation(SourceText, range);
     }
 
     /// <inheritdoc />

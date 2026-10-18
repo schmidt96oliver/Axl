@@ -166,7 +166,7 @@ public sealed class TestFile
         var annotations = ImmutableArray.CreateBuilder<Annotation>();
         var annotationLocations = Lexer.Lex(sourceText, new DiagnosticBag())
             .Where(t => t.Kind is TokenKind.Comment)
-            .Select(t => sourceText.GetLocation(t.FullRange))
+            .Select(t => new SourceLocation(sourceText, t.FullRange))
             .Where(l => l.Text.StartsWith("//~") || l.Text.StartsWith("//=") || l.Text.StartsWith("//@"));
 
         foreach (var location in annotationLocations)
@@ -209,8 +209,8 @@ public sealed class TestFile
         {
             if (!location.Text.StartsWith(prefix))
                 return null;
-            var prefixLocation = location.FromLengthInside(0, prefix.Length);
-            var textLocation = location.FromBoundsInside(prefix.Length, location.Length);
+            var prefixLocation = location[..prefix.Length];
+            var textLocation = location[prefix.Length..];
             return new Annotation(kind, prefixLocation, textLocation);
         }
     }
@@ -222,7 +222,7 @@ public sealed class TestFile
         // to, but excluding, the next delimiter.
         
         if (sourceText.Lines.Length == 0)
-            return [new Fragment(sourceText.GetLocation(SourceRange.FromLength(0, sourceText.Length)))];
+            return [new Fragment(SourceLocation.FromLength(sourceText, 0, sourceText.Length))];
         
         var splitLines = Enumerable.Range(0, sourceText.Lines.Length)
             .Where(i => sourceText.GetText(sourceText.Lines[i].Range).TrimStart().StartsWith("//---"))
@@ -244,7 +244,7 @@ public sealed class TestFile
                 : sourceText.Lines.Length - 1;
             
             var range = SourceRange.FromTo(sourceText.Lines[firstLine].RangeWithLineBreak, sourceText.Lines[lastLine].RangeWithLineBreak);
-            var location = sourceText.GetLocation(range);
+            var location = new SourceLocation(sourceText, range);
             
             fragments.Add(new Fragment(location));
         }

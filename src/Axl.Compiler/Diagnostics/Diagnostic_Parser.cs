@@ -8,7 +8,7 @@ public partial record Diagnostic
 {
     public sealed record UnexpectedToken(SourceText SourceText, Token Actual, ExpectedSyntax Expected) : Error
     {
-        public override ImmutableArray<SourceLocation> Locations => [SourceText.GetLocation(Actual.FullRange)];
+        public override ImmutableArray<SourceLocation> Locations => [new SourceLocation(SourceText, Actual.FullRange)];
 
         public override string Message
             => $"Expected {Expected.DisplayName}, got {Actual.Kind.DisplayName}.";
@@ -23,9 +23,9 @@ public partial record Diagnostic
                 // If it's missing at the start of file, place it
                 // before the next token.
                 if (Previous is null)
-                    return [SourceText.GetLocation(SourceRange.EmptyBefore(Next.FullRange))];
+                    return [new SourceLocation(SourceText, SourceRange.EmptyBefore(Next.FullRange))];
 
-                return [SourceText.GetLocation(SourceRange.EmptyAfter(Previous.FullRange))];
+                return [new SourceLocation(SourceText, SourceRange.EmptyAfter(Previous.FullRange))];
             }
         }
 
@@ -36,7 +36,7 @@ public partial record Diagnostic
     public sealed record InvalidOperatorChaining(SourceText SourceText, ImmutableArray<Token> OffendingOperators) : Error
     {
         public override ImmutableArray<SourceLocation> Locations =>
-            [.. OffendingOperators.Select(offendingOp => SourceText.GetLocation(offendingOp.FullRange))];
+            [.. OffendingOperators.Select(offendingOp => new SourceLocation(SourceText, offendingOp.FullRange))];
 
         public override string LocationLabel => "Conflicts with this operator.";
 

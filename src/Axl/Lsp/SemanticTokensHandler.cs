@@ -107,7 +107,7 @@ public class SemanticTokensHandler : SemanticTokensHandlerBase
         if (testFile.Fragments.Any(f => f.Location.StartLine == tokenLocationInTestFile.StartLine) &&
             text.StartsWith("//---"))
         {
-            yield return (tokenLocationInTestFile.FromLengthInside(0, "//---".Length), SemanticTokenType.Decorator);
+            yield return (tokenLocationInTestFile[.."//---".Length], SemanticTokenType.Decorator);
             yield break;
         }
 
@@ -161,25 +161,18 @@ public class SemanticTokensHandler : SemanticTokensHandlerBase
 
             // String before
             if (i > stringTokenStart)
-            {
-                yield return (token.Location.FromLengthInside(stringTokenStart, length: i - stringTokenStart),
-                    SemanticTokenType.String);
-            }
+                yield return (token.Location[stringTokenStart..i], SemanticTokenType.String);
 
             // Escape
-            yield return (token.Location.FromLengthInside(i, length: i + 1 < text.Length ? 2 : 1),
-                SemanticTokenType.Regexp);
+            var escapeLength = i + 1 < text.Length ? 2 : 1;
+            yield return (token.Location[i..(i + escapeLength)], SemanticTokenType.Regexp);
             
-            if (i + 1 < text.Length)
-                i++;
-            stringTokenStart = i + 1;
+            stringTokenStart = i + escapeLength;
+            i += escapeLength - 1;  // Will be incremented on next iteration
         }
 
         // Push rest string
         if (text.Length > stringTokenStart)
-        {
-            yield return (token.Location.FromLengthInside(stringTokenStart, length: text.Length - stringTokenStart),
-                SemanticTokenType.String);
-        }
+            yield return (token.Location[stringTokenStart..text.Length], SemanticTokenType.String);
     }
 }

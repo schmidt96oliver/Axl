@@ -15,9 +15,7 @@ public sealed class ArgListSyntax(ImmutableArray<SyntaxElement> children)
         {
             var argExprs = Arguments.ToList();
             if (argExprs.Count == 0) return Location;
-
-            var range = SourceRange.FromTo(argExprs[0].Location.Range, argExprs[^1].Location.Range);
-            return Tree.SourceText.GetLocation(range);
+            return SourceLocation.FromTo(argExprs[0].Location, argExprs[^1].Location);
         }
     }
 }
