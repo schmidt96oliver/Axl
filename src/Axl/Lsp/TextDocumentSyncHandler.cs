@@ -6,10 +6,11 @@ using OmniSharp.Extensions.LanguageServer.Protocol.Document;
 using OmniSharp.Extensions.LanguageServer.Protocol.Models;
 using OmniSharp.Extensions.LanguageServer.Protocol.Server;
 using OmniSharp.Extensions.LanguageServer.Protocol.Server.Capabilities;
+using Container = System.ComponentModel.Container;
 
 namespace Axl.Lsp;
 
-public class TextDocumentSyncHandler(ILanguageServerFacade facade) : TextDocumentSyncHandlerBase
+public class TextDocumentSyncHandler : TextDocumentSyncHandlerBase
 {
     public override TextDocumentAttributes GetTextDocumentAttributes(DocumentUri uri) => new(uri, Lsp.LanguageId);
 
@@ -26,7 +27,6 @@ public class TextDocumentSyncHandler(ILanguageServerFacade facade) : TextDocumen
     public override Task<Unit> Handle(DidOpenTextDocumentParams request, CancellationToken cancellationToken)
     {
         ProjectStore.Load(request.TextDocument.Uri, request.TextDocument.Text);
-        PushDiagnostics(request.TextDocument.Uri);
         return Unit.Task;
     }
 
@@ -36,7 +36,7 @@ public class TextDocumentSyncHandler(ILanguageServerFacade facade) : TextDocumen
         var text = request.ContentChanges.LastOrDefault()?.Text;
         if (text is not null) 
             ProjectStore.Load(request.TextDocument.Uri, text);
-        PushDiagnostics(request.TextDocument.Uri);
+
         return Unit.Task;
     }
 
@@ -44,7 +44,6 @@ public class TextDocumentSyncHandler(ILanguageServerFacade facade) : TextDocumen
     {
         if (request.Text is not null) 
             ProjectStore.Load(request.TextDocument.Uri, request.Text);
-        PushDiagnostics(request.TextDocument.Uri);
         return Unit.Task;
     }
 
@@ -52,18 +51,5 @@ public class TextDocumentSyncHandler(ILanguageServerFacade facade) : TextDocumen
     {
         ProjectStore.Unload(request.TextDocument.Uri);
         return Unit.Task;
-    }
-
-
-    private void PushDiagnostics(DocumentUri uri)
-    {
-        var project = ProjectStore.TryGetProject(uri);
-        if (project is null) return;
-        
-        facade.TextDocument.PublishDiagnostics(new PublishDiagnosticsParams
-        {
-            Uri = uri,
-            Diagnostics = project.GetDiagnostics(uri)
-        });
     }
 }

@@ -10,8 +10,7 @@
     </PropertyGroup>
 
     <ItemGroup>
-      <PackageReference Include="OmniSharp.Extensions.LanguageServer" Version="0.19.9" />
-      <PackageReference Include="Terminal.Gui" Version="2.4.17" />
+      <PackageReference Include="OmniSharp.Extensions.LanguageServer" Version="0.19.11" />
     </ItemGroup>
 
     <ItemGroup>

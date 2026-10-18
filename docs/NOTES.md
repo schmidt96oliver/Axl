@@ -3,15 +3,15 @@
 
 # Now
 
-* LSP: Rework diagnostics
-  * ?? Maybe use pull diagnostics
-  * move NonEmpty logic to diagnostics only; remove from general handler
-
 * LSP: FoldingRangeHandler
   * It needs to resepect Project mapping correctly
   * fold fragments
   * don't fold exepctation/directives
   * bug: folds too much
+
+* refactor: Remove SourceText.GetLocation, replace with SourceLocation.From***
+  * Implement `this[Range]` for SourceLocation and SourceRange
+  * Maybe implicit conversion from Range `1..2` to SourceRange
 
 --------
 
@@ -26,7 +26,6 @@
 
 # Questions / Little ones
 
-* refactor: Remove SourceText.GetLocation, replace with SourceLocation.From***
 
 * ?? Should I get rid of RootNamespace?
 * refactor: cleanup FunBuilder (Const instead of True())

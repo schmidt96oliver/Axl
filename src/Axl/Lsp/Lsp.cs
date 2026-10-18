@@ -1,6 +1,12 @@
-﻿using OmniSharp.Extensions.LanguageServer.Server;
+﻿using OmniSharp.Extensions.JsonRpc;
+using OmniSharp.Extensions.LanguageServer.Server;
 
 namespace Axl.Lsp;
+
+internal sealed class AlwaysSerial : IRequestProcessIdentifier
+{
+    public RequestProcessType Identify(IHandlerDescriptor descriptor) => RequestProcessType.Serial;
+}
 
 public static class Lsp
 {
@@ -11,10 +17,12 @@ public static class Lsp
     {
         // Run the server
         var server = await LanguageServer.From(options => options
+                .WithRequestProcessIdentifier(new AlwaysSerial())
                 .WithInput(Console.OpenStandardInput())
                 .WithOutput(Console.OpenStandardOutput())
-                .WithHandler<SemanticTokensHandler>()
                 .WithHandler<TextDocumentSyncHandler>()
+                .WithHandler<DocumentDiagnosticHandler>()
+                .WithHandler<SemanticTokensHandler>()
                 .WithHandler<FoldingRangeHandler>()
                 .WithHandler<HoverHandler>()
             );
