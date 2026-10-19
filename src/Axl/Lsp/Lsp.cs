@@ -23,7 +23,6 @@ public static class Lsp
                 .WithHandler<DocumentHandler>()
                 .WithHandler<DiagnosticHandler>()
                 .WithHandler<SemanticTokensHandler>()
-                .WithHandler<FoldingRangeHandler>()
                 .WithHandler<HoverHandler>()
             );
         await server.WaitForExit;

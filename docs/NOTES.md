@@ -3,11 +3,6 @@
 
 # Now
 
-* LSP: FoldingRangeHandler
-  * It needs to resepect Project mapping correctly
-  * fold fragments
-  * don't fold exepctation/directives
-  * bug: folds too much
 
 --------
 
