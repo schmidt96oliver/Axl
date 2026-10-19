@@ -69,5 +69,6 @@ public enum SyntaxKind
     ConditionClause,
     StructBody,
     Self,
-    FunName
+    FunName,
+    NamespaceName
 }

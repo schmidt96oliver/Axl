@@ -85,6 +85,25 @@ public partial class Parser
         return _scanner.Close(field, SyntaxKind.FieldDecl);
     }
 
+    private MarkClose EnsureNamespaceName()
+    {
+        var namespaceName = _scanner.Open();
+        EnsureToken(TokenKind.Identifier, ExpectedSyntax.NamespaceName);
+
+        foreach (var _ in _scanner.MustEatEachIteration())
+        {
+            if (_scanner.IsAt(TokenKind.Dot))
+            {
+                _scanner.Eat();
+                EnsureToken(TokenKind.Identifier);
+            }
+            else
+                break;
+        }
+
+        return _scanner.Close(namespaceName, SyntaxKind.NamespaceName);
+    }
+
     private MarkClose EatNamespaceDecl()
     {
         Debug.Assert(_scanner.IsAt(TokenKind.NamespaceKw));
@@ -92,7 +111,7 @@ public partial class Parser
         var namespaceDecl = _scanner.Open();
 
         _scanner.EatKnown(TokenKind.NamespaceKw);
-        EnsureTypeName(ExpectedSyntax.NamespaceName);
+        EnsureNamespaceName();
         EnsureToken(TokenKind.Semicolon);
 
         return _scanner.Close(namespaceDecl, SyntaxKind.NamespaceDecl);

@@ -168,6 +168,17 @@ public sealed class Binder
     
     #region File and Script
 
+    private RootNamespaceSymbol BindRootNamespace(ImmutableArray<SyntaxTree> trees)
+    {
+        // Build Namespace declarations
+        // Build Map NS -> SyntaxTree
+        // Build NS Members (Tree + Namespace decl)
+        // Bind NS Body
+
+        throw new NotImplementedException();
+    }
+    
+    
     public static BoundScript BindFile(FileSyntax syntax, RootNamespaceSymbol rootNamespace)
     {
         var diagnostics = new DiagnosticBag();

@@ -3,8 +3,10 @@
 
 File            = (Stmt | UsingDirective | NamespaceDecl | FnDecl | StructDecl)*
 
-NamespaceDecl      = "namespace" TypeName ";"
-UsingDirective  = "using" TypeName ";"
+NamespaceDecl      = "namespace" NamespaceName ";"
+UsingDirective     = "using" NamespaceName ";"
+
+NamespaceName      = Identifier ("." Identifier)*
 
 ## Member Declarations
 MemberDecl       = FnDecl | StructDecl

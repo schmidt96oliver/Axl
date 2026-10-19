@@ -17,8 +17,6 @@
 
 # Questions / Little ones
 
-
-* ?? Should I get rid of RootNamespace?
 * refactor: cleanup FunBuilder (Const instead of True())
 
 * ?? Should StringExpr bind to string.Concat?
@@ -27,25 +25,21 @@
 # Milestones
 
 ## 4. Namespaces and multiple files
-* [ ] Taxl file splitter + LSP Project abstraction (handles AxlLocation <-> LspLocation)
-* [ ] Compilation takes multiple files
+* [x] Taxl file splitter + LSP Project abstraction (handles AxlLocation <-> LspLocation)
+* [x] Compilation takes multiple files
 * [ ] Namespaces
   * [ ] Open across same compilation
   * [ ] Free funs + structs
   * [ ] `pub` and private visibility in namespaces
-* [ ] Project files
-  * [ ] Dependencies
-  * [ ] Cyclic dependencies rejected
-  * [ ] Namespaces cannot be added to if in another Compilation
-  * [ ] LSP automatically opens referenced Compilations
 * [ ] Using directives
 
 ## 5. `Base` namespace as Axl-Code
 [Proposal](Proposals/Primitives.axl)
+* [ ] BaseNamespaceSymbol searches for correct symbols
+* [ ] BaseNamespace shared across Compilations (through LSP)
 * [ ] `@intrinsic` and `@primitive` annotations
   * `@primitive(I32)` mapped to PrimitiveKind on struct
   * `@intrinsic` maps receiver and params to PrimitiveKind (instead of type name)
-* [ ] BaseNamespaceSymbol searches for correct symbols
 * [ ] IntrinsicLookup checks signatures
 * [ ] Replace entire BaseNamespaceSymbol with axl text :)).
 

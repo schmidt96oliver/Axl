@@ -33,6 +33,13 @@ Just like the Axolotl, Axl's animal.
   * Non-local returns; How does `return, break, continue` inside lambdas work?
   * Parameter and return-type inference
 
+* Project files
+    * Compilations can reference other Compilations
+    * Dependencies
+    * Cyclic dependencies rejected
+    * Namespaces cannot be added to if in another Compilation
+    * LSP automatically opens referenced Compilations
+
 # Unsorted design ideas and inspiration
 
 https://core-lang.dev/design.html
