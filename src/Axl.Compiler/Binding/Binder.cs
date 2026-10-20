@@ -168,14 +168,43 @@ public sealed class Binder
     
     #region File and Script
 
-    private RootNamespaceSymbol BindRootNamespace(ImmutableArray<SyntaxTree> trees)
-    {
-        // Build Namespace declarations
-        // Build Map NS -> SyntaxTree
-        // Build NS Members (Tree + Namespace decl)
-        // Bind NS Body
+    public sealed record NamespaceDeclaration(
+        string Name,
+        List<NamespaceDeclaration> Children,
+        List<SyntaxTree> Syntaxes);
 
-        throw new NotImplementedException();
+    public static NamespaceDeclaration GetRootNamespaceDeclaration(ImmutableArray<SyntaxTree> trees)
+    {
+        var rootNamespaceDeclaration = new NamespaceDeclaration("", [], []);
+
+        foreach (var tree in trees)
+        {
+            if (tree.FileSyntax.SyntaxNodes().FirstOrDefault() is not NamespaceDeclSyntax syntax)
+                continue;
+
+            // Namespace names have multiple parts "A.B.C" and each parts needs
+            // to declare a new namespace, even if it doesn't have any syntax.
+            
+            var decl = rootNamespaceDeclaration;
+            foreach (var namePart in syntax.Name.Identifiers.Select(t => t.Text.ToString()))
+            {
+                // For an empty name, always insert a new namespace,
+                // don't group them together.
+                
+                var child = decl.Children.FirstOrDefault(c => c.Name == namePart);
+                if (child is null || namePart is "")
+                {
+                    child = new NamespaceDeclaration(namePart, [], []);
+                    decl.Children.Add(child);
+                }
+
+                decl = child;
+            }
+            
+            decl.Syntaxes.Add(tree);
+        }
+
+        return rootNamespaceDeclaration;
     }
     
     
