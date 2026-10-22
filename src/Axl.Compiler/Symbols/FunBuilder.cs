@@ -13,14 +13,14 @@ namespace Axl.Compiler.Symbols;
 public sealed class FunBuilder
 {
     private readonly List<ParameterSymbol> _parameters = [];
-    private readonly FunSymbol _fun;
+    private readonly SyntheticFunSymbol _fun;
     private readonly BaseNamespaceSymbol _baseNamespace;
     private BoundStmt? _last = null;
     private bool _isFinished = false;
     private TypeSymbol? _returnType = null;
 
 
-    private FunBuilder(FunSymbol fun, BaseNamespaceSymbol baseNamespace)
+    private FunBuilder(SyntheticFunSymbol fun, BaseNamespaceSymbol baseNamespace)
     {
         _fun = fun;
         _baseNamespace = baseNamespace;
@@ -30,7 +30,7 @@ public sealed class FunBuilder
     public static FunBuilder Method(string name, Symbol parent, TypeSymbol receiverType, BaseNamespaceSymbol baseNamespace,
         bool isPublic = true)
     {
-        var fun = new FunSymbol(name, parent, isPublic, receiverType, isMutatingReceiver: false);
+        var fun = new SyntheticFunSymbol(name, parent, isPublic, receiverType, isMutatingReceiver: false);
         return new FunBuilder(fun, baseNamespace);
     }
 
@@ -43,7 +43,7 @@ public sealed class FunBuilder
     public static FunBuilder Static(string name, Symbol parent,
         BaseNamespaceSymbol baseNamespace, bool isPublic = true)
     {
-        var fun = new FunSymbol(name, parent, isPublic, null, isMutatingReceiver: false);
+        var fun = new SyntheticFunSymbol(name, parent, isPublic, null, isMutatingReceiver: false);
         return new FunBuilder(fun, baseNamespace);
     }
 
@@ -108,8 +108,7 @@ public sealed class FunBuilder
         var body = GetBody();
         Debug.Assert(_returnType is not null);
         
-        _fun.SetParametersAndReturnType([.. _parameters], _returnType);
-        _fun.SetBody(body);
+        _fun.SetSignatureAndBody([.. _parameters], _returnType, body);
         return _fun;
     }
 

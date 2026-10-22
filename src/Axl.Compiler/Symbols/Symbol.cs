@@ -1,4 +1,6 @@
-﻿namespace Axl.Compiler.Symbols;
+﻿using Axl.Compiler.Binding;
+
+namespace Axl.Compiler.Symbols;
 
 public closed class Symbol(string name, Symbol? owner)
 {
@@ -18,6 +20,16 @@ public closed class Symbol(string name, Symbol? owner)
 
     public TypeSymbol? OwningType 
         => SelfAndOwners().OfType<TypeSymbol>().FirstOrDefault();
+
+    /// <summary>
+    /// Completes binding of all lazy symbols and transfers side effects
+    /// to <paramref name="sideEffects"/>. Completes any members or
+    /// owned symbols as well.
+    /// </summary>
+    public virtual void Complete(BinderSideEffects sideEffects)
+    {
+
+    }
 
     /// <summary>
     /// Iterates through all owners starting with this symbol.

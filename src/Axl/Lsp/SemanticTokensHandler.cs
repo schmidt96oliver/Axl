@@ -129,7 +129,7 @@ public class SemanticTokensHandler : SemanticTokensHandlerBase
 
     private static IEnumerable<(SourceLocation, SemanticTokenType)> SingleIdentifier(Token token, IProject project)
     {
-        var symbol = project.Compilation.GetBoundScript(token.Tree).SemanticSideTable.TryGetSymbol(token.Location);
+        var symbol = project.Compilation.SemanticSideTable.TryGetSymbol(token.Location);
 
         return symbol switch
         {

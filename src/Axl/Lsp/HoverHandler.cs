@@ -26,8 +26,8 @@ public class HoverHandler : HoverHandlerBase
         if (project is null)
             return Task.FromResult<Hover?>(null);
 
-        var token = project.Compilation.GetTokenAt(axlLocation);
-        var symbol = project.Compilation.GetBoundScript(token.Tree).SemanticSideTable.TryGetSymbol(token.Location);
+        var token = project.Compilation.TokenAt(axlLocation);
+        var symbol = project.Compilation.SemanticSideTable.TryGetSymbol(token.Location);
         
         if (symbol is null)
             return Task.FromResult<Hover?>(null);

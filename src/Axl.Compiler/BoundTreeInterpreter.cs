@@ -38,25 +38,15 @@ public sealed class BoundTreeInterpreter
     }
     
     
-    public static void Run(BoundScript script, TextWriter output)
+    public static void Run(FunSymbol script, TextWriter output)
     {
-        PrintDiagnostics(output, script.Diagnostics);
-        if (script.Diagnostics.Any(diag => diag is Diagnostic.Error))
-            return;
-        
         var interpreter = new BoundTreeInterpreter(output);
 
         try
         {
-            interpreter.Call(script.ScriptFun, null, []);
+            interpreter.Call(script, null, []);
         }
         catch (ReturnException) {}
-    }
-
-    private static void PrintDiagnostics(TextWriter output, ImmutableArray<Diagnostic> diagnostics)
-    {
-        foreach (var diag in diagnostics)
-            output.WriteLine($"[{diag.DefaultSeverity.ToString().ToUpper()}] {diag.Id}@l.{diag.Locations[0].StartLine}: {diag.Message}");
     }
 
     private object Call(FunSymbol fun, object? receiver, ImmutableArray<object> args)
@@ -197,28 +187,29 @@ public sealed class BoundTreeInterpreter
     private object Evaluate(BoundValue value) => value switch
     {
         BoundValueOrTypeRef valueOrType => Evaluate(valueOrType.AsValue),
-        
+
         BoundSelf boundSelf => CopyOrAlias(GetPlaceRef(boundSelf)),
         BoundVariable boundVariableRef => CopyOrAlias(GetPlaceRef(boundVariableRef)),
         BoundConst boundConst => boundConst.Value.Value!,
-        
+
         BoundLogicAnd boundAnd => EvaluateAnd(boundAnd),
         BoundAssign boundAssign => EvaluateAssign(boundAssign),
         BoundBlock boundBlock => EvaluateBlock(boundBlock),
         BoundCall boundCall => EvaluateCall(boundCall),
         BoundIfExpr boundIfExpr => EvaluateIf(boundIfExpr),
-        
+
         BoundLogicOr boundOr => EvaluateOr(boundOr),
         BoundStringExpr boundStringExpr => string.Concat(boundStringExpr.Parts.Select(part => (string)Evaluate(part))),
-        
+
         BoundBreak => throw new BreakException(),
         BoundContinue => throw new ContinueException(),
         BoundReturn boundReturn => EvaluateReturn(boundReturn),
-        
+
         BoundStructInit structInit => EvaluateStructInit(structInit),
         BoundField field => EvaluateField(field),
-        
-        BoundFieldInit or BoundError => throw new UnreachableException(),
+
+        BoundFieldInit => throw new UnreachableException(),
+        BoundError => throw new InvalidOperationException("Cannot evaluate errors."),
     };
 
     private object EvaluateField(BoundField field)

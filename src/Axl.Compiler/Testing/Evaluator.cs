@@ -156,11 +156,11 @@ public sealed class Evaluator
         var compilation = _testFile.Compilation;
         if (compilation.Scripts.Length != 1)
         {
-            _failedChecks.Add(new FailedCheck(0, $"Test file must have 1 script to execut, got {compilation.Scripts.Length}."));
+            _failedChecks.Add(new FailedCheck(0, $"Test file must have 1 script to execute, got {compilation.Scripts.Length}."));
             return;
         }
         
-        BoundTreeInterpreter.Run(compilation.Scripts[0], output);
+        BoundTreeInterpreter.Run(compilation.Scripts[0].Fun, output);
         
         var actualOutput = Normalize(output.ToString());
 

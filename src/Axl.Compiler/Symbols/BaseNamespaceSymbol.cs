@@ -9,16 +9,16 @@ public sealed class BaseNamespaceSymbol : NamespaceSymbol
 {
     public override ImmutableArray<Symbol> Members { get; }
 
-    public StructSymbol I32 { get; }
-    public StructSymbol I64 { get; }
-    public StructSymbol F32 { get; }
-    public StructSymbol F64 { get; }
-    public StructSymbol String { get; }
-    public StructSymbol Bool { get; }
-    public StructSymbol Unit { get; }
+    public SyntheticStructSymbol I32 { get; }
+    public SyntheticStructSymbol I64 { get; }
+    public SyntheticStructSymbol F32 { get; }
+    public SyntheticStructSymbol F64 { get; }
+    public SyntheticStructSymbol String { get; }
+    public SyntheticStructSymbol Bool { get; }
+    public SyntheticStructSymbol Unit { get; }
 
-    public StructSymbol DefaultIntType => I32;
-    public StructSymbol DefaultFloatType => F64;
+    public SyntheticStructSymbol DefaultIntType => I32;
+    public SyntheticStructSymbol DefaultFloatType => F64;
 
 
     public BaseNamespaceSymbol(Symbol owner)
@@ -26,13 +26,13 @@ public sealed class BaseNamespaceSymbol : NamespaceSymbol
     {
         //TODO: String should not be a struct, probably :D
         
-        Bool = new StructSymbol("Bool", this, isPublic: true, isPrimitive: true);
-        String = new StructSymbol("String", this, isPublic: true, isPrimitive: true);
-        I32 = new StructSymbol("I32", this, isPublic: true, isPrimitive: true);
-        I64 = new StructSymbol("I64", this, isPublic: true, isPrimitive: true);
-        F32 = new StructSymbol("F32", this, isPublic: true, isPrimitive: true);
-        F64 = new StructSymbol("F64", this, isPublic: true, isPrimitive: true);
-        Unit = new StructSymbol("Unit", this, isPublic: true, isPrimitive: false);
+        Bool = new SyntheticStructSymbol("Bool", this, isPublic: true, isPrimitive: true);
+        String = new SyntheticStructSymbol("String", this, isPublic: true, isPrimitive: true);
+        I32 = new SyntheticStructSymbol("I32", this, isPublic: true, isPrimitive: true);
+        I64 = new SyntheticStructSymbol("I64", this, isPublic: true, isPrimitive: true);
+        F32 = new SyntheticStructSymbol("F32", this, isPublic: true, isPrimitive: true);
+        F64 = new SyntheticStructSymbol("F64", this, isPublic: true, isPrimitive: true);
+        Unit = new SyntheticStructSymbol("Unit", this, isPublic: true, isPrimitive: false);
         
         // Bool members need to be generated first, because
         // generation will look for ! operator.
@@ -54,13 +54,12 @@ public sealed class BaseNamespaceSymbol : NamespaceSymbol
     {
         var funs = ImmutableArray.CreateBuilder<Symbol>();
         
-        var print = new FunSymbol("Print", 
+        var print = new SyntheticFunSymbol("Print", 
             owner: this,
             isPublic: true,
             receiverType: null, 
             isMutatingReceiver: false);
-        print.SetParametersAndReturnType([new ParameterSymbol("text", print, String)], Unit);
-        print.SetBody(Intrinsic.Print);
+        print.SetSignatureAndBody([new ParameterSymbol("text", print, String)], Unit, Intrinsic.Print);
         funs.Add(print);
 
         // PrintLine = Print("{arg}\n")
@@ -103,9 +102,8 @@ public sealed class BaseNamespaceSymbol : NamespaceSymbol
     private FunSymbol IntrinsicMethodNoParam(string name, TypeSymbol type, TypeSymbol returnType,
         Intrinsic intrinsic)
     {
-        var fun = new FunSymbol(name, owner: type, isPublic: true, receiverType: type, isMutatingReceiver: false);
-        fun.SetParametersAndReturnType([], returnType);
-        fun.SetBody(intrinsic);
+        var fun = new SyntheticFunSymbol(name, owner: type, isPublic: true, receiverType: type, isMutatingReceiver: false);
+        fun.SetSignatureAndBody([], returnType, intrinsic);
         return fun;
     }
     
@@ -117,9 +115,8 @@ public sealed class BaseNamespaceSymbol : NamespaceSymbol
     private FunSymbol IntrinsicMethodSingleParam(string name, TypeSymbol type, TypeSymbol returnType,
         Intrinsic intrinsic)
     {
-        var fun = new FunSymbol(name, owner: type, isPublic: true, receiverType: type, isMutatingReceiver: false);
-        fun.SetParametersAndReturnType([new ParameterSymbol("right", fun, type)], returnType);
-        fun.SetBody(intrinsic);
+        var fun = new SyntheticFunSymbol(name, owner: type, isPublic: true, receiverType: type, isMutatingReceiver: false);
+        fun.SetSignatureAndBody([new ParameterSymbol("right", fun, type)], returnType, intrinsic);
         return fun;
     }
     

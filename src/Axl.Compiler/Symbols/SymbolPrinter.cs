@@ -47,11 +47,8 @@ public static class SymbolPrinter
             => $"({string.Join(", ", fun.Parameters.Select(param => $"{param.Name}: {param.Type.Name}"))})";
 
         private static string GetFunAnnotationText(FunSymbol fun)
-            => fun.Body is Intrinsic intrinsic
-                ? $" @intrinsic {intrinsic.ToString()}"
-                : fun.DeclarationSyntax is null
-                    ? " @compiler-generated"
-                    : "";
+            => (fun.Body is Intrinsic intrinsic ? $" @intrinsic {intrinsic.ToString()}" : "") +
+               (fun is SyntheticFunSymbol ? " @synthetic" : "");
     }
 
     extension(FunSymbol fun)

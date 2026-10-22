@@ -16,6 +16,8 @@ public closed class Scope
 
     public TypeSymbol? OwnerAsType => Owner as TypeSymbol;
 
+    public NamespaceOrTypeSymbol? OwnerAsNamespaceOrType => Owner as NamespaceOrTypeSymbol;
+
     public BindingFlags Flags { get; }
 
     public TypeSymbol? InstanceType

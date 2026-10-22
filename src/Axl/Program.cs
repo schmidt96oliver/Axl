@@ -20,7 +20,7 @@ switch (args[0])
             return;
         }
         
-        BoundTreeInterpreter.Run(compilation.GetBoundScript(compilation.SyntaxTrees[0]), Console.Out);
+        BoundTreeInterpreter.Run(compilation.Scripts[0].Fun, Console.Out);
         break;
     }
     

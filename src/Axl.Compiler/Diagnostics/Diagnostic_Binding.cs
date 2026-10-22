@@ -44,7 +44,7 @@ public partial record Diagnostic
             => [NumberLiteralSyntax.Location];
 
         public override string Message
-            => $"Suffix ‘{NumberLiteralSyntax.Token.Suffix.ToString().ToLower()}‘ describes an integral type. Expected a type that describes a decimal number.";
+            => $"Suffix ‘{NumberLiteralSyntax.Token.Suffix.ToString().ToLowerInvariant()}‘ describes an integral type. Expected a type that describes a decimal number.";
     }
 
     public sealed record UndefinedName(IdNameSyntax Syntax) : Error
@@ -224,8 +224,7 @@ public partial record Diagnostic
             // Squiggle the name and parameter list, since they are at fault.
             =>
             [
-                .. Duplicates.Where(fun => fun.DeclarationSyntax is not null)
-                    .Select(fun =>
+                .. Duplicates.Select(fun =>
                         SourceLocation.FromTo(fun.DeclarationSyntax!.Name.Location,
                             fun.DeclarationSyntax!.ParameterList.Location))
             ];
@@ -377,8 +376,9 @@ public partial record Diagnostic
 
         private static SyntaxElement? GetDeclarationNameSyntax(Symbol symbol) => symbol switch
         {
-            StructSymbol { DeclarationSyntax: not null } structSymbol => structSymbol.DeclarationSyntax.Name,
-            FunSymbol { DeclarationSyntax: not null } funSymbol => funSymbol.DeclarationSyntax.Name,
+            SourceStructSymbol structSymbol => structSymbol.DeclarationSyntax.Name,
+            SourceFunSymbol sourceFun => sourceFun.DeclarationSyntax!.Name,
+            LocalFunSymbol localFun => localFun.DeclarationSyntax.Name,
             FieldSymbol { DeclarationSyntax: not null } fieldSymbol => fieldSymbol.DeclarationSyntax.Name,
             _ => null
         };
@@ -576,15 +576,15 @@ public partial record Diagnostic
     public sealed record WrongOperatorParameterCount(FunSymbol Fun) : Error
     {
         /// <inheritdoc />
-        public override ImmutableArray<SourceLocation> Locations => [Fun.DeclarationSyntax!.ParameterList.Location];
+        public override ImmutableArray<SourceLocation> Locations => [Fun.DeclarationSyntax.ParameterList.Location];
 
         /// <inheritdoc />
         public override string Message
         {
             get
             {
-                var isUnary = SyntaxFacts.IsUnaryOperator(Fun.DeclarationSyntax!.Name.Token.Kind);
-                var isBinary = SyntaxFacts.IsBinaryOperator(Fun.DeclarationSyntax!.Name.Token.Kind);
+                var isUnary = SyntaxFacts.IsUnaryOperator(Fun.DeclarationSyntax.Name.Token.Kind);
+                var isBinary = SyntaxFacts.IsBinaryOperator(Fun.DeclarationSyntax.Name.Token.Kind);
                 return (isUnary, isBinary) switch
                 {
                     (true, true) =>
@@ -604,7 +604,7 @@ public partial record Diagnostic
         /// <inheritdoc />
         public override ImmutableArray<SourceLocation> Locations =>
         [
-            Fun.DeclarationSyntax!.ReturnTypeAnnotation?.Location ?? Fun.DeclarationSyntax!.Name.Location
+            Fun.DeclarationSyntax!.ReturnTypeAnnotation?.Location ?? Fun.DeclarationSyntax.Name.Location
         ];
 
         /// <inheritdoc />

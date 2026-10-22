@@ -3,11 +3,7 @@
 
 # Now
 
-
 --------
-
-* Compilation exposes `Namespaces` and `Scripts` it declares. They can be accessed from
-  other Compilations.
 
 * Compilation (= one project) is one of
   * Project (stdlib) with `project.axlproj` and dependencies

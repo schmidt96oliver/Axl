@@ -12,6 +12,8 @@ public sealed class SemanticSideTable
 {
     private readonly Dictionary<SourceLocation, Symbol> _resolvedSymbols = [];
 
+    public IReadOnlyDictionary<SourceLocation, Symbol> ResolvedSymbols => _resolvedSymbols.AsReadOnly();
+
     public void AddResolvedSymbol(SourceLocation location, Symbol? symbol)
     {
         if (symbol is null) return;

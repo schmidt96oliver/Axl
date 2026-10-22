@@ -12,7 +12,7 @@ namespace Axl.Compiler;
 
 public class Compilation
 {
-    private readonly Dictionary<SyntaxTree, BoundScript> _boundScripts = [];
+    private readonly Dictionary<SyntaxTree, ScriptSymbol> _boundScripts = [];
     
     public ImmutableArray<SyntaxTree> SyntaxTrees { get; }
 
@@ -21,12 +21,24 @@ public class Compilation
         get
         {
             if (field.IsDefault)
-                field = [..SyntaxTrees.SelectMany(tree => tree.Diagnostics), .. Scripts.SelectMany(boundFile => boundFile.Diagnostics)];
+                Complete();
             return field;
         }
+        private set;
     }
 
-    public ImmutableArray<BoundScript> Scripts
+    public SemanticSideTable SemanticSideTable
+    {
+        get
+        {
+            if (field is null)
+                Complete();
+            return field!;
+        }
+        private set;
+    }
+
+    public ImmutableArray<ScriptSymbol> Scripts
     {
         get
         {
@@ -52,11 +64,22 @@ public class Compilation
     }
 
 
-    public BoundScript GetBoundScript(SyntaxTree tree)
+    private void Complete()
+    {
+        var sideEffects = new BinderSideEffects();
+        foreach (var script in Scripts)
+            script.Complete(sideEffects);
+
+        Diagnostics = [.. SyntaxTrees.SelectMany(tree => tree.Diagnostics), ..sideEffects.DiagnosticBag.Drain()];
+        SemanticSideTable = sideEffects.SemanticSideTable;
+    }
+    
+
+    public ScriptSymbol GetBoundScript(SyntaxTree tree)
     {
         if (!_boundScripts.TryGetValue(tree, out var boundFile))
         {
-            boundFile = Binder.BindFile(tree.FileSyntax, RootNamespace);
+            boundFile = Binder.BindScriptFile(tree, RootNamespace);
             _boundScripts.Add(tree, boundFile);
         }
 
@@ -92,7 +115,7 @@ public class Compilation
         }
     }
 
-    public Token GetTokenAt(SourceLocation location)
+    public Token TokenAt(SourceLocation location)
     {
         SyntaxElement current = GetSyntaxTree(location.SourceText).FileSyntax;
         Debug.Assert(current.FullRange.Contains(location.Range));
