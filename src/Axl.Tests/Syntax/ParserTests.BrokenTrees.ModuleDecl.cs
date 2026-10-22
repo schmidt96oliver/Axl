@@ -16,7 +16,8 @@ public partial class ParserTests
 
                     NamespaceDecl
                     · 'namespace'
-                    · NamespaceName 'A'
+                    · NamespaceName
+                    · · IdName 'A'
                     · ??';'
                     """);
             

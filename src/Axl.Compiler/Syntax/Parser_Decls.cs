@@ -97,14 +97,14 @@ public partial class Parser
     private MarkClose EnsureNamespaceName()
     {
         var namespaceName = _scanner.Open();
-        EnsureToken(TokenKind.Identifier, ExpectedSyntax.NamespaceName);
+        EnsureIdName(ExpectedSyntax.NamespaceName);
 
         foreach (var _ in _scanner.MustEatEachIteration())
         {
             if (_scanner.IsAt(TokenKind.Dot))
             {
                 _scanner.Eat();
-                EnsureToken(TokenKind.Identifier);
+                EnsureIdName();
             }
             else
                 break;

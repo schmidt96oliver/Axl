@@ -6,6 +6,10 @@ namespace Axl.Compiler.Binding.Scopes;
 
 public closed class Scope
 {
+    public virtual Compilation Compilation => EnclosingScope?.Compilation ??
+                                              throw new UnreachableException(
+                                                  "Without enclosing scope, the scope must declare Compilation explicitly.");
+
     public Scope? EnclosingScope { get; }
 
     public BaseNamespaceSymbol BaseNamespace { get; }

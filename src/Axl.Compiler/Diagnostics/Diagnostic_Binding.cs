@@ -363,6 +363,20 @@ public partial record Diagnostic
         };
 
     }
+    public sealed record NotANamespace(BoundNode BoundNode) : Error
+    {
+        public override ImmutableArray<SourceLocation> Locations => [BoundNode.Syntax!.Location];
+
+        public override string Message => BoundNode switch
+        {
+            BoundValue value => $"Expected a namespace, but got value of type ‘{value.Type.Name}‘.",
+            IBoundSymbolRef symbolRef => $"Expected a namespace, but got {symbolRef.Symbol.ShortDisplayName}.",
+            BoundFunGroup funGroup => $"Expected a namespace, but got fun ‘{funGroup.Name}‘.",
+            
+            BoundStmt => "Expected a namespace, but got a statement.",
+        };
+
+    }
 
     public sealed record AlreadyDeclared(ImmutableArray<Symbol> OffendingSymbols) : Error
     {
@@ -674,5 +688,14 @@ public partial record Diagnostic
         public override string Message => Owner is not null
             ? $"{TypeRef.Type.ShortDisplayName} is less accessible than {Owner.ShortDisplayName}."
             : $"{TypeRef.Type.ShortDisplayName} is not globally accessible.";
+    }
+
+    public sealed record UsingDirectiveAfterCode(SyntaxNode Syntax) : Error
+    {
+        /// <inheritdoc />
+        public override ImmutableArray<SourceLocation> Locations => [Syntax.Location];
+
+        /// <inheritdoc />
+        public override string Message => "Using directives must appear before all declarations and code.";
     }
 }

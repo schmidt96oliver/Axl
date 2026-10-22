@@ -6,7 +6,7 @@ namespace Axl.Compiler.Binding.Scopes;
 public sealed class GlobalScope(Compilation compilation)
     : Scope(enclosingScope: null, owner: null, BindingFlags.None, compilation.BaseNamespace)
 {
-    public Compilation Compilation { get; } = compilation;
+    public override Compilation Compilation { get; } = compilation;
 
     /// <inheritdoc />
     public override ImmutableArray<Symbol> Lookup(string name)
@@ -15,6 +15,7 @@ public sealed class GlobalScope(Compilation compilation)
 
         return
         [
+            .. Compilation.RootNamespace.LookupMembers(name),
             .. Compilation.ReferencedCompilations.SelectMany(refCompilation =>
                 refCompilation.RootNamespace.LookupMembers(name)),
             .. BaseNamespace.LookupMembers(name)

@@ -1,0 +1,10 @@
+﻿//@check
+
+let a = 1;
+
+using A;        //~error UsingDirectiveAfterCode
+using A;        //~error UsingDirectiveAfterCode
+using A;        //~error UsingDirectiveAfterCode
+
+//---
+namespace A;

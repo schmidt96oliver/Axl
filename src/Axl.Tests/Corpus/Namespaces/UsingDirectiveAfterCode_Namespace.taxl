@@ -1,0 +1,10 @@
+﻿//@check
+
+namespace Test;
+
+fun A() { }
+
+using A;        //~error UsingDirectiveAfterCode
+
+//---
+namespace A;

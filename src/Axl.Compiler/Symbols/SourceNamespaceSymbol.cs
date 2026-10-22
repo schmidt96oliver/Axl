@@ -1,6 +1,9 @@
-﻿using System.Collections.Immutable;
+﻿using System.Collections.Frozen;
+using System.Collections.Immutable;
+using System.Diagnostics;
 using Axl.Compiler.Binding;
 using Axl.Compiler.Binding.Scopes;
+using Axl.Compiler.Syntax;
 
 namespace Axl.Compiler.Symbols;
 
@@ -14,6 +17,8 @@ public sealed class SourceNamespaceSymbol(NamespaceDeclaration declaration, Scop
     private Binder? _binder = null;
     private bool _isBindingMembers = false;
 
+    private FrozenDictionary<SyntaxTree, UsingsScope>? _fileScopes;
+    
     public NamespaceDeclaration Declaration { get; } = declaration;
     
     
@@ -28,9 +33,12 @@ public sealed class SourceNamespaceSymbol(NamespaceDeclaration declaration, Scop
                 _isBindingMembers = true;
 
                 _binder ??= MakeBinder();
+                _fileScopes ??= Declaration.Syntaxes
+                    .ToFrozenDictionary(tree => tree, tree => _binder.BindFileScope(tree.FileSyntax));
+                
                 field =
                 [
-                    .. Declaration.Syntaxes.SelectMany(tree => _binder.BindNamespaceFile(tree)),
+                    .. Declaration.Syntaxes.SelectMany(tree => _binder.WithScope(_fileScopes[tree]).BindNamespaceFile(tree)),
                     .. Declaration.Children.Select(_binder.BindNamespaceDeclaration)
                 ];
 
@@ -49,13 +57,17 @@ public sealed class SourceNamespaceSymbol(NamespaceDeclaration declaration, Scop
     {
         foreach (var member in Members)
             member.Complete(sideEffects);
-
+        
+        Debug.Assert(_fileScopes is not null);
+        foreach (var scope in _fileScopes.Values)
+            scope.Complete(sideEffects);
+        
         _binder!.SideEffects.DrainInto(sideEffects);
         _binder = null;
     }
 
     private Binder MakeBinder()
-        => new(new MemberScope(enclosingScope, this), new BinderSideEffects());
-
-    
+        // Global scope already sees root namespace.
+        => new(Owner is null ? enclosingScope.WithOwner(this) : new MemberScope(enclosingScope, this),
+            new BinderSideEffects());
 }

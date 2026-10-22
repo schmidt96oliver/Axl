@@ -1,0 +1,25 @@
+﻿//@run
+//= y y
+
+using Test1;
+using Test2;
+
+Test1();
+Test2();
+
+//---
+namespace Test1;
+using A;
+
+pub fun Test1() = B.Do();
+
+//---
+namespace Test2;
+using A.B;
+
+pub fun Test2() = Do();
+
+//---
+namespace A.B;
+
+pub fun Do() = Print("y ");

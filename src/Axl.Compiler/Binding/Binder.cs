@@ -111,6 +111,7 @@ public sealed class Binder(Scope scope, BinderSideEffects sideEffects)
     {
         Any,
         OnlyType,
+        OnlyNamespace,
         MustBeCallable,
     }
     
@@ -122,6 +123,8 @@ public sealed class Binder(Scope scope, BinderSideEffects sideEffects)
         if (options is LookupOptions.OnlyType && symbol is not TypeSymbol)
             return LookupViability.WrongKind;
         if (options is LookupOptions.MustBeCallable && symbol is not (TypeSymbol or FunSymbol))
+            return LookupViability.WrongKind;
+        if (options is LookupOptions.OnlyNamespace && symbol is not NamespaceSymbol)
             return LookupViability.WrongKind;
 
         return LookupViability.Viable;
@@ -188,13 +191,13 @@ public sealed class Binder(Scope scope, BinderSideEffects sideEffects)
         foreach (var tree in trees)
         {
             if (tree.FileSyntax.SyntaxNodes().FirstOrDefault() is not NamespaceDeclSyntax syntax)
-                continue;
+                throw new UnreachableException();
 
             // Namespace names have multiple parts "A.B.C" and each parts needs
             // to declare a new namespace, even if it doesn't have any syntax.
             
             var decl = rootNamespaceDeclaration;
-            foreach (var namePart in syntax.Name.Identifiers.Select(t => t.Text.ToString()))
+            foreach (var namePart in syntax.Name.Parts.Select(t => t.Text.ToString()))
             {
                 // For an empty name, always insert a new namespace,
                 // don't group them together.
@@ -221,7 +224,24 @@ public sealed class Binder(Scope scope, BinderSideEffects sideEffects)
     
     public BoundBlock BindScriptBody(FileSyntax syntax)
     {
-        var block = BindBlock(syntax);
+        // File scope can immediately be completed, since
+        // we are not currently binding a namespace.
+        var fileScope = BindFileScope(syntax);
+        fileScope.Complete(SideEffects);
+        
+        var usingsBinder = WithScope(fileScope);
+        
+        // Skip all using directives that come at the start of the file.
+        var scriptContent = syntax.SyntaxNodes().SkipWhile(node => node is UsingDirectiveSyntax).ToImmutableArray();
+        
+        var localFuns = scriptContent.OfType<FunDeclSyntax>().Select(usingsBinder.BindLocalFunDeclaration).ToImmutableArray();
+        CheckDuplicateDeclarations([.. localFuns]);
+
+        var inBlockBinder = usingsBinder.EnterBlock([.. localFuns]);
+
+        var stmts = inBlockBinder.BindStmtsAndLocalFunBodies(scriptContent, localFuns);
+        
+        var block = new BoundBlock(stmts, localFuns, Unit, syntax);
         if (!block.IsDiverging)
             block = block.WithAdditionalStmts(new BoundReturn(null));
 
@@ -230,14 +250,15 @@ public sealed class Binder(Scope scope, BinderSideEffects sideEffects)
 
     public NamespaceSymbol BindNamespaceDeclaration(NamespaceDeclaration declaration)
     {
-        if (Scope.EnclosingScope is GlobalScope &&
-            Scope.EnclosingScope.Lookup(declaration.Name).Length > 0)
+        if (Scope.Owner?.Owner is null &&
+            Scope.Compilation.ReferencedCompilations.Any(c =>
+                c.RootNamespace.LookupMembers(declaration.Name).Length > 0))
         {
             // The namespace is being declared on global or root namespace
             // but is already declared in a referenced compilation.
             SideEffects.ReportError(new Diagnostic.NamespaceAlreadyDeclared(declaration));
         }
-        
+
         return new SourceNamespaceSymbol(declaration, Scope);
     }
     
@@ -247,17 +268,22 @@ public sealed class Binder(Scope scope, BinderSideEffects sideEffects)
         // syntax.
         Debug.Assert(syntax.FileSyntax.SyntaxNodes().First() is NamespaceDeclSyntax);
 
+        var usingsBinder = WithScope(BindFileScope(syntax.FileSyntax));
+        
         var symbols = ImmutableArray.CreateBuilder<Symbol>();
+        var rejectUsingDirectives = false;
         foreach (var child in syntax.FileSyntax.SyntaxNodes().Skip(1))
         {
             switch (child)
             {
                 case FunDeclSyntax funDecl:
-                    symbols.Add(BindSourceFunDeclaration(funDecl));
+                    symbols.Add(usingsBinder.BindSourceFunDeclaration(funDecl));
+                    rejectUsingDirectives = true;
                     break;
                 
                 case StructDeclSyntax structDecl:
-                    symbols.Add(BindStructDeclaration(structDecl));
+                    symbols.Add(usingsBinder.BindStructDeclaration(structDecl));
+                    rejectUsingDirectives = true;
                     break;
                 
                 case NamespaceDeclSyntax namespaceDecl:
@@ -267,15 +293,41 @@ public sealed class Binder(Scope scope, BinderSideEffects sideEffects)
                 
                 case StmtSyntax stmtSyntax:
                     SideEffects.ReportError(new Diagnostic.StmtInNamespaceFile(stmtSyntax));
+                    rejectUsingDirectives = true;
+                    break;
+                
+                case UsingDirectiveSyntax usingDirective:
+                    if (rejectUsingDirectives)
+                        SideEffects.ReportError(new Diagnostic.UsingDirectiveAfterCode(usingDirective));
                     break;
                 
                 default:
                     SideEffects.ReportError(new Diagnostic.UnsupportedFeature(child));
+                    rejectUsingDirectives = true;
                     break;
             }
         }
 
         return symbols.DrainToImmutable();
+    }
+
+    public UsingsScope BindFileScope(FileSyntax syntax)
+        => new(Scope, [.. syntax.SyntaxNodes().OfType<UsingDirectiveSyntax>()]);
+    
+    public NamespaceSymbol? BindUsingDirective(UsingDirectiveSyntax syntax)
+    {
+        // Usings must be bound in global scope
+        var globalBinder = WithScope(Scope.Compilation.GlobalScope);
+        
+        var boundExpr = globalBinder.BindExpr(syntax.NameExpr, LookupOptions.OnlyNamespace);
+        if (boundExpr is not BoundNamespaceRef nsRef)
+        {
+            if (boundExpr is not BoundError)
+                SideEffects.ReportError(new Diagnostic.NotANamespace(boundExpr));
+            return null;
+        }
+
+        return nsRef.Namespace;
     }
     
     #endregion
@@ -890,7 +942,7 @@ public sealed class Binder(Scope scope, BinderSideEffects sideEffects)
     
     #region Blocks, Control Flow
     
-    private BoundBlock BindBlock(SyntaxNode syntax)
+    private BoundBlock BindBlock(BlockExprSyntax syntax)
     {
         var localFuns = syntax.Children.OfType<FunDeclSyntax>().Select(BindLocalFunDeclaration).ToImmutableArray();
         CheckDuplicateDeclarations([.. localFuns]);
@@ -937,9 +989,9 @@ public sealed class Binder(Scope scope, BinderSideEffects sideEffects)
                 // This is only allowed on scripts and is handled separately.
             }
             else if (node is NamespaceDeclSyntax)
-            {
                 SideEffects.ReportError(new Diagnostic.NamespaceDeclarationInScript(node));
-            }
+            else if (node is UsingDirectiveSyntax)
+                SideEffects.ReportError(new Diagnostic.UsingDirectiveAfterCode(node));
             else
                 SideEffects.ReportError(new Diagnostic.UnsupportedFeature(node));
         }
@@ -1084,6 +1136,7 @@ public sealed class Binder(Scope scope, BinderSideEffects sideEffects)
             { } when boundNode is BoundError error => error,
             LookupOptions.MustBeCallable => BindError(boundNode.Syntax!, new Diagnostic.CannotCall(boundNode)),
             LookupOptions.OnlyType => BindError(boundNode.Syntax!, new Diagnostic.NotAType(boundNode)),
+            LookupOptions.OnlyNamespace => BindError(boundNode.Syntax!, new Diagnostic.NotANamespace(boundNode)),
             _ => throw new UnreachableException($"{nameof(LookupOptions)}.{lookupOptions} is unknown to {nameof(BindIdNameWithWrongKind)}")
         };
     

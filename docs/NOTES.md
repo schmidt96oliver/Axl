@@ -3,6 +3,10 @@
 
 # Now
 
+* use full names for diagnostics
+* ?? multiple usings of same namespace -> Produce AmbiguousRef currently
+* ?? using of namespace inside same namespace
+
 * Add Compilation refs to Symbol
 * ?? NamespaceDeclaration ImmutableArray
 

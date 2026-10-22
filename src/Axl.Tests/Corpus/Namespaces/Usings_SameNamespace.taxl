@@ -1,0 +1,20 @@
+﻿//@run
+//= y
+
+// Using scopes must handle usings of the same namespace.
+// This enforces the binder doing lazy using scope binding.
+
+using A;
+Do();
+
+//---
+namespace A;
+
+using A.B;
+
+pub fun Do() = Test();
+
+//---
+namespace A.B;
+
+pub fun Test() = Print("y");
