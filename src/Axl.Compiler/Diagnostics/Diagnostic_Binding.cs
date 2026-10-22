@@ -103,7 +103,7 @@ public partial record Diagnostic
         };
     }
 
-    public sealed record CannotMutateReceiver(BoundValue Receiver, FunSymbol Fun, Symbol Context, SyntaxNode FunSyntax) : Error
+    public sealed record CannotMutateReceiver(BoundValue Receiver, FunSymbol Fun, Symbol? Context, SyntaxNode FunSyntax) : Error
     {
         public override ImmutableArray<SourceLocation> Locations => [FunSyntax.Location];
 
@@ -486,7 +486,7 @@ public partial record Diagnostic
         public override string Message => "‘self‘ is only available inside non-static funs of a type.";
     }
 
-    public sealed record InstanceMemberInStaticContext(Symbol InstanceMember, Symbol Context, SyntaxNode Syntax) : Error
+    public sealed record InstanceMemberInStaticContext(Symbol InstanceMember, Symbol? Context, SyntaxNode Syntax) : Error
     {
         public override ImmutableArray<SourceLocation> Locations => [Syntax.Location];
 
@@ -494,7 +494,7 @@ public partial record Diagnostic
             $"{InstanceMember.ShortDisplayName.Capitalize()} needs an instance of ‘{InstanceMember.OwningType?.Name ?? "???"}‘, but there is no ‘self‘ here{ GetReasonText() }.";
 
         private FunSymbol? GetOutermostFun()
-            => (FunSymbol?)Context.SelfAndOwners().TakeWhile(s => s is FunSymbol).LastOrDefault();
+            => (FunSymbol?)Context?.SelfAndOwners().TakeWhile(s => s is FunSymbol).LastOrDefault();
         
         private string GetReasonText()
             => GetOutermostFun() is { } outermostFun

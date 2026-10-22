@@ -154,17 +154,16 @@ public sealed class Binder(Scope scope, BinderSideEffects sideEffects)
     public static NamespaceSymbol BindRootNamespace(Compilation compilation)
     {
         var decl = GetRootNamespaceDeclaration([.. compilation.SyntaxTrees.Where(IsNamespaceFile)]);
-        return new SourceNamespaceSymbol(decl, compilation.GlobalScope, owner: null);
+        return new SourceNamespaceSymbol(decl, compilation.GlobalScope);
     }
 
     public static ImmutableArray<ScriptSymbol> BindScripts(Compilation compilation)
     {
-        //TODO: Should scripts really have root namespace as owner?
-        var rootNamespaceScope = new NamespaceOrTypeScope(compilation.GlobalScope, compilation.RootNamespace);
+        var scriptScope = new ScriptScope(compilation.GlobalScope);
         return
         [
             .. compilation.SyntaxTrees.Where(tree => !IsNamespaceFile(tree))
-                .Select(tree => new ScriptSymbol(tree, rootNamespaceScope))
+                .Select(tree => new ScriptSymbol(tree, scriptScope))
         ];
     }
 

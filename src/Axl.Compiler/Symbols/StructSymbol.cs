@@ -5,7 +5,7 @@ namespace Axl.Compiler.Symbols;
 public closed class StructSymbol : TypeSymbol
 {
     protected StructSymbol(string name,
-        Symbol owner,
+        Symbol? owner,
         bool isPublic,
         bool isPrimitive) : base(name, owner, isPublic)
     {

@@ -4,7 +4,7 @@ using Axl.Compiler.Syntax.Tree;
 
 namespace Axl.Compiler.Symbols;
 
-public sealed class LocalFunSymbol(FunDeclSyntax declarationSyntax, Symbol owner, TypeSymbol? receiverType, bool isMutatingReceiver)
+public sealed class LocalFunSymbol(FunDeclSyntax declarationSyntax, Symbol? owner, TypeSymbol? receiverType, bool isMutatingReceiver)
     : FunSymbol(declarationSyntax.Name.Text.ToString(), owner, isPublic: false, receiverType, isMutatingReceiver)
 {
     public override FunDeclSyntax DeclarationSyntax { get; } = declarationSyntax;

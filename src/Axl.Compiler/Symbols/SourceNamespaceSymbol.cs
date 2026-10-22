@@ -4,8 +4,8 @@ using Axl.Compiler.Binding.Scopes;
 
 namespace Axl.Compiler.Symbols;
 
-public sealed class SourceNamespaceSymbol(NamespaceDeclaration declaration, Scope enclosingScope, Symbol? owner)
-    : NamespaceSymbol(declaration.Name, owner)
+public sealed class SourceNamespaceSymbol(NamespaceDeclaration declaration, Scope enclosingScope)
+    : NamespaceSymbol(declaration.Name, enclosingScope.Owner)
 {
     /// <summary>
     /// To avoid unnecessary allocations, the binder is created on first
@@ -14,19 +14,9 @@ public sealed class SourceNamespaceSymbol(NamespaceDeclaration declaration, Scop
     private Binder? _binder = null;
     private bool _isBindingMembers = false;
 
-    public SourceNamespaceSymbol(NamespaceDeclaration declaration, Scope enclosingScope) 
-        : this(declaration, enclosingScope, owner: enclosingScope.Owner)
-    {
-    }
-
-
     public NamespaceDeclaration Declaration { get; } = declaration;
-
-    /// <summary>
-    /// Namespaces are always public.
-    /// </summary>
-    public override bool IsPublic => true;
-
+    
+    
     public override ImmutableArray<Symbol> Members
     {
         get
@@ -65,5 +55,8 @@ public sealed class SourceNamespaceSymbol(NamespaceDeclaration declaration, Scop
     }
 
     private Binder MakeBinder()
+        // Root namespaces must not create a new scope, since everything is covered by the global scope.
         => new(new NamespaceOrTypeScope(enclosingScope, this), new BinderSideEffects());
+
+    
 }

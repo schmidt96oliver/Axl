@@ -18,8 +18,6 @@
 
 # Questions / Little ones
 
-* ?? Should Scripts have RootNamespace as owner? (Removing it breaks accessibility check)
-
 * refactor: cleanup FunBuilder (Const instead of True())
 
 * ?? Should StringExpr bind to string.Concat?

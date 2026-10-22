@@ -41,7 +41,7 @@ public closed class FunSymbol : Symbol
 
 
     protected FunSymbol(string name,
-        Symbol owner,
+        Symbol? owner,
         bool isPublic,
         TypeSymbol? receiverType,
         bool isMutatingReceiver) : base(name, owner)

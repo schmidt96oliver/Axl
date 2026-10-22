@@ -10,7 +10,11 @@ public closed class Scope
 
     public BaseNamespaceSymbol BaseNamespace { get; }
 
-    public virtual Symbol Owner { get; }
+    /// <summary>
+    /// The innermost <see cref="Symbol"/> the binder is currently
+    /// inside. <c>null</c> for global scopes.
+    /// </summary>
+    public Symbol? Owner { get; }
 
     public FunSymbol? OwnerAsFun => Owner as FunSymbol;
 
@@ -43,7 +47,7 @@ public closed class Scope
             = (enclosingScope, owner ?? enclosingScope.Owner, flags ?? enclosingScope.Flags,
                 baseNamespace ?? enclosingScope.BaseNamespace);
 
-    protected Scope(Scope? enclosingScope, Symbol owner, BindingFlags flags, BaseNamespaceSymbol baseNamespace)
+    protected Scope(Scope? enclosingScope, Symbol? owner, BindingFlags flags, BaseNamespaceSymbol baseNamespace)
         => (EnclosingScope, Owner, Flags, BaseNamespace)
             = (enclosingScope, owner, flags, baseNamespace);
     
@@ -51,5 +55,5 @@ public closed class Scope
     public abstract ImmutableArray<Symbol> Lookup(string name);
 
     public bool IsAccessible(Symbol symbol)
-        => symbol.AccessibleWithin is null || Owner.SelfAndOwners().Contains(symbol.AccessibleWithin);
+        => symbol.AccessibleWithin is null || Owner?.SelfAndOwners().Contains(symbol.AccessibleWithin) == true;
 }
