@@ -22,6 +22,7 @@ public readonly struct ExpectedSyntax
     public static readonly ExpectedSyntax NamespaceName = new("a namespace name");
     public static readonly ExpectedSyntax Block = new("a block");
     public static readonly ExpectedSyntax FieldName = new("a field name");
+    public static readonly ExpectedSyntax FunOrStruct = new("fun or struct");
     
     private ExpectedSyntax(string description)
         => DisplayName = description;

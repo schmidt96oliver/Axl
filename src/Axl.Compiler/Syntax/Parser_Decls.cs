@@ -10,8 +10,17 @@ public partial class Parser
     private MarkClose EatStructDecl(Anchor anchor)
     {
         var structDecl = _scanner.Open();
-        _scanner.EatKnown(TokenKind.StructKw);
+        
+        _scanner.EatIfPresent(TokenKind.PubKw);
 
+        if (!_scanner.IsAt(TokenKind.StructKw))
+        {
+            _scanner.ReportMissingTokenHere(TokenKind.StructKw);
+            return _scanner.Close(structDecl, SyntaxKind.Garbage);
+        }
+        
+        _scanner.EatKnown(TokenKind.StructKw);
+        
         EnsureIdName();
 
         if (_scanner.IsAt(TokenKind.Semicolon))

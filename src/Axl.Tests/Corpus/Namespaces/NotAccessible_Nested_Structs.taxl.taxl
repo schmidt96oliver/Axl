@@ -1,0 +1,35 @@
+﻿//@check
+
+let a = Test.PrivateInTest();           //~error NotAccessible
+let a = Test.PublicInTest();
+let a = Test.Inside.PrivateInside();    //~error NotAccessible
+let a = Test.Inside.PublicInside();
+
+//---
+namespace Test;
+
+struct PrivateInTest;
+pub struct PublicInTest;
+
+pub fun Test()
+{
+    let a = PrivateInTest();
+    let a = PublicInTest();
+    let a = Inside.PrivateInside();     //~error NotAccessible
+    let a = Inside.PublicInside();
+}
+
+//---
+namespace Test.Inside;
+
+struct PrivateInside;
+pub struct PublicInside;
+
+pub fun Test()
+{
+    // Here, everything is accessible
+    let a = PrivateInTest();
+    let a = PublicInTest();
+    let a = PrivateInside();
+    let a = PublicInside();
+}

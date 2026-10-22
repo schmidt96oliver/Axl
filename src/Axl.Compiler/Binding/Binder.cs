@@ -345,7 +345,14 @@ public sealed class Binder(Scope scope, BinderSideEffects sideEffects)
 
     public SourceStructSymbol BindStructDeclaration(StructDeclSyntax syntax)
     {
-        var symbol = new SourceStructSymbol(syntax, enclosingScope: Scope, isPublic: false, isPrimitive: false);
+        var isPublic = syntax.PubKw is not null;
+        if (syntax.PubKw is not null && Scope.Owner is ScriptSymbol)
+        {
+            SideEffects.ReportError(new Diagnostic.InvalidScriptStructModifier(syntax.PubKw));
+            isPublic = false;
+        }
+
+        var symbol = new SourceStructSymbol(syntax, enclosingScope: Scope, isPublic, isPrimitive: false);
         if (symbol.Name.Length > 0)
             SideEffects.AddResolvedSymbol(syntax.Name.Location, symbol);
         return symbol;
@@ -1102,7 +1109,7 @@ public sealed class Binder(Scope scope, BinderSideEffects sideEffects)
             return BindError(syntax, new Diagnostic.AmbiguousReference(lookupResult, syntax.Member));
         
         var receiver = ReplaceBoundValueOrTypeRef(left, symbol);
-        SideEffects.AddResolvedSymbol(syntax.Location, symbol);
+        SideEffects.AddResolvedSymbol(syntax.Member.Location, symbol);
         
         return symbol switch
         {

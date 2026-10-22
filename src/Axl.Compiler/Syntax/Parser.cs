@@ -61,6 +61,21 @@ public partial class Parser
                 else
                     EatStmt(fileAnchor | TokenKind.Semicolon);
             }
+            else if (_scanner.IsAt(TokenKind.PubKw))
+            {
+                switch (_scanner.Peek(1).Kind)
+                {
+                    case var kind when FirstSet.FunDecl.Contains(kind):
+                        EatFunDecl(fileAnchor);
+                        break;
+                    case TokenKind.StructKw:
+                        EatStructDecl(fileAnchor);
+                        break;
+                    default:
+                        _scanner.EatIntoGarbageAndReport(ExpectedSyntax.FunOrStruct);
+                        break;
+                }
+            }
             
             else if (_scanner.IsAt(FirstSet.Stmt))
                 EatStmt(fileAnchor | TokenKind.Semicolon);

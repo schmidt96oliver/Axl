@@ -1,0 +1,35 @@
+﻿//@check
+
+Test.PrivateInTest();           //~error NotAccessible
+Test.PublicInTest();
+Test.Inside.PrivateInside();    //~error NotAccessible
+Test.Inside.PublicInside();
+
+//---
+namespace Test;
+
+fun PrivateInTest() { }
+pub fun PublicInTest() { }
+
+pub fun Test()
+{
+    PrivateInTest();
+    PublicInTest();
+    Inside.PrivateInside();     //~error NotAccessible
+    Inside.PublicInside();
+}
+
+//---
+namespace Test.Inside;
+
+fun PrivateInside() { }
+pub fun PublicInside() { }
+
+pub fun Test()
+{
+    // Here, everything is accessible
+    PrivateInTest();
+    PublicInTest();
+    PrivateInside();
+    PublicInside();
+}

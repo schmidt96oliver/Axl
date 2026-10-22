@@ -1,0 +1,3 @@
+﻿//@check
+
+pub struct Test;    //~error InvalidScriptStructModifier

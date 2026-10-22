@@ -657,4 +657,11 @@ public partial record Diagnostic
         /// <inheritdoc />
         public override string Message => "The namespace declaration must be the first declaration in the file.";
     }
+
+    public sealed record InvalidScriptStructModifier(Token Syntax) : Error
+    {
+        /// <inheritdoc />
+        public override ImmutableArray<SourceLocation> Locations => [Syntax.Location];
+        public override string Message => $"‘{Syntax.Text}‘ is not valid on structs inside scripts.";
+    }
 }

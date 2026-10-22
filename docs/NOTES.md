@@ -7,7 +7,7 @@
 * ?? NamespaceDeclaration ImmutableArray
 
 * [x] NamespaceDeclarationInScript
-* [ ] pub structs
+* [x] pub structs
 * [ ] Private types must not leak through funs ("less accessible" rule) -> `IsAccessibleFrom`
 * [ ] test: accessibility
 * [ ] test: Open across same compilation
@@ -28,8 +28,8 @@
 * [x] Compilation takes multiple files
 * [ ] Namespaces
   * [x] Open across same compilation
-  * [ ] Free funs + structs
-  * [ ] `pub` and private visibility in namespaces
+  * [x] Free funs + structs
+  * [x] `pub` and private visibility in namespaces
 * [ ] Using directives
 
 ## 5. `Base` namespace as Axl-Code

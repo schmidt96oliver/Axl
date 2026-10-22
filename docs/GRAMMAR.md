@@ -20,7 +20,7 @@ ParamList       = "(" ")"
                 | "(" Param ("," Param)* ")"
 Param           = IdName TypeAnnotation?
 
-StructDecl      = "struct" IdName (StructBody | ";")
+StructDecl      = "pub"? "struct" IdName (StructBody | ";")
 StructBody      = "{" (FieldDecl | FunDecl)* "}"
 FieldDecl       = "pub"? IdName TypeAnnotation ";"
 
