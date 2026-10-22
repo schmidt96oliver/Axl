@@ -55,8 +55,7 @@ public sealed class SourceNamespaceSymbol(NamespaceDeclaration declaration, Scop
     }
 
     private Binder MakeBinder()
-        // Root namespaces must not create a new scope, since everything is covered by the global scope.
-        => new(new NamespaceOrTypeScope(enclosingScope, this), new BinderSideEffects());
+        => new(new MemberScope(enclosingScope, this), new BinderSideEffects());
 
     
 }

@@ -1,4 +1,6 @@
 using Axl.Compiler;
+using Axl.Compiler.Diagnostics;
+using Axl.Compiler.Testing;
 using Axl.Compiler.Text;
 
 var testFilePath = Path.Combine("..", "..", "..", "..", "src", "Axl", "test.taxl");
@@ -12,11 +14,13 @@ switch (args[0])
     case "run":
     {
         var sourceText = SourceText.LoadFile(testFilePath);
-        var compilation = Compilation.From(sourceText);
+        var compilation = Path.GetExtension(testFilePath) is ".taxl"
+            ? TestFile.From(sourceText).Compilation
+            : Compilation.From(sourceText);
 
-        if (compilation.SyntaxTrees.Length != 1)
+        if (compilation.Scripts.Length != 1)
         {
-            Console.WriteLine($"Compilation has {compilation.SyntaxTrees.Length} files, but can only run 1.");
+            Console.WriteLine($"Compilation has {compilation.SyntaxTrees.Length} scripts, but can only run 1.");
             return;
         }
 
@@ -24,7 +28,8 @@ switch (args[0])
             Console.WriteLine(
                 $"[{diagnostic.DefaultSeverity.ToString().ToUpperInvariant()}] {diagnostic.Id}@{diagnostic.Locations[0].Range}: {diagnostic.Message}");
         
-        BoundTreeInterpreter.Run(compilation.Scripts[0].Fun, Console.Out);
+        if (!compilation.Diagnostics.HasError)
+            BoundTreeInterpreter.Run(compilation.Scripts[0].Fun, Console.Out);
         break;
     }
     

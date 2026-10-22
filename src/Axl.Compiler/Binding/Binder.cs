@@ -10,6 +10,20 @@ using Axl.Compiler.Syntax.Tree;
 
 namespace Axl.Compiler.Binding;
 
+public enum TypeUsage
+{
+    /// <summary>
+    /// The type will not be visible outside the current owner.
+    /// </summary>
+    Local,
+    
+    /// <summary>
+    /// The type will be visible outside the current owner, so
+    /// the type must at least be as visible as owner.
+    /// </summary>
+    Signature
+}
+
 public sealed class Binder(Scope scope, BinderSideEffects sideEffects)
 {
     public Scope Scope { get; } = scope;
@@ -31,7 +45,7 @@ public sealed class Binder(Scope scope, BinderSideEffects sideEffects)
         => new(scope, SideEffects);
     
     public Binder EnterFunSignature(FunSymbol fun)
-        => WithScope(new FunSignatureScope(Scope, fun));
+        => WithScope(Scope.WithOwner(fun));
 
     public Binder EnterFunBody()
     {
@@ -485,7 +499,7 @@ public sealed class Binder(Scope scope, BinderSideEffects sideEffects)
     public TypeSymbol BindFunReturnType(ExprSyntax? returnTypeAnnotation)
     {
         return returnTypeAnnotation is not null
-            ? BindType(returnTypeAnnotation)
+            ? BindType(returnTypeAnnotation, TypeUsage.Signature)
             : Unit;
     }
     
@@ -513,7 +527,7 @@ public sealed class Binder(Scope scope, BinderSideEffects sideEffects)
         if (Scope.OwnerAsFun is null)
             throw new InvalidOperationException($"{nameof(BindParameter)} only valid on funs.");
 
-        var type = BindType(syntax.TypeAnnotation);
+        var type = BindType(syntax.TypeAnnotation, TypeUsage.Signature);
         var symbol = new ParameterSymbol(syntax.Name.Identifier, Scope.OwnerAsFun!, type, syntax);
         SideEffects.AddResolvedSymbol(syntax.Name.Location, symbol);
         return symbol;
@@ -568,7 +582,7 @@ public sealed class Binder(Scope scope, BinderSideEffects sideEffects)
     private BoundStmt BindVarDecl(VarDeclSyntax syntax)
     {
         var variableType = syntax.TypeAnnotation is not null
-            ? BindType(syntax.TypeAnnotation)
+            ? BindType(syntax.TypeAnnotation, TypeUsage.Local)
             : null;
         
         var boundInitializer = BindVarDeclInitializer(syntax);
@@ -660,18 +674,26 @@ public sealed class Binder(Scope scope, BinderSideEffects sideEffects)
         return value;
     }
 
-    public TypeSymbol BindType(ExprSyntax syntax)
+    public TypeSymbol BindType(ExprSyntax syntax, TypeUsage usage)
     {
         var bound = BindExpr(syntax, LookupOptions.OnlyType);
+        var typeRef = bound as BoundTypeRef;
         if (bound is BoundValueOrTypeRef valueOrType)
-            return valueOrType.AsTypeRef.Type;
-        if (bound is not BoundTypeRef typeRef)
+            typeRef = valueOrType.AsTypeRef;
+        if (typeRef is null)
         {
             if (bound is not BoundError)
                 SideEffects.ReportError(new Diagnostic.NotAType(bound));
             return ErrorTypeSymbol.Instance;
         }
 
+        // Check consistent accessibility
+        if (usage is TypeUsage.Signature && !typeRef.Type.IsAccessibleFrom(Scope.Owner?.AccessibleWithin))
+        {
+            SideEffects.DiagnosticBag.ReportError(new Diagnostic.InconsistentAccessibility(typeRef, Scope.Owner));
+            return ErrorTypeSymbol.Instance;
+        }
+        
         return typeRef.Type;
     }
     

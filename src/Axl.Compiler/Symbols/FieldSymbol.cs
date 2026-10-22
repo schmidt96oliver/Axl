@@ -33,7 +33,7 @@ public sealed class FieldSymbol(
                 _isBindingType = true;
                 
                 _binder ??= MakeBinder();
-                field = _binder.BindType(DeclarationSyntax.TypeExpr);
+                field = _binder.BindType(DeclarationSyntax.TypeExpr, TypeUsage.Signature);
 
                 _isBindingType = false;
             }
@@ -43,7 +43,7 @@ public sealed class FieldSymbol(
     }
 
     private Binder MakeBinder()
-        => new(enclosingScope, new BinderSideEffects());
+        => new(enclosingScope.WithOwner(this), new BinderSideEffects());
 
     /// <inheritdoc />
     public override void Complete(BinderSideEffects sideEffects)

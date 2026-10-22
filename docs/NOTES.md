@@ -8,8 +8,8 @@
 
 * [x] NamespaceDeclarationInScript
 * [x] pub structs
-* [ ] Private types must not leak through funs ("less accessible" rule) -> `IsAccessibleFrom`
-* [ ] test: accessibility
+* [x] Private types must not leak through funs ("less accessible" rule) -> `IsAccessibleFrom`
+* [x] test: accessibility
 * [ ] test: Open across same compilation
 
 * "var fun" -> "mut fun"
@@ -26,7 +26,7 @@
 ## 4. Namespaces and multiple files
 * [x] Taxl file splitter + LSP Project abstraction (handles AxlLocation <-> LspLocation)
 * [x] Compilation takes multiple files
-* [ ] Namespaces
+* [x] Namespaces
   * [x] Open across same compilation
   * [x] Free funs + structs
   * [x] `pub` and private visibility in namespaces

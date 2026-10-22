@@ -1,0 +1,26 @@
+﻿//@check
+
+namespace Test;
+
+struct Private;          // Within: Test
+
+pub fun A1(): Private  //~error InconsistentAccessibility
+    = Private();
+fun A2(): Private
+    = Private();
+    
+pub struct B
+{
+    pub Field1: Private;    //~error InconsistentAccessibility
+    
+    // Private members are fine, because they are less accessible.
+    Field2: Private;
+    fun PrivateFun(): Private
+        = Private();
+}
+
+struct C
+{
+    // Fine, it has same accessibility
+    pub Field: Private;
+}

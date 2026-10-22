@@ -3,7 +3,7 @@ using Axl.Compiler.Symbols;
 
 namespace Axl.Compiler.Binding.Scopes;
 
-public sealed class NamespaceOrTypeScope(Scope enclosingScope, NamespaceOrTypeSymbol namespaceOrType)
+public sealed class MemberScope(Scope enclosingScope, NamespaceOrTypeSymbol namespaceOrType)
     : Scope(enclosingScope, owner: namespaceOrType, flags: BindingFlags.None)
 {
     /// <inheritdoc />

@@ -71,7 +71,7 @@ public class ScriptSymbol(SyntaxTree syntax, Scope enclosingScope)
     }
 
     private Binder MakeBinder()
-        => new(new NamespaceOrTypeScope(enclosingScope, this), new BinderSideEffects());
+        => new(new MemberScope(enclosingScope, this), new BinderSideEffects());
 
     /// <inheritdoc />
     public override void Complete(BinderSideEffects sideEffects)

@@ -25,6 +25,15 @@ public closed class Symbol(string name, Symbol? owner)
         => SelfAndOwners().OfType<TypeSymbol>().FirstOrDefault();
 
     /// <summary>
+    /// Whether this symbol can be accessed from a scope inside
+    /// <paramref name="symbol"/>.
+    /// </summary>
+    /// <param name="symbol"><c>null</c> means global scope.</param>
+    public bool IsAccessibleFrom(Symbol? symbol)
+        => AccessibleWithin is null || symbol?.SelfAndOwners().Contains(AccessibleWithin) == true;
+    
+    
+    /// <summary>
     /// Completes binding of all lazy symbols and transfers side effects
     /// to <paramref name="sideEffects"/>. Completes any members or
     /// owned symbols as well.

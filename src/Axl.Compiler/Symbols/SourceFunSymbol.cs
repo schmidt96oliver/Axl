@@ -98,5 +98,5 @@ public sealed class SourceFunSymbol(
     }
 
     private Binder MakeSignatureBinder()
-        => new(new FunSignatureScope(enclosingScope, this), new BinderSideEffects());
+        => new(enclosingScope.WithOwner(this), new BinderSideEffects());
 }

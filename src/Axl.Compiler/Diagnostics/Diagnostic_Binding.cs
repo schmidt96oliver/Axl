@@ -664,4 +664,15 @@ public partial record Diagnostic
         public override ImmutableArray<SourceLocation> Locations => [Syntax.Location];
         public override string Message => $"‘{Syntax.Text}‘ is not valid on structs inside scripts.";
     }
+
+    public sealed record InconsistentAccessibility(BoundTypeRef TypeRef, Symbol? Owner) : Error
+    {
+        /// <inheritdoc />
+        public override ImmutableArray<SourceLocation> Locations => [TypeRef.Syntax!.Location];
+
+        /// <inheritdoc />
+        public override string Message => Owner is not null
+            ? $"{TypeRef.Type.ShortDisplayName} is less accessible than {Owner.ShortDisplayName}."
+            : $"{TypeRef.Type.ShortDisplayName} is not globally accessible.";
+    }
 }

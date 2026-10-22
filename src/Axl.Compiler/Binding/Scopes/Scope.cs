@@ -56,4 +56,8 @@ public closed class Scope
 
     public bool IsAccessible(Symbol symbol)
         => symbol.AccessibleWithin is null || Owner?.SelfAndOwners().Contains(symbol.AccessibleWithin) == true;
+
+
+    public Scope WithOwner(Symbol owner)
+        => new OwnerScope(this, owner);
 }

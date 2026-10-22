@@ -66,6 +66,6 @@ public sealed class SourceStructSymbol(
     }
 
     private Binder MakeBinder()
-        => new(new NamespaceOrTypeScope(enclosingScope, this), new BinderSideEffects());
+        => new(new MemberScope(enclosingScope, this), new BinderSideEffects());
 
 }
