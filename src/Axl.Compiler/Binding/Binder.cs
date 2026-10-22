@@ -881,38 +881,38 @@ public sealed class Binder(Scope scope, BinderSideEffects sideEffects)
         for (var i = 0; i < childNodes.Length; i++)
         {
             var node = childNodes[i];
-            switch (node)
+            if (node is StmtSyntax stmtSyntax)
             {
-                case StmtSyntax stmtSyntax:
-                    var boundStmt = BindStmt(stmtSyntax);
-                    stmts.Add(boundStmt);
-                    if (boundStmt is BoundVarDecl boundVarDecl)
+                var boundStmt = BindStmt(stmtSyntax);
+                stmts.Add(boundStmt);
+                if (boundStmt is BoundVarDecl boundVarDecl)
+                {
+                    // Create an adjacent scope and continue from there.
+                    if (i + 1 < childNodes.Length)
                     {
-                        // Create an adjacent scope and continue from there.
-                        if (i + 1 < childNodes.Length)
-                        {
-                            var adjacentBinder = WithScope(blockScope.WithVariable(boundVarDecl.Variable));
-                            stmts.AddRange(adjacentBinder.BindStmtsAndLocalFunBodies(childNodes[(i + 1)..], localFuns));
-                        }
-                        
-                        return stmts.DrainToImmutable();
+                        var adjacentBinder = WithScope(blockScope.WithVariable(boundVarDecl.Variable));
+                        stmts.AddRange(adjacentBinder.BindStmtsAndLocalFunBodies(childNodes[(i + 1)..], localFuns));
                     }
-                    break;
 
-                case FunDeclSyntax funDeclSyntax:
-                    var localFunSymbol = localFuns.Single(fun => fun.DeclarationSyntax == funDeclSyntax);
-                    var localFunBinder = EnterFunSignature(localFunSymbol);
-                    localFunSymbol.SetBody(localFunBinder.BindFunBody(funDeclSyntax.Body));
-                    break;
-
-                case StructDeclSyntax:
-                    // This is only allowed on scripts and is handled separately.
-                    break;
-
-                default:
-                    SideEffects.ReportError(new Diagnostic.UnsupportedFeature(node));
-                    break;
+                    return stmts.DrainToImmutable();
+                }
             }
+            else if (node is FunDeclSyntax funDeclSyntax)
+            {
+                var localFunSymbol = localFuns.Single(fun => fun.DeclarationSyntax == funDeclSyntax);
+                var localFunBinder = EnterFunSignature(localFunSymbol);
+                localFunSymbol.SetBody(localFunBinder.BindFunBody(funDeclSyntax.Body));
+            }
+            else if (node is StructDeclSyntax)
+            {
+                // This is only allowed on scripts and is handled separately.
+            }
+            else if (node is NamespaceDeclSyntax)
+            {
+                SideEffects.ReportError(new Diagnostic.NamespaceDeclarationInScript(node));
+            }
+            else
+                SideEffects.ReportError(new Diagnostic.UnsupportedFeature(node));
         }
 
         return stmts.DrainToImmutable();

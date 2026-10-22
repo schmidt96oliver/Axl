@@ -646,4 +646,13 @@ public partial record Diagnostic
         public override string Message =>
             $"The namespace '{Declaration.Name}' is already declared in a dependency. Namespaces are only open across the same project.";
     }
+
+    public sealed record NamespaceDeclarationInScript(SyntaxNode Syntax) : Error
+    {
+        /// <inheritdoc />
+        public override ImmutableArray<SourceLocation> Locations => [Syntax.Location];
+
+        /// <inheritdoc />
+        public override string Message => "The namespace declaration must be the first declaration in the file.";
+    }
 }

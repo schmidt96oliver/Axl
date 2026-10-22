@@ -6,7 +6,7 @@
 * Add Compilation refs to Symbol
 * ?? NamespaceDeclaration ImmutableArray
 
-* [ ] NamespaceDeclarationInScript
+* [x] NamespaceDeclarationInScript
 * [ ] pub structs
 * [ ] Private types must not leak through funs ("less accessible" rule) -> `IsAccessibleFrom`
 * [ ] test: accessibility
