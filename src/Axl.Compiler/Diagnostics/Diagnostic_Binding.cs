@@ -370,17 +370,20 @@ public partial record Diagnostic
             // Squiggle the name and parameter list, since they are at fault.
             =>
             [
-                .. OffendingSymbols.Where(symbol => GetDeclarationNameSyntax(symbol) is not null)
-                    .Select(symbol => GetDeclarationNameSyntax(symbol)!.Location)
+                .. OffendingSymbols.SelectMany(symbol => GetDeclNameLocations(symbol))
             ];
 
-        private static SyntaxElement? GetDeclarationNameSyntax(Symbol symbol) => symbol switch
+        private static ImmutableArray<SourceLocation> GetDeclNameLocations(Symbol symbol) => symbol switch
         {
-            SourceStructSymbol structSymbol => structSymbol.DeclarationSyntax.Name,
-            SourceFunSymbol sourceFun => sourceFun.DeclarationSyntax!.Name,
-            LocalFunSymbol localFun => localFun.DeclarationSyntax.Name,
-            FieldSymbol { DeclarationSyntax: not null } fieldSymbol => fieldSymbol.DeclarationSyntax.Name,
-            _ => null
+            SourceStructSymbol structSymbol => [structSymbol.DeclarationSyntax.Name.Location],
+            SourceFunSymbol sourceFun => [sourceFun.DeclarationSyntax!.Name.Location],
+            LocalFunSymbol localFun => [localFun.DeclarationSyntax.Name.Location],
+            FieldSymbol fieldSymbol => [fieldSymbol.DeclarationSyntax.Name.Location],
+            SourceNamespaceSymbol namespaceSymbol =>
+            [
+                .. namespaceSymbol.Declaration.DeclarationSyntaxes.Select(s => s.Name.Location)
+            ],
+            _ => []
         };
         
         public override string LocationLabel => "Also declared here.";
@@ -638,8 +641,7 @@ public partial record Diagnostic
         /// <inheritdoc />
         public override ImmutableArray<SourceLocation> Locations =>
         [
-            .. Declaration.Syntaxes
-                .Select(tree => tree.FileSyntax.Children.FirstOfType<NamespaceDeclSyntax>().Name.Location)
+            .. Declaration.DeclarationSyntaxes.Select(s => s.Name.Location)
         ];
 
         /// <inheritdoc />

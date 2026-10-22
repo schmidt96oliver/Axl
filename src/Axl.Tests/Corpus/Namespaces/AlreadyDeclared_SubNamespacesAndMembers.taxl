@@ -1,0 +1,17 @@
+﻿//@check
+
+// Sub-namespace must report declaration errors against types and funs.
+
+//---
+namespace A.B;  //~error AlreadyDeclared
+
+//---
+namespace A;
+
+struct B { }    //~error AlreadyDeclared
+
+//---
+namespace C.D;  //~error AlreadyDeclared
+//---
+namespace C;
+fun D() { }     //~error AlreadyDeclared
