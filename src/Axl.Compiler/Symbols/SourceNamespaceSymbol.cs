@@ -31,7 +31,7 @@ public sealed class SourceNamespaceSymbol(NamespaceDeclaration declaration, Scop
                 field =
                 [
                     .. Declaration.Syntaxes.SelectMany(tree => _binder.BindNamespaceFile(tree)),
-                    .. Declaration.Children.Select(decl => new SourceNamespaceSymbol(decl, _binder.Scope))
+                    .. Declaration.Children.Select(_binder.BindNamespaceDeclaration)
                 ];
 
                 _isBindingMembers = false;

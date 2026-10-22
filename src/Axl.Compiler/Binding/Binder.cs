@@ -214,6 +214,19 @@ public sealed class Binder(Scope scope, BinderSideEffects sideEffects)
         return block;
     }
 
+    public NamespaceSymbol BindNamespaceDeclaration(NamespaceDeclaration declaration)
+    {
+        if (Scope.EnclosingScope is GlobalScope &&
+            Scope.EnclosingScope.Lookup(declaration.Name).Length > 0)
+        {
+            // The namespace is being declared on global or root namespace
+            // but is already declared in a referenced compilation.
+            SideEffects.ReportError(new Diagnostic.NamespaceAlreadyDeclared(declaration));
+        }
+        
+        return new SourceNamespaceSymbol(declaration, Scope);
+    }
+    
     public ImmutableArray<Symbol> BindNamespaceFile(SyntaxTree syntax)
     {
         // In a namespace file, the first declaration must be the namespace

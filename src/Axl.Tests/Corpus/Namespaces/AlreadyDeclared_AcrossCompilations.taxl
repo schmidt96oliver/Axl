@@ -1,0 +1,15 @@
+﻿//@check
+
+// Namespaces are open only across the same compilation and
+// must not redeclare namespaces of dependencies. This is mainly
+// to avoid merging logic in my Compilation :D. But it also
+// seems sound.
+
+// Currently, only Base can be referenced (honestly, I don't know if
+// that is going to change).
+
+//---
+namespace Base;     //~error NamespaceAlreadyDeclared
+
+//---
+namespace Base;     //~error NamespaceAlreadyDeclared

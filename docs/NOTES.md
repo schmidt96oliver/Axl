@@ -4,8 +4,6 @@
 # Now
 
 * Add Compilation refs to Symbol
-* Reject namespace declared in other compilations
-
 * ?? NamespaceDeclaration ImmutableArray
 
 * [ ] NamespaceDeclarationInScript
@@ -29,7 +27,7 @@
 * [x] Taxl file splitter + LSP Project abstraction (handles AxlLocation <-> LspLocation)
 * [x] Compilation takes multiple files
 * [ ] Namespaces
-  * [ ] Open across same compilation
+  * [x] Open across same compilation
   * [ ] Free funs + structs
   * [ ] `pub` and private visibility in namespaces
 * [ ] Using directives
@@ -41,7 +39,7 @@
     * [ ] `@Primitive` marks types primitive; rejects any fields declared
     * [ ] `@LanguageItem("I32")` marks items for the compiler to be found
 * [x] Compilation.ReferencedCompilations (only BaseLib implicitly)
-  * [ ] Namespace closed across Compilations
+  * [x] Namespace closed across Compilations
 * [ ] Project marker files (without dependencies)
 * [ ] BaseNamespaceSymbol/WellKnownSymbols searches for correct symbols
 * [ ] BaseNamespace shared across Compilations (through LSP)

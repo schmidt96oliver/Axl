@@ -632,4 +632,18 @@ public partial record Diagnostic
         /// <inheritdoc />
         public override string Hint => "Remove the namespace declaration at the top of this file to make it a script.";
     }
+
+    public sealed record NamespaceAlreadyDeclared(NamespaceDeclaration Declaration) : Error
+    {
+        /// <inheritdoc />
+        public override ImmutableArray<SourceLocation> Locations =>
+        [
+            .. Declaration.Syntaxes
+                .Select(tree => tree.FileSyntax.Children.FirstOfType<NamespaceDeclSyntax>().Name.Location)
+        ];
+
+        /// <inheritdoc />
+        public override string Message =>
+            $"The namespace '{Declaration.Name}' is already declared in a dependency. Namespaces are only open across the same project.";
+    }
 }
