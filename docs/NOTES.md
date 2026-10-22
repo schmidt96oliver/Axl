@@ -6,12 +6,6 @@
 * Add Compilation refs to Symbol
 * ?? NamespaceDeclaration ImmutableArray
 
-* [x] NamespaceDeclarationInScript
-* [x] pub structs
-* [x] Private types must not leak through funs ("less accessible" rule) -> `IsAccessibleFrom`
-* [x] test: accessibility
-* [ ] test: Open across same compilation
-
 * "var fun" -> "mut fun"
 
 # Questions / Little ones****

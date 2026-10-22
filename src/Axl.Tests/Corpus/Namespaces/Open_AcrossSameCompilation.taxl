@@ -1,0 +1,21 @@
+﻿//@run
+//= 123
+
+A.Do1();
+A.Do2();
+A.Do3();
+
+//---
+namespace A;
+
+pub fun Do1() = Print("1");
+
+//---
+namespace A;
+
+pub fun Do2() = Print("2");
+
+//---
+namespace A;
+
+pub fun Do3() = Print("3");
