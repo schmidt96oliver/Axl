@@ -3,23 +3,22 @@
 
 # Now
 
+* Add Compilation refs to Symbol
+* Reject namespace declared in other compilations
+
+* ?? NamespaceDeclaration ImmutableArray
+
 * [ ] NamespaceDeclarationInScript
-* [ ] RootNamespace or not?
 * [ ] pub structs
-* [ ] Private types must not leak through funs ("less accessible" rule)
-* [ ] Test accessibility
+* [ ] Private types must not leak through funs ("less accessible" rule) -> `IsAccessibleFrom`
+* [ ] test: accessibility
+* [ ] test: Open across same compilation
 
 * "var fun" -> "mut fun"
 
---------
-
-* Compilation (= one project) is one of
-  * Project (stdlib) with `project.axlproj` and dependencies
-    * Cyclic dependency graphs must be rejected (?? What happens if not ??)
-  * Taxl (many files), only stdlib referenced
-  * Free *.axl script. One file, only stdlib referenced
-
 # Questions / Little ones
+
+* ?? Should Scripts have RootNamespace as owner? (Removing it breaks accessibility check)
 
 * refactor: cleanup FunBuilder (Const instead of True())
 
@@ -39,13 +38,17 @@
 
 ## 5. `Base` namespace as Axl-Code
 [Proposal](Proposals/Primitives.axl)
-* [ ] BaseNamespaceSymbol searches for correct symbols
+* [ ] Annotations (private inside BaseLib)
+    * [ ] `@Intrinsic` looks up funs agains LookupTable and checks signatures
+    * [ ] `@Primitive` marks types primitive; rejects any fields declared
+    * [ ] `@LanguageItem("I32")` marks items for the compiler to be found
+* [x] Compilation.ReferencedCompilations (only BaseLib implicitly)
+  * [ ] Namespace closed across Compilations
+* [ ] Project marker files (without dependencies)
+* [ ] BaseNamespaceSymbol/WellKnownSymbols searches for correct symbols
 * [ ] BaseNamespace shared across Compilations (through LSP)
-* [ ] `@intrinsic` and `@primitive` annotations
-  * `@primitive(I32)` mapped to PrimitiveKind on struct
-  * `@intrinsic` maps receiver and params to PrimitiveKind (instead of type name)
-* [ ] IntrinsicLookup checks signatures
-* [ ] Replace entire BaseNamespaceSymbol with axl text :)).
+
+* [ ] Replace entire BaseNamespaceSymbol with axl text!!
 
 
 # Later

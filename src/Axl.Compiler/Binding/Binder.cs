@@ -151,19 +151,23 @@ public sealed class Binder(Scope scope, BinderSideEffects sideEffects)
     
     #region Namespaces and Scripts
 
-    public static (ImmutableArray<ScriptSymbol>, RootNamespaceSymbol) BindCompilationDeclarations(
-        ImmutableArray<SyntaxTree> trees)
+    public static NamespaceSymbol BindRootNamespace(Compilation compilation)
     {
-        var rootDecl = GetRootNamespaceDeclaration([.. trees.Where(IsNamespaceFile)]);
-        var rootSymbol = new RootNamespaceSymbol(rootDecl);
-        var rootScope = new RootScope(rootSymbol);
-        var scriptSymbols = trees.Where(tree => !IsNamespaceFile(tree))
-            .Select(tree => new ScriptSymbol(tree, rootScope))
-            .ToImmutableArray();
-
-        return (scriptSymbols, rootSymbol);
+        var decl = GetRootNamespaceDeclaration([.. compilation.SyntaxTrees.Where(IsNamespaceFile)]);
+        return new SourceNamespaceSymbol(decl, compilation.GlobalScope, owner: null);
     }
-    
+
+    public static ImmutableArray<ScriptSymbol> BindScripts(Compilation compilation)
+    {
+        //TODO: Should scripts really have root namespace as owner?
+        var rootNamespaceScope = new NamespaceOrTypeScope(compilation.GlobalScope, compilation.RootNamespace);
+        return
+        [
+            .. compilation.SyntaxTrees.Where(tree => !IsNamespaceFile(tree))
+                .Select(tree => new ScriptSymbol(tree, rootNamespaceScope))
+        ];
+    }
+
     private static NamespaceDeclaration GetRootNamespaceDeclaration(ImmutableArray<SyntaxTree> trees)
     {
         var rootNamespaceDeclaration = new NamespaceDeclaration("", [], []);

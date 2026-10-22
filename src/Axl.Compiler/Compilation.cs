@@ -1,7 +1,7 @@
 ﻿using System.Collections.Immutable;
 using System.Diagnostics;
 using Axl.Compiler.Binding;
-using Axl.Compiler.Binding.BoundTree;
+using Axl.Compiler.Binding.Scopes;
 using Axl.Compiler.Diagnostics;
 using Axl.Compiler.Symbols;
 using Axl.Compiler.Syntax;
@@ -12,6 +12,12 @@ namespace Axl.Compiler;
 
 public class Compilation
 {
+    /// <summary>
+    /// All dependencies of this compilation. All namespaces inside referenced
+    /// compilations will be visible to this one.
+    /// </summary>
+    public ImmutableArray<Compilation> ReferencedCompilations { get; }
+
     public ImmutableArray<SyntaxTree> SyntaxTrees { get; }
 
     public ImmutableArray<Diagnostic> Diagnostics
@@ -36,23 +42,81 @@ public class Compilation
         private set;
     }
 
-    public ImmutableArray<ScriptSymbol> Scripts { get; }
+    public ImmutableArray<ScriptSymbol> Scripts
+    {
+        get
+        {
+            if (field.IsDefault)
+                field = Binder.BindScripts(this);
+            return field;
+        }
+    }
 
-    public RootNamespaceSymbol RootNamespace { get; }
+    public NamespaceSymbol RootNamespace
+    {
+        get
+        {
+            field ??= Binder.BindRootNamespace(this);
+            return field;
+        }
+        private set;
+    }
+
+    public GlobalScope GlobalScope
+    {
+        get
+        {
+            field ??= new GlobalScope(this);
+            return field;
+        }
+    }
+
+    public BaseNamespaceSymbol BaseNamespace
+    {
+        get
+        {
+            // BaseLib is either referenced or this compilation.
+            field ??= ReferencedCompilations.Length > 0
+                ? ReferencedCompilations[0].BaseNamespace
+                : RootNamespace.Members.OfType<BaseNamespaceSymbol>().Single();
+            return field;
+        }
+    }
 
 
-    private Compilation(ImmutableArray<SyntaxTree> syntaxTrees)
+    private Compilation(ImmutableArray<SyntaxTree> syntaxTrees, ImmutableArray<Compilation> referencedCompilations)
     {
         SyntaxTrees = syntaxTrees;
-        (Scripts, RootNamespace) = Binder.BindCompilationDeclarations(syntaxTrees);
+        ReferencedCompilations = referencedCompilations;
     }
 
-    public static Compilation From(params IEnumerable<SourceText> texts)
+    public static Compilation From(ImmutableArray<SyntaxTree> syntaxTrees,
+        ImmutableArray<Compilation> referencedCompilations = default)
     {
-        var trees = texts.Select(Parser.Parse).ToImmutableArray();
-        return new Compilation(trees);
+        if (referencedCompilations.IsDefault)
+            referencedCompilations = [MakeBaseLib()];
+        
+        Guard.MustBe(referencedCompilations.Length == 0 ||
+                     referencedCompilations.All(c =>
+                         c.BaseNamespace == referencedCompilations[0].BaseNamespace),
+            $"All {nameof(referencedCompilations)} must reference the same {nameof(BaseNamespace)}.");
+
+        return new Compilation([.. syntaxTrees], [.. referencedCompilations]);
     }
 
+    public static Compilation From(IEnumerable<SourceText> texts, ImmutableArray<Compilation> referencedCompilations = default)
+        => From([.. texts.Select(Parser.Parse)], referencedCompilations);
+    
+    public static Compilation From(SourceText text, ImmutableArray<Compilation> referencedCompilations = default)
+        => From([text], referencedCompilations);
+    
+    public static Compilation MakeBaseLib()
+    {
+        var compilation = new Compilation([], []);
+        compilation.RootNamespace = new BaseLibRootSymbol(compilation);
+        return compilation;
+    }
+    
 
     private void Complete()
     {

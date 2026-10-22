@@ -4,8 +4,8 @@ using Axl.Compiler.Binding.Scopes;
 
 namespace Axl.Compiler.Symbols;
 
-public sealed class SourceNamespaceSymbol(NamespaceDeclaration declaration, Scope enclosingScope)
-    : NamespaceSymbol(declaration.Name, owner: enclosingScope.Owner)
+public sealed class SourceNamespaceSymbol(NamespaceDeclaration declaration, Scope enclosingScope, Symbol? owner)
+    : NamespaceSymbol(declaration.Name, owner)
 {
     /// <summary>
     /// To avoid unnecessary allocations, the binder is created on first
@@ -13,8 +13,13 @@ public sealed class SourceNamespaceSymbol(NamespaceDeclaration declaration, Scop
     /// </summary>
     private Binder? _binder = null;
     private bool _isBindingMembers = false;
-    
-    
+
+    public SourceNamespaceSymbol(NamespaceDeclaration declaration, Scope enclosingScope) 
+        : this(declaration, enclosingScope, owner: enclosingScope.Owner)
+    {
+    }
+
+
     public NamespaceDeclaration Declaration { get; } = declaration;
 
     /// <summary>

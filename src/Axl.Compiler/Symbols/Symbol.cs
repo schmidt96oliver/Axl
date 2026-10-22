@@ -13,9 +13,12 @@ public closed class Symbol(string name, Symbol? owner)
     /// <summary>
     /// The greatest owner where this symbol is still
     /// accessible to all its members.
+    /// <c>null</c> means, that this symbol is globally
+    /// visible.
     /// </summary>
-    public Symbol AccessibleWithin => IsPublic
-        ? Owner?.AccessibleWithin ?? this
+    public Symbol? AccessibleWithin => IsPublic
+        ? Owner?.AccessibleWithin
+        // A private global symbol is not globally visible.
         : Owner ?? this;
 
     public TypeSymbol? OwningType 

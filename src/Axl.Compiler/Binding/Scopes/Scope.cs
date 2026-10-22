@@ -10,7 +10,7 @@ public closed class Scope
 
     public BaseNamespaceSymbol BaseNamespace { get; }
 
-    public Symbol Owner { get; }
+    public virtual Symbol Owner { get; }
 
     public FunSymbol? OwnerAsFun => Owner as FunSymbol;
 
@@ -51,5 +51,5 @@ public closed class Scope
     public abstract ImmutableArray<Symbol> Lookup(string name);
 
     public bool IsAccessible(Symbol symbol)
-        => Owner.SelfAndOwners().Contains(symbol.AccessibleWithin);
+        => symbol.AccessibleWithin is null || Owner.SelfAndOwners().Contains(symbol.AccessibleWithin);
 }
