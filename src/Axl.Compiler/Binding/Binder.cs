@@ -149,14 +149,22 @@ public sealed class Binder(Scope scope, BinderSideEffects sideEffects)
     #endregion
     
     
-    #region File and Script
+    #region Namespaces and Scripts
 
-    public sealed record NamespaceDeclaration(
-        string Name,
-        List<NamespaceDeclaration> Children,
-        List<SyntaxTree> Syntaxes);
+    public static (ImmutableArray<ScriptSymbol>, RootNamespaceSymbol) BindCompilationDeclarations(
+        ImmutableArray<SyntaxTree> trees)
+    {
+        var rootDecl = GetRootNamespaceDeclaration([.. trees.Where(IsNamespaceFile)]);
+        var rootSymbol = new RootNamespaceSymbol(rootDecl);
+        var rootScope = new RootScope(rootSymbol);
+        var scriptSymbols = trees.Where(tree => !IsNamespaceFile(tree))
+            .Select(tree => new ScriptSymbol(tree, rootScope))
+            .ToImmutableArray();
 
-    public static NamespaceDeclaration GetRootNamespaceDeclaration(ImmutableArray<SyntaxTree> trees)
+        return (scriptSymbols, rootSymbol);
+    }
+    
+    private static NamespaceDeclaration GetRootNamespaceDeclaration(ImmutableArray<SyntaxTree> trees)
     {
         var rootNamespaceDeclaration = new NamespaceDeclaration("", [], []);
 
@@ -189,13 +197,11 @@ public sealed class Binder(Scope scope, BinderSideEffects sideEffects)
 
         return rootNamespaceDeclaration;
     }
-    
-    
-    public static ScriptSymbol BindScriptFile(SyntaxTree syntax, RootNamespaceSymbol rootNamespace)
-    {
-        return new ScriptSymbol(syntax, new RootScope(rootNamespace), rootNamespace);
-    }
 
+    private static bool IsNamespaceFile(SyntaxTree tree)
+        => tree.FileSyntax.SyntaxNodes().FirstOrDefault() is NamespaceDeclSyntax;
+
+    
     public BoundBlock BindScriptBody(FileSyntax syntax)
     {
         var block = BindBlock(syntax);
@@ -203,6 +209,43 @@ public sealed class Binder(Scope scope, BinderSideEffects sideEffects)
             block = block.WithAdditionalStmts(new BoundReturn(null));
 
         return block;
+    }
+
+    public ImmutableArray<Symbol> BindNamespaceFile(SyntaxTree syntax)
+    {
+        // In a namespace file, the first declaration must be the namespace
+        // syntax.
+        Debug.Assert(syntax.FileSyntax.SyntaxNodes().First() is NamespaceDeclSyntax);
+
+        var symbols = ImmutableArray.CreateBuilder<Symbol>();
+        foreach (var child in syntax.FileSyntax.SyntaxNodes().Skip(1))
+        {
+            switch (child)
+            {
+                case FunDeclSyntax funDecl:
+                    symbols.Add(BindSourceFunDeclaration(funDecl));
+                    break;
+                
+                case StructDeclSyntax structDecl:
+                    symbols.Add(BindStructDeclaration(structDecl));
+                    break;
+                
+                case NamespaceDeclSyntax namespaceDecl:
+                    // Multiple namespace declaration
+                    SideEffects.ReportError(new Diagnostic.DuplicateNamespaceDeclaration(namespaceDecl));
+                    break;
+                
+                case StmtSyntax stmtSyntax:
+                    SideEffects.ReportError(new Diagnostic.StmtInNamespaceFile(stmtSyntax));
+                    break;
+                
+                default:
+                    SideEffects.ReportError(new Diagnostic.UnsupportedFeature(child));
+                    break;
+            }
+        }
+
+        return symbols.DrainToImmutable();
     }
     
     #endregion
@@ -255,7 +298,7 @@ public sealed class Binder(Scope scope, BinderSideEffects sideEffects)
 
     public SourceFunSymbol BindSourceFunDeclaration(FunDeclSyntax syntax)
     {
-        Debug.Assert(Scope.OwnerAsType is not null);
+        Debug.Assert(Scope.OwnerAsNamespaceOrType is not null);
         
         var name = syntax.Name.Text.ToString();
         

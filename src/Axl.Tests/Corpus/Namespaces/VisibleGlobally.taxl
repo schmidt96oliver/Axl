@@ -1,13 +1,12 @@
 ﻿//@run
+//= A
 
 // Namespace files are visible globally from every other file.
 
 Test.Do();
 
-//--- Namespace.axl
+//---
 namespace Test;
 
-fun Do() = Standard.PrintLine("yip");
-
-//=== stdout
-// yip
+pub fun Do()
+    = Print("A");

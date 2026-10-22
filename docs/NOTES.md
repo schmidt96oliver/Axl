@@ -3,6 +3,14 @@
 
 # Now
 
+* [ ] NamespaceDeclarationInScript
+* [ ] RootNamespace or not?
+* [ ] pub structs
+* [ ] Private types must not leak through funs ("less accessible" rule)
+* [ ] Test accessibility
+
+* "var fun" -> "mut fun"
+
 --------
 
 * Compilation (= one project) is one of

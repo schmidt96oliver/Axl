@@ -576,14 +576,14 @@ public partial record Diagnostic
     public sealed record WrongOperatorParameterCount(FunSymbol Fun) : Error
     {
         /// <inheritdoc />
-        public override ImmutableArray<SourceLocation> Locations => [Fun.DeclarationSyntax.ParameterList.Location];
+        public override ImmutableArray<SourceLocation> Locations => [Fun.DeclarationSyntax!.ParameterList.Location];
 
         /// <inheritdoc />
         public override string Message
         {
             get
             {
-                var isUnary = SyntaxFacts.IsUnaryOperator(Fun.DeclarationSyntax.Name.Token.Kind);
+                var isUnary = SyntaxFacts.IsUnaryOperator(Fun.DeclarationSyntax!.Name.Token.Kind);
                 var isBinary = SyntaxFacts.IsBinaryOperator(Fun.DeclarationSyntax.Name.Token.Kind);
                 return (isUnary, isBinary) switch
                 {
@@ -610,5 +610,26 @@ public partial record Diagnostic
         /// <inheritdoc />
         public override string Message => 
             $"Operator ‘{Fun.Name}’ must return ´{Expected.Name}´, but returns ’{Fun.ReturnType.Name}’.";
+    }
+
+    public sealed record DuplicateNamespaceDeclaration(SyntaxNode Syntax) : Error
+    {
+        /// <inheritdoc />
+        public override ImmutableArray<SourceLocation> Locations => [Syntax.Location];
+
+        /// <inheritdoc />
+        public override string Message => "A file can only have one namespace declaration.";
+    }
+
+    public sealed record StmtInNamespaceFile(SyntaxNode Syntax) : Error
+    {
+        /// <inheritdoc />
+        public override ImmutableArray<SourceLocation> Locations => [Syntax.Location];
+
+        /// <inheritdoc />
+        public override string Message => "Statements are not allowed in a namespace file.";
+
+        /// <inheritdoc />
+        public override string Hint => "Remove the namespace declaration at the top of this file to make it a script.";
     }
 }

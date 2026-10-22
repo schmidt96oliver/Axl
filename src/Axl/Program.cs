@@ -19,6 +19,10 @@ switch (args[0])
             Console.WriteLine($"Compilation has {compilation.SyntaxTrees.Length} files, but can only run 1.");
             return;
         }
+
+        foreach (var diagnostic in compilation.Diagnostics)
+            Console.WriteLine(
+                $"[{diagnostic.DefaultSeverity.ToString().ToUpperInvariant()}] {diagnostic.Id}@{diagnostic.Locations[0].Range}: {diagnostic.Message}");
         
         BoundTreeInterpreter.Run(compilation.Scripts[0].Fun, Console.Out);
         break;

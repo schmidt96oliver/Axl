@@ -12,8 +12,6 @@ namespace Axl.Compiler;
 
 public class Compilation
 {
-    private readonly Dictionary<SyntaxTree, ScriptSymbol> _boundScripts = [];
-    
     public ImmutableArray<SyntaxTree> SyntaxTrees { get; }
 
     public ImmutableArray<Diagnostic> Diagnostics
@@ -38,15 +36,7 @@ public class Compilation
         private set;
     }
 
-    public ImmutableArray<ScriptSymbol> Scripts
-    {
-        get
-        {
-            if (field.IsDefault)
-                field = [.. SyntaxTrees.Select(GetBoundScript)];
-            return field;
-        }
-    }
+    public ImmutableArray<ScriptSymbol> Scripts { get; }
 
     public RootNamespaceSymbol RootNamespace { get; }
 
@@ -54,7 +44,7 @@ public class Compilation
     private Compilation(ImmutableArray<SyntaxTree> syntaxTrees)
     {
         SyntaxTrees = syntaxTrees;
-        RootNamespace = new RootNamespaceSymbol();
+        (Scripts, RootNamespace) = Binder.BindCompilationDeclarations(syntaxTrees);
     }
 
     public static Compilation From(params IEnumerable<SourceText> texts)
@@ -67,6 +57,7 @@ public class Compilation
     private void Complete()
     {
         var sideEffects = new BinderSideEffects();
+        RootNamespace.Complete(sideEffects);
         foreach (var script in Scripts)
             script.Complete(sideEffects);
 
@@ -74,17 +65,6 @@ public class Compilation
         SemanticSideTable = sideEffects.SemanticSideTable;
     }
     
-
-    public ScriptSymbol GetBoundScript(SyntaxTree tree)
-    {
-        if (!_boundScripts.TryGetValue(tree, out var boundFile))
-        {
-            boundFile = Binder.BindScriptFile(tree, RootNamespace);
-            _boundScripts.Add(tree, boundFile);
-        }
-
-        return boundFile;
-    }
 
     public SyntaxTree GetSyntaxTree(SourceText text)
     {

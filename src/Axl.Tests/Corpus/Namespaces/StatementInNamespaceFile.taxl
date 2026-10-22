@@ -1,0 +1,10 @@
+﻿//@check
+
+// If a file starts with a namespace declaration, it will be a 
+// namespace file an must not contain any statements.
+
+namespace A;
+
+let a = 10;     //~error StmtInNamespaceFile
+1 + 2;          //~error StmtInNamespaceFile
+if (true) { }   //~error StmtInNamespaceFile

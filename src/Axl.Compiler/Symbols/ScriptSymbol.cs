@@ -6,8 +6,8 @@ using Axl.Compiler.Syntax.Tree;
 
 namespace Axl.Compiler.Symbols;
 
-public class ScriptSymbol(SyntaxTree syntax, Scope enclosingScope, Symbol owner) 
-    : NamespaceSymbol(name: "", owner)
+public class ScriptSymbol(SyntaxTree syntax, Scope enclosingScope) 
+    : NamespaceSymbol(name: "", owner: enclosingScope.Owner)
 {
     /// <summary>
     /// To avoid unnecessary allocations, the binder is created on first
