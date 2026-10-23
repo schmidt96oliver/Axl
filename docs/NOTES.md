@@ -4,7 +4,6 @@
 # Now
 
 * Add Compilation refs to Symbol
-* ?? NamespaceDeclaration ImmutableArray
 
 * "var fun" -> "mut fun"
 

@@ -395,7 +395,7 @@ public partial record Diagnostic
             FieldSymbol fieldSymbol => [fieldSymbol.DeclarationSyntax.Name.Location],
             SourceNamespaceSymbol namespaceSymbol =>
             [
-                .. namespaceSymbol.Declaration.DeclarationSyntaxes.Select(s => s.Name.Location)
+                .. namespaceSymbol.Declaration.NamespaceDeclSyntaxes.Select(s => s.Name.Location)
             ],
             _ => []
         };
@@ -655,7 +655,7 @@ public partial record Diagnostic
         /// <inheritdoc />
         public override ImmutableArray<SourceLocation> Locations =>
         [
-            .. Declaration.DeclarationSyntaxes.Select(s => s.Name.Location)
+            .. Declaration.NamespaceDeclSyntaxes.Select(s => s.Name.Location)
         ];
 
         /// <inheritdoc />

@@ -186,7 +186,7 @@ public sealed class Binder(Scope scope, BinderSideEffects sideEffects)
 
     private static NamespaceDeclaration GetRootNamespaceDeclaration(ImmutableArray<SyntaxTree> trees)
     {
-        var rootNamespaceDeclaration = new NamespaceDeclaration("", [], []);
+        var rootNamespaceDeclaration = new NamespaceDeclarationBuilder("");
 
         foreach (var tree in trees)
         {
@@ -202,20 +202,17 @@ public sealed class Binder(Scope scope, BinderSideEffects sideEffects)
                 // For an empty name, always insert a new namespace,
                 // don't group them together.
                 
-                var child = decl.Children.FirstOrDefault(c => c.Name == namePart);
+                var child = decl.TryGetChild(namePart);
                 if (child is null || namePart is "")
-                {
-                    child = new NamespaceDeclaration(namePart, [], []);
-                    decl.Children.Add(child);
-                }
+                    child = decl.AddChild(namePart);
 
                 decl = child;
             }
             
-            decl.Syntaxes.Add(tree);
+            decl.AddSyntaxTree(tree);
         }
 
-        return rootNamespaceDeclaration;
+        return rootNamespaceDeclaration.ToNamespaceDeclaration();
     }
 
     private static bool IsNamespaceFile(SyntaxTree tree)
