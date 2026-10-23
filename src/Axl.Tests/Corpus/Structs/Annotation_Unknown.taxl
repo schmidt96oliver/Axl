@@ -1,0 +1,7 @@
+﻿//@check
+
+namespace Test;
+
+@Bla            //~error UnknownAnnotation
+@Blupp          //~error UnknownAnnotation
+struct A;

@@ -1,0 +1,6 @@
+﻿//@check
+
+namespace Test;
+
+@Primitive      //~error InvalidFunAnnotation
+fun A() { }

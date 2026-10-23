@@ -3,8 +3,6 @@
 
 # Now
 
-* reject all Annotations. Add to syntax
-
 * Add Compilation refs to Symbol
 
 * "var fun" -> "mut fun"
@@ -20,9 +18,9 @@
 
 ## 5. `Base` namespace as Axl-Code
 [Proposal](Proposals/Primitives.axl)
-* [ ] Annotations (private inside BaseLib)
-    * [ ] `@Intrinsic` looks up funs agains LookupTable and checks signatures
-    * [ ] `@Primitive` marks types primitive; rejects any fields declared
+* [x] Annotations (private inside BaseLib)
+    * [x] `@Intrinsic` looks up funs agains LookupTable and checks signatures
+    * [x] `@Primitive` marks types primitive; rejects any fields declared
 * [x] Compilation.ReferencedCompilations (only BaseLib implicitly)
   * [x] Namespace closed across Compilations
 * [ ] Project marker files (without dependencies)

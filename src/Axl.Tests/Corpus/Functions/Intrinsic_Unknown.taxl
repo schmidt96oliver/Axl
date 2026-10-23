@@ -1,0 +1,43 @@
+﻿//@check
+
+// Intrinsics are matched against their primitive signature.
+
+namespace T0;
+@Intrinsic      //~error UnknownIntrinsic
+pub fun Bla();  // wrong name
+
+//---
+namespace T1;
+@Intrinsic      //~error UnknownIntrinsic
+pub fun Print();  // missing return type
+
+//---
+namespace T2;
+@Intrinsic
+pub fun Print(a: String);  // correct
+
+//---
+namespace T3;
+@Intrinsic      //~error UnknownIntrinsic
+pub fun Print(a: String): I32;  // wrong return type
+
+//---
+namespace T4;
+@Intrinsic      //~error UnknownIntrinsic
+pub fun Print(a: String, b: String);  // wrong param count
+
+//---
+namespace T5;
+struct Test
+{
+    @Intrinsic
+    pub static fun Print(a: String);    // correct
+}
+
+//---
+namespace T6;
+struct Test 
+{
+    @Intrinsic      //~error UnknownIntrinsic
+    pub fun Print(a: String);  // wrong receiver
+}

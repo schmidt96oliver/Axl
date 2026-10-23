@@ -1,0 +1,6 @@
+﻿//@check
+
+// Primitives are matched against their plain name.
+
+@Primitive      //~error UnknownPrimitive
+struct A;

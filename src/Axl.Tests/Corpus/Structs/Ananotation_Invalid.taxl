@@ -1,0 +1,4 @@
+﻿//@check
+
+@Intrinsic      //~error InvalidStructAnnotation
+struct A;

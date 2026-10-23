@@ -1,0 +1,19 @@
+﻿//@check
+
+// Non-intrinsic funs must declare a body.
+
+fun A();          //~error MissingFunBody
+fun Outer()
+{
+    fun Local();  //~error MissingFunBody
+}
+
+//---
+namespace Test;
+
+pub fun A();    //~error MissingFunBody
+
+struct B
+{
+    pub fun A();    //~error MissingFunBody
+}

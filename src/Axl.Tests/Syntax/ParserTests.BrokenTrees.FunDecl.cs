@@ -35,11 +35,7 @@ public partial class ParserTests
                     · ParamList
                     · · '('
                     · · ??')'
-                    · FunBody
-                    · · BlockExpr
-                    · · · ??'{'
-                    · · · ??'}'
-                    · · ';'
+                    · FunBody ';'
                     """);
             [Fact]
             public void UnclosedParamList_3()

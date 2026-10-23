@@ -1,0 +1,15 @@
+﻿//@check
+
+// Intrinsic funs must not declare a body.
+
+namespace Test;
+
+@Intrinsic
+pub fun Print(str: String) { }  //~error IntrinsicFunWithBody
+
+//---
+namespace Other;
+
+@Intrinsic
+pub fun Print(str: String)
+    = { };                  //~error IntrinsicFunWithBody

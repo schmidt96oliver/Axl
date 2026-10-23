@@ -1,0 +1,11 @@
+﻿//@check
+
+// Field declaration are disallowed on any struct marked as primitive.
+
+@Primitive
+struct I32
+{
+    A: Bool;        //~error FieldDeclarationOnPrimitive
+    B: String;      //~error FieldDeclarationOnPrimitive
+    pub C: F32;     //~error FieldDeclarationOnPrimitive
+}
