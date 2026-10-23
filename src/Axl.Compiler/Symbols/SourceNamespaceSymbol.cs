@@ -17,7 +17,7 @@ public sealed class SourceNamespaceSymbol(NamespaceDeclaration declaration, Scop
     private Binder? _binder = null;
     private bool _isBindingMembers = false;
 
-    private FrozenDictionary<SyntaxTree, UsingsScope>? _fileScopes;
+    private ImmutableArray<LazyUsingsScope> _scopes;
     
     public NamespaceDeclaration Declaration { get; } = declaration;
     
@@ -26,30 +26,41 @@ public sealed class SourceNamespaceSymbol(NamespaceDeclaration declaration, Scop
     {
         get
         {
-            if (field.IsDefault)
-            {
-                if (_isBindingMembers)
-                    throw new CycleException();
-                _isBindingMembers = true;
+            if (!field.IsDefault) return field;
 
-                _binder ??= MakeBinder();
-                _fileScopes ??= Declaration.Syntaxes
-                    .ToFrozenDictionary(tree => tree, tree => _binder.BindFileScope(tree.FileSyntax));
-                
-                field =
-                [
-                    .. Declaration.Syntaxes.SelectMany(tree => _binder.WithScope(_fileScopes[tree]).BindNamespaceFile(tree)),
-                    .. Declaration.Children.Select(_binder.BindNamespaceDeclaration)
-                ];
+            if (_isBindingMembers)
+                throw new CycleException();
+            _isBindingMembers = true;
 
-                _isBindingMembers = false;
+            _binder ??= MakeBinder();
+            
+            // Binding namespace files produces the usings scopes of
+            // that file, which is lazy and must be completed by this
+            // symbol.
+            var scopes = ImmutableArray.CreateBuilder<LazyUsingsScope>();
+            
+            field =
+            [
+                .. Declaration.Syntaxes.SelectMany(tree => BindNamespaceFile(tree)),
+                .. Declaration.Children.Select(_binder.BindNamespaceDeclaration)
+            ];
 
-                // The following checks accesses members, so they need to run
-                // after binding is done.
-                _binder.CheckDuplicateDeclarations(field);
-            }
+            _scopes = scopes.DrainToImmutable();
+
+            _isBindingMembers = false;
+
+            // The following checks accesses members, so they need to run
+            // after binding is done.
+            _binder.CheckDuplicateDeclarations(field);
 
             return field;
+
+            ImmutableArray<Symbol> BindNamespaceFile(SyntaxTree tree)
+            {
+                var result = _binder.BindNamespaceFile(tree, out var scope);
+                scopes.Add(scope);
+                return result;
+            }
         }
     }
 
@@ -58,8 +69,8 @@ public sealed class SourceNamespaceSymbol(NamespaceDeclaration declaration, Scop
         foreach (var member in Members)
             member.Complete(sideEffects);
         
-        Debug.Assert(_fileScopes is not null);
-        foreach (var scope in _fileScopes.Values)
+        Debug.Assert(!_scopes.IsDefault);
+        foreach (var scope in _scopes)
             scope.Complete(sideEffects);
         
         _binder!.SideEffects.DrainInto(sideEffects);

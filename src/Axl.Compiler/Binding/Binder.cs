@@ -224,22 +224,29 @@ public sealed class Binder(Scope scope, BinderSideEffects sideEffects)
     
     public BoundBlock BindScriptBody(FileSyntax syntax)
     {
-        // File scope can immediately be completed, since
+        var syntaxNodes = syntax.SyntaxNodes().ToImmutableArray();
+        
+        // Usings
+        var index = 0;
+        var usingSyntaxes = ImmutableArray.CreateBuilder<UsingDirectiveSyntax>();
+        for (; index < syntaxNodes.Length && syntaxNodes[index] is UsingDirectiveSyntax usingSyntax; index++)
+            usingSyntaxes.Add(usingSyntax);
+
+        // The scope can immediately be completed, since
         // we are not currently binding a namespace.
-        var fileScope = BindFileScope(syntax);
-        fileScope.Complete(SideEffects);
+        var usingsScope = new LazyUsingsScope(Scope, usingSyntaxes.DrainToImmutable());
+        usingsScope.Complete(SideEffects);
+        var usingsBinder = WithScope(usingsScope);
         
-        var usingsBinder = WithScope(fileScope);
-        
-        // Skip all using directives that come at the start of the file.
-        var scriptContent = syntax.SyntaxNodes().SkipWhile(node => node is UsingDirectiveSyntax).ToImmutableArray();
-        
-        var localFuns = scriptContent.OfType<FunDeclSyntax>().Select(usingsBinder.BindLocalFunDeclaration).ToImmutableArray();
+        var localFuns = syntaxNodes[index..]
+            .OfType<FunDeclSyntax>()
+            .Select(usingsBinder.BindLocalFunDeclaration)
+            .ToImmutableArray();
         CheckDuplicateDeclarations([.. localFuns]);
 
         var inBlockBinder = usingsBinder.EnterBlock([.. localFuns]);
 
-        var stmts = inBlockBinder.BindStmtsAndLocalFunBodies(scriptContent, localFuns);
+        var stmts = inBlockBinder.BindStmtsAndLocalFunBodies(syntaxNodes[index..], localFuns);
         
         var block = new BoundBlock(stmts, localFuns, Unit, syntax);
         if (!block.IsDiverging)
@@ -262,48 +269,55 @@ public sealed class Binder(Scope scope, BinderSideEffects sideEffects)
         return new SourceNamespaceSymbol(declaration, Scope);
     }
     
-    public ImmutableArray<Symbol> BindNamespaceFile(SyntaxTree syntax)
+    public ImmutableArray<Symbol> BindNamespaceFile(SyntaxTree syntax, out LazyUsingsScope usingsScope)
     {
         // In a namespace file, the first declaration must be the namespace
         // syntax.
-        Debug.Assert(syntax.FileSyntax.SyntaxNodes().First() is NamespaceDeclSyntax);
+        var syntaxNodes = syntax.FileSyntax.SyntaxNodes().ToImmutableArray();
+        Debug.Assert(syntaxNodes[0] is NamespaceDeclSyntax);
 
-        var usingsBinder = WithScope(BindFileScope(syntax.FileSyntax));
+        // Usings
+        var index = 1;
+        var usingSyntaxes = ImmutableArray.CreateBuilder<UsingDirectiveSyntax>();
+        for (; index < syntaxNodes.Length && syntaxNodes[index] is UsingDirectiveSyntax usingSyntax; index++)
+            usingSyntaxes.Add(usingSyntax);
         
+        // The scope is lazy and will be completed by the caller.
+        // We cannot complete it here, because it might look up inside this namespace's members.
+        usingsScope = new LazyUsingsScope(Scope, usingSyntaxes.DrainToImmutable());
+        var usingsBinder = WithScope(usingsScope);
+        
+        // Declarations
         var symbols = ImmutableArray.CreateBuilder<Symbol>();
-        var rejectUsingDirectives = false;
-        foreach (var child in syntax.FileSyntax.SyntaxNodes().Skip(1))
+        for (; index < syntaxNodes.Length; index++)
         {
-            switch (child)
+            switch (syntaxNodes[index])
             {
                 case FunDeclSyntax funDecl:
                     symbols.Add(usingsBinder.BindSourceFunDeclaration(funDecl));
-                    rejectUsingDirectives = true;
                     break;
-                
+
                 case StructDeclSyntax structDecl:
                     symbols.Add(usingsBinder.BindStructDeclaration(structDecl));
-                    rejectUsingDirectives = true;
                     break;
-                
+
                 case NamespaceDeclSyntax namespaceDecl:
                     // Multiple namespace declaration
                     SideEffects.ReportError(new Diagnostic.DuplicateNamespaceDeclaration(namespaceDecl));
                     break;
-                
+
                 case StmtSyntax stmtSyntax:
                     SideEffects.ReportError(new Diagnostic.StmtInNamespaceFile(stmtSyntax));
-                    rejectUsingDirectives = true;
                     break;
-                
+
                 case UsingDirectiveSyntax usingDirective:
-                    if (rejectUsingDirectives)
-                        SideEffects.ReportError(new Diagnostic.UsingDirectiveAfterCode(usingDirective));
+                    // All valid using directives have been handled,
+                    // so this one is invalid.
+                    SideEffects.ReportError(new Diagnostic.UsingDirectiveAfterCode(usingDirective));
                     break;
-                
+
                 default:
-                    SideEffects.ReportError(new Diagnostic.UnsupportedFeature(child));
-                    rejectUsingDirectives = true;
+                    SideEffects.ReportError(new Diagnostic.UnsupportedFeature(syntaxNodes[index]));
                     break;
             }
         }
@@ -311,9 +325,6 @@ public sealed class Binder(Scope scope, BinderSideEffects sideEffects)
         return symbols.DrainToImmutable();
     }
 
-    public UsingsScope BindFileScope(FileSyntax syntax)
-        => new(Scope, [.. syntax.SyntaxNodes().OfType<UsingDirectiveSyntax>()]);
-    
     public NamespaceSymbol? BindUsingDirective(UsingDirectiveSyntax syntax)
     {
         var boundExpr = BindExpr(syntax.NameExpr, LookupOptions.OnlyNamespace);

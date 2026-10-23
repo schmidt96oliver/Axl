@@ -4,7 +4,7 @@ using Axl.Compiler.Syntax.Tree;
 
 namespace Axl.Compiler.Binding.Scopes;
 
-public sealed class UsingsScope(Scope enclosingScope, ImmutableArray<UsingDirectiveSyntax> usingSyntaxes)
+public sealed class LazyUsingsScope(Scope enclosingScope, ImmutableArray<UsingDirectiveSyntax> usingSyntaxes)
     : Scope(enclosingScope)
 {
     /// <summary>
