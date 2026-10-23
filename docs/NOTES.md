@@ -3,9 +3,13 @@
 
 # Now
 
+* don't put duplicate usings in scope
+* don't put misplaced usings in scope
+* ?? reject `using Base`
+* ?? reject `namespace A.B; using A;`
+* Parse TypeName instead Expr
+
 * use full names for diagnostics
-* ?? multiple usings of same namespace -> Produce AmbiguousRef currently
-* ?? using of namespace inside same namespace
 
 * Add Compilation refs to Symbol
 * ?? NamespaceDeclaration ImmutableArray

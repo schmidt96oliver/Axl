@@ -316,10 +316,7 @@ public sealed class Binder(Scope scope, BinderSideEffects sideEffects)
     
     public NamespaceSymbol? BindUsingDirective(UsingDirectiveSyntax syntax)
     {
-        // Usings must be bound in global scope
-        var globalBinder = WithScope(Scope.Compilation.GlobalScope);
-        
-        var boundExpr = globalBinder.BindExpr(syntax.NameExpr, LookupOptions.OnlyNamespace);
+        var boundExpr = BindExpr(syntax.NameExpr, LookupOptions.OnlyNamespace);
         if (boundExpr is not BoundNamespaceRef nsRef)
         {
             if (boundExpr is not BoundError)
