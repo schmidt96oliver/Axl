@@ -70,5 +70,6 @@ public enum SyntaxKind
     StructBody,
     Self,
     FunName,
-    NamespaceName
+    NamespaceName,
+    Annotation
 }

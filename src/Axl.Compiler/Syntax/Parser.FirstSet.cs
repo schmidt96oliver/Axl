@@ -30,7 +30,8 @@ public partial class Parser
         );
         
         public static readonly TokenSet Var = TokenSet.Of(TokenKind.VarKw, TokenKind.LetKw);
-        
+
+        public static readonly TokenSet Annotation = TokenSet.Of(TokenKind.At);
 
         public static readonly TokenSet NonExprStmt = Var | TokenKind.WhileKw;
         
@@ -44,10 +45,18 @@ public partial class Parser
         public static readonly TokenSet StringContinuation = TokenSet.Of(
             TokenKind.StringText, TokenKind.StringEnd, TokenKind.OpenBrace);
 
-        public static readonly TokenSet FieldDecl = TokenSet.Of(TokenKind.PubKw, TokenKind.Identifier);
+        public static readonly TokenSet FieldDeclAfterHeader = TokenSet.Of(TokenKind.Identifier);
 
-        public static readonly TokenSet FunDecl =
-            TokenSet.Of(TokenKind.PubKw, TokenKind.StaticKw, TokenKind.VarKw, TokenKind.FunKw);
+        public static readonly TokenSet FieldDecl = FieldDeclAfterHeader | TokenKind.PubKw;
+
+        public static readonly TokenSet StructDeclAfterHeader = TokenSet.Of(TokenKind.StructKw);
+
+        public static readonly TokenSet StructDecl = Annotation | TokenKind.PubKw | StructDeclAfterHeader;
+        
+        public static readonly TokenSet FunDeclAfterHeader =
+            TokenSet.Of(TokenKind.StaticKw, TokenKind.VarKw, TokenKind.FunKw);
+
+        public static readonly TokenSet FunDecl = Annotation | TokenKind.PubKw | FunDeclAfterHeader;
 
         public static readonly TokenSet FunName = TokenSet.Of(TokenKind.Identifier,
             TokenKind.Plus, TokenKind.Minus, TokenKind.Star, TokenKind.Slash,

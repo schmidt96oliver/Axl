@@ -56,33 +56,16 @@ public partial class Parser
             // A few keywords need to be disambiguated.
             if (_scanner.IsAt(TokenKind.VarKw))
             {
-                if (_scanner.Peek(1).Kind is TokenKind.StaticKw or TokenKind.FunKw)
-                    EatFunDecl(fileAnchor);
+                if (FirstSet.FunDeclAfterHeader.Contains(_scanner.Peek(1).Kind))
+                    ContinueEatFunDecl(fileAnchor, _scanner.Open());
                 else
                     EatStmt(fileAnchor | TokenKind.Semicolon);
-            }
-            else if (_scanner.IsAt(TokenKind.PubKw))
-            {
-                switch (_scanner.Peek(1).Kind)
-                {
-                    case var kind when FirstSet.FunDecl.Contains(kind):
-                        EatFunDecl(fileAnchor);
-                        break;
-                    case TokenKind.StructKw:
-                        EatStructDecl(fileAnchor);
-                        break;
-                    default:
-                        _scanner.EatIntoGarbageAndReport(ExpectedSyntax.FunOrStruct);
-                        break;
-                }
             }
             
             else if (_scanner.IsAt(FirstSet.Stmt))
                 EatStmt(fileAnchor | TokenKind.Semicolon);
-            else if (_scanner.IsAt(FirstSet.FunDecl))
-                EatFunDecl(fileAnchor);
-            else if (_scanner.IsAt(TokenKind.StructKw))
-                EatStructDecl(fileAnchor);
+            else if (_scanner.IsAt(FirstSet.StructDecl | FirstSet.FunDecl))
+                EatMember(fileAnchor, allowedAfterHeader: FirstSet.StructDeclAfterHeader | FirstSet.FunDeclAfterHeader);
             else if (_scanner.IsAt(TokenKind.NamespaceKw))
                 EatNamespaceDecl();
             else if (_scanner.IsAt(TokenKind.UsingKw))

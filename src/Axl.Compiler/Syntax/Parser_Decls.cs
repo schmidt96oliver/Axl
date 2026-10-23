@@ -7,18 +7,52 @@ namespace Axl.Compiler.Syntax;
 
 public partial class Parser
 {
-    private MarkClose EatStructDecl(Anchor anchor)
+    private MarkClose EatMember(Anchor anchor, TokenSet allowedAfterHeader)
     {
-        var structDecl = _scanner.Open();
-        
-        _scanner.EatIfPresent(TokenKind.PubKw);
+        Debug.Assert(_scanner.IsAt(FirstSet.StructDecl | FirstSet.FunDecl | FirstSet.FieldDecl));
 
-        if (!_scanner.IsAt(TokenKind.StructKw))
+        var common = _scanner.Open();
+
+        // Annotations
+        foreach (var _ in _scanner.MustEatEachIteration())
         {
-            _scanner.ReportMissingTokenHere(TokenKind.StructKw);
-            return _scanner.Close(structDecl, SyntaxKind.Garbage);
+            if (_scanner.IsAt(FirstSet.Annotation))
+                EatAnnotation();
+            else
+                break;
         }
         
+        // Pub
+        _scanner.EatIfPresent(TokenKind.PubKw);
+
+        if (!_scanner.IsAt(allowedAfterHeader))
+        {
+            _scanner.ReportMissingTokenHere(ExpectedSyntax.Member);
+            return _scanner.Close(common, SyntaxKind.Garbage);
+        }
+        
+        if (_scanner.IsAt(FirstSet.FunDeclAfterHeader))
+            return ContinueEatFunDecl(anchor, common);
+        if (_scanner.IsAt(FirstSet.StructDeclAfterHeader))
+            return ContinueEatStructDecl(anchor, common);
+        if (_scanner.IsAt(FirstSet.FieldDeclAfterHeader))
+            return ContinueEatFieldDecl(common);
+        
+        _scanner.ReportMissingTokenHere(ExpectedSyntax.Member);
+        return _scanner.Close(common, SyntaxKind.Garbage);
+    }
+
+    private MarkClose EatAnnotation()
+    {
+        var annotation = _scanner.Open();
+        _scanner.EatKnown(TokenKind.At);
+        EnsureIdName();
+        return _scanner.Close(annotation, SyntaxKind.Annotation);
+    }
+
+
+    private MarkClose ContinueEatStructDecl(Anchor anchor, MarkOpen commonHeader)
+    {
         _scanner.EatKnown(TokenKind.StructKw);
         
         EnsureIdName();
@@ -28,7 +62,7 @@ public partial class Parser
         else
             EnsureStructBody(anchor);
 
-        return _scanner.Close(structDecl, SyntaxKind.StructDecl);
+        return _scanner.Close(commonHeader, SyntaxKind.StructDecl);
     }
 
     private MarkClose EnsureStructBody(Anchor anchor)
@@ -40,20 +74,9 @@ public partial class Parser
         
         foreach (var _ in _scanner.MustEatEachIteration())
         {
-            if (_scanner.IsAt(TokenKind.PubKw))
-            {
-                if (_scanner.Peek(1).Kind is TokenKind.VarKw or TokenKind.StaticKw or TokenKind.FunKw)
-                    EatFunDecl(bodyAnchor);
-                else
-                    EatFieldDecl();
-            }
+            if (_scanner.IsAt(FirstSet.FunDecl | FirstSet.FieldDecl))
+                EatMember(bodyAnchor, allowedAfterHeader: FirstSet.FunDeclAfterHeader | FirstSet.FieldDeclAfterHeader);
             
-            // --- Members
-            else if (_scanner.IsAt(FirstSet.FieldDecl))
-                EatFieldDecl();
-            else if (_scanner.IsAt(FirstSet.FunDecl))
-                EatFunDecl(bodyAnchor);
-
             // --- lone ";" special case
             else if (_scanner.IsAt(TokenKind.Semicolon))
                 _scanner.EatIntoGarbageAndReport(ExpectedSyntax.Stmt);
@@ -79,19 +102,14 @@ public partial class Parser
         return _scanner.Close(body, SyntaxKind.StructBody);
     }
 
-    private MarkClose EatFieldDecl()
+    private MarkClose ContinueEatFieldDecl(MarkOpen commonHeader)
     {
-        Debug.Assert(_scanner.IsAt(FirstSet.FieldDecl));
-
-        var field = _scanner.Open();
-        
-        if (_scanner.IsAt(TokenKind.PubKw))
-            _scanner.Eat();
+        Debug.Assert(_scanner.IsAt(FirstSet.FieldDeclAfterHeader));
 
         EnsureIdName(ExpectedSyntax.FieldName);
         EnsureTypeAnnotation();
         EnsureToken(TokenKind.Semicolon);
-        return _scanner.Close(field, SyntaxKind.FieldDecl);
+        return _scanner.Close(commonHeader, SyntaxKind.FieldDecl);
     }
 
     private MarkClose EnsureNamespaceName()
@@ -126,20 +144,17 @@ public partial class Parser
         return _scanner.Close(namespaceDecl, SyntaxKind.NamespaceDecl);
     }
 
-    private MarkClose EatFunDecl(Anchor anchor)
+    private MarkClose ContinueEatFunDecl(Anchor anchor, MarkOpen commonHeader)
     {
-        Debug.Assert(_scanner.IsAt(FirstSet.FunDecl));
+        Debug.Assert(_scanner.IsAt(FirstSet.FunDeclAfterHeader));
 
-        var fnDecl = _scanner.Open();
-
-        _scanner.EatIfPresent(TokenKind.PubKw);
         _scanner.EatIfPresent(TokenKind.StaticKw);
         _scanner.EatIfPresent(TokenKind.VarKw);
 
         if (!_scanner.IsAt(TokenKind.FunKw))
         {
             _scanner.ReportMissingTokenHere(TokenKind.FunKw);
-            return _scanner.Close(fnDecl, SyntaxKind.Garbage);
+            return _scanner.Close(commonHeader, SyntaxKind.Garbage);
         }
         
         _scanner.EatKnown(TokenKind.FunKw);
@@ -153,7 +168,7 @@ public partial class Parser
 
         EnsureFunBody(anchor);
 
-        return _scanner.Close(fnDecl, SyntaxKind.FunDecl);
+        return _scanner.Close(commonHeader, SyntaxKind.FunDecl);
     }
 
     private MarkClose EnsureFunName()

@@ -3,6 +3,8 @@
 
 # Now
 
+* reject all Annotations. Add to syntax
+
 * Add Compilation refs to Symbol
 
 * "var fun" -> "mut fun"
@@ -16,25 +18,15 @@
 
 # Milestones
 
-## 4. Namespaces and multiple files
-* [x] Taxl file splitter + LSP Project abstraction (handles AxlLocation <-> LspLocation)
-* [x] Compilation takes multiple files
-* [x] Namespaces
-  * [x] Open across same compilation
-  * [x] Free funs + structs
-  * [x] `pub` and private visibility in namespaces
-* [x] Using directives
-
 ## 5. `Base` namespace as Axl-Code
 [Proposal](Proposals/Primitives.axl)
 * [ ] Annotations (private inside BaseLib)
     * [ ] `@Intrinsic` looks up funs agains LookupTable and checks signatures
     * [ ] `@Primitive` marks types primitive; rejects any fields declared
-    * [ ] `@LanguageItem("I32")` marks items for the compiler to be found
 * [x] Compilation.ReferencedCompilations (only BaseLib implicitly)
   * [x] Namespace closed across Compilations
 * [ ] Project marker files (without dependencies)
-* [ ] BaseNamespaceSymbol/WellKnownSymbols searches for correct symbols
+* [x] BaseLibrary searches for correct symbols
 * [ ] BaseNamespace shared across Compilations (through LSP)
 
 * [ ] Replace entire BaseNamespaceSymbol with axl text!!

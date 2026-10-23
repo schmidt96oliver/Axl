@@ -1,5 +1,6 @@
 using Axl.Compiler.Symbols;
 using Axl.Compiler.Syntax;
+using Axl.Compiler.Syntax.Tree;
 using Axl.Compiler.Testing;
 using Axl.Compiler.Text;
 using OmniSharp.Extensions.LanguageServer.Protocol.Client.Capabilities;
@@ -129,6 +130,9 @@ public class SemanticTokensHandler : SemanticTokensHandlerBase
 
     private static IEnumerable<(SourceLocation, SemanticTokenType)> SingleIdentifier(Token token, IProject project)
     {
+        if (token.Parent?.Parent is AnnotationSyntax)
+            return [(token.Parent.Parent.Location, SemanticTokenType.Decorator)];
+        
         var symbol = project.Compilation.SemanticSideTable.TryGetSymbol(token.Location);
 
         return symbol switch

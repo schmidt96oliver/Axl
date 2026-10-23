@@ -332,8 +332,8 @@ public partial class Parser
         {
             if (_scanner.IsAt(TokenKind.VarKw))
             {
-                if (_scanner.Peek(1).Kind is TokenKind.StaticKw or TokenKind.FunKw)
-                    EatFunDecl(blockAnchor);
+                if (FirstSet.FunDeclAfterHeader.Contains(_scanner.Peek(1).Kind))
+                    ContinueEatFunDecl(blockAnchor, _scanner.Open());
                 else
                     EatStmt(blockAnchor);
             }
@@ -342,7 +342,7 @@ public partial class Parser
             else if (_scanner.IsAt(FirstSet.Stmt))
                 EatStmt(blockAnchor);
             else if (_scanner.IsAt(FirstSet.FunDecl))
-                EatFunDecl(blockAnchor);
+                EatMember(blockAnchor, allowedAfterHeader: FirstSet.FunDeclAfterHeader);
             
             // --- lone ";" special case
             else if (_scanner.IsAt(TokenKind.Semicolon))
