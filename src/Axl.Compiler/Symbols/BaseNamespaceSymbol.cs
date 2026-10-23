@@ -9,6 +9,9 @@ public sealed class BaseNamespaceSymbol : NamespaceSymbol
 {
     public override ImmutableArray<Symbol> Members { get; }
 
+    /// <inheritdoc/>
+    public override bool CanBeReferencedByName => true;
+    
     public SyntheticStructSymbol I32 { get; }
     public SyntheticStructSymbol I64 { get; }
     public SyntheticStructSymbol F32 { get; }
@@ -22,7 +25,7 @@ public sealed class BaseNamespaceSymbol : NamespaceSymbol
 
 
     public BaseNamespaceSymbol(Symbol owner)
-        : base("Base", owner)
+        : base("Base", owner, isRoot: false)
     {
         //TODO: String should not be a struct, probably :D
         

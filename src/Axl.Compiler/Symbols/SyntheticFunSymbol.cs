@@ -13,6 +13,9 @@ public sealed class SyntheticFunSymbol(
 {
     /// <inheritdoc />
     public override FunDeclSyntax? DeclarationSyntax => null;
+
+    /// <inheritdoc />
+    public override bool CanBeReferencedByName => Name is not "";
     
     private ImmutableArray<ParameterSymbol>? _parameters;
     public override ImmutableArray<ParameterSymbol> Parameters => _parameters ?? throw new InvalidOperationException(

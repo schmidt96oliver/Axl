@@ -7,9 +7,11 @@ public class BaseLibRootSymbol : NamespaceSymbol
 {
     private readonly BaseNamespaceSymbol _baseNamespace;
 
-    
+    /// <inheritdoc />
+    public override bool CanBeReferencedByName => false;
+
     public BaseLibRootSymbol(Compilation compilation) 
-        : base(name: "", owner: null)
+        : base(name: "", owner: null, isRoot: true)
     {
         _baseNamespace = new BaseNamespaceSymbol(owner: this);
     }

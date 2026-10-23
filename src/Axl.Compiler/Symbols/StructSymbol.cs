@@ -17,5 +17,8 @@ public closed class StructSymbol : TypeSymbol
     /// </summary>
     public bool IsPrimitive { get; }
 
+    /// <inheritdoc />
+    public override bool CanBeReferencedByName => true;
+
     public ImmutableArray<FieldSymbol> Fields => [.. Members.OfType<FieldSymbol>()];
 }

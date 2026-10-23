@@ -171,7 +171,7 @@ public sealed class Binder(Scope scope, BinderSideEffects sideEffects)
     public static NamespaceSymbol BindRootNamespace(Compilation compilation)
     {
         var decl = GetRootNamespaceDeclaration([.. compilation.SyntaxTrees.Where(IsNamespaceFile)]);
-        return new SourceNamespaceSymbol(decl, compilation.GlobalScope);
+        return new SourceNamespaceSymbol(decl, compilation.GlobalScope, isRoot: true);
     }
 
     public static ImmutableArray<ScriptSymbol> BindScripts(Compilation compilation)
@@ -266,7 +266,7 @@ public sealed class Binder(Scope scope, BinderSideEffects sideEffects)
             SideEffects.ReportError(new Diagnostic.NamespaceAlreadyDeclared(declaration));
         }
 
-        return new SourceNamespaceSymbol(declaration, Scope);
+        return new SourceNamespaceSymbol(declaration, Scope, isRoot: false);
     }
     
     public ImmutableArray<Symbol> BindNamespaceFile(SyntaxTree syntax, out LazyUsingsScope usingsScope)

@@ -18,6 +18,9 @@ public sealed class FieldSymbol(
     private Binder? _binder = null;
 
     private bool _isBindingType = false;
+
+    /// <inheritdoc />
+    public override bool CanBeReferencedByName => true;
     
     public FieldDeclSyntax DeclarationSyntax { get; } = declarationSyntax;
     public override bool IsPublic { get; } = isPublic;

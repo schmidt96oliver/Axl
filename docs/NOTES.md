@@ -3,8 +3,6 @@
 
 # Now
 
-* use full names for diagnostics
-
 * Add Compilation refs to Symbol
 * ?? NamespaceDeclaration ImmutableArray
 
@@ -26,7 +24,7 @@
   * [x] Open across same compilation
   * [x] Free funs + structs
   * [x] `pub` and private visibility in namespaces
-* [ ] Using directives
+* [x] Using directives
 
 ## 5. `Base` namespace as Axl-Code
 [Proposal](Proposals/Primitives.axl)

@@ -17,7 +17,7 @@ public partial record Diagnostic
             => [Value.Syntax!.Location];
 
         public override string Message
-            => $"Expected type ‘{Expected.Name}‘ but got ‘{Value.Type.Name}‘.";
+            => $"Expected type ‘{Expected.QualifiedName}‘ but got ‘{Value.Type.QualifiedName}‘.";
     }
     
     public sealed record ArgumentTypeMismatch(BoundValue Value, ParameterSymbol Parameter) : Error
@@ -26,7 +26,7 @@ public partial record Diagnostic
             => [Value.Syntax!.Location];
 
         public override string Message
-            => $"Argument for ‘{Parameter.Name}‘ must be ‘{Parameter.Type.Name}‘, but got ‘{Value.Type.Name}‘.";
+            => $"Argument for ‘{Parameter.Name}‘ must be ‘{Parameter.Type.QualifiedName}‘, but got ‘{Value.Type.QualifiedName}‘.";
     }
 
     public sealed record MissingInitializer(VarDeclSyntax VarDeclSyntax) : Error
@@ -65,8 +65,8 @@ public partial record Diagnostic
 
         private string GetTypeString()
             => OperandTypes.Length == 1
-                ? $"‘{OperandTypes[0].Name}‘"
-                : $"{string.Join(", ", OperandTypes[..^1].Select(expr => $"‘{expr.Name}‘"))} and ‘{OperandTypes[^1].Name}‘";
+                ? $"‘{OperandTypes[0].QualifiedName}‘"
+                : $"{string.Join(", ", OperandTypes[..^1].Select(expr => $"{expr.QualifiedName}"))} and {OperandTypes[^1].QualifiedName}";
     }
 
     public sealed record CannotAssign(BoundNode BoundTarget) : Error
@@ -87,10 +87,10 @@ public partial record Diagnostic
                 BoundValue => "Cannot assign this for unknown reason.",
 
                 BoundFunGroup boundFunGroup =>
-                    $"Cannot assign to ‘{boundFunGroup.Name}‘, because it is a group of overloaded funs.",
+                    $"Cannot assign to ‘{boundFunGroup.Candidates[0].QualifiedName}‘, because it is a group of overloaded funs.",
                 BoundNamespaceRef boundNamespace =>
-                    $"Cannot assign to ‘{boundNamespace.Namespace.Name}‘, because it is a namespace.",
-                BoundTypeRef boundType => $"Cannot assign to ‘{boundType.Type.Name}‘, because it is a type.",
+                    $"Cannot assign to ‘{boundNamespace.Namespace.QualifiedName}‘, because it is a namespace.",
+                BoundTypeRef boundType => $"Cannot assign to ‘{boundType.Type.QualifiedName}‘, because it is a type.",
 
                 BoundStmt => throw new UnreachableException(
                     "Non-value stmts can never be in assignment target position.")
@@ -109,18 +109,18 @@ public partial record Diagnostic
 
         public override string Message => Receiver switch
         {
-            { IsPlace: false } => $"Cannot call var fun ‘{Fun.Name}‘ on a temporary value.",
+            { IsPlace: false } => $"Cannot call var fun ‘{Fun.QualifiedName}‘ on a temporary value.",
 
             { } when GetFirstPlace(Receiver) is BoundVariable { Variable: { IsReadOnly: true, Name: var varName } }
-                => $"Cannot call var fun ‘{Fun.Name}‘ on ‘{varName}‘, because ‘{varName}‘ is declared ‘let‘. Consider declaring it ‘var‘ instead.",
+                => $"Cannot call var fun ‘{Fun.QualifiedName}‘ on ‘{varName}‘, because ‘{varName}‘ is declared ‘let‘. Consider declaring it ‘var‘ instead.",
 
             { } when GetFirstPlace(Receiver) is BoundSelf { IsMutablePlace: false }
-                => $"Cannot call var fun ‘{Fun.Name}‘ through ‘self‘, because ‘{ContextFunName}‘ is not ‘var‘. Consider declaring it ‘var‘ instead.",
+                => $"Cannot call var fun ‘{Fun.QualifiedName}‘ through ‘self‘, because ‘{ContextFunName}‘ is not ‘var‘. Consider declaring it ‘var‘ instead.",
 
-            _ => $"‘{Fun.Name}‘ is a var fun, but ‘{Receiver!.Type.Name}‘ cannot be mutated here.",
+            _ => $"‘{Fun.QualifiedName}‘ is a var fun, but ‘{Receiver!.Type.QualifiedName}‘ cannot be mutated here.",
         };
 
-        private string ContextFunName => (Context as FunSymbol)?.Name ?? "???";
+        private string ContextFunName => (Context as FunSymbol)?.QualifiedName ?? "???";
 
         private static BoundValue GetFirstPlace(BoundValue value) => value switch
         {
@@ -153,7 +153,7 @@ public partial record Diagnostic
             => [First.Syntax!.Location, Second.Syntax!.Location];
 
         public override string Message
-            => $"Both ‘if‘ and ‘else‘ branches must have the same type. Got ‘{First.Type.Name}‘ and ‘{Second.Type.Name}‘.";
+            => $"Both ‘if‘ and ‘else‘ branches must have the same type. Got ‘{First.Type.QualifiedName}‘ and ‘{Second.Type.QualifiedName}‘.";
     }
 
     public sealed record UndefinedMember(BoundNode Left, SyntaxNode Syntax) : Error
@@ -162,9 +162,9 @@ public partial record Diagnostic
 
         public override string Message => Left switch
         {
-            BoundValue value => $"‘{value.Type.Name}‘ has no member ‘{Syntax.Text.ToString()}‘.",
-            BoundTypeRef type => $"‘{type.Type.Name}‘ has no member ‘{Syntax.Text.ToString()}‘.",
-            BoundNamespaceRef ns => $"‘{ns.Namespace.Name}‘ has no member ‘{Syntax.Text.ToString()}‘.",
+            BoundValue value => $"‘{value.Type.QualifiedName}‘ has no member ‘{Syntax.Text.ToString()}‘.",
+            BoundTypeRef type => $"‘{type.Type.QualifiedName}‘ has no member ‘{Syntax.Text.ToString()}‘.",
+            BoundNamespaceRef ns => $"‘{ns.Namespace.QualifiedName}‘ has no member ‘{Syntax.Text.ToString()}‘.",
 
             _ => $"Cannot find member ‘{Syntax.Text.ToString()}‘.",
         };
@@ -176,7 +176,7 @@ public partial record Diagnostic
         public override ImmutableArray<SourceLocation> Locations => [Node.Syntax!.Location];
 
         public override string Message
-            => $"Cannot use ‘{Node.Type.Name}‘ in a string, because it has no ‘pub fun ToString()‘ returning ‘String‘.";
+            => $"Cannot use ‘{Node.Type.QualifiedName}‘ in a string, because it has no ‘pub fun ToString()‘ returning ‘String‘.";
         
     }
 
@@ -186,8 +186,8 @@ public partial record Diagnostic
             => [Syntax is ArgListSyntax argList ? argList.InsideLocation : Syntax.Location];
 
         public override string Message => Candidates.Length == 1
-            ? $"‘{Candidates[0].Name}‘ takes {GetArgCountText(Candidates[0].Parameters.Length)}, but {ArgCountWasOrWere(ArgumentCount)} given."
-            : $"No overload of ‘{Candidates[0].Name}‘ takes {GetArgCountText(ArgumentCount)}.";
+            ? $"‘{Candidates[0].QualifiedName}‘ takes {GetArgCountText(Candidates[0].Parameters.Length)}, but {ArgCountWasOrWere(ArgumentCount)} given."
+            : $"No overload of ‘{Candidates[0].QualifiedName}‘ takes {GetArgCountText(ArgumentCount)}.";
 
         private static string GetArgCountText(int number)
             => number == 1 ? $"1 argument" : $"{number} arguments";
@@ -202,10 +202,10 @@ public partial record Diagnostic
 
         public override string Message => BoundCallee switch
         {
-            BoundValue value => $"A value of type ‘{value.Type.Name}‘ cannot be called.",
+            BoundValue value => $"A value of type ‘{value.Type.QualifiedName}‘ cannot be called.",
             
             IBoundSymbolRef symbolRef => $"{symbolRef.Symbol.ShortDisplayName.Capitalize()} cannot be called.",
-            BoundFunGroup fun => $"Fun ‘{fun.Name}‘ cannot be called.",
+            BoundFunGroup fun => $"Fun ‘{fun.Candidates[0].QualifiedName}‘ cannot be called.",
             BoundStmt => "A statement cannot be called.",
         };
     }
@@ -215,7 +215,7 @@ public partial record Diagnostic
         public override ImmutableArray<SourceLocation> Locations => [Syntax.Location];
 
         public override string Message
-            => $"Number is too big for ‘{TargetType.Name}‘.";
+            => $"Number is too big for ‘{TargetType.QualifiedName}‘.";
     }
 
     public sealed record DuplicateFunDeclarations(ImmutableArray<FunSymbol> Duplicates) : Error
@@ -231,7 +231,7 @@ public partial record Diagnostic
 
         public override string LocationLabel => "Also declared here.";
 
-        public override string Message => $"‘{Duplicates[0].Name}‘ with the same signature is already declared.";
+        public override string Message => $"‘{Duplicates[0].QualifiedName}‘ with the same signature is already declared.";
     }
 
     public sealed record DuplicateParameters(ImmutableArray<ParameterSymbol> Duplicates) : Error
@@ -254,7 +254,7 @@ public partial record Diagnostic
             [Syntax is ArgListSyntax argList ? argList.InsideLocation : Syntax.Location];
 
         public override string Message => $"""
-                                           No overload of ‘{Candidates[0].Name}‘ accepts ({ ArgumentTypes.TypeListString })‘. Candidates:
+                                           No overload of ‘{Candidates[0].QualifiedName}‘ accepts ({ ArgumentTypes.TypeListString })‘. Candidates:
                                            {CandidateString}
                                            """;
 
@@ -273,7 +273,7 @@ public partial record Diagnostic
             [Syntax is ArgListSyntax argList ? argList.InsideLocation : Syntax.Location];
 
         public override string Message => $"""
-                                           Call to ‘{Candidates[0].Name}‘ is ambiguous between:
+                                           Call to ‘{Candidates[0].QualifiedName}‘ is ambiguous between:
                                            {CandidateString}
                                            """;
 
@@ -295,7 +295,7 @@ public partial record Diagnostic
     public sealed record MissingReturnValue(FunSymbol Fun, SyntaxNode Syntax) : Error
     {
         public override ImmutableArray<SourceLocation> Locations => [Syntax.Location];
-        public override string Message => $"‘{Fun.Name}‘ must return a value of type ‘{Fun.ReturnType.Name}‘.";
+        public override string Message => $"‘{Fun.Name}‘ must return a value of type ‘{Fun.ReturnType.QualifiedName}‘.";
     }
 
     public sealed record CannotCapture(SyntaxNode Syntax) : Error
@@ -330,7 +330,7 @@ public partial record Diagnostic
         public override ImmutableArray<SourceLocation> Locations => [Syntax.Location];
 
         public override string Message =>
-            $"{Fun.ShortDisplayName.Capitalize()} is static. Call it as ‘{Fun.OwningType?.Name ?? "???"}.{Fun.Name}(...)‘ instead.";
+            $"{Fun.ShortDisplayName.Capitalize()} is static. Call it as ‘{Fun.QualifiedName}(...)‘ instead.";
     }
 
     public sealed record NotAValue(BoundNode BoundNode) : Error
@@ -339,12 +339,12 @@ public partial record Diagnostic
 
         public override string Message => BoundNode switch
         {
-            BoundTypeRef type => $"‘{type.Type.Name}‘ is a type, not a value.",
-            BoundNamespaceRef ns => $"‘{ns.Namespace.Name}‘ is a namespace, not a value.",
-            BoundFunGroup funGroup => $"‘{funGroup.Name}‘ is a fun, not a value. Did you mean to call it?",
+            BoundTypeRef type => $"‘{type.Type.QualifiedName}‘ is a type, not a value.",
+            BoundNamespaceRef ns => $"‘{ns.Namespace.QualifiedName}‘ is a namespace, not a value.",
+            BoundFunGroup funGroup => $"‘{funGroup.Candidates[0].QualifiedName}‘ is a fun, not a value. Did you mean to call it?",
 
             // TypeRef should of course not report. To be resilient, just include it.
-            BoundValue value => $"‘{value.Type.Name}‘ is a value, _not_? a value.",
+            BoundValue value => $"‘{value.Type.QualifiedName}‘ is a value, _not_? a value.",
             BoundStmt => "Expected a value, got a statement.",
         };
     }
@@ -355,9 +355,9 @@ public partial record Diagnostic
 
         public override string Message => BoundNode switch
         {
-            BoundValue value => $"Expected a type, but got value of type ‘{value.Type.Name}‘.",
+            BoundValue value => $"Expected a type, but got value of type ‘{value.Type.QualifiedName}‘.",
             IBoundSymbolRef symbolRef => $"Expected a type, but got {symbolRef.Symbol.ShortDisplayName}.",
-            BoundFunGroup funGroup => $"Expected a type, but got fun ‘{funGroup.Name}‘.",
+            BoundFunGroup funGroup => $"Expected a type, but got fun ‘{funGroup.Candidates[0].QualifiedName}‘.",
             
             BoundStmt => "Expected a type, but got a statement.",
         };
@@ -369,9 +369,9 @@ public partial record Diagnostic
 
         public override string Message => BoundNode switch
         {
-            BoundValue value => $"Expected a namespace, but got value of type ‘{value.Type.Name}‘.",
+            BoundValue value => $"Expected a namespace, but got value of type ‘{value.Type.QualifiedName}‘.",
             IBoundSymbolRef symbolRef => $"Expected a namespace, but got {symbolRef.Symbol.ShortDisplayName}.",
-            BoundFunGroup funGroup => $"Expected a namespace, but got fun ‘{funGroup.Name}‘.",
+            BoundFunGroup funGroup => $"Expected a namespace, but got fun ‘{funGroup.Candidates[0].QualifiedName}‘.",
             
             BoundStmt => "Expected a namespace, but got a statement.",
         };
@@ -402,23 +402,23 @@ public partial record Diagnostic
         
         public override string LocationLabel => "Also declared here.";
 
-        public override string Message => $"‘{OffendingSymbols[0].Name}‘ is already declared.";
+        public override string Message => $"‘{OffendingSymbols[0].QualifiedName}‘ is already declared.";
     }
 
     public sealed record RecursiveStructLayout(StructSymbol StructSymbol, ImmutableArray<FieldSymbol> FieldPath) : Error
     {
         public override ImmutableArray<SourceLocation> Locations => [FieldPath[0].DeclarationSyntax!.TypeExpr.Location];
-        public override string Message => $"Struct ‘{StructSymbol.Name}‘ has a cycle in its layout. The cycle is through fields {GetCycleString()}";
+        public override string Message => $"Struct ‘{StructSymbol.QualifiedName}‘ has a cycle in its layout. The cycle is through fields {GetCycleString()}";
 
         private string GetCycleString()
-            => string.Join(" -> ", FieldPath.Select(field => $"‘{field.Owner!.Name}.{field.Name}: {field.Type.Name}‘"));
+            => string.Join(" -> ", FieldPath.Select(field => $"‘{field.QualifiedName}: {field.Type.QualifiedName}‘"));
     }
 
     public record UndefinedField(StructSymbol Struct, SyntaxNode Syntax) : Error
     {
         public override ImmutableArray<SourceLocation> Locations => [Syntax.Location];
 
-        public override string Message => $"‘{Struct.Name}‘ has no field ‘{Syntax.Text}‘.";
+        public override string Message => $"‘{Struct.QualifiedName}‘ has no field ‘{Syntax.Text}‘.";
     }
 
     public record MissingFieldName(SyntaxNode Syntax) : Error
@@ -451,8 +451,8 @@ public partial record Diagnostic
             => [TypeRef.Syntax!.Location];
 
         public override string Message => TypeRef.Type is StructSymbol { IsPrimitive: true } ?
-            $"‘{TypeRef.Type.Name}‘ cannot be initialized, because it is a primitive type."
-            : $"‘{TypeRef.Type.Name}‘ cannot be initialized.";
+            $"‘{TypeRef.Type.QualifiedName}‘ cannot be initialized, because it is a primitive type."
+            : $"‘{TypeRef.Type.QualifiedName}‘ cannot be initialized.";
     }
 
     public sealed record NotAccessible(ImmutableArray<Symbol> Symbols, SyntaxNode Syntax) : Error
@@ -463,7 +463,7 @@ public partial record Diagnostic
             ? $"{Symbols[0].ShortDisplayName.Capitalize()} is private and cannot be accessed here."
             : Symbols.All(s => s is FunSymbol)
                 ? $"All overloads of {Symbols[0].ShortDisplayName} are private and cannot be accessed here."
-                : $"‘{Symbols[0].Name}‘ is private and cannot be accessed here.";
+                : $"‘{Symbols[0].ShortDisplayName}‘ is private and cannot be accessed here.";
     }
 
     public sealed record InvalidLocalFunModifier(Token Syntax) : Error
@@ -508,7 +508,7 @@ public partial record Diagnostic
         public override ImmutableArray<SourceLocation> Locations => [Syntax.Location];
 
         public override string Message =>
-            $"{InstanceMember.ShortDisplayName.Capitalize()} needs an instance of ‘{InstanceMember.OwningType?.Name ?? "???"}‘, but there is no ‘self‘ here{ GetReasonText() }.";
+            $"{InstanceMember.ShortDisplayName.Capitalize()} needs an instance of ‘{InstanceMember.OwningType?.QualifiedName ?? "???"}‘, but there is no ‘self‘ here{ GetReasonText() }.";
 
         private FunSymbol? GetOutermostFun()
             => (FunSymbol?)Context?.SelfAndOwners().TakeWhile(s => s is FunSymbol).LastOrDefault();
@@ -524,7 +524,7 @@ public partial record Diagnostic
         public override ImmutableArray<SourceLocation> Locations => [Syntax.Location];
 
         public override string Message =>
-            $"{InstanceMember.ShortDisplayName.Capitalize()} needs an instance of ‘{InstanceMember.OwningType?.Name ?? "???"}‘. It can not be accessed through the type.";
+            $"{InstanceMember.ShortDisplayName.Capitalize()} needs an instance of ‘{InstanceMember.OwningType?.QualifiedName ?? "???"}‘. It can not be accessed through the type.";
     }
 
     public sealed record AmbiguousReference(LookupResult LookupResult, SyntaxNode Syntax) : Error
@@ -548,7 +548,7 @@ public partial record Diagnostic
     public sealed record FunHasNoMembers(BoundFunGroup FunGroup, SyntaxNode Syntax) : Error
     {
         public override ImmutableArray<SourceLocation> Locations => [Syntax.Location];
-        public override string Message => $"‘{FunGroup.Name}‘ is a fun and has no members.";
+        public override string Message => $"‘{FunGroup.Candidates[0].QualifiedName}‘ is a fun and has no members.";
     }
 
 
@@ -557,7 +557,7 @@ public partial record Diagnostic
         public override ImmutableArray<SourceLocation> Locations => [Syntax.Location];
 
         public override string Message =>
-            $"Cannot access non-static member {Member.ShortDisplayName} of outer type ‘{Member.OwningType?.Name ?? "???"}‘ via nested type ‘{SelfType.Name}‘.";
+            $"Cannot access non-static member {Member.Name} of outer type ‘{Member.OwningType?.QualifiedName ?? "???"}‘ via nested type ‘{SelfType.Name}‘.";
     }
 
 

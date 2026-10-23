@@ -10,4 +10,7 @@ public class VariableSymbol(string name, FunSymbol owner, bool isReadOnly, TypeS
     /// Variables are always private inside their fun body.
     /// </summary>
     public override bool IsPublic => false;
+
+    /// <inheritdoc />
+    public override bool CanBeReferencedByName => true;
 }

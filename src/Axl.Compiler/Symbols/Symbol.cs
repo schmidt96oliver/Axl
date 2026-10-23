@@ -5,10 +5,15 @@ namespace Axl.Compiler.Symbols;
 public closed class Symbol(string name, Symbol? owner)
 {
     public string Name { get; } = name;
-    
+
     public Symbol? Owner { get; } = owner;
 
     public abstract bool IsPublic { get; }
+
+    /// <summary>
+    /// Whether this symbols name can be written in source code.
+    /// </summary>
+    public abstract bool CanBeReferencedByName { get; }
 
     /// <summary>
     /// The greatest owner where this symbol is still

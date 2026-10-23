@@ -1,5 +1,4 @@
-﻿using System.Collections.Frozen;
-using System.Collections.Immutable;
+﻿using System.Collections.Immutable;
 using System.Diagnostics;
 using Axl.Compiler.Binding;
 using Axl.Compiler.Binding.Scopes;
@@ -7,8 +6,8 @@ using Axl.Compiler.Syntax;
 
 namespace Axl.Compiler.Symbols;
 
-public sealed class SourceNamespaceSymbol(NamespaceDeclaration declaration, Scope enclosingScope)
-    : NamespaceSymbol(declaration.Name, enclosingScope.Owner)
+public sealed class SourceNamespaceSymbol(NamespaceDeclaration declaration, Scope enclosingScope, bool isRoot)
+    : NamespaceSymbol(declaration.Name, enclosingScope.Owner, isRoot)
 {
     /// <summary>
     /// To avoid unnecessary allocations, the binder is created on first
@@ -20,8 +19,14 @@ public sealed class SourceNamespaceSymbol(NamespaceDeclaration declaration, Scop
     private ImmutableArray<LazyUsingsScope> _scopes;
     
     public NamespaceDeclaration Declaration { get; } = declaration;
+
+    /// <summary>
+    /// A source declared namespace is nameable, only if
+    /// it is not the root.
+    /// </summary>
+    public override bool CanBeReferencedByName => !IsRoot;
     
-    
+
     public override ImmutableArray<Symbol> Members
     {
         get

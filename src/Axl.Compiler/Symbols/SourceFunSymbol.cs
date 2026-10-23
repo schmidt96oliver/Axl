@@ -24,6 +24,9 @@ public sealed class SourceFunSymbol(
     private bool _isBindingReturnType = false;
     private bool _isBindingBody = false;
 
+    /// <inheritdoc />
+    public override bool CanBeReferencedByName => true;
+    
     public override ImmutableArray<ParameterSymbol> Parameters
     {
         get

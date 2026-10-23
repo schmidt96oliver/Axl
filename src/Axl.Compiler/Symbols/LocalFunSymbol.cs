@@ -8,7 +8,9 @@ public sealed class LocalFunSymbol(FunDeclSyntax declarationSyntax, Symbol? owne
     : FunSymbol(declarationSyntax.Name.Text.ToString(), owner, isPublic: false, receiverType, isMutatingReceiver)
 {
     public override FunDeclSyntax DeclarationSyntax { get; } = declarationSyntax;
-    
+
+    /// <inheritdoc />
+    public override bool CanBeReferencedByName => true;
     
     private ImmutableArray<ParameterSymbol>? _parameters;
 
