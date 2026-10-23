@@ -698,4 +698,16 @@ public partial record Diagnostic
         /// <inheritdoc />
         public override string Message => "Using directives must appear before all declarations and code.";
     }
+
+    public sealed record UnnecessaryUsing(UsingDirectiveSyntax Syntax) : Lint
+    {
+        /// <inheritdoc />
+        public override ImmutableArray<SourceLocation> Locations => [Syntax.Location];
+
+        /// <inheritdoc />
+        public override DiagnosticSeverity DefaultSeverity => DiagnosticSeverity.Info;
+
+        /// <inheritdoc />
+        public override string Message => "The using directive is not necessary and can safely be removed.";
+    }
 }

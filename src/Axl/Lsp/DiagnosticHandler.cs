@@ -111,6 +111,8 @@ public class DiagnosticHandler : DocumentDiagnosticHandlerBase
                 _ => DiagnosticSeverity.Information
             },
 
+            Tags = GetTags(diagnostic),
+            
             // Only the first line, as stated above.
             Message = message,
 
@@ -122,6 +124,11 @@ public class DiagnosticHandler : DocumentDiagnosticHandlerBase
             ]),
         };
     }
+
+    private static Container<DiagnosticTag> GetTags(AxlDiagnostic diagnostic)
+        => diagnostic is AxlDiagnostic.UnnecessaryUsing
+            ? new Container<DiagnosticTag>(DiagnosticTag.Unnecessary)
+            : new Container<DiagnosticTag>();
     
     private static IEnumerable<DiagnosticRelatedInformation> GetRelatedInformation(AxlDiagnostic diagnostic, int exceptIndex)
         => diagnostic.Locations

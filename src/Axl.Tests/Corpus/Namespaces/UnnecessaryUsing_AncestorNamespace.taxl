@@ -1,0 +1,7 @@
+﻿//@check
+
+namespace A.B.C;
+
+using A;        //~lint UnnecessaryUsing
+using A.B;      //~lint UnnecessaryUsing
+using A.B.C;    //~lint UnnecessaryUsing

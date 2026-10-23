@@ -1,0 +1,7 @@
+﻿//@check
+
+using Base;     //~lint UnnecessaryUsing
+
+//---
+namespace A;
+using Base;     //~lint UnnecessaryUsing

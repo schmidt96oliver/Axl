@@ -16,6 +16,12 @@ public sealed class BinderSideEffects
         Guard.IsState(!_isDrained);
         DiagnosticBag.ReportError(error);
     }
+
+    public void ReportLint(Diagnostic.Lint lint)
+    {
+        Guard.IsState(!_isDrained);
+        DiagnosticBag.ReportLint(lint);
+    }
     
     public void AddResolvedSymbol(SourceLocation location, Symbol? symbol)
     {
@@ -37,4 +43,6 @@ public sealed class BinderSideEffects
         foreach (var (location, symbol) in SemanticSideTable.ResolvedSymbols)
             sideEffects.SemanticSideTable.AddResolvedSymbol(location, symbol);
     }
+
+    
 }

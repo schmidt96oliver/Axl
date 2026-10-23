@@ -1,10 +1,18 @@
 ﻿//@check
 
+// Usings must come before any declarations.
+// If they do, they must not insert their
+// namespaces members and must not report further
+// errors.
+
 namespace Test;
 
-fun A() { }
+fun A() { InA(); }  //~error UndefinedName
 
 using A;        //~error UsingDirectiveAfterCode
+using Error;    //~error UsingDirectiveAfterCode
 
 //---
 namespace A;
+
+fun InA() { }

@@ -3,11 +3,7 @@
 
 # Now
 
-* don't put duplicate usings in scope
-* ?? reject `using Base`
-* ?? reject `namespace A.B; using A;`
 * Parse TypeName instead Expr
-* lint: Unnecessary using
 
 * use full names for diagnostics
 

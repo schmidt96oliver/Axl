@@ -325,7 +325,7 @@ public sealed class Binder(Scope scope, BinderSideEffects sideEffects)
         return symbols.DrainToImmutable();
     }
 
-    public NamespaceSymbol? BindUsingDirective(UsingDirectiveSyntax syntax)
+    private NamespaceSymbol? BindUsingDirective(UsingDirectiveSyntax syntax)
     {
         var boundExpr = BindExpr(syntax.NameExpr, LookupOptions.OnlyNamespace);
         if (boundExpr is not BoundNamespaceRef nsRef)
@@ -337,6 +337,28 @@ public sealed class Binder(Scope scope, BinderSideEffects sideEffects)
 
         return nsRef.Namespace;
     }
+
+    public ImmutableArray<NamespaceSymbol> BindUsingDirectives(ImmutableArray<UsingDirectiveSyntax> syntaxes)
+    {
+        var namespaces = ImmutableArray.CreateBuilder<NamespaceSymbol>();
+        foreach (var syntax in syntaxes)
+        {
+            var bound = BindUsingDirective(syntax);
+            if (bound is null) continue;
+            if (namespaces.Contains(bound) ||
+                Scope.Owner?.SelfAndOwners().Contains(bound) == true ||
+                bound == Scope.Compilation.BaseNamespace)
+            {
+                SideEffects.ReportLint(new Diagnostic.UnnecessaryUsing(syntax));
+                continue;
+            }
+
+            namespaces.Add(bound);
+        }
+
+        return namespaces.DrainToImmutable();
+    }
+    
     
     #endregion
     

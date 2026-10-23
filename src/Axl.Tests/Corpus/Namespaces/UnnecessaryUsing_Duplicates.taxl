@@ -1,0 +1,13 @@
+﻿//@check
+
+using A;
+using A;    //~lint UnnecessaryUsing
+using A;    //~lint UnnecessaryUsing
+
+// Must not produce AmbiguousRef
+Do();
+
+//---
+namespace A;
+
+pub fun Do() { }
