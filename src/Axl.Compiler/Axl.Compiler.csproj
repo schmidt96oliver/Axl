@@ -24,4 +24,12 @@
         </AssemblyAttribute>
     </ItemGroup>
 
+    <ItemGroup>
+        <None Include="..\BaseLib\**\*.axl"
+              Exclude="..\BaseLib\bin\**;..\BaseLib\obj\**"
+              LinkBase="BaseLib"
+              CopyToOutputDirectory="PreserveNewest"
+              Visible="false"/>
+    </ItemGroup>
+    
 </Project>

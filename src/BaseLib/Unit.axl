@@ -1,0 +1,9 @@
+﻿namespace Base;
+
+pub struct Unit
+{
+    pub fun ==(right: Unit): Bool
+        = true;
+    pub fun !=(right: Unit): Bool
+        = false;
+}

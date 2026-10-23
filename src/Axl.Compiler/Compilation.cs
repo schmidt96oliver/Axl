@@ -12,6 +12,10 @@ namespace Axl.Compiler;
 
 public class Compilation
 {
+    public static string BaseLibraryDirectory
+        => Path.Combine(AppContext.BaseDirectory, "BaseLib");
+    
+    
     /// <summary>
     /// All dependencies of this compilation. All namespaces inside referenced
     /// compilations will be visible to this one.
@@ -87,26 +91,26 @@ public class Compilation
         ReferencedCompilations = referencedCompilations;
     }
 
-    public static Compilation From(ImmutableArray<SyntaxTree> syntaxTrees,
-        ImmutableArray<Compilation> referencedCompilations = default)
-    {
-        if (referencedCompilations.IsDefault)
-            referencedCompilations = [MakeBaseLib()];
-        
-        return new Compilation([.. syntaxTrees], [.. referencedCompilations]);
-    }
+    public static Compilation From(ImmutableArray<SyntaxTree> syntaxTrees)
+        => new([.. syntaxTrees], []);
+    
+    public static Compilation From(IEnumerable<SourceText> texts)
+        => From([.. texts.Select(Parser.Parse)]);
+    
+    public static Compilation From(SourceText text)
+        => From([text]);
 
-    public static Compilation From(IEnumerable<SourceText> texts, ImmutableArray<Compilation> referencedCompilations = default)
-        => From([.. texts.Select(Parser.Parse)], referencedCompilations);
+    public Compilation AddReference(Compilation referencedCompilation)
+        => new(SyntaxTrees, [referencedCompilation, .. ReferencedCompilations]);
+
+    public Compilation AddBaseLibrary()
+        => AddReference(LoadBaseLibrary());
     
-    public static Compilation From(SourceText text, ImmutableArray<Compilation> referencedCompilations = default)
-        => From([text], referencedCompilations);
-    
-    public static Compilation MakeBaseLib()
+
+    public static Compilation LoadBaseLibrary()
     {
-        var compilation = new Compilation([], []);
-        compilation.RootNamespace = new BaseLibRootSymbol(compilation);
-        return compilation;
+        var fileNames = Directory.EnumerateFiles(BaseLibraryDirectory, "*.axl", SearchOption.AllDirectories);
+        return From(fileNames.Select(SourceText.LoadFile));
     }
     
 

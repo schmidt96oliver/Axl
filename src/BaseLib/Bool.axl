@@ -1,0 +1,17 @@
+﻿namespace Base;
+
+@Primitive
+pub struct Bool
+{
+    @Intrinsic
+    pub fun ToString(): String;
+    
+    @Intrinsic
+    pub fun !(): Bool;
+    
+    @Intrinsic
+    pub fun ==(right: Bool): Bool;
+    
+    pub fun !=(right: Bool): Bool
+        = !(self == right);
+}

@@ -1,0 +1,40 @@
+﻿namespace Base;
+
+@Intrinsic
+pub fun Print(string: String);
+
+pub fun Print(int: I32)
+    = Print("{int}");
+    
+pub fun Print(int: I64)
+    = Print("{int}");
+    
+pub fun Print(float: F32)
+    = Print("{float}"); 
+       
+pub fun Print(float: F64)
+    = Print("{float}");   
+     
+pub fun Print(bool: Bool)
+    = Print("{bool}");
+    
+pub fun PrintLine()
+    = Print("\n");
+    
+pub fun PrintLine(string: String)
+    = Print("{string}\n");
+    
+pub fun PrintLine(int: I32)
+    = PrintLine("{int}");
+    
+pub fun PrintLine(int: I64)
+    = PrintLine("{int}");
+    
+pub fun PrintLine(float: F32)
+    = PrintLine("{float}"); 
+       
+pub fun PrintLine(float: F64)
+    = PrintLine("{float}");   
+     
+pub fun PrintLine(bool: Bool)
+    = PrintLine("{bool}");

@@ -1,3 +1,4 @@
+using System.Collections.Immutable;
 using Axl.Compiler;
 using Axl.Compiler.Diagnostics;
 using Axl.Compiler.Testing;
@@ -18,7 +19,9 @@ switch (args[0])
         var testFile = Path.GetExtension(testFilePath) is ".taxl"
             ? TestFile.From(sourceText)
             : null;
-        var compilation = testFile is not null ? testFile.Compilation : Compilation.From(sourceText);
+        var compilation = testFile is not null 
+            ? testFile.Compilation 
+            : Compilation.From(sourceText).AddBaseLibrary();
 
         if (compilation.Scripts.Length != 1)
         {
@@ -26,15 +29,20 @@ switch (args[0])
             return;
         }
 
-        foreach (var diagnostic in compilation.Diagnostics)
+        var allDiagnostics =
+            compilation.Diagnostics.
+                Concat(compilation.ReferencedCompilations.SelectMany(c => c.Diagnostics))
+                .ToImmutableArray();
+        
+        foreach (var diagnostic in allDiagnostics)
         {
             Console.WriteLine(testFile is not null
                 ? diagnostic.GetDisplayString(testDirectory,
-                    testFile.MapToTestFile)
+                    l => testFile.TryMapToTestFile(l) ?? l)
                 : diagnostic.GetDisplayString(testDirectory));
         }
         
-        if (!compilation.Diagnostics.HasError)
+        if (!allDiagnostics.HasError)
             BoundTreeInterpreter.Run(compilation.Scripts[0].Fun, Console.Out);
         break;
     }

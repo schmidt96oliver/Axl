@@ -1,0 +1,37 @@
+﻿namespace Base;
+
+@Primitive
+pub struct I32
+{
+    @Intrinsic
+    pub fun ToString(): String;
+    
+    @Intrinsic
+    pub fun +(right: I32): I32;
+    @Intrinsic
+    pub fun -(right: I32): I32;
+    @Intrinsic
+    pub fun -(): I32;
+    @Intrinsic
+    pub fun *(right: I32): I32;
+    @Intrinsic
+    pub fun /(right: I32): I32;
+    
+    @Intrinsic
+    pub fun <(right: I32): Bool;
+    
+    pub fun <=(right: I32): Bool
+        = self < right || self == right;
+        
+    pub fun >(right: I32): Bool
+        = right < self;
+        
+    pub fun >=(right: I32): Bool
+        = self > right || self == right;
+        
+    @Intrinsic
+    pub fun ==(right: I32): Bool;
+    
+    pub fun !=(right: I32): Bool
+        = !(self == right);
+}

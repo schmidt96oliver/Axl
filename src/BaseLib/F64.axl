@@ -1,0 +1,37 @@
+﻿namespace Base;
+
+@Primitive
+pub struct F64
+{
+    @Intrinsic
+    pub fun ToString(): String;
+    
+    @Intrinsic
+    pub fun +(right: F64): F64;
+    @Intrinsic
+    pub fun -(right: F64): F64;
+    @Intrinsic
+    pub fun -(): F64;
+    @Intrinsic
+    pub fun *(right: F64): F64;
+    @Intrinsic
+    pub fun /(right: F64): F64;
+    
+    @Intrinsic
+    pub fun <(right: F64): Bool;
+    
+    pub fun <=(right: F64): Bool
+        = self < right || self == right;
+        
+    pub fun >(right: F64): Bool
+        = right < self;
+        
+    pub fun >=(right: F64): Bool
+        = self > right || self == right;
+        
+    @Intrinsic
+    pub fun ==(right: F64): Bool;
+    
+    pub fun !=(right: F64): Bool
+        = !(self == right);
+}

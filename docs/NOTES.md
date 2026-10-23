@@ -27,7 +27,7 @@
 * [x] BaseLibrary searches for correct symbols
 * [ ] BaseNamespace shared across Compilations (through LSP)
 
-* [ ] Replace entire BaseNamespaceSymbol with axl text!!
+* [x] Replace entire BaseNamespaceSymbol with axl text!!
 
 
 # Later

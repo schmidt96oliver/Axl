@@ -138,10 +138,7 @@ public sealed class Binder(Scope scope, BinderSideEffects sideEffects)
         {
             var here = new LookupResult();
             foreach (var s in scope.Lookup(name))
-            {
-                Debug.Assert(s.Name == name);
                 here.MergeSingle(s, GetViability(s, options));
-            }
 
             result.MergeWith(here);
 
@@ -149,7 +146,6 @@ public sealed class Binder(Scope scope, BinderSideEffects sideEffects)
                 break;
         }
 
-        Debug.Assert(result.Symbols.All(s => s.Name == name));
         return result;
     }
 

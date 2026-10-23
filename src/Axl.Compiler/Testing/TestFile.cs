@@ -32,7 +32,7 @@ public sealed class TestFile
     {
         get
         {
-            field ??= Compilation.From(Fragments.Select(frag => frag.SourceText));
+            field ??= Compilation.From(Fragments.Select(frag => frag.SourceText)).AddBaseLibrary();
             return field;
         }
     }
@@ -85,14 +85,30 @@ public sealed class TestFile
     /// </summary>
     public SourceLocation MapToTestFile(SourceLocation location)
     {
+        if (TryMapToTestFile(location) is not SourceLocation mappedLocation)
+        {
+            throw new ArgumentException(
+                $"The given {nameof(location)} does not reference this {nameof(TestFile)} or a fragment thereof.",
+                nameof(location));
+        }
+        return mappedLocation;
+    }
+
+    /// <summary>
+    /// Returns <paramref name="location"/> relative to <see cref="SourceText"/>.
+    /// Returns <c>null</c>, if <paramref name="location"/> does not refer to
+    /// this test file or a fragment thereof.
+    /// </summary>
+    public SourceLocation? TryMapToTestFile(SourceLocation location)
+    {
         if (ReferenceEquals(location.SourceText, SourceText))
             return location;
 
         var fragment = Fragments.SingleOrDefault(frag => frag.SourceText == location.SourceText &&
-                                                         frag.SourceText.Range.Contains(location.Range))
-                       ?? throw new ArgumentException(
-                           $"The given {nameof(location)} does not reference this {nameof(TestFile)} or a fragment thereof.",
-                           nameof(location));
+                                                         frag.SourceText.Range.Contains(location.Range));
+        if (fragment is null)
+            return null;
+        
         var range = SourceRange.FromLength(location.Start + fragment.Location.Start, location.Length);
         return new SourceLocation(SourceText, range);
     }
