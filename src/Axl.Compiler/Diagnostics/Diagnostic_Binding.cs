@@ -738,6 +738,15 @@ public partial record Diagnostic
         public override string Message => $"Annotation '{Annotation.Syntax.Text}' is not valid for structs.";
     }
 
+    public sealed record InvalidFunAnnotation(BoundAnnotation Annotation) : Error
+    {
+        /// <inheritdoc />
+        public override ImmutableArray<SourceLocation> Locations => [Annotation.Syntax.Location];
+
+        /// <inheritdoc />
+        public override string Message => $"Annotation '{Annotation.Syntax.Text}' is not valid for funs.";
+    }
+
     public sealed record UnknownPrimitive(BoundAnnotation Annotation, string Name) : Error
     {
         /// <inheritdoc />
@@ -754,5 +763,34 @@ public partial record Diagnostic
 
         /// <inheritdoc />
         public override string Message => $"Cannot declare fields on {Symbol.ShortDisplayName}, because it is primitive.";
+    }
+
+
+    public sealed record UnknownIntrinsic(BoundAnnotation Annotation) : Error
+    {
+        /// <inheritdoc />
+        public override ImmutableArray<SourceLocation> Locations => [Annotation.Syntax.Location];
+
+        /// <inheritdoc />
+        public override string Message => "There is no intrinsic that matches the given signature.";
+    }
+
+    public sealed record IntrinsicFunWithBody(FunSymbol Fun, FunBodySyntax Syntax) : Error
+    {
+        /// <inheritdoc />
+        public override ImmutableArray<SourceLocation> Locations => [Syntax.Location];
+
+        /// <inheritdoc />
+        public override string Message => $"{Fun.ShortDisplayName} cannot declare a body, because it is intrinsic.";
+    }
+
+    public record MissingFunBody(FunSymbol Fun, FunDeclSyntax Syntax) : Error
+    {
+        /// <inheritdoc />
+        public override ImmutableArray<SourceLocation> Locations =>
+            [SourceLocation.FromTo(Syntax.Name.Location, Syntax.ParameterList.Location)];
+
+        /// <inheritdoc />
+        public override string Message => $"{Fun.ShortDisplayName} must declare a body.";
     }
 }

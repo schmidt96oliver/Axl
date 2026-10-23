@@ -1,5 +1,6 @@
 ﻿using System.Collections.Immutable;
 using Axl.Compiler.Binding;
+using Axl.Compiler.Binding.BoundTree;
 using Axl.Compiler.Binding.Scopes;
 using Axl.Compiler.Syntax.Tree;
 
@@ -10,7 +11,8 @@ public sealed class SourceFunSymbol(
     Scope enclosingScope,
     bool isPublic,
     TypeSymbol? receiverType,
-    bool isMutatingReceiver)
+    bool isMutatingReceiver,
+    BoundAnnotation? intrinsicAnnotation)
     : FunSymbol(declarationSyntax.Name.Text.ToString(), owner: enclosingScope.Owner, isPublic, receiverType, isMutatingReceiver)
 {
     public override FunDeclSyntax DeclarationSyntax { get; } = declarationSyntax;
@@ -81,7 +83,9 @@ public sealed class SourceFunSymbol(
                 _isBindingBody = true;
 
                 _signatureBinder ??= MakeSignatureBinder();
-                field = _signatureBinder.BindFunBody(DeclarationSyntax.Body);
+                field = intrinsicAnnotation is not null
+                    ? _signatureBinder.BindIntrinsicFunBody(DeclarationSyntax.Body, intrinsicAnnotation)
+                    : _signatureBinder.BindSourceFunBody(DeclarationSyntax.Body);
 
                 _isBindingBody = false;
             }

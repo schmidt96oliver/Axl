@@ -192,6 +192,10 @@ public partial class Parser
             EnsureExpr(anchor);
             EnsureToken(TokenKind.Semicolon);
         }
+        else if (_scanner.IsAt(TokenKind.Semicolon))
+        {
+            _scanner.EatKnown(TokenKind.Semicolon);
+        }
         else
         {
             EnsureBlock(anchor, ExpectedSyntax.FunBody);

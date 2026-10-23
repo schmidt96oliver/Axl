@@ -15,6 +15,7 @@ FunDecl          = Annotation* "pub"? "static"? "var"? "fun" FunName ParamList T
 FunName          = Identifier | "+" | "-" | "*" | "/" | "<" | "<=" | ">" | ">=" |"==" | "!=" | "!"
 FunBody          = "=>" Expr ";"
                 | BlockExpr
+                | ";"
 
 ParamList       = "(" ")"
                 | "(" Param ("," Param)* ")"

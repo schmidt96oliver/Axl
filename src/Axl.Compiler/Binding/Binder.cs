@@ -425,9 +425,20 @@ public sealed class Binder(Scope scope, BinderSideEffects sideEffects)
     public SourceFunSymbol BindSourceFunDeclaration(FunDeclSyntax syntax)
     {
         Debug.Assert(Scope.OwnerAsNamespaceOrType is not null);
+
+        // Primitive annotation
+        var annotations = syntax.Annotations.Select(BindAnnotation);
+        BoundAnnotation? intrinsicAnnotation = null;
+        foreach (var annotation in annotations)
+        {
+            if (annotation is null) continue;
+            if (annotation.Kind is AnnotationKind.Intrinsic)
+                intrinsicAnnotation = annotation;
+            else
+                SideEffects.ReportError(new Diagnostic.InvalidFunAnnotation(annotation));
+        }
         
-        //TODO: Implement Intrinsic Annotation
-        
+        // ---
         var name = syntax.Name.Text.ToString();
         
         var isPublic = syntax.PubKw is not null;
@@ -446,10 +457,11 @@ public sealed class Binder(Scope scope, BinderSideEffects sideEffects)
             SideEffects.ReportError(new Diagnostic.OperatorCannotBeVar(name, syntax.VarKw!));
 
         var funSymbol = new SourceFunSymbol(syntax,
-            enclosingScope: Scope,
-            isPublic: isPublic,
-            receiverType: receiverType,
-            isMutatingReceiver: isMutatingReceiver);
+            Scope,
+            isPublic,
+            receiverType,
+            isMutatingReceiver,
+            intrinsicAnnotation);
 
         SideEffects.AddResolvedSymbol(syntax.Name.Location, funSymbol);
         return funSymbol;
@@ -597,16 +609,19 @@ public sealed class Binder(Scope scope, BinderSideEffects sideEffects)
     
     #region Fun Signature/Body
 
-    public BoundBlock BindFunBody(FunBodySyntax syntax)
+    public BoundBlock BindSourceFunBody(FunBodySyntax syntax)
     {
         if (Scope.OwnerAsFun is not FunSymbol fun)
-            throw new InvalidOperationException($"{nameof(BindFunBody)} only valid on funs.");
+            throw new InvalidOperationException($"{nameof(BindSourceFunBody)} only valid on funs.");
 
         var bodyBinder = EnterFunBody();
 
         // --- Empty body
         if (syntax.Expr is null)
-            throw new NotImplementedException("Funs without body not supported yet.");
+        {
+            SideEffects.ReportError(new Diagnostic.MissingFunBody(fun, fun.DeclarationSyntax!));
+            return new BoundBlock([], [], Unit);
+        }
 
         // --- Expression body
         if (syntax.IsExpressionBodied)
@@ -634,6 +649,35 @@ public sealed class Binder(Scope scope, BinderSideEffects sideEffects)
         return block;
     }
 
+    public FunBody BindIntrinsicFunBody(FunBodySyntax syntax, BoundAnnotation annotation)
+    {
+        if (Scope.OwnerAsFun is not FunSymbol fun)
+            throw new InvalidOperationException($"{nameof(BindSourceFunBody)} only valid on funs.");
+
+        if (syntax.IsExpressionBodied || syntax.Expr is not null)
+            SideEffects.DiagnosticBag.ReportError(new Diagnostic.IntrinsicFunWithBody(fun, syntax));
+        
+        if (fun.ReceiverType is not null && !fun.ReceiverType.IsPrimitive
+            || fun.ParameterTypes.Any(p => !p.IsPrimitive)
+            || fun.ReturnType != Unit && !fun.ReturnType.IsPrimitive)
+        {
+            SideEffects.DiagnosticBag.ReportError(new Diagnostic.UnknownIntrinsic(annotation));
+            return new BoundBlock([], [], Unit);
+        }
+
+        var receiver = fun.ReceiverType?.PrimitiveKind;
+        var parameters = fun.ParameterTypes.Select(p => p.PrimitiveKind!.Value).ToImmutableArray();
+        var returnType = fun.ReturnType == Unit ? null : fun.ReturnType.PrimitiveKind;
+
+        if (IntrinsicLookup.TryGetIntrinsic(fun.Name, receiver, parameters, returnType) is not Intrinsic intrinsic)
+        {
+            SideEffects.DiagnosticBag.ReportError(new Diagnostic.UnknownIntrinsic(annotation));
+            return new BoundBlock([], [], Unit);
+        }
+
+        return intrinsic;
+    }
+    
     public TypeSymbol BindFunReturnType(ExprSyntax? returnTypeAnnotation)
     {
         return returnTypeAnnotation is not null
@@ -1068,7 +1112,7 @@ public sealed class Binder(Scope scope, BinderSideEffects sideEffects)
             {
                 var localFunSymbol = localFuns.Single(fun => fun.DeclarationSyntax == funDeclSyntax);
                 var localFunBinder = EnterFunSignature(localFunSymbol);
-                localFunSymbol.SetBody(localFunBinder.BindFunBody(funDeclSyntax.Body));
+                localFunSymbol.SetBody(localFunBinder.BindSourceFunBody(funDeclSyntax.Body));
             }
             else if (node is StructDeclSyntax)
             {
