@@ -330,16 +330,8 @@ public partial class Parser
 
         foreach (var _ in _scanner.MustEatEachIteration())
         {
-            if (_scanner.IsAt(TokenKind.VarKw))
-            {
-                if (FirstSet.FunDeclAfterHeader.Contains(_scanner.Peek(1).Kind))
-                    ContinueEatFunDecl(blockAnchor, _scanner.Open());
-                else
-                    EatStmt(blockAnchor);
-            }
-            
             // --- Statement or FunDecl
-            else if (_scanner.IsAt(FirstSet.Stmt))
+            if (_scanner.IsAt(FirstSet.Stmt))
                 EatStmt(blockAnchor);
             else if (_scanner.IsAt(FirstSet.FunDecl))
                 EatMember(blockAnchor, allowedAfterHeader: FirstSet.FunDeclAfterHeader);

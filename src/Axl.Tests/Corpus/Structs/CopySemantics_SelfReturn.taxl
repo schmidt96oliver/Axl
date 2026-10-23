@@ -5,7 +5,7 @@ struct Test
 {
     pub X: I32;
     
-    pub var fun MutateAndReturn(): Test
+    pub mut fun MutateAndReturn(): Test
     {
         self.X = 1;
         return self;

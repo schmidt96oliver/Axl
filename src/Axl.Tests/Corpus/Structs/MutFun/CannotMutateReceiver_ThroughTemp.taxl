@@ -1,13 +1,13 @@
 ﻿//@check
 
-// Var funs can not be called through let bindings.
+// mut funs can not be called through let bindings.
 
 struct Test
 {
     pub X: I32;
     pub Inn: Inner;
    
-    pub var fun Mutate() { }
+    pub mut fun Mutate() { }
     
     pub static fun Make(): Test 
         = Test(X = 1, Inn = Inner(Y = 1));
@@ -17,7 +17,7 @@ struct Inner
 {
     pub Y: I32;
     
-    pub var fun Mutate() { }
+    pub mut fun Mutate() { }
 }
 
 fun Make(): Test 

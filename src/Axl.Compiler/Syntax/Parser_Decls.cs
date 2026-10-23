@@ -149,7 +149,7 @@ public partial class Parser
         Debug.Assert(_scanner.IsAt(FirstSet.FunDeclAfterHeader));
 
         _scanner.EatIfPresent(TokenKind.StaticKw);
-        _scanner.EatIfPresent(TokenKind.VarKw);
+        _scanner.EatIfPresent(TokenKind.MutKw);
 
         if (!_scanner.IsAt(TokenKind.FunKw))
         {

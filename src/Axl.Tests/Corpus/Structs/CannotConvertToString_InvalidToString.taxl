@@ -12,9 +12,9 @@ struct Static
     pub static fun ToString(): String
         = "";
 }
-struct Var
+struct Mut
 {
-    pub var fun ToString(): String
+    pub mut fun ToString(): String
         = "";
 }
 struct Params
@@ -38,7 +38,7 @@ Print("{t}");       //~error CannotConvertToString
 let t = Static();
 Print("{t}");       //~error CannotConvertToString
 
-let t = Var();
+let t = Mut();
 Print("{t}");       //~error CannotConvertToString
 
 let t = Params();

@@ -3,28 +3,11 @@
 
 # Now
 
-* "var fun" -> "mut fun"
-
 # Questions / Little ones****
 
 # Milestones
 
-## 5. `Base` namespace as Axl-Code
-[Proposal](Proposals/Primitives.axl)
-* [x] Annotations (private inside BaseLib)
-    * [x] `@Intrinsic` looks up funs agains LookupTable and checks signatures
-    * [x] `@Primitive` marks types primitive; rejects any fields declared
-* [x] Compilation.ReferencedCompilations (only BaseLib implicitly)
-  * [x] Namespace closed across Compilations
-* [ ] Project marker files (without dependencies)
-* [x] BaseLibrary searches for correct symbols
-* [x] BaseNamespace shared across Compilations (through LSP)
-
-* [x] Replace entire BaseNamespaceSymbol with axl text!!
-
-
 # Later
-
 
 # Ideas
 [Ideas](IDEAS.md)

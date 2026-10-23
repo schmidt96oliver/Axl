@@ -81,7 +81,7 @@ public partial record Diagnostic
                 BoundValue { IsPlace: false }
                     => "Cannot assign to a temporary value.",
                 BoundValue { IsPlace: true, IsMutablePlace: false } value when GetFirstPlace(value) is BoundSelf
-                    => "Cannot mutate through ‘self‘, because this fun is not ‘var‘. Consider declaring it ‘var‘.",
+                    => "Cannot mutate through ‘self‘, because this fun is not ‘mut‘. Consider declaring it ‘mut‘.",
                 BoundValue { IsPlace: true, IsMutablePlace: false }
                     => "Cannot assign to through a ‘let‘ binding.",
                 BoundValue => "Cannot assign this for unknown reason.",
@@ -109,15 +109,15 @@ public partial record Diagnostic
 
         public override string Message => Receiver switch
         {
-            { IsPlace: false } => $"Cannot call var fun ‘{Fun.QualifiedName}‘ on a temporary value.",
+            { IsPlace: false } => $"Cannot call mut fun ‘{Fun.QualifiedName}‘ on a temporary value.",
 
             { } when GetFirstPlace(Receiver) is BoundVariable { Variable: { IsReadOnly: true, Name: var varName } }
-                => $"Cannot call var fun ‘{Fun.QualifiedName}‘ on ‘{varName}‘, because ‘{varName}‘ is declared ‘let‘. Consider declaring it ‘var‘ instead.",
+                => $"Cannot call mut fun ‘{Fun.QualifiedName}‘ on ‘{varName}‘, because ‘{varName}‘ is declared ‘let‘. Consider declaring it ‘var‘ instead.",
 
             { } when GetFirstPlace(Receiver) is BoundSelf { IsMutablePlace: false }
-                => $"Cannot call var fun ‘{Fun.QualifiedName}‘ through ‘self‘, because ‘{ContextFunName}‘ is not ‘var‘. Consider declaring it ‘var‘ instead.",
+                => $"Cannot call mut fun ‘{Fun.QualifiedName}‘ through ‘self‘, because ‘{ContextFunName}‘ is not ‘mut‘. Consider declaring it ‘mut‘ instead.",
 
-            _ => $"‘{Fun.QualifiedName}‘ is a var fun, but ‘{Receiver!.Type.QualifiedName}‘ cannot be mutated here.",
+            _ => $"‘{Fun.QualifiedName}‘ is a mut fun, but ‘{Receiver!.Type.QualifiedName}‘ cannot be mutated here.",
         };
 
         private string ContextFunName => (Context as FunSymbol)?.QualifiedName ?? "???";
@@ -473,22 +473,22 @@ public partial record Diagnostic
         public override string Message => $"‘{Syntax.Text}‘ is not valid on local funs.";
     }
 
-    public sealed record VarLocalFunInStaticContext(Token Syntax) : Error
+    public sealed record MutLocalFunInStaticContext(Token Syntax) : Error
     {
         public override ImmutableArray<SourceLocation> Locations => [Syntax.Location];
 
-        public override string Message => "‘var‘ is not valid here, because there is no ‘self‘ to mutate.";
+        public override string Message => "‘mut‘ is not valid here, because there is no ‘self‘ to mutate.";
     }
 
-    public sealed record VarLocalFunInNonVarFun(Token Syntax) : Error
+    public sealed record MutLocalFunInNonMutFun(Token Syntax) : Error
     {
         public override ImmutableArray<SourceLocation> Locations => [Syntax.Location];
 
-        public override string Message => "A local fun can only be ‘var‘ if the enclosing fun is ‘var‘.";
+        public override string Message => "A local fun can only be ‘mut‘ if the enclosing fun is ‘mut‘.";
     }
 
 
-    public sealed record StaticFunCannotBeVar(Token Syntax, string FunName) : Error
+    public sealed record StaticFunCannotBeMut(Token Syntax, string FunName) : Error
     {
         public override ImmutableArray<SourceLocation> Locations => [Syntax.Location];
 
@@ -580,14 +580,14 @@ public partial record Diagnostic
             $"Operator ‘{FunName}’ cannot be ‘static’. It is called on a value and uses ‘self’ as its left operand.";
     }
 
-    public sealed record OperatorCannotBeVar(string FunName, Token Syntax) : Error
+    public sealed record OperatorCannotBeMut(string FunName, Token Syntax) : Error
     {
         /// <inheritdoc />
         public override ImmutableArray<SourceLocation> Locations => [Syntax.Location];
 
         /// <inheritdoc />
         public override string Message =>
-            $"Operator ‘{FunName}’ cannot be ‘var’.";
+            $"Operator ‘{FunName}’ cannot be ‘mut’.";
     }
 
     public sealed record WrongOperatorParameterCount(FunSymbol Fun) : Error

@@ -1,0 +1,25 @@
+﻿//@check
+
+// Operator cannot be declared mut, because mutation of the underlying
+// struct would (a) be unexpected and (b) not visible under copying.
+
+struct Test
+{
+    pub mut fun -(right: I32) { }        //~error OperatorCannotBeMut
+    pub mut fun !() { }                  //~error OperatorCannotBeMut
+    pub mut fun +(right: I32) { }        //~error OperatorCannotBeMut
+    pub mut fun *(right: I32) { }        //~error OperatorCannotBeMut
+    pub mut fun /(right: I32) { }        //~error OperatorCannotBeMut
+    pub mut fun <(right: I32): Bool      //~error OperatorCannotBeMut
+        = false;  
+    pub mut fun <=(right: I32): Bool     //~error OperatorCannotBeMut
+        = false;  
+    pub mut fun >(right: I32): Bool      //~error OperatorCannotBeMut
+        = false;  
+    pub mut fun >=(right: I32): Bool     //~error OperatorCannotBeMut
+        = false;  
+    pub mut fun ==(right: I32): Bool     //~error OperatorCannotBeMut
+        = false;  
+    pub mut fun !=(right: I32): Bool     //~error OperatorCannotBeMut
+        = false;  
+}

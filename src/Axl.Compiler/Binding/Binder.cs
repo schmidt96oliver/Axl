@@ -393,13 +393,13 @@ public sealed class Binder(Scope scope, BinderSideEffects sideEffects)
         var receiverType = Scope.OwnerAsFun.ReceiverType;
         var isMutatingReceiver = false;
 
-        if (syntax.VarKw is not null)
+        if (syntax.MutKw is not null)
         {
-            // Var on local funs is only allowed, if its parent is var.
+            // Mut on local funs is only allowed, if its parent is mut.
             if (receiverType is null)
-                SideEffects.ReportError(new Diagnostic.VarLocalFunInStaticContext(syntax.VarKw));
+                SideEffects.ReportError(new Diagnostic.MutLocalFunInStaticContext(syntax.MutKw));
             else if (!Scope.OwnerAsFun!.IsMutatingReceiver)
-                SideEffects.ReportError(new Diagnostic.VarLocalFunInNonVarFun(syntax.VarKw));
+                SideEffects.ReportError(new Diagnostic.MutLocalFunInNonMutFun(syntax.MutKw));
             else
                 isMutatingReceiver = true;
         }
@@ -439,18 +439,18 @@ public sealed class Binder(Scope scope, BinderSideEffects sideEffects)
         
         var isPublic = syntax.PubKw is not null;
         var receiverType = syntax.StaticKw is not null ? null : Scope.OwnerAsType;
-        var isMutatingReceiver = syntax.VarKw is not null;
+        var isMutatingReceiver = syntax.MutKw is not null;
 
         if (receiverType is null && isMutatingReceiver)
         {
-            SideEffects.ReportError(new Diagnostic.StaticFunCannotBeVar(syntax.VarKw!, name));
+            SideEffects.ReportError(new Diagnostic.StaticFunCannotBeMut(syntax.MutKw!, name));
             isMutatingReceiver = false;
         }
         
         if (syntax.IsOperatorName && receiverType is null)
             SideEffects.ReportError(new Diagnostic.OperatorCannotBeStatic(name, syntax.StaticKw!));
         if (syntax.IsOperatorName && isMutatingReceiver)
-            SideEffects.ReportError(new Diagnostic.OperatorCannotBeVar(name, syntax.VarKw!));
+            SideEffects.ReportError(new Diagnostic.OperatorCannotBeMut(name, syntax.MutKw!));
 
         var funSymbol = new SourceFunSymbol(syntax,
             Scope,

@@ -54,7 +54,7 @@ public partial class Parser
         public static readonly TokenSet StructDecl = Annotation | TokenKind.PubKw | StructDeclAfterHeader;
         
         public static readonly TokenSet FunDeclAfterHeader =
-            TokenSet.Of(TokenKind.StaticKw, TokenKind.VarKw, TokenKind.FunKw);
+            TokenSet.Of(TokenKind.StaticKw, TokenKind.MutKw, TokenKind.FunKw);
 
         public static readonly TokenSet FunDecl = Annotation | TokenKind.PubKw | FunDeclAfterHeader;
 

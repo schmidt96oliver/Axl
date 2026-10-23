@@ -12,7 +12,7 @@ public sealed class BoundSelf(TypeSymbol type, bool mutable = false, SyntaxNode?
     public override bool IsPlace => true;
 
     /// <summary>
-    /// Mutability depends on context: For 'var fun' it is mutable,
+    /// Mutability depends on context: For 'mut fun' it is mutable,
     /// for 'fun', it is not.
     /// </summary>
     public override bool IsMutablePlace => mutable;

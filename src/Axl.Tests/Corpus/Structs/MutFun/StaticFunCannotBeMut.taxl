@@ -1,0 +1,9 @@
+﻿//@check
+
+// Static funs do not have an instance, so they cannot mutate it.
+
+struct Test 
+{
+    pub static mut fun StaticMut() { }      //~error StaticFunCannotBeMut
+    static mut fun StaticMut2() { }         //~error StaticFunCannotBeMut
+}

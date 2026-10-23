@@ -44,22 +44,22 @@ struct Test
         }
     }
     
-    pub var fun Set1(n: I32)
+    pub mut fun Set1(n: I32)
     {
         Local(n);
-        var fun Local(n: I32)
+        mut fun Local(n: I32)
         {
             Field = n;
         }
     }
     
-    pub var fun Set2(n: I32)
+    pub mut fun Set2(n: I32)
     {
         Local(n);
-        var fun Local(n: I32)
+        mut fun Local(n: I32)
         {
             Inner(n);
-            var fun Inner(n: I32)
+            mut fun Inner(n: I32)
             {
                 Field = n;
             }

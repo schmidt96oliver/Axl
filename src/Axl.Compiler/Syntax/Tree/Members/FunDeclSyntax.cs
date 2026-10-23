@@ -11,8 +11,8 @@ public sealed class FunDeclSyntax(ImmutableArray<SyntaxElement> children)
     public Token? StaticKw 
         => Children.OfType<Token>().FirstOrDefault(child => child is { Kind: TokenKind.StaticKw });
 
-    public Token? VarKw 
-        => Children.OfType<Token>().FirstOrDefault(child => child is { Kind: TokenKind.VarKw });
+    public Token? MutKw 
+        => Children.OfType<Token>().FirstOrDefault(child => child is { Kind: TokenKind.MutKw });
     
     public IEnumerable<AnnotationSyntax> Annotations => Children.OfType<AnnotationSyntax>();
     

@@ -16,7 +16,7 @@ struct Test
 {
     pub Color: Color;
     
-    pub var fun Output()
+    pub mut fun Output()
     {
         // Access of static members interpret the left side
         // as the type, rather than the field.

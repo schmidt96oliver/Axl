@@ -11,7 +11,7 @@ NamespaceName      = Identifier ("." Identifier)*
 ## Member Declarations
 MemberDecl       = FnDecl | StructDecl
                 
-FunDecl          = Annotation* "pub"? "static"? "var"? "fun" FunName ParamList TypeAnnotation? FunBody
+FunDecl          = Annotation* "pub"? "static"? "mut"? "fun" FunName ParamList TypeAnnotation? FunBody
 FunName          = Identifier | "+" | "-" | "*" | "/" | "<" | "<=" | ">" | ">=" |"==" | "!=" | "!"
 FunBody          = "=>" Expr ";"
                 | BlockExpr

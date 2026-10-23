@@ -1,0 +1,16 @@
+﻿//@check
+
+// 'mut' funs are not allowed inside static funs.
+
+struct Test
+{
+    static fun Static()
+    {
+        mut fun MutLocal() { }     //~error MutLocalFunInStaticContext
+        
+        fun Local()
+        {
+            mut fun MutLocal() { } //~error MutLocalFunInStaticContext
+        }
+    }
+}

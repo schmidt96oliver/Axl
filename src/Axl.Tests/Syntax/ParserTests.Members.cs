@@ -167,13 +167,13 @@ public partial class ParserTests
         [Fact]
         public void Annotations_Fun_5()
             => InlineSnapshot.Validate(Tree("""
-                                            @ID var fun A() { }
+                                            @ID mut fun A() { }
                                             """), """
                 FunDecl
                 · Annotation
                 · · '@'
                 · · IdName 'ID'
-                · 'var'
+                · 'mut'
                 · 'fun'
                 · FunName 'A'
                 · ParamList '(' ')'

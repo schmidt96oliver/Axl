@@ -20,6 +20,7 @@ public static class SyntaxFacts
         TokenKind.PubKw => "pub",
         TokenKind.StaticKw => "static",
         TokenKind.SelfKw => "self",
+        TokenKind.MutKw => "mut",
     
         // --- Literals
         TokenKind.StringStart => "\"",
@@ -89,6 +90,7 @@ public static class SyntaxFacts
             "pub" => TokenKind.PubKw,
             "static" => TokenKind.StaticKw,
             "self" => TokenKind.SelfKw,
+            "mut" => TokenKind.MutKw,
 
             _ => null
         };

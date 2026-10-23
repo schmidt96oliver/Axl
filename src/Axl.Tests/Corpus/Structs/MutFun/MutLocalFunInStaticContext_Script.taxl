@@ -1,0 +1,11 @@
+﻿//@check
+
+// 'mut' is not allowed on script level.
+
+mut fun Local() { }        //~error MutLocalFunInStaticContext
+{ mut fun Local() { } }    //~error MutLocalFunInStaticContext
+
+fun Outer()
+{
+    mut fun Local() { }     //~error MutLocalFunInStaticContext
+}

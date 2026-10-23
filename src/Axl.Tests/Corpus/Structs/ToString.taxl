@@ -11,7 +11,7 @@ struct Overloaded
 
     pub fun ToString(): String = "B";
         
-    pub var fun ToString(c: String): String = "XX";
+    pub mut fun ToString(c: String): String = "XX";
 }
 
 let t = Single();

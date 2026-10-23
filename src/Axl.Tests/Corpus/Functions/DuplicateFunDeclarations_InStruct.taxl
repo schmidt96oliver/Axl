@@ -15,7 +15,7 @@ struct Test
     
     pub fun A() { }         //~error DuplicateFunDeclarations
     pub static fun A() { }  //~error DuplicateFunDeclarations
-    pub var fun A() { }     //~error DuplicateFunDeclarations
+    pub mut fun A() { }     //~error DuplicateFunDeclarations
     
     pub fun B() { }
     pub fun B(i: I32) { }

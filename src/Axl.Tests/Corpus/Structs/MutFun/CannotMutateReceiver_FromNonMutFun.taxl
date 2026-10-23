@@ -1,18 +1,18 @@
 ﻿//@check
 
-// Non-var funs cannot call var funs
+// Non-mut funs cannot call mut funs
 
 struct Test
 {
     pub X: I32;
     pub Inn: Inner;
    
-    pub var fun Mutate() 
+    pub mut fun Mutate() 
     { 
         X = 10;
     }
     
-    pub fun NonVar() 
+    pub fun NonMut() 
     { 
         self.Mutate();          //~error CannotMutateReceiver
         Mutate();               //~error CannotMutateReceiver
@@ -25,5 +25,5 @@ struct Inner
 {
     pub Y: I32;
     
-    pub var fun Mutate() { }
+    pub mut fun Mutate() { }
 }

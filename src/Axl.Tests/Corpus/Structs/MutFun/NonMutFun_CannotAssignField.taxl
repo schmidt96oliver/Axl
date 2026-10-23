@@ -1,12 +1,12 @@
 ﻿//@check
 
-// Non-var funs cannot assign to fields.
+// Non-mut funs cannot assign to fields.
 
 struct Test
 {
     pub X: I32;
    
-    pub fun NonVar() 
+    pub fun NonMut() 
     { 
         X = 10;                 //~error CannotAssign
         self.X = 10;            //~error CannotAssign

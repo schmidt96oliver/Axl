@@ -1,0 +1,26 @@
+﻿//@check
+
+// Local funs can only be 'mut', if all of their enclosing funs are 'mut'.
+
+struct Test 
+{
+    Field: I32;
+    
+    fun NonMut()
+    {
+        mut fun MutLocal() { }      //~error MutLocalFunInNonMutFun
+        
+        mut fun MutIntermediate()   //~error MutLocalFunInNonMutFun
+        {
+            mut fun MutInner() { }  //~error MutLocalFunInNonMutFun
+        }
+    }
+    
+    mut fun Mut()
+    {
+        fun NonMutMiddle()
+        {
+            mut fun MutInner() { }  //~error MutLocalFunInNonMutFun
+        }
+    }
+}

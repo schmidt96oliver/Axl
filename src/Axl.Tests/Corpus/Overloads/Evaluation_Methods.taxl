@@ -9,7 +9,7 @@ struct Test
     pub static fun A(i: I32)
         = Print("2");
     
-    pub var fun A(f: F32)
+    pub mut fun A(f: F32)
         = Print("3");
         
     pub fun A(a: String, b: String)

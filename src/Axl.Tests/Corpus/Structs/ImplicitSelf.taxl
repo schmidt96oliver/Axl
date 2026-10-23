@@ -5,7 +5,7 @@ struct Test
 {
     X: I32;
 
-    pub var fun Set(x: I32)
+    pub mut fun Set(x: I32)
     { X = x; }
     
     pub fun Get(): I32 = X;
