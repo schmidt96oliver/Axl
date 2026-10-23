@@ -2,21 +2,13 @@
 
 namespace Axl.Compiler.Symbols;
 
-public closed class StructSymbol : TypeSymbol
+public closed class StructSymbol(
+    string name,
+    Symbol? owner,
+    bool isPublic,
+    PrimitiveKind? primitiveKind)
+    : TypeSymbol(name, owner, isPublic, primitiveKind)
 {
-    protected StructSymbol(string name,
-        Symbol? owner,
-        bool isPublic,
-        bool isPrimitive) : base(name, owner, isPublic)
-    {
-        IsPrimitive = isPrimitive;
-    }
-
-    /// <summary>
-    /// Whether this structs memory representation is internal.
-    /// </summary>
-    public bool IsPrimitive { get; }
-
     /// <inheritdoc />
     public override bool CanBeReferencedByName => true;
 

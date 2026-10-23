@@ -710,4 +710,49 @@ public partial record Diagnostic
         /// <inheritdoc />
         public override string Message => "The using directive is not necessary and can safely be removed.";
     }
+
+    public sealed record UnknownAnnotation(SyntaxNode Syntax) : Error
+    {
+        /// <inheritdoc />
+        public override ImmutableArray<SourceLocation> Locations => [Syntax.Location];
+
+        /// <inheritdoc />
+        public override string Message => $"Unknown annotation '{Syntax.Text}'.";
+    }
+
+    public sealed record InvalidLocalFunAnnotation(BoundAnnotation Annotation) : Error
+    {
+        /// <inheritdoc />
+        public override ImmutableArray<SourceLocation> Locations => [Annotation.Syntax.Location];
+
+        /// <inheritdoc />
+        public override string Message => $"Annotation '{Annotation.Syntax.Text}' is not valid for local funs.";
+    }
+
+    public sealed record InvalidStructAnnotation(BoundAnnotation Annotation) : Error
+    {
+        /// <inheritdoc />
+        public override ImmutableArray<SourceLocation> Locations => [Annotation.Syntax.Location];
+
+        /// <inheritdoc />
+        public override string Message => $"Annotation '{Annotation.Syntax.Text}' is not valid for structs.";
+    }
+
+    public sealed record UnknownPrimitive(BoundAnnotation Annotation, string Name) : Error
+    {
+        /// <inheritdoc />
+        public override ImmutableArray<SourceLocation> Locations => [Annotation.Syntax.Location];
+
+        /// <inheritdoc />
+        public override string Message => $"Unknown primitive '{Name}'.";
+    }
+
+    public sealed record FieldDeclarationOnPrimitive(FieldDeclSyntax Syntax, StructSymbol Symbol) : Error
+    {
+        /// <inheritdoc />
+        public override ImmutableArray<SourceLocation> Locations => [Syntax.Location];
+
+        /// <inheritdoc />
+        public override string Message => $"Cannot declare fields on {Symbol.ShortDisplayName}, because it is primitive.";
+    }
 }

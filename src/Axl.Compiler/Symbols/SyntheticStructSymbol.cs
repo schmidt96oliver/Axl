@@ -6,8 +6,8 @@ public sealed class SyntheticStructSymbol(
     string name,
     Symbol owner,
     bool isPublic,
-    bool isPrimitive)
-    : StructSymbol(name, owner, isPublic, isPrimitive)
+    PrimitiveKind? primitiveKind)
+    : StructSymbol(name, owner, isPublic, primitiveKind)
 {
     private ImmutableArray<Symbol>? _members;
 

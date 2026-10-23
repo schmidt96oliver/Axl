@@ -10,8 +10,8 @@ public sealed class SourceStructSymbol(
     StructDeclSyntax declarationSyntax,
     Scope enclosingScope,
     bool isPublic,
-    bool isPrimitive)
-    : StructSymbol(declarationSyntax.Name.Text.ToString(), owner: enclosingScope.Owner, isPublic, isPrimitive)
+    PrimitiveKind? primitiveKind)
+    : StructSymbol(declarationSyntax.Name.Text.ToString(), owner: enclosingScope.Owner, isPublic, primitiveKind)
 {
     /// <summary>
     /// To avoid unnecessary allocations, the binder is created on first

@@ -375,6 +375,13 @@ public sealed class Binder(Scope scope, BinderSideEffects sideEffects)
     {
         Debug.Assert(Scope.OwnerAsFun is not null);
 
+        // No annotations are valid
+        foreach (var boundAnnotation in syntax.Annotations.Select(BindAnnotation))
+        {
+            if (boundAnnotation is null) continue;
+            SideEffects.ReportError(new Diagnostic.InvalidLocalFunAnnotation(boundAnnotation));
+        }
+        
         // 'Pub' and 'static' are not allowed
         if (syntax.PubKw is not null)
             SideEffects.ReportError(new Diagnostic.InvalidLocalFunModifier(syntax.PubKw));
@@ -419,6 +426,8 @@ public sealed class Binder(Scope scope, BinderSideEffects sideEffects)
     {
         Debug.Assert(Scope.OwnerAsNamespaceOrType is not null);
         
+        //TODO: Implement Intrinsic Annotation
+        
         var name = syntax.Name.Text.ToString();
         
         var isPublic = syntax.PubKw is not null;
@@ -448,6 +457,29 @@ public sealed class Binder(Scope scope, BinderSideEffects sideEffects)
 
     public SourceStructSymbol BindStructDeclaration(StructDeclSyntax syntax)
     {
+        // Primitive annotation
+        var annotations = syntax.Annotations.Select(BindAnnotation);
+        PrimitiveKind? primitiveKind = null;
+        foreach (var annotation in annotations)
+        {
+            if (annotation is null) continue;
+            if (annotation.Kind is AnnotationKind.Primitive)
+            {
+                if (primitiveKind is null && syntax.Name.Text is not "")
+                {
+                    if (Enum.TryParse(syntax.Name.Text, out PrimitiveKind kind))
+                        primitiveKind = kind;
+                    else
+                    {
+                        SideEffects.ReportError(new Diagnostic.UnknownPrimitive(annotation,
+                            syntax.Name.Text.ToString()));
+                    }
+                }
+            }
+            else if (annotation.Kind is not AnnotationKind.Primitive)
+                SideEffects.ReportError(new Diagnostic.InvalidStructAnnotation(annotation));
+        }
+
         var isPublic = syntax.PubKw is not null;
         if (syntax.PubKw is not null && Scope.Owner is ScriptSymbol)
         {
@@ -455,7 +487,7 @@ public sealed class Binder(Scope scope, BinderSideEffects sideEffects)
             isPublic = false;
         }
 
-        var symbol = new SourceStructSymbol(syntax, enclosingScope: Scope, isPublic, isPrimitive: false);
+        var symbol = new SourceStructSymbol(syntax, enclosingScope: Scope, isPublic, primitiveKind);
         if (symbol.Name.Length > 0)
             SideEffects.AddResolvedSymbol(syntax.Name.Location, symbol);
         return symbol;
@@ -466,6 +498,9 @@ public sealed class Binder(Scope scope, BinderSideEffects sideEffects)
         if (Scope.Owner is not StructSymbol structSymbol)
             throw new InvalidOperationException("Can only bind fields inside structs.");
 
+        if (structSymbol.IsPrimitive)
+            SideEffects.ReportError(new Diagnostic.FieldDeclarationOnPrimitive(syntax, structSymbol));
+        
         var isPub = syntax.PubKw is not null;
         var symbol = new FieldSymbol(syntax, Scope, structSymbol, isPub);
         if (symbol.Name.Length > 0)
@@ -474,6 +509,20 @@ public sealed class Binder(Scope scope, BinderSideEffects sideEffects)
         return symbol;
     }
 
+    
+
+    public BoundAnnotation? BindAnnotation(AnnotationSyntax syntax)
+    {
+        if (syntax.Name.Text is "")
+            return null;
+
+        if (Enum.TryParse(syntax.Name.Text, out AnnotationKind kind))
+            return new BoundAnnotation(kind, syntax);
+        
+        SideEffects.ReportError(new Diagnostic.UnknownAnnotation(syntax));
+        return null;
+    }
+    
     
     public void CheckDuplicateDeclarations(ImmutableArray<Symbol> declared)
     {

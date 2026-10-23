@@ -27,15 +27,13 @@ public sealed class BaseNamespaceSymbol : NamespaceSymbol
     public BaseNamespaceSymbol(Symbol owner)
         : base("Base", owner, isRoot: false)
     {
-        //TODO: String should not be a struct, probably :D
-        
-        Bool = new SyntheticStructSymbol("Bool", this, isPublic: true, isPrimitive: true);
-        String = new SyntheticStructSymbol("String", this, isPublic: true, isPrimitive: true);
-        I32 = new SyntheticStructSymbol("I32", this, isPublic: true, isPrimitive: true);
-        I64 = new SyntheticStructSymbol("I64", this, isPublic: true, isPrimitive: true);
-        F32 = new SyntheticStructSymbol("F32", this, isPublic: true, isPrimitive: true);
-        F64 = new SyntheticStructSymbol("F64", this, isPublic: true, isPrimitive: true);
-        Unit = new SyntheticStructSymbol("Unit", this, isPublic: true, isPrimitive: false);
+        Bool = new SyntheticStructSymbol("Bool", this, isPublic: true, PrimitiveKind.Bool);
+        String = new SyntheticStructSymbol("String", this, isPublic: true, PrimitiveKind.String);
+        I32 = new SyntheticStructSymbol("I32", this, isPublic: true, PrimitiveKind.I32);
+        I64 = new SyntheticStructSymbol("I64", this, isPublic: true, PrimitiveKind.I64);
+        F32 = new SyntheticStructSymbol("F32", this, isPublic: true, PrimitiveKind.F32);
+        F64 = new SyntheticStructSymbol("F64", this, isPublic: true, PrimitiveKind.F64);
+        Unit = new SyntheticStructSymbol("Unit", this, isPublic: true, primitiveKind: null);
         
         // Bool members need to be generated first, because
         // generation will look for ! operator.

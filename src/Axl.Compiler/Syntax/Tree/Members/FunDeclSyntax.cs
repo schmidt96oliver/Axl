@@ -14,6 +14,8 @@ public sealed class FunDeclSyntax(ImmutableArray<SyntaxElement> children)
     public Token? VarKw 
         => Children.OfType<Token>().FirstOrDefault(child => child is { Kind: TokenKind.VarKw });
     
+    public IEnumerable<AnnotationSyntax> Annotations => Children.OfType<AnnotationSyntax>();
+    
     public FunNameSyntax Name => Children.FirstOfType<FunNameSyntax>();
 
     public bool IsOperatorName => Name.Token.Kind is not TokenKind.Identifier;
