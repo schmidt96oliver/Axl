@@ -7,7 +7,7 @@ public sealed class Evaluator
 {
     private readonly record struct FailedCheck(int LineNumber, string Message)
     {
-        public override string ToString() => $"l.{LineNumber}: {Message}";
+        public override string ToString() => $"l.{LineNumber + 1}: {Message}";
     }
 
     private enum DiagnosticKind
@@ -121,20 +121,28 @@ public sealed class Evaluator
     {
         var table = new Dictionary<int, DiagnosticId>();
         foreach (var diagnostic in _testFile.Compilation.Diagnostics)
-        foreach (var location in diagnostic.Locations.Select(_testFile.MapToTestFile))
         {
-            var line = location.StartLine;
-            if (line != location.EndLine)
+            if (diagnostic.Locations.Length == 0)
             {
-                _failedChecks.Add(new FailedCheck(line, $"Multi-line diagnostic \'{diagnostic.Id}\'"));
+                _failedChecks.Add(new FailedCheck(0, $"Global diagnostic: \'{diagnostic.Id}\'"));
                 continue;
             }
+            
+            foreach (var location in diagnostic.Locations.Select(_testFile.MapToTestFile))
+            {
+                var line = location.StartLine;
+                if (line != location.EndLine)
+                {
+                    _failedChecks.Add(new FailedCheck(line, $"Multi-line diagnostic \'{diagnostic.Id}\'"));
+                    continue;
+                }
 
-            var id = new DiagnosticId(diagnostic is Diagnostic.Error ? DiagnosticKind.Error : DiagnosticKind.Lint,
-                diagnostic.Id);
+                var id = new DiagnosticId(diagnostic is Diagnostic.Error ? DiagnosticKind.Error : DiagnosticKind.Lint,
+                    diagnostic.Id);
 
-            if (!table.TryAdd(line, id))
-                _failedChecks.Add(new FailedCheck(line, "Multiple reported diagnostics."));
+                if (!table.TryAdd(line, id))
+                    _failedChecks.Add(new FailedCheck(line, "Multiple reported diagnostics."));
+            }
         }
 
         return table;

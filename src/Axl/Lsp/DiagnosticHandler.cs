@@ -4,6 +4,7 @@ using OmniSharp.Extensions.LanguageServer.Protocol;
 using OmniSharp.Extensions.LanguageServer.Protocol.Client.Capabilities;
 using OmniSharp.Extensions.LanguageServer.Protocol.Document;
 using OmniSharp.Extensions.LanguageServer.Protocol.Models;
+using Range = OmniSharp.Extensions.LanguageServer.Protocol.Models.Range;
 
 namespace Axl.Lsp;
 
@@ -91,6 +92,9 @@ public class DiagnosticHandler : DocumentDiagnosticHandlerBase
             Message = WebUtility.HtmlEncode(line)
         }).ToList();
 
+        if (diagnostic.Locations.Length == 0)
+            return [TrySingleLocationToLsp(diagnostic, uri, -1, messageLines[0], messageRelatedInfo)!];
+        
         return Enumerable.Range(0, diagnostic.Locations.Length)
             .Select(i => TrySingleLocationToLsp(diagnostic, uri, i, messageLines[0], messageRelatedInfo))
             .Where(lspDiagnostic => lspDiagnostic is not null)!;
@@ -98,9 +102,19 @@ public class DiagnosticHandler : DocumentDiagnosticHandlerBase
 
     private static Diagnostic? TrySingleLocationToLsp(AxlDiagnostic diagnostic, DocumentUri uri, int locationIndex, string message, IReadOnlyList<DiagnosticRelatedInformation> previousRelatedInformation)
     {
-        var lspLocation = ProjectStore.TryMapToLsp(ImproveLocationForEditor(diagnostic.Locations[locationIndex]));
-        if (lspLocation is null || lspLocation.Uri != uri)
-            return null;
+        Location? lspLocation;
+        if (locationIndex < 0)
+        {
+            // The diagnostic has no location, so add it on
+            // top of every file.
+            lspLocation = new Location { Uri = uri, Range = new Range(0, 0, 0, 10) };
+        }
+        else
+        {
+            lspLocation = ProjectStore.TryMapToLsp(ImproveLocationForEditor(diagnostic.Locations[locationIndex]));
+            if (lspLocation is null || lspLocation.Uri != uri)
+                return null;
+        }
 
         return new Diagnostic
         {

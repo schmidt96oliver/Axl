@@ -3,7 +3,8 @@ using Axl.Compiler.Diagnostics;
 using Axl.Compiler.Testing;
 using Axl.Compiler.Text;
 
-var testFilePath = Path.Combine("..", "..", "..", "..", "src", "Axl", "test.taxl");
+var testDirectory = Path.Combine("..", "..", "..", "..", "src", "Axl");
+var testFilePath = Path.Combine(testDirectory, "test.taxl");
 
 switch (args[0])
 {
@@ -14,9 +15,10 @@ switch (args[0])
     case "run":
     {
         var sourceText = SourceText.LoadFile(testFilePath);
-        var compilation = Path.GetExtension(testFilePath) is ".taxl"
-            ? TestFile.From(sourceText).Compilation
-            : Compilation.From(sourceText);
+        var testFile = Path.GetExtension(testFilePath) is ".taxl"
+            ? TestFile.From(sourceText)
+            : null;
+        var compilation = testFile is not null ? testFile.Compilation : Compilation.From(sourceText);
 
         if (compilation.Scripts.Length != 1)
         {
@@ -25,8 +27,12 @@ switch (args[0])
         }
 
         foreach (var diagnostic in compilation.Diagnostics)
-            Console.WriteLine(
-                $"[{diagnostic.DefaultSeverity.ToString().ToUpperInvariant()}] {diagnostic.Id}@{diagnostic.Locations[0].Range}: {diagnostic.Message}");
+        {
+            Console.WriteLine(testFile is not null
+                ? diagnostic.GetDisplayString(testDirectory,
+                    testFile.MapToTestFile)
+                : diagnostic.GetDisplayString(testDirectory));
+        }
         
         if (!compilation.Diagnostics.HasError)
             BoundTreeInterpreter.Run(compilation.Scripts[0].Fun, Console.Out);
