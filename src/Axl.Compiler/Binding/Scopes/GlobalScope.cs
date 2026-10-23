@@ -4,7 +4,7 @@ using Axl.Compiler.Symbols;
 namespace Axl.Compiler.Binding.Scopes;
 
 public sealed class GlobalScope(Compilation compilation)
-    : Scope(enclosingScope: null, owner: null, BindingFlags.None, compilation.BaseNamespace)
+    : Scope(enclosingScope: null, owner: null, BindingFlags.None)
 {
     public override Compilation Compilation { get; } = compilation;
 
@@ -18,7 +18,7 @@ public sealed class GlobalScope(Compilation compilation)
             .. Compilation.RootNamespace.LookupMembers(name),
             .. Compilation.ReferencedCompilations.SelectMany(refCompilation =>
                 refCompilation.RootNamespace.LookupMembers(name)),
-            .. BaseNamespace.LookupMembers(name)
+            .. Compilation.BaseLibrary.BaseNamespace.LookupMembers(name)
         ];
     }
 }

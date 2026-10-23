@@ -12,8 +12,6 @@ public closed class Scope
 
     public Scope? EnclosingScope { get; }
 
-    public BaseNamespaceSymbol BaseNamespace { get; }
-
     /// <summary>
     /// The innermost <see cref="Symbol"/> the binder is currently
     /// inside. <c>null</c> for global scopes.
@@ -45,15 +43,12 @@ public closed class Scope
 
 
     
-    protected Scope(Scope enclosingScope, Symbol? owner = null, BindingFlags? flags = null,
-        BaseNamespaceSymbol? baseNamespace = null)
-        => (EnclosingScope, Owner, Flags, BaseNamespace)
-            = (enclosingScope, owner ?? enclosingScope.Owner, flags ?? enclosingScope.Flags,
-                baseNamespace ?? enclosingScope.BaseNamespace);
+    protected Scope(Scope enclosingScope, Symbol? owner = null, BindingFlags? flags = null)
+        => (EnclosingScope, Owner, Flags)
+            = (enclosingScope, owner ?? enclosingScope.Owner, flags ?? enclosingScope.Flags);
 
-    protected Scope(Scope? enclosingScope, Symbol? owner, BindingFlags flags, BaseNamespaceSymbol baseNamespace)
-        => (EnclosingScope, Owner, Flags, BaseNamespace)
-            = (enclosingScope, owner, flags, baseNamespace);
+    protected Scope(Scope? enclosingScope, Symbol? owner, BindingFlags flags)
+        => (EnclosingScope, Owner, Flags) = (enclosingScope, owner, flags);
     
 
     public abstract ImmutableArray<Symbol> Lookup(string name);

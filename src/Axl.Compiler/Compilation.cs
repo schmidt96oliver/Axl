@@ -71,14 +71,11 @@ public class Compilation
         }
     }
 
-    public BaseNamespaceSymbol BaseNamespace
+    public BaseLibrary BaseLibrary
     {
         get
         {
-            // BaseLib is either referenced or this compilation.
-            field ??= ReferencedCompilations.Length > 0
-                ? ReferencedCompilations[0].BaseNamespace
-                : RootNamespace.Members.OfType<BaseNamespaceSymbol>().Single();
+            field ??= new(this);
             return field;
         }
     }
@@ -96,11 +93,6 @@ public class Compilation
         if (referencedCompilations.IsDefault)
             referencedCompilations = [MakeBaseLib()];
         
-        Guard.MustBe(referencedCompilations.Length == 0 ||
-                     referencedCompilations.All(c =>
-                         c.BaseNamespace == referencedCompilations[0].BaseNamespace),
-            $"All {nameof(referencedCompilations)} must reference the same {nameof(BaseNamespace)}.");
-
         return new Compilation([.. syntaxTrees], [.. referencedCompilations]);
     }
 
@@ -121,6 +113,8 @@ public class Compilation
     private void Complete()
     {
         var sideEffects = new BinderSideEffects();
+        
+        BaseLibrary.Complete(sideEffects.DiagnosticBag);
         RootNamespace.Complete(sideEffects);
         foreach (var script in Scripts)
             script.Complete(sideEffects);

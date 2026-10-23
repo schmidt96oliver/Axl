@@ -63,7 +63,7 @@ public class ScriptSymbol(SyntaxTree syntax, Scope enclosingScope)
                     isPublic: false,
                     receiverType: null,
                     isMutatingReceiver: false);
-                field.SetSignature([], _binder.Scope.BaseNamespace.Unit);
+                field.SetSignature([], _binder.Scope.Compilation.BaseLibrary.Unit);
                 field.SetBody(_binder.EnterFunSignature(field).BindScriptBody(syntax.FileSyntax));
 
                 _isBindingScriptFun = false;

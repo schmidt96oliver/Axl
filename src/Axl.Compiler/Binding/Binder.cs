@@ -31,11 +31,11 @@ public sealed class Binder(Scope scope, BinderSideEffects sideEffects)
 
     #region Comfort Stuff
 
-    private StructSymbol Bool => Scope.BaseNamespace.Bool;
+    private TypeSymbol Bool => Scope.Compilation.BaseLibrary.Bool;
     
-    private StructSymbol String => Scope.BaseNamespace.String;
+    private TypeSymbol String => Scope.Compilation.BaseLibrary.String;
     
-    private StructSymbol Unit => Scope.BaseNamespace.Unit;
+    private TypeSymbol Unit => Scope.Compilation.BaseLibrary.Unit;
 
 
     public Binder WithSideEffects(BinderSideEffects sideEffects)
@@ -261,6 +261,16 @@ public sealed class Binder(Scope scope, BinderSideEffects sideEffects)
             // The namespace is being declared on global or root namespace
             // but is already declared in a referenced compilation.
             SideEffects.ReportError(new Diagnostic.NamespaceAlreadyDeclared(declaration));
+            
+            // If base namespace is declared again in spite of an error, that
+            // would lead to the Compilation finding ambigous references to
+            // it, which create a massive amount of followup errors. Thus,
+            // empty its name.
+            if (declaration.Name is Names.BaseNamespace)
+            {
+                var emptyNameDeclaration = new NamespaceDeclaration("", declaration.Children, declaration.SyntaxTrees);
+                return new SourceNamespaceSymbol(emptyNameDeclaration, Scope, isRoot: false);
+            }
         }
 
         return new SourceNamespaceSymbol(declaration, Scope, isRoot: false);
@@ -344,7 +354,7 @@ public sealed class Binder(Scope scope, BinderSideEffects sideEffects)
             if (bound is null) continue;
             if (namespaces.Contains(bound) ||
                 Scope.Owner?.SelfAndOwners().Contains(bound) == true ||
-                bound == Scope.Compilation.BaseNamespace)
+                bound == Scope.Compilation.BaseLibrary.BaseNamespace)
             {
                 SideEffects.ReportLint(new Diagnostic.UnnecessaryUsing(syntax));
                 continue;
@@ -791,22 +801,22 @@ public sealed class Binder(Scope scope, BinderSideEffects sideEffects)
     {
         var type = syntax.Token.Suffix switch
         {
-            NumberLiteralSuffix.I32 => Scope.BaseNamespace.I32,
-            NumberLiteralSuffix.I64 => Scope.BaseNamespace.I64,
-            NumberLiteralSuffix.F32 => Scope.BaseNamespace.F32,
-            NumberLiteralSuffix.F64 => Scope.BaseNamespace.F64,
+            NumberLiteralSuffix.I32 => Scope.Compilation.BaseLibrary.I32,
+            NumberLiteralSuffix.I64 => Scope.Compilation.BaseLibrary.I64,
+            NumberLiteralSuffix.F32 => Scope.Compilation.BaseLibrary.F32,
+            NumberLiteralSuffix.F64 => Scope.Compilation.BaseLibrary.F64,
 
-            _ => syntax.Token.HasDecimalPoint ? Scope.BaseNamespace.DefaultFloatType : Scope.BaseNamespace.DefaultIntType
+            _ => syntax.Token.HasDecimalPoint ? Scope.Compilation.BaseLibrary.DefaultFloatType : Scope.Compilation.BaseLibrary.DefaultIntType
         };
 
         // Literals like "1.1i32" need to be rejected.
         if (syntax.Token.HasDecimalPoint &&
-            type != Scope.BaseNamespace.F32 && type != Scope.BaseNamespace.F64)
+            type != Scope.Compilation.BaseLibrary.F32 && type != Scope.Compilation.BaseLibrary.F64)
         {
             return BindError(syntax, new Diagnostic.SuffixInvalidForDecimalNumber(syntax));
         }
 
-        if (type == Scope.BaseNamespace.I32)
+        if (type == Scope.Compilation.BaseLibrary.I32)
         {
             if (!int.TryParse(syntax.Token.Body, out var value))
                 return BindError(syntax, new Diagnostic.NumberTooBig(type, syntax));
@@ -814,7 +824,7 @@ public sealed class Binder(Scope scope, BinderSideEffects sideEffects)
             return new BoundConst(value, type, syntax);
         }
 
-        if (type == Scope.BaseNamespace.I64)
+        if (type == Scope.Compilation.BaseLibrary.I64)
         {
             if (!long.TryParse(syntax.Token.Body, out var value))
                 return BindError(syntax, new Diagnostic.NumberTooBig(type, syntax));
@@ -822,13 +832,13 @@ public sealed class Binder(Scope scope, BinderSideEffects sideEffects)
             return new BoundConst(value, type, syntax);
         }
 
-        if (type == Scope.BaseNamespace.F32)
+        if (type == Scope.Compilation.BaseLibrary.F32)
         {
             var value = float.Parse(syntax.Token.Body, CultureInfo.InvariantCulture);
             return new BoundConst(value, type, syntax);
         }
 
-        if (type == Scope.BaseNamespace.F64)
+        if (type == Scope.Compilation.BaseLibrary.F64)
         {
             var value = double.Parse(syntax.Token.Body, CultureInfo.InvariantCulture);
             return new BoundConst(value, type, syntax);
