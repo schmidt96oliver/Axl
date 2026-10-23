@@ -41,6 +41,7 @@ public enum TokenKind
     DoubleAmpersand,
     DoubleVerticalBar,
     Bang,
+    At,
     
     // --- Assignment Symbols
     Equal,

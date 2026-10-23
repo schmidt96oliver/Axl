@@ -137,7 +137,7 @@ public partial class ParserTests
                     """);
             [Fact]
             public void UnclosedParamList_7()
-                => InlineSnapshot.Validate(Tree("fun Foo(a: I32, @@ { }"), """
+                => InlineSnapshot.Validate(Tree("fun Foo(a: I32, ## { }"), """
                     ERROR UnexpectedToken@[16, 18): Expected a parameter, got unknown characters.
 
 
@@ -152,7 +152,7 @@ public partial class ParserTests
                     · · · · ':'
                     · · · · IdName 'I32'
                     · · ','
-                    · · Garbage '@@'
+                    · · Garbage '##'
                     · · Param
                     · · · IdName
                     · · · · ??ID
@@ -166,7 +166,7 @@ public partial class ParserTests
                     """);
             [Fact]
             public void UnclosedParamList_8()
-                => InlineSnapshot.Validate(Tree("fun Foo(a: I32, @@: String { }"), """
+                => InlineSnapshot.Validate(Tree("fun Foo(a: I32, ##: String { }"), """
                     ERROR UnexpectedToken@[16, 18): Expected a parameter, got unknown characters.
                     ERROR MissingToken@[26, 26): Expected ')'.
 
@@ -182,7 +182,7 @@ public partial class ParserTests
                     · · · · ':'
                     · · · · IdName 'I32'
                     · · ','
-                    · · Garbage '@@'
+                    · · Garbage '##'
                     · · Param
                     · · · IdName
                     · · · · ??ID
@@ -563,7 +563,7 @@ public partial class ParserTests
 
             [Fact]
             public void ParamList_Garbage_1()
-                => InlineSnapshot.Validate(Tree("fun Foo(a @@ b) { }"), """
+                => InlineSnapshot.Validate(Tree("fun Foo(a ## b) { }"), """
                     ERROR MissingToken@[9, 9): Expected a type annotation.
                     ERROR UnexpectedToken@[10, 12): Expected ',', got unknown characters.
                     ERROR MissingToken@[14, 14): Expected a type annotation.
@@ -580,7 +580,7 @@ public partial class ParserTests
                     · · · · ??':'
                     · · · · IdName
                     · · · · · ??ID
-                    · · Garbage '@@'
+                    · · Garbage '##'
                     · · ??','
                     · · Param
                     · · · IdName 'b'
@@ -595,7 +595,7 @@ public partial class ParserTests
             
             [Fact]
             public void ParamList_Garbage_2()
-                => InlineSnapshot.Validate(Tree("fun Foo(@@ a, b) { }"), """
+                => InlineSnapshot.Validate(Tree("fun Foo(## a, b) { }"), """
                     ERROR UnexpectedToken@[8, 10): Expected a parameter, got unknown characters.
                     ERROR MissingToken@[12, 12): Expected a type annotation.
                     ERROR MissingToken@[15, 15): Expected a type annotation.
@@ -606,7 +606,7 @@ public partial class ParserTests
                     · FunName 'Foo'
                     · ParamList
                     · · '('
-                    · · Garbage '@@'
+                    · · Garbage '##'
                     · · Param
                     · · · IdName 'a'
                     · · · TypeAnnotationClause
@@ -627,7 +627,7 @@ public partial class ParserTests
             
             [Fact]
             public void ParamList_Garbage_3()
-                => InlineSnapshot.Validate(Tree("fun Foo(@@, a, b) { }"), """
+                => InlineSnapshot.Validate(Tree("fun Foo(##, a, b) { }"), """
                     ERROR UnexpectedToken@[8, 10): Expected a parameter, got unknown characters.
                     ERROR MissingToken@[13, 13): Expected a type annotation.
                     ERROR MissingToken@[16, 16): Expected a type annotation.
@@ -638,7 +638,7 @@ public partial class ParserTests
                     · FunName 'Foo'
                     · ParamList
                     · · '('
-                    · · Garbage '@@'
+                    · · Garbage '##'
                     · · Param
                     · · · IdName
                     · · · · ??ID
@@ -667,7 +667,7 @@ public partial class ParserTests
             
             [Fact]
             public void ParamList_Garbage_4()
-                => InlineSnapshot.Validate(Tree("fun Foo(@@) { }"), """
+                => InlineSnapshot.Validate(Tree("fun Foo(##) { }"), """
                     ERROR UnexpectedToken@[8, 10): Expected a parameter, got unknown characters.
 
 
@@ -676,7 +676,7 @@ public partial class ParserTests
                     · FunName 'Foo'
                     · ParamList
                     · · '('
-                    · · Garbage '@@'
+                    · · Garbage '##'
                     · · Param
                     · · · IdName
                     · · · · ??ID
@@ -691,7 +691,7 @@ public partial class ParserTests
             
             [Fact]
             public void ParamList_Garbage_5()
-                => InlineSnapshot.Validate(Tree("fun Foo(@@, ) { }"), """
+                => InlineSnapshot.Validate(Tree("fun Foo(##, ) { }"), """
                     ERROR UnexpectedToken@[8, 10): Expected a parameter, got unknown characters.
                     ERROR MissingToken@[11, 11): Expected a parameter.
 
@@ -701,7 +701,7 @@ public partial class ParserTests
                     · FunName 'Foo'
                     · ParamList
                     · · '('
-                    · · Garbage '@@'
+                    · · Garbage '##'
                     · · Param
                     · · · IdName
                     · · · · ??ID
@@ -724,7 +724,7 @@ public partial class ParserTests
             
             [Fact]
             public void ParamList_Garbage_6()
-                => InlineSnapshot.Validate(Tree("fun Foo(a @@, @@) { }"), """
+                => InlineSnapshot.Validate(Tree("fun Foo(a ##, ##) { }"), """
                     ERROR MissingToken@[9, 9): Expected a type annotation.
                     ERROR UnexpectedToken@[10, 12): Expected ',', got unknown characters.
                     ERROR UnexpectedToken@[14, 16): Expected a parameter, got unknown characters.
@@ -741,9 +741,9 @@ public partial class ParserTests
                     · · · · ??':'
                     · · · · IdName
                     · · · · · ??ID
-                    · · Garbage '@@'
+                    · · Garbage '##'
                     · · ','
-                    · · Garbage '@@'
+                    · · Garbage '##'
                     · · Param
                     · · · IdName
                     · · · · ??ID
@@ -758,7 +758,7 @@ public partial class ParserTests
             
             [Fact]
             public void ParamList_Garbage_7()
-                => InlineSnapshot.Validate(Tree("fun Foo(@@, a, b @@) { }"), """
+                => InlineSnapshot.Validate(Tree("fun Foo(##, a, b ##) { }"), """
                     ERROR UnexpectedToken@[8, 10): Expected a parameter, got unknown characters.
                     ERROR MissingToken@[13, 13): Expected a type annotation.
                     ERROR MissingToken@[16, 16): Expected a type annotation.
@@ -770,7 +770,7 @@ public partial class ParserTests
                     · FunName 'Foo'
                     · ParamList
                     · · '('
-                    · · Garbage '@@'
+                    · · Garbage '##'
                     · · Param
                     · · · IdName
                     · · · · ??ID
@@ -792,7 +792,7 @@ public partial class ParserTests
                     · · · · ??':'
                     · · · · IdName
                     · · · · · ??ID
-                    · · Garbage '@@'
+                    · · Garbage '##'
                     · · ')'
                     · FunBody
                     · · BlockExpr '{' '}'
@@ -800,7 +800,7 @@ public partial class ParserTests
             
             [Fact]
             public void ParamList_Garbage_8()
-                => InlineSnapshot.Validate(Tree("fun Foo(@@,@@) { }"), """
+                => InlineSnapshot.Validate(Tree("fun Foo(##,##) { }"), """
                     ERROR UnexpectedToken@[8, 10): Expected a parameter, got unknown characters.
                     ERROR UnexpectedToken@[11, 13): Expected a parameter, got unknown characters.
 
@@ -810,7 +810,7 @@ public partial class ParserTests
                     · FunName 'Foo'
                     · ParamList
                     · · '('
-                    · · Garbage '@@'
+                    · · Garbage '##'
                     · · Param
                     · · · IdName
                     · · · · ??ID
@@ -819,7 +819,7 @@ public partial class ParserTests
                     · · · · IdName
                     · · · · · ??ID
                     · · ','
-                    · · Garbage '@@'
+                    · · Garbage '##'
                     · · Param
                     · · · IdName
                     · · · · ??ID

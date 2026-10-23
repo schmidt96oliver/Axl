@@ -35,6 +35,7 @@ public static class SyntaxFacts
         TokenKind.DoubleAmpersand => "&&",
         TokenKind.DoubleVerticalBar => "||",
         TokenKind.Bang => "!",
+        TokenKind.At => "@",
     
         // --- Assignment Symbols
         TokenKind.Equal => "=",

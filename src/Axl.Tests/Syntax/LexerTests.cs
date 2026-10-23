@@ -65,9 +65,9 @@ public sealed class LexerTests
     
     [Fact]
     public void InvalidCharacters_Sequence()
-        => InlineSnapshot.Validate(All("@@@##"),
+        => InlineSnapshot.Validate(All("#####"),
             """
-            - UnknownCharacters: "@@@##"
+            - UnknownCharacters: "#####"
             - Eof
             """);
 
@@ -141,8 +141,9 @@ public sealed class LexerTests
 
     [Fact]
     public void Symbols_Other()
-        => InlineSnapshot.Validate(NoWhitespace("(){}<>-.,;:+-*/&&||!"),
+        => InlineSnapshot.Validate(NoWhitespace("@(){}<>-.,;:+-*/&&||!"),
             """
+            - At: "@"
             - OpenParen: "("
             - CloseParen: ")"
             - OpenBrace: "{"

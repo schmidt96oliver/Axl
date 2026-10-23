@@ -32,23 +32,23 @@ public partial class ParserTests
             
             [Fact]
             public void SemicolonAfterError_Global()
-                => InlineSnapshot.Validate(Tree("@@ ;"), """
+                => InlineSnapshot.Validate(Tree("## ;"), """
                     ERROR UnexpectedToken@[0, 2): Expected a statement, got unknown characters.
 
 
-                    Garbage '@@'
+                    Garbage '##'
                     Garbage ';'
                     """);
             [Fact]
             public void SemicolonAfterError_InBlock()
-                => InlineSnapshot.Validate(Tree("{ @@ ; }"), """
+                => InlineSnapshot.Validate(Tree("{ ## ; }"), """
                     ERROR UnexpectedToken@[2, 4): Expected a statement, got unknown characters.
 
 
                     ExprStmt
                     · BlockExpr
                     · · '{'
-                    · · Garbage '@@'
+                    · · Garbage '##'
                     · · Garbage ';'
                     · · '}'
                     """);

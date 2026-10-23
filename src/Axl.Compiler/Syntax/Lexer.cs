@@ -249,7 +249,11 @@ public sealed class Lexer
                     ? TokenKind.GreaterThanEqual
                     : TokenKind.GreaterThan);
                 break;
-
+            
+            case '@':
+                scanner.AddToken(TokenKind.At);
+                break;
+            
             default:
                 scanner.AddUnknownCharacter();
                 break;
