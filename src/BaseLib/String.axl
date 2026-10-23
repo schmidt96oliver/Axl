@@ -8,4 +8,7 @@ pub struct String
     
     pub fun !=(right: String): Bool
         = !(self == right);
+          
+    @Intrinsic
+    pub fun Concat(right: String): String;
 }

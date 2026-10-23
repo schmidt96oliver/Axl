@@ -937,14 +937,30 @@ public sealed class Binder(Scope scope, BinderSideEffects sideEffects)
     }
     
     
-    private BoundStringExpr BindString(StringExprSyntax syntax)
+    private BoundValue BindString(StringExprSyntax syntax)
     {
         var parts = syntax.Parts.Select(BindStringPart).ToImmutableArray();
     
         if (parts.Length == 0)
-            parts = [new BoundConst("", String, syntax)];
+            return new BoundConst("", String, syntax);
+        if (parts.Length == 1)
+            return parts[0];
+
+        if (parts.OfType<BoundError>().Any())
+            return new BoundError(syntax);
         
-        return new BoundStringExpr(parts, String, syntax);
+        var concatCall = TryBindMethodCall(parts[0], Names.StringConcatMethod, [parts[1]], syntax);
+        if (concatCall is null)
+            return BindError(syntax, new Diagnostic.CannotConcatString(syntax, String));
+
+        for (var i = 2; i < parts.Length; i++)
+        {
+            concatCall = TryBindMethodCall(concatCall, Names.StringConcatMethod, [parts[i]], syntax);
+            if (concatCall is null)
+                return BindError(syntax, new Diagnostic.CannotConcatString(syntax, String));
+        }
+        
+        return concatCall;
     }
     
     private BoundValue BindStringPart(StringPartSyntax syntax)

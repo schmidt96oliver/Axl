@@ -123,6 +123,7 @@ public sealed class BoundTreeInterpreter
                 Intrinsic.EqualsBool => (bool)receiver! == (bool)args[0],
 
                 Intrinsic.EqualsString => (string)receiver! == (string)args[0],
+                Intrinsic.ConcatString => string.Concat((string)receiver!, (string)args[0]),
 
                 Intrinsic.ToStringI32 or Intrinsic.ToStringI64 => receiver!.ToString()!,
                 Intrinsic.ToStringBool => (bool)receiver! ? "true" : "false",
@@ -199,7 +200,6 @@ public sealed class BoundTreeInterpreter
         BoundIfExpr boundIfExpr => EvaluateIf(boundIfExpr),
 
         BoundLogicOr boundOr => EvaluateOr(boundOr),
-        BoundStringExpr boundStringExpr => string.Concat(boundStringExpr.Parts.Select(part => (string)Evaluate(part))),
 
         BoundBreak => throw new BreakException(),
         BoundContinue => throw new ContinueException(),

@@ -7,8 +7,6 @@
 
 # Questions / Little ones****
 
-* ?? Should StringExpr bind to string.Concat?
-
 # Milestones
 
 ## 5. `Base` namespace as Axl-Code

@@ -43,6 +43,7 @@ public enum Intrinsic
     ToStringBool,
     
     EqualsString,
+    ConcatString,
     
     Print
 }

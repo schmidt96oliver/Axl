@@ -793,4 +793,14 @@ public partial record Diagnostic
         /// <inheritdoc />
         public override string Message => $"{Fun.ShortDisplayName} must declare a body.";
     }
+
+    public sealed record CannotConcatString(SyntaxNode Syntax, TypeSymbol String) : Error
+    {
+        /// <inheritdoc />
+        public override ImmutableArray<SourceLocation> Locations => [Syntax.Location];
+
+        /// <inheritdoc />
+        public override string Message =>
+            $"Cannot build interpolated string, because '{String.QualifiedName}.{Names.StringConcatMethod}' does not exist.";
+    }
 }

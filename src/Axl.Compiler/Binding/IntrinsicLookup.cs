@@ -70,6 +70,7 @@ public static class IntrinsicLookup
         new(Intrinsic.ToStringF64, Names.ToStringMethod, PrimitiveKind.F64, [], PrimitiveKind.String),
         
         new(Intrinsic.EqualsString, TokenKind.DoubleEqual, PrimitiveKind.String, [PrimitiveKind.String], PrimitiveKind.Bool),
+        new(Intrinsic.ConcatString, Names.StringConcatMethod, PrimitiveKind.String, [PrimitiveKind.String], PrimitiveKind.String),
         
         new(Intrinsic.Print, "Print", [PrimitiveKind.String]),
     ];
