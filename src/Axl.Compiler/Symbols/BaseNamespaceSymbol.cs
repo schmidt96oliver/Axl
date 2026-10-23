@@ -82,7 +82,7 @@ public sealed class BaseNamespaceSymbol : NamespaceSymbol
         foreach (var type in types)
         {
             if (type.Members.OfType<FunSymbol>().FirstOrDefault(fun =>
-                    fun.Name is "ToString" && fun.ReceiverType == type && fun.Parameters.Length == 0)
+                    fun.Name is Names.ToStringMethod && fun.ReceiverType == type && fun.Parameters.Length == 0)
                 is not { } toString)
             {
                 continue;
@@ -135,7 +135,7 @@ public sealed class BaseNamespaceSymbol : NamespaceSymbol
         IntrinsicMethodNoParam(TokenKind.Bang, Bool, returnType: Bool, Intrinsic.NotBool),
         IntrinsicMethodSingleParam(TokenKind.DoubleEqual, Bool, returnType: Bool, Intrinsic.EqualsBool),
 
-        IntrinsicMethodNoParam("ToString", Bool, returnType: String, Intrinsic.ToStringBool),
+        IntrinsicMethodNoParam(Names.ToStringMethod, Bool, returnType: String, Intrinsic.ToStringBool),
     ];
 
     private ImmutableArray<Symbol> GetUnitMembers()
@@ -171,7 +171,7 @@ public sealed class BaseNamespaceSymbol : NamespaceSymbol
         IntrinsicMethodSingleParam(TokenKind.LessThan, I32,
             returnType: Bool, Intrinsic.LessThanI32),
 
-        IntrinsicMethodNoParam("ToString", I32, returnType: String, Intrinsic.ToStringI32),
+        IntrinsicMethodNoParam(Names.ToStringMethod, I32, returnType: String, Intrinsic.ToStringI32),
     ];
 
     private ImmutableArray<Symbol> GetI64Members() =>
@@ -194,7 +194,7 @@ public sealed class BaseNamespaceSymbol : NamespaceSymbol
         IntrinsicMethodSingleParam(TokenKind.LessThan, I64,
             returnType: Bool, Intrinsic.LessThanI64),
 
-        IntrinsicMethodNoParam("ToString", I64, returnType: String, Intrinsic.ToStringI64),
+        IntrinsicMethodNoParam(Names.ToStringMethod, I64, returnType: String, Intrinsic.ToStringI64),
     ];
 
     private ImmutableArray<Symbol> GetF32Members() =>
@@ -217,7 +217,7 @@ public sealed class BaseNamespaceSymbol : NamespaceSymbol
         IntrinsicMethodSingleParam(TokenKind.LessThan,
             F32, returnType: Bool, Intrinsic.LessThanF32),
 
-        IntrinsicMethodNoParam("ToString", F32, returnType: String, Intrinsic.ToStringF32),
+        IntrinsicMethodNoParam(Names.ToStringMethod, F32, returnType: String, Intrinsic.ToStringF32),
     ];
 
     private ImmutableArray<Symbol> GetF64Members() =>
@@ -240,7 +240,7 @@ public sealed class BaseNamespaceSymbol : NamespaceSymbol
         IntrinsicMethodSingleParam(TokenKind.LessThan, F64,
             returnType: Bool, Intrinsic.LessThanF64),
 
-        IntrinsicMethodNoParam("ToString", F64, returnType: String, Intrinsic.ToStringF64),
+        IntrinsicMethodNoParam(Names.ToStringMethod, F64, returnType: String, Intrinsic.ToStringF64),
     ];
 
 

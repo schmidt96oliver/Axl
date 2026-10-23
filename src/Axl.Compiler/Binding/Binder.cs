@@ -879,7 +879,7 @@ public sealed class Binder(Scope scope, BinderSideEffects sideEffects)
         if (IsAssignableTo(boundExpr.Type, String))
             return boundExpr;
 
-        if (TryBindMethodCall(boundExpr, "ToString", [], syntax) is not BoundCall boundCall
+        if (TryBindMethodCall(boundExpr, Names.ToStringMethod, [], syntax) is not BoundCall boundCall
             || boundCall.Type != String)
         {
             return BindError(syntax, new Diagnostic.CannotConvertToString(boundExpr));
