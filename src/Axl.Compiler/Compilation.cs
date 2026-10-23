@@ -103,6 +103,9 @@ public class Compilation
     public Compilation AddReference(Compilation referencedCompilation)
         => new(SyntaxTrees, [referencedCompilation, .. ReferencedCompilations]);
 
+    public Compilation WithoutReference(Compilation compilation)
+        => new(SyntaxTrees, [.. ReferencedCompilations.Where(c => c != compilation)]);
+    
     public Compilation AddBaseLibrary()
         => AddReference(LoadBaseLibrary());
     
@@ -177,4 +180,6 @@ public class Compilation
             current = nextNode;
         }
     }
+
+    
 }

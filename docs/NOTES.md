@@ -3,16 +3,11 @@
 
 # Now
 
-* Add Compilation refs to Symbol
-
 * "var fun" -> "mut fun"
 
 # Questions / Little ones****
 
-* refactor: cleanup FunBuilder (Const instead of True())
-
 * ?? Should StringExpr bind to string.Concat?
-* ?? Should all duplicates be added to members? Leads to unecessary AmbiguousRef errors.
 
 # Milestones
 
@@ -25,7 +20,7 @@
   * [x] Namespace closed across Compilations
 * [ ] Project marker files (without dependencies)
 * [x] BaseLibrary searches for correct symbols
-* [ ] BaseNamespace shared across Compilations (through LSP)
+* [x] BaseNamespace shared across Compilations (through LSP)
 
 * [x] Replace entire BaseNamespaceSymbol with axl text!!
 

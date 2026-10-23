@@ -19,9 +19,11 @@ switch (args[0])
         var testFile = Path.GetExtension(testFilePath) is ".taxl"
             ? TestFile.From(sourceText)
             : null;
-        var compilation = testFile is not null 
-            ? testFile.Compilation 
-            : Compilation.From(sourceText).AddBaseLibrary();
+        var compilation = Compilation
+            .From(testFile is not null
+                ? testFile.Fragments.Select(f => f.SourceText)
+                : [sourceText])
+            .AddBaseLibrary();
 
         if (compilation.Scripts.Length != 1)
         {

@@ -12,6 +12,9 @@ public sealed class SingleFileProject : IProject
     public DocumentUri Uri { get; }
 
     /// <inheritdoc />
+    public event Action<UpdatedEvent>? Updated;
+
+    /// <inheritdoc />
     public Compilation Compilation { get; private set; }
 
     public SourceText SourceText => Compilation.SyntaxTrees.Single().SourceText;
@@ -21,6 +24,7 @@ public sealed class SingleFileProject : IProject
     {
         Uri = uri;
         Compilation = compilation;
+        ProjectStore.BaseLibraryProject.Updated += ReloadBaseLib;
     }
     
     public static SingleFileProject From(DocumentUri uri, string text)
@@ -32,14 +36,34 @@ public sealed class SingleFileProject : IProject
 
 
     /// <inheritdoc />
+    public void Close()
+    {
+        Updated -= ReloadBaseLib;
+    }
+
+    /// <inheritdoc />
     public bool HasDocument(DocumentUri uri)
         => Uri == uri;
 
     /// <inheritdoc />
-    public void UpdateDocument(DocumentUri uri, string text)
+    public void UpdateDocument(DocumentUri uri, string? text)
     {
+        if (text is null)
+            return;
+        
         if (uri != Uri) return;
+        var oldCompilation = Compilation;
         Compilation = Compilation.From(SourceText.From(text, uri.GetFileSystemPath()));
+        Updated?.Invoke(new UpdatedEvent(oldCompilation, Compilation));
+    }
+
+    private void ReloadBaseLib(UpdatedEvent baseLibUpdated)
+    {
+        var oldCompilation = Compilation;
+        Compilation = Compilation
+            .WithoutReference(baseLibUpdated.OldCompilation)
+            .AddReference(baseLibUpdated.NewCompilation);
+        Updated?.Invoke(new UpdatedEvent(oldCompilation, Compilation));
     }
 
     /// <inheritdoc />

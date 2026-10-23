@@ -24,17 +24,23 @@ public sealed class Evaluator
     
     private readonly List<FailedCheck> _failedChecks = [];
     private readonly TestFile _testFile;
+    private readonly Compilation _compilation;
 
-    private Evaluator(TestFile testFile)
+    private Evaluator(TestFile testFile, Compilation compilation)
     {
         _testFile = testFile;
+        _compilation = compilation;
     }
 
     public static Evaluation Evaluate(TestFile testFile)
     {
+        var compilation = Compilation
+            .From(testFile.Fragments.Select(f => f.SourceText))
+            .AddBaseLibrary();
+        
         // The test file might still contain unsupported features.
         // In that case, tests should be skipped instead of failing.
-        var unsupportedFeatures = testFile.Compilation
+        var unsupportedFeatures = compilation
             .Diagnostics
             .OfType<Diagnostic.UnsupportedFeature>()
             .ToList();
@@ -48,7 +54,7 @@ public sealed class Evaluator
         if (!testFile.Validate(out var errorMessage))
             return Evaluation.Failed($"Invalid taxl file: {errorMessage}");
         
-        var evaluator = new Evaluator(testFile);
+        var evaluator = new Evaluator(testFile, compilation);
         evaluator.CheckDiagnostics();
         switch (testFile.Kind)
         {
@@ -120,7 +126,7 @@ public sealed class Evaluator
     private Dictionary<int, DiagnosticId> GetActualDiagnostics()
     {
         var table = new Dictionary<int, DiagnosticId>();
-        foreach (var diagnostic in _testFile.Compilation.Diagnostics)
+        foreach (var diagnostic in _compilation.Diagnostics)
         {
             if (diagnostic.Locations.Length == 0)
             {
@@ -161,7 +167,7 @@ public sealed class Evaluator
         }
 
         var output = new StringWriter();
-        var compilation = _testFile.Compilation;
+        var compilation = _compilation;
         if (compilation.Scripts.Length != 1)
         {
             _failedChecks.Add(new FailedCheck(0, $"Test file must have 1 script to execute, got {compilation.Scripts.Length}."));

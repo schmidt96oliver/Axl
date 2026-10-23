@@ -27,16 +27,6 @@ public sealed class TestFile
 
     public ImmutableArray<Annotation> Annotations { get; }
 
-
-    public Compilation Compilation
-    {
-        get
-        {
-            field ??= Compilation.From(Fragments.Select(frag => frag.SourceText)).AddBaseLibrary();
-            return field;
-        }
-    }
-
     private Evaluation? _evaluation;
 
     public Evaluation Evaluation

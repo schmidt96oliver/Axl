@@ -9,8 +9,18 @@ public static class ProjectStore
 {
     private static readonly Dictionary<DocumentUri, IProject> OpenDocuments = [];
     private static readonly List<IProject> OpenProjects = [];
-    
 
+    
+    
+    public static IProject BaseLibraryProject
+    {
+        get
+        {
+            field ??= BaseLibProject.TryLoad()!;
+            return field;
+        }
+    }
+    
     /// <summary>
     /// Adds the given document to the store.
     /// </summary>
@@ -30,6 +40,12 @@ public static class ProjectStore
             return;
         }
 
+        if (BaseLibraryProject.HasDocument(uri))
+        {
+            BaseLibraryProject.UpdateDocument(uri, text);
+            return;
+        }
+        
         var project = OpenProjects.FirstOrDefault(p => p.HasDocument(uri));
         
         if (project is not null)
@@ -52,13 +68,28 @@ public static class ProjectStore
     
     public static void Unload(DocumentUri uri)
     {
-        if (!OpenDocuments.Remove(uri))
+        if (BaseLibraryProject.HasDocument(uri))
+        {
+            BaseLibraryProject.UpdateDocument(uri, null);
             return;
-        
+        }
+
+        if (!OpenDocuments.Remove(uri, out var project))
+            return;
+
         // The document was open and is now closed.
         // Remove all projects that were only open
         // because of this file.
-        OpenProjects.RemoveAll(p => !OpenDocuments.ContainsValue(p));
+        var forRemoval = OpenProjects.Where(p => !OpenDocuments.ContainsValue(p)).ToList();
+        
+        if (!forRemoval.Contains(project))
+            project.UpdateDocument(uri, null);
+        
+        foreach (var remove in forRemoval)
+        {
+            remove.Close();
+            OpenProjects.Remove(remove);
+        }
     }
 
 
@@ -69,6 +100,9 @@ public static class ProjectStore
     /// </summary>
     public static IProject? TryGetProject(DocumentUri uri)
     {
+        if (BaseLibraryProject.HasDocument(uri))
+            return BaseLibraryProject;
+        
         if (OpenDocuments.TryGetValue(uri, out var projectFromDoc))
             return projectFromDoc;
 
@@ -83,12 +117,15 @@ public static class ProjectStore
     public static Location? TryMapToLsp(SourceLocation axlLocation)
     {
         return OpenProjects
+            .Concat([BaseLibraryProject])
             .Select(p => p.TryMapToLsp(axlLocation))
             .FirstOrDefault(lspLocation => lspLocation is not null);
     }
 
     public static SourceLocation? TryMapToAxl(Location lspLocation)
     {
+        if (BaseLibraryProject.HasDocument(lspLocation.Uri))
+            return BaseLibraryProject.TryMapToAxl(lspLocation);
         if (OpenDocuments.TryGetValue(lspLocation.Uri, out var project))
             return project.TryMapToAxl(lspLocation);
         return OpenProjects.FirstOrDefault(p => p.HasDocument(lspLocation.Uri))?.TryMapToAxl(lspLocation);

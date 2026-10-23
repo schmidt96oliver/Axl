@@ -1,4 +1,5 @@
 ﻿using System.Collections.Immutable;
+using System.Data.Common;
 using Axl.Compiler;
 using Axl.Compiler.Syntax;
 using Axl.Compiler.Text;
@@ -7,10 +8,16 @@ using OmniSharp.Extensions.LanguageServer.Protocol.Models;
 
 namespace Axl.Lsp;
 
+public sealed record UpdatedEvent(Compilation OldCompilation, Compilation NewCompilation);
+
 public interface IProject
 {
+    public event Action<UpdatedEvent> Updated;
+    
     public Compilation Compilation { get; }
 
+    public void Close();
+    
     /// <summary>
     /// Whether this project contains the given document <paramref name="uri"/>
     /// </summary>
@@ -20,8 +27,9 @@ public interface IProject
     /// Updates the specified document <paramref name="uri"/> to the specified
     /// text. This will reload <see cref="Compilation"/>.
     /// </summary>
-    public void UpdateDocument(DocumentUri uri, string text);
-
+    /// <param name="text"><c>null</c> means text was not available or the file was unloaded.</param>
+    public void UpdateDocument(DocumentUri uri, string? text);
+    
     /// <summary>
     /// Returns all <see cref="SyntaxTree"/>s inside the specified file.
     /// </summary>
