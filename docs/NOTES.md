@@ -3,8 +3,6 @@
 
 # Now
 
-* Parse TypeName instead Expr
-
 * use full names for diagnostics
 
 * Add Compilation refs to Symbol

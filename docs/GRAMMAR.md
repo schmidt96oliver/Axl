@@ -4,7 +4,7 @@
 File            = (Stmt | UsingDirective | NamespaceDecl | FnDecl | StructDecl)*
 
 NamespaceDecl      = "namespace" NamespaceName ";"
-UsingDirective     = "using" Expr ";"
+UsingDirective     = "using" TypeName ";"
 
 NamespaceName      = Identifier ("." Identifier)*
 
