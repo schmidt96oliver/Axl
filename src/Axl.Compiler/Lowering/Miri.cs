@@ -6,6 +6,8 @@ using Axl.Compiler.Symbols;
 
 namespace Axl.Compiler.Lowering;
 
+using Environment = Dictionary<LocalId, object>;
+
 public sealed class Miri
 {
     private sealed class StructValue
@@ -13,11 +15,11 @@ public sealed class Miri
         public readonly Dictionary<FieldSymbol, object> Fields = [];
     }
 
+    private sealed record Reference(Environment Environment, Place Place);
+
 
     private readonly MirProgram _program;
     private readonly TextWriter _output;
-
-    private Dictionary<LocalId, object> _locals = [];
     private readonly object _empty = new StructValue();
 
     private Miri(MirProgram program, TextWriter output)
@@ -36,24 +38,23 @@ public sealed class Miri
     {
         var mirFun = _program.GetMirFunction(fun);
 
-        var prevLocals = _locals;
-        _locals = new Dictionary<LocalId, object>();
+        var environment = new Environment();
 
         var firstArgument = 0;
         if (mirFun.ReceiverPlace is not null)
         {
-            _locals[mirFun.ReceiverPlace.Id] = arguments[firstArgument];
+            environment[mirFun.ReceiverPlace.Id] = arguments[firstArgument];
             firstArgument++;
         }
 
         for (var paramIndex = 0; paramIndex < mirFun.Parameters.Count; paramIndex++)
-            _locals[mirFun.Parameters[paramIndex].Id] = arguments[paramIndex + firstArgument];
+            environment[mirFun.Parameters[paramIndex].Id] = arguments[paramIndex + firstArgument];
 
         var block = mirFun.Entry;
         while (true)
         {
             foreach (var instruction in block.Instructions)
-                Execute(instruction);
+                Execute(instruction, environment);
 
             switch (block.Terminator)
             {
@@ -62,13 +63,12 @@ public sealed class Miri
                     break;
 
                 case Terminator.Branch branch:
-                    var condition = Evaluate(branch.Condition);
+                    var condition = Evaluate(branch.Condition, environment);
                     block = (bool)condition ? branch.True : branch.False;
                     break;
 
                 case Terminator.Return @return:
-                    var value = Evaluate(@return.Value);
-                    _locals = prevLocals;
+                    var value = Evaluate(@return.Value, environment);
                     return value;
 
                 default:
@@ -77,32 +77,55 @@ public sealed class Miri
         }
     }
 
-    private void Execute(Instruction instruction)
+    private void Execute(Instruction instruction, Environment environment)
     {
         switch (instruction)
         {
             case Instruction.Assign assign:
-                GetPlaceRef(assign.Target) = Evaluate(assign.Value);
+            {
+                var value = Evaluate(assign.Value, environment);
+                GetPlaceRef(assign.Target, environment) = value;
                 break;
+            }
             
             case Instruction.Call call:
-                GetPlaceRef(call.Target) = Call(call.Fun, [.. call.Arguments.Select(Evaluate)]);
+            {
+                var value = Call(call.Fun,
+                [
+                    .. call.Arguments.Select(a => Evaluate(a, environment))
+                ]);
+                GetPlaceRef(call.Target, environment) = value;
                 break;
+            }
             
             case Instruction.Intrinsic intrinsic:
-                GetPlaceRef(intrinsic.Target) = EvaluateIntrinsic(intrinsic.Kind, [.. intrinsic.Arguments.Select(Evaluate)]);
+            {
+                var value = EvaluateIntrinsic(intrinsic.Kind,
+                [
+                    .. intrinsic.Arguments.Select(a => Evaluate(a, environment))
+                ]);
+                GetPlaceRef(intrinsic.Target, environment) = value;
                 break;
+            }
             
             case Instruction.StructInit structInit:
-                var @struct = new StructValue();
+            {
+                var value = new StructValue();
                 foreach (var kvp in structInit.FieldValues)
-                    @struct.Fields.Add(kvp.Key, Evaluate(kvp.Value));
-                GetPlaceRef(structInit.Target) = @struct;
+                    value.Fields.Add(kvp.Key, Evaluate(kvp.Value, environment));
+                GetPlaceRef(structInit.Target, environment) = value;
                 break;
+            }
             
             case Instruction.VmCall vmCall:
-                GetPlaceRef(vmCall.Target) = EvaluateVmCall(vmCall.Kind, [.. vmCall.Arguments.Select(Evaluate)]);
+            {
+                var value = EvaluateVmCall(vmCall.Kind,
+                [
+                    .. vmCall.Arguments.Select(a => Evaluate(a, environment))
+                ]);
+                GetPlaceRef(vmCall.Target, environment) = value;
                 break;
+            }
             
             default:
                 throw new ArgumentOutOfRangeException(nameof(instruction));
@@ -174,31 +197,36 @@ public sealed class Miri
     }
     
 
-    private ref object GetPlaceRef(Place place)
+    private ref object GetPlaceRef(Place place, Environment environment)
     {
         switch (place)
         {
             case Place.Local local:
-                return ref CollectionsMarshal.GetValueRefOrAddDefault(_locals, local.Id, out _)!;
+                return ref CollectionsMarshal.GetValueRefOrAddDefault(environment, local.Id, out _)!;
             
             case Place.Field field:
-                var receiver = GetPlaceRef(field.Receiver);
+                var receiver = GetPlaceRef(field.Receiver, environment);
                 return ref CollectionsMarshal.GetValueRefOrNullRef(((StructValue)receiver).Fields, field.FieldSymbol);
+            
+            case Place.Deref deref:
+                var @ref = (Reference)GetPlaceRef(deref.Reference, environment);
+                return ref GetPlaceRef(@ref.Place, @ref.Environment);
             
             default:
                 throw new UnreachableException();
         }
     }
 
-    private object Evaluate(Operand operand) => operand switch
+    private object Evaluate(Operand operand, Environment environment) => operand switch
     {
         Operand.Const @const => @const.Value.Value,
-        Operand.Copy copy => Copy(GetPlaceRef(copy.Place)),
-        Operand.EmptyStructConst => _empty,
+        Operand.Copy copy => Copy(GetPlaceRef(copy.Place, environment)),
+        Operand.Ref @ref => new Reference(environment, @ref.Place),
+        Operand.Empty => _empty,
         Operand.Unreachable => throw new UnreachableException(),
     };
 
-    private object Copy(object value)
+    private static object Copy(object value)
     {
         if (value is StructValue structValue)
         {

@@ -20,23 +20,27 @@ public static class MirPrinter
                 ? $"{id}[{syntax.Name.Text}]"
                 : id.ToString(),
             Place.Field { Receiver: var receiver, FieldSymbol: var field } => $"{receiver.Print()}.{field.Name}",
+            Place.Deref { Reference: var reference } => $"(deref {reference.Print()})",
         };
 
     public static string PrintWithType(this Place place)
         => place switch
         {
+            Place.Local { Type: RefTypeSymbol { Inner: var inner } } => $"{place.Print()}: ref {inner.QualifiedName}",
             Place.Local => $"{place.Print()}: {place.Type.QualifiedName}",
             Place.Field { Receiver: var receiver, FieldSymbol: var field } =>
                 $"{receiver.Print()}.{field.Name}: {place.Type.QualifiedName}",
+            Place.Deref { Reference: var reference } => $"(deref {reference.Print()}): {reference.Type.QualifiedName}",
         };
     
     public static string Print(this Operand operand)
         => operand switch
         {
             Operand.Copy { Place: var place } => $"copy {place.Print()}",
+            Operand.Ref { Place: var place } => $"ref {place.Print()}",
             Operand.Const { Value: var constValue } => $"const {constValue.Value}",
             Operand.Unreachable => "never",
-            Operand.EmptyStructConst => "empty",
+            Operand.Empty => "empty",
         };
 
     public static string Print(this Instruction instruction)

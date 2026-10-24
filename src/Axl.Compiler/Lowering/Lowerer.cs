@@ -176,9 +176,19 @@ public class Lowerer
         switch (value)
         {
             case BoundVariable variable:
-                return _variables[variable.Variable];
+            {
+                Place place = _variables[variable.Variable];
+                if (place.Type is RefTypeSymbol)
+                    place = new Place.Deref(place);
+                return place;
+            }
             case BoundSelf:
-                return _function.ReceiverPlace!;
+            {
+                Place place = _function.ReceiverPlace!;
+                if (place.Type is RefTypeSymbol)
+                    place = new Place.Deref(place);
+                return place;
+            }
             case BoundField field:
                 return new Place.Field(LowerPlace(field.Receiver), field.Field, field.Syntax);
             default:
@@ -192,8 +202,8 @@ public class Lowerer
     {
         BoundBlock boundBlock => LowerBlock(boundBlock),
 
-        BoundVariable boundVariable => new Operand.Copy(_variables[boundVariable.Variable], boundVariable.Syntax),
-        BoundSelf boundSelf => new Operand.Copy(_function.ReceiverPlace!, boundSelf.Syntax),
+        BoundVariable boundVariable => new Operand.Copy(LowerPlace(boundVariable), boundVariable.Syntax),
+        BoundSelf boundSelf => new Operand.Copy(LowerPlace(boundSelf), boundSelf.Syntax),
         BoundConst boundConst => new Operand.Const(boundConst.Value, boundConst.Type, boundConst.Syntax),
         BoundField boundField => new Operand.Copy(LowerPlace(boundField), boundField.Syntax),
 
@@ -242,21 +252,23 @@ public class Lowerer
         foreach (var stmt in block.Stmts)
             LowerStmt(stmt);
 
-        return new Operand.EmptyStructConst(Unit);
+        return new Operand.Empty(Unit);
     }
 
     private Operand LowerAssign(BoundAssign assign)
     {
         LowerInto(assign.Value, LowerPlace(assign.Target));
-        return new Operand.EmptyStructConst(Unit);
+        return new Operand.Empty(Unit);
     }
 
-
-
+    
     private Operand LowerCall(BoundCall call, Place target)
     {
-        var arguments = call.Receiver is not null
-            ? [LowerOperand(call.Receiver), .. call.Arguments.Select(LowerOperand)]
+        var receiver = call.Receiver is not null
+            ? call.Fun.IsMutatingReceiver ? new Operand.Ref(LowerPlace(call.Receiver!)) : LowerOperand(call.Receiver!)
+            : null;
+        var arguments = receiver is not null
+            ? [receiver, .. call.Arguments.Select(LowerOperand)]
             : call.Arguments.Select(LowerOperand).ToImmutableArray();
         
         if (call.Fun.Body is Intrinsic { IsVmCall: true } vmIntrinsic)
@@ -353,7 +365,7 @@ public class Lowerer
     {
         var value = @return.Value is not null
             ? LowerOperand(@return.Value)
-            : new Operand.EmptyStructConst(Unit);
+            : new Operand.Empty(Unit);
 
         Terminate(new Terminator.Return(value, @return.Syntax));
         return Operand.Unreachable.Instance;

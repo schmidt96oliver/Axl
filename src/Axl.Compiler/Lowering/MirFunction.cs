@@ -15,8 +15,6 @@ public sealed class MirFunction
 
     public Place.Local? ReceiverPlace { get; }
 
-    public Place.Local ReturnPlace { get; }
-
     public List<BasicBlock> BasicBlocks { get; } = [];
     
     public BasicBlock Entry => BasicBlocks[0];
@@ -25,8 +23,9 @@ public sealed class MirFunction
     public MirFunction(FunSymbol funSymbol)
     {
         FunSymbol = funSymbol;
-        ReturnPlace = NewLocal(funSymbol.ReturnType);
-        ReceiverPlace = funSymbol.ReceiverType is not null ? NewLocal(funSymbol.ReceiverType) : null;
+        ReceiverPlace = funSymbol.ReceiverType is not null
+            ? NewLocal(funSymbol.IsMutatingReceiver ? new RefTypeSymbol(funSymbol.ReceiverType) : funSymbol.ReceiverType)
+            : null;
         NewBasicBlock();
     }
     

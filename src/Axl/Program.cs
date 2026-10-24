@@ -2,6 +2,7 @@ using System.Collections.Immutable;
 using Axl.Compiler;
 using Axl.Compiler.Diagnostics;
 using Axl.Compiler.Lowering;
+using Axl.Compiler.Symbols;
 using Axl.Compiler.Testing;
 using Axl.Compiler.Text;
 
@@ -13,7 +14,7 @@ switch (args[0])
     case "lsp":
         await Axl.Lsp.Lsp.RunAsync();
         break;
-    
+
     case "run":
     {
         var sourceText = SourceText.LoadFile(testFilePath);
@@ -33,10 +34,9 @@ switch (args[0])
         }
 
         var allDiagnostics =
-            compilation.Diagnostics.
-                Concat(compilation.ReferencedCompilations.SelectMany(c => c.Diagnostics))
+            compilation.Diagnostics.Concat(compilation.ReferencedCompilations.SelectMany(c => c.Diagnostics))
                 .ToImmutableArray();
-        
+
         foreach (var diagnostic in allDiagnostics)
         {
             Console.WriteLine(testFile is not null
@@ -46,19 +46,33 @@ switch (args[0])
         }
 
         var program = new MirProgram(compilation);
-        
-        var mir = program.GetMirFunction(compilation.Scripts[0].Fun);
-        Console.WriteLine(mir.Print());
-        
+
+        foreach (var fun in AllFuns(compilation.Scripts[0]))
+        {
+            Console.WriteLine(program.GetMirFunction(fun).Print());
+            Console.WriteLine();
+        }
+
         if (!allDiagnostics.HasError)
             Miri.Run(program, compilation.Scripts[0].Fun, Console.Out);
-        
+
         // if (!allDiagnostics.HasError)
         //     BoundTreeInterpreter.Run(compilation.Scripts[0].Fun, Console.Out);
         break;
     }
-    
+
     default:
         Console.WriteLine("Invalid command line. Try 'lsp' or 'play'.");
         break;
 }
+
+return;
+
+IEnumerable<FunSymbol> AllFuns(Symbol symbol) =>
+    symbol switch
+    {
+        ScriptSymbol script => [script.Fun, .. script.Members.SelectMany(AllFuns)],
+        NamespaceOrTypeSymbol members => members.Members.SelectMany(AllFuns),
+        FunSymbol fun => [fun],
+        _ => []
+    };
