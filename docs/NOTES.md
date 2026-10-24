@@ -3,7 +3,6 @@
 
 # Now
 
-** separate Terminate and Enter ??
 
 # Questions / Little ones****
 

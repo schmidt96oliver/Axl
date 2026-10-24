@@ -45,8 +45,13 @@ switch (args[0])
                 : diagnostic.GetDisplayString(testDirectory));
         }
 
-        var mir = Lowerer.Lower(compilation.Scripts[0].Fun, compilation);
+        var program = new MirProgram(compilation);
+        
+        var mir = program.GetMirFunction(compilation.Scripts[0].Fun);
         Console.WriteLine(mir.Print());
+        
+        if (!allDiagnostics.HasError)
+            Miri.Run(program, compilation.Scripts[0].Fun, Console.Out);
         
         // if (!allDiagnostics.HasError)
         //     BoundTreeInterpreter.Run(compilation.Scripts[0].Fun, Console.Out);

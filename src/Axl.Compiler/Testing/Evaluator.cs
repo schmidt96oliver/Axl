@@ -1,5 +1,6 @@
 ﻿using System.Diagnostics;
 using Axl.Compiler.Diagnostics;
+using Axl.Compiler.Lowering;
 
 namespace Axl.Compiler.Testing;
 
@@ -174,7 +175,7 @@ public sealed class Evaluator
             return;
         }
         
-        BoundTreeInterpreter.Run(compilation.Scripts[0].Fun, output);
+        Miri.Run(new MirProgram(compilation), compilation.Scripts[0].Fun, output);
         
         var actualOutput = Normalize(output.ToString());
 
