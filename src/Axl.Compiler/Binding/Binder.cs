@@ -389,30 +389,32 @@ public sealed class Binder(Scope scope, BinderSideEffects sideEffects)
         // They can be declared though, since they are not callable anyway.
         if (syntax.IsOperatorName)
             SideEffects.ReportError(new Diagnostic.OperatorOutsideType(syntax.Name));
-        
-        var receiverType = Scope.OwnerAsFun.ReceiverType;
-        var isMutatingReceiver = false;
+
+        var ownerSelf = Scope.OwnerAsFun.SelfParameter;
+        var selfIsMut = false;
 
         if (syntax.MutKw is not null)
         {
             // Mut on local funs is only allowed, if its parent is mut.
-            if (receiverType is null)
+            if (ownerSelf is null)
                 SideEffects.ReportError(new Diagnostic.MutLocalFunInStaticContext(syntax.MutKw));
-            else if (!Scope.OwnerAsFun!.IsMutatingReceiver)
+            else if (!ownerSelf.IsMut)
                 SideEffects.ReportError(new Diagnostic.MutLocalFunInNonMutFun(syntax.MutKw));
             else
-                isMutatingReceiver = true;
+                selfIsMut = true;
         }
 
-        var symbol = new LocalFunSymbol(syntax,
-            owner: Scope.Owner,
-            receiverType,
-            isMutatingReceiver);
+        var symbol = new LocalFunSymbol(syntax, Scope.Owner);
 
         var localFunBinder = EnterFunSignature(symbol);
         
         // Directly bind the signature
-        symbol.SetSignature(localFunBinder.BindParameters(syntax.ParameterList), localFunBinder.BindFunReturnType(syntax.ReturnTypeAnnotation));
+        var selfParameter = ownerSelf is not null
+            ? new ParameterSymbol(Names.Self, owner: symbol, ownerSelf.Type, selfIsMut, isSelf: true)
+            : null;
+        symbol.SetSignature(selfParameter,
+            localFunBinder.BindParameters(syntax.ParameterList), 
+            localFunBinder.BindFunReturnType(syntax.ReturnTypeAnnotation));
         
         SideEffects.AddResolvedSymbol(syntax.Name.Location, symbol);
         return symbol;
@@ -455,8 +457,6 @@ public sealed class Binder(Scope scope, BinderSideEffects sideEffects)
         var funSymbol = new SourceFunSymbol(syntax,
             Scope,
             isPublic,
-            receiverType,
-            isMutatingReceiver,
             intrinsicAnnotation);
 
         SideEffects.AddResolvedSymbol(syntax.Name.Location, funSymbol);
@@ -653,7 +653,7 @@ public sealed class Binder(Scope scope, BinderSideEffects sideEffects)
         if (syntax.IsExpressionBodied || syntax.Expr is not null)
             SideEffects.DiagnosticBag.ReportError(new Diagnostic.IntrinsicFunWithBody(fun, syntax));
         
-        if (fun.ReceiverType is not null && !fun.ReceiverType.IsPrimitive
+        if (fun.SelfParameter is not null && !fun.SelfParameter.Type.IsPrimitive
             || fun.ParameterTypes.Any(p => !p.IsPrimitive)
             || fun.ReturnType != Unit && !fun.ReturnType.IsPrimitive)
         {
@@ -661,7 +661,7 @@ public sealed class Binder(Scope scope, BinderSideEffects sideEffects)
             return new BoundBlock([], [], Unit);
         }
 
-        var receiver = fun.ReceiverType?.PrimitiveKind;
+        var receiver = fun.SelfParameter?.Type.PrimitiveKind;
         var parameters = fun.ParameterTypes.Select(p => p.PrimitiveKind!.Value).ToImmutableArray();
         var returnType = fun.ReturnType == Unit ? null : fun.ReturnType.PrimitiveKind;
 
@@ -706,7 +706,7 @@ public sealed class Binder(Scope scope, BinderSideEffects sideEffects)
             throw new InvalidOperationException($"{nameof(BindParameter)} only valid on funs.");
 
         var type = BindType(syntax.TypeAnnotation, TypeUsage.Signature);
-        var symbol = new ParameterSymbol(syntax.Name.Identifier, Scope.OwnerAsFun!, type, syntax);
+        var symbol = new ParameterSymbol(syntax.Name.Identifier, Scope.OwnerAsFun!, type, isMut: false, isSelf: false, syntax);
         SideEffects.AddResolvedSymbol(syntax.Name.Location, symbol);
         return symbol;
     }
@@ -880,10 +880,10 @@ public sealed class Binder(Scope scope, BinderSideEffects sideEffects)
 
     private BoundNode BindSelf(SelfSyntax syntax)
     {
-        if (Scope.InstanceType is null)
+        if (Scope.OwnerAsFun?.SelfParameter is null)
             return BindError(syntax, new Diagnostic.InvalidSelfRef(syntax));
 
-        return new BoundSelf(Scope.InstanceType, Scope.OwnerAsFun!.IsMutatingReceiver, syntax);
+        return new BoundVariable(Scope.OwnerAsFun.SelfParameter, syntax);
     }
 
     private BoundValue BindNumberLiteral(NumberLiteralSyntax syntax)
@@ -1363,11 +1363,11 @@ public sealed class Binder(Scope scope, BinderSideEffects sideEffects)
         return replaced;
     }
     
-    private BoundSelf? SynthesizeFunGroupReceiver()
+    private BoundValue? SynthesizeFunGroupReceiver()
     {
-        if (Scope.InstanceType is null)
+        if (Scope.OwnerAsFun?.SelfParameter is null)
             return null;
-        return new BoundSelf(Scope.InstanceType, mutable: Scope.OwnerAsFun!.IsMutatingReceiver);
+        return new BoundVariable(Scope.OwnerAsFun.SelfParameter);
     }
 
 
@@ -1409,21 +1409,21 @@ public sealed class Binder(Scope scope, BinderSideEffects sideEffects)
         {
             // Field was bound as a plain name.
             // It can be interpreted as type (if possible) or with an implicit self.
-            if (Scope.InstanceType is null)
+            if (Scope.OwnerAsFun?.SelfParameter?.Type is null)
             {
                 return asTypeRef is null
                     ? BindError(syntax, new Diagnostic.InstanceMemberInStaticContext(field, Scope.Owner, syntax))
                     : asTypeRef;
             }
 
-            if (Scope.InstanceType != field.OwningType)
+            if (Scope.OwnerAsFun.SelfParameter.Type != field.OwningType)
             {
                 return asTypeRef is null
-                    ? BindError(syntax, new Diagnostic.MemberOfEnclosingType(field, Scope.InstanceType, syntax))
+                    ? BindError(syntax, new Diagnostic.MemberOfEnclosingType(field, Scope.OwnerAsFun.SelfParameter.Type, syntax))
                     : asTypeRef;
             }
 
-            receiver = new BoundSelf(Scope.InstanceType, mutable: Scope.OwnerAsFun!.IsMutatingReceiver);    
+            receiver = new BoundVariable(Scope.OwnerAsFun.SelfParameter);    
         }
 
         if (receiver is not BoundValue valueReceiver)
@@ -1584,13 +1584,13 @@ public sealed class Binder(Scope scope, BinderSideEffects sideEffects)
             Debug.Assert(receiver is BoundValue);
             var valueReceiver = (receiver as BoundValue)!;
 
-            if (fun.ReceiverType != valueReceiver.Type)
+            if (fun.SelfParameter?.Type != valueReceiver.Type)
             {
                 SideEffects.ReportError(new Diagnostic.MemberOfEnclosingType(fun, Scope.InstanceType!, funSyntax));
                 return false;
             }
 
-            if (fun.IsMutatingReceiver && !valueReceiver.IsMutablePlace)
+            if (fun.SelfParameter.IsMut && !valueReceiver.IsMutablePlace)
             {
                 SideEffects.ReportError(new Diagnostic.CannotMutateReceiver(valueReceiver, fun, Scope.Owner, funSyntax));
                 return false;
@@ -1639,7 +1639,7 @@ public sealed class Binder(Scope scope, BinderSideEffects sideEffects)
     private BoundNode? BindFunReceiver(FunSymbol fun, BoundNode? receiver)
     {
         // Receiver could still be implicit or ambiguous between value or typeref.
-        if (receiver is BoundSelf { IsImplicit: true } && fun.IsStatic)
+        if (receiver is BoundVariable { IsImplicitSelf: true } && fun.IsStatic)
             receiver = null;
         if (receiver is not null)
             receiver = ReplaceBoundValueOrTypeRef(receiver, fun);

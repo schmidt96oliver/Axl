@@ -3,16 +3,23 @@
 
 # Now
 
+* [ ] Decide deref only by parameter kind, not by RefType (in LowerPlace)
+* [ ] RefTypeSymbol: Extract, add doc, maybe already add Kind { Object, Place }
+* `Test(a, (a = 11));` evaluation order. Others with side-effects?
 * Const value printing string "" and "\n", truncate
-* Fun printing: only non-param locals
+
+* [ ] Split OperatorKind and VmCallKind
+* [ ] Add Return Place (always _0) and remove "return expr".
+
+* [ ] Miri: `Environment` -> `ActivationFrame` with .GetRef that throws if exited
+* [ ] MirProgram.GetSignature(FunSymbol) has parameter ordering and byref parameter. Cached
+* [ ] Miri: Store reference as Root (ActivationFrame, LocalId) + Path (FieldSymbol[]). See Claude, think why?
 
 * Validator 
   * checks type and ref types
   * unreachable
   * terminators
 
-* mut self parameter and parameter -> Local map
-* Central place for calling convention (ref or not)
 * Try to pass big structs by ref
 
 # Questions / Little ones****
@@ -20,6 +27,8 @@
 # Milestones
 
 # Later
+
+* implement `mut` parameter. Mir should already handle it correctly.
 
 # Ideas
 [Ideas](IDEAS.md)

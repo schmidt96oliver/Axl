@@ -77,10 +77,11 @@ public partial record Diagnostic
         public override string Message
             => BoundTarget switch
             {
-                BoundSelf => "Cannot assign to ‘self‘ directly.",
+                BoundVariable { IsSelf: true } => "Cannot assign to ‘self‘ directly.",
                 BoundValue { IsPlace: false }
                     => "Cannot assign to a temporary value.",
-                BoundValue { IsPlace: true, IsMutablePlace: false } value when GetFirstPlace(value) is BoundSelf
+                BoundValue { IsPlace: true, IsMutablePlace: false } value when 
+                    GetFirstPlace(value) is BoundVariable { IsSelf: true }
                     => "Cannot mutate through ‘self‘, because this fun is not ‘mut‘. Consider declaring it ‘mut‘.",
                 BoundValue { IsPlace: true, IsMutablePlace: false }
                     => "Cannot assign to through a ‘let‘ binding.",
@@ -114,7 +115,7 @@ public partial record Diagnostic
             { } when GetFirstPlace(Receiver) is BoundVariable { Variable: { IsReadOnly: true, Name: var varName } }
                 => $"Cannot call mut fun ‘{Fun.QualifiedName}‘ on ‘{varName}‘, because ‘{varName}‘ is declared ‘let‘. Consider declaring it ‘var‘ instead.",
 
-            { } when GetFirstPlace(Receiver) is BoundSelf { IsMutablePlace: false }
+            { } when GetFirstPlace(Receiver) is BoundVariable { IsSelf: true, IsMutablePlace: false }
                 => $"Cannot call mut fun ‘{Fun.QualifiedName}‘ through ‘self‘, because ‘{ContextFunName}‘ is not ‘mut‘. Consider declaring it ‘mut‘ instead.",
 
             _ => $"‘{Fun.QualifiedName}‘ is a mut fun, but ‘{Receiver!.Type.QualifiedName}‘ cannot be mutated here.",
@@ -390,7 +391,7 @@ public partial record Diagnostic
         private static ImmutableArray<SourceLocation> GetDeclNameLocations(Symbol symbol) => symbol switch
         {
             SourceStructSymbol structSymbol => [structSymbol.DeclarationSyntax.Name.Location],
-            SourceFunSymbol sourceFun => [sourceFun.DeclarationSyntax!.Name.Location],
+            SourceFunSymbol sourceFun => [sourceFun.DeclarationSyntax.Name.Location],
             LocalFunSymbol localFun => [localFun.DeclarationSyntax.Name.Location],
             FieldSymbol fieldSymbol => [fieldSymbol.DeclarationSyntax.Name.Location],
             SourceNamespaceSymbol namespaceSymbol =>
@@ -407,7 +408,7 @@ public partial record Diagnostic
 
     public sealed record RecursiveStructLayout(StructSymbol StructSymbol, ImmutableArray<FieldSymbol> FieldPath) : Error
     {
-        public override ImmutableArray<SourceLocation> Locations => [FieldPath[0].DeclarationSyntax!.TypeExpr.Location];
+        public override ImmutableArray<SourceLocation> Locations => [FieldPath[0].DeclarationSyntax.TypeExpr.Location];
         public override string Message => $"Struct ‘{StructSymbol.QualifiedName}‘ has a cycle in its layout. The cycle is through fields {GetCycleString()}";
 
         private string GetCycleString()

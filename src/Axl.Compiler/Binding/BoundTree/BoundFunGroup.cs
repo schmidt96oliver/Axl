@@ -13,12 +13,4 @@ public sealed class BoundFunGroup(ImmutableArray<FunSymbol> candidates, BoundNod
 {
     public ImmutableArray<FunSymbol> Candidates { get; } = candidates;
     public BoundNode? Receiver { get; } = receiver;
-
-    /// <summary>
-    /// Whether <see cref="Receiver"/> can be dropped, if the corresponding
-    /// fun is static.
-    /// </summary>
-    public bool IsReceiverImplicit => Receiver is BoundSelf { IsImplicit: true };
-
-    public string Name => Candidates[0].Name;
 }

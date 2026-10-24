@@ -7,8 +7,9 @@ public static class MirPrinter
 {
     public static string Print(this MirFunction function)
         => $"""
-           --- fun {function.FunSymbol.QualifiedName}({ string.Join(", ", function.Parameters.Select(PrintWithType)) })
-           { string.Join('\n', function.Locals.Select(PrintWithType)) }
+           --- fun {function.FunSymbol.QualifiedName}({ string.Join(", ", function.Parameters.Select(p => function.GetParameterPlace(p).PrintWithType())) })
+           { string.Join('\n', function.Locals.Where(l => !function.Parameters.Select(function.GetParameterPlace).Contains(l))
+               .Select(PrintWithType)) }
            
            { string.Join("\n\n", function.BasicBlocks.Select(Print)) }
            """;

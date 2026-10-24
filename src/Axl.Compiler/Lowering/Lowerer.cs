@@ -25,12 +25,8 @@ public class Lowerer
         _funSymbol = funSymbol;
         
         _function = new MirFunction(funSymbol);
-        foreach (var param in funSymbol.Parameters)
-        {
-            var paramLocal = _function.NewLocal(param.Type, param.DeclarationSyntax);
-            _variables[param] = paramLocal;
-            _function.Parameters.Add(paramLocal);
-        }
+        foreach (var param in _function.Parameters)
+            _variables[param] = _function.GetParameterPlace(param);
         
         _currentBlock = _function.Entry;
     }
@@ -189,13 +185,6 @@ public class Lowerer
                     place = new Place.Deref(place);
                 return place;
             }
-            case BoundSelf:
-            {
-                Place place = _function.ReceiverPlace!;
-                if (place.Type is RefTypeSymbol)
-                    place = new Place.Deref(place);
-                return place;
-            }
             case BoundField field:
                 return new Place.Field(LowerPlace(field.Receiver), field.Field, field.Syntax);
             default:
@@ -210,7 +199,6 @@ public class Lowerer
         BoundBlock boundBlock => LowerBlock(boundBlock),
 
         BoundVariable boundVariable => new Operand.Copy(LowerPlace(boundVariable), boundVariable.Syntax),
-        BoundSelf boundSelf => new Operand.Copy(LowerPlace(boundSelf), boundSelf.Syntax),
         BoundConst boundConst => new Operand.Const(boundConst.Value, boundConst.Type, boundConst.Syntax),
         BoundField boundField => new Operand.Copy(LowerPlace(boundField), boundField.Syntax),
 
@@ -272,21 +260,25 @@ public class Lowerer
     
     private Operand LowerCall(BoundCall call, Place target)
     {
-        var receiver = call.Receiver is not null
-            ? call.Fun.IsMutatingReceiver ? new Operand.Ref(LowerPlace(call.Receiver!)) : LowerOperand(call.Receiver!)
-            : null;
-        var arguments = receiver is not null
-            ? [receiver, .. call.Arguments.Select(LowerOperand)]
-            : call.Arguments.Select(LowerOperand).ToImmutableArray();
+        var receiver = call.Receiver is not null ? LowerArgument(call.Receiver, call.Fun.SelfParameter!) : null;
+        var arguments = call.Arguments.Select((arg, index) => LowerArgument(arg, call.Fun.Parameters[index]));
+        var loweredArguments = receiver is not null
+            ? [receiver, .. arguments]
+            : arguments.ToImmutableArray();
         
         if (call.Fun.Body is Intrinsic { IsVmCall: true } vmIntrinsic)
-            Emit(new Instruction.VmCall(vmIntrinsic, target, arguments, call.Syntax));
+            Emit(new Instruction.VmCall(vmIntrinsic, target, loweredArguments, call.Syntax));
         else if (call.Fun.Body is Intrinsic intrinsic)
-            Emit(new Instruction.Intrinsic(intrinsic, target, arguments, call.Syntax));
+            Emit(new Instruction.Intrinsic(intrinsic, target, loweredArguments, call.Syntax));
         else
-            Emit(new Instruction.Call(call.Fun, target, arguments, call.Syntax));
+            Emit(new Instruction.Call(call.Fun, target, loweredArguments, call.Syntax));
 
         return new Operand.Copy(target);
+    }
+
+    private Operand LowerArgument(BoundValue value, ParameterSymbol parameter)
+    {
+        return MirFunction.IsParameterByRef(parameter) ? new Operand.Ref(LowerPlace(value)) : LowerOperand(value);
     }
 
     private Operand LowerStructInit(BoundStructInit structInit, Place target)

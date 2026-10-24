@@ -58,12 +58,8 @@ public class ScriptSymbol(SyntaxTree syntax, Scope enclosingScope)
                 
                 _binder ??= MakeBinder();
 
-                field = new SyntheticFunSymbol(name: "",
-                    owner: this,
-                    isPublic: false,
-                    receiverType: null,
-                    isMutatingReceiver: false);
-                field.SetSignature([], _binder.Scope.Compilation.BaseLibrary.Unit);
+                field = new SyntheticFunSymbol(name: "", owner: this, isPublic: false);
+                field.SetSignature(selfParameter: null, [], _binder.Scope.Compilation.BaseLibrary.Unit);
                 field.SetBody(_binder.EnterFunSignature(field).BindScriptBody(syntax.FileSyntax));
 
                 _isBindingScriptFun = false;

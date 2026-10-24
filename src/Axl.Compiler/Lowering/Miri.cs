@@ -41,15 +41,11 @@ public sealed class Miri
 
         var environment = new Environment();
 
-        var firstArgument = 0;
-        if (mirFun.ReceiverPlace is not null)
+        for (var paramIndex = 0; paramIndex < mirFun.Parameters.Length; paramIndex++)
         {
-            environment[mirFun.ReceiverPlace.Id] = arguments[firstArgument];
-            firstArgument++;
+            var place = mirFun.GetParameterPlace(mirFun.Parameters[paramIndex]);
+            environment[place.Id] = arguments[paramIndex];
         }
-
-        for (var paramIndex = 0; paramIndex < mirFun.Parameters.Count; paramIndex++)
-            environment[mirFun.Parameters[paramIndex].Id] = arguments[paramIndex + firstArgument];
 
         var block = mirFun.Entry;
         while (true)

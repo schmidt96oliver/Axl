@@ -10,10 +10,8 @@ public sealed class SourceFunSymbol(
     FunDeclSyntax declarationSyntax,
     Scope enclosingScope,
     bool isPublic,
-    TypeSymbol? receiverType,
-    bool isMutatingReceiver,
     BoundAnnotation? intrinsicAnnotation)
-    : FunSymbol(declarationSyntax.Name.Text.ToString(), owner: enclosingScope.Owner, isPublic, receiverType, isMutatingReceiver)
+    : FunSymbol(declarationSyntax.Name.Text.ToString(), owner: enclosingScope.Owner, isPublic)
 {
     public override FunDeclSyntax DeclarationSyntax { get; } = declarationSyntax;
 
@@ -25,6 +23,7 @@ public sealed class SourceFunSymbol(
     private bool _isBindingParameters = false;
     private bool _isBindingReturnType = false;
     private bool _isBindingBody = false;
+    private bool _isSelfParameterBound = false;
 
     /// <inheritdoc />
     public override bool CanBeReferencedByName => true;
@@ -46,6 +45,25 @@ public sealed class SourceFunSymbol(
 
                 if (IsOperator)
                     _signatureBinder.CheckOperatorSignature(this);
+            }
+
+            return field;
+        }
+    }
+
+    /// <inheritdoc />
+    public override ParameterSymbol? SelfParameter
+    {
+        get
+        {
+            if (!_isSelfParameterBound)
+            {
+                var type = DeclarationSyntax.StaticKw is not null ? null : OwningType;
+                var isMut = DeclarationSyntax.MutKw is not null;
+                field = type is not null
+                    ? new ParameterSymbol(Names.Self, owner: this, type, isMut, isSelf: true)
+                    : null;
+                _isSelfParameterBound = true;
             }
 
             return field;

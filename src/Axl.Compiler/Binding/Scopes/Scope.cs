@@ -26,18 +26,9 @@ public closed class Scope
 
     public BindingFlags Flags { get; }
 
-    public TypeSymbol? InstanceType
-    {
-        get
-        {
-            Debug.Assert(OwnerAsFun?.ReceiverType is null ||
-                         OwnerAsFun.ReceiverType == OwnerAsFun.OwningType,
-                "A funs receiver should always be its owning type. Extensions differ, but are not implemented yet.");
-            return OwnerAsFun?.ReceiverType;
-        }
-    }
+    public TypeSymbol? InstanceType => OwnerAsFun?.SelfParameter?.Type;
 
-    public bool IsStatic => OwnerAsFun?.ReceiverType == null;
+    public bool IsStatic => OwnerAsFun?.SelfParameter == null;
 
     public bool IsInsideLoop => (Flags & BindingFlags.InsideLoop) != 0;
 

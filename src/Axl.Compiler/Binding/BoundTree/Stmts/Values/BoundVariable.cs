@@ -28,6 +28,9 @@ public sealed class BoundVariable(VariableSymbol variable, SyntaxNode? syntax = 
     /// <summary>
     /// A variable is assignable, if it came from a 'var' binding.
     /// </summary>
-    public override bool IsAssignable => IsMutablePlace;
+    public override bool IsAssignable => IsMutablePlace && !IsSelf;
 
+    public bool IsSelf => Variable is ParameterSymbol { IsSelf: true };
+
+    public bool IsImplicitSelf => Variable is ParameterSymbol { IsSelf: true } && Syntax is null;
 }
