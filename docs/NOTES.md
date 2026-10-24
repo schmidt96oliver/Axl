@@ -3,6 +3,17 @@
 
 # Now
 
+* Const value printing string "" and "\n", truncate
+* Fun printing: only non-param locals
+
+* Validator 
+  * checks type and ref types
+  * unreachable
+  * terminators
+
+* mut self parameter and parameter -> Local map
+* Central place for calling convention (ref or not)
+* Try to pass big structs by ref
 
 # Questions / Little ones****
 

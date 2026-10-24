@@ -168,14 +168,13 @@ public sealed class Evaluator
         }
 
         var output = new StringWriter();
-        var compilation = _compilation;
-        if (compilation.Scripts.Length != 1)
+        if (_compilation.Scripts.Length != 1)
         {
-            _failedChecks.Add(new FailedCheck(0, $"Test file must have 1 script to execute, got {compilation.Scripts.Length}."));
+            _failedChecks.Add(new FailedCheck(0, $"Test file must have 1 script to execute, got {_compilation.Scripts.Length}."));
             return;
         }
         
-        Miri.Run(new MirProgram(compilation), compilation.Scripts[0].Fun, output);
+        Miri.Run(new MirProgram(_compilation), _compilation.Scripts[0].Fun, output);
         
         var actualOutput = Normalize(output.ToString());
 

@@ -21,6 +21,7 @@ public static class MirPrinter
                 : id.ToString(),
             Place.Field { Receiver: var receiver, FieldSymbol: var field } => $"{receiver.Print()}.{field.Name}",
             Place.Deref { Reference: var reference } => $"(deref {reference.Print()})",
+            Place.Discard => "_",
         };
 
     public static string PrintWithType(this Place place)
@@ -31,6 +32,7 @@ public static class MirPrinter
             Place.Field { Receiver: var receiver, FieldSymbol: var field } =>
                 $"{receiver.Print()}.{field.Name}: {place.Type.QualifiedName}",
             Place.Deref { Reference: var reference } => $"(deref {reference.Print()}): {reference.Type.QualifiedName}",
+            Place.Discard => "_",
         };
     
     public static string Print(this Operand operand)
@@ -39,7 +41,7 @@ public static class MirPrinter
             Operand.Copy { Place: var place } => $"copy {place.Print()}",
             Operand.Ref { Place: var place } => $"ref {place.Print()}",
             Operand.Const { Value: var constValue } => $"const {constValue.Value}",
-            Operand.Unreachable => "never",
+            Operand.Unreachable => "unreachable",
             Operand.Empty => "empty",
         };
 

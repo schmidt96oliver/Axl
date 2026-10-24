@@ -1,5 +1,6 @@
 using System.Collections.Immutable;
 using Axl.Compiler;
+using Axl.Compiler.Binding.BoundTree;
 using Axl.Compiler.Diagnostics;
 using Axl.Compiler.Lowering;
 using Axl.Compiler.Symbols;
@@ -71,8 +72,11 @@ return;
 IEnumerable<FunSymbol> AllFuns(Symbol symbol) =>
     symbol switch
     {
-        ScriptSymbol script => [script.Fun, .. script.Members.SelectMany(AllFuns)],
+        ScriptSymbol script => [script.Fun, .. script.Members.SelectMany(AllFuns), ..AllLocalFuns(script.Fun.Body.Value as BoundBlock)],
         NamespaceOrTypeSymbol members => members.Members.SelectMany(AllFuns),
         FunSymbol fun => [fun],
         _ => []
     };
+    
+    IEnumerable<FunSymbol> AllLocalFuns(BoundBlock? block) =>block is null ? [] :
+        [.. block.LocalFuns, ..block.Stmts.OfType<BoundBlock>().SelectMany(AllLocalFuns)];

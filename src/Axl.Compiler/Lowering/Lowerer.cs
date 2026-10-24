@@ -78,7 +78,7 @@ public class Lowerer
         switch (stmt)
         {
             case BoundValue value:
-                LowerOperand(value);
+                LowerInto(value, Place.Discard.Instance);
                 break;
             
             case BoundIfStmt ifStmt:
@@ -100,6 +100,13 @@ public class Lowerer
 
     private void LowerVarDecl(BoundVarDecl varDecl)
     {
+        if (varDecl.Variable.Type is NeverTypeSymbol)
+        {
+            // Never does not create a variable that is written to.
+            LowerInto(varDecl.Initializer, Place.Discard.Instance);
+            return;
+        }
+        
         if (!_variables.TryGetValue(varDecl.Variable, out var local))
         {
             local = _function.NewLocal(varDecl.Variable.Type, varDecl.Syntax);
@@ -242,7 +249,8 @@ public class Lowerer
         // All others need to be assigned to the target.
         
         var operand = LowerOperand(value);
-        Emit(new Instruction.Assign(target, operand, value.Syntax));
+        if (operand is not Operand.Unreachable && target is not Place.Discard)
+            Emit(new Instruction.Assign(target, operand, value.Syntax));
         return new Operand.Copy(target);
     }
     
@@ -367,7 +375,8 @@ public class Lowerer
             ? LowerOperand(@return.Value)
             : new Operand.Empty(Unit);
 
-        Terminate(new Terminator.Return(value, @return.Syntax));
+        if (value is not Operand.Unreachable)
+            Terminate(new Terminator.Return(value, @return.Syntax));
         return Operand.Unreachable.Instance;
     }
 }

@@ -21,11 +21,18 @@ public static class SymbolPrinter
         };
 
         public string QualifiedName
-            => string.Join(".", symbol.SelfAndOwners()
-                .Where(s => s.CanBeReferencedByName)
-                .Reverse()
-                .Select(s => s.Name));
-        
+        {
+            get
+            {
+                if (symbol is NeverTypeSymbol) return "never";
+                if (symbol is ErrorTypeSymbol) return "???";
+                return string.Join(".", symbol.SelfAndOwners()
+                    .Where(s => s.CanBeReferencedByName)
+                    .Reverse()
+                    .Select(s => s.Name));
+            }
+        }
+
         /// <summary>
         /// A string like <c>fun 'A'</c>.
         /// </summary>

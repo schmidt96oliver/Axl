@@ -21,6 +21,7 @@ public sealed class Miri
     private readonly MirProgram _program;
     private readonly TextWriter _output;
     private readonly object _empty = new StructValue();
+    private object _discard = new();
 
     private Miri(MirProgram program, TextWriter output)
     {
@@ -211,6 +212,9 @@ public sealed class Miri
             case Place.Deref deref:
                 var @ref = (Reference)GetPlaceRef(deref.Reference, environment);
                 return ref GetPlaceRef(@ref.Place, @ref.Environment);
+            
+            case Place.Discard:
+                return ref _discard;
             
             default:
                 throw new UnreachableException();
