@@ -47,3 +47,11 @@ public enum Intrinsic
     
     Print
 }
+
+public static class IntrinsicExtensions
+{
+    extension(Intrinsic intrinsic)
+    {
+        public bool IsVmCall => intrinsic is Intrinsic.Print or Intrinsic.ConcatString;
+    }
+}

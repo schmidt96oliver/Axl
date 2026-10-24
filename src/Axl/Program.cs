@@ -1,6 +1,7 @@
 using System.Collections.Immutable;
 using Axl.Compiler;
 using Axl.Compiler.Diagnostics;
+using Axl.Compiler.Lowering;
 using Axl.Compiler.Testing;
 using Axl.Compiler.Text;
 
@@ -43,9 +44,12 @@ switch (args[0])
                     l => testFile.TryMapToTestFile(l) ?? l)
                 : diagnostic.GetDisplayString(testDirectory));
         }
+
+        var mir = Lowerer.Lower(compilation.Scripts[0].Fun, compilation);
+        Console.WriteLine(mir.Print());
         
-        if (!allDiagnostics.HasError)
-            BoundTreeInterpreter.Run(compilation.Scripts[0].Fun, Console.Out);
+        // if (!allDiagnostics.HasError)
+        //     BoundTreeInterpreter.Run(compilation.Scripts[0].Fun, Console.Out);
         break;
     }
     
