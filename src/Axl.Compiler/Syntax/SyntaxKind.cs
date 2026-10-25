@@ -55,6 +55,7 @@ public enum SyntaxKind
     
     BlockExpr,
     IfExpr,
+    MutExpr,
     
     // Clauses
     Arg,
@@ -71,5 +72,5 @@ public enum SyntaxKind
     Self,
     FunName,
     NamespaceName,
-    Annotation
+    Annotation,
 }

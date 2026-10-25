@@ -1,4 +1,7 @@
-﻿namespace Axl.Compiler.Symbols;
+﻿using System.Collections.Immutable;
+using Axl.Compiler.Binding.BoundTree;
+
+namespace Axl.Compiler.Symbols;
 
 public static class SymbolPrinter
 {
@@ -67,12 +70,24 @@ public static class SymbolPrinter
 
     extension(FunSymbol fun)
     {
-        public string DisplayNameWithParameterTypes => $"{fun.KindName} {fun.QualifiedName}({fun.ParameterTypes.TypeListString})";
+        public string DisplayNameWithParameterTypes => $"{fun.KindName} {fun.QualifiedName}({
+            string.Join(", ", fun.Parameters.Select(get_TypeDisplayString))})";
     }
 
-    extension(IEnumerable<TypeSymbol> types)
+    extension(ParameterSymbol parameter)
+    {
+        public string TypeDisplayString
+            => parameter.IsMut ? $"mut {parameter.Type.QualifiedName}" : parameter.Type.QualifiedName;
+    }
+    extension(BoundArgument argument)
+    {
+        public string TypeDisplayString
+            => argument.IsMut ? $"mut {argument.Type.QualifiedName}" : argument.Type.QualifiedName;
+    }
+
+    extension(ImmutableArray<BoundArgument> args)
     {
         public string TypeListString
-            => string.Join(", ", types.Select(argType => argType.Name));
+            => string.Join(", ", args.Select(get_TypeDisplayString));
     }
 }

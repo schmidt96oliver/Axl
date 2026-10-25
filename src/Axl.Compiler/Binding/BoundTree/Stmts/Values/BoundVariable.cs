@@ -15,20 +15,8 @@ public sealed class BoundVariable(VariableSymbol variable, SyntaxNode? syntax = 
     /// <inheritdoc />
     public Symbol Symbol => Variable;
 
-    /// <summary>
-    /// A variable always refers to a storage location.
-    /// </summary>
-    public override bool IsPlace => true;
-
-    /// <summary>
-    /// A variable is mutable, if it came from a 'var' binding.
-    /// </summary>
-    public override bool IsMutablePlace => !Variable.IsReadOnly;
-
-    /// <summary>
-    /// A variable is assignable, if it came from a 'var' binding.
-    /// </summary>
-    public override bool IsAssignable => IsMutablePlace && !IsSelf;
+    /// <inheritdoc />
+    public override Place? Place => new(Root: this, IsMut: !Variable.IsReadOnly);
 
     public bool IsSelf => Variable is ParameterSymbol { IsSelf: true };
 

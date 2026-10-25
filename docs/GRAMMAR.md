@@ -19,7 +19,7 @@ FunBody          = "=>" Expr ";"
 
 ParamList       = "(" ")"
                 | "(" Param ("," Param)* ")"
-Param           = IdName TypeAnnotation?
+Param           = "mut"? IdName TypeAnnotation?
 
 StructDecl      = Annotation* "pub"? "struct" IdName (StructBody | ";")
 StructBody      = "{" (FieldDecl | FunDecl)* "}"
@@ -50,6 +50,9 @@ Expr        = BlockExpr
             | Call
             | MemberAccess
             | AssignExpr
+            | MutExpr
+
+MutExpr     = "mut" Expr
 
 BlockExpr   = "{" (Stmt | FnDecl)* "}"
 

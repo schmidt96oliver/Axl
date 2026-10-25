@@ -3,6 +3,17 @@
 
 # Now
 
+* [ ] MutOnInvalidValue naming and messages
+
+* [ ] implement call rule
+
+* [ ] test: `mut EXPR` must reject let + fields, non-mut-self + fields
+* [ ] test: `mut EXPR` must accept var + fields, mut-self + fields
+* [ ] test: `mut EXPR` in various position
+* [ ] test: Cannot call mut fun on non-mut parameter (message)
+* [ ] test: mut arguments assign correctly
+* [ ] test: fun signatures differ by mut as well
+
 * [ ] Intrinsic lookup: Remove receiver, only by (receiver, arguments) (static and method the same)
 * [ ] Split OperatorKind and VmCallKind -> Intrinsic = union
 

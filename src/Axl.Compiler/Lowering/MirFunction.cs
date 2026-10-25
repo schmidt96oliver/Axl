@@ -1,5 +1,4 @@
 ﻿using System.Collections.Frozen;
-using System.Collections.Immutable;
 using Axl.Compiler.Symbols;
 using Axl.Compiler.Syntax;
 
@@ -28,10 +27,6 @@ public sealed class MirFunction
         DebugName = debugName;
         NewBasicBlock();
     }
-
-    public Place.Local GetParameterPlace(ParameterSymbol parameter)
-        => ParameterPlaces[parameter];
-    
 
     public BasicBlock NewBasicBlock(string debugLabel = "")
     {

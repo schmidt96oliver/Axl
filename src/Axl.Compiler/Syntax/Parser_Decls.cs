@@ -212,7 +212,7 @@ public partial class Parser
     {
         // Add ':' and type names to the first set, to catch
         // cases like 'fun A( : i32)' gracefully.
-        var itemFirst = TokenSet.Of(TokenKind.Identifier, TokenKind.Colon);
+        var itemFirst = TokenSet.Of(TokenKind.MutKw, TokenKind.Identifier, TokenKind.Colon);
 
         return EnsureDelimitedList(anchor,
             openToken: TokenKind.OpenParen,
@@ -227,6 +227,7 @@ public partial class Parser
         {
             var param = _scanner.Open();
 
+            _scanner.EatIfPresent(TokenKind.MutKw);
             EnsureIdName(expectedSyntax: _scanner.IsAt(itemFirst)
                 ? TokenKind.Identifier
                 : ExpectedSyntax.Param);

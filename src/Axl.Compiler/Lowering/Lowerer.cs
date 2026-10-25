@@ -275,25 +275,34 @@ public class Lowerer
         return new Operand.Copy(target);
     }
 
-    private ImmutableArray<Operand> LowerArguments(ImmutableArray<BoundValue> values,
+    private ImmutableArray<Operand> LowerArguments(ImmutableArray<BoundArgument> boundArguments,
         ImmutableArray<ParameterSymbol> parameters)
     {
-        Debug.Assert(values.Length == parameters.Length);
+        Debug.Assert(boundArguments.Length == parameters.Length);
 
         // If any argument might have a side effect, we need to lower
         // every argument into a temp to respect evaluation order.
         // Without side effects, this is not necessary.
 
-        var mightHaveSideEffect = values.Any(MightHaveSideEffects);
-        var arguments = ImmutableArray.CreateBuilder<Operand>(values.Length);
-        for (var i = 0; i < values.Length; i++)
+        var mightHaveSideEffect = boundArguments.Any(arg => MightHaveSideEffects(arg.Value));
+        var arguments = ImmutableArray.CreateBuilder<Operand>(boundArguments.Length);
+        for (var i = 0; i < boundArguments.Length; i++)
         {
             if (parameters[i].IsMut)
-                arguments.Add(new Operand.Ref(LowerPlace(values[i])));
-            else if (values[i] is BoundConst || !mightHaveSideEffect)
-                arguments.Add(LowerOperand(values[i]));
+            {
+                Debug.Assert(boundArguments[i].IsMut);
+                arguments.Add(new Operand.Ref(LowerPlace(boundArguments[i].Value)));
+            }
+            else if (boundArguments[i].Value is BoundConst || !mightHaveSideEffect)
+            {
+                Debug.Assert(!boundArguments[i].IsMut);
+                arguments.Add(LowerOperand(boundArguments[i].Value));
+            }
             else
-                arguments.Add(LowerInto(values[i], _fun.NewTempLocal(values[i].Type)));
+            {
+                Debug.Assert(!boundArguments[i].IsMut);
+                arguments.Add(LowerInto(boundArguments[i].Value, _fun.NewTempLocal(boundArguments[i].Type)));
+            }
         }
 
         return arguments.MoveToImmutable();

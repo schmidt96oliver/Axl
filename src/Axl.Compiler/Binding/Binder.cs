@@ -562,7 +562,7 @@ public sealed class Binder(Scope scope, BinderSideEffects sideEffects)
         {
             var first = remaining[0];
             var sameSignature = remaining
-                .Where(fun => fun.ParameterTypes.SequenceEqual(first.ParameterTypes))
+                .Where(fun => SignatureEqual(fun, first))
                 .ToImmutableArray();
             if (sameSignature.Length > 1)
             {
@@ -576,6 +576,18 @@ public sealed class Binder(Scope scope, BinderSideEffects sideEffects)
             }
 
             remaining.RemoveAll(sameSignature.Contains);
+        }
+
+        bool SignatureEqual(FunSymbol a, FunSymbol b)
+        {
+            if (a.Parameters.Length != b.Parameters.Length) return false;
+            for (var i = 0; i < a.Parameters.Length; i++)
+            {
+                if (a.Parameters[i].Type != b.Parameters[i].Type || a.Parameters[i].IsMut != b.Parameters[i].IsMut)
+                    return false;
+            }
+
+            return true;
         }
     }
 
@@ -706,7 +718,7 @@ public sealed class Binder(Scope scope, BinderSideEffects sideEffects)
             throw new InvalidOperationException($"{nameof(BindParameter)} only valid on funs.");
 
         var type = BindType(syntax.TypeAnnotation, TypeUsage.Signature);
-        var symbol = new ParameterSymbol(syntax.Name.Identifier, Scope.OwnerAsFun!, type, isMut: false, isSelf: false, syntax);
+        var symbol = new ParameterSymbol(syntax.Name.Identifier, Scope.OwnerAsFun!, type, isMut: syntax.MutKw is not null, isSelf: false, syntax);
         SideEffects.AddResolvedSymbol(syntax.Name.Location, symbol);
         return symbol;
     }
@@ -817,6 +829,7 @@ public sealed class Binder(Scope scope, BinderSideEffects sideEffects)
         IdNameSyntax idNameSyntax => BindIdName(idNameSyntax, lookupOptions),
         SelfSyntax selfSyntax => BindSelf(selfSyntax),
         CallExprSyntax callExprSyntax => BindCall(callExprSyntax),
+        MutExprSyntax mutExprSyntax => BindMutExpr(mutExprSyntax),
         
         // Strings and Literals
         NumberLiteralSyntax numberLiteralSyntax => BindNumberLiteral(numberLiteralSyntax),
@@ -873,6 +886,20 @@ public sealed class Binder(Scope scope, BinderSideEffects sideEffects)
         }
         
         return typeRef.Type;
+    }
+
+    
+    private BoundNode BindMutExpr(MutExprSyntax syntax)
+    {
+        var value = BindValue(syntax.Expr);
+        if (value.Place?.IsMut != true)
+        {
+            if (value is not BoundError)
+                SideEffects.ReportError(new Diagnostic.MutOnInvalidValue(value));
+            return new BoundError(syntax);
+        }
+
+        return new BoundMutValue(value, syntax);
     }
     
     
@@ -1071,7 +1098,7 @@ public sealed class Binder(Scope scope, BinderSideEffects sideEffects)
         if (value.Type is ErrorTypeSymbol)
             return new BoundAssign(target, value, ErrorTypeSymbol.Instance, syntax);
 
-        if (!target.IsPlace || !target.IsAssignable)
+        if (target.Place?.IsMut != true || target is BoundVariable { IsSelf: true })
             return BindError(syntax, new Diagnostic.CannotAssign(target));
 
         TypeSymbol type = CheckType(value, target.Type)
@@ -1293,6 +1320,8 @@ public sealed class Binder(Scope scope, BinderSideEffects sideEffects)
         // A fun group cannot have members
         if (left is BoundFunGroup leftAsFunGroup)
             return BindError(syntax, new Diagnostic.FunHasNoMembers(leftAsFunGroup, syntax.Member));
+        if (left is BoundMutValue leftAsMutValue)
+            return BindError(syntax, new Diagnostic.MutNotAllowedHere(leftAsMutValue));
         
         NamespaceOrTypeSymbol namespaceOrType = left switch
         {
@@ -1304,6 +1333,7 @@ public sealed class Binder(Scope scope, BinderSideEffects sideEffects)
             BoundTypeRef boundTypeRef => boundTypeRef.Type,
             
             BoundFunGroup => throw new UnreachableException("Fun group handled above."),
+            BoundMutValue => throw new UnreachableException("Mut Value group handled above."),
             BoundStmt => throw new UnreachableException("Stmt can never be the left side of member access."),
         };
         if (namespaceOrType is ErrorTypeSymbol)
@@ -1453,7 +1483,7 @@ public sealed class Binder(Scope scope, BinderSideEffects sideEffects)
     /// it has the correct arity and matching argument types.
     /// </summary>
     private FunSymbol? BindSingleFunInGroup(BoundFunGroup funGroup, 
-        ImmutableArray<BoundValue> arguments, 
+        ImmutableArray<BoundArgument> arguments, 
         SyntaxNode argListSyntax)
     {
         var argumentTypes = arguments.Select(arg => arg.Type).ToImmutableArray();
@@ -1463,7 +1493,7 @@ public sealed class Binder(Scope scope, BinderSideEffects sideEffects)
 
         foreach (var fun in funGroup.Candidates)
         {
-            var thisFunViability = CheckFunCandidate(fun, argumentTypes);
+            var thisFunViability = CheckFunCandidate(fun, arguments);
             if (thisFunViability == viability)
                 candidates.Add(fun);
             if (thisFunViability > viability)
@@ -1501,7 +1531,7 @@ public sealed class Binder(Scope scope, BinderSideEffects sideEffects)
             {
                 SideEffects.ReportError(new Diagnostic.NoMatchingOverload(
                     [.. candidates],
-                    argumentTypes,
+                    arguments,
                     argListSyntax));
                 return null;
             }
@@ -1509,7 +1539,8 @@ public sealed class Binder(Scope scope, BinderSideEffects sideEffects)
             var candidate = candidates[0];
             for (var i = 0; i < arguments.Length; i++)
             {
-                if (!IsAssignableTo(arguments[i].Type, candidate.ParameterTypes[i]))
+                if (!IsAssignableTo(arguments[i].Type, candidate.Parameters[i].Type)
+                    || arguments[i].IsMut != candidate.Parameters[i].IsMut)
                 {
                     SideEffects.ReportError(new Diagnostic.ArgumentTypeMismatch(
                         arguments[i],
@@ -1533,15 +1564,18 @@ public sealed class Binder(Scope scope, BinderSideEffects sideEffects)
         return candidates[0];
     }
 
-    private FunViability CheckFunCandidate(FunSymbol fun, ImmutableArray<TypeSymbol> argumentTypes)
+    private FunViability CheckFunCandidate(FunSymbol fun, ImmutableArray<BoundArgument> arguments)
     {
-        if (fun.Parameters.Length != argumentTypes.Length)
+        if (fun.Parameters.Length != arguments.Length)
             return FunViability.ArityMismatch;
 
-        if (!argumentTypes.Zip(fun.ParameterTypes, IsAssignableTo).All(x => x))
+        if (!arguments.Zip(fun.Parameters, CheckArgument).All(x => x))
             return FunViability.ArgumentTypeMismatch;
 
         return FunViability.Viable;
+
+        bool CheckArgument(BoundArgument argument, ParameterSymbol parameter)
+            => IsAssignableTo(argument.Type, parameter.Type) && parameter.IsMut == argument.IsMut;
     }
 
 
@@ -1551,11 +1585,11 @@ public sealed class Binder(Scope scope, BinderSideEffects sideEffects)
     /// </summary>
     private bool CheckCallToSingleFun(FunSymbol fun, 
         BoundNode? receiver,
-        ImmutableArray<BoundValue> arguments, 
+        ImmutableArray<BoundArgument> arguments, 
         SyntaxNode funSyntax)
     {
-        Debug.Assert(fun.ParameterTypes
-            .Zip(arguments.Select(arg => arg.Type), (param, arg) => IsAssignableTo(arg, param))
+        Debug.Assert(fun.Parameters
+            .Zip(arguments, (param, arg) => IsAssignableTo(arg.Type, param.Type) && arg.IsMut == param.IsMut)
             .All(x => x));
         
         // Check StaticMismatch
@@ -1590,7 +1624,7 @@ public sealed class Binder(Scope scope, BinderSideEffects sideEffects)
                 return false;
             }
 
-            if (fun.SelfParameter.IsMut && !valueReceiver.IsMutablePlace)
+            if (fun.SelfParameter.IsMut && valueReceiver.Place?.IsMut != true)
             {
                 SideEffects.ReportError(new Diagnostic.CannotMutateReceiver(valueReceiver, fun, Scope.Owner, funSyntax));
                 return false;
@@ -1610,7 +1644,7 @@ public sealed class Binder(Scope scope, BinderSideEffects sideEffects)
         if (callee is BoundTypeRef typeRef)
             return BindTypeInit(typeRef, syntax);
         
-        var arguments = syntax.ArgumentExprs.Select(BindValue).ToImmutableArray();
+        var arguments = syntax.ArgList.Arguments.Select(BindArgument).ToImmutableArray();
 
         //TODO: Implement named arguments
         if (syntax.ArgList.Arguments.Any(argSyntax => argSyntax.IsNamed))
@@ -1630,10 +1664,25 @@ public sealed class Binder(Scope scope, BinderSideEffects sideEffects)
             return new BoundError(syntax);
 
         var receiver = BindFunReceiver(singleFun, calleeFunGroup.Receiver);
-        
+
+        // Correct receiver mutation behavior is checked by CheckCallToSingleFun.
+        var receiverArgument = receiver is BoundValue receiverValue
+            ? new BoundArgument(receiverValue, isMut: singleFun.SelfParameter?.IsMut == true)
+            : null;
         return CheckCallToSingleFun(singleFun, receiver, arguments, calleeFunGroup.Syntax!)
-            ? new BoundCall(singleFun, receiver as BoundValue, arguments, syntax)
+            ? new BoundCall(singleFun, receiverArgument, arguments, syntax)
             : new BoundError(syntax);
+    }
+
+    private BoundArgument BindArgument(ArgSyntax syntax)
+    {
+        if (syntax.Expr is MutExprSyntax mutExpr)
+        {
+            if (BindMutExpr(mutExpr) is not BoundMutValue boundMutExpr)
+                return new BoundArgument(new BoundError(syntax), isMut: false);
+            return new BoundArgument(boundMutExpr.Inner, isMut: true);
+        }
+        return new BoundArgument(BindValue(syntax.Expr), isMut: false);
     }
 
     private BoundNode? BindFunReceiver(FunSymbol fun, BoundNode? receiver)
@@ -1671,15 +1720,17 @@ public sealed class Binder(Scope scope, BinderSideEffects sideEffects)
 
         // Bind the fun call on a discard binder, so we can report our
         // own error. Note that it cannot attach meaningful information
-        // to the sidetable anyway. Since we discard, syntax nodes don't
-        // matter expect for the final call bind.
+        // to the sidetable anyway.
+        
+        // For binding methods, just use non-mut parameters everywhere.
+        var boundArguments = arguments.Select(a => new BoundArgument(a, isMut: false)).ToImmutableArray();
         var resolutionBinder = WithSideEffects(new BinderSideEffects());
-        var singleFun = resolutionBinder.BindSingleFunInGroup(funGroup, arguments, syntax);
+        var singleFun = resolutionBinder.BindSingleFunInGroup(funGroup, boundArguments, syntax);
         if (singleFun is null)
             return null;
 
-        return resolutionBinder.CheckCallToSingleFun(singleFun, receiver, arguments, syntax)
-            ? new BoundCall(singleFun, receiver, arguments, syntax)
+        return resolutionBinder.CheckCallToSingleFun(singleFun, receiver, boundArguments, syntax)
+            ? new BoundCall(singleFun, new BoundArgument(receiver, isMut: false), boundArguments, syntax)
             : null;
     }
     

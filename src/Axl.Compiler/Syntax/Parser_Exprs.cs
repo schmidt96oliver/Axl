@@ -122,6 +122,13 @@ public partial class Parser
             case TokenKind.OpenParen:
                 return EatGroupExpr(anchor);
 
+            // --- Mut Expr
+            case TokenKind.MutKw:
+                var mutExpr = _scanner.Open();
+                _scanner.EatKnown(TokenKind.MutKw);
+                EnsureExpr(anchor);
+                return _scanner.Close(mutExpr, SyntaxKind.MutExpr);
+            
             // --- Blocks, Control Flow
             case TokenKind.OpenBrace:
                 return EnsureBlock(anchor);
@@ -330,8 +337,12 @@ public partial class Parser
 
         foreach (var _ in _scanner.MustEatEachIteration())
         {
+            // Mut could be either an expression or a fun
+            if (_scanner.IsAt(TokenKind.MutKw) && _scanner.Peek(1).Kind is TokenKind.FunKw)
+                EatMember(blockAnchor, allowedAfterHeader: FirstSet.FunDeclAfterHeader);
+                
             // --- Statement or FunDecl
-            if (_scanner.IsAt(FirstSet.Stmt))
+            else if (_scanner.IsAt(FirstSet.Stmt))
                 EatStmt(blockAnchor);
             else if (_scanner.IsAt(FirstSet.FunDecl))
                 EatMember(blockAnchor, allowedAfterHeader: FirstSet.FunDeclAfterHeader);

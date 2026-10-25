@@ -32,8 +32,8 @@ public static class DivergenceAnalyzer
                     BoundReturn => true,
                     BoundVariable => false,
                     BoundWhile => false,
-                    BoundCall boundCall => boundCall.Receiver?.IsDiverging == true ||
-                                           boundCall.Arguments.Any(get_IsDiverging),
+                    BoundCall boundCall => boundCall.Receiver?.Value.IsDiverging == true ||
+                                           boundCall.Arguments.Select(a => a.Value).Any(get_IsDiverging),
                     BoundLogicAnd boundAnd => boundAnd.Left.IsDiverging,
                     BoundLogicOr boundOr => boundOr.Left.IsDiverging,
                     BoundIfExpr boundIfExpr => boundIfExpr.Condition.IsDiverging ||

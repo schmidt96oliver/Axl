@@ -16,7 +16,7 @@ public partial class Parser
     /// </remarks>
     private static class FirstSet
     {
-        public static readonly TokenSet Expr = TokenSet.Of(
+        public static readonly TokenSet Expr = TokenSet.Of(TokenKind.MutKw,
             TokenKind.TrueKw, TokenKind.FalseKw,
             TokenKind.NumberLiteral,
             TokenKind.Identifier,
