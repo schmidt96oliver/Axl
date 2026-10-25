@@ -260,26 +260,67 @@ public class Lowerer
     
     private Operand LowerCall(BoundCall call, Place target)
     {
-        var receiver = call.Receiver is not null ? LowerArgument(call.Receiver, call.Fun.SelfParameter!) : null;
-        var arguments = call.Arguments.Select((arg, index) => LowerArgument(arg, call.Fun.Parameters[index]));
-        var loweredArguments = receiver is not null
-            ? [receiver, .. arguments]
-            : arguments.ToImmutableArray();
+        var arguments = LowerArguments(call.ReceiverAndArguments, call.Fun.SelfAndParameters);
         
         if (call.Fun.Body is Intrinsic { IsVmCall: true } vmIntrinsic)
-            Emit(new Instruction.VmCall(vmIntrinsic, target, loweredArguments, call.Syntax));
+            Emit(new Instruction.VmCall(vmIntrinsic, target, arguments, call.Syntax));
         else if (call.Fun.Body is Intrinsic intrinsic)
-            Emit(new Instruction.Intrinsic(intrinsic, target, loweredArguments, call.Syntax));
+            Emit(new Instruction.Intrinsic(intrinsic, target, arguments, call.Syntax));
         else
-            Emit(new Instruction.Call(call.Fun, target, loweredArguments, call.Syntax));
+            Emit(new Instruction.Call(call.Fun, target, arguments, call.Syntax));
 
         return new Operand.Copy(target);
     }
 
-    private Operand LowerArgument(BoundValue value, ParameterSymbol parameter)
+    private ImmutableArray<Operand> LowerArguments(ImmutableArray<BoundValue> values,
+        ImmutableArray<ParameterSymbol> parameters)
     {
-        return MirFunction.IsParameterByRef(parameter) ? new Operand.Ref(LowerPlace(value)) : LowerOperand(value);
+        Debug.Assert(values.Length == parameters.Length);
+
+        // If any argument might have a side effect, we need to lower
+        // every argument into a temp to respect evaluation order.
+        // Without side effects, this is not necessary.
+
+        var mightHaveSideEffect = values.Any(MightHaveSideEffects);
+        var arguments = ImmutableArray.CreateBuilder<Operand>(values.Length);
+        for (var i = 0; i < values.Length; i++)
+        {
+            if (parameters[i].IsMut)
+                arguments.Add(new Operand.Ref(LowerPlace(values[i])));
+            else if (values[i] is BoundConst || !mightHaveSideEffect)
+                arguments.Add(LowerOperand(values[i]));
+            else
+                arguments.Add(LowerInto(values[i], _function.NewLocal(values[i].Type)));
+        }
+
+        return arguments.MoveToImmutable();
     }
+
+    private static bool MightHaveSideEffects(BoundValue value) => value switch
+    {
+        BoundAssign => true,
+        BoundBlock => true,
+        BoundBreak => true,
+        BoundCall => true,
+        BoundContinue => true,
+        BoundReturn => true,
+
+        BoundIfExpr => true, // Lowers to temp anyway
+        BoundStructInit => true, // Lowers to temp anyway
+
+        BoundConst => false,
+        BoundVariable => false,
+        BoundError => false,
+        BoundField => false,
+        BoundLogicAnd boundLogicAnd => MightHaveSideEffects(boundLogicAnd.Left) ||
+                                       MightHaveSideEffects(boundLogicAnd.Right),
+        BoundLogicOr boundLogicOr => MightHaveSideEffects(boundLogicOr.Left) ||
+                                     MightHaveSideEffects(boundLogicOr.Right),
+
+        BoundValueOrTypeRef => throw new UnreachableException(),
+        BoundFieldInit => throw new UnreachableException(),
+    };
+
 
     private Operand LowerStructInit(BoundStructInit structInit, Place target)
     {

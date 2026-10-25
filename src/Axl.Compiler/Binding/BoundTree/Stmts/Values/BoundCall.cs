@@ -1,4 +1,5 @@
 ﻿using System.Collections.Immutable;
+using Axl.Compiler.Diagnostics;
 using Axl.Compiler.Symbols;
 using Axl.Compiler.Syntax;
 
@@ -14,4 +15,8 @@ public sealed class BoundCall(
     public FunSymbol Fun { get; } = fun;
     public BoundValue? Receiver { get; } = receiver;
     public ImmutableArray<BoundValue> Arguments { get; } = arguments;
+
+    public ImmutableArray<BoundValue> ReceiverAndArguments => Receiver is not null
+        ? [Receiver, .. Arguments]
+        : Arguments;
 }

@@ -3,12 +3,15 @@
 
 # Now
 
+* [x] `Test(a, (a = 11));` evaluation order. Others with side-effects?
+
+* [ ] `Place.Local` kind and return local
 * [ ] Decide deref only by parameter kind, not by RefType (in LowerPlace)
 * [ ] RefTypeSymbol: Extract, add doc, maybe already add Kind { Object, Place }
-* `Test(a, (a = 11));` evaluation order. Others with side-effects?
-* Const value printing string "" and "\n", truncate
+* [ ] Const value printing string "" and "\n", truncate
+* [ ] Intrinsic lookup: Remove receiver, only by (receiver, arguments) (static and method the same)
 
-* [ ] Split OperatorKind and VmCallKind
+* [ ] Split OperatorKind and VmCallKind -> Intrinsic = union
 * [ ] Add Return Place (always _0) and remove "return expr".
 
 * [ ] Miri: `Environment` -> `ActivationFrame` with .GetRef that throws if exited

@@ -1,0 +1,8 @@
+﻿//@run
+//= 1
+
+var a = 1;
+Test(a, (a = 2));
+
+fun Test(a: I32, b: Unit)
+    = Print(a);

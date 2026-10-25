@@ -19,9 +19,21 @@ public closed class FunSymbol(string name, Symbol? owner, bool isPublic) : Symbo
     public abstract FunDeclSyntax? DeclarationSyntax { get; }
 
 
+    /// <summary>
+    /// Declared parameters. Excluding <see cref="SelfParameter"/>.
+    /// </summary>
     public abstract ImmutableArray<ParameterSymbol> Parameters { get; }
     
+    /// <summary>
+    /// Parameter that takes the receiver in methods.
+    /// </summary>
     public abstract ParameterSymbol? SelfParameter { get; }
+
+    /// <summary>
+    /// Self parameter if it exists followed by declared parameters.
+    /// </summary>
+    public ImmutableArray<ParameterSymbol> SelfAndParameters =>
+        SelfParameter is not null ? [SelfParameter, .. Parameters] : Parameters;
     
     
     public ImmutableArray<TypeSymbol> ParameterTypes => [.. Parameters.Select(parameter => parameter.Type)];
