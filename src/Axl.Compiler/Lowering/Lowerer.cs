@@ -9,34 +9,31 @@ namespace Axl.Compiler.Lowering;
 public class Lowerer
 {
     private readonly Compilation _compilation;
-    private readonly FunSymbol _funSymbol;
-    private readonly MirFunction _function;
+    private readonly MirFunction _fun;
     private BasicBlock? _currentBlock;
-    private Dictionary<VariableSymbol, Place.Local> _variables = [];
+    private readonly Dictionary<VariableSymbol, Place.Local> _variables = [];
 
-    private Stack<(BasicBlock Break, BasicBlock Continue)> _loopLabels = [];
+    private readonly Stack<(BasicBlock Break, BasicBlock Continue)> _loopLabels = [];
 
     private TypeSymbol Unit => _compilation.BaseLibrary.Unit;
     private TypeSymbol Bool => _compilation.BaseLibrary.Bool;
     
-    private Lowerer(Compilation compilation, FunSymbol funSymbol)
+    private Lowerer(Compilation compilation, MirFunction mirFun)
     {
         _compilation = compilation;
-        _funSymbol = funSymbol;
-        
-        _function = new MirFunction(funSymbol);
-        foreach (var param in _function.Parameters)
-            _variables[param] = _function.GetParameterPlace(param);
-        
-        _currentBlock = _function.Entry;
+        _fun = mirFun;
+        _currentBlock = _fun.Entry;
     }
 
     public static MirFunction Lower(FunSymbol fun, Compilation compilation)
     {
         if (fun.Body is not BoundBlock body)
             throw new ArgumentException("Cannot lower funs without blocks.", nameof(fun));
+
+        var mirFun = new MirFunction(fun.QualifiedName);
         
-        var lowerer = new Lowerer(compilation, fun);
+        var lowerer = new Lowerer(compilation, mirFun);
+        lowerer.MakeSignature(fun);
         lowerer.LowerStmt(body);
         
         if (lowerer._currentBlock is not null &&
@@ -45,19 +42,36 @@ public class Lowerer
             lowerer.Terminate(new Terminator.Unreachable());
         }
 
-        return lowerer._function;
+        return lowerer._fun;
     }
+
+    private void MakeSignature(FunSymbol fun)
+    {
+        _fun.ReturnPlace = _fun.NewLocal(fun.ReturnType, LocalKind.Return);
+        _fun.ParameterPlaces = Enumerable
+            .ToDictionary(fun.SelfAndParameters, param => param, MakeParameter)
+            .ToFrozenDictionary();
+        foreach (var paramAndPlace in _fun.ParameterPlaces)
+            _variables[paramAndPlace.Key] = paramAndPlace.Value;
+    }
+
+    private Place.Local MakeParameter(ParameterSymbol parameter)
+        => _fun.NewLocal(parameter.IsMut
+                ? new RefTypeSymbol(parameter.Type)
+                : parameter.Type,
+            LocalKind.Parameter,
+            parameter.DeclarationSyntax);
 
 
     private void Emit(Instruction instruction)
     {
-        _currentBlock ??= _function.NewBasicBlock();
+        _currentBlock ??= _fun.NewBasicBlock();
         _currentBlock.Instructions.Add(instruction);
     }
 
     private void Terminate(Terminator terminator)
     {
-        _currentBlock ??= _function.NewBasicBlock();
+        _currentBlock ??= _fun.NewBasicBlock();
         _currentBlock.Terminator = terminator;
         _currentBlock = null;
     }
@@ -105,7 +119,7 @@ public class Lowerer
         
         if (!_variables.TryGetValue(varDecl.Variable, out var local))
         {
-            local = _function.NewLocal(varDecl.Variable.Type, varDecl.Syntax);
+            local = _fun.NewLocal(varDecl.Variable.Type, LocalKind.Variable, varDecl.Syntax);
             _variables[varDecl.Variable] = local;
         }
         
@@ -114,9 +128,9 @@ public class Lowerer
     
     private void LowerWhile(BoundWhile @while)
     {
-        var conditionBlock = _function.NewBasicBlock("while condition");
-        var blockBlock = _function.NewBasicBlock("while body");
-        var joinBlock = _function.NewBasicBlock("while join");
+        var conditionBlock = _fun.NewBasicBlock("while condition");
+        var blockBlock = _fun.NewBasicBlock("while body");
+        var joinBlock = _fun.NewBasicBlock("while join");
         
         Terminate(new Terminator.Goto(conditionBlock));
         
@@ -135,22 +149,9 @@ public class Lowerer
 
     private void LowerIfStmt(BoundIfStmt ifStmt)
     {
-        // if (condition) A else B
-
-        //    _0 = condition
-        //    branch _0 true false
-        // true: 
-        //    _target = A
-        //    goto join
-        // false:
-        //    _target = B
-        //    goto join
-        // join:
-        //    ...
-
-        var trueBlock = _function.NewBasicBlock("if true");
-        var joinBlock = _function.NewBasicBlock("if join");
-        var falseBlock = ifStmt.Else is not null ? _function.NewBasicBlock("if false") : joinBlock;
+        var trueBlock = _fun.NewBasicBlock("if true");
+        var joinBlock = _fun.NewBasicBlock("if join");
+        var falseBlock = ifStmt.Else is not null ? _fun.NewBasicBlock("if false") : joinBlock;
 
         Terminate(new Terminator.Branch(
                 LowerOperand(ifStmt.Condition), 
@@ -188,7 +189,7 @@ public class Lowerer
             case BoundField field:
                 return new Place.Field(LowerPlace(field.Receiver), field.Field, field.Syntax);
             default:
-                var temp = _function.NewLocal(value.Type);
+                var temp = _fun.NewTempLocal(value.Type);
                 LowerInto(value, temp);
                 return temp;
         }
@@ -202,18 +203,18 @@ public class Lowerer
         BoundConst boundConst => new Operand.Const(boundConst.Value, boundConst.Type, boundConst.Syntax),
         BoundField boundField => new Operand.Copy(LowerPlace(boundField), boundField.Syntax),
 
-        BoundIfExpr boundIfExpr => LowerIfExpr(boundIfExpr, _function.NewLocal(boundIfExpr.Type)),
+        BoundIfExpr boundIfExpr => LowerIfExpr(boundIfExpr, _fun.NewTempLocal(boundIfExpr.Type)),
 
-        BoundLogicAnd boundLogicAnd => LowerLogicOperator(boundLogicAnd, _function.NewLocal(boundLogicAnd.Type)),
-        BoundLogicOr boundLogicOr => LowerLogicOperator(boundLogicOr, _function.NewLocal(boundLogicOr.Type)),
+        BoundLogicAnd boundLogicAnd => LowerLogicOperator(boundLogicAnd, _fun.NewTempLocal(boundLogicAnd.Type)),
+        BoundLogicOr boundLogicOr => LowerLogicOperator(boundLogicOr, _fun.NewTempLocal(boundLogicOr.Type)),
         BoundAssign boundAssign => LowerAssign(boundAssign),
 
         BoundBreak => LowerBreak(),
         BoundReturn boundReturn => LowerReturn(boundReturn),
         BoundContinue => LowerContinue(),
 
-        BoundCall boundCall => LowerCall(boundCall, _function.NewLocal(boundCall.Type)),
-        BoundStructInit boundStructInit => LowerStructInit(boundStructInit, _function.NewLocal(boundStructInit.Type)),
+        BoundCall boundCall => LowerCall(boundCall, _fun.NewTempLocal(boundCall.Type)),
+        BoundStructInit boundStructInit => LowerStructInit(boundStructInit, _fun.NewTempLocal(boundStructInit.Type)),
 
         BoundError or BoundFieldInit or BoundValueOrTypeRef => throw new UnreachableException(),
     };
@@ -290,7 +291,7 @@ public class Lowerer
             else if (values[i] is BoundConst || !mightHaveSideEffect)
                 arguments.Add(LowerOperand(values[i]));
             else
-                arguments.Add(LowerInto(values[i], _function.NewLocal(values[i].Type)));
+                arguments.Add(LowerInto(values[i], _fun.NewTempLocal(values[i].Type)));
         }
 
         return arguments.MoveToImmutable();
@@ -334,9 +335,9 @@ public class Lowerer
     
     private Operand LowerIfExpr(BoundIfExpr ifExpr, Place target)
     {
-        var trueBlock = _function.NewBasicBlock("if true");
-        var falseBlock = _function.NewBasicBlock("if false");
-        var joinBlock = _function.NewBasicBlock("if join");
+        var trueBlock = _fun.NewBasicBlock("if true");
+        var falseBlock = _fun.NewBasicBlock("if false");
+        var joinBlock = _fun.NewBasicBlock("if join");
         
         Terminate(new Terminator.Branch(LowerOperand(ifExpr.Condition), 
                 trueBlock, 
@@ -364,11 +365,11 @@ public class Lowerer
             _ => throw new ArgumentException($"{nameof(logic)} is not a logic operator.", nameof(logic))
         };
 
-        var assignLeftBlock = _function.NewBasicBlock();
-        var assignRightBlock = _function.NewBasicBlock();
-        var joinBlock = _function.NewBasicBlock();
+        var assignLeftBlock = _fun.NewBasicBlock();
+        var assignRightBlock = _fun.NewBasicBlock();
+        var joinBlock = _fun.NewBasicBlock();
 
-        var left = LowerInto(boundLeft, _function.NewLocal(boundLeft.Type));
+        var left = LowerInto(boundLeft, _fun.NewTempLocal(boundLeft.Type));
         Terminate(new Terminator.Branch(
                 left, 
                 True: logic is BoundLogicAnd ? assignRightBlock : assignLeftBlock, 
@@ -404,12 +405,12 @@ public class Lowerer
 
     private Operand LowerReturn(BoundReturn @return)
     {
-        var value = @return.Value is not null
-            ? LowerOperand(@return.Value)
-            : new Operand.Empty(Unit);
+        if (@return.Value is not null) 
+            LowerInto(@return.Value, _fun.ReturnPlace);
+        else
+            Emit(new Instruction.Assign(_fun.ReturnPlace, new Operand.Empty(Unit)));
 
-        if (value is not Operand.Unreachable)
-            Terminate(new Terminator.Return(value, @return.Syntax));
+        Terminate(new Terminator.Return(@return.Syntax));
         return Operand.Unreachable.Instance;
     }
 }

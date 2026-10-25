@@ -10,41 +10,27 @@ public sealed class MirFunction
     private int _nextLocal = 0;
     private int _nextBasicBlock = 0;
 
-    private readonly FrozenDictionary<ParameterSymbol, Place.Local> _parameterPlaces;
-    
-    public FunSymbol FunSymbol { get; }
-    
-    public List<Place.Local> Locals { get; } = [];
+    public FrozenDictionary<ParameterSymbol, Place.Local> ParameterPlaces { get; set; }
 
-    public ImmutableArray<ParameterSymbol> Parameters { get; }
+    public Place.Local ReturnPlace { get; set; }
+
+    public string DebugName { get; }
+
+    public List<Place.Local> Locals { get; } = [];
 
     public List<BasicBlock> BasicBlocks { get; } = [];
     
     public BasicBlock Entry => BasicBlocks[0];
 
 
-    public MirFunction(FunSymbol funSymbol)
+    public MirFunction(string debugName)
     {
-        FunSymbol = funSymbol;
-
-        Parameters = FunSymbol.SelfParameter is not null
-            ? [FunSymbol.SelfParameter, .. FunSymbol.Parameters]
-            : FunSymbol.Parameters;
-
-        _parameterPlaces = Enumerable.ToDictionary(Parameters,
-                param => param, param => NewLocal(IsParameterByRef(param)
-                    ? new RefTypeSymbol(param.Type)
-                    : param.Type, param.DeclarationSyntax))
-            .ToFrozenDictionary();
-        
+        DebugName = debugName;
         NewBasicBlock();
     }
 
     public Place.Local GetParameterPlace(ParameterSymbol parameter)
-        => _parameterPlaces[parameter];
-
-    public static bool IsParameterByRef(ParameterSymbol parameter)
-        => parameter.IsMut;
+        => ParameterPlaces[parameter];
     
 
     public BasicBlock NewBasicBlock(string debugLabel = "")
@@ -56,12 +42,15 @@ public sealed class MirFunction
         return block;
     }
 
-    public Place.Local NewLocal(TypeSymbol type, SyntaxNode? syntax = null)
+    public Place.Local NewLocal(TypeSymbol type, LocalKind kind, SyntaxNode? syntax = null)
     {
         var id = new LocalId(_nextLocal);
         _nextLocal++;
-        var local = new Place.Local(id, type, syntax);
+        var local = new Place.Local(id, kind, type, syntax);
         Locals.Add(local);
         return local;
     }
+    
+    public Place.Local NewTempLocal(TypeSymbol type)
+        => NewLocal(type, LocalKind.Temp);
 }

@@ -3,9 +3,6 @@
 
 # Now
 
-* [x] `Test(a, (a = 11));` evaluation order. Others with side-effects?
-
-* [ ] `Place.Local` kind and return local
 * [ ] Decide deref only by parameter kind, not by RefType (in LowerPlace)
 * [ ] RefTypeSymbol: Extract, add doc, maybe already add Kind { Object, Place }
 * [ ] Const value printing string "" and "\n", truncate

@@ -40,11 +40,10 @@ public sealed class Miri
         var mirFun = _program.GetMirFunction(fun);
 
         var environment = new Environment();
-
-        for (var paramIndex = 0; paramIndex < mirFun.Parameters.Length; paramIndex++)
+        for (var i = 0; i < fun.SelfAndParameters.Length; i++)
         {
-            var place = mirFun.GetParameterPlace(mirFun.Parameters[paramIndex]);
-            environment[place.Id] = arguments[paramIndex];
+            var place = mirFun.ParameterPlaces[fun.SelfAndParameters[i]];
+            environment[place.Id] = arguments[i];
         }
 
         var block = mirFun.Entry;
@@ -64,9 +63,8 @@ public sealed class Miri
                     block = (bool)condition ? branch.True : branch.False;
                     break;
 
-                case Terminator.Return @return:
-                    var value = Evaluate(@return.Value, environment);
-                    return value;
+                case Terminator.Return:
+                    return GetPlaceRef(mirFun.ReturnPlace, environment);
 
                 default:
                     throw new UnreachableException();

@@ -11,9 +11,17 @@ public readonly record struct LocalId(int Value)
         => $"_{Value}";
 }
 
+public enum LocalKind
+{
+    Return,
+    Parameter,
+    Variable,
+    Temp
+}
+
 public closed record Place(TypeSymbol Type, SyntaxNode? Syntax)
 {
-    public sealed record Local(LocalId Id, TypeSymbol Type, SyntaxNode? Syntax) : Place(Type, Syntax);
+    public sealed record Local(LocalId Id, LocalKind Kind, TypeSymbol Type, SyntaxNode? Syntax) : Place(Type, Syntax);
 
     public sealed record Field(Place Receiver, FieldSymbol FieldSymbol, SyntaxNode? Syntax) : Place(FieldSymbol.Type, Syntax);
 

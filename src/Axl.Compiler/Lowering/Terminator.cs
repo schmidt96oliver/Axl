@@ -10,7 +10,7 @@ public closed record Terminator(SyntaxNode? Syntax)
     public sealed record Branch(Operand Condition, BasicBlock True, BasicBlock False, SyntaxNode? Syntax = null)
         : Terminator(Syntax);
     
-    public sealed record Return(Operand Value, SyntaxNode? Syntax)
+    public sealed record Return(SyntaxNode? Syntax = null)
         : Terminator(Syntax);
     
     public sealed record Unreachable(SyntaxNode? Syntax = null)

@@ -7,8 +7,8 @@ public static class MirPrinter
 {
     public static string Print(this MirFunction function)
         => $"""
-           --- fun {function.FunSymbol.QualifiedName}({ string.Join(", ", function.Parameters.Select(p => function.GetParameterPlace(p).PrintWithType())) })
-           { string.Join('\n', function.Locals.Where(l => !function.Parameters.Select(function.GetParameterPlace).Contains(l))
+           --- fun {function.DebugName}({ string.Join(", ", function.Locals.Where(l => l.Kind is LocalKind.Parameter).Select(PrintWithType)) })
+           { string.Join('\n', function.Locals.Where(l => l.Kind is not LocalKind.Parameter)
                .Select(PrintWithType)) }
            
            { string.Join("\n\n", function.BasicBlocks.Select(Print)) }
@@ -17,9 +17,13 @@ public static class MirPrinter
     public static string Print(this Place place)
         => place switch
         {
-            Place.Local { Id: var id } => place.Syntax is VarDeclSyntax syntax
-                ? $"{id}[{syntax.Name.Text}]"
-                : id.ToString(),
+            Place.Local { Id: var id, Kind: var kind } => kind switch
+            {
+                LocalKind.Return => $"{id}[ret]",
+                LocalKind.Parameter => $"{id}[{(place.Syntax as ParamSyntax)?.Name.Text.ToString() ?? ""}]",
+                LocalKind.Variable => $"{id}[{(place.Syntax as VarDeclSyntax)?.Name.Text.ToString() ?? ""}]",
+                _ => $"{id}",
+            },
             Place.Field { Receiver: var receiver, FieldSymbol: var field } => $"{receiver.Print()}.{field.Name}",
             Place.Deref { Reference: var reference } => $"(deref {reference.Print()})",
             Place.Discard => "_",
@@ -65,7 +69,7 @@ public static class MirPrinter
         {
             Terminator.Branch branch => $"branch {branch.Condition.Print()} - True: {branch.True.Id} False: {branch.False.Id}",
             Terminator.Goto @goto => $"goto {@goto.Block.Id}",
-            Terminator.Return @return => $"return {@return.Value.Print()}",
+            Terminator.Return => "return",
             Terminator.Unreachable => "unreachable",
         };
 
