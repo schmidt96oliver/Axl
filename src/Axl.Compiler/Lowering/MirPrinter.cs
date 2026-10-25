@@ -45,10 +45,22 @@ public static class MirPrinter
         {
             Operand.Copy { Place: var place } => $"copy {place.Print()}",
             Operand.Ref { Place: var place } => $"ref {place.Print()}",
-            Operand.Const { Value: var constValue } => $"const {constValue.Value}",
+            Operand.Const { Value: var constValue } => constValue switch
+                {
+                    string s => $"const { PrintConstString(s) }",
+                    _ => $"const {constValue.Value}",
+                },
+                
             Operand.Unreachable => "unreachable",
             Operand.Empty => "empty",
         };
+
+    private static string PrintConstString(string str)
+    {
+        str = str.Replace("\n", "\\n").Replace("\r", "\\r");
+        return str.Length < 10 ? $"\"{str}\"" : $"\"{str[..10]}\"..";
+    }
+
 
     public static string Print(this Instruction instruction)
         => instruction switch

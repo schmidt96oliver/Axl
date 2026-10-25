@@ -182,6 +182,8 @@ public class Lowerer
             case BoundVariable variable:
             {
                 Place place = _variables[variable.Variable];
+                
+                // Anything that came in as a ref needs to be dereferenced.
                 if (place.Type is RefTypeSymbol)
                     place = new Place.Deref(place);
                 return place;

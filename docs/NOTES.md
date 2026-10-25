@@ -3,16 +3,10 @@
 
 # Now
 
-* [ ] Decide deref only by parameter kind, not by RefType (in LowerPlace)
-* [ ] RefTypeSymbol: Extract, add doc, maybe already add Kind { Object, Place }
-* [ ] Const value printing string "" and "\n", truncate
 * [ ] Intrinsic lookup: Remove receiver, only by (receiver, arguments) (static and method the same)
-
 * [ ] Split OperatorKind and VmCallKind -> Intrinsic = union
-* [ ] Add Return Place (always _0) and remove "return expr".
 
 * [ ] Miri: `Environment` -> `ActivationFrame` with .GetRef that throws if exited
-* [ ] MirProgram.GetSignature(FunSymbol) has parameter ordering and byref parameter. Cached
 * [ ] Miri: Store reference as Root (ActivationFrame, LocalId) + Path (FieldSymbol[]). See Claude, think why?
 
 * Validator 

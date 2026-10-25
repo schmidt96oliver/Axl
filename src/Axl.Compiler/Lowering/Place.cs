@@ -1,5 +1,4 @@
-﻿using System.Collections.Immutable;
-using Axl.Compiler.Symbols;
+﻿using Axl.Compiler.Symbols;
 using Axl.Compiler.Syntax;
 
 namespace Axl.Compiler.Lowering;
@@ -32,15 +31,4 @@ public closed record Place(TypeSymbol Type, SyntaxNode? Syntax)
     {
         public static readonly Discard Instance = new();
     }
-}
-
-public sealed class RefTypeSymbol(TypeSymbol inner) : TypeSymbol($"ref {inner.Name}", null, false)
-{
-    public TypeSymbol Inner { get; } = inner;
-
-    /// <inheritdoc />
-    public override bool CanBeReferencedByName => false;
-
-    /// <inheritdoc />
-    public override ImmutableArray<Symbol> Members => [];
 }
