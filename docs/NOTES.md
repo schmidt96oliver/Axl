@@ -3,9 +3,15 @@
 
 # Now
 
-* [ ] MutOnInvalidValue naming and messages
+* [ ] `ArgumentMutMismatch`
+* [ ] implement exclusivity check in 'CheckCallToSingleFun'
+* [ ] implement mut return values
+  * [ ] Proper `BindReturnValue` that handles MutExpr and rejects for non-mut return -> BindExprBody, BindReturn
 
-* [ ] implement call rule
+* [ ] check CannotAssign diagnostic message
+* [ ] check CannotMutateReceiver diagnostic message
+* [ ] check CannotPassAsMut diagnostic message
+* [ ] check CannotReturnAsMut diagnostic message
 
 * [ ] test: `mut EXPR` must reject let + fields, non-mut-self + fields
 * [ ] test: `mut EXPR` must accept var + fields, mut-self + fields
@@ -32,8 +38,6 @@
 # Milestones
 
 # Later
-
-* implement `mut` parameter. Mir should already handle it correctly.
 
 # Ideas
 [Ideas](IDEAS.md)

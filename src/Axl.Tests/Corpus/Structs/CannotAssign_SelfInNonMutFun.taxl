@@ -1,0 +1,9 @@
+﻿//@check
+
+struct Test 
+{
+    pub fun TryReassign()
+    {
+        self = Test();      //~error CannotAssign
+    }
+}

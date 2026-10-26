@@ -1,0 +1,18 @@
+﻿//@run
+//= 10
+
+// Self can be reassigned
+
+var t = Test(X = 0);
+t.Reassign();
+Print(t.X);
+
+struct Test 
+{
+    pub X: I32;
+    
+    pub mut fun Reassign()
+    {
+        self = Test(X = 10);
+    }
+}

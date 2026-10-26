@@ -13,9 +13,8 @@ public sealed class BoundField(BoundValue receiver, FieldSymbol field, SyntaxNod
     public Symbol Symbol => Field;
 
     /// <inheritdoc />
-    public override Place? Place => Receiver.Place is { } receiverPlace
-        ? new Place(receiverPlace.Root, receiverPlace.IsMut)
-        : null;
-
-    
+    public override PlaceKind PlaceKind => Receiver.PlaceKind;
+        // At(1).X = 10;
+    /// <inheritdoc />
+    public override BoundValue? PlaceRoot => Receiver.PlaceRoot;
 }

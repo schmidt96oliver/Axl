@@ -74,50 +74,66 @@ public partial record Diagnostic
         public override ImmutableArray<SourceLocation> Locations
             => [BoundTarget.Syntax!.Location];
 
-        public override string Message
-            => BoundTarget switch
+        public override string Message =>
+            $"Cannot assign to '{BoundTarget.Syntax?.Text.ToString() ?? ""}', because {GetReasonText(BoundTarget)}.";
+
+        internal static string GetReasonText(BoundNode node) =>
+            node switch
             {
-                BoundVariable { IsSelf: true } => "Cannot assign to ‘self‘ directly.",
-                BoundValue { Place: null }
-                    => "Cannot assign to a temporary value.",
-                BoundValue { Place.Root: BoundVariable { IsSelf: true } }
-                    => "Cannot mutate through ‘self‘, because this fun is not ‘mut‘. Consider declaring it ‘mut‘.",
-                BoundValue { Place: not null }
-                    => "Cannot assign to through a ‘let‘ binding.",
+                BoundValue value => value.PlaceKind switch
+                {
+                    PlaceKind.Value => "it is a temporary value",
+                    PlaceKind.ReadOnlyPlace => value.PlaceRoot switch
+                    {
+                        BoundVariable { Variable: ParameterSymbol { IsSelf: true } } =>
+                            "'self' is read-only in a non-mut fun",
+                        BoundVariable { Variable: ParameterSymbol p } => $"parameter '{p.Name}' is not 'mut'",
+                        BoundVariable { Variable: var v } => $"'{v.Name}' is declared with 'let'",
+                        _ => "it is read-only",
+                    },
+                    _ => "it is not mutable",
 
-                BoundFunGroup boundFunGroup =>
-                    $"Cannot assign to ‘{boundFunGroup.Candidates[0].QualifiedName}‘, because it is a group of overloaded funs.",
-                BoundNamespaceRef boundNamespace =>
-                    $"Cannot assign to ‘{boundNamespace.Namespace.QualifiedName}‘, because it is a namespace.",
-                BoundTypeRef boundType => $"Cannot assign to ‘{boundType.Type.QualifiedName}‘, because it is a type.",
-
-                BoundMutValue => "Cannot assign to mut values.",
-                BoundStmt => throw new UnreachableException(
-                    "Non-value stmts can never be in assignment target position.")
+                },
+                BoundFunGroup => "it is a group of overloaded funs",
+                BoundNamespaceRef => "it is a namespace",
+                BoundTypeRef => "it is a type",
+                BoundStmt => "it is a statement",
             };
+    }
+
+    public sealed record CannotPassAsMut(BoundNode Node) : Error
+    {
+        public override ImmutableArray<SourceLocation> Locations
+            => [Node.Syntax!.Location];
+
+        public override string Message =>
+            $"Cannot pass '{Node.Syntax?.Text.ToString() ?? ""}' as 'mut', because { CannotAssign.GetReasonText(Node) }.";
+    }
+    
+    public sealed record CannotReturnAsMut(BoundNode Node) : Error
+    {
+        public override ImmutableArray<SourceLocation> Locations
+            => [Node.Syntax!.Location];
+
+        public override string Message =>
+            $"Cannot return '{Node.Syntax?.Text.ToString() ?? ""}' as 'mut', because { CannotAssign.GetReasonText(Node) }.";
+    }
+    
+    public sealed record MutReturnEscapesScope(BoundValue Value) : Error
+    {
+        public override ImmutableArray<SourceLocation> Locations
+            => [Value.Syntax!.Location];
+
+        public override string Message =>
+            $"Cannot return '{Value.Syntax?.Text.ToString() ?? ""}' as 'mut', because it only lives until the end of the function.";
     }
 
     public sealed record CannotMutateReceiver(BoundValue Receiver, FunSymbol Fun, Symbol? Context, SyntaxNode FunSyntax) : Error
     {
         public override ImmutableArray<SourceLocation> Locations => [FunSyntax.Location];
 
-        public override string Message => Receiver.Place switch
-        {
-            null => $"Cannot call mut fun ‘{Fun.QualifiedName}‘ on a temporary value.",
-
-            { Root: BoundVariable { Variable: ParameterSymbol param }  }
-                => $"Cannot call mut fun ‘{Fun.QualifiedName}‘ on parameter ‘{param.Name}‘, because ‘{param.Name}‘ is not declared ‘mut‘. Consider declaring it ‘mut‘ instead.",
-            
-            { Root: BoundVariable { Variable: { IsReadOnly: true, Name: var varName } } }
-                => $"Cannot call mut fun ‘{Fun.QualifiedName}‘ on ‘{varName}‘, because ‘{varName}‘ is declared ‘let‘. Consider declaring it ‘var‘ instead.",
-
-            { Root: BoundVariable { IsSelf: true } }
-                => $"Cannot call mut fun ‘{Fun.QualifiedName}‘ through ‘self‘, because ‘{ContextFunName}‘ is not ‘mut‘. Consider declaring it ‘mut‘ instead.",
-
-            _ => $"‘{Fun.QualifiedName}‘ is a mut fun, but ‘{Receiver!.Type.QualifiedName}‘ cannot be mutated here.",
-        };
-
-        private string ContextFunName => (Context as FunSymbol)?.QualifiedName ?? "???";
+        public override string Message =>
+            $"Cannot call 'mut' fun '{ Fun.QualifiedName }' on '{Receiver.Syntax?.Text.ToString() ?? "self"}', because { CannotAssign.GetReasonText(Receiver) }.";
     }
 
     public sealed record BreakOrContinueOutsideLoop(ExprSyntax Syntax) : Error
@@ -194,7 +210,6 @@ public partial record Diagnostic
         public override string Message => BoundCallee switch
         {
             BoundValue value => $"A value of type ‘{value.Type.QualifiedName}‘ cannot be called.",
-            BoundMutValue value => $"A mut value of type ‘{value.Inner.Type.QualifiedName}‘ cannot be called.",
             
             IBoundSymbolRef symbolRef => $"{symbolRef.Symbol.ShortDisplayName.Capitalize()} cannot be called.",
             BoundFunGroup fun => $"Fun ‘{fun.Candidates[0].QualifiedName}‘ cannot be called.",
@@ -331,7 +346,6 @@ public partial record Diagnostic
 
         public override string Message => BoundNode switch
         {
-            BoundMutValue  => $"'mut' is only allowed on arguments or after return.",
             BoundTypeRef type => $"‘{type.Type.QualifiedName}‘ is a type, not a value.",
             BoundNamespaceRef ns => $"‘{ns.Namespace.QualifiedName}‘ is a namespace, not a value.",
             BoundFunGroup funGroup => $"‘{funGroup.Candidates[0].QualifiedName}‘ is a fun, not a value. Did you mean to call it?",
@@ -349,7 +363,6 @@ public partial record Diagnostic
         public override string Message => BoundNode switch
         {
             BoundValue value => $"Expected a type, but got value of type ‘{value.Type.QualifiedName}‘.",
-            BoundMutValue value => $"Expected a type, but got value of type ‘{value.Inner.Type.QualifiedName}‘.",
             IBoundSymbolRef symbolRef => $"Expected a type, but got {symbolRef.Symbol.ShortDisplayName}.",
             BoundFunGroup funGroup => $"Expected a type, but got fun ‘{funGroup.Candidates[0].QualifiedName}‘.",
             
@@ -364,7 +377,6 @@ public partial record Diagnostic
         public override string Message => BoundNode switch
         {
             BoundValue value => $"Expected a namespace, but got value of type ‘{value.Type.QualifiedName}‘.",
-            BoundMutValue value => $"Expected a namespace, but got value of type ‘{value.Inner.Type.QualifiedName}‘.",
             IBoundSymbolRef symbolRef => $"Expected a namespace, but got {symbolRef.Symbol.ShortDisplayName}.",
             BoundFunGroup funGroup => $"Expected a namespace, but got fun ‘{funGroup.Candidates[0].QualifiedName}‘.",
             
@@ -799,28 +811,10 @@ public partial record Diagnostic
             $"Cannot build interpolated string, because '{String.QualifiedName}.{Names.StringConcatMethod}' does not exist.";
     }
 
-    public sealed record MutOnInvalidValue(BoundValue Value) : Error
+    public sealed record MutNotAllowedHere(SyntaxNode Syntax) : Error
     {
         /// <inheritdoc />
-        public override ImmutableArray<SourceLocation> Locations => [Value.Syntax!.Location];
-
-        /// <inheritdoc />
-        public override string Message => Value.Place?.Root switch
-        {
-            BoundVariable { IsSelf: true  } 
-                => "Cannot use 'mut' through 'self', because this fun is not 'mut'.",
-            BoundVariable { Variable: ParameterSymbol }
-                => "Cannot use non-mut parameters as mut.",
-            BoundVariable { Variable: var variable }
-                => $"Cannot use 'mut' through {variable.ShortDisplayName}, because it is declared 'let'.",
-            _ => "Cannot use 'mut' on a temporary value.",
-        };
-    }
-
-    public sealed record MutNotAllowedHere(BoundMutValue MutValue) : Error
-    {
-        /// <inheritdoc />
-        public override ImmutableArray<SourceLocation> Locations => [MutValue.Syntax!.Location];
+        public override ImmutableArray<SourceLocation> Locations => [Syntax.Location];
 
         /// <inheritdoc />
         public override string Message => "'mut' is only allowed on arguments or after return.";

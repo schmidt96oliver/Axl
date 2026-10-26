@@ -24,6 +24,35 @@ public enum TypeUsage
     Signature
 }
 
+[Flags]
+public enum ValueUsage
+{
+    /// <summary>
+    /// The value will not be used.
+    /// </summary>
+    None = 0,
+    
+    /// <summary>
+    /// Value will be read as a value.
+    /// </summary>
+    Read = 1 << 1,
+
+    /// <summary>
+    /// Value will be assigned to.
+    /// </summary>
+    Assign = 1 << 2,
+
+    /// <summary>
+    /// Value will be passed through "mut" to a mut fun parameter.
+    /// </summary>
+    PassAsMut = 1 << 3,
+
+    /// <summary>
+    /// Value will be returned from a mut-returning fun.
+    /// </summary>
+    ReturnAsMut = 1 << 4,
+}
+
 public sealed class Binder(Scope scope, BinderSideEffects sideEffects)
 {
     public Scope Scope { get; } = scope;
@@ -634,7 +663,7 @@ public sealed class Binder(Scope scope, BinderSideEffects sideEffects)
         // --- Expression body
         if (syntax.IsExpressionBodied)
         {
-            var expr = bodyBinder.BindValue(syntax.Expr);
+            var expr = bodyBinder.BindValue(syntax.Expr, fun.IsReturnValueMut ? ValueUsage.ReturnAsMut : ValueUsage.Read);
             if (!CheckType(expr, fun.ReturnType))
                 expr = new BoundError(syntax.Expr);
 
@@ -766,7 +795,7 @@ public sealed class Binder(Scope scope, BinderSideEffects sideEffects)
         if (exprSyntax is IfExprSyntax ifExprSyntax)
             return BindIfStmt(ifExprSyntax);
 
-        return BindValue(exprSyntax);
+        return BindValue(exprSyntax, ValueUsage.None);
     }
     
     private BoundStmt BindVarDecl(VarDeclSyntax syntax)
@@ -809,13 +838,13 @@ public sealed class Binder(Scope scope, BinderSideEffects sideEffects)
         if (syntax.Initializer is null)
             return BindError(syntax, new Diagnostic.MissingInitializer(syntax));
     
-        return BindValue(syntax.Initializer);
+        return BindValue(syntax.Initializer, ValueUsage.Read);
     }
     
     private BoundStmt BindWhile(WhileStmtSyntax syntax)
     {
         var condition = BindCondition(syntax.Condition);
-        var body = WithAdditionalFlags(BindingFlags.InsideLoop).BindValue(syntax.Body);
+        var body = WithAdditionalFlags(BindingFlags.InsideLoop).BindValue(syntax.Body, ValueUsage.None);
         
         return new BoundWhile(condition, body, syntax);
     }
@@ -829,7 +858,7 @@ public sealed class Binder(Scope scope, BinderSideEffects sideEffects)
         IdNameSyntax idNameSyntax => BindIdName(idNameSyntax, lookupOptions),
         SelfSyntax selfSyntax => BindSelf(selfSyntax),
         CallExprSyntax callExprSyntax => BindCall(callExprSyntax),
-        MutExprSyntax mutExprSyntax => BindMutExpr(mutExprSyntax),
+        MutExprSyntax mutExprSyntax => BindError(syntax, new Diagnostic.MutNotAllowedHere(syntax)),
         
         // Strings and Literals
         NumberLiteralSyntax numberLiteralSyntax => BindNumberLiteral(numberLiteralSyntax),
@@ -844,7 +873,7 @@ public sealed class Binder(Scope scope, BinderSideEffects sideEffects)
         // Blocks and Control Flow
         BlockExprSyntax blockExprSyntax => BindBlock(blockExprSyntax),
         IfExprSyntax ifExprSyntax => BindIfExpr(ifExprSyntax),
-        GroupExprSyntax groupExprSyntax => BindValue(groupExprSyntax.Inner),
+        GroupExprSyntax groupExprSyntax => BindValue(groupExprSyntax.Inner, ValueUsage.Read),
         BreakExprSyntax breakExprSyntax => BindBreakOrContinue(breakExprSyntax),
         ContinueExprSyntax or BreakExprSyntax => BindBreakOrContinue(syntax),
         ReturnExprSyntax returnExprSyntax => BindReturn(returnExprSyntax),
@@ -854,17 +883,77 @@ public sealed class Binder(Scope scope, BinderSideEffects sideEffects)
         FunNameSyntax => throw new UnreachableException(),
     };
 
-    private BoundValue BindValue(ExprSyntax syntax)
+    private BoundValue BindValue(ExprSyntax syntax, ValueUsage usage)
     {
         var bound = BindExpr(syntax, LookupOptions.Any);
+        
+        BoundValue value;
         if (bound is BoundValueOrTypeRef valueOrType)
-            return valueOrType.AsValue;
-        if (bound is not BoundValue value)
-            return BindError(syntax, new Diagnostic.NotAValue(bound));
+            value = valueOrType.AsValue;
+        else
+        {
+            if (bound is not BoundValue boundValue)
+                return BindError(syntax, new Diagnostic.NotAValue(bound));
+            value = boundValue;
+        }
 
+        if (value is BoundError || !CheckValueUsage(value, usage))
+            return new BoundError(syntax);
+        
         return value;
     }
 
+    private bool CheckValueUsage(BoundValue value, ValueUsage usage)
+    {
+        if ((usage & ValueUsage.Assign) != 0 && value.PlaceKind is not PlaceKind.MutPlace)
+        {
+            SideEffects.ReportError(new Diagnostic.CannotAssign(value));
+            return false;
+        }
+
+        if ((usage & ValueUsage.PassAsMut) != 0 && value.PlaceKind is not PlaceKind.MutPlace)
+        {
+            // + BindCall will do an exclusivity check on the arguments.
+            SideEffects.ReportError(new Diagnostic.CannotPassAsMut(value));
+            return false;
+        }
+
+        if ((usage & ValueUsage.ReturnAsMut) != 0)
+        {
+            if (value.PlaceKind is not PlaceKind.MutPlace)
+            {
+                SideEffects.ReportError(new Diagnostic.CannotReturnAsMut(value));
+                return false;
+            }
+            
+            Debug.Assert(value.PlaceRoot is not null);
+            if (!CanMutReturnValueEscape(value.PlaceRoot))
+            {
+                SideEffects.ReportError(new Diagnostic.MutReturnEscapesScope(value));
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    private static bool CanMutReturnValueEscape(BoundValue root) => root switch
+    {
+        // Can escape: Parameters and mut return values of calls, where every argument
+        // (including receiver) can escape.
+        // Cannot escape: Locals
+        
+        BoundVariable
+        {
+            Variable: ParameterSymbol { IsMut: true }
+        } => true, // Includes mut self, since that is a parameter
+        BoundCall { IsMutReturn: true } call => call.ReceiverAndArguments
+            .Where(arg => arg.IsMut)
+            .All(arg => CanMutReturnValueEscape(arg.Value.PlaceRoot!)),
+
+        _ => false,
+    };
+    
     public TypeSymbol BindType(ExprSyntax syntax, TypeUsage usage)
     {
         var bound = BindExpr(syntax, LookupOptions.OnlyType);
@@ -888,20 +977,6 @@ public sealed class Binder(Scope scope, BinderSideEffects sideEffects)
         return typeRef.Type;
     }
 
-    
-    private BoundNode BindMutExpr(MutExprSyntax syntax)
-    {
-        var value = BindValue(syntax.Expr);
-        if (value.Place?.IsMut != true)
-        {
-            if (value is not BoundError)
-                SideEffects.ReportError(new Diagnostic.MutOnInvalidValue(value));
-            return new BoundError(syntax);
-        }
-
-        return new BoundMutValue(value, syntax);
-    }
-    
     
     #region Literals and Strings and Self
 
@@ -1006,7 +1081,7 @@ public sealed class Binder(Scope scope, BinderSideEffects sideEffects)
             return new BoundConst("", String, syntax);
         }
                 
-        var boundExpr = BindValue(syntax.Expr);
+        var boundExpr = BindValue(syntax.Expr, ValueUsage.Read);
 
         if (IsAssignableTo(boundExpr.Type, String))
             return boundExpr;
@@ -1025,7 +1100,7 @@ public sealed class Binder(Scope scope, BinderSideEffects sideEffects)
     #region Operators and Assignment
 
     private BoundValue BindUnary(UnaryExprSyntax syntax)
-        => BindSynthesizedOperatorCall(BindValue(syntax.Operand), syntax.Operator, [], syntax);
+        => BindSynthesizedOperatorCall(BindValue(syntax.Operand, ValueUsage.Read), syntax.Operator, [], syntax);
     
     private BoundValue BindBinary(BinaryExprSyntax syntax)
     {
@@ -1034,8 +1109,8 @@ public sealed class Binder(Scope scope, BinderSideEffects sideEffects)
         if (syntax.Operator.Kind == TokenKind.Equal)
             return BindAssign(syntax);
         
-        var left = BindValue(syntax.Left);
-        var right = BindValue(syntax.Right);
+        var left = BindValue(syntax.Left, ValueUsage.Read);
+        var right = BindValue(syntax.Right, ValueUsage.Read);
 
         return BindSynthesizedOperatorCall(left, syntax.Operator, [right], syntax);
     }
@@ -1062,8 +1137,8 @@ public sealed class Binder(Scope scope, BinderSideEffects sideEffects)
     {
         Debug.Assert(syntax.Operator.Kind is TokenKind.DoubleAmpersand or TokenKind.DoubleVerticalBar);
     
-        var left = BindValue(syntax.Left);
-        var right = BindValue(syntax.Right);
+        var left = BindValue(syntax.Left, ValueUsage.Read);
+        var right = BindValue(syntax.Right, ValueUsage.Read);
         if (left.Type is ErrorTypeSymbol || right.Type is ErrorTypeSymbol)
         {
             // Some operands have an error. So don't type-check them
@@ -1090,20 +1165,15 @@ public sealed class Binder(Scope scope, BinderSideEffects sideEffects)
     {
         Debug.Assert(syntax.Operator.Kind is TokenKind.Equal);
 
-        var target = BindValue(syntax.Left);
-        var value = BindValue(syntax.Right);
+        var target = BindValue(syntax.Left, ValueUsage.Assign);
+        var value = BindValue(syntax.Right, ValueUsage.Read);
 
         if (target is BoundError)
             return new BoundError(syntax);
         if (value.Type is ErrorTypeSymbol)
             return new BoundAssign(target, value, ErrorTypeSymbol.Instance, syntax);
 
-        if (target.Place?.IsMut != true || target is BoundVariable { IsSelf: true })
-            return BindError(syntax, new Diagnostic.CannotAssign(target));
-
-        TypeSymbol type = CheckType(value, target.Type)
-            ? Unit
-            : ErrorTypeSymbol.Instance;
+        var type = CheckType(value, target.Type) ? Unit : ErrorTypeSymbol.Instance;
         return new BoundAssign(target, value, type, syntax);
     }
     
@@ -1170,7 +1240,7 @@ public sealed class Binder(Scope scope, BinderSideEffects sideEffects)
 
     private BoundValue BindCondition(ExprSyntax syntax)
     {
-        var condition = BindValue(syntax);
+        var condition = BindValue(syntax, ValueUsage.Read);
         if (!CheckType(condition, expected: Bool))
             condition = new BoundError(syntax);
 
@@ -1180,7 +1250,7 @@ public sealed class Binder(Scope scope, BinderSideEffects sideEffects)
     private BoundValue BindIfExpr(IfExprSyntax syntax)
     {
         var condition = BindCondition(syntax.Condition);
-        var body = BindValue(syntax.Body);
+        var body = BindValue(syntax.Body, ValueUsage.Read);
         var @else = BindElseExpr(syntax);
 
         // In some cases (e.g. Never type), one branch is assignable to
@@ -1205,7 +1275,7 @@ public sealed class Binder(Scope scope, BinderSideEffects sideEffects)
         if (elseSyntax is null)
             return BindError(ifSyntax, new Diagnostic.MissingElse(ifSyntax));
 
-        return BindValue(elseSyntax);
+        return BindValue(elseSyntax, ValueUsage.Read);
     }
 
     private BoundStmt BindIfStmt(IfExprSyntax syntax)
@@ -1236,8 +1306,11 @@ public sealed class Binder(Scope scope, BinderSideEffects sideEffects)
     {
         if (Scope.OwnerAsFun is not FunSymbol fun)
             throw new InvalidOperationException("Values can only be bound on fun bodies.");
-        
-        var expr = syntax.Expr is not null ? BindValue(syntax.Expr) : null;
+
+        var expr = syntax.Expr is not null
+            ? BindValue(syntax.Expr,
+                fun.IsReturnValueMut ? ValueUsage.ReturnAsMut : ValueUsage.Read)
+            : null;
 
         if (expr is not null)
         {
@@ -1320,8 +1393,6 @@ public sealed class Binder(Scope scope, BinderSideEffects sideEffects)
         // A fun group cannot have members
         if (left is BoundFunGroup leftAsFunGroup)
             return BindError(syntax, new Diagnostic.FunHasNoMembers(leftAsFunGroup, syntax.Member));
-        if (left is BoundMutValue leftAsMutValue)
-            return BindError(syntax, new Diagnostic.MutNotAllowedHere(leftAsMutValue));
         
         NamespaceOrTypeSymbol namespaceOrType = left switch
         {
@@ -1333,7 +1404,6 @@ public sealed class Binder(Scope scope, BinderSideEffects sideEffects)
             BoundTypeRef boundTypeRef => boundTypeRef.Type,
             
             BoundFunGroup => throw new UnreachableException("Fun group handled above."),
-            BoundMutValue => throw new UnreachableException("Mut Value group handled above."),
             BoundStmt => throw new UnreachableException("Stmt can never be the left side of member access."),
         };
         if (namespaceOrType is ErrorTypeSymbol)
@@ -1624,13 +1694,15 @@ public sealed class Binder(Scope scope, BinderSideEffects sideEffects)
                 return false;
             }
 
-            if (fun.SelfParameter.IsMut && valueReceiver.Place?.IsMut != true)
+            if (fun.SelfParameter.IsMut && valueReceiver.PlaceKind is not PlaceKind.MutPlace)
             {
                 SideEffects.ReportError(new Diagnostic.CannotMutateReceiver(valueReceiver, fun, Scope.Owner, funSyntax));
                 return false;
             }
         }
 
+        //TODO: Implement mut exclusivity rule
+        
         return true;
     }
 
@@ -1678,11 +1750,10 @@ public sealed class Binder(Scope scope, BinderSideEffects sideEffects)
     {
         if (syntax.Expr is MutExprSyntax mutExpr)
         {
-            if (BindMutExpr(mutExpr) is not BoundMutValue boundMutExpr)
-                return new BoundArgument(new BoundError(syntax), isMut: false);
-            return new BoundArgument(boundMutExpr.Inner, isMut: true);
+            var value = BindValue(mutExpr.Expr, ValueUsage.PassAsMut);
+            return new BoundArgument(value, isMut: true);
         }
-        return new BoundArgument(BindValue(syntax.Expr), isMut: false);
+        return new BoundArgument(BindValue(syntax.Expr, ValueUsage.Read), isMut: false);
     }
 
     private BoundNode? BindFunReceiver(FunSymbol fun, BoundNode? receiver)
@@ -1774,7 +1845,7 @@ public sealed class Binder(Scope scope, BinderSideEffects sideEffects)
 
     private BoundValue BindFieldInitializer(StructSymbol @struct, ArgSyntax argSyntax)
     {
-        var value = BindValue(argSyntax.Expr);
+        var value = BindValue(argSyntax.Expr, ValueUsage.Read);
 
         var field = @struct.Fields.FirstOrDefault(field => argSyntax.IsNamed
             ? field.Name.SequenceEqual(argSyntax.Name!.Text)

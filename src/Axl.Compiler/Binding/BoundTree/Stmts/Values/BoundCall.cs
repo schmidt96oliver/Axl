@@ -15,6 +15,8 @@ public sealed class BoundCall(
     public BoundArgument? Receiver { get; } = receiver;
     public ImmutableArray<BoundArgument> Arguments { get; } = arguments;
 
+    public bool IsMutReturn => Fun.IsReturnValueMut;
+
     public ImmutableArray<BoundArgument> ReceiverAndArguments => Receiver is not null
         ? [Receiver, .. Arguments]
         : Arguments;

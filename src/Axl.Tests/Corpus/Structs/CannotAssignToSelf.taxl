@@ -1,9 +1,0 @@
-﻿//@check
-
-struct Test 
-{
-    pub mut fun Mut()
-    { self = 10; }      //~error CannotAssign
-    pub fun NonMut()
-    { self = 10; }      //~error CannotAssign
-}

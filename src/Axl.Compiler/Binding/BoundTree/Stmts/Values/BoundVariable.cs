@@ -3,10 +3,6 @@ using Axl.Compiler.Syntax;
 
 namespace Axl.Compiler.Binding.BoundTree;
 
-/// <summary>
-/// A reference to a <see cref="VariableSymbol"/>. Note that failed lookups
-/// are represented as <see cref="BoundError"/>.
-/// </summary>
 public sealed class BoundVariable(VariableSymbol variable, SyntaxNode? syntax = null) 
     : BoundValue(variable.Type, syntax), IBoundSymbolRef
 {
@@ -16,7 +12,10 @@ public sealed class BoundVariable(VariableSymbol variable, SyntaxNode? syntax = 
     public Symbol Symbol => Variable;
 
     /// <inheritdoc />
-    public override Place? Place => new(Root: this, IsMut: !Variable.IsReadOnly);
+    public override PlaceKind PlaceKind => Variable.IsReadOnly ? PlaceKind.ReadOnlyPlace : PlaceKind.MutPlace;
+
+    /// <inheritdoc />
+    public override BoundValue PlaceRoot => this;
 
     public bool IsSelf => Variable is ParameterSymbol { IsSelf: true };
 
