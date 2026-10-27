@@ -1,0 +1,11 @@
+﻿//@run
+//= 6
+
+var a = 3;
+Double(mut a);
+PrintLine("{a}");
+
+fun Double(mut a: I32)
+{
+    a = a + a;
+} 

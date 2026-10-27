@@ -1,0 +1,22 @@
+﻿//@run
+//= 1
+
+var c = Counter(X=0);
+Inc(mut c.Value());
+PrintLine("{c}");
+
+fun Inc(mut a: I32)
+{
+    a = a + 1;
+}
+
+struct Counter
+{
+    pub X: I32;
+
+    pub mut fun Value(): mut I32
+        = mut X;
+
+    pub fun ToString(): String
+        = "{X}";
+}

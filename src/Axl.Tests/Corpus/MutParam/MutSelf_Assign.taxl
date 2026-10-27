@@ -1,0 +1,19 @@
+﻿//@run
+//= 0
+
+var c = Counter(X=5);
+c.Reset();
+PrintLine("{c}");
+
+struct Counter
+{
+    pub X: I32;
+
+    pub mut fun Reset()
+    {
+        self = Counter(X=0);
+    }
+
+    pub fun ToString(): String
+        = "{X}";
+}

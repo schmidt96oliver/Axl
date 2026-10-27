@@ -3,28 +3,17 @@
 
 # Now
 
-* [ ] `ArgumentMutMismatch`
-* [ ] implement exclusivity check in 'CheckCallToSingleFun'
-* [ ] MIR: Check types in constructors
+* `ArgumentMutMismatch` -> `MissingMut`, `UnexpectedMut`
+* implement exclusivity check in 'CheckCallToSingleFun'
 
-* [ ] check CannotAssign diagnostic message
-* [ ] check CannotMutateReceiver diagnostic message
-* [ ] check CannotPassAsMut diagnostic message
-* [ ] check CannotReturnAsMut diagnostic message
+* check CannotAssign diagnostic message
+* check CannotMutateReceiver diagnostic message
 
-* [ ] test: UnexpectedMutReturn, MissingMutReturn. Expression bodied and return 
-* [ ] test: `mut EXPR` must reject let + fields, non-mut-self + fields
-* [ ] test: `mut EXPR` must accept var + fields, mut-self + fields
-* [ ] test: `mut EXPR` in various position
-* [ ] test: Cannot call mut fun on non-mut parameter (message)
-* [ ] test: mut arguments assign correctly
-* [ ] test: fun signatures differ by mut as well
+* Intrinsic lookup: Remove receiver, only by (receiver, arguments) (static and method the same)
+* Split OperatorKind and VmCallKind -> Intrinsic = union
 
-* [ ] Intrinsic lookup: Remove receiver, only by (receiver, arguments) (static and method the same)
-* [ ] Split OperatorKind and VmCallKind -> Intrinsic = union
-
-* [ ] Miri: `Environment` -> `ActivationFrame` with .GetRef that throws if exited
-* [ ] Miri: Store reference as Root (ActivationFrame, LocalId) + Path (FieldSymbol[]). See Claude, think why?
+* Miri: `Environment` -> `ActivationFrame` with .GetRef that throws if exited
+* Miri: Store reference as Root (ActivationFrame, LocalId) + Path (FieldSymbol[]). See Claude, think why?
 
 * Validator 
   * checks type and ref types

@@ -1,0 +1,17 @@
+﻿//@run
+//= 3
+
+var c = Counter(X=0);
+c.This().X = 3;
+PrintLine("{c}");
+
+struct Counter
+{
+    pub X: I32;
+
+    pub mut fun This(): mut Counter
+        = mut self;
+
+    pub fun ToString(): String
+        = "{X}";
+}

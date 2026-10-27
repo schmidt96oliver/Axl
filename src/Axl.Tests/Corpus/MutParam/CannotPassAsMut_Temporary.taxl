@@ -1,0 +1,18 @@
+﻿//@check
+
+Inc(mut 5); //~error CannotPassAsMut
+Inc(mut Two()); //~error CannotPassAsMut
+Inc(mut Counter(X=0).X); //~error CannotPassAsMut
+
+fun Inc(mut a: I32)
+{
+    a = a + 1;
+}
+
+fun Two(): I32
+    = 2;
+
+struct Counter
+{
+    pub X: I32;
+}

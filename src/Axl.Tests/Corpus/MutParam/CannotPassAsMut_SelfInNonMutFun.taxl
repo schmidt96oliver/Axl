@@ -1,0 +1,16 @@
+﻿//@check
+
+struct Counter
+{
+    pub X: I32;
+
+    pub fun Bad()
+    {
+        Inc(mut X); //~error CannotPassAsMut
+    }
+    
+    static fun Inc(mut a: I32)
+    {
+        a = a + 1;
+    }
+}

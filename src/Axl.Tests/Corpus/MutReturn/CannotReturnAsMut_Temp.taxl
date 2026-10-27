@@ -1,0 +1,10 @@
+﻿//@check
+
+fun F(): mut I32
+    = mut 1; //~error CannotReturnAsMut
+
+fun G(): mut I32
+    = mut Two(); //~error CannotReturnAsMut
+
+fun Two(): I32
+    = 2;

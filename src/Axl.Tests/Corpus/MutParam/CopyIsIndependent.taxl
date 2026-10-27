@@ -1,0 +1,14 @@
+﻿//@run
+//= 0
+//= 1
+
+var a = 0;
+let copy = a;
+Inc(mut a);
+PrintLine("{copy}");
+PrintLine("{a}");
+
+fun Inc(mut a: I32)
+{
+    a = a + 1;
+}

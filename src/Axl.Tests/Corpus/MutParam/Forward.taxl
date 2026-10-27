@@ -1,0 +1,17 @@
+﻿//@run
+//= 2
+
+var a = 0;
+IncTwice(mut a);
+PrintLine("{a}");
+
+fun IncTwice(mut a: I32)
+{
+    Inc(mut a);
+    Inc(mut a);
+}
+
+fun Inc(mut a: I32)
+{
+    a = a + 1;
+}

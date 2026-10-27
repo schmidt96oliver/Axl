@@ -1,0 +1,7 @@
+﻿//@check
+
+var a = 0;
+let b = mut a; //~error MutNotAllowedHere
+a = mut a; //~error MutNotAllowedHere
+let c = 1 + mut a; //~error MutNotAllowedHere
+mut a; //~error MutNotAllowedHere

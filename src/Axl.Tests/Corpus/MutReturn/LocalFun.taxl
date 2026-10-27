@@ -1,0 +1,17 @@
+﻿//@run
+//= 4
+
+var c = Counter(X=0);
+Get(mut c) = 4;
+PrintLine("{c}");
+
+fun Get(mut c: Counter): mut I32
+    = mut c.X;
+
+struct Counter
+{
+    pub X: I32;
+
+    pub fun ToString(): String
+        = "{X}";
+}

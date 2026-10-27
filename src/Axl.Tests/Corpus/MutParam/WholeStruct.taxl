@@ -1,0 +1,27 @@
+﻿//@run
+//= 11
+//= 0
+
+var c = Counter(X=1);
+Bump(mut c);
+PrintLine("{c}");
+Reset(mut c);
+PrintLine("{c}");
+
+fun Bump(mut c: Counter)
+{
+    c.X = c.X + 10;
+}
+
+fun Reset(mut c: Counter)
+{
+    c = Counter(X=0);
+}
+
+struct Counter
+{
+    pub X: I32;
+
+    pub fun ToString(): String
+        = "{X}";
+}

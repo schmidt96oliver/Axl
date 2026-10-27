@@ -1,0 +1,27 @@
+﻿//@check
+
+fun Local(): mut I32
+{
+    var x = 0;
+    return mut x; //~error MutReturnEscapesScope
+}
+
+fun FieldOfLocal(): mut I32
+{
+    var c = Counter(X=0);
+    return mut c.X; //~error MutReturnEscapesScope
+}
+
+fun ThroughCall(mut p: I32): mut I32
+{
+    var local = 0;
+    return mut First(mut p, mut local); //~error MutReturnEscapesScope
+}
+
+fun First(mut a: I32, mut b: I32): mut I32
+    = mut a;
+
+struct Counter
+{
+    pub X: I32;
+}

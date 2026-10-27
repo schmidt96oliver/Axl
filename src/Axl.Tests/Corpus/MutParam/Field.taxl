@@ -1,0 +1,20 @@
+﻿//@run
+//= 5 0
+
+var p = Pair(A=0, B=0);
+Set(mut p.A, 5);
+PrintLine("{p}");
+
+fun Set(mut target: I32, value: I32)
+{
+    target = value;
+}
+
+struct Pair
+{
+    pub A: I32;
+    pub B: I32;
+
+    pub fun ToString(): String
+        = "{A} {B}";
+}

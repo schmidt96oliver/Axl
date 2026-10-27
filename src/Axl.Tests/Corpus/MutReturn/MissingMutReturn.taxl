@@ -1,0 +1,9 @@
+﻿//@check
+
+fun F(mut a: I32): mut I32
+{
+    return a; //~error MissingMutReturn
+}
+
+fun G(mut a: I32): mut I32
+    = a; //~error MissingMutReturn

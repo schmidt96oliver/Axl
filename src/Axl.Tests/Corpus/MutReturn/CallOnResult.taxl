@@ -1,0 +1,29 @@
+﻿//@run
+//= 8
+//= 10
+
+var c = Counter(X=0);
+c.This().Value() = 8;
+PrintLine("{c}");
+c.This().Inc();
+c.This().Inc();
+PrintLine("{c}");
+
+struct Counter
+{
+    pub X: I32;
+
+    pub mut fun This(): mut Counter
+        = mut self;
+
+    pub mut fun Value(): mut I32
+        = mut X;
+
+    pub mut fun Inc()
+    {
+        X = X + 1;
+    }
+
+    pub fun ToString(): String
+        = "{X}";
+}

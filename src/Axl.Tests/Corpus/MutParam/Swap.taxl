@@ -1,0 +1,16 @@
+﻿//@run
+//= 2
+//= 1
+
+var a = 1;
+var b = 2;
+Swap(mut a, mut b);
+PrintLine("{a}");
+PrintLine("{b}");
+
+fun Swap(mut a: I32, mut b: I32)
+{
+    let t = a;
+    a = b;
+    b = t;
+}

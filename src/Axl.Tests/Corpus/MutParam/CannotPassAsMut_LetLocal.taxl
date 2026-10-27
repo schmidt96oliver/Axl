@@ -1,0 +1,9 @@
+﻿//@check
+
+let a = 0;
+Inc(mut a); //~error CannotPassAsMut
+
+fun Inc(mut a: I32)
+{
+    a = a + 1;
+}

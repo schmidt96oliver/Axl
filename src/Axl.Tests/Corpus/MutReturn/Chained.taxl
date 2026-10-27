@@ -1,0 +1,23 @@
+﻿//@run
+//= 6
+
+var c = Counter(X=0);
+Outer(mut c) = 6;
+PrintLine("{c}");
+
+fun Outer(mut c: Counter): mut I32
+    = mut Inner(mut c);
+
+fun Inner(mut c: Counter): mut I32
+    = mut c.Value();
+
+struct Counter
+{
+    pub X: I32;
+
+    pub mut fun Value(): mut I32
+        = mut X;
+
+    pub fun ToString(): String
+        = "{X}";
+}

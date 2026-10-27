@@ -1,0 +1,15 @@
+﻿//@run
+//= 1
+//= 5
+
+var calls = 0;
+var x = 0;
+Track(mut calls, mut x) = 5;
+PrintLine("{calls}");
+PrintLine("{x}");
+
+fun Track(mut calls: I32, mut x: I32): mut I32
+{
+    calls = calls + 1;
+    return mut x;
+}

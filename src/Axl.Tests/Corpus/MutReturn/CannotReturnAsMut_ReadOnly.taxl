@@ -1,0 +1,18 @@
+﻿//@check
+
+fun F(a: I32): mut I32
+    = mut a; //~error CannotReturnAsMut
+
+fun G(): mut I32
+{
+    let x = 0;
+    return mut x; //~error CannotReturnAsMut
+}
+
+struct Counter
+{
+    pub X: I32;
+
+    pub fun Bad(): mut I32
+        = mut X; //~error CannotReturnAsMut
+}

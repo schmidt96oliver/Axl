@@ -1,0 +1,20 @@
+﻿//@run
+//= 3
+//= 9
+
+var c = Counter(X=3);
+let v = c.Value();
+c.Value() = 9;
+PrintLine("{v}");
+PrintLine("{c}");
+
+struct Counter
+{
+    pub X: I32;
+
+    pub mut fun Value(): mut I32
+        = mut X;
+
+    pub fun ToString(): String
+        = "{X}";
+}

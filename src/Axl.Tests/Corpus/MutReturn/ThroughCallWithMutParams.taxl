@@ -1,0 +1,15 @@
+﻿//@run
+//= 5
+//= 0
+
+var x = 0;
+var y = 0;
+Forward(mut x, mut y) = 5;
+PrintLine("{x}");
+PrintLine("{y}");
+
+fun Forward(mut p: I32, mut q: I32): mut I32
+    = mut First(mut p, mut q);
+
+fun First(mut a: I32, mut b: I32): mut I32
+    = mut a;

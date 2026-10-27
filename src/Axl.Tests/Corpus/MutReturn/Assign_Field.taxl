@@ -1,0 +1,17 @@
+﻿//@run
+//= 10
+
+var c = Counter(X=0);
+c.Value() = 10;
+PrintLine("{c}");
+
+struct Counter
+{
+    pub X: I32;
+
+    pub mut fun Value(): mut I32
+        = mut X;
+
+    pub fun ToString(): String
+        = "{X}";
+}

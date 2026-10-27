@@ -1,0 +1,25 @@
+﻿//@run
+//= 2
+
+var c = Counter(X=0);
+IncTwice(mut c);
+PrintLine("{c}");
+
+fun IncTwice(mut c: Counter)
+{
+    c.Inc();
+    c.Inc();
+}
+
+struct Counter
+{
+    pub X: I32;
+
+    pub mut fun Inc()
+    {
+        X = X + 1;
+    }
+
+    pub fun ToString(): String
+        = "{X}";
+}

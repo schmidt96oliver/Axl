@@ -1,0 +1,13 @@
+﻿//@run
+//= Mut
+//= NonMut
+
+var a = 1;
+A(mut a);
+A(a);
+
+fun A(mut a: I32)
+{ PrintLine("Mut"); }
+
+fun A(a: I32)
+{ PrintLine("NonMut"); }
