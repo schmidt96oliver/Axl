@@ -819,4 +819,24 @@ public partial record Diagnostic
         /// <inheritdoc />
         public override string Message => "'mut' is only allowed on arguments or after return.";
     }
+
+    public sealed record UnexpectedMutReturn(MutExprSyntax Syntax, FunSymbol Fun) : Error
+    {
+        /// <inheritdoc />
+        public override ImmutableArray<SourceLocation> Locations => [Syntax.MutKw.Location];
+
+        /// <inheritdoc />
+        public override string Message =>
+            $"‘{Fun.Name}’ does not return ‘mut’. Remove ‘mut’ or change the return type to ‘mut {Fun.ReturnType.Name}’.";
+    }
+    
+    public sealed record MissingMutReturn(SyntaxNode Syntax, FunSymbol Fun) : Error
+    {
+        /// <inheritdoc />
+        public override ImmutableArray<SourceLocation> Locations => [Syntax.Location];
+
+        /// <inheritdoc />
+        public override string Message =>
+            $"‘{Fun.Name}’ returns ‘mut {Fun.ReturnType.QualifiedName}’. Use ‘return mut ...’.";
+    }
 }

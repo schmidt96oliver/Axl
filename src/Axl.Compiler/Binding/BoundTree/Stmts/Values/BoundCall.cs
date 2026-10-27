@@ -15,11 +15,17 @@ public sealed class BoundCall(
     public BoundArgument? Receiver { get; } = receiver;
     public ImmutableArray<BoundArgument> Arguments { get; } = arguments;
 
-    public bool IsMutReturn => Fun.IsReturnValueMut;
+    public bool IsMutReturn => Fun.IsReturnMut;
 
     public ImmutableArray<BoundArgument> ReceiverAndArguments => Receiver is not null
         ? [Receiver, .. Arguments]
         : Arguments;
+
+    /// <inheritdoc />
+    public override PlaceKind PlaceKind => IsMutReturn ? PlaceKind.MutPlace : PlaceKind.Value;
+
+    /// <inheritdoc />
+    public override BoundValue? PlaceRoot => IsMutReturn ? this : null;
 }
 
 public sealed class BoundArgument(BoundValue value, bool isMut)

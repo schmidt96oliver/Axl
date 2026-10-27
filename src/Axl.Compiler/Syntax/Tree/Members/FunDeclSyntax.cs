@@ -25,8 +25,8 @@ public sealed class FunDeclSyntax(ImmutableArray<SyntaxElement> children)
     public IEnumerable<ParamSyntax> Parameters
         => ParameterList.Parameters;
 
-    public ExprSyntax? ReturnTypeAnnotation
-        => Children.FirstOfTypeOrNull<TypeAnnotationClauseSyntax>()?.TypeExpr;
+    public ReturnTypeAnnotationSyntax? ReturnTypeAnnotation
+        => Children.FirstOfTypeOrNull<ReturnTypeAnnotationSyntax>();
     
     public FunBodySyntax Body => Children.FirstOfType<FunBodySyntax>();
 }

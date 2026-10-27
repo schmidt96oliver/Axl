@@ -11,11 +11,12 @@ NamespaceName      = Identifier ("." Identifier)*
 ## Member Declarations
 MemberDecl       = FnDecl | StructDecl
                 
-FunDecl          = Annotation* "pub"? "static"? "mut"? "fun" FunName ParamList TypeAnnotation? FunBody
+FunDecl          = Annotation* "pub"? "static"? "mut"? "fun" FunName ParamList ReturnTypeAnnotation? FunBody
 FunName          = Identifier | "+" | "-" | "*" | "/" | "<" | "<=" | ">" | ">=" |"==" | "!=" | "!"
 FunBody          = "=>" Expr ";"
                 | BlockExpr
                 | ";"
+ReturnTypeAnnotation = ":" "mut"? TypeName
 
 ParamList       = "(" ")"
                 | "(" Param ("," Param)* ")"

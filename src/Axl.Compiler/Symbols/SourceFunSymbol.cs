@@ -70,23 +70,48 @@ public sealed class SourceFunSymbol(
         }
     }
 
+    private TypeSymbol? _returnType;
+    private bool? _isReturnMut;
+    
     public override TypeSymbol ReturnType
     {
         get
         {
-            if (field is null)
+            if (_returnType is null)
             {
                 if (_isBindingReturnType)
                     throw new CycleException();
                 _isBindingReturnType = true;
 
                 _signatureBinder ??= MakeSignatureBinder();
-                field = _signatureBinder.BindFunReturnType(DeclarationSyntax.ReturnTypeAnnotation);
+                (_returnType, _isReturnMut) = _signatureBinder.BindFunReturnType(DeclarationSyntax.ReturnTypeAnnotation);
 
                 _isBindingReturnType = false;
             }
 
-            return field;
+            return _returnType;
+        }
+    }
+
+    /// <inheritdoc />
+    public override bool IsReturnMut
+    {
+        get
+        {
+            if (_isReturnMut is null)
+            {
+                if (_isBindingReturnType)
+                    throw new CycleException();
+                _isBindingReturnType = true;
+
+                _signatureBinder ??= MakeSignatureBinder();
+                (_returnType, _isReturnMut) =
+                    _signatureBinder.BindFunReturnType(DeclarationSyntax.ReturnTypeAnnotation);
+
+                _isBindingReturnType = false;
+            }
+
+            return _isReturnMut.Value;
         }
     }
 

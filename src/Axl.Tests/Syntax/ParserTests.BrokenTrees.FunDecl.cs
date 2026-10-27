@@ -548,7 +548,7 @@ public partial class ParserTests
                     · ParamList
                     · · ??'('
                     · · ??')'
-                    · TypeAnnotationClause
+                    · ReturnTypeAnnotation
                     · · ':'
                     · · IdName 'I32'
                     · FunBody

@@ -164,11 +164,20 @@ public partial class Parser
                         TokenKind.Semicolon | TokenKind.Equal);
 
         if (_scanner.IsAt(TokenKind.Colon))
-            EnsureTypeAnnotation();
+            EatReturnTypeAnnotation();
 
         EnsureFunBody(anchor);
 
         return _scanner.Close(commonHeader, SyntaxKind.FunDecl);
+    }
+
+    private MarkClose EatReturnTypeAnnotation()
+    {
+        var annotation = _scanner.Open();
+        _scanner.EatKnown(TokenKind.Colon);
+        _scanner.EatIfPresent(TokenKind.MutKw);
+        EnsureTypeName();
+        return _scanner.Close(annotation, SyntaxKind.ReturnTypeAnnotation);
     }
 
     private MarkClose EnsureFunName()

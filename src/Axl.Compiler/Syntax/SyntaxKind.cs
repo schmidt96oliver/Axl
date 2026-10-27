@@ -65,6 +65,7 @@ public enum SyntaxKind
     NativeClause,
     ElseClause,
     TypeAnnotationClause,
+    ReturnTypeAnnotation,
     InitializerClause,
     FunBody,
     ConditionClause,

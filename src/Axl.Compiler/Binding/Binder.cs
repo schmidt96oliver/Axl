@@ -272,7 +272,7 @@ public sealed class Binder(Scope scope, BinderSideEffects sideEffects)
         
         var block = new BoundBlock(stmts, localFuns, Unit, syntax);
         if (!block.IsDiverging)
-            block = block.WithAdditionalStmts(new BoundReturn(null));
+            block = block.WithAdditionalStmts(new BoundReturn(null, false));
 
         return block;
     }
@@ -441,9 +441,11 @@ public sealed class Binder(Scope scope, BinderSideEffects sideEffects)
         var selfParameter = ownerSelf is not null
             ? new ParameterSymbol(Names.Self, owner: symbol, ownerSelf.Type, selfIsMut, isSelf: true)
             : null;
+        var (returnType, isReturnMut) = localFunBinder.BindFunReturnType(syntax.ReturnTypeAnnotation);
+
         symbol.SetSignature(selfParameter,
-            localFunBinder.BindParameters(syntax.ParameterList), 
-            localFunBinder.BindFunReturnType(syntax.ReturnTypeAnnotation));
+            localFunBinder.BindParameters(syntax.ParameterList),
+            returnType, isReturnMut);
         
         SideEffects.AddResolvedSymbol(syntax.Name.Location, symbol);
         return symbol;
@@ -663,11 +665,8 @@ public sealed class Binder(Scope scope, BinderSideEffects sideEffects)
         // --- Expression body
         if (syntax.IsExpressionBodied)
         {
-            var expr = bodyBinder.BindValue(syntax.Expr, fun.IsReturnValueMut ? ValueUsage.ReturnAsMut : ValueUsage.Read);
-            if (!CheckType(expr, fun.ReturnType))
-                expr = new BoundError(syntax.Expr);
-
-            return new BoundBlock([new BoundReturn(expr)], [], Unit);
+            var value = bodyBinder.BindReturnValue(syntax.Expr, out var isMutReturn);
+            return new BoundBlock([new BoundReturn(value, isMutReturn)], [], Unit);
         }
 
         // --- Block body
@@ -677,8 +676,8 @@ public sealed class Binder(Scope scope, BinderSideEffects sideEffects)
         // Check that all code-paths return a value
         if (!block.IsDiverging)
         {
-            if (fun.ReturnType == Unit)
-                block = block.WithAdditionalStmts(new BoundReturn(null));
+            if (fun.ReturnType == Unit && !fun.IsReturnMut)
+                block = block.WithAdditionalStmts(new BoundReturn(null, false));
             else
                 SideEffects.ReportError(new Diagnostic.MissingReturn(block.Syntax!));
         }
@@ -715,11 +714,11 @@ public sealed class Binder(Scope scope, BinderSideEffects sideEffects)
         return intrinsic;
     }
     
-    public TypeSymbol BindFunReturnType(ExprSyntax? returnTypeAnnotation)
+    public (TypeSymbol Type, bool IsMut) BindFunReturnType(ReturnTypeAnnotationSyntax? returnTypeAnnotation)
     {
         return returnTypeAnnotation is not null
-            ? BindType(returnTypeAnnotation, TypeUsage.Signature)
-            : Unit;
+            ? (BindType(returnTypeAnnotation.TypeExpr, TypeUsage.Signature), returnTypeAnnotation.MutKw is not null)
+            : (Unit, false);
     }
     
     public ImmutableArray<ParameterSymbol> BindParameters(ParamListSyntax syntax)
@@ -858,7 +857,7 @@ public sealed class Binder(Scope scope, BinderSideEffects sideEffects)
         IdNameSyntax idNameSyntax => BindIdName(idNameSyntax, lookupOptions),
         SelfSyntax selfSyntax => BindSelf(selfSyntax),
         CallExprSyntax callExprSyntax => BindCall(callExprSyntax),
-        MutExprSyntax mutExprSyntax => BindError(syntax, new Diagnostic.MutNotAllowedHere(syntax)),
+        MutExprSyntax => BindError(syntax, new Diagnostic.MutNotAllowedHere(syntax)),
         
         // Strings and Literals
         NumberLiteralSyntax numberLiteralSyntax => BindNumberLiteral(numberLiteralSyntax),
@@ -1307,25 +1306,56 @@ public sealed class Binder(Scope scope, BinderSideEffects sideEffects)
         if (Scope.OwnerAsFun is not FunSymbol fun)
             throw new InvalidOperationException("Values can only be bound on fun bodies.");
 
-        var expr = syntax.Expr is not null
-            ? BindValue(syntax.Expr,
-                fun.IsReturnValueMut ? ValueUsage.ReturnAsMut : ValueUsage.Read)
-            : null;
-
-        if (expr is not null)
+        if (syntax.Expr is null)
         {
-            if (!CheckType(expr, fun.ReturnType))
-                expr = new BoundError(syntax.Expr);
-        }
-        else if (fun.ReturnType != Unit)
-        {
-            SideEffects.ReportError(new Diagnostic.MissingReturnValue(fun, syntax));
-            expr = new BoundError();
+            if (fun.ReturnType != Unit)
+            {
+                SideEffects.ReportError(new Diagnostic.MissingReturnValue(fun, syntax));
+                return new BoundReturn(new BoundError(), isMut: false, syntax);
+            }
+            return new BoundReturn(null, isMut: false, syntax);
         }
 
-        return new BoundReturn(expr, syntax);
+        var value = BindReturnValue(syntax.Expr, out var isMutReturn);
+        return new BoundReturn(value, isMutReturn, syntax);
     }
-    
+
+    private BoundValue BindReturnValue(ExprSyntax syntax, out bool isMutReturn)
+    {
+        if (Scope.OwnerAsFun is not FunSymbol fun)
+            throw new InvalidOperationException("Return values can only be bound on fun bodies.");
+
+        if (syntax is MutExprSyntax mutExprSyntax)
+        {
+            if (!fun.IsReturnMut)
+            {
+                SideEffects.ReportError(new Diagnostic.UnexpectedMutReturn(mutExprSyntax, fun));
+                isMutReturn = false;
+                return new BoundError(syntax);
+            }
+
+            isMutReturn = true;
+
+            var mutValue = BindValue(mutExprSyntax.Expr, ValueUsage.ReturnAsMut);
+            if (!CheckType(mutValue, fun.ReturnType))
+                return new BoundError(mutExprSyntax.Expr);
+            return mutValue;
+        }
+
+        if (fun.IsReturnMut)
+        {
+            SideEffects.ReportError(new Diagnostic.MissingMutReturn(syntax, fun));
+            isMutReturn = false;
+            return new BoundError(syntax);
+        }
+
+        isMutReturn = false;
+        var value = BindValue(syntax, ValueUsage.Read);
+        if (!CheckType(value, fun.ReturnType))
+            return new BoundError(syntax);
+        return value;
+    }
+
     #endregion
 
     #region Names and Member access

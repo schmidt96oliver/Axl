@@ -39,9 +39,13 @@ public closed class FunSymbol(string name, Symbol? owner, bool isPublic) : Symbo
     public ImmutableArray<TypeSymbol> ParameterTypes => [.. Parameters.Select(parameter => parameter.Type)];
 
     public abstract TypeSymbol ReturnType { get; }
-    
-    public bool IsReturnValueMut => false;  //TODO: Implement mut return values
-    
+
+    /// <summary>
+    /// Whether the return type was declared 'mut', which means that
+    /// it returns a place rather than a value.
+    /// </summary>
+    public abstract bool IsReturnMut { get; }
+
 
     public abstract FunBody Body { get; }
 }

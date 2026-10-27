@@ -5,14 +5,14 @@
 
 * [ ] `ArgumentMutMismatch`
 * [ ] implement exclusivity check in 'CheckCallToSingleFun'
-* [ ] implement mut return values
-  * [ ] Proper `BindReturnValue` that handles MutExpr and rejects for non-mut return -> BindExprBody, BindReturn
+* [ ] MIR: Check types in constructors
 
 * [ ] check CannotAssign diagnostic message
 * [ ] check CannotMutateReceiver diagnostic message
 * [ ] check CannotPassAsMut diagnostic message
 * [ ] check CannotReturnAsMut diagnostic message
 
+* [ ] test: UnexpectedMutReturn, MissingMutReturn. Expression bodied and return 
 * [ ] test: `mut EXPR` must reject let + fields, non-mut-self + fields
 * [ ] test: `mut EXPR` must accept var + fields, mut-self + fields
 * [ ] test: `mut EXPR` in various position

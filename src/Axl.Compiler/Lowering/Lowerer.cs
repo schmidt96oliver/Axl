@@ -12,6 +12,7 @@ public class Lowerer
     private readonly MirFunction _fun;
     private BasicBlock? _currentBlock;
     private readonly Dictionary<VariableSymbol, Place.Local> _variables = [];
+    private readonly Dictionary<TypeSymbol, RefTypeSymbol> _refTypeSymbols = [];
 
     private readonly Stack<(BasicBlock Break, BasicBlock Continue)> _loopLabels = [];
 
@@ -47,7 +48,10 @@ public class Lowerer
 
     private void MakeSignature(FunSymbol fun)
     {
-        _fun.ReturnPlace = _fun.NewLocal(fun.ReturnType, LocalKind.Return);
+        _fun.ReturnPlace = _fun.NewLocal(fun.IsReturnMut
+                ? GetRefType(fun.ReturnType)
+                : fun.ReturnType,
+            LocalKind.Return);
         _fun.ParameterPlaces = Enumerable
             .ToDictionary(fun.SelfAndParameters, param => param, MakeParameter)
             .ToFrozenDictionary();
@@ -57,7 +61,7 @@ public class Lowerer
 
     private Place.Local MakeParameter(ParameterSymbol parameter)
         => _fun.NewLocal(parameter.IsMut
-                ? new RefTypeSymbol(parameter.Type)
+                ? GetRefType(parameter.Type)
                 : parameter.Type,
             LocalKind.Parameter,
             parameter.DeclarationSyntax);
@@ -80,6 +84,17 @@ public class Lowerer
     {
         Debug.Assert(_currentBlock is null, "Current block must be terminated.");
         _currentBlock = block;
+    }
+
+
+    private RefTypeSymbol GetRefType(TypeSymbol type)
+    {
+        if (_refTypeSymbols.TryGetValue(type, out var refType))
+            return refType;
+
+        refType = new RefTypeSymbol(type);
+        _refTypeSymbols[type] = refType;
+        return refType;
     }
     
     
@@ -190,6 +205,17 @@ public class Lowerer
             }
             case BoundField field:
                 return new Place.Field(LowerPlace(field.Receiver), field.Field, field.Syntax);
+            case BoundCall { IsMutReturn: true } call:
+            {
+                // Lower the call target into a temp with ref type
+                // and hand over the deref.
+                var arguments = LowerArguments(call.ReceiverAndArguments, call.Fun.SelfAndParameters);
+                
+                var refTemp = _fun.NewTempLocal(GetRefType(value.Type));
+                Emit(new Instruction.Call(call.Fun, Target: refTemp, arguments, call.Syntax));
+                return new Place.Deref(refTemp);
+            }
+                
             default:
                 var temp = _fun.NewTempLocal(value.Type);
                 LowerInto(value, temp);
@@ -256,7 +282,21 @@ public class Lowerer
 
     private Operand LowerAssign(BoundAssign assign)
     {
-        LowerInto(assign.Value, LowerPlace(assign.Target));
+        // If the target is a call returning a mut value,
+        // it may have side effects. These must be evaluated
+        // after the arguments because of
+        //    `buffer.At(0) = buffer.ReallocateAndMutReturn(0)`
+        // The reference must be directly used.
+        
+        if (assign.Target is BoundCall)
+        {
+            var valueTemp = _fun.NewTempLocal(assign.Value.Type);
+            LowerInto(assign.Value, valueTemp);
+            var place = LowerPlace(assign.Target);
+            Emit(new Instruction.Assign(place, new Operand.Copy(valueTemp), assign.Syntax));
+        }
+        else
+            LowerInto(assign.Value, LowerPlace(assign.Target));
         return new Operand.Empty(Unit);
     }
 
@@ -270,7 +310,19 @@ public class Lowerer
         else if (call.Fun.Body is Intrinsic intrinsic)
             Emit(new Instruction.Intrinsic(intrinsic, target, arguments, call.Syntax));
         else
-            Emit(new Instruction.Call(call.Fun, target, arguments, call.Syntax));
+        {
+            if (call.IsMutReturn)
+            {
+                // Call returns a reference. We need to store the ref
+                // into a temp and deref it into target, since we are
+                // in value position.
+                var refTarget = _fun.NewTempLocal(GetRefType(call.Type));
+                Emit(new Instruction.Call(call.Fun, refTarget, arguments, call.Syntax));
+                Emit(new Instruction.Assign(target, new Operand.Copy(new Place.Deref(refTarget))));
+            }
+            else
+                Emit(new Instruction.Call(call.Fun, target, arguments, call.Syntax));
+        }
 
         return new Operand.Copy(target);
     }
@@ -416,8 +468,16 @@ public class Lowerer
 
     private Operand LowerReturn(BoundReturn @return)
     {
-        if (@return.Value is not null) 
-            LowerInto(@return.Value, _fun.ReturnPlace);
+        if (@return.Value is not null)
+        {
+            if (@return.IsMut)
+            {
+                var place = LowerPlace(@return.Value);
+                Emit(new Instruction.Assign(_fun.ReturnPlace, new Operand.Ref(place)));
+            }
+            else
+                LowerInto(@return.Value, _fun.ReturnPlace);
+        }
         else
             Emit(new Instruction.Assign(_fun.ReturnPlace, new Operand.Empty(Unit)));
 

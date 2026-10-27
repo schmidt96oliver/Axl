@@ -1,0 +1,18 @@
+﻿//@run
+//= 0
+
+// Assign target is evaluated last: the right side is read
+// before Set runs, so 'a' is overwritten with its old value.
+
+// This is to avoid dangling references in cases like
+//    `buffer.At(0) = buffer.ReallocateAndMutReturn(0)`
+
+var a = 0;
+Set(mut a, 10) = a;
+Print(a);
+
+fun Set(mut a: I32, to: I32): mut I32
+{
+    a = to;
+    return mut a;
+}
