@@ -3,6 +3,7 @@ using System.Collections.Immutable;
 using System.Diagnostics;
 using Axl.Compiler.Binding.BoundTree;
 using Axl.Compiler.Symbols;
+using Axl.Compiler.Syntax;
 
 namespace Axl.Compiler.Lowering;
 
@@ -96,6 +97,9 @@ public class Lowerer
         _refTypeSymbols[type] = refType;
         return refType;
     }
+
+    private Operand.Ref MakeRef(Place place, SyntaxNode? syntax = null)
+        => new(place, GetRefType(place.Type), syntax);
     
     
     public void LowerStmt(BoundStmt stmt)
@@ -343,7 +347,7 @@ public class Lowerer
             if (parameters[i].IsMut)
             {
                 Debug.Assert(boundArguments[i].IsMut);
-                arguments.Add(new Operand.Ref(LowerPlace(boundArguments[i].Value)));
+                arguments.Add(MakeRef(LowerPlace(boundArguments[i].Value)));
             }
             else if (boundArguments[i].Value is BoundConst || !mightHaveSideEffect)
             {
@@ -473,7 +477,7 @@ public class Lowerer
             if (@return.IsMut)
             {
                 var place = LowerPlace(@return.Value);
-                Emit(new Instruction.Assign(_fun.ReturnPlace, new Operand.Ref(place)));
+                Emit(new Instruction.Assign(_fun.ReturnPlace, MakeRef(place)));
             }
             else
                 LowerInto(@return.Value, _fun.ReturnPlace);

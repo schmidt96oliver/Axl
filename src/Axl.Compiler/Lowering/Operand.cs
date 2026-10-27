@@ -6,15 +6,20 @@ namespace Axl.Compiler.Lowering;
 
 public closed record Operand(TypeSymbol Type, SyntaxNode? Syntax)
 {
-    public sealed record Copy(Place Place, SyntaxNode? Syntax = null) : Operand(Place.Type, Syntax);
+    public sealed record Copy(Place Place, SyntaxNode? Syntax = null) 
+        : Operand(Place.Type, Syntax);
 
-    public sealed record Ref(Place Place, SyntaxNode? Syntax = null) : Operand(Place.Type, Syntax);
+    public sealed record Ref(Place Place, TypeSymbol Type, SyntaxNode? Syntax = null) : 
+        Operand(Type, Syntax);
     
-    public sealed record Const(ConstValue Value, TypeSymbol Type, SyntaxNode? Syntax = null) : Operand(Type, Syntax);
+    public sealed record Const(ConstValue Value, TypeSymbol Type, SyntaxNode? Syntax = null) 
+        : Operand(Type, Syntax);
 
-    public sealed record Empty(TypeSymbol Type, SyntaxNode? Syntax = null) : Operand(Type, Syntax);
+    public sealed record Empty(TypeSymbol Type, SyntaxNode? Syntax = null) 
+        : Operand(Type, Syntax);
 
-    public sealed record Unreachable() : Operand(NeverTypeSymbol.Instance, null)
+    public sealed record Unreachable() 
+        : Operand(NeverTypeSymbol.Instance, null)
     {
         public static readonly Unreachable Instance = new ();
     }
