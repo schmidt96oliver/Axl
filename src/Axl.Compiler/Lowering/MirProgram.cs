@@ -4,9 +4,9 @@ namespace Axl.Compiler.Lowering;
 
 public sealed class MirProgram(Compilation compilation)
 {
-    private readonly Dictionary<FunSymbol, MirFunction> _loweredFuns = [];
+    private readonly Dictionary<FunSymbol, MutMirFunction> _loweredFuns = [];
 
-    public MirFunction GetMirFunction(FunSymbol fun)
+    public MutMirFunction GetMirFunction(FunSymbol fun)
     {
         if (_loweredFuns.TryGetValue(fun, out var mirFun))
             return mirFun;

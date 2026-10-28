@@ -3,26 +3,23 @@
 
 # Now
 
+* Analysis, collecting funs, reachability
+* return type analysis on MIR
+* Never nameable
+* Panic, Assert, ...
+
 * `ArgumentMutMismatch` -> `MissingMut`, `UnexpectedMut`
 * implement exclusivity check in 'CheckCallToSingleFun'
-
-* check CannotAssign diagnostic message
-* check CannotMutateReceiver diagnostic message
 
 * Intrinsic lookup: Remove receiver, only by (receiver, arguments) (static and method the same)
 * Split OperatorKind and VmCallKind -> Intrinsic = union
 
-* Miri: `Environment` -> `ActivationFrame` with .GetRef that throws if exited
-* Miri: Store reference as Root (ActivationFrame, LocalId) + Path (FieldSymbol[]). See Claude, think why?
-
-* Validator 
-  * checks type and ref types
-  * unreachable
-  * terminators
-
-* Try to pass big structs by ref
+* Validator
 
 # Questions / Little ones****
+
+* ?? Miri: `Environment` -> `ActivationFrame` with .GetRef that throws if exited
+* ?? Miri: Store reference as Root (ActivationFrame, LocalId) + Path (FieldSymbol[]). See Claude, think why?
 
 # Milestones
 

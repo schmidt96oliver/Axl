@@ -5,7 +5,7 @@ namespace Axl.Compiler.Lowering;
 
 public static class MirPrinter
 {
-    public static string Print(this MirFunction function)
+    public static string Print(this MutMirFunction function)
         => $"""
            --- fun {function.DebugName}({ string.Join(", ", function.Locals.Where(l => l.Kind is LocalKind.Parameter).Select(PrintWithType)) })
            { string.Join('\n', function.Locals.Where(l => l.Kind is not LocalKind.Parameter)
@@ -85,7 +85,7 @@ public static class MirPrinter
             Terminator.Unreachable => "unreachable",
         };
 
-    public static string Print(this BasicBlock basicBlock)
+    public static string Print(this MutBasicBlock basicBlock)
         => basicBlock.Instructions.Count > 0
             ? $"""
                {basicBlock.Id}: {basicBlock.DebugLabel}
