@@ -2,7 +2,7 @@
 using Axl.Compiler.Symbols;
 using Axl.Compiler.Syntax;
 
-namespace Axl.Compiler.Lowering;
+namespace Axl.Compiler.Mir;
 
 public sealed class MutMirFunction
 {

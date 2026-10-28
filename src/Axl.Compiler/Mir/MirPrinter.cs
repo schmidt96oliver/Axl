@@ -1,7 +1,7 @@
 ﻿using Axl.Compiler.Symbols;
 using Axl.Compiler.Syntax.Tree;
 
-namespace Axl.Compiler.Lowering;
+namespace Axl.Compiler.Mir;
 
 public static class MirPrinter
 {

@@ -2,7 +2,7 @@ using System.Collections.Immutable;
 using Axl.Compiler;
 using Axl.Compiler.Binding.BoundTree;
 using Axl.Compiler.Diagnostics;
-using Axl.Compiler.Lowering;
+using Axl.Compiler.Mir;
 using Axl.Compiler.Symbols;
 using Axl.Compiler.Testing;
 using Axl.Compiler.Text;

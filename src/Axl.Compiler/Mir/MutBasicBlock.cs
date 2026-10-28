@@ -1,4 +1,4 @@
-﻿namespace Axl.Compiler.Lowering;
+﻿namespace Axl.Compiler.Mir;
 
 public readonly record struct BasicBlockId(int Value)
 {

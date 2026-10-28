@@ -1,7 +1,7 @@
 ﻿using Axl.Compiler.Symbols;
 using Axl.Compiler.Syntax;
 
-namespace Axl.Compiler.Lowering;
+namespace Axl.Compiler.Mir;
 
 public readonly record struct LocalId(int Value)
 {

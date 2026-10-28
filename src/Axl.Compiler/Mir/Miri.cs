@@ -4,7 +4,7 @@ using System.Globalization;
 using System.Runtime.InteropServices;
 using Axl.Compiler.Symbols;
 
-namespace Axl.Compiler.Lowering;
+namespace Axl.Compiler.Mir;
 
 using Environment = Dictionary<LocalId, object>;
 

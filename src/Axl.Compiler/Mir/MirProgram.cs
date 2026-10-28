@@ -1,6 +1,6 @@
 ﻿using Axl.Compiler.Symbols;
 
-namespace Axl.Compiler.Lowering;
+namespace Axl.Compiler.Mir;
 
 public sealed class MirProgram(Compilation compilation)
 {

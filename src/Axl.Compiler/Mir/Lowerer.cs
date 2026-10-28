@@ -5,7 +5,7 @@ using Axl.Compiler.Binding.BoundTree;
 using Axl.Compiler.Symbols;
 using Axl.Compiler.Syntax;
 
-namespace Axl.Compiler.Lowering;
+namespace Axl.Compiler.Mir;
 
 public class Lowerer
 {

@@ -1,6 +1,6 @@
 ﻿using System.Diagnostics;
 using Axl.Compiler.Diagnostics;
-using Axl.Compiler.Lowering;
+using Axl.Compiler.Mir;
 
 namespace Axl.Compiler.Testing;
 

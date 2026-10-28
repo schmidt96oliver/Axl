@@ -3,7 +3,7 @@ using System.Collections.Immutable;
 using Axl.Compiler.Symbols;
 using Axl.Compiler.Syntax;
 
-namespace Axl.Compiler.Lowering;
+namespace Axl.Compiler.Mir;
 
 public closed record Instruction(Place Target, ImmutableArray<Operand> Operands, SyntaxNode? Syntax)
 {

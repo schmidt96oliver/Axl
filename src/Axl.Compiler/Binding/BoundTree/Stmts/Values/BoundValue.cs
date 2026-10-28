@@ -1,5 +1,4 @@
-﻿using Axl.Compiler.Lowering;
-using Axl.Compiler.Symbols;
+﻿using Axl.Compiler.Symbols;
 using Axl.Compiler.Syntax;
 using Axl.Compiler.Syntax.Tree;
 

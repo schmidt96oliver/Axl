@@ -1,6 +1,6 @@
 ﻿using Axl.Compiler.Syntax;
 
-namespace Axl.Compiler.Lowering;
+namespace Axl.Compiler.Mir;
 
 public closed record Terminator(SyntaxNode? Syntax)
 {
