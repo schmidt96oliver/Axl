@@ -88,12 +88,15 @@ public static class MirPrinter
     public static string Print(this MutBasicBlock basicBlock)
         => basicBlock.Instructions.Count > 0
             ? $"""
-               {basicBlock.Id}: {basicBlock.DebugLabel}
+               {Reachability(basicBlock)}{basicBlock.Id}: "{basicBlock.DebugLabel}"
                {string.Join('\n', basicBlock.Instructions.Select(i => "   " + i.Print()))}
                   {basicBlock.Terminator?.Print() ?? "missing terminator"}
                """
             : $"""
-               {basicBlock.Id}: {basicBlock.DebugLabel}
+               {Reachability(basicBlock)}{basicBlock.Id}: {basicBlock.DebugLabel}
                   {basicBlock.Terminator?.Print() ?? "missing terminator"}
                """;
+
+    private static string Reachability(MutBasicBlock block)
+        => block.MirFunction.Analysis.IsReachable(block) ? "" : "unreachable ";
 }

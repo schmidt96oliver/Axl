@@ -1,4 +1,5 @@
 ﻿using System.Collections.Frozen;
+using Axl.Compiler.Mir.Analysis;
 using Axl.Compiler.Symbols;
 using Axl.Compiler.Syntax;
 
@@ -44,6 +45,16 @@ public sealed class MutMirFunction
     public IReadOnlyList<MutBasicBlock> BasicBlocks => _basicBlocks.AsReadOnly();
     
     public MutBasicBlock Entry => BasicBlocks[0];
+
+
+    public FunctionAnalysis Analysis
+    {
+        get
+        {
+            field ??= new FunctionAnalysis(this);
+            return field;
+        }
+    }
 
 
     public MutMirFunction(string debugName)
