@@ -8,5 +8,7 @@ public sealed class BoundAssign(BoundValue target, BoundValue value, TypeSymbol 
 {
     public BoundValue Target { get; } = target;
     public BoundValue Value { get; } = value;
-    
+
+    public override IEnumerable<BoundStmt> GetChildren()
+        => [Target, Value];
 }

@@ -30,4 +30,7 @@ public sealed class BoundValueOrTypeRef : BoundValue
         AsValue = asValue;
         AsTypeRef = asTypeRef;
     }
+
+    public override IEnumerable<BoundStmt> GetChildren()
+        => [AsValue];
 }

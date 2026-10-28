@@ -1,4 +1,5 @@
-﻿using Axl.Compiler.Binding;
+﻿using System.Diagnostics;
+using Axl.Compiler.Binding;
 
 namespace Axl.Compiler.Symbols;
 

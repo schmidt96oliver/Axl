@@ -7,4 +7,7 @@ public sealed class BoundLogicAnd(BoundValue left, BoundValue right, TypeSymbol 
 {
     public BoundValue Left { get; } = left;
     public BoundValue Right { get; } = right;
+
+    public override IEnumerable<BoundStmt> GetChildren()
+        => [Left, Right];
 }

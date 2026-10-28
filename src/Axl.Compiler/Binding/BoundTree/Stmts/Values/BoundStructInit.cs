@@ -9,6 +9,9 @@ public sealed class BoundStructInit(StructSymbol @struct, ImmutableArray<BoundFi
 {
     public StructSymbol Struct { get; } = @struct;
     public ImmutableArray<BoundFieldInit> FieldInits { get; } = fieldInits;
+
+    public override IEnumerable<BoundStmt> GetChildren()
+        => FieldInits;
 }
 
 public sealed class BoundFieldInit(FieldSymbol field, BoundValue value, SyntaxNode? syntax)
@@ -16,4 +19,7 @@ public sealed class BoundFieldInit(FieldSymbol field, BoundValue value, SyntaxNo
 {
     public BoundValue Value { get; } = value;
     public FieldSymbol Field { get; } = field;
+
+    public override IEnumerable<BoundStmt> GetChildren()
+        => [Value];
 }

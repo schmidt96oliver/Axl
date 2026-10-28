@@ -1,4 +1,5 @@
 ﻿using System.Collections.Frozen;
+using Axl.Compiler.Diagnostics;
 using Axl.Compiler.Mir.Analysis;
 using Axl.Compiler.Symbols;
 using Axl.Compiler.Syntax;
@@ -33,12 +34,15 @@ public sealed class MutMirFunction
     /// </summary>
     public int Version { get; internal set; } = 0;
 
+    public FunSymbol Symbol { get; }
+
+    public Compilation Compilation { get; }
 
     public FrozenDictionary<ParameterSymbol, Place.Local> ParameterPlaces { get; set; }
 
     public Place.Local ReturnPlace { get; set; }
 
-    public string DebugName { get; }
+    public string DebugName => Symbol.QualifiedName;
 
     public IReadOnlyList<Place.Local> Locals => _locals.AsReadOnly();
 
@@ -57,11 +61,21 @@ public sealed class MutMirFunction
     }
 
 
-    public MutMirFunction(string debugName)
+    public MutMirFunction(Compilation compilation, FunSymbol fun)
     {
-        DebugName = debugName;
+        Compilation = compilation;
+        Symbol = fun;
         AddBasicBlock();
     }
+
+    /// <summary>
+    /// Runs all checks that produce diagnostics.
+    /// </summary>
+    public void Analyze(DiagnosticBag diagnosticBag)
+    {
+        ReturnCheck.Check(this, diagnosticBag);
+    }
+    
 
     public MutBasicBlock AddBasicBlock(string debugLabel = "")
     {

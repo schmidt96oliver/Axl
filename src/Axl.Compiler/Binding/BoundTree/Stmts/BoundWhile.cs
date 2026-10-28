@@ -7,4 +7,7 @@ public sealed class BoundWhile(BoundValue condition, BoundValue body, SyntaxNode
 {
     public BoundValue Condition { get; } = condition;
     public BoundValue Body { get; } = body;
+
+    public override IEnumerable<BoundStmt> GetChildren()
+        => [Condition, Body];
 }

@@ -7,4 +7,7 @@ public sealed class BoundVarDecl(VariableSymbol variable, BoundValue initializer
 {
     public VariableSymbol Variable { get; } = variable;
     public BoundValue Initializer { get; } = initializer;
+
+    public override IEnumerable<BoundStmt> GetChildren()
+        => [Initializer];
 }

@@ -1,4 +1,5 @@
-﻿using Axl.Compiler.Syntax;
+﻿using Axl.Compiler.Diagnostics;
+using Axl.Compiler.Syntax;
 
 namespace Axl.Compiler.Mir;
 
@@ -12,6 +13,9 @@ public closed record Terminator(SyntaxNode? Syntax)
     
     public sealed record Return(SyntaxNode? Syntax = null)
         : Terminator(Syntax);
+
+    public sealed record MissingReturn(SyntaxNode ErrorSyntax)
+        : Terminator(ErrorSyntax);
     
     public sealed record Unreachable(SyntaxNode? Syntax = null)
         : Terminator(Syntax);

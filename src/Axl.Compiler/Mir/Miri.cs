@@ -37,7 +37,9 @@ public sealed class Miri
 
     private object Call(FunSymbol fun, ImmutableArray<object> arguments)
     {
-        var mirFun = _program.GetMirFunction(fun);
+        var mirFun = _program.TryGetMirFunction(fun);
+        if (mirFun is null)
+            throw new InvalidOperationException("Cannot run MIR with errors.");
 
         var environment = new Environment();
         for (var i = 0; i < fun.SelfAndParameters.Length; i++)

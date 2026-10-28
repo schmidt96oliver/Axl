@@ -270,11 +270,7 @@ public sealed class Binder(Scope scope, BinderSideEffects sideEffects)
 
         var stmts = inBlockBinder.BindStmtsAndLocalFunBodies(syntaxNodes[index..], localFuns);
         
-        var block = new BoundBlock(stmts, localFuns, Unit, syntax);
-        if (!block.IsDiverging)
-            block = block.WithAdditionalStmts(new BoundReturn(null, false));
-
-        return block;
+        return new BoundBlock(stmts, localFuns, Unit, syntax);
     }
 
     public NamespaceSymbol BindNamespaceDeclaration(NamespaceDeclaration declaration)
@@ -671,18 +667,7 @@ public sealed class Binder(Scope scope, BinderSideEffects sideEffects)
 
         // --- Block body
         Debug.Assert(syntax.Expr is BlockExprSyntax);
-        var block = bodyBinder.BindBlock((BlockExprSyntax)syntax.Expr);
-
-        // Check that all code-paths return a value
-        if (!block.IsDiverging)
-        {
-            if (fun.ReturnType == Unit && !fun.IsReturnMut)
-                block = block.WithAdditionalStmts(new BoundReturn(null, false));
-            else
-                SideEffects.ReportError(new Diagnostic.MissingReturn(block.Syntax!));
-        }
-
-        return block;
+        return bodyBinder.BindBlock((BlockExprSyntax)syntax.Expr);
     }
 
     public FunBody BindIntrinsicFunBody(FunBodySyntax syntax, BoundAnnotation annotation)

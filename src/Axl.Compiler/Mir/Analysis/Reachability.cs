@@ -1,5 +1,6 @@
 ﻿using System.Collections.Frozen;
 using System.Diagnostics;
+using Axl.Compiler.Diagnostics;
 
 namespace Axl.Compiler.Mir.Analysis;
 
@@ -58,6 +59,7 @@ public sealed class Reachability
             
             case null:
             case Terminator.Return:
+            case Terminator.MissingReturn:
             case Terminator.Unreachable:
                 break;
             

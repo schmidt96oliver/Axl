@@ -20,4 +20,9 @@ public sealed class BoundVariable(VariableSymbol variable, SyntaxNode? syntax = 
     public bool IsSelf => Variable is ParameterSymbol { IsSelf: true };
 
     public bool IsImplicitSelf => Variable is ParameterSymbol { IsSelf: true } && Syntax is null;
+
+
+    /// <inheritdoc />
+    public override IEnumerable<BoundStmt> GetChildren()
+        => [];
 }

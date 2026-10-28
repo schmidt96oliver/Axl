@@ -32,7 +32,7 @@ public class Lowerer
         if (fun.Body is not BoundBlock body)
             throw new ArgumentException("Cannot lower funs without blocks.", nameof(fun));
 
-        var mirFun = new MutMirFunction(fun.QualifiedName);
+        var mirFun = new MutMirFunction(compilation, fun);
         
         var lowerer = new Lowerer(compilation, mirFun);
         lowerer.MakeSignature(fun);
@@ -41,7 +41,13 @@ public class Lowerer
         if (lowerer._currentBlock is not null &&
             lowerer._currentBlock.Terminator is null)
         {
-            lowerer.Terminate(new Terminator.Unreachable());
+            if (fun.ReturnType == compilation.BaseLibrary.Unit)
+            {
+                lowerer.Emit(new Instruction.Assign(mirFun.ReturnPlace, new Operand.Empty(compilation.BaseLibrary.Unit)));
+                lowerer.Terminate(new Terminator.Return());
+            }
+            else
+                lowerer.Terminate(new Terminator.MissingReturn(body.Syntax!));
         }
 
         return lowerer._fun;

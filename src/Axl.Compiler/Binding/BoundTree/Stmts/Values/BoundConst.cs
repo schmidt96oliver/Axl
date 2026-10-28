@@ -9,4 +9,7 @@ public sealed class BoundConst(ConstValue value, TypeSymbol type, SyntaxNode? sy
     : BoundValue(type, syntax)
 {
     public ConstValue Value { get; } = value;
+
+    public override IEnumerable<BoundStmt> GetChildren()
+        => [];
 }

@@ -82,6 +82,7 @@ public static class MirPrinter
             Terminator.Branch branch => $"branch {branch.Condition.Print()} - True: {branch.True.Id} False: {branch.False.Id}",
             Terminator.Goto @goto => $"goto {@goto.Block.Id}",
             Terminator.Return => "return",
+            Terminator.MissingReturn => "missing return",
             Terminator.Unreachable => "unreachable",
         };
 

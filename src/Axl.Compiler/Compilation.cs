@@ -1,8 +1,10 @@
 ﻿using System.Collections.Immutable;
 using System.Diagnostics;
 using Axl.Compiler.Binding;
+using Axl.Compiler.Binding.BoundTree;
 using Axl.Compiler.Binding.Scopes;
 using Axl.Compiler.Diagnostics;
+using Axl.Compiler.Mir;
 using Axl.Compiler.Symbols;
 using Axl.Compiler.Syntax;
 using Axl.Compiler.Text;
@@ -84,6 +86,15 @@ public class Compilation
         }
     }
 
+    public MirProgram MirProgram
+    {
+        get
+        {
+            field ??= new MirProgram(this);
+            return field;
+        }
+    }
+
 
     private Compilation(ImmutableArray<SyntaxTree> syntaxTrees, ImmutableArray<Compilation> referencedCompilations)
     {
@@ -125,7 +136,10 @@ public class Compilation
         RootNamespace.Complete(sideEffects);
         foreach (var script in Scripts)
             script.Complete(sideEffects);
-
+        
+        foreach (var mirFun in AllFunsRecursive().Select(MirProgram.TryGetMirFunction))
+            mirFun?.Analyze(sideEffects.DiagnosticBag);
+        
         Diagnostics = [.. SyntaxTrees.SelectMany(tree => tree.Diagnostics), ..sideEffects.DiagnosticBag.Drain()];
         SemanticSideTable = sideEffects.SemanticSideTable;
     }
@@ -181,5 +195,18 @@ public class Compilation
         }
     }
 
-    
+    public IEnumerable<FunSymbol> AllFunsRecursive()
+    {
+        return [.. Inner(RootNamespace), .. Scripts.SelectMany(Inner)];
+        IEnumerable<FunSymbol> Inner(Symbol symbol) => symbol switch
+        {
+            FunSymbol { Body: BoundBlock bodyBlock } funSymbol => [funSymbol, .. bodyBlock.LocalFunsRecursive()],
+            FunSymbol funSymbol => [funSymbol],
+            ScriptSymbol script => [.. Inner(script.Fun), .. script.Members.OfType<FunSymbol>()],
+            NamespaceOrTypeSymbol namespaceOrTypeSymbol => namespaceOrTypeSymbol.Members.OfType<FunSymbol>(),
+
+            FieldSymbol => [],
+            VariableSymbol => [],
+        };
+    }
 }

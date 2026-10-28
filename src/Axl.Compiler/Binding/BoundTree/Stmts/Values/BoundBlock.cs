@@ -13,10 +13,18 @@ public sealed class BoundBlock(
     public ImmutableArray<BoundStmt> Stmts { get; } = stmts;
     public ImmutableArray<LocalFunSymbol> LocalFuns { get; } = localFuns;
 
-    /// <summary>
-    /// Returns this block with <paramref name="additionalStmts"/> attached. Does
-    /// not modify this block.
-    /// </summary>
-    public BoundBlock WithAdditionalStmts(params IEnumerable<BoundStmt> additionalStmts)
-        => new([.. Stmts, .. additionalStmts], LocalFuns, Type, Syntax);
+    public override IEnumerable<BoundStmt> GetChildren()
+        => Stmts;
+
+    public IEnumerable<FunSymbol> LocalFunsRecursive()
+    {
+        return Inner(this);
+
+        IEnumerable<FunSymbol> Inner(BoundStmt stmt) => stmt is BoundBlock block
+            ?
+            [
+                .. block.LocalFuns, .. stmt.GetChildren().SelectMany(Inner)
+            ]
+            : stmt.GetChildren().SelectMany(Inner);
+    }
 }

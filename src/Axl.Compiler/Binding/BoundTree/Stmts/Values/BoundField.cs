@@ -17,4 +17,7 @@ public sealed class BoundField(BoundValue receiver, FieldSymbol field, SyntaxNod
         // At(1).X = 10;
     /// <inheritdoc />
     public override BoundValue? PlaceRoot => Receiver.PlaceRoot;
+
+    public override IEnumerable<BoundStmt> GetChildren()
+        => [Receiver];
 }

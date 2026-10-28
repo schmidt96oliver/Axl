@@ -26,6 +26,9 @@ public sealed class BoundCall(
 
     /// <inheritdoc />
     public override BoundValue? PlaceRoot => IsMutReturn ? this : null;
+
+    public override IEnumerable<BoundStmt> GetChildren()
+        => ReceiverAndArguments.Select(arg => arg.Value);
 }
 
 public sealed class BoundArgument(BoundValue value, bool isMut)

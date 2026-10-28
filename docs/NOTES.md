@@ -3,8 +3,6 @@
 
 # Now
 
-* Analysis, collecting funs, reachability
-* return type analysis on MIR
 * Never nameable
 * Panic, Assert, ...
 
@@ -21,9 +19,16 @@
 * ?? Miri: `Environment` -> `ActivationFrame` with .GetRef that throws if exited
 * ?? Miri: Store reference as Root (ActivationFrame, LocalId) + Path (FieldSymbol[]). See Claude, think why?
 
+* ?? BoundParameter and BoundSelf again?
+
 # Milestones
 
 # Later
+
+* Unreachable code analysis
+  * Build HashSet for reachable StmtSyntax by walk on MIR. Then walk over syntax tree to report.
+* Unused variables
+* ?? Drop initializers + definite assignment
 
 # Ideas
 [Ideas](IDEAS.md)

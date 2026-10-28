@@ -10,4 +10,7 @@ public sealed class BoundIfExpr(BoundValue condition, BoundValue then, BoundValu
     public BoundValue Condition { get; } = condition;
     public BoundValue Then { get; } = then;
     public BoundValue Else { get; } = @else;
+
+    public override IEnumerable<BoundStmt> GetChildren()
+        => [Condition, Then, Else];
 }

@@ -48,30 +48,42 @@ fun IfExpr1(): I32
 fun IfExpr2(): I32
 { let a = if (true) 2 else return 2; } //~error MissingReturn
 
-// --- While ignored
-fun While(): I32
-{ while (true) { return 1; } } //~error MissingReturn
+// --- While true
+fun While1(): I32
+{ while (true) { return 1; } } 
+fun While2(): I32
+{ while (false) { return 1; } }     //~error MissingReturn
+fun While3(): I32
+{ while (true) { break; return 1; } }     //~error MissingReturn
+fun While4(): I32
+{ while (true) { continue; return 1; } } 
+fun While5(): I32
+{ while (true) { return 1; break; } }
+fun While6(): I32
+{ while (true) { } }
 
-// --- If statement
+// --- If statement true
 fun IfStmt1(): I32
-{ if (true) return 1; } //~error MissingReturn
-
+{ if (true) return 1; } 
 fun IfStmt2(): I32
+{ if (false) return 1; } //~error MissingReturn
+
+fun IfStmt3(): I32
 { 
     if (true) return 1;
     else return 2;
 }
 
-fun IfStmt3(): I32
+fun IfStmt4(): I32
 {
     if (true)
     {
         if (true) return 1;
     }
     else return 2;
-}   //~error MissingReturn
+}
 
-fun IfStmt4(): I32
+fun IfStmt5(): I32
 {
     if (true)
     {
@@ -81,7 +93,7 @@ fun IfStmt4(): I32
     else return 2;
 }  
 
-fun IfStmt5(): I32
+fun IfStmt6(): I32
 {
     if (return 1)
     { }

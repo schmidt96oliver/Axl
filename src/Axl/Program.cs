@@ -50,7 +50,7 @@ switch (args[0])
 
         foreach (var fun in AllFuns(compilation.Scripts[0]))
         {
-            Console.WriteLine(program.GetMirFunction(fun).Print());
+            Console.WriteLine(program.TryGetMirFunction(fun)?.Print());
             Console.WriteLine();
         }
 

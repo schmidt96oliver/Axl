@@ -8,4 +8,7 @@ public sealed class BoundReturn(BoundValue? value, bool isMut, SyntaxNode? synta
 {
     public BoundValue? Value { get; } = value;
     public bool IsMut { get; } = isMut;
+
+    public override IEnumerable<BoundStmt> GetChildren()
+        => Value is not null ? [Value] : [];
 }
