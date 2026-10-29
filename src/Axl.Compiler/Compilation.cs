@@ -1,4 +1,5 @@
-﻿using System.Collections.Immutable;
+﻿using System.Collections.Frozen;
+using System.Collections.Immutable;
 using System.Diagnostics;
 using Axl.Compiler.Binding;
 using Axl.Compiler.Binding.BoundTree;
@@ -12,10 +13,17 @@ using Binder = Axl.Compiler.Binding.Binder;
 
 namespace Axl.Compiler;
 
+public sealed record LoweredFunBody(MutMirFunction? MirFunction, ImmutableArray<Diagnostic> Diagnostics);
+
 public class Compilation
 {
     public static string BaseLibraryDirectory
         => Path.Combine(AppContext.BaseDirectory, "BaseLib");
+
+    
+
+    private readonly Dictionary<FunSymbol, LoweredFunBody> _loweredBodies = [];
+    private bool _isComplete = false;
     
     
     /// <summary>
@@ -85,16 +93,30 @@ public class Compilation
         }
     }
 
-    public MirProgram MirProgram
+    /// <summary>
+    /// Enumerates all funs contained in this compilation, excluding
+    /// those in <see cref="ReferencedCompilations"/>.
+    /// </summary>
+    public IEnumerable<FunSymbol> AllFuns
     {
         get
         {
-            field ??= new MirProgram(this);
-            return field;
+            return [.. Inner(RootNamespace), .. Scripts.SelectMany(Inner)];
+
+            IEnumerable<FunSymbol> Inner(Symbol symbol) => symbol switch
+            {
+                FunSymbol { Body: BoundBlock bodyBlock } funSymbol => [funSymbol, .. bodyBlock.LocalFunsRecursive()],
+                FunSymbol funSymbol => [funSymbol],
+                ScriptSymbol script => [.. Inner(script.Fun), .. script.Members.OfType<FunSymbol>()],
+                NamespaceOrTypeSymbol namespaceOrTypeSymbol => namespaceOrTypeSymbol.Members.OfType<FunSymbol>(),
+
+                FieldSymbol => [],
+                VariableSymbol => [],
+            };
         }
     }
-
-
+    
+    
     private Compilation(ImmutableArray<SyntaxTree> syntaxTrees, ImmutableArray<Compilation> referencedCompilations)
     {
         SyntaxTrees = syntaxTrees;
@@ -129,6 +151,8 @@ public class Compilation
 
     private void Complete()
     {
+        if (_isComplete) return;
+        
         var sideEffects = new BinderSideEffects();
         
         BaseLibrary.Complete(sideEffects.DiagnosticBag);
@@ -136,11 +160,59 @@ public class Compilation
         foreach (var script in Scripts)
             script.Complete(sideEffects);
         
-        foreach (var mirFun in AllFunsRecursive().Select(MirProgram.TryGetMirFunction))
-            mirFun?.Analyze(sideEffects.DiagnosticBag);
+        Diagnostics =
+        [
+            .. SyntaxTrees.SelectMany(tree => tree.Diagnostics),
+            .. sideEffects.DiagnosticBag.Drain(),
+            .. AllFuns.SelectMany(fun => GetLoweredFunBody(fun).Diagnostics)
+        ];
         
-        Diagnostics = [.. SyntaxTrees.SelectMany(tree => tree.Diagnostics), ..sideEffects.DiagnosticBag.Drain()];
         SemanticSideTable = sideEffects.SemanticSideTable;
+        _isComplete = true;
+    }
+
+    public LoweredFunBody GetLoweredFunBody(FunSymbol fun)
+    {
+        if (fun.Compilation != this)
+            return fun.Compilation.GetLoweredFunBody(fun);
+        
+        if (_loweredBodies.TryGetValue(fun, out var loweredFun))
+            return loweredFun;
+
+        //TODO: Implement error tolerant MIR
+        if (fun.Body is not BoundBlock { HasError: false })
+        {
+            var loweredBody = new LoweredFunBody(null, []);
+            _loweredBodies[fun] = loweredBody;
+            return loweredBody;
+        }
+        else
+        {
+            var mirFun = Lowerer.Lower(fun, this);
+            var bag = new DiagnosticBag();
+            mirFun.Analyze(bag);
+
+            var loweredBody = new LoweredFunBody(mirFun, bag.Drain());
+            _loweredBodies[fun] = loweredBody;
+            return loweredBody;
+        }
+    }
+
+
+    public MirProgram Lower(ScriptSymbol entryScript)
+    {
+        if (entryScript.Compilation != this || !Scripts.Contains(entryScript))
+            throw new ArgumentException("The given script is not part of this compilation.", nameof(entryScript));
+        
+        Complete();
+        
+        if (Diagnostics.HasError || ReferencedCompilations.Any(c => c.Diagnostics.HasError))
+            throw new InvalidOperationException("Cannot lower program with errors.");
+
+        var scriptMirFun = _loweredBodies.GetValueOrDefault(entryScript.Fun)?.MirFunction ??
+                           throw new ArgumentException("The given script is not part of this compilation.",
+                               nameof(entryScript));
+        return new MirProgram(f => GetLoweredFunBody(f).MirFunction!, scriptMirFun);
     }
     
 
@@ -194,18 +266,5 @@ public class Compilation
         }
     }
 
-    public IEnumerable<FunSymbol> AllFunsRecursive()
-    {
-        return [.. Inner(RootNamespace), .. Scripts.SelectMany(Inner)];
-        IEnumerable<FunSymbol> Inner(Symbol symbol) => symbol switch
-        {
-            FunSymbol { Body: BoundBlock bodyBlock } funSymbol => [funSymbol, .. bodyBlock.LocalFunsRecursive()],
-            FunSymbol funSymbol => [funSymbol],
-            ScriptSymbol script => [.. Inner(script.Fun), .. script.Members.OfType<FunSymbol>()],
-            NamespaceOrTypeSymbol namespaceOrTypeSymbol => namespaceOrTypeSymbol.Members.OfType<FunSymbol>(),
-
-            FieldSymbol => [],
-            VariableSymbol => [],
-        };
-    }
+    
 }

@@ -63,7 +63,8 @@ public sealed class Evaluator
                 break;
 
             case TestKind.Run:
-                evaluator.CheckExpectedOutput();
+                if (evaluator._failedChecks.Count == 0)
+                    evaluator.CheckExpectedOutput();
                 break;
 
             default:
@@ -174,7 +175,7 @@ public sealed class Evaluator
             return;
         }
         
-        Miri.Run(new MirProgram(_compilation), _compilation.Scripts[0].Fun, output);
+        Miri.Run(_compilation.Lower(_compilation.Scripts[0]), output);
         
         var actualOutput = Normalize(output.ToString());
 

@@ -46,19 +46,15 @@ switch (args[0])
                 : diagnostic.GetDisplayString(testDirectory));
         }
 
-        var program = new MirProgram(compilation);
-
-        foreach (var fun in AllFuns(compilation.Scripts[0]))
+        foreach (var fun in compilation.AllFuns)
         {
-            Console.WriteLine(program.TryGetMirFunction(fun)?.Print());
+            Console.WriteLine(compilation.GetLoweredFunBody(fun).MirFunction.Print());
             Console.WriteLine();
         }
 
         if (!allDiagnostics.HasError)
-            Miri.Run(program, compilation.Scripts[0].Fun, Console.Out);
+            Miri.Run(compilation.Lower(compilation.Scripts[0]), Console.Out);
 
-        // if (!allDiagnostics.HasError)
-        //     BoundTreeInterpreter.Run(compilation.Scripts[0].Fun, Console.Out);
         break;
     }
 

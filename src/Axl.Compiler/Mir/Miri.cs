@@ -29,15 +29,15 @@ public sealed class Miri
         _output = output;
     }
 
-    public static void Run(MirProgram program, FunSymbol entry, TextWriter output)
+    public static void Run(MirProgram program, TextWriter output)
     {
         var miri = new Miri(program, output);
-        miri.Call(entry, []);
+        miri.Call(program.Entry.Symbol, []);
     }
 
     private object Call(FunSymbol fun, ImmutableArray<object> arguments)
     {
-        var mirFun = _program.TryGetMirFunction(fun);
+        var mirFun = _program.GetMirFunction(fun);
         if (mirFun is null)
             throw new InvalidOperationException("Cannot run MIR with errors.");
 
