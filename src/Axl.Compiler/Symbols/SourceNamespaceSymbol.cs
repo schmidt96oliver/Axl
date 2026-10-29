@@ -6,8 +6,16 @@ using Axl.Compiler.Syntax;
 
 namespace Axl.Compiler.Symbols;
 
-public sealed class SourceNamespaceSymbol(NamespaceDeclaration declaration, Scope enclosingScope, bool isRoot)
-    : NamespaceSymbol(declaration.Name, enclosingScope.Owner, isRoot)
+// Because root is created as SourceNamespaceSymbol as well, we need
+// to pass compilation and owner separately and cannot derive it from
+// scope. Otherwise, asking the GlobalScope for it starts an infinite loop :/.
+public sealed class SourceNamespaceSymbol(
+    Compilation compilation,
+    NamespaceDeclaration declaration,
+    Symbol? owner,
+    Scope enclosingScope,
+    bool isRoot)
+    : NamespaceSymbol(compilation, declaration.Name, owner, isRoot)
 {
     /// <summary>
     /// To avoid unnecessary allocations, the binder is created on first

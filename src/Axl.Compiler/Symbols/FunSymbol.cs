@@ -7,7 +7,8 @@ namespace Axl.Compiler.Symbols;
 
 public union FunBody(Intrinsic, BoundBlock);
 
-public closed class FunSymbol(string name, Symbol? owner, bool isPublic) : Symbol(name, owner)
+public closed class FunSymbol(Compilation compilation, string name, Symbol? owner, bool isPublic) 
+    : Symbol(compilation, name, owner)
 {
     public override bool IsPublic { get; } = isPublic;
 

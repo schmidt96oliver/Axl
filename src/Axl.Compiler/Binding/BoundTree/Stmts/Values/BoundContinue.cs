@@ -3,8 +3,8 @@ using Axl.Compiler.Syntax;
 
 namespace Axl.Compiler.Binding.BoundTree;
 
-public sealed class BoundContinue(SyntaxNode? syntax = null)
-    : BoundValue(NeverTypeSymbol.Instance, syntax)
+public sealed class BoundContinue(NeverTypeSymbol type, SyntaxNode? syntax = null)
+    : BoundValue(type, syntax)
 {
     public override IEnumerable<BoundStmt> GetChildren()
         => [];

@@ -1,22 +1,19 @@
 ﻿using System.Collections.Immutable;
-using System.Diagnostics;
 using Axl.Compiler.Symbols;
 
 namespace Axl.Compiler.Binding.Scopes;
 
 public closed class Scope
 {
-    public virtual Compilation Compilation => EnclosingScope?.Compilation ??
-                                              throw new UnreachableException(
-                                                  "Without enclosing scope, the scope must declare Compilation explicitly.");
+    public Compilation Compilation => Owner.Compilation;
 
     public Scope? EnclosingScope { get; }
 
     /// <summary>
     /// The innermost <see cref="Symbol"/> the binder is currently
-    /// inside. <c>null</c> for global scopes.
+    /// inside.
     /// </summary>
-    public Symbol? Owner { get; }
+    public virtual Symbol Owner { get; }
 
     public FunSymbol? OwnerAsFun => Owner as FunSymbol;
 
@@ -38,15 +35,14 @@ public closed class Scope
         => (EnclosingScope, Owner, Flags)
             = (enclosingScope, owner ?? enclosingScope.Owner, flags ?? enclosingScope.Flags);
 
-    protected Scope(Scope? enclosingScope, Symbol? owner, BindingFlags flags)
+    protected Scope(Scope? enclosingScope, Symbol owner, BindingFlags flags)
         => (EnclosingScope, Owner, Flags) = (enclosingScope, owner, flags);
     
 
     public abstract ImmutableArray<Symbol> Lookup(string name);
 
     public bool IsAccessible(Symbol symbol)
-        => symbol.AccessibleWithin is null || Owner?.SelfAndOwners().Contains(symbol.AccessibleWithin) == true;
-
+        => symbol.AccessibleWithin is null || Owner.SelfAndOwners().Contains(symbol.AccessibleWithin);
 
     public Scope WithOwner(Symbol owner)
         => new OwnerScope(this, owner);

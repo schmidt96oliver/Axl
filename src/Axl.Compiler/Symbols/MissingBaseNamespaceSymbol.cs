@@ -3,7 +3,7 @@
 namespace Axl.Compiler.Symbols;
 
 public sealed class MissingBaseNamespaceSymbol(Symbol owner) 
-    : NamespaceSymbol(name: "base", owner, isRoot: false)
+    : NamespaceSymbol(owner.Compilation, name: "base", owner: owner, isRoot: false)
 {
     /// <inheritdoc />
     public override bool CanBeReferencedByName => false;
@@ -17,5 +17,5 @@ public sealed class MissingBaseNamespaceSymbol(Symbol owner)
     /// is more useful.
     /// </summary>
     public override ImmutableArray<Symbol> LookupMembers(string name)
-        => [ErrorTypeSymbol.Instance];
+        => [Compilation.BaseLibrary.Error];
 }

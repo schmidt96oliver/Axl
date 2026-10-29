@@ -18,9 +18,6 @@ public closed record Operand(TypeSymbol Type, SyntaxNode? Syntax)
     public sealed record Empty(TypeSymbol Type, SyntaxNode? Syntax = null) 
         : Operand(Type, Syntax);
 
-    public sealed record Unreachable() 
-        : Operand(NeverTypeSymbol.Instance, null)
-    {
-        public static readonly Unreachable Instance = new ();
-    }
+    public sealed record Unreachable(TypeSymbol Type)
+        : Operand(Type, null);
 }

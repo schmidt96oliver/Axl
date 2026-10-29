@@ -27,8 +27,5 @@ public closed record Place(TypeSymbol Type, SyntaxNode? Syntax)
     public sealed record Deref(Place Reference, SyntaxNode? Syntax = null)
         : Place(((RefTypeSymbol)Reference.Type).Inner, Syntax);
 
-    public sealed record Discard() : Place(ErrorTypeSymbol.Instance, null)
-    {
-        public static readonly Discard Instance = new();
-    }
+    public sealed record Discard(TypeSymbol Type) : Place(Type, null);
 }

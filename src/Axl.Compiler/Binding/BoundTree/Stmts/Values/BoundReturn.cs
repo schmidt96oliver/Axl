@@ -3,8 +3,8 @@ using Axl.Compiler.Syntax;
 
 namespace Axl.Compiler.Binding.BoundTree;
 
-public sealed class BoundReturn(BoundValue? value, bool isMut, SyntaxNode? syntax = null)
-    : BoundValue(NeverTypeSymbol.Instance, syntax)
+public sealed class BoundReturn(BoundValue? value, bool isMut, NeverTypeSymbol type, SyntaxNode? syntax = null)
+    : BoundValue(type, syntax)
 {
     public BoundValue? Value { get; } = value;
     public bool IsMut { get; } = isMut;

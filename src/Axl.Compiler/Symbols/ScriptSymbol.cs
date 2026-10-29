@@ -7,7 +7,7 @@ using Axl.Compiler.Syntax.Tree;
 namespace Axl.Compiler.Symbols;
 
 public class ScriptSymbol(SyntaxTree syntax, Scope enclosingScope) 
-    : NamespaceSymbol(name: "", owner: null, isRoot: false)
+    : NamespaceSymbol(enclosingScope.Compilation, name: "", owner: null, isRoot: false)
 {
     /// <summary>
     /// To avoid unnecessary allocations, the binder is created on first

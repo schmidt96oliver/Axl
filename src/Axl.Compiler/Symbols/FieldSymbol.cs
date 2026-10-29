@@ -9,7 +9,7 @@ public sealed class FieldSymbol(
     Scope enclosingScope,
     StructSymbol owner,
     bool isPublic)
-    : Symbol(declarationSyntax.Name.Text.ToString(), owner)
+    : Symbol(owner.Compilation, declarationSyntax.Name.Text.ToString(), owner)
 {
     /// <summary>
     /// To avoid unnecessary allocations, the binder is created on first

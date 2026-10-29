@@ -113,7 +113,7 @@ public class Lowerer
         switch (stmt)
         {
             case BoundValue value:
-                LowerInto(value, Place.Discard.Instance);
+                LowerInto(value, new Place.Discard(_compilation.BaseLibrary.Error));
                 break;
             
             case BoundIfStmt ifStmt:
@@ -138,7 +138,7 @@ public class Lowerer
         if (varDecl.Variable.Type is NeverTypeSymbol)
         {
             // Never does not create a variable that is written to.
-            LowerInto(varDecl.Initializer, Place.Discard.Instance);
+            LowerInto(varDecl.Initializer, new Place.Discard(_compilation.BaseLibrary.Error));
             return;
         }
         
@@ -466,14 +466,14 @@ public class Lowerer
     {
         Debug.Assert(_loopLabels.Count > 0);
         Terminate(new Terminator.Goto(_loopLabels.Peek().Break));
-        return Operand.Unreachable.Instance;
+        return new Operand.Unreachable(_compilation.BaseLibrary.Never);
     }
 
     private Operand LowerContinue()
     {
         Debug.Assert(_loopLabels.Count > 0);
         Terminate(new Terminator.Goto(_loopLabels.Peek().Continue));
-        return Operand.Unreachable.Instance;
+        return new Operand.Unreachable(_compilation.BaseLibrary.Never);
     }
 
     private Operand LowerReturn(BoundReturn @return)
@@ -492,6 +492,6 @@ public class Lowerer
             Emit(new Instruction.Assign(_fun.ReturnPlace, new Operand.Empty(Unit)));
 
         Terminate(new Terminator.Return(@return.Syntax));
-        return Operand.Unreachable.Instance;
+        return new Operand.Unreachable(_compilation.BaseLibrary.Never);
     }
 }

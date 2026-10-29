@@ -11,7 +11,7 @@ public sealed class SourceFunSymbol(
     Scope enclosingScope,
     bool isPublic,
     BoundAnnotation? intrinsicAnnotation)
-    : FunSymbol(declarationSyntax.Name.Text.ToString(), owner: enclosingScope.Owner, isPublic)
+    : FunSymbol(enclosingScope.Compilation, declarationSyntax.Name.Text.ToString(), owner: enclosingScope.Owner, isPublic: isPublic)
 {
     public override FunDeclSyntax DeclarationSyntax { get; } = declarationSyntax;
 

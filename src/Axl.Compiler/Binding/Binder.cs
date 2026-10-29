@@ -66,7 +66,11 @@ public sealed class Binder(Scope scope, BinderSideEffects sideEffects)
     
     private TypeSymbol Unit => Scope.Compilation.BaseLibrary.Unit;
 
-
+    private ErrorTypeSymbol ErrorType => Scope.Compilation.BaseLibrary.Error;
+    
+    private NeverTypeSymbol NeverType => Scope.Compilation.BaseLibrary.Never;
+    
+    
     public Binder WithSideEffects(BinderSideEffects sideEffects)
         => new(Scope, sideEffects);
 
@@ -130,7 +134,7 @@ public sealed class Binder(Scope scope, BinderSideEffects sideEffects)
     private BoundError BindError(SyntaxNode syntax, Diagnostic.Error error)
     {
         SideEffects.ReportError(error);
-        return new BoundError(syntax);
+        return new BoundError(ErrorType, syntax);
     }
 
     
@@ -196,18 +200,14 @@ public sealed class Binder(Scope scope, BinderSideEffects sideEffects)
     public static NamespaceSymbol BindRootNamespace(Compilation compilation)
     {
         var decl = GetRootNamespaceDeclaration([.. compilation.SyntaxTrees.Where(IsNamespaceFile)]);
-        return new SourceNamespaceSymbol(decl, compilation.GlobalScope, isRoot: true);
+        return new SourceNamespaceSymbol(compilation, decl, owner: null, compilation.GlobalScope, isRoot: true);
     }
 
-    public static ImmutableArray<ScriptSymbol> BindScripts(Compilation compilation)
-    {
-        var scriptScope = new ScriptScope(compilation.GlobalScope);
-        return
-        [
-            .. compilation.SyntaxTrees.Where(tree => !IsNamespaceFile(tree))
-                .Select(tree => new ScriptSymbol(tree, scriptScope))
-        ];
-    }
+    public static ImmutableArray<ScriptSymbol> BindScripts(Compilation compilation) =>
+    [
+        .. compilation.SyntaxTrees.Where(tree => !IsNamespaceFile(tree))
+            .Select(tree => new ScriptSymbol(tree, compilation.GlobalScope))
+    ];
 
     private static NamespaceDeclaration GetRootNamespaceDeclaration(ImmutableArray<SyntaxTree> trees)
     {
@@ -275,7 +275,7 @@ public sealed class Binder(Scope scope, BinderSideEffects sideEffects)
 
     public NamespaceSymbol BindNamespaceDeclaration(NamespaceDeclaration declaration)
     {
-        if (Scope.Owner?.Owner is null &&
+        if (Scope.Owner.Owner is null &&
             Scope.Compilation.ReferencedCompilations.Any(c =>
                 c.RootNamespace.LookupMembers(declaration.Name).Length > 0))
         {
@@ -290,11 +290,11 @@ public sealed class Binder(Scope scope, BinderSideEffects sideEffects)
             if (declaration.Name is Names.BaseNamespace)
             {
                 var emptyNameDeclaration = new NamespaceDeclaration("", declaration.Children, declaration.SyntaxTrees);
-                return new SourceNamespaceSymbol(emptyNameDeclaration, Scope, isRoot: false);
+                return new SourceNamespaceSymbol(Scope.Compilation, emptyNameDeclaration, Scope.Owner, Scope, isRoot: false);
             }
         }
 
-        return new SourceNamespaceSymbol(declaration, Scope, isRoot: false);
+        return new SourceNamespaceSymbol(Scope.Compilation, declaration, Scope.Owner, Scope, isRoot: false);
     }
     
     public ImmutableArray<Symbol> BindNamespaceFile(SyntaxTree syntax, out LazyUsingsScope usingsScope)
@@ -662,7 +662,7 @@ public sealed class Binder(Scope scope, BinderSideEffects sideEffects)
         if (syntax.IsExpressionBodied)
         {
             var value = bodyBinder.BindReturnValue(syntax.Expr, out var isMutReturn);
-            return new BoundBlock([new BoundReturn(value, isMutReturn)], [], Unit);
+            return new BoundBlock([new BoundReturn(value, isMutReturn, NeverType)], [], Unit);
         }
 
         // --- Block body
@@ -863,7 +863,7 @@ public sealed class Binder(Scope scope, BinderSideEffects sideEffects)
         ReturnExprSyntax returnExprSyntax => BindReturn(returnExprSyntax),
         
         // Error
-        ErrorExprSyntax errorExprSyntax => new BoundError(errorExprSyntax),
+        ErrorExprSyntax errorExprSyntax => new BoundError(ErrorType, errorExprSyntax),
         FunNameSyntax => throw new UnreachableException(),
     };
 
@@ -882,7 +882,7 @@ public sealed class Binder(Scope scope, BinderSideEffects sideEffects)
         }
 
         if (value is BoundError || !CheckValueUsage(value, usage))
-            return new BoundError(syntax);
+            return new BoundError(ErrorType, syntax);
         
         return value;
     }
@@ -948,14 +948,14 @@ public sealed class Binder(Scope scope, BinderSideEffects sideEffects)
         {
             if (bound is not BoundError)
                 SideEffects.ReportError(new Diagnostic.NotAType(bound));
-            return ErrorTypeSymbol.Instance;
+            return ErrorType;
         }
 
         // Check consistent accessibility
-        if (usage is TypeUsage.Signature && !typeRef.Type.IsAccessibleFrom(Scope.Owner?.AccessibleWithin))
+        if (usage is TypeUsage.Signature && !typeRef.Type.IsAccessibleFrom(Scope.Owner.AccessibleWithin))
         {
             SideEffects.DiagnosticBag.ReportError(new Diagnostic.InconsistentAccessibility(typeRef, Scope.Owner));
-            return ErrorTypeSymbol.Instance;
+            return ErrorType;
         }
         
         return typeRef.Type;
@@ -1033,7 +1033,7 @@ public sealed class Binder(Scope scope, BinderSideEffects sideEffects)
             return parts[0];
 
         if (parts.OfType<BoundError>().Any())
-            return new BoundError(syntax);
+            return new BoundError(ErrorType, syntax);
         
         var concatCall = TryBindMethodCall(parts[0], Names.StringConcatMethod, [parts[1]], syntax);
         if (concatCall is null)
@@ -1106,7 +1106,7 @@ public sealed class Binder(Scope scope, BinderSideEffects sideEffects)
         {
             // If any operand had an error, stay silent.
             if (receiver.Type is ErrorTypeSymbol || arguments.Any(arg => arg.Type is ErrorTypeSymbol))
-                return new BoundError(syntax);
+                return new BoundError(ErrorType, syntax);
             
             return BindError(syntax, new Diagnostic.UndefinedOperator(
                 @operator,
@@ -1127,14 +1127,14 @@ public sealed class Binder(Scope scope, BinderSideEffects sideEffects)
         {
             // Some operands have an error. So don't type-check them
             // be silent and wrap in an error expression.
-            return new BoundError(syntax);
+            return new BoundError(ErrorType, syntax);
         }
     
         // Type-check against bool
         if (!CheckType(left, Bool) ||
             !CheckType(right, Bool))
         {
-            return new BoundError(syntax);
+            return new BoundError(ErrorType, syntax);
         }
     
         if (syntax.Operator.Kind is TokenKind.DoubleAmpersand)
@@ -1153,11 +1153,11 @@ public sealed class Binder(Scope scope, BinderSideEffects sideEffects)
         var value = BindValue(syntax.Right, ValueUsage.Read);
 
         if (target is BoundError)
-            return new BoundError(syntax);
+            return new BoundError(ErrorType, syntax);
         if (value.Type is ErrorTypeSymbol)
-            return new BoundAssign(target, value, ErrorTypeSymbol.Instance, syntax);
+            return new BoundAssign(target, value, ErrorType, syntax);
 
-        var type = CheckType(value, target.Type) ? Unit : ErrorTypeSymbol.Instance;
+        var type = CheckType(value, target.Type) ? Unit : ErrorType;
         return new BoundAssign(target, value, type, syntax);
     }
     
@@ -1226,7 +1226,7 @@ public sealed class Binder(Scope scope, BinderSideEffects sideEffects)
     {
         var condition = BindValue(syntax, ValueUsage.Read);
         if (!CheckType(condition, expected: Bool))
-            condition = new BoundError(syntax);
+            condition = new BoundError(ErrorType, syntax);
 
         return condition;
     }
@@ -1247,7 +1247,7 @@ public sealed class Binder(Scope scope, BinderSideEffects sideEffects)
         else
         {
             SideEffects.ReportError(new Diagnostic.IncompatibleBranches(body, @else));
-            type = ErrorTypeSymbol.Instance;
+            type = ErrorType;
         }
         
         return new BoundIfExpr(condition, body, @else, type, syntax);
@@ -1282,8 +1282,8 @@ public sealed class Binder(Scope scope, BinderSideEffects sideEffects)
             return BindError(syntax, new Diagnostic.BreakOrContinueOutsideLoop(syntax));
     
         return syntax is BreakExprSyntax
-            ? new BoundBreak(syntax)
-            : new BoundContinue(syntax);
+            ? new BoundBreak(NeverType, syntax)
+            : new BoundContinue(NeverType, syntax);
     }
 
     private BoundValue BindReturn(ReturnExprSyntax syntax)
@@ -1296,13 +1296,13 @@ public sealed class Binder(Scope scope, BinderSideEffects sideEffects)
             if (fun.ReturnType != Unit)
             {
                 SideEffects.ReportError(new Diagnostic.MissingReturnValue(fun, syntax));
-                return new BoundReturn(new BoundError(), isMut: false, syntax);
+                return new BoundReturn(new BoundError(ErrorType), isMut: false, NeverType, syntax);
             }
-            return new BoundReturn(null, isMut: false, syntax);
+            return new BoundReturn(null, isMut: false, NeverType, syntax);
         }
 
         var value = BindReturnValue(syntax.Expr, out var isMutReturn);
-        return new BoundReturn(value, isMutReturn, syntax);
+        return new BoundReturn(value, isMutReturn, NeverType, syntax);
     }
 
     private BoundValue BindReturnValue(ExprSyntax syntax, out bool isMutReturn)
@@ -1314,30 +1314,28 @@ public sealed class Binder(Scope scope, BinderSideEffects sideEffects)
         {
             if (!fun.IsReturnMut)
             {
-                SideEffects.ReportError(new Diagnostic.UnexpectedMutReturn(mutExprSyntax, fun));
                 isMutReturn = false;
-                return new BoundError(syntax);
+                return BindError(syntax, new Diagnostic.UnexpectedMutReturn(mutExprSyntax, fun));
             }
 
             isMutReturn = true;
 
             var mutValue = BindValue(mutExprSyntax.Expr, ValueUsage.ReturnAsMut);
             if (!CheckType(mutValue, fun.ReturnType))
-                return new BoundError(mutExprSyntax.Expr);
+                return new BoundError(ErrorType, mutExprSyntax.Expr);
             return mutValue;
         }
 
         if (fun.IsReturnMut)
         {
-            SideEffects.ReportError(new Diagnostic.MissingMutReturn(syntax, fun));
             isMutReturn = false;
-            return new BoundError(syntax);
+            return BindError(syntax, new Diagnostic.MissingMutReturn(syntax, fun));
         }
 
         isMutReturn = false;
         var value = BindValue(syntax, ValueUsage.Read);
         if (!CheckType(value, fun.ReturnType))
-            return new BoundError(syntax);
+            return new BoundError(ErrorType, syntax);
         return value;
     }
 
@@ -1348,7 +1346,7 @@ public sealed class Binder(Scope scope, BinderSideEffects sideEffects)
     private BoundNode BindIdName(IdNameSyntax syntax, LookupOptions lookupOptions)
     {
         if (syntax.Token.IsMissing)
-            return new BoundError(syntax);
+            return new BoundError(ErrorType, syntax);
 
         var lookupResult = LookupName(syntax.Token.Identifier, lookupOptions);
 
@@ -1403,7 +1401,7 @@ public sealed class Binder(Scope scope, BinderSideEffects sideEffects)
         var left = BindExpr(syntax.Left, LookupOptions.Any);
 
         if (syntax.Member.Token.IsMissing)
-            return new BoundError(syntax.Member);
+            return new BoundError(ErrorType, syntax.Member);
         
         // A fun group cannot have members
         if (left is BoundFunGroup leftAsFunGroup)
@@ -1422,7 +1420,7 @@ public sealed class Binder(Scope scope, BinderSideEffects sideEffects)
             BoundStmt => throw new UnreachableException("Stmt can never be the left side of member access."),
         };
         if (namespaceOrType is ErrorTypeSymbol)
-            return new BoundError(syntax.Member);
+            return new BoundError(ErrorType, syntax.Member);
 
         var memberName = syntax.Member.Text.ToString();
         var lookupResult = LookupMembers(namespaceOrType, memberName);
@@ -1741,14 +1739,14 @@ public sealed class Binder(Scope scope, BinderSideEffects sideEffects)
         }
 
         if (callee is BoundError)
-            return new BoundError(syntax);
+            return new BoundError(ErrorType, syntax);
         
         if (callee is not BoundFunGroup calleeFunGroup)
             return BindError(syntax, new Diagnostic.CannotCall(callee));
 
         var singleFun = BindSingleFunInGroup(calleeFunGroup, arguments, syntax.ArgList);
         if (singleFun is null)
-            return new BoundError(syntax);
+            return new BoundError(ErrorType, syntax);
 
         var receiver = BindFunReceiver(singleFun, calleeFunGroup.Receiver);
 
@@ -1758,7 +1756,7 @@ public sealed class Binder(Scope scope, BinderSideEffects sideEffects)
             : null;
         return CheckCallToSingleFun(singleFun, receiver, arguments, calleeFunGroup.Syntax!)
             ? new BoundCall(singleFun, receiverArgument, arguments, syntax)
-            : new BoundError(syntax);
+            : new BoundError(ErrorType, syntax);
     }
 
     private BoundArgument BindArgument(ArgSyntax syntax)
@@ -1850,7 +1848,7 @@ public sealed class Binder(Scope scope, BinderSideEffects sideEffects)
         }
 
         if (hadError)
-            return new BoundError(syntax);
+            return new BoundError(ErrorType, syntax);
 
         if (uninitializedFields.Count > 0)
             return BindError(syntax, new Diagnostic.MissingFieldInitializers([.. uninitializedFields], syntax.ArgList));
@@ -1875,7 +1873,7 @@ public sealed class Binder(Scope scope, BinderSideEffects sideEffects)
         
         if (!CheckAccessibility(field, argSyntax.IsNamed ? argSyntax.Name! : argSyntax) ||
             !CheckType(value, field.Type))
-            return new BoundError(argSyntax);
+            return new BoundError(ErrorType, argSyntax);
 
         return new BoundFieldInit(field, value, argSyntax);
     }

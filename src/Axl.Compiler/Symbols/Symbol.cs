@@ -1,10 +1,11 @@
-﻿using System.Diagnostics;
-using Axl.Compiler.Binding;
+﻿using Axl.Compiler.Binding;
 
 namespace Axl.Compiler.Symbols;
 
-public closed class Symbol(string name, Symbol? owner)
+public closed class Symbol(Compilation compilation, string name, Symbol? owner)
 {
+    public Compilation Compilation { get; } = compilation;
+
     public string Name { get; } = name;
 
     public Symbol? Owner { get; } = owner;

@@ -65,7 +65,6 @@ public class Compilation
             field ??= Binder.BindRootNamespace(this);
             return field;
         }
-        private set;
     }
 
     public GlobalScope GlobalScope

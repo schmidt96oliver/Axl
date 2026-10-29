@@ -4,10 +4,10 @@ namespace Axl.Compiler.Symbols;
 
 public closed class StructSymbol(
     string name,
-    Symbol? owner,
+    Symbol owner,
     bool isPublic,
     PrimitiveKind? primitiveKind)
-    : TypeSymbol(name, owner, isPublic, primitiveKind)
+    : TypeSymbol(owner.Compilation, name, owner, isPublic, primitiveKind)
 {
     /// <inheritdoc />
     public override bool CanBeReferencedByName => true;

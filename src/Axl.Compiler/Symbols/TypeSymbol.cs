@@ -1,7 +1,7 @@
 ﻿namespace Axl.Compiler.Symbols;
 
-public closed class TypeSymbol(string name, Symbol? owner, bool isPublic, PrimitiveKind? primitiveKind = null)
-    : NamespaceOrTypeSymbol(name, owner)
+public closed class TypeSymbol(Compilation compilation, string name, Symbol? owner, bool isPublic, PrimitiveKind? primitiveKind = null)
+    : NamespaceOrTypeSymbol(compilation, name, owner)
 {
     public override bool IsPublic { get; } = isPublic;
     

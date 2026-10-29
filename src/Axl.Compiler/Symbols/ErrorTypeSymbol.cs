@@ -2,18 +2,11 @@
 
 namespace Axl.Compiler.Symbols;
 
-public sealed class ErrorTypeSymbol : TypeSymbol
+public sealed class ErrorTypeSymbol(Compilation compilation) 
+    : TypeSymbol(compilation, name: "???", owner: null, isPublic: true)
 {
-    public static readonly ErrorTypeSymbol Instance = new();
-
     /// <inheritdoc />
     public override bool CanBeReferencedByName => false;
     
-    private ErrorTypeSymbol()
-        : base(name: "???", owner: null, isPublic: true)
-    {
-        
-    }
-
     public override ImmutableArray<Symbol> Members => [];
 }

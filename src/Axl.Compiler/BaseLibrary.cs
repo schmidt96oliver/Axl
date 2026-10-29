@@ -23,6 +23,10 @@ public sealed class BaseLibrary(Compilation compilation)
     private readonly Dictionary<BaseTypeKind, TypeSymbol> _baseTypes = [];
     private readonly DiagnosticBag _diagnosticBag = new();
 
+    public ErrorTypeSymbol Error { get; } = new(compilation);
+    
+    public NeverTypeSymbol Never { get; } = new(compilation);
+
     public NamespaceSymbol BaseNamespace
     {
         get
@@ -74,8 +78,8 @@ public sealed class BaseLibrary(Compilation compilation)
         {
             if (BaseNamespace is not MissingBaseNamespaceSymbol)
                 _diagnosticBag.ReportError(new Diagnostic.CannotFindBaseType(kind, lookupResult));
-            _baseTypes[kind] = ErrorTypeSymbol.Instance;
-            return ErrorTypeSymbol.Instance;
+            _baseTypes[kind] = Error;
+            return Error;
         }
 
         symbol = (TypeSymbol)lookupResult[0];

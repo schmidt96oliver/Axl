@@ -7,7 +7,7 @@ namespace Axl.Compiler.Symbols;
 /// MIR.
 /// </summary>
 public sealed class RefTypeSymbol(TypeSymbol inner) 
-    : TypeSymbol($"ref {inner.Name}", null, false)
+    : TypeSymbol(inner.Compilation, $"ref {inner.Name}", null, false)
 {
     public TypeSymbol Inner { get; } = inner;
 
