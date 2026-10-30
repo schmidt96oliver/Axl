@@ -1,0 +1,139 @@
+﻿//@check
+
+// --- Returns inside expressions
+fun Call1(): I32
+{ Dupe(Panic()); }
+fun Call1N(): Never
+{ Dupe(Panic()); }
+
+fun Call2(): I32
+{ Dupe("", Panic()); }
+fun Call2N(): Never
+{ Dupe("", Panic()); }
+
+fun Dupe(a: String, b: String) { }
+fun Dupe(a: String) { }
+
+fun VarDecl(): I32
+{ let a = Panic(); }
+fun VarDeclN(): Never
+{ let a = Panic(); }
+
+fun Assign(): I32
+{ 
+    var a = 2;
+    a = Panic(); 
+}
+fun AssignN(): Never
+{ 
+    var a = 2;
+    a = Panic(); 
+}
+
+fun Block(): I32
+{ 
+    Print("");
+    Panic();
+    Print("");
+}
+fun BlockN(): Never
+{ 
+    Print("");
+    Panic();
+    Print("");
+}
+
+fun Logic1(): I32
+{ (Panic()) && true; }
+fun Logic1N(): Never
+{ (Panic()) && true; }
+
+fun Logic2(): I32
+{ (Panic()) || true; }
+fun Logic2N(): Never
+{ (Panic()) || true; }
+
+fun Logic3(): I32
+{ 
+    // Right side is not always executed.
+    let a = false || (Panic());
+    let a = false && (Panic());
+} //~error MissingReturn
+fun Logic3N(): Never
+{ 
+    // Right side is not always executed.
+    let a = false || (Panic());
+    let a = false && (Panic());
+} //~error MissingReturn
+
+fun StringInterpolation1(): Never
+{ "{ Panic() }"; } 
+fun StringInterpolation2(): Never
+{ "{ 2 } { Panic() }"; } 
+
+fun IfExpr1(): Never
+{ 
+    let a = if (true) Panic(); else Panic(); 
+} 
+fun IfExpr2(): I32
+{ let a = if (true) 2 else Panic(); } //~error MissingReturn
+fun IfExpr2N(): Never
+{ let a = if (true) 2 else Panic(); } //~error MissingReturn
+
+// --- While true
+fun While1(): Never
+{ while (true) { } } 
+
+fun While2(): Never
+{ while (false) { Panic(); } }     //~error MissingReturn
+
+fun While3(): Never
+{ while (true) { break; Panic(); } }     //~error MissingReturn
+
+fun While4(): Never
+{ while (true) { continue; } } 
+
+fun While5(): Never
+{ while (true) { Panic(); break; } }
+
+// --- If statement true
+fun IfStmt1(): Never
+{ if (true) Panic(); } 
+
+fun IfStmt2(): Never
+{ if (false) Panic(); } //~error MissingReturn
+
+fun IfStmt3(): Never
+{ 
+    if (true) Panic();
+    else Panic();
+}
+
+fun IfStmt4(): Never
+{
+    if (true)
+    {
+        if (true) Panic();
+    }
+    else Panic();
+}
+
+fun IfStmt5(): Never
+{
+    if (true)
+    {
+        if (true) Panic();
+        else Panic();
+    }
+    else Panic();
+}  
+
+fun IfStmt6(): Never
+{
+    if (Panic())
+    { }
+}  
+
+// --- Expression bodied fun
+fun ExprBodied1(): Never
+    = Panic();

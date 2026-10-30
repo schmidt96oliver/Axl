@@ -1,5 +1,4 @@
-﻿using System.Collections.Immutable;
-using Axl.Compiler.Diagnostics;
+﻿using Axl.Compiler.Diagnostics;
 
 namespace Axl.Compiler.Mir.Analysis;
 
@@ -7,16 +6,18 @@ public static class ReturnCheck
 {
     public static void Check(MutMirFunction function, ReachabilityResult reachability, DiagnosticBag diagnosticBag)
     {
-        if (function.Symbol.ReturnType == function.Compilation.BaseLibrary.Unit)
-            return;
-
-        var reachableTerminators = function.BasicBlocks
-            .Where(b => reachability.Reachable[b.Id])
-            .Select(b => b.Terminator)
-            .ToImmutableArray();
-        if (reachableTerminators.OfType<Terminator.MissingReturn>().FirstOrDefault() is { } missingReturn)
+        var missingReturnReachable = function.BasicBlocks
+            .Any(b => reachability.Reachable[b.Id] && b.Terminator is Terminator.MissingReturn);
+        
+        if (missingReturnReachable)
         {
-            diagnosticBag.ReportError(new Diagnostic.MissingReturn(missingReturn.Syntax!));
+            if (function.Symbol.DeclarationSyntax is null)
+            {
+                throw new ArgumentException("The given function is synthetic and not all code paths return a value.",
+                    nameof(function));
+            }
+            
+            diagnosticBag.ReportError(new Diagnostic.MissingReturn(function.Symbol));
         }
     }
 }

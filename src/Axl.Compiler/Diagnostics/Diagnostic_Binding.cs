@@ -311,27 +311,6 @@ public partial record Diagnostic
         public override string Message => $"Cannot use ‘{Syntax.Text}‘ here. Local funs cannot use variables of the enclosing fun.";
     }
 
-    public sealed record MissingReturn(SyntaxNode BlockSyntax) : Error
-    {
-        public override ImmutableArray<SourceLocation> Locations
-        {
-            get
-            {
-                if (BlockSyntax is BlockExprSyntax blockExprSyntax &&
-                    blockExprSyntax.SyntaxElements().First(el => el is Token { Kind: TokenKind.CloseBrace })
-                        is Token { IsMissing: false } closeBraceToken)
-                {
-                    return [closeBraceToken.Location];
-                }
-
-                return [BlockSyntax.Location];
-            }
-        }
-
-        public override string Message
-            => "Not all code-paths return a value.";
-    }
-
     public sealed record StaticMemberThroughInstance(FunSymbol Fun, SyntaxNode Syntax) : Error
     {
         public override ImmutableArray<SourceLocation> Locations => [Syntax.Location];

@@ -51,7 +51,7 @@ public class Lowerer
                 lowerer.Terminate(new Terminator.Return());
             }
             else
-                lowerer.Terminate(new Terminator.MissingReturn(body.Syntax!));
+                lowerer.Terminate(new Terminator.MissingReturn());
         }
 
         return lowerer._fun;
@@ -200,15 +200,12 @@ public class Lowerer
             case BoundField field:
                 return new Place.Field(LowerPlace(field.Receiver), field.Field, field.Syntax);
             case BoundCall { IsMutReturn: true } call:
-            {
                 // Lower the call target into a temp with ref type
                 // and hand over the deref.
-                var arguments = LowerArguments(call.ReceiverAndArguments, call.Fun.SelfAndParameters);
-                
-                var refTemp = _fun.AddTemp(GetRefType(value.Type));
-                Emit(new Instruction.Call(call.Fun, Target: refTemp, arguments, call.Syntax));
+                var refTemp = _fun.AddTemp(GetRefType(call.Type));
+                LowerCallInstruction(call, refTemp);
+
                 return new Place.Deref(refTemp);
-            }
             
             case BoundError:
                 return new Place.Error(Error);
@@ -238,7 +235,7 @@ public class Lowerer
         BoundReturn boundReturn => LowerReturn(boundReturn),
         BoundContinue => LowerContinue(),
 
-        BoundCall boundCall => LowerCall(boundCall, _fun.AddTemp(boundCall.Type)),
+        BoundCall boundCall => LowerCallOperand(boundCall, _fun.AddTemp(boundCall.Type)),
         BoundStructInit boundStructInit => LowerStructInit(boundStructInit, _fun.AddTemp(boundStructInit.Type)),
 
         BoundError => new Operand.Error(Error),
@@ -257,7 +254,7 @@ public class Lowerer
             case BoundLogicOr logicOr:
                 return LowerLogicOperator(logicOr, target);
             case BoundCall call:
-                return LowerCall(call, target);
+                return LowerCallOperand(call, target);
             case BoundStructInit structInit:
                 return LowerStructInit(structInit, target);
         }
@@ -299,8 +296,25 @@ public class Lowerer
         return new Operand.Empty(Unit);
     }
 
-    
-    private Operand LowerCall(BoundCall call, Place target)
+
+    private Operand LowerCallOperand(BoundCall call, Place target)
+    {
+        if (call.IsMutReturn)
+        {
+            // Call returns a reference. We need to store the ref
+            // into a temp and deref it into target, since we are
+            // in value position.
+            var refTarget = _fun.AddTemp(GetRefType(call.Type));
+            LowerCallInstruction(call, refTarget);
+            Emit(new Instruction.Assign(target, new Operand.Copy(new Place.Deref(refTarget))));
+        }
+        else
+            LowerCallInstruction(call, target);
+
+        return new Operand.Copy(target);
+    }
+
+    private void LowerCallInstruction(BoundCall call, Place target)
     {
         var arguments = LowerArguments(call.ReceiverAndArguments, call.Fun.SelfAndParameters);
         
@@ -309,21 +323,10 @@ public class Lowerer
         else if (call.Fun.Body is Intrinsic intrinsic)
             Emit(new Instruction.Intrinsic(intrinsic, target, arguments, call.Syntax));
         else
-        {
-            if (call.IsMutReturn)
-            {
-                // Call returns a reference. We need to store the ref
-                // into a temp and deref it into target, since we are
-                // in value position.
-                var refTarget = _fun.AddTemp(GetRefType(call.Type));
-                Emit(new Instruction.Call(call.Fun, refTarget, arguments, call.Syntax));
-                Emit(new Instruction.Assign(target, new Operand.Copy(new Place.Deref(refTarget))));
-            }
-            else
-                Emit(new Instruction.Call(call.Fun, target, arguments, call.Syntax));
-        }
+            Emit(new Instruction.Call(call.Fun, target, arguments, call.Syntax));
 
-        return new Operand.Copy(target);
+        if (call.Type == Never)
+            Terminate(new Terminator.Unreachable());
     }
 
     private ImmutableArray<Operand> LowerArguments(ImmutableArray<BoundArgument> boundArguments,

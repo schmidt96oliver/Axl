@@ -14,8 +14,7 @@ public closed record Terminator(SyntaxNode? Syntax)
     public sealed record Return(SyntaxNode? Syntax = null)
         : Terminator(Syntax);
 
-    public sealed record MissingReturn(SyntaxNode ErrorSyntax)
-        : Terminator(ErrorSyntax);
+    public sealed record MissingReturn() : Terminator(Syntax: null);
     
     public sealed record Unreachable(SyntaxNode? Syntax = null)
         : Terminator(Syntax);

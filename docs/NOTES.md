@@ -3,18 +3,10 @@
 
 # Now
 
-* ReturnCheck Never; lower to unreachable after never call
-* test Panics
+* Binder: `ArgumentMutMismatch` -> `MissingMut`, `UnexpectedMut`
+* Binder: implement exclusivity check in 'CheckCallToSingleFun'
 
-* Miri flat execution + stack trace + @StackTraceHidden
-
-* `ArgumentMutMismatch` -> `MissingMut`, `UnexpectedMut`
-* implement exclusivity check in 'CheckCallToSingleFun'
-
-* Intrinsic lookup: Remove receiver, only by (receiver, arguments) (static and method the same)
-* Split OperatorKind and VmCallKind -> Intrinsic = union
-
-* Validator
+* Mir: Validator
 
 # Questions / Little ones****
 
@@ -23,8 +15,9 @@
 * ?? Miri: `Environment` -> `ActivationFrame` with .GetRef that throws if exited
 * ?? Miri: Store reference as Root (ActivationFrame, LocalId) + Path (FieldSymbol[]). See Claude, think why?
 
-* ?? Intrinsic lookup on SelfAndParameters instead of singling out receiver?
-* ?? BoundParameter and BoundSelf again?
+* ?? Binder: Intrinsic lookup on SelfAndParameters instead of singling out receiver?
+* ?? Binder: BoundParameter and BoundSelf again?
+* ?? Mir: Split OperatorKind and VmCallKind -> Intrinsic = union
 
 # Milestones
 
@@ -32,8 +25,13 @@
 
 * Unreachable code analysis
   * Build HashSet for reachable StmtSyntax by walk on MIR. Then walk over syntax tree to report.
-* Unused variables
+* Read/Write analysis
+  * Unused variables
+  * 'var' can be 'let'
+  * unecessary parameter 'mut' + self
+  * unecessary assignment
 * ?? Drop initializers + definite assignment
+* Miri flat execution + stack trace + @StackTraceHidden
 
 # Ideas
 [Ideas](IDEAS.md)
