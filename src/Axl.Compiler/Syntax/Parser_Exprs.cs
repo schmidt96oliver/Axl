@@ -305,7 +305,7 @@ public partial class Parser
             closeToken: TokenKind.CloseBracket,
             listKind: SyntaxKind.SubscriptArgList,
             itemFirst: FirstSet.Expr,
-            allowEmpty: true,
+            allowEmpty: false,
             ensureItem: EnsureExpr, 
             expectedOpenSyntax: null,
             expectedItemSyntax: ExpectedSyntax.Expr);

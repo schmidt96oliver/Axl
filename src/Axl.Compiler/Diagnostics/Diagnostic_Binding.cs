@@ -802,4 +802,14 @@ public partial record Diagnostic
         public override string Message =>
             $"‘{Fun.Name}’ returns ‘mut {Fun.ReturnType.QualifiedName}’. Use ‘return mut ...’.";
     }
+
+    public sealed record SubscriptNotAllowed(SubscriptArgListSyntax Syntax, BoundNode Left) : Error
+    {
+        /// <inheritdoc />
+        public override ImmutableArray<SourceLocation> Locations => [Syntax.Location];
+
+        /// <inheritdoc />
+        public override string Message 
+            => "Subscript is not allowed here. It can only be used to name type arguments.";
+    }
 }

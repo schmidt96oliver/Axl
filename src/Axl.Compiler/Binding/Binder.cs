@@ -1534,7 +1534,19 @@ public sealed class Binder(Scope scope, BinderSideEffects sideEffects)
 
     private BoundNode BindSubscript(SubscriptExprSyntax syntax)
     {
-        return BindError(syntax.ArgList, new Diagnostic.UnsupportedFeature(syntax.ArgList));
+        var left = BindExpr(syntax.Left, LookupOptions.Any);
+
+        if (left is BoundError)
+            return new BoundError(ErrorType, syntax);
+
+        if (left is not BoundFunGroup funGroup || funGroup.HasTypeArguments)
+            return BindError(syntax.ArgList, new Diagnostic.SubscriptNotAllowed(syntax.ArgList, left));
+
+        var typeArgs = syntax.ArgList.Arguments
+            .Select(s => new BoundTypeArgument(BindType(s, TypeUsage.Local), s))
+            .ToImmutableArray();
+        
+        return funGroup.WithTypeArguments(typeArgs, syntax);
     }
     
     #endregion 

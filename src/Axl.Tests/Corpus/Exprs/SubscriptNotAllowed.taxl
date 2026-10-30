@@ -1,0 +1,11 @@
+﻿//@check
+
+let a = 1[I32];         //~error SubscriptNotAllowed
+let a = A[I32][T]();    //~error SubscriptNotAllowed
+let a = A[I32]()[T];    //~error SubscriptNotAllowed
+let a = A()[T];         //~error SubscriptNotAllowed
+let a = I32[T];         //~error SubscriptNotAllowed
+let a = Base[T];        //~error SubscriptNotAllowed
+let a = (1 + 2)[T];     //~error SubscriptNotAllowed
+
+fun A[T]() { }
