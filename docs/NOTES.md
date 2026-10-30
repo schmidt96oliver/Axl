@@ -3,9 +3,6 @@
 
 # Now
 
-* Binder: `ArgumentMutMismatch` -> `MissingMut`, `UnexpectedMut`
-* Binder: implement exclusivity check in 'CheckCallToSingleFun'
-
 * Mir: Validator
 
 # Questions / Little ones****

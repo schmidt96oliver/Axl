@@ -1,0 +1,15 @@
+﻿//@check
+
+var a = 0;
+Inc(a); //~error ArgumentTypeMismatch
+Show(mut a); //~error ArgumentTypeMismatch
+
+fun Inc(mut a: I32)
+{
+    a = a + 1;
+}
+
+fun Show(a: I32)
+{
+    PrintLine("{a}");
+}

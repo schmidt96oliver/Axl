@@ -1712,14 +1712,10 @@ public sealed class Binder(Scope scope, BinderSideEffects sideEffects)
             }
         }
 
-        //TODO: Implement mut exclusivity rule
-        
         return true;
     }
 
     
-   
-
     private BoundValue BindCall(CallExprSyntax syntax)
     {
         var callee = BindExpr(syntax.Callee, LookupOptions.MustBeCallable);

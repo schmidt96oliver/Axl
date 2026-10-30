@@ -1,0 +1,17 @@
+﻿//@run
+//= 2
+
+var t = Test(Field = 1);
+Pass(mut Pass(mut t).Field) = 2;
+Print(t.Field);
+
+fun Pass(mut x: Test): mut Test
+    = mut x;
+    
+fun Pass(mut x: I32): mut I32
+    = mut x;
+    
+struct Test
+{
+    pub Field: I32;
+}

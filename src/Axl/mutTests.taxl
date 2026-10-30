@@ -1,26 +1,4 @@
-﻿//--- MutArg/MissingMut
-//@check
-
-var a = 0;
-Inc(a); //~error
-
-fun Inc(mut a: I32)
-{
-    a = a + 1;
-}
-
-//--- MutArg/UnexpectedMut
-//@check
-
-var a = 0;
-Show(mut a); //~error
-
-fun Show(a: I32)
-{
-    PrintLine("{a}");
-}
-
-//--- Exclusivity/SameLocal
+﻿//--- Exclusivity/SameLocal
 //@check
 
 var a = 0;
