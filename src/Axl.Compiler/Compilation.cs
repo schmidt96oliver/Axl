@@ -173,29 +173,22 @@ public class Compilation
 
     public LoweredFunBody GetLoweredFunBody(FunSymbol fun)
     {
+        if (fun.Body is not BoundBlock)
+            throw new ArgumentException("Cannot lower fun without a bound block.", nameof(fun));
+
         if (fun.Compilation != this)
             return fun.Compilation.GetLoweredFunBody(fun);
-        
+
         if (_loweredBodies.TryGetValue(fun, out var loweredFun))
             return loweredFun;
 
-        //TODO: Implement error tolerant MIR
-        if (fun.Body is not BoundBlock { HasError: false })
-        {
-            var loweredBody = new LoweredFunBody(null, []);
-            _loweredBodies[fun] = loweredBody;
-            return loweredBody;
-        }
-        else
-        {
-            var mirFun = Lowerer.Lower(fun, this);
-            var bag = new DiagnosticBag();
-            mirFun.Analyze(bag);
+        var mirFun = Lowerer.Lower(fun, this);
+        var bag = new DiagnosticBag();
+        mirFun.Analyze(bag);
 
-            var loweredBody = new LoweredFunBody(mirFun, bag.Drain());
-            _loweredBodies[fun] = loweredBody;
-            return loweredBody;
-        }
+        var loweredBody = new LoweredFunBody(mirFun, bag.Drain());
+        _loweredBodies[fun] = loweredBody;
+        return loweredBody;
     }
 
 

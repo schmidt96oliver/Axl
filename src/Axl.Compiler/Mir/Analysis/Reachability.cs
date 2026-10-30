@@ -8,12 +8,10 @@ public sealed record ReachabilityResult(int CfgVersion, FrozenDictionary<BasicBl
 
 public sealed class Reachability
 {
-    private readonly MutMirFunction _function;
     private readonly Dictionary<BasicBlockId, bool> _reachable = [];
 
-    private Reachability(MutMirFunction function)
+    private Reachability()
     {
-        _function = function;
     }
 
     public static ReachabilityResult Analyze(MutMirFunction function)
@@ -23,7 +21,7 @@ public sealed class Reachability
 
         var cfgVersion = function.CfgVersion;
         
-        var analyzer = new Reachability(function);
+        var analyzer = new Reachability();
         foreach (var block in function.BasicBlocks)
             analyzer._reachable[block.Id] = false;
 

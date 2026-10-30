@@ -28,4 +28,6 @@ public closed record Place(TypeSymbol Type, SyntaxNode? Syntax)
         : Place(((RefTypeSymbol)Reference.Type).Inner, Syntax);
 
     public sealed record Discard(TypeSymbol Type) : Place(Type, null);
+
+    public sealed record Error(TypeSymbol Type) : Place(Type, null);
 }

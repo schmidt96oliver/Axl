@@ -18,6 +18,7 @@ public closed record Operand(TypeSymbol Type, SyntaxNode? Syntax)
     public sealed record Empty(TypeSymbol Type, SyntaxNode? Syntax = null) 
         : Operand(Type, Syntax);
 
-    public sealed record Unreachable(TypeSymbol Type)
-        : Operand(Type, null);
+    public sealed record Unreachable(TypeSymbol Type) : Operand(Type, null);
+
+    public sealed record Error(TypeSymbol Type) : Operand(Type, null);
 }

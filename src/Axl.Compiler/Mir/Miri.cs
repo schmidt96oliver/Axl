@@ -223,7 +223,7 @@ public sealed class Miri
         Operand.Copy copy => Copy(GetPlaceRef(copy.Place, environment)),
         Operand.Ref @ref => new Reference(environment, @ref.Place),
         Operand.Empty => _empty,
-        Operand.Unreachable => throw new UnreachableException(),
+        Operand.Unreachable or Operand.Error => throw new UnreachableException()
     };
 
     private static object Copy(object value)

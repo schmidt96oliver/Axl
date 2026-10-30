@@ -209,6 +209,9 @@ public class Lowerer
                 Emit(new Instruction.Call(call.Fun, Target: refTemp, arguments, call.Syntax));
                 return new Place.Deref(refTemp);
             }
+            
+            case BoundError:
+                return new Place.Error(Error);
                 
             default:
                 var temp = _fun.AddTemp(value.Type);
@@ -238,7 +241,9 @@ public class Lowerer
         BoundCall boundCall => LowerCall(boundCall, _fun.AddTemp(boundCall.Type)),
         BoundStructInit boundStructInit => LowerStructInit(boundStructInit, _fun.AddTemp(boundStructInit.Type)),
 
-        BoundError or BoundFieldInit or BoundValueOrTypeRef => throw new UnreachableException(),
+        BoundError => new Operand.Error(Error),
+        
+        BoundFieldInit or BoundValueOrTypeRef => throw new UnreachableException(),
     };
     
     private Operand LowerInto(BoundValue value, Place target)

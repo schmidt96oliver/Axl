@@ -3,6 +3,7 @@
 
 # Now
 
+* Make MIR error tolerant
 * Never nameable
 * Panic, Assert, ...
 * Miri flat execution + stack trace + @StackTraceHidden
