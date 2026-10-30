@@ -3,8 +3,6 @@
 
 # Now
 
-* type parameter overloads
-
 # Questions / Little ones****
 
 * ?? Miri: `Environment` -> `ActivationFrame` with .GetRef that throws if exited

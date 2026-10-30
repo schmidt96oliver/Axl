@@ -51,18 +51,17 @@ public static class SymbolPrinter
 
         public string FullDisplayName => symbol switch
         {
-            ParameterSymbol parameter => $"parameter {parameter.Name}: {parameter.Type.QualifiedName}",
+            ParameterSymbol parameter => $"parameter {parameter.Name}: {parameter.TypeDisplayString}",
             VariableSymbol { IsReadOnly: false } variable => $"var {variable.Name}: {variable.Type.QualifiedName}",
             VariableSymbol { IsReadOnly: true } variable => $"let {variable.Name}: {variable.Type.QualifiedName}",
             FieldSymbol fieldSymbol => $"field {fieldSymbol.QualifiedName}: {fieldSymbol.Type.QualifiedName}",
             
             NamespaceOrTypeSymbol => $"{symbol.KindName} {symbol.QualifiedName}",
             
-            FunSymbol fun => $"{fun.KindName} {fun.QualifiedName}{ GetParameterText(fun) }{ GetFunAnnotationText(fun) }",
+            FunSymbol fun => $"{fun.KindName} {fun.QualifiedName}{ fun.TypeParameterText }{ fun.ParameterText }{ GetFunAnnotationText(fun) }",
         };
 
-        private static string GetParameterText(FunSymbol fun)
-            => $"({string.Join(", ", fun.Parameters.Select(param => $"{param.Name}: {param.Type.QualifiedName}"))})";
+        
 
         private static string GetFunAnnotationText(FunSymbol fun)
             => (fun.Body is Intrinsic intrinsic ? $" @intrinsic {intrinsic.ToString()}" : "") +
@@ -71,8 +70,16 @@ public static class SymbolPrinter
 
     extension(FunSymbol fun)
     {
-        public string DisplayNameWithParameterTypes => $"{fun.KindName} {fun.QualifiedName}({
+        public string DisplayNameWithParameterTypes => $"{fun.KindName} {fun.QualifiedName}{fun.TypeParameterText}({
             string.Join(", ", fun.Parameters.Select(get_TypeDisplayString))})";
+
+        public string ParameterText
+            => $"({string.Join(", ", fun.Parameters.Select(get_FullDisplayName))})";
+
+        public string TypeParameterText
+            => fun.TypeParameters.Length > 0
+                ? $"[{string.Join(", ", fun.TypeParameters.Select(p => $"{p.Name}"))}]"
+                : "";
     }
 
     extension(ParameterSymbol parameter)
