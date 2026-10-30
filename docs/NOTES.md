@@ -7,8 +7,6 @@
 
 # Questions / Little ones****
 
-* ?? Local Funs: Lowered by MIR directly?
-
 * ?? Miri: `Environment` -> `ActivationFrame` with .GetRef that throws if exited
 * ?? Miri: Store reference as Root (ActivationFrame, LocalId) + Path (FieldSymbol[]). See Claude, think why?
 

@@ -1,0 +1,12 @@
+﻿//@check
+
+// Funs cannot refer to variables/parameters outside of their activation frame.
+
+let a = 1;
+
+fun Test(param: I32)
+{
+    a = 2;      //~error UndefinedName
+    let b = a;  //~error UndefinedName
+    let a = a;  //~error UndefinedName
+}

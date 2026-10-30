@@ -64,15 +64,3 @@ switch (args[0])
 }
 
 return;
-
-IEnumerable<FunSymbol> AllFuns(Symbol symbol) =>
-    symbol switch
-    {
-        ScriptSymbol script => [script.Fun, .. script.Members.SelectMany(AllFuns), ..AllLocalFuns(script.Fun.Body.Value as BoundBlock)],
-        NamespaceOrTypeSymbol members => members.Members.SelectMany(AllFuns),
-        FunSymbol fun => [fun],
-        _ => []
-    };
-    
-    IEnumerable<FunSymbol> AllLocalFuns(BoundBlock? block) =>block is null ? [] :
-        [.. block.LocalFuns, ..block.Stmts.OfType<BoundBlock>().SelectMany(AllLocalFuns)];

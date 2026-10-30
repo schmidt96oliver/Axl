@@ -1,5 +1,4 @@
-﻿using System.Collections.Frozen;
-using System.Collections.Immutable;
+﻿using System.Collections.Immutable;
 using System.Diagnostics;
 using Axl.Compiler.Binding;
 using Axl.Compiler.Binding.BoundTree;
@@ -94,8 +93,8 @@ public class Compilation
     }
 
     /// <summary>
-    /// Enumerates all funs contained in this compilation, excluding
-    /// those in <see cref="ReferencedCompilations"/>.
+    /// Enumerates all funs with a body contained in this compilation, excluding
+    /// those in <see cref="ReferencedCompilations"/> and excluding intrinsics.
     /// </summary>
     public IEnumerable<FunSymbol> AllFuns
     {
@@ -105,7 +104,7 @@ public class Compilation
 
             IEnumerable<FunSymbol> Inner(Symbol symbol) => symbol switch
             {
-                FunSymbol { Body: BoundBlock bodyBlock } funSymbol => [funSymbol, .. bodyBlock.LocalFunsRecursive()],
+                FunSymbol { Body: BoundBlock } funSymbol => [funSymbol],
                 FunSymbol funSymbol => [funSymbol],
                 ScriptSymbol script => [.. Inner(script.Fun), .. script.Members.OfType<FunSymbol>()],
                 NamespaceOrTypeSymbol namespaceOrTypeSymbol => namespaceOrTypeSymbol.Members.OfType<FunSymbol>(),

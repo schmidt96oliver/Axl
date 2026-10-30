@@ -3,10 +3,6 @@
 // Non-intrinsic funs must declare a body.
 
 fun A();          //~error MissingFunBody
-fun Outer()
-{
-    fun Local();  //~error MissingFunBody
-}
 
 //---
 namespace Test;

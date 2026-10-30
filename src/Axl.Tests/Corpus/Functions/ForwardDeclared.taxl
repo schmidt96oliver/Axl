@@ -1,24 +1,8 @@
 ﻿//@run
-//= A A B B C C
+//= A A
 
 // Functions are callable from in- and outside before they are declared.
-
+  
 Test();
 fun Test() { Print("A "); }
 Test();
-
-// Also local funs inside blocks
-{
-    Test();
-    fun Test() { Print("B "); }
-    Test();
-}
-
-// Also inside fun blocks
-Outer();
-fun Outer()
-{
-    Test();
-    fun Test() { Print("C "); }
-    Test();
-}

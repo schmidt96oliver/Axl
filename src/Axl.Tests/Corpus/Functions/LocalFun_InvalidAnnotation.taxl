@@ -1,7 +1,0 @@
-﻿//@check
-
-// There are no valid annotations for local funs.
-
-@Intrinsic          //~error InvalidLocalFunAnnotation
-@Primitive          //~error InvalidLocalFunAnnotation
-fun Test() { }

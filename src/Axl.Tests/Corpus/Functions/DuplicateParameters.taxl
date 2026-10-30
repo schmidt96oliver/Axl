@@ -3,16 +3,3 @@
 fun Test(a: String,   //~error DuplicateParameters
          a: Bool)     //~error DuplicateParameters
 { }
-
-{
-    fun Test(a: String,   //~error DuplicateParameters
-             a: Bool)     //~error DuplicateParameters
-    { }
-}
-
-fun Outer()
-{
-    fun Test(a: String,   //~error DuplicateParameters
-             a: Bool)     //~error DuplicateParameters
-    { }
-}

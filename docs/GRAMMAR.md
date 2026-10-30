@@ -55,7 +55,7 @@ Expr        = BlockExpr
 
 MutExpr     = "mut" Expr
 
-BlockExpr   = "{" (Stmt | FnDecl)* "}"
+BlockExpr   = "{" Stmt* "}"
 
 IfExpr      = "if" (Expr) Expr (";"? "else" Expr)
 

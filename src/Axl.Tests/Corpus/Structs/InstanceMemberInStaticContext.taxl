@@ -13,11 +13,5 @@ struct Test
     {  
         let f = Field;          //~error InstanceMemberInStaticContext
         Method();               //~error InstanceMemberInStaticContext
-        
-        fun Local()
-        {
-            let f = Field;          //~error InstanceMemberInStaticContext
-            Method();               //~error InstanceMemberInStaticContext
-        }
     }
 }

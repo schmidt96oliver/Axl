@@ -1,5 +1,4 @@
 ﻿using System.Collections.Immutable;
-using System.Diagnostics;
 using Axl.Compiler.Binding;
 using Axl.Compiler.Binding.BoundTree;
 using Axl.Compiler.Symbols;
@@ -377,7 +376,6 @@ public partial record Diagnostic
         {
             SourceStructSymbol structSymbol => [structSymbol.DeclarationSyntax.Name.Location],
             SourceFunSymbol sourceFun => [sourceFun.DeclarationSyntax.Name.Location],
-            LocalFunSymbol localFun => [localFun.DeclarationSyntax.Name.Location],
             FieldSymbol fieldSymbol => [fieldSymbol.DeclarationSyntax.Name.Location],
             SourceNamespaceSymbol namespaceSymbol =>
             [
@@ -450,27 +448,6 @@ public partial record Diagnostic
             : Symbols.All(s => s is FunSymbol)
                 ? $"All overloads of {Symbols[0].ShortDisplayName} are private and cannot be accessed here."
                 : $"‘{Symbols[0].ShortDisplayName}‘ is private and cannot be accessed here.";
-    }
-
-    public sealed record InvalidLocalFunModifier(Token Syntax) : Error
-    {
-        public override ImmutableArray<SourceLocation> Locations => [Syntax.Location];
-
-        public override string Message => $"‘{Syntax.Text}‘ is not valid on local funs.";
-    }
-
-    public sealed record MutLocalFunInStaticContext(Token Syntax) : Error
-    {
-        public override ImmutableArray<SourceLocation> Locations => [Syntax.Location];
-
-        public override string Message => "‘mut‘ is not valid here, because there is no ‘self‘ to mutate.";
-    }
-
-    public sealed record MutLocalFunInNonMutFun(Token Syntax) : Error
-    {
-        public override ImmutableArray<SourceLocation> Locations => [Syntax.Location];
-
-        public override string Message => "A local fun can only be ‘mut‘ if the enclosing fun is ‘mut‘.";
     }
 
 
@@ -553,7 +530,7 @@ public partial record Diagnostic
         public override ImmutableArray<SourceLocation> Locations => [Syntax.Location];
 
         /// <inheritdoc />
-        public override string Message => $"Operator ‘{Syntax.Text}’ can only be declared inside a type.";
+        public override string Message => $"Operator ‘{Syntax.Text}’ can only be declared outside a type.";
     }
 
     public sealed record OperatorCannotBeStatic(string FunName, Token Syntax) : Error
@@ -704,15 +681,6 @@ public partial record Diagnostic
 
         /// <inheritdoc />
         public override string Message => $"Unknown annotation '{Syntax.Text}'.";
-    }
-
-    public sealed record InvalidLocalFunAnnotation(BoundAnnotation Annotation) : Error
-    {
-        /// <inheritdoc />
-        public override ImmutableArray<SourceLocation> Locations => [Annotation.Syntax.Location];
-
-        /// <inheritdoc />
-        public override string Message => $"Annotation '{Annotation.Syntax.Text}' is not valid for local funs.";
     }
 
     public sealed record InvalidStructAnnotation(BoundAnnotation Annotation) : Error

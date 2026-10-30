@@ -15,11 +15,6 @@ struct Test
         let Color = 1;
         
         let b: Color = Color(Field = 1);
-        
-        fun Local(param: Color) 
-        { 
-            let b: Color = Color(Field = 1);
-        }
     }
 } 
 

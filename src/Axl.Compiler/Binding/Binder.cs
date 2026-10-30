@@ -86,8 +86,8 @@ public sealed class Binder(Scope scope, BinderSideEffects sideEffects)
         return WithScope(new FunBodyScope(Scope));
     }
 
-    public Binder EnterBlock(ImmutableArray<Symbol> localMembers)
-        => WithScope(new BlockScope(Scope, localMembers));
+    public Binder EnterBlock()
+        => WithScope(new BlockScope(Scope));
 
     public Binder WithAdditionalFlags(BindingFlags flags)
         => WithScope(new FlagsScope(Scope, Scope.Flags | flags));
@@ -260,17 +260,10 @@ public sealed class Binder(Scope scope, BinderSideEffects sideEffects)
         usingsScope.Complete(SideEffects);
         var usingsBinder = WithScope(usingsScope);
         
-        var localFuns = syntaxNodes[index..]
-            .OfType<FunDeclSyntax>()
-            .Select(usingsBinder.BindLocalFunDeclaration)
-            .ToImmutableArray();
-        CheckDuplicateDeclarations([.. localFuns]);
+        var inBlockBinder = usingsBinder.EnterBlock();
 
-        var inBlockBinder = usingsBinder.EnterBlock([.. localFuns]);
-
-        var stmts = inBlockBinder.BindStmtsAndLocalFunBodies(syntaxNodes[index..], localFuns);
-        
-        return new BoundBlock(stmts, localFuns, Unit, syntax);
+        var stmts = inBlockBinder.BindStmts(syntaxNodes[index..]);
+        return new BoundBlock(stmts, Unit, syntax);
     }
 
     public NamespaceSymbol BindNamespaceDeclaration(NamespaceDeclaration declaration)
@@ -392,61 +385,6 @@ public sealed class Binder(Scope scope, BinderSideEffects sideEffects)
     
     #region Declarations
     
-    private LocalFunSymbol BindLocalFunDeclaration(FunDeclSyntax syntax)
-    {
-        Debug.Assert(Scope.OwnerAsFun is not null);
-
-        // No annotations are valid
-        foreach (var boundAnnotation in syntax.Annotations.Select(BindAnnotation))
-        {
-            if (boundAnnotation is null) continue;
-            SideEffects.ReportError(new Diagnostic.InvalidLocalFunAnnotation(boundAnnotation));
-        }
-        
-        // 'Pub' and 'static' are not allowed
-        if (syntax.PubKw is not null)
-            SideEffects.ReportError(new Diagnostic.InvalidLocalFunModifier(syntax.PubKw));
-
-        if (syntax.StaticKw is not null)
-            SideEffects.ReportError(new Diagnostic.InvalidLocalFunModifier(syntax.StaticKw));
-
-        // Operators are not allowed.
-        // They can be declared though, since they are not callable anyway.
-        if (syntax.IsOperatorName)
-            SideEffects.ReportError(new Diagnostic.OperatorOutsideType(syntax.Name));
-
-        var ownerSelf = Scope.OwnerAsFun.SelfParameter;
-        var selfIsMut = false;
-
-        if (syntax.MutKw is not null)
-        {
-            // Mut on local funs is only allowed, if its parent is mut.
-            if (ownerSelf is null)
-                SideEffects.ReportError(new Diagnostic.MutLocalFunInStaticContext(syntax.MutKw));
-            else if (!ownerSelf.IsMut)
-                SideEffects.ReportError(new Diagnostic.MutLocalFunInNonMutFun(syntax.MutKw));
-            else
-                selfIsMut = true;
-        }
-
-        var symbol = new LocalFunSymbol(syntax, Scope.Owner);
-
-        var localFunBinder = EnterFunSignature(symbol);
-        
-        // Directly bind the signature
-        var selfParameter = ownerSelf is not null
-            ? new ParameterSymbol(Names.Self, owner: symbol, ownerSelf.Type, selfIsMut, isSelf: true)
-            : null;
-        var (returnType, isReturnMut) = localFunBinder.BindFunReturnType(syntax.ReturnTypeAnnotation);
-
-        symbol.SetSignature(selfParameter,
-            localFunBinder.BindParameters(syntax.ParameterList),
-            returnType, isReturnMut);
-        
-        SideEffects.AddResolvedSymbol(syntax.Name.Location, symbol);
-        return symbol;
-    }
-
     public SourceFunSymbol BindSourceFunDeclaration(FunDeclSyntax syntax)
     {
         Debug.Assert(Scope.OwnerAsNamespaceOrType is not null);
@@ -462,7 +400,7 @@ public sealed class Binder(Scope scope, BinderSideEffects sideEffects)
             else
                 SideEffects.ReportError(new Diagnostic.InvalidFunAnnotation(annotation));
         }
-        
+
         // ---
         var name = syntax.Name.Text.ToString();
         
@@ -471,15 +409,7 @@ public sealed class Binder(Scope scope, BinderSideEffects sideEffects)
         var isMutatingReceiver = syntax.MutKw is not null;
 
         if (receiverType is null && isMutatingReceiver)
-        {
             SideEffects.ReportError(new Diagnostic.StaticFunCannotBeMut(syntax.MutKw!, name));
-            isMutatingReceiver = false;
-        }
-        
-        if (syntax.IsOperatorName && receiverType is null)
-            SideEffects.ReportError(new Diagnostic.OperatorCannotBeStatic(name, syntax.StaticKw!));
-        if (syntax.IsOperatorName && isMutatingReceiver)
-            SideEffects.ReportError(new Diagnostic.OperatorCannotBeMut(name, syntax.MutKw!));
 
         var funSymbol = new SourceFunSymbol(syntax,
             Scope,
@@ -655,14 +585,14 @@ public sealed class Binder(Scope scope, BinderSideEffects sideEffects)
         if (syntax.Expr is null)
         {
             SideEffects.ReportError(new Diagnostic.MissingFunBody(fun, fun.DeclarationSyntax!));
-            return new BoundBlock([], [], Unit);
+            return new BoundBlock([], Unit);
         }
 
         // --- Expression body
         if (syntax.IsExpressionBodied)
         {
             var value = bodyBinder.BindReturnValue(syntax.Expr, out var isMutReturn);
-            return new BoundBlock([new BoundReturn(value, isMutReturn, NeverType)], [], Unit);
+            return new BoundBlock([new BoundReturn(value, isMutReturn, NeverType)], Unit);
         }
 
         // --- Block body
@@ -682,7 +612,7 @@ public sealed class Binder(Scope scope, BinderSideEffects sideEffects)
             fun.ReturnType != Unit && !fun.ReturnType.IsPrimitive)
         {
             SideEffects.DiagnosticBag.ReportError(new Diagnostic.UnknownIntrinsic(annotation));
-            return new BoundBlock([], [], Unit);
+            return new BoundBlock([], Unit);
         }
 
         var parameters = fun.SelfAndParameters.Select(p => p.Type.PrimitiveKind!.Value).ToImmutableArray();
@@ -691,7 +621,7 @@ public sealed class Binder(Scope scope, BinderSideEffects sideEffects)
         if (IntrinsicLookup.TryGetIntrinsic(fun.Name, parameters, returnType) is not Intrinsic intrinsic)
         {
             SideEffects.DiagnosticBag.ReportError(new Diagnostic.UnknownIntrinsic(annotation));
-            return new BoundBlock([], [], Unit);
+            return new BoundBlock([], Unit);
         }
 
         return intrinsic;
@@ -736,10 +666,26 @@ public sealed class Binder(Scope scope, BinderSideEffects sideEffects)
 
     public void CheckOperatorSignature(FunSymbol funSymbol)
     {
-        // Local funs already get an error if they are operators,
-        // so be silent.
-        if (funSymbol.Owner is FunSymbol)
+        if (funSymbol.Owner is not TypeSymbol)
+        {
+            SideEffects.ReportError(new Diagnostic.OperatorOutsideType(funSymbol.DeclarationSyntax!.Name));
             return;
+        }
+
+        if (funSymbol.SelfParameter is null)
+        {
+            SideEffects.ReportError(new Diagnostic.OperatorCannotBeStatic(funSymbol.Name,
+                funSymbol.DeclarationSyntax!.StaticKw!));
+            return;
+        }
+
+        if (funSymbol.SelfParameter?.IsMut == true)
+        {
+            SideEffects.ReportError(
+                new Diagnostic.OperatorCannotBeMut(funSymbol.Name, funSymbol.DeclarationSyntax!.MutKw!));
+            return;
+        }
+
 
         var opToken = funSymbol.DeclarationSyntax!.Name.Token;
         var isUnary = SyntaxFacts.IsUnaryOperator(opToken.Kind);
@@ -760,7 +706,7 @@ public sealed class Binder(Scope scope, BinderSideEffects sideEffects)
             SideEffects.ReportError(new Diagnostic.WrongOperatorReturnType(funSymbol, Bool));
         }
     }
-    
+
     #endregion
     
     #region Stmts
@@ -1163,18 +1109,15 @@ public sealed class Binder(Scope scope, BinderSideEffects sideEffects)
     
     #region Blocks, Control Flow
     
-    private BoundBlock BindBlock(BlockExprSyntax syntax)
+    private BoundBlock BindBlock(SyntaxNode syntax)
     {
-        var localFuns = syntax.Children.OfType<FunDeclSyntax>().Select(BindLocalFunDeclaration).ToImmutableArray();
-        CheckDuplicateDeclarations([.. localFuns]);
-
-        var inBlockBinder = EnterBlock([.. localFuns]);
+        var inBlockBinder = EnterBlock();
         
-        var stmts = inBlockBinder.BindStmtsAndLocalFunBodies([.. syntax.SyntaxNodes()], localFuns);
-        return new BoundBlock(stmts, localFuns, Unit, syntax);
+        var stmts = inBlockBinder.BindStmts([.. syntax.SyntaxNodes()]);
+        return new BoundBlock(stmts, Unit, syntax);
     }
 
-    private ImmutableArray<BoundStmt> BindStmtsAndLocalFunBodies(ImmutableArray<SyntaxNode> childNodes, ImmutableArray<LocalFunSymbol> localFuns)
+    private ImmutableArray<BoundStmt> BindStmts(ImmutableArray<SyntaxNode> childNodes)
     {
         if (Scope is not BlockScope blockScope)
             throw new InvalidOperationException("Must be on block scope.");
@@ -1193,19 +1136,13 @@ public sealed class Binder(Scope scope, BinderSideEffects sideEffects)
                     if (i + 1 < childNodes.Length)
                     {
                         var adjacentBinder = WithScope(blockScope.WithVariable(boundVarDecl.Variable));
-                        stmts.AddRange(adjacentBinder.BindStmtsAndLocalFunBodies(childNodes[(i + 1)..], localFuns));
+                        stmts.AddRange(adjacentBinder.BindStmts(childNodes[(i + 1)..]));
                     }
 
                     return stmts.DrainToImmutable();
                 }
             }
-            else if (node is FunDeclSyntax funDeclSyntax)
-            {
-                var localFunSymbol = localFuns.Single(fun => fun.DeclarationSyntax == funDeclSyntax);
-                var localFunBinder = EnterFunSignature(localFunSymbol);
-                localFunSymbol.SetBody(localFunBinder.BindSourceFunBody(funDeclSyntax.Body));
-            }
-            else if (node is StructDeclSyntax)
+            else if (node is StructDeclSyntax or FunDeclSyntax)
             {
                 // This is only allowed on scripts and is handled separately.
             }

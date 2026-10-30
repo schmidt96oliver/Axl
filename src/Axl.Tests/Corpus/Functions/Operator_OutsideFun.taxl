@@ -1,6 +1,6 @@
 ﻿//@check
 
-// Operator cannot be declared on scripts or as local funs.
+// Operator cannot be declared on scripts or namespaces.
 
 fun +() { }     //~error OperatorOutsideType
 fun -() { }     //~error OperatorOutsideType
@@ -14,17 +14,17 @@ fun <=() { }    //~error OperatorOutsideType
 fun >() { }     //~error OperatorOutsideType
 fun >=() { }    //~error OperatorOutsideType
 
-fun Local()
-{
-    fun +() { }     //~error OperatorOutsideType
-    fun -() { }     //~error OperatorOutsideType
-    fun !() { }     //~error OperatorOutsideType
-    fun *() { }     //~error OperatorOutsideType
-    fun /() { }     //~error OperatorOutsideType
-    fun ==() { }    //~error OperatorOutsideType
-    fun !=() { }    //~error OperatorOutsideType
-    fun <() { }     //~error OperatorOutsideType
-    fun <=() { }    //~error OperatorOutsideType
-    fun >() { }     //~error OperatorOutsideType
-    fun >=() { }    //~error OperatorOutsideType
-}
+//---
+namespace Test;
+
+fun +() { }     //~error OperatorOutsideType
+fun -() { }     //~error OperatorOutsideType
+fun !() { }     //~error OperatorOutsideType
+fun *() { }     //~error OperatorOutsideType
+fun /() { }     //~error OperatorOutsideType
+fun ==() { }    //~error OperatorOutsideType
+fun !=() { }    //~error OperatorOutsideType
+fun <() { }     //~error OperatorOutsideType
+fun <=() { }    //~error OperatorOutsideType
+fun >() { }     //~error OperatorOutsideType
+fun >=() { }    //~error OperatorOutsideType

@@ -34,7 +34,8 @@ public class ScriptSymbol(SyntaxTree syntax, Scope enclosingScope)
                 _binder ??= MakeBinder();
                 field =
                 [
-                    .. syntax.FileSyntax.Children.OfType<StructDeclSyntax>().Select(_binder.BindStructDeclaration)
+                    .. syntax.FileSyntax.Children.OfType<StructDeclSyntax>().Select(_binder.BindStructDeclaration),
+                    .. syntax.FileSyntax.Children.OfType<FunDeclSyntax>().Select(_binder.BindSourceFunDeclaration)
                 ];
                 
                 _isBindingMembers = false;

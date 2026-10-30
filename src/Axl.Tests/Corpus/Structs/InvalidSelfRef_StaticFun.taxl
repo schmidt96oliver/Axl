@@ -11,11 +11,5 @@ struct Test
     { 
         let a = self;   //~error InvalidSelfRef
         let a = self.X; //~error InvalidSelfRef
-        
-        fun Local()
-        {
-            let a = self;   //~error InvalidSelfRef
-            let a = self.X; //~error InvalidSelfRef
-        }
     }
 }
