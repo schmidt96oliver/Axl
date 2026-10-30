@@ -1638,7 +1638,8 @@ public sealed class Binder(Scope scope, BinderSideEffects sideEffects)
                 {
                     SideEffects.ReportError(new Diagnostic.ArgumentTypeMismatch(
                         arguments[i],
-                        candidate.Parameters[i]));
+                        candidate.Parameters[i],
+                        GetConcreteParameterType(candidate.Parameters[i], funGroup.TypeArguments)));
                 }
             }
 
@@ -1647,6 +1648,13 @@ public sealed class Binder(Scope scope, BinderSideEffects sideEffects)
         
         Debug.Assert(viability is FunViability.Viable);
 
+        if (candidates.Count > 1)
+        {
+            // If there are generics, pick the one that has no generic parameters
+            candidates.RemoveAll(f =>
+                f.Parameters.Any(p => p.Type is TypeParameterSymbol typeParam && typeParam.Owner == p.Owner));
+        }
+        
         if (candidates.Count > 1)
         {
             SideEffects.ReportError(new Diagnostic.AmbiguousCall([.. candidates], funGroup.Syntax!));
@@ -1666,21 +1674,10 @@ public sealed class Binder(Scope scope, BinderSideEffects sideEffects)
         if (fun.Parameters.Length != arguments.Length)
             return FunViability.ArityMismatch;
 
-        if (!arguments.Zip(fun.Parameters, CheckArgument).All(x => x))
+        if (!arguments.Zip(fun.Parameters, (arg, param) => IsArgumentAssignableTo(param, typeArguments, arg)).All(x => x))
             return FunViability.ArgumentTypeMismatch;
 
         return FunViability.Viable;
-
-        bool CheckArgument(BoundArgument argument, ParameterSymbol parameter)
-        {
-            if (parameter.IsMut != argument.IsMut)
-                return false;
-
-            if (parameter.Type is TypeParameterSymbol typeParam && typeParam.Owner == parameter.Owner)
-                return IsAssignableTo(argument.Type, typeArguments[typeParam.Ordinal].Type);
-            
-            return IsAssignableTo(argument.Type, parameter.Type);
-        }
     }
 
 
@@ -1688,15 +1685,11 @@ public sealed class Binder(Scope scope, BinderSideEffects sideEffects)
     /// Checks that a fun can be called. Expects, that arity and argument types are
     /// already valid.
     /// </summary>
-    private bool CheckCallToSingleFun(FunSymbol fun, 
+    private bool ContinueCheckCallToSingleFun(FunSymbol fun, 
         BoundNode? receiver,
         ImmutableArray<BoundArgument> arguments, 
         SyntaxNode funSyntax)
     {
-        Debug.Assert(fun.Parameters
-            .Zip(arguments, (param, arg) => IsAssignableTo(arg.Type, param.Type) && arg.IsMut == param.IsMut)
-            .All(x => x));
-        
         // Check StaticMismatch
         var isContextStatic = receiver is (null or not BoundValue);
         if (isContextStatic != fun.IsStatic)
@@ -1739,6 +1732,25 @@ public sealed class Binder(Scope scope, BinderSideEffects sideEffects)
         return true;
     }
 
+
+    private TypeSymbol GetConcreteParameterType(ParameterSymbol parameter,
+        ImmutableArray<BoundTypeArgument> typeArguments)
+    {
+        return parameter.Type is TypeParameterSymbol typeParam && typeParam.Owner == parameter.Owner
+            ? typeArguments[typeParam.Ordinal].Type
+            : parameter.Type;
+    }
+
+    private bool IsArgumentAssignableTo(ParameterSymbol parameter, ImmutableArray<BoundTypeArgument> typeArguments,
+        BoundArgument argument)
+    {
+        if (parameter.IsMut != argument.IsMut)
+            return false;
+        
+        var concreteParamType = GetConcreteParameterType(parameter, typeArguments);
+        return IsAssignableTo(argument.Type, concreteParamType);
+    }
+    
     
     private BoundValue BindCall(CallExprSyntax syntax)
     {
@@ -1772,7 +1784,7 @@ public sealed class Binder(Scope scope, BinderSideEffects sideEffects)
         var receiverArgument = receiver is BoundValue receiverValue
             ? new BoundArgument(receiverValue, isMut: singleFun.SelfParameter?.IsMut == true)
             : null;
-        return CheckCallToSingleFun(singleFun, receiver, arguments, calleeFunGroup.Syntax!)
+        return ContinueCheckCallToSingleFun(singleFun, receiver, arguments, calleeFunGroup.Syntax!)
             ? new BoundCall(singleFun, receiverArgument, arguments, syntax)
             : new BoundError(ErrorType, syntax);
     }
@@ -1831,7 +1843,7 @@ public sealed class Binder(Scope scope, BinderSideEffects sideEffects)
         if (singleFun is null)
             return null;
 
-        return resolutionBinder.CheckCallToSingleFun(singleFun, receiver, boundArguments, syntax)
+        return resolutionBinder.ContinueCheckCallToSingleFun(singleFun, receiver, boundArguments, syntax)
             ? new BoundCall(singleFun, new BoundArgument(receiver, isMut: false), boundArguments, syntax)
             : null;
     }

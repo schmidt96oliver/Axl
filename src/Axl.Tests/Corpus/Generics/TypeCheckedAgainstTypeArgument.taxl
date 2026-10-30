@@ -1,0 +1,10 @@
+﻿//@check
+
+A[I32](1);
+A[I32](1.1);        //~error ArgumentTypeMismatch
+A[I32](true);       //~error ArgumentTypeMismatch
+A[String]("");
+A[String](1);       //~error ArgumentTypeMismatch
+A[String]({});      //~error ArgumentTypeMismatch
+ 
+fun A[T](t: T) { }

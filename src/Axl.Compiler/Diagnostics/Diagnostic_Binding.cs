@@ -19,13 +19,14 @@ public partial record Diagnostic
             => $"Expected type ‘{Expected.QualifiedName}‘ but got ‘{Value.Type.QualifiedName}‘.";
     }
     
-    public sealed record ArgumentTypeMismatch(BoundArgument Argument, ParameterSymbol Parameter) : Error
+    public sealed record ArgumentTypeMismatch(BoundArgument Argument, ParameterSymbol Parameter, TypeSymbol ConcreteParamType) : Error
     {
         public override ImmutableArray<SourceLocation> Locations
             => [Argument.Syntax!.Location];
 
-        public override string Message
-            => $"Argument for ‘{Parameter.Name}‘ must be ‘{Parameter.TypeDisplayString}‘, but got ‘{Argument.TypeDisplayString}‘.";
+        public override string Message => Parameter.IsMut
+            ? $"Argument for ‘{Parameter.Name}‘ must be ‘mut {ConcreteParamType.QualifiedName}‘, but got ‘{Argument.TypeDisplayString}‘."
+            : $"Argument for ‘{Parameter.Name}‘ must be ‘{ConcreteParamType.QualifiedName}‘, but got ‘{Argument.TypeDisplayString}‘.";
     }
 
     public sealed record MissingInitializer(VarDeclSyntax VarDeclSyntax) : Error

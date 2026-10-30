@@ -3,7 +3,8 @@
 
 # Now
 
-* type args: overload resolution and checking
+* AmbiguousCall: Candidate insert type arguments
+* Monomorphize :)
 
 # Questions / Little ones****
 
