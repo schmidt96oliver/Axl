@@ -3,6 +3,7 @@
 
 # Now
 
+* type args: overload resolution and checking
 
 # Questions / Little ones****
 

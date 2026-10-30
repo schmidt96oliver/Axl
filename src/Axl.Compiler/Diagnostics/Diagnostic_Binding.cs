@@ -201,6 +201,22 @@ public partial record Diagnostic
         private static string ArgCountWasOrWere(int number)
             => number == 1 ? "1 was" : $"{number} were";
     }
+    
+    public sealed record TypeParamArityMismatch(ImmutableArray<FunSymbol> Candidates, BoundFunGroup FunGroup) : Error
+    {
+        public override ImmutableArray<SourceLocation> Locations
+            => [FunGroup.TypeArgListSyntax?.Location ?? FunGroup.Syntax!.Location];
+
+        public override string Message => Candidates.Length == 1
+            ? $"‘{Candidates[0].QualifiedName}‘ takes {GetArgCountText(Candidates[0].TypeParameters.Length)}, but {ArgCountWasOrWere(FunGroup.TypeArguments.Length)} given."
+            : $"No overload of ‘{Candidates[0].QualifiedName}‘ takes {GetArgCountText(FunGroup.TypeArguments.Length)}.";
+
+        private static string GetArgCountText(int number)
+            => number == 1 ? $"1 type argument" : $"{number} type arguments";
+
+        private static string ArgCountWasOrWere(int number)
+            => number == 1 ? "1 was" : $"{number} were";
+    }
 
     public sealed record CannotCall(BoundNode BoundCallee) : Error
     {

@@ -1546,7 +1546,7 @@ public sealed class Binder(Scope scope, BinderSideEffects sideEffects)
             .Select(s => new BoundTypeArgument(BindType(s, TypeUsage.Local), s))
             .ToImmutableArray();
         
-        return funGroup.WithTypeArguments(typeArgs, syntax);
+        return funGroup.WithTypeArguments(typeArgs, syntax.ArgList, syntax);
     }
     
     #endregion 
@@ -1556,6 +1556,7 @@ public sealed class Binder(Scope scope, BinderSideEffects sideEffects)
     private enum FunViability
     {
         NotFound,
+        TypeParamArityMismatch,
         ArityMismatch,
         ArgumentTypeMismatch,
         Viable
@@ -1578,7 +1579,7 @@ public sealed class Binder(Scope scope, BinderSideEffects sideEffects)
 
         foreach (var fun in funGroup.Candidates)
         {
-            var thisFunViability = CheckFunCandidate(fun, arguments);
+            var thisFunViability = CheckFunCandidate(fun, funGroup.TypeArguments, arguments);
             if (thisFunViability == viability)
                 candidates.Add(fun);
             if (thisFunViability > viability)
@@ -1592,6 +1593,14 @@ public sealed class Binder(Scope scope, BinderSideEffects sideEffects)
         Debug.Assert(viability > FunViability.NotFound);
         Debug.Assert(candidates.Count >= 1);
 
+        if (viability is FunViability.TypeParamArityMismatch)
+        {
+            SideEffects.ReportError(new Diagnostic.TypeParamArityMismatch(
+                [.. candidates],
+                funGroup));
+            return null;
+        }
+        
         if (viability is FunViability.ArityMismatch)
         {
             SideEffects.ReportError(new Diagnostic.ArityMismatch(
@@ -1649,8 +1658,11 @@ public sealed class Binder(Scope scope, BinderSideEffects sideEffects)
         return candidates[0];
     }
 
-    private FunViability CheckFunCandidate(FunSymbol fun, ImmutableArray<BoundArgument> arguments)
+    private FunViability CheckFunCandidate(FunSymbol fun, ImmutableArray<BoundTypeArgument> typeArguments, ImmutableArray<BoundArgument> arguments)
     {
+        if (fun.TypeParameters.Length != typeArguments.Length)
+            return FunViability.TypeParamArityMismatch;
+        
         if (fun.Parameters.Length != arguments.Length)
             return FunViability.ArityMismatch;
 
@@ -1660,7 +1672,15 @@ public sealed class Binder(Scope scope, BinderSideEffects sideEffects)
         return FunViability.Viable;
 
         bool CheckArgument(BoundArgument argument, ParameterSymbol parameter)
-            => IsAssignableTo(argument.Type, parameter.Type) && parameter.IsMut == argument.IsMut;
+        {
+            if (parameter.IsMut != argument.IsMut)
+                return false;
+
+            if (parameter.Type is TypeParameterSymbol typeParam && typeParam.Owner == parameter.Owner)
+                return IsAssignableTo(argument.Type, typeArguments[typeParam.Ordinal].Type);
+            
+            return IsAssignableTo(argument.Type, parameter.Type);
+        }
     }
 
 
