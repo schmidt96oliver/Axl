@@ -1601,6 +1601,11 @@ public sealed class Binder(Scope scope, BinderSideEffects sideEffects)
             return null;
         }
         
+        // All candidates have correct type parameter arity, so we
+        // can already construct for better diagnostics.
+        for (var i = 0; i < candidates.Count; i++)
+            candidates[i] = candidates[i].GetConstructedFun([.. funGroup.TypeArguments.Select(a => a.Type)]);
+        
         if (viability is FunViability.ArityMismatch)
         {
             SideEffects.ReportError(new Diagnostic.ArityMismatch(
@@ -1650,9 +1655,6 @@ public sealed class Binder(Scope scope, BinderSideEffects sideEffects)
 
         if (candidates.Count > 1)
         {
-            // If there are generics, pick the one that has no generic parameters
-            candidates.RemoveAll(f =>
-                f.Parameters.Any(p => p.Type is TypeParameterSymbol typeParam && typeParam.Owner == p.Owner));
             //TODO: Implement proper specificity
         }
         
@@ -1663,13 +1665,10 @@ public sealed class Binder(Scope scope, BinderSideEffects sideEffects)
         }
 
         // Construct it
-        var pickedFun = candidates[0].IsGeneric
-            ? candidates[0].GetConstructedFun([.. funGroup.TypeArguments.Select(t => t.Type)])
-            : candidates[0];
-        
+        Debug.Assert(candidates[0].IsConstructed);
         if (funGroup.Syntax is not null)
-            SideEffects.AddResolvedSymbol(funGroup.Syntax.Location, pickedFun);
-        return pickedFun;
+            SideEffects.AddResolvedSymbol(funGroup.Syntax.Location, candidates[0]);
+        return candidates[0];
     }
 
     private FunViability CheckFunCandidate(FunSymbol fun, ImmutableArray<BoundTypeArgument> typeArguments, ImmutableArray<BoundArgument> arguments)

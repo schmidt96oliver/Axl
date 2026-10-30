@@ -18,8 +18,6 @@
     Several left, not viable: a specific message per grade, for example:
   * Implement rule for specificity in overload resolution (-> Claude)
 
-* AmbiguousCall: Candidate insert type arguments
-
 
 # Questions / Little ones****
 
