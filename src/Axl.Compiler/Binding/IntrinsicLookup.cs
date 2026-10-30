@@ -18,6 +18,11 @@ public static class IntrinsicLookup
         {
             
         }
+        public IntrinsicDefinition(Intrinsic Intrinsic, string Name, ImmutableArray<PrimitiveKind> Parameters, PrimitiveKind ReturnType)
+            : this(Intrinsic, Name, null, Parameters, ReturnType)
+        {
+            
+        }
         
         public IntrinsicDefinition(Intrinsic Intrinsic, TokenKind tokenName, PrimitiveKind Receiver, ImmutableArray<PrimitiveKind> Parameters, PrimitiveKind ReturnType)
             : this(Intrinsic, SyntaxFacts.GetText(tokenName)!, Receiver, Parameters, ReturnType)
@@ -73,6 +78,7 @@ public static class IntrinsicLookup
         new(Intrinsic.ConcatString, Names.StringConcatMethod, PrimitiveKind.String, [PrimitiveKind.String], PrimitiveKind.String),
         
         new(Intrinsic.Print, "Print", [PrimitiveKind.String]),
+        new(Intrinsic.Panic, "Panic", [PrimitiveKind.String], PrimitiveKind.Never),
     ];
     
     public static Intrinsic? TryGetIntrinsic(string name, PrimitiveKind? receiver,

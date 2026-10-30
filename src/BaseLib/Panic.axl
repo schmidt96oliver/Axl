@@ -1,0 +1,22 @@
+﻿namespace Base;
+
+@Intrinsic
+pub fun Panic(message: String): Never;
+
+pub fun Panic() : Never
+    = Panic("");
+
+pub fun Assert(condition: Bool, message: String): Never
+    = Panic("Assertion failed. {message}");
+    
+pub fun Assert(condition: Bool): Never
+    = Panic("Assertion failed.");
+    
+pub fun TODO() : Never
+    = Panic("TODO");
+    
+pub fun Unreachable(): Never
+    = Panic("This instruction was thought to be unreachable.");
+    
+pub fun Unreachable(message: String): Never
+    = Panic(message);

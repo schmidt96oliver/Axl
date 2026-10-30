@@ -3,9 +3,9 @@
 
 # Now
 
-* Make MIR error tolerant
-* Never nameable
-* Panic, Assert, ...
+* ReturnCheck Never; lower to unreachable after never call
+* test Panics
+
 * Miri flat execution + stack trace + @StackTraceHidden
 
 * `ArgumentMutMismatch` -> `MissingMut`, `UnexpectedMut`
@@ -18,9 +18,12 @@
 
 # Questions / Little ones****
 
+* ?? Local Funs: Lowered by MIR directly?
+
 * ?? Miri: `Environment` -> `ActivationFrame` with .GetRef that throws if exited
 * ?? Miri: Store reference as Root (ActivationFrame, LocalId) + Path (FieldSymbol[]). See Claude, think why?
 
+* ?? Intrinsic lookup on SelfAndParameters instead of singling out receiver?
 * ?? BoundParameter and BoundSelf again?
 
 # Milestones

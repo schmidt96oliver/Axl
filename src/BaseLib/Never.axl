@@ -1,0 +1,4 @@
+﻿namespace Base;
+
+@Primitive
+pub struct Never;   //TODO: Implement as empty enum

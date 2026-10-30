@@ -7,5 +7,6 @@ public enum PrimitiveKind
     F32,
     F64,
     Bool,
-    String
+    String,
+    Never,
 }

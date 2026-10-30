@@ -9,3 +9,4 @@ let p = I64();      //~error CannotInitialize
 let p = F32();      //~error CannotInitialize
 let p = F64();      //~error CannotInitialize
 let p = Bool();     //~error CannotInitialize
+let p = Never();    //~error CannotInitialize

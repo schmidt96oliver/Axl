@@ -15,7 +15,8 @@ public enum BaseTypeKind
     F64,
     
     String,
-    Unit
+    Unit,
+    Never,
 }
 
 public sealed class BaseLibrary(Compilation compilation)
@@ -24,8 +25,7 @@ public sealed class BaseLibrary(Compilation compilation)
     private readonly DiagnosticBag _diagnosticBag = new();
 
     public ErrorTypeSymbol Error { get; } = new(compilation);
-    
-    public NeverTypeSymbol Never { get; } = new(compilation);
+
 
     public NamespaceSymbol BaseNamespace
     {
@@ -63,6 +63,7 @@ public sealed class BaseLibrary(Compilation compilation)
     public TypeSymbol Bool => Get(BaseTypeKind.Bool);
     public TypeSymbol String => Get(BaseTypeKind.String);
     public TypeSymbol Unit => Get(BaseTypeKind.Unit);
+    public TypeSymbol Never => Get(BaseTypeKind.Never);
 
     public TypeSymbol DefaultIntType => I32;
     public TypeSymbol DefaultFloatType => F64;

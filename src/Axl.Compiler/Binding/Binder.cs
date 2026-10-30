@@ -68,7 +68,7 @@ public sealed class Binder(Scope scope, BinderSideEffects sideEffects)
 
     private ErrorTypeSymbol ErrorType => Scope.Compilation.BaseLibrary.Error;
     
-    private NeverTypeSymbol NeverType => Scope.Compilation.BaseLibrary.Never;
+    private TypeSymbol NeverType => Scope.Compilation.BaseLibrary.Never;
     
     
     public Binder WithSideEffects(BinderSideEffects sideEffects)
@@ -95,13 +95,13 @@ public sealed class Binder(Scope scope, BinderSideEffects sideEffects)
     #endregion
 
 
-    private static bool IsAssignableTo(TypeSymbol source, TypeSymbol target)
+    private bool IsAssignableTo(TypeSymbol source, TypeSymbol target)
     {
         // Errors are silent
         if (source is ErrorTypeSymbol || target is ErrorTypeSymbol) return true;
         
         // Never assigns to anything
-        if (source is NeverTypeSymbol) return true;
+        if (source == NeverType) return true;
 
         return source == target;
     }

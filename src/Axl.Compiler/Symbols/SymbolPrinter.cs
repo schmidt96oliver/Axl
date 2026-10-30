@@ -27,7 +27,6 @@ public static class SymbolPrinter
         {
             get
             {
-                if (symbol is NeverTypeSymbol) return "never";
                 if (symbol is ErrorTypeSymbol) return "???";
                 return string.Join(".", symbol.SelfAndOwners()
                     .Where(s => s.CanBeReferencedByName)

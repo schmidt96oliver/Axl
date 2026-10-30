@@ -119,7 +119,7 @@ public class Lowerer
 
     private void LowerVarDecl(BoundVarDecl varDecl)
     {
-        if (varDecl.Variable.Type is NeverTypeSymbol)
+        if (varDecl.Variable.Type == Never)
         {
             // Never does not create a variable that is written to.
             LowerInto(varDecl.Initializer, new Place.Discard(Error));

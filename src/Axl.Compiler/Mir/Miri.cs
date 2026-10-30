@@ -10,6 +10,8 @@ using Environment = Dictionary<LocalId, object>;
 
 public sealed class Miri
 {
+    private sealed class PanicException() : Exception;
+    
     private sealed class StructValue
     {
         public readonly Dictionary<FieldSymbol, object> Fields = [];
@@ -32,7 +34,14 @@ public sealed class Miri
     public static void Run(MirProgram program, TextWriter output)
     {
         var miri = new Miri(program, output);
-        miri.Call(program.Entry.Symbol, []);
+        try
+        {
+            miri.Call(program.Entry.Symbol, []);
+        }
+        catch (PanicException)
+        {
+            
+        }
     }
 
     private object Call(FunSymbol fun, ImmutableArray<object> arguments)
@@ -187,6 +196,11 @@ public sealed class Miri
             
             case Intrinsic.ConcatString:
                 return string.Concat((string)args[0], (string)args[1]);
+            
+            case Intrinsic.Panic:
+                var message = (string)args[0];
+                _output.WriteLine($"PANIC: {message}");
+                throw new PanicException();
             
             default:
                 throw new UnreachableException();
