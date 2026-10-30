@@ -145,6 +145,7 @@ public static class SyntaxFacts
     {
         TokenKind.Dot => Precedence.Dot,
         TokenKind.OpenParen => Precedence.ArgList,
+        TokenKind.OpenBracket => Precedence.ArgList,
         _ => null,
     };
 }

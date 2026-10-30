@@ -48,6 +48,7 @@ public enum SyntaxKind
     UnaryExpr,
     CallExpr,
     MemberAccessExpr,
+    SubscriptExpr,
     
     BreakExpr,
     ContinueExpr,
@@ -77,4 +78,5 @@ public enum SyntaxKind
     FunName,
     NamespaceName,
     Annotation,
+    SubscriptArgList,
 }

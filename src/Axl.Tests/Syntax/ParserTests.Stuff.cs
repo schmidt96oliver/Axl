@@ -33,5 +33,55 @@ public partial class ParserTests
                 · · · ')'
                 · ';'
                 """);
+
+        [Fact]
+        public void Subscript_1()
+            => InlineSnapshot.Validate(Tree("f[a, b]();"), """
+                ExprStmt
+                · CallExpr
+                · · SubscriptExpr
+                · · · IdName 'f'
+                · · · SubscriptArgList
+                · · · · '['
+                · · · · IdName 'a'
+                · · · · ','
+                · · · · IdName 'b'
+                · · · · ']'
+                · · ArgList '(' ')'
+                · ';'
+                """);
+        [Fact]
+        public void Subscript_2()
+            => InlineSnapshot.Validate(Tree("f[a + b, a()[4]()]()[a];"), """
+                ExprStmt
+                · SubscriptExpr
+                · · CallExpr
+                · · · SubscriptExpr
+                · · · · IdName 'f'
+                · · · · SubscriptArgList
+                · · · · · '['
+                · · · · · BinaryExpr
+                · · · · · · IdName 'a'
+                · · · · · · '+'
+                · · · · · · IdName 'b'
+                · · · · · ','
+                · · · · · CallExpr
+                · · · · · · SubscriptExpr
+                · · · · · · · CallExpr
+                · · · · · · · · IdName 'a'
+                · · · · · · · · ArgList '(' ')'
+                · · · · · · · SubscriptArgList
+                · · · · · · · · '['
+                · · · · · · · · NumberLiteral '4'
+                · · · · · · · · ']'
+                · · · · · · ArgList '(' ')'
+                · · · · · ']'
+                · · · ArgList '(' ')'
+                · · SubscriptArgList
+                · · · '['
+                · · · IdName 'a'
+                · · · ']'
+                · ';'
+                """);
     }
 }

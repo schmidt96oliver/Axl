@@ -832,6 +832,7 @@ public sealed class Binder(Scope scope, BinderSideEffects sideEffects)
         IdNameSyntax idNameSyntax => BindIdName(idNameSyntax, lookupOptions),
         SelfSyntax selfSyntax => BindSelf(selfSyntax),
         CallExprSyntax callExprSyntax => BindCall(callExprSyntax),
+        SubscriptExprSyntax subscriptExprSyntax => BindSubscript(subscriptExprSyntax),
         MutExprSyntax => BindError(syntax, new Diagnostic.MutNotAllowedHere(syntax)),
         
         // Strings and Literals
@@ -1529,6 +1530,14 @@ public sealed class Binder(Scope scope, BinderSideEffects sideEffects)
 
     #endregion
     
+    #region Subscripts
+
+    private BoundNode BindSubscript(SubscriptExprSyntax syntax)
+    {
+        return BindError(syntax.ArgList, new Diagnostic.UnsupportedFeature(syntax.ArgList));
+    }
+    
+    #endregion 
     
     #region Call and Struct Initializer
 

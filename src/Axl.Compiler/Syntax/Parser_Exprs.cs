@@ -171,10 +171,14 @@ public partial class Parser
                 EnsureIdName();
                 return _scanner.Close(expr, SyntaxKind.MemberAccessExpr);
 
-            // --- Call
+            // --- Call, Subscript
             case TokenKind.OpenParen:
                 EnsureArgList(anchor);
                 return _scanner.Close(expr, SyntaxKind.CallExpr);
+            
+            case TokenKind.OpenBracket:
+                EnsureSubscriptArgList(anchor);
+                return _scanner.Close(expr, SyntaxKind.SubscriptExpr);
 
             default:
                 throw new UnreachableException("Not a postfix op.");
@@ -292,6 +296,19 @@ public partial class Parser
             EnsureExpr(argAnchor);
             return _scanner.Close(arg, SyntaxKind.Arg);
         }
+    }
+    
+    private MarkClose EnsureSubscriptArgList(Anchor anchor)
+    {
+        return EnsureDelimitedList(anchor,
+            openToken: TokenKind.OpenBracket,
+            closeToken: TokenKind.CloseBracket,
+            listKind: SyntaxKind.SubscriptArgList,
+            itemFirst: FirstSet.Expr,
+            allowEmpty: true,
+            ensureItem: EnsureExpr, 
+            expectedOpenSyntax: null,
+            expectedItemSyntax: ExpectedSyntax.Expr);
     }
     
     private MarkClose EatIf(Anchor anchor)
