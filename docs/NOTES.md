@@ -5,6 +5,7 @@
 
 * Never nameable
 * Panic, Assert, ...
+* Miri flat execution + stack trace + @StackTraceHidden
 
 * `ArgumentMutMismatch` -> `MissingMut`, `UnexpectedMut`
 * implement exclusivity check in 'CheckCallToSingleFun'

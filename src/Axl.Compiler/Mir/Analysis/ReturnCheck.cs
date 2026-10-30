@@ -5,13 +5,13 @@ namespace Axl.Compiler.Mir.Analysis;
 
 public static class ReturnCheck
 {
-    public static void Check(MutMirFunction function, DiagnosticBag diagnosticBag)
+    public static void Check(MutMirFunction function, ReachabilityResult reachability, DiagnosticBag diagnosticBag)
     {
         if (function.Symbol.ReturnType == function.Compilation.BaseLibrary.Unit)
             return;
 
         var reachableTerminators = function.BasicBlocks
-            .Where(function.Analysis.IsReachable)
+            .Where(b => reachability.Reachable[b.Id])
             .Select(b => b.Terminator)
             .ToImmutableArray();
         if (reachableTerminators.OfType<Terminator.MissingReturn>().FirstOrDefault() is { } missingReturn)

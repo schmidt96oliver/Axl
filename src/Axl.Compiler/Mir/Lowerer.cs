@@ -9,21 +9,28 @@ namespace Axl.Compiler.Mir;
 
 public class Lowerer
 {
-    private readonly Compilation _compilation;
     private readonly MutMirFunction _fun;
     private MutBasicBlock? _currentBlock;
     private readonly Dictionary<VariableSymbol, Place.Local> _variables = [];
     private readonly Dictionary<TypeSymbol, RefTypeSymbol> _refTypeSymbols = [];
-
     private readonly Stack<(MutBasicBlock Break, MutBasicBlock Continue)> _loopLabels = [];
 
-    private TypeSymbol Unit => _compilation.BaseLibrary.Unit;
-    private TypeSymbol Bool => _compilation.BaseLibrary.Bool;
+    private TypeSymbol Unit => _fun.Compilation.BaseLibrary.Unit;
+    private TypeSymbol Never => _fun.Compilation.BaseLibrary.Never;
+    private TypeSymbol Error => _fun.Compilation.BaseLibrary.Error;
+    private TypeSymbol Bool => _fun.Compilation.BaseLibrary.Bool;
     
-    private Lowerer(Compilation compilation, MutMirFunction mirFun)
+    private Lowerer(FunSymbol fun)
     {
-        _compilation = compilation;
-        _fun = mirFun;
+        _fun = new MutMirFunction(fun,
+            returnType: fun.IsReturnMut ? GetRefType(fun.ReturnType) : fun.ReturnType,
+            param => param.IsMut
+                ? GetRefType(param.Type)
+                : param.Type);
+
+        foreach (var paramAndPlace in _fun.ParameterPlaces)
+            _variables[paramAndPlace.Key] = paramAndPlace.Value;
+        
         _currentBlock = _fun.Entry;
     }
 
@@ -32,10 +39,7 @@ public class Lowerer
         if (fun.Body is not BoundBlock body)
             throw new ArgumentException("Cannot lower funs without blocks.", nameof(fun));
 
-        var mirFun = new MutMirFunction(compilation, fun);
-        
-        var lowerer = new Lowerer(compilation, mirFun);
-        lowerer.MakeSignature(fun);
+        var lowerer = new Lowerer(fun);
         lowerer.LowerStmt(body);
         
         if (lowerer._currentBlock is not null &&
@@ -43,7 +47,7 @@ public class Lowerer
         {
             if (fun.ReturnType == compilation.BaseLibrary.Unit)
             {
-                lowerer.Emit(new Instruction.Assign(mirFun.ReturnPlace, new Operand.Empty(compilation.BaseLibrary.Unit)));
+                lowerer.Emit(new Instruction.Assign(lowerer._fun.ReturnPlace, new Operand.Empty(compilation.BaseLibrary.Unit)));
                 lowerer.Terminate(new Terminator.Return());
             }
             else
@@ -52,26 +56,6 @@ public class Lowerer
 
         return lowerer._fun;
     }
-
-    private void MakeSignature(FunSymbol fun)
-    {
-        _fun.ReturnPlace = _fun.AddLocal(fun.IsReturnMut
-                ? GetRefType(fun.ReturnType)
-                : fun.ReturnType,
-            LocalKind.Return);
-        _fun.ParameterPlaces = Enumerable
-            .ToDictionary(fun.SelfAndParameters, param => param, MakeParameter)
-            .ToFrozenDictionary();
-        foreach (var paramAndPlace in _fun.ParameterPlaces)
-            _variables[paramAndPlace.Key] = paramAndPlace.Value;
-    }
-
-    private Place.Local MakeParameter(ParameterSymbol parameter)
-        => _fun.AddLocal(parameter.IsMut
-                ? GetRefType(parameter.Type)
-                : parameter.Type,
-            LocalKind.Parameter,
-            parameter.DeclarationSyntax);
 
 
     private void Emit(Instruction instruction)
@@ -113,7 +97,7 @@ public class Lowerer
         switch (stmt)
         {
             case BoundValue value:
-                LowerInto(value, new Place.Discard(_compilation.BaseLibrary.Error));
+                LowerInto(value, new Place.Discard(Error));
                 break;
             
             case BoundIfStmt ifStmt:
@@ -138,7 +122,7 @@ public class Lowerer
         if (varDecl.Variable.Type is NeverTypeSymbol)
         {
             // Never does not create a variable that is written to.
-            LowerInto(varDecl.Initializer, new Place.Discard(_compilation.BaseLibrary.Error));
+            LowerInto(varDecl.Initializer, new Place.Discard(Error));
             return;
         }
         
@@ -466,14 +450,14 @@ public class Lowerer
     {
         Debug.Assert(_loopLabels.Count > 0);
         Terminate(new Terminator.Goto(_loopLabels.Peek().Break));
-        return new Operand.Unreachable(_compilation.BaseLibrary.Never);
+        return new Operand.Unreachable(Never);
     }
 
     private Operand LowerContinue()
     {
         Debug.Assert(_loopLabels.Count > 0);
         Terminate(new Terminator.Goto(_loopLabels.Peek().Continue));
-        return new Operand.Unreachable(_compilation.BaseLibrary.Never);
+        return new Operand.Unreachable(Never);
     }
 
     private Operand LowerReturn(BoundReturn @return)
@@ -492,6 +476,6 @@ public class Lowerer
             Emit(new Instruction.Assign(_fun.ReturnPlace, new Operand.Empty(Unit)));
 
         Terminate(new Terminator.Return(@return.Syntax));
-        return new Operand.Unreachable(_compilation.BaseLibrary.Never);
+        return new Operand.Unreachable(Never);
     }
 }

@@ -34,15 +34,16 @@ public sealed class MutMirFunction
     /// </summary>
     public int Version { get; internal set; } = 0;
 
+    public string DebugName => Symbol.QualifiedName;
+    
     public FunSymbol Symbol { get; }
 
-    public Compilation Compilation { get; }
+    public Compilation Compilation => Symbol.Compilation;
 
-    public FrozenDictionary<ParameterSymbol, Place.Local> ParameterPlaces { get; set; }
+    public FrozenDictionary<ParameterSymbol, Place.Local> ParameterPlaces { get; }
 
-    public Place.Local ReturnPlace { get; set; }
+    public Place.Local ReturnPlace { get; }
 
-    public string DebugName => Symbol.QualifiedName;
 
     public IReadOnlyList<Place.Local> Locals => _locals.AsReadOnly();
 
@@ -51,20 +52,17 @@ public sealed class MutMirFunction
     public MutBasicBlock Entry => BasicBlocks[0];
 
 
-    public FunctionAnalysis Analysis
+    public MutMirFunction(FunSymbol fun, TypeSymbol returnType, Func<ParameterSymbol, TypeSymbol> getParameterType)
     {
-        get
-        {
-            field ??= new FunctionAnalysis(this);
-            return field;
-        }
-    }
-
-
-    public MutMirFunction(Compilation compilation, FunSymbol fun)
-    {
-        Compilation = compilation;
         Symbol = fun;
+
+        ReturnPlace = AddLocal(returnType, LocalKind.Return);
+        ParameterPlaces = Enumerable
+            .ToDictionary(fun.SelfAndParameters,
+                param => param,
+                param => AddLocal(getParameterType(param), LocalKind.Parameter, param.DeclarationSyntax))
+            .ToFrozenDictionary();
+        
         AddBasicBlock();
     }
 
@@ -73,7 +71,8 @@ public sealed class MutMirFunction
     /// </summary>
     public void Analyze(DiagnosticBag diagnosticBag)
     {
-        ReturnCheck.Check(this, diagnosticBag);
+        var reachability = Reachability.Analyze(this);
+        ReturnCheck.Check(this, reachability, diagnosticBag);
     }
     
 
