@@ -317,11 +317,18 @@ public class Lowerer
     private void LowerCallInstruction(BoundCall call, Place target)
     {
         var arguments = LowerArguments(call.ReceiverAndArguments, call.Fun.SelfAndParameters);
-        
-        if (call.Fun.Body is Intrinsic { IsVmCall: true } vmIntrinsic)
-            Emit(new Instruction.VmCall(vmIntrinsic, target, arguments, call.Syntax));
-        else if (call.Fun.Body is Intrinsic intrinsic)
-            Emit(new Instruction.Intrinsic(intrinsic, target, arguments, call.Syntax));
+
+        if (call.Fun.Body is Intrinsic intrinsic)
+        {
+            if (OperatorKind.TryFrom(intrinsic) is { } opKind)
+                Emit(new Instruction.Operator(opKind, target, arguments, call.Syntax));
+            else if (VmCallKind.TryFrom(intrinsic) is { } vmCallKind)
+                Emit(new Instruction.VmCall(vmCallKind, target, arguments, call.Syntax));
+            else
+            {
+                throw new UnreachableException($"Unknown intrinsic {intrinsic}");
+            }
+        }
         else
             Emit(new Instruction.Call(call.Fun, target, arguments, call.Syntax));
 

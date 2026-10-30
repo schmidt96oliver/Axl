@@ -2,6 +2,8 @@
 
 public enum Intrinsic
 {
+    // !! When adding intrinsics, also adjust OperatorKind and VmCallKind in Lowering !!
+    
     NegateI32,
     AddI32,
     SubtractI32,
@@ -47,12 +49,4 @@ public enum Intrinsic
     
     Print,
     Panic,
-}
-
-public static class IntrinsicExtensions
-{
-    extension(Intrinsic intrinsic)
-    {
-        public bool IsVmCall => intrinsic is Intrinsic.Print or Intrinsic.ConcatString or Intrinsic.Panic;
-    }
 }

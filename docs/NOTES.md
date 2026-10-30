@@ -16,7 +16,6 @@
 * ?? Miri: Store reference as Root (ActivationFrame, LocalId) + Path (FieldSymbol[]). See Claude, think why?
 
 * ?? Binder: BoundParameter and BoundSelf again?
-* ?? Mir: Split OperatorKind and VmCallKind -> Intrinsic = union
 
 # Milestones
 

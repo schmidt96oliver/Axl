@@ -104,9 +104,9 @@ public sealed class Miri
                 break;
             }
             
-            case Instruction.Intrinsic intrinsic:
+            case Instruction.Operator intrinsic:
             {
-                var value = EvaluateIntrinsic(intrinsic.Kind,
+                var value = EvaluateOperator(intrinsic.Kind,
                 [
                     .. intrinsic.Arguments.Select(a => Evaluate(a, environment))
                 ]);
@@ -138,70 +138,75 @@ public sealed class Miri
         }
     }
 
-    private static object EvaluateIntrinsic(Intrinsic intrinsic, ImmutableArray<object> args)=> intrinsic switch
+    private static object EvaluateOperator(OperatorKind opKind, ImmutableArray<object> args)=> opKind switch
     {
-        Intrinsic.NegateI32 => -(int)args[0],
-        Intrinsic.AddI32 => (int)args[0] + (int)args[1],
-        Intrinsic.SubtractI32 => (int)args[0] - (int)args[1],
-        Intrinsic.DivideI32 => (int)args[0] / (int)args[1],
-        Intrinsic.MultiplyI32 => (int)args[0] * (int)args[1],
-        Intrinsic.EqualsI32 => (int)args[0] == (int)args[1],
-        Intrinsic.LessThanI32 => (int)args[0] < (int)args[1],
+        OperatorKind.NegateI32 => -(int)args[0],
+        OperatorKind.AddI32 => (int)args[0] + (int)args[1],
+        OperatorKind.SubtractI32 => (int)args[0] - (int)args[1],
+        OperatorKind.DivideI32 => (int)args[0] / (int)args[1],
+        OperatorKind.MultiplyI32 => (int)args[0] * (int)args[1],
+        OperatorKind.EqualsI32 => (int)args[0] == (int)args[1],
+        OperatorKind.LessThanI32 => (int)args[0] < (int)args[1],
 
-        Intrinsic.NegateI64 => -(long)args[0],
-        Intrinsic.AddI64 => (long)args[0] + (long)args[1],
-        Intrinsic.SubtractI64 => (long)args[0] - (long)args[1],
-        Intrinsic.DivideI64 => (long)args[0] / (long)args[1],
-        Intrinsic.MultiplyI64 => (long)args[0] * (long)args[1],
-        Intrinsic.EqualsI64 => (long)args[0] == (long)args[1],
-        Intrinsic.LessThanI64 => (long)args[0] < (long)args[1],
+        OperatorKind.NegateI64 => -(long)args[0],
+        OperatorKind.AddI64 => (long)args[0] + (long)args[1],
+        OperatorKind.SubtractI64 => (long)args[0] - (long)args[1],
+        OperatorKind.DivideI64 => (long)args[0] / (long)args[1],
+        OperatorKind.MultiplyI64 => (long)args[0] * (long)args[1],
+        OperatorKind.EqualsI64 => (long)args[0] == (long)args[1],
+        OperatorKind.LessThanI64 => (long)args[0] < (long)args[1],
 
-        Intrinsic.NegateF32 => -(float)args[0],
-        Intrinsic.AddF32 => (float)args[0] + (float)args[1],
-        Intrinsic.SubtractF32 => (float)args[0] - (float)args[1],
-        Intrinsic.DivideF32 => (float)args[0] / (float)args[1],
-        Intrinsic.MultiplyF32 => (float)args[0] * (float)args[1],
-        Intrinsic.EqualsF32 => (float)args[0] == (float)args[1],
-        Intrinsic.LessThanF32 => (float)args[0] < (float)args[1],
+        OperatorKind.NegateF32 => -(float)args[0],
+        OperatorKind.AddF32 => (float)args[0] + (float)args[1],
+        OperatorKind.SubtractF32 => (float)args[0] - (float)args[1],
+        OperatorKind.DivideF32 => (float)args[0] / (float)args[1],
+        OperatorKind.MultiplyF32 => (float)args[0] * (float)args[1],
+        OperatorKind.EqualsF32 => (float)args[0] == (float)args[1],
+        OperatorKind.LessThanF32 => (float)args[0] < (float)args[1],
 
-        Intrinsic.NegateF64 => -(double)args[0],
-        Intrinsic.AddF64 => (double)args[0] + (double)args[1],
-        Intrinsic.SubtractF64 => (double)args[0] - (double)args[1],
-        Intrinsic.DivideF64 => (double)args[0] / (double)args[1],
-        Intrinsic.MultiplyF64 => (double)args[0] * (double)args[1],
-        Intrinsic.EqualsF64 => (double)args[0] == (double)args[1],
-        Intrinsic.LessThanF64 => (double)args[0] < (double)args[1],
+        OperatorKind.NegateF64 => -(double)args[0],
+        OperatorKind.AddF64 => (double)args[0] + (double)args[1],
+        OperatorKind.SubtractF64 => (double)args[0] - (double)args[1],
+        OperatorKind.DivideF64 => (double)args[0] / (double)args[1],
+        OperatorKind.MultiplyF64 => (double)args[0] * (double)args[1],
+        OperatorKind.EqualsF64 => (double)args[0] == (double)args[1],
+        OperatorKind.LessThanF64 => (double)args[0] < (double)args[1],
 
-        Intrinsic.NotBool => !(bool)args[0],
-        Intrinsic.EqualsBool => (bool)args[0] == (bool)args[1],
-
-        Intrinsic.EqualsString => (string)args[0] == (string)args[1],
-
-        Intrinsic.ToStringI32 or Intrinsic.ToStringI64 => args[0].ToString()!,
-        Intrinsic.ToStringBool => (bool)args[0] ? "true" : "false",
-        Intrinsic.ToStringF32 => ((float)args[0]).ToString(CultureInfo.InvariantCulture)!,
-        Intrinsic.ToStringF64 => ((double)args[0]).ToString(CultureInfo.InvariantCulture)!,
-
+        OperatorKind.NotBool => !(bool)args[0],
+        OperatorKind.EqualsBool => (bool)args[0] == (bool)args[1],
+        
         _ => throw new UnreachableException()
     };
     
 
-    private object EvaluateVmCall(Intrinsic intrinsic, ImmutableArray<object> args)
+    private object EvaluateVmCall(VmCallKind vmCallKind, ImmutableArray<object> args)
     {
-        switch (intrinsic)
+        switch (vmCallKind)
         {
-            case Intrinsic.Print:
+            case VmCallKind.Print:
                 _output.Write(args[0]);
                 return _empty;
-            
-            case Intrinsic.ConcatString:
+
+            case VmCallKind.ConcatString:
                 return string.Concat((string)args[0], (string)args[1]);
-            
-            case Intrinsic.Panic:
+
+            case VmCallKind.Panic:
                 var message = (string)args[0];
                 _output.WriteLine($"PANIC: {message}");
                 throw new PanicException();
-            
+
+            case VmCallKind.EqualsString:
+                return (string)args[0] == (string)args[1];
+
+            case VmCallKind.ToStringI32:
+            case VmCallKind.ToStringI64:
+                return args[0].ToString()!;
+
+            case VmCallKind.ToStringBool:
+                return (bool)args[0] ? "true" : "false";
+            case VmCallKind.ToStringF32: return ((float)args[0]).ToString(CultureInfo.InvariantCulture);
+            case VmCallKind.ToStringF64: return ((double)args[0]).ToString(CultureInfo.InvariantCulture);
+
             default:
                 throw new UnreachableException();
         }

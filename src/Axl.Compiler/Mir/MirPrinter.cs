@@ -71,7 +71,7 @@ public static class MirPrinter
             Instruction.Assign assign => $"{assign.Target.Print()} = {assign.Value.Print()}",
             Instruction.Call call => $"{call.Target.Print()} = call {
                 call.Fun.QualifiedName}({ string.Join(", ", call.Arguments.Select(Print)) })",
-            Instruction.Intrinsic intrinsic => $"{intrinsic.Target.Print()} = intrinsic {
+            Instruction.Operator intrinsic => $"{intrinsic.Target.Print()} = intrinsic {
                 intrinsic.Kind}({string.Join(", ", intrinsic.Arguments.Select(Print))})",
             Instruction.VmCall vmCall => $"{vmCall.Target.Print()} = vmcall {
                 vmCall.Kind}({string.Join(", ", vmCall.Arguments.Select(Print))})",
