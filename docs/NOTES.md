@@ -15,7 +15,6 @@
 * ?? Miri: `Environment` -> `ActivationFrame` with .GetRef that throws if exited
 * ?? Miri: Store reference as Root (ActivationFrame, LocalId) + Path (FieldSymbol[]). See Claude, think why?
 
-* ?? Binder: Intrinsic lookup on SelfAndParameters instead of singling out receiver?
 * ?? Binder: BoundParameter and BoundSelf again?
 * ?? Mir: Split OperatorKind and VmCallKind -> Intrinsic = union
 

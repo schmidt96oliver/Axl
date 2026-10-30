@@ -678,19 +678,17 @@ public sealed class Binder(Scope scope, BinderSideEffects sideEffects)
         if (syntax.IsExpressionBodied || syntax.Expr is not null)
             SideEffects.DiagnosticBag.ReportError(new Diagnostic.IntrinsicFunWithBody(fun, syntax));
         
-        if (fun.SelfParameter is not null && !fun.SelfParameter.Type.IsPrimitive
-            || fun.ParameterTypes.Any(p => !p.IsPrimitive)
-            || fun.ReturnType != Unit && !fun.ReturnType.IsPrimitive)
+        if (fun.SelfAndParameters.Any(p => !p.Type.IsPrimitive) || 
+            fun.ReturnType != Unit && !fun.ReturnType.IsPrimitive)
         {
             SideEffects.DiagnosticBag.ReportError(new Diagnostic.UnknownIntrinsic(annotation));
             return new BoundBlock([], [], Unit);
         }
 
-        var receiver = fun.SelfParameter?.Type.PrimitiveKind;
-        var parameters = fun.ParameterTypes.Select(p => p.PrimitiveKind!.Value).ToImmutableArray();
+        var parameters = fun.SelfAndParameters.Select(p => p.Type.PrimitiveKind!.Value).ToImmutableArray();
         var returnType = fun.ReturnType == Unit ? null : fun.ReturnType.PrimitiveKind;
 
-        if (IntrinsicLookup.TryGetIntrinsic(fun.Name, receiver, parameters, returnType) is not Intrinsic intrinsic)
+        if (IntrinsicLookup.TryGetIntrinsic(fun.Name, parameters, returnType) is not Intrinsic intrinsic)
         {
             SideEffects.DiagnosticBag.ReportError(new Diagnostic.UnknownIntrinsic(annotation));
             return new BoundBlock([], [], Unit);
