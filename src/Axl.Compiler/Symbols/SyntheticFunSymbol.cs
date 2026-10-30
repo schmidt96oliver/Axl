@@ -11,7 +11,10 @@ public sealed class SyntheticFunSymbol(string name, Symbol owner, bool isPublic)
 
     /// <inheritdoc />
     public override bool CanBeReferencedByName => Name is not "";
-    
+
+    /// <inheritdoc />
+    public override ImmutableArray<TypeParameterSymbol> TypeParameters => [];
+
     private ImmutableArray<ParameterSymbol>? _parameters;
     public override ImmutableArray<ParameterSymbol> Parameters => _parameters ?? throw new InvalidOperationException(
         $"Parameters of '{Name}' not bound yet.");

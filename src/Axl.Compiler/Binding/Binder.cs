@@ -664,6 +664,32 @@ public sealed class Binder(Scope scope, BinderSideEffects sideEffects)
         return symbol;
     }
 
+    public ImmutableArray<TypeParameterSymbol> BindTypeParameters(TypeParamListSyntax syntax)
+    {
+        var typeParameters = syntax.TypeParameters
+            .Select(BindTypeParameter)
+            .ToImmutableArray();
+
+        // Report duplicate type parameter errors only on parameters
+        // with a non-empty name.
+        var duplicateGroups = typeParameters
+            .Where(param => param.Name is not "")
+            .GroupBy(param => param.Name)
+            .Select(grp => grp.ToImmutableArray())
+            .Where(grp => grp.Length > 1);
+        foreach (var duplicateGroup in duplicateGroups)
+            SideEffects.ReportError(new Diagnostic.DuplicateTypeParameters(duplicateGroup));
+
+        return typeParameters;
+    }
+
+    private TypeParameterSymbol BindTypeParameter(TypeParamSyntax syntax)
+    {
+        var symbol = new TypeParameterSymbol(syntax.Name.Text.ToString(), Scope.Owner, syntax);
+        SideEffects.AddResolvedSymbol(syntax.Name.Location, symbol);
+        return symbol;
+    }
+    
     public void CheckOperatorSignature(FunSymbol funSymbol)
     {
         if (funSymbol.Owner is not TypeSymbol)

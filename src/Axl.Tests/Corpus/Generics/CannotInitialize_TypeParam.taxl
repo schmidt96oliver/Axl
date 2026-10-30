@@ -1,0 +1,3 @@
+﻿//@check
+
+fun A[T]() { let a = T(); } //~error CannotInitialize

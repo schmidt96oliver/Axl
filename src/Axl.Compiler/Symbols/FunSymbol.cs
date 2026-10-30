@@ -19,6 +19,7 @@ public closed class FunSymbol(Compilation compilation, string name, Symbol? owne
 
     public abstract FunDeclSyntax? DeclarationSyntax { get; }
 
+    public abstract ImmutableArray<TypeParameterSymbol> TypeParameters { get; }
 
     /// <summary>
     /// Declared parameters. Excluding <see cref="SelfParameter"/>.

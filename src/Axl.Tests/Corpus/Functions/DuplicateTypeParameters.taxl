@@ -1,0 +1,4 @@
+﻿//@check
+
+fun A[T,            //~error DuplicateTypeParameters
+      T] () { }     //~error DuplicateTypeParameters

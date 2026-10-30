@@ -20,6 +20,7 @@ public static class SymbolPrinter
 
             NamespaceSymbol => "namespace",
             StructSymbol => "struct",
+            TypeParameterSymbol => "generic type",
             TypeSymbol => "type",
         };
 
@@ -28,6 +29,7 @@ public static class SymbolPrinter
             get
             {
                 if (symbol is ErrorTypeSymbol) return "???";
+                if (symbol is TypeParameterSymbol) return symbol.Name;
                 return string.Join(".", symbol.SelfAndOwners()
                     .Where(s => s.CanBeReferencedByName)
                     .Reverse()

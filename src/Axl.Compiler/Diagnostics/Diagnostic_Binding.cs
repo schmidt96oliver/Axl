@@ -250,6 +250,17 @@ public partial record Diagnostic
 
         public override string Message => $"Duplicate parameter ‘{Duplicates[0].Name}‘.";
     }
+    
+    public sealed record DuplicateTypeParameters(ImmutableArray<TypeParameterSymbol> Duplicates) : Error
+    {
+        public override ImmutableArray<SourceLocation> Locations
+            // Squiggle all parameter names
+            => [.. Duplicates.Where(param => param.DeclarationSyntax is not null).Select(param => param.DeclarationSyntax!.Name.Location)];
+
+        public override string LocationLabel => "Also declared here.";
+
+        public override string Message => $"Duplicate type parameter ‘{Duplicates[0].Name}‘.";
+    }
 
     public sealed record NoMatchingOverload(
         ImmutableArray<FunSymbol> Candidates,
@@ -434,9 +445,14 @@ public partial record Diagnostic
         public override ImmutableArray<SourceLocation> Locations
             => [TypeRef.Syntax!.Location];
 
-        public override string Message => TypeRef.Type is StructSymbol { IsPrimitive: true } ?
-            $"‘{TypeRef.Type.QualifiedName}‘ cannot be initialized, because it is a primitive type."
-            : $"‘{TypeRef.Type.QualifiedName}‘ cannot be initialized.";
+        public override string Message => TypeRef.Type switch
+        {
+            StructSymbol { IsPrimitive: true } =>
+                $"‘{TypeRef.Type.QualifiedName}‘ cannot be initialized, because it is a primitive type.",
+            TypeParameterSymbol =>
+                $"‘{TypeRef.Type.QualifiedName}‘ cannot be initialized, because it is a generic type.",
+            _ => $"‘{TypeRef.Type.QualifiedName}‘ cannot be initialized."
+        };
     }
 
     public sealed record NotAccessible(ImmutableArray<Symbol> Symbols, SyntaxNode Syntax) : Error

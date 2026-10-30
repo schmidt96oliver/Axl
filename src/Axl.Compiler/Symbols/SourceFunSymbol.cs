@@ -15,11 +15,8 @@ public sealed class SourceFunSymbol(
 {
     public override FunDeclSyntax DeclarationSyntax { get; } = declarationSyntax;
 
-    /// <summary>
-    /// To avoid unnecessary allocations, the binder is created on first
-    /// use and released again after call to <see cref="Complete"/>.
-    /// </summary>
-    private Binder? _signatureBinder = null;
+    private BinderSideEffects _sideEffects = new();
+    private bool _isBindingTypeParameters = false;
     private bool _isBindingParameters = false;
     private bool _isBindingReturnType = false;
     private bool _isBindingBody = false;
@@ -27,6 +24,32 @@ public sealed class SourceFunSymbol(
 
     /// <inheritdoc />
     public override bool CanBeReferencedByName => true;
+
+    public override ImmutableArray<TypeParameterSymbol> TypeParameters
+    {
+        get
+        {
+            if (field.IsDefault)
+            {
+                if (DeclarationSyntax.TypeParameterList is null)
+                {
+                    field = [];
+                    return field;
+                }
+                
+                if (_isBindingTypeParameters)
+                    throw new CycleException();
+                _isBindingTypeParameters = true;
+
+                var binder = new Binder(enclosingScope.WithOwner(this), _sideEffects);
+                field = binder.BindTypeParameters(DeclarationSyntax.TypeParameterList);
+
+                _isBindingTypeParameters = false;
+            }
+
+            return field;
+        }
+    }
     
     public override ImmutableArray<ParameterSymbol> Parameters
     {
@@ -38,13 +61,13 @@ public sealed class SourceFunSymbol(
                     throw new CycleException();
                 _isBindingParameters = true;
                 
-                _signatureBinder ??= MakeSignatureBinder();
-                field = _signatureBinder.BindParameters(DeclarationSyntax.ParameterList);
+                var binder = MakeSignatureBinder();
+                field = binder.BindParameters(DeclarationSyntax.ParameterList);
 
                 _isBindingParameters = false;
 
                 if (IsOperator)
-                    _signatureBinder.CheckOperatorSignature(this);
+                    binder.CheckOperatorSignature(this);
             }
 
             return field;
@@ -83,8 +106,8 @@ public sealed class SourceFunSymbol(
                     throw new CycleException();
                 _isBindingReturnType = true;
 
-                _signatureBinder ??= MakeSignatureBinder();
-                (_returnType, _isReturnMut) = _signatureBinder.BindFunReturnType(DeclarationSyntax.ReturnTypeAnnotation);
+                (_returnType, _isReturnMut) = MakeSignatureBinder()
+                    .BindFunReturnType(DeclarationSyntax.ReturnTypeAnnotation);
 
                 _isBindingReturnType = false;
             }
@@ -104,9 +127,8 @@ public sealed class SourceFunSymbol(
                     throw new CycleException();
                 _isBindingReturnType = true;
 
-                _signatureBinder ??= MakeSignatureBinder();
                 (_returnType, _isReturnMut) =
-                    _signatureBinder.BindFunReturnType(DeclarationSyntax.ReturnTypeAnnotation);
+                    MakeSignatureBinder().BindFunReturnType(DeclarationSyntax.ReturnTypeAnnotation);
 
                 _isBindingReturnType = false;
             }
@@ -125,10 +147,9 @@ public sealed class SourceFunSymbol(
                     throw new CycleException();
                 _isBindingBody = true;
 
-                _signatureBinder ??= MakeSignatureBinder();
                 field = intrinsicAnnotation is not null
-                    ? _signatureBinder.BindIntrinsicFunBody(DeclarationSyntax.Body, intrinsicAnnotation)
-                    : _signatureBinder.BindSourceFunBody(DeclarationSyntax.Body);
+                    ? MakeSignatureBinder().BindIntrinsicFunBody(DeclarationSyntax.Body, intrinsicAnnotation)
+                    : MakeSignatureBinder().BindSourceFunBody(DeclarationSyntax.Body);
 
                 _isBindingBody = false;
             }
@@ -139,14 +160,14 @@ public sealed class SourceFunSymbol(
 
     public override void Complete(BinderSideEffects sideEffects)
     {
+        _ = TypeParameters;
         _ = Parameters;
         _ = ReturnType;
         _ = Body;
         
-        _signatureBinder!.SideEffects.DrainInto(sideEffects);
-        _signatureBinder = null;
+        _sideEffects.DrainInto(sideEffects);
     }
 
     private Binder MakeSignatureBinder()
-        => new(enclosingScope.WithOwner(this), new BinderSideEffects());
+        => new(new FunSignatureScope(enclosingScope.WithOwner(this)), _sideEffects);
 }
