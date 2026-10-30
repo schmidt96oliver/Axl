@@ -208,6 +208,12 @@ public sealed class Lexer
             case ')':
                 scanner.AddToken(TokenKind.CloseParen);
                 break;
+            case '[':
+                scanner.AddToken(TokenKind.OpenBracket);
+                break;
+            case ']':
+                scanner.AddToken(TokenKind.CloseBracket);
+                break;
 
             case '=':
                 scanner.AddToken(scanner.Match('=') ? TokenKind.DoubleEqual : TokenKind.Equal);

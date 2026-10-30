@@ -142,11 +142,13 @@ public sealed class LexerTests
 
     [Fact]
     public void Symbols_Other()
-        => InlineSnapshot.Validate(NoWhitespace("@(){}<>-.,;:+-*/&&||!"),
+        => InlineSnapshot.Validate(NoWhitespace("@()[]{}<>-.,;:+-*/&&||!"),
             """
             - At: "@"
             - OpenParen: "("
             - CloseParen: ")"
+            - OpenBracket: "["
+            - CloseBracket: "]"
             - OpenBrace: "{"
             - CloseBrace: "}"
             - LessThan: "<"

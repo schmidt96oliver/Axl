@@ -160,6 +160,9 @@ public partial class Parser
         _scanner.EatKnown(TokenKind.FunKw);
         EnsureFunName();
 
+        if (_scanner.IsAt(TokenKind.OpenBracket))
+            EatTypeParamList(anchor);
+        
         EnsureParamList(anchor | TokenKind.OpenBrace | TokenKind.Colon |
                         TokenKind.Semicolon | TokenKind.Equal);
 
@@ -190,6 +193,28 @@ public partial class Parser
         return _scanner.Close(funName, SyntaxKind.FunName);
     }
 
+    private MarkClose EatTypeParamList(Anchor anchor)
+    {
+        var itemFirst = TokenSet.Of(TokenKind.Identifier);
+
+        return EnsureDelimitedList(anchor,
+            openToken: TokenKind.OpenBracket,
+            closeToken: TokenKind.CloseBracket,
+            listKind: SyntaxKind.TypeParamList,
+            itemFirst,
+            allowEmpty: false,
+            ensureItem: EnsureTypeParam,
+            expectedOpenSyntax: TokenKind.OpenBracket,
+            expectedItemSyntax: ExpectedSyntax.TypeParamName);
+
+        MarkClose EnsureTypeParam(Anchor _)
+        {
+            var typeParam = _scanner.Open();
+            EnsureIdName(ExpectedSyntax.TypeParamName);
+            return _scanner.Close(typeParam, SyntaxKind.TypeParam);
+        }
+    }
+    
     private MarkClose EnsureFunBody(Anchor anchor)
     {
         var fnBody = _scanner.Open();
@@ -228,6 +253,7 @@ public partial class Parser
             closeToken: TokenKind.CloseParen,
             listKind: SyntaxKind.ParamList,
             itemFirst,
+            allowEmpty: true,
             ensureItem: EnsureParam,
             expectedOpenSyntax: ExpectedSyntax.ParamList,
             expectedItemSyntax: ExpectedSyntax.Param);

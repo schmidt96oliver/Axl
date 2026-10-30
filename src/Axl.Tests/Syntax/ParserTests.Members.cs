@@ -224,5 +224,87 @@ public partial class ParserTests
                 · IdName 'T'
                 · ';'
                 """);
+
+        [Fact]
+        public void FunTypeParams_0()
+            => InlineSnapshot.Validate(Tree("""
+                                            fun A[]() { }
+                                            """), """
+                ERROR MissingToken@[6, 6): Expected a type parameter name.
+
+
+                FunDecl
+                · 'fun'
+                · FunName 'A'
+                · TypeParamList
+                · · '['
+                · · TypeParam
+                · · · IdName
+                · · · · ??ID
+                · · ']'
+                · ParamList '(' ')'
+                · FunBody
+                · · BlockExpr '{' '}'
+                """);
+        [Fact]
+        public void FunTypeParams_1()
+            => InlineSnapshot.Validate(Tree("""
+                                            fun A[T1]() { }
+                                            """), """
+                FunDecl
+                · 'fun'
+                · FunName 'A'
+                · TypeParamList
+                · · '['
+                · · TypeParam
+                · · · IdName 'T1'
+                · · ']'
+                · ParamList '(' ')'
+                · FunBody
+                · · BlockExpr '{' '}'
+                """);
+        [Fact]
+        public void FunTypeParams_2()
+            => InlineSnapshot.Validate(Tree("""
+                                            fun A[T1, T2]() { }
+                                            """), """
+                FunDecl
+                · 'fun'
+                · FunName 'A'
+                · TypeParamList
+                · · '['
+                · · TypeParam
+                · · · IdName 'T1'
+                · · ','
+                · · TypeParam
+                · · · IdName 'T2'
+                · · ']'
+                · ParamList '(' ')'
+                · FunBody
+                · · BlockExpr '{' '}'
+                """);
+        [Fact]
+        public void FunTypeParams_3()
+            => InlineSnapshot.Validate(Tree("""
+                                            fun A[T1, T2, T3]() { }
+                                            """), """
+                FunDecl
+                · 'fun'
+                · FunName 'A'
+                · TypeParamList
+                · · '['
+                · · TypeParam
+                · · · IdName 'T1'
+                · · ','
+                · · TypeParam
+                · · · IdName 'T2'
+                · · ','
+                · · TypeParam
+                · · · IdName 'T3'
+                · · ']'
+                · ParamList '(' ')'
+                · FunBody
+                · · BlockExpr '{' '}'
+                """);
     }
 }

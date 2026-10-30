@@ -46,6 +46,8 @@ public static class SyntaxFacts
         TokenKind.CloseParen => ")",
         TokenKind.OpenBrace => "{",
         TokenKind.CloseBrace => "}",
+        TokenKind.OpenBracket => "[",
+        TokenKind.CloseBracket => "]",
     
         // --- Mathematical Symbols
         TokenKind.Plus => "+",

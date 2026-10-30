@@ -271,6 +271,7 @@ public partial class Parser
             closeToken: TokenKind.CloseParen,
             listKind: SyntaxKind.ArgList,
             itemFirst: FirstSet.Expr,
+            allowEmpty: true,
             ensureItem: EnsureArg, 
             expectedOpenSyntax: null,
             expectedItemSyntax: ExpectedSyntax.Expr);

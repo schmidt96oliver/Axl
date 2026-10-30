@@ -23,6 +23,7 @@ public readonly struct ExpectedSyntax
     public static readonly ExpectedSyntax Block = new("a block");
     public static readonly ExpectedSyntax FieldName = new("a field name");
     public static readonly ExpectedSyntax Member = new("a member");
+    public static readonly ExpectedSyntax TypeParamName = new("a type parameter name");
     
     private ExpectedSyntax(string description)
         => DisplayName = description;

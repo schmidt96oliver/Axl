@@ -18,22 +18,13 @@ public sealed class FunDeclSyntax(ImmutableArray<SyntaxElement> children)
     
     public FunNameSyntax Name => Children.FirstOfType<FunNameSyntax>();
 
-    public bool IsOperatorName => Name.Token.Kind is not TokenKind.Identifier;
-
+    public TypeParamListSyntax? TypeParameterList => Children.FirstOfTypeOrNull<TypeParamListSyntax>();
+    
     public ParamListSyntax ParameterList => Children.FirstOfType<ParamListSyntax>();
     
-    public IEnumerable<ParamSyntax> Parameters
-        => ParameterList.Parameters;
 
     public ReturnTypeAnnotationSyntax? ReturnTypeAnnotation
         => Children.FirstOfTypeOrNull<ReturnTypeAnnotationSyntax>();
     
     public FunBodySyntax Body => Children.FirstOfType<FunBodySyntax>();
-}
-
-public sealed class FunBodySyntax(ImmutableArray<SyntaxElement> children)
-    : SyntaxNode(SyntaxKind.FunBody, children)
-{
-    public bool IsExpressionBodied => Children.Any(child => child is Token { Kind: TokenKind.Equal });
-    public ExprSyntax? Expr => Children.FirstOfTypeOrNull<ExprSyntax>();
 }

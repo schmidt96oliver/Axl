@@ -52,6 +52,8 @@ public enum TokenKind
     CloseParen,
     OpenBrace,
     CloseBrace,
+    OpenBracket,
+    CloseBracket,
     
     // --- Mathematical Symbols
     Plus,

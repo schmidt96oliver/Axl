@@ -206,6 +206,7 @@ public partial class Parser
         TokenKind closeToken,
         SyntaxKind listKind,
         TokenSet itemFirst,
+        bool allowEmpty,
         Func<Anchor, MarkClose> ensureItem,
         ExpectedSyntax? expectedOpenSyntax,
         ExpectedSyntax expectedItemSyntax)
@@ -220,20 +221,23 @@ public partial class Parser
             return _scanner.Close(list, listKind);
         }
 
-        // --- Empty list?
-        if (_scanner.IsAt(closeToken))
+        if (allowEmpty)
         {
-            _scanner.EatKnown(closeToken);
-            return _scanner.Close(list, listKind);
-        }
-        
-        // --- Already at anchor?
-        // Special-case here, so we report "expected close" instead of
-        // "expected item" in cases like `Call( `.
-        if (!_scanner.IsAt(itemFirst) && _scanner.IsAt(anchor))
-        {
-            EnsureToken(closeToken);
-            return _scanner.Close(list, listKind);
+            // --- Empty list?
+            if (_scanner.IsAt(closeToken))
+            {
+                _scanner.EatKnown(closeToken);
+                return _scanner.Close(list, listKind);
+            }
+
+            // --- Already at anchor?
+            // Special-case here, so we report "expected close" instead of
+            // "expected item" in cases like `Call( `.
+            if (!_scanner.IsAt(itemFirst) && _scanner.IsAt(anchor))
+            {
+                EnsureToken(closeToken);
+                return _scanner.Close(list, listKind);
+            }
         }
 
         // --- Items
