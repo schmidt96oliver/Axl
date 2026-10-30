@@ -34,7 +34,7 @@ public class Lowerer
         _currentBlock = _fun.Entry;
     }
 
-    public static MutMirFunction Lower(FunSymbol fun, Compilation compilation)
+    public static MutMirFunction Lower(FunDefinitionSymbol fun, Compilation compilation)
     {
         if (fun.Body is not BoundBlock body)
             throw new ArgumentException("Cannot lower funs without blocks.", nameof(fun));
@@ -318,7 +318,7 @@ public class Lowerer
     {
         var arguments = LowerArguments(call.ReceiverAndArguments, call.Fun.SelfAndParameters);
 
-        if (call.Fun.Body is Intrinsic intrinsic)
+        if (call.Fun.OriginalDefinition.Body is Intrinsic intrinsic)
         {
             if (OperatorKind.TryFrom(intrinsic) is { } opKind)
                 Emit(new Instruction.Operator(opKind, target, arguments, call.Syntax));

@@ -13,8 +13,8 @@ public sealed class BoundFunGroup(
     BoundNode? receiver,
     ImmutableArray<BoundTypeArgument> typeArguments,
     SyntaxNode? typeArgListSyntax = null,
-    SyntaxNode? syntax = null)
-    : BoundNode(syntax)
+    SyntaxNode? funSyntax = null)
+    : BoundNode(funSyntax)
 {
     public BoundFunGroup(ImmutableArray<FunSymbol> candidates, BoundNode? receiver, SyntaxNode? syntax = null)
         : this(candidates, receiver, [], null, syntax)
@@ -30,6 +30,6 @@ public sealed class BoundFunGroup(
     
     public BoundNode? Receiver { get; } = receiver;
 
-    public BoundFunGroup WithTypeArguments(ImmutableArray<BoundTypeArgument> typeArguments, SyntaxNode? typeArgListSyntax, SyntaxNode? syntax = null)
-        => new(Candidates, Receiver, typeArguments, typeArgListSyntax, syntax ?? Syntax);
+    public BoundFunGroup WithTypeArguments(ImmutableArray<BoundTypeArgument> typeArguments, SyntaxNode? typeArgListSyntax)
+        => new(Candidates, Receiver, typeArguments, typeArgListSyntax, Syntax);
 }

@@ -4,7 +4,7 @@ using Axl.Compiler.Syntax.Tree;
 namespace Axl.Compiler.Symbols;
 
 public sealed class SyntheticFunSymbol(string name, Symbol owner, bool isPublic)
-    : FunSymbol(owner.Compilation, name, owner, isPublic)
+    : FunDefinitionSymbol(owner.Compilation, name, owner, isPublic)
 {
     /// <inheritdoc />
     public override FunDeclSyntax? DeclarationSyntax => null;

@@ -1,7 +1,8 @@
-﻿using System.Collections.Immutable;
+﻿using System.Collections.Concurrent;
+using System.Collections.Immutable;
+using System.Diagnostics;
 using Axl.Compiler.Binding.BoundTree;
 using Axl.Compiler.Syntax;
-using Axl.Compiler.Syntax.Tree;
 
 namespace Axl.Compiler.Symbols;
 
@@ -10,16 +11,41 @@ public union FunBody(Intrinsic, BoundBlock);
 public closed class FunSymbol(Compilation compilation, string name, Symbol? owner, bool isPublic) 
     : Symbol(compilation, name, owner)
 {
+    private readonly List<ConstructedFunSymbol> _constructedFunSymbols = [];
+    
+    
     public override bool IsPublic { get; } = isPublic;
-
 
     public bool IsOperator => SyntaxFacts.IsOperator(Name);
 
     public bool IsStatic => SelfParameter is null;
 
-    public abstract FunDeclSyntax? DeclarationSyntax { get; }
+    /// <summary>
+    /// Whether this fun has all type arguments that fill its type parameters.
+    /// </summary>
+    public bool IsConstructed => ConstructedFrom is not null;
+
+    /// <summary>
+    /// Whether this fun has type parameters.
+    /// </summary>
+    public bool IsGeneric => TypeParameters.Length > 0;
+
+    /// <summary>
+    /// The <see cref="FunDefinitionSymbol"/> that originally declared this fun in
+    /// source text without any type parameter substitutions.
+    /// </summary>
+    public abstract FunDefinitionSymbol OriginalDefinition { get; }
+
+    /// <summary>
+    /// The <see cref="FunSymbol"/> this fun was constructed from by substituting
+    /// its own type parameters. <c>null</c>, if this fun is still generic.
+    /// </summary>
+    public abstract FunSymbol? ConstructedFrom { get; }
+
 
     public abstract ImmutableArray<TypeParameterSymbol> TypeParameters { get; }
+
+    public abstract ImmutableArray<TypeSymbol> TypeArguments { get; }
 
     /// <summary>
     /// Declared parameters. Excluding <see cref="SelfParameter"/>.
@@ -37,9 +63,6 @@ public closed class FunSymbol(Compilation compilation, string name, Symbol? owne
     public ImmutableArray<ParameterSymbol> SelfAndParameters =>
         SelfParameter is not null ? [SelfParameter, .. Parameters] : Parameters;
     
-    
-    public ImmutableArray<TypeSymbol> ParameterTypes => [.. Parameters.Select(parameter => parameter.Type)];
-
     public abstract TypeSymbol ReturnType { get; }
 
     /// <summary>
@@ -49,5 +72,20 @@ public closed class FunSymbol(Compilation compilation, string name, Symbol? owne
     public abstract bool IsReturnMut { get; }
 
 
-    public abstract FunBody Body { get; }
+    public FunSymbol GetConstructedFun(ImmutableArray<TypeSymbol> typeArguments)
+    {
+        Guard.IsState(!IsConstructed);
+        Guard.MustBe(TypeParameters.Length == typeArguments.Length);
+        
+        if (_constructedFunSymbols.FirstOrDefault(s => s.TypeArguments.SequenceEqual(typeArguments))
+            is { } constructed)
+        {
+            Debug.Assert(constructed.ConstructedFrom == this);
+            return constructed;
+        }
+
+        constructed = new ConstructedFunSymbol(this, typeArguments);
+        _constructedFunSymbols.Add(constructed);
+        return constructed;
+    }
 }

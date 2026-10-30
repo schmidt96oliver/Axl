@@ -96,18 +96,19 @@ public class Compilation
     /// Enumerates all funs with a body contained in this compilation, excluding
     /// those in <see cref="ReferencedCompilations"/> and excluding intrinsics.
     /// </summary>
-    public IEnumerable<FunSymbol> AllFuns
+    public IEnumerable<FunDefinitionSymbol> AllFuns
     {
         get
         {
             return [.. Inner(RootNamespace), .. Scripts.SelectMany(Inner)];
 
-            IEnumerable<FunSymbol> Inner(Symbol symbol) => symbol switch
+            IEnumerable<FunDefinitionSymbol> Inner(Symbol symbol) => symbol switch
             {
-                FunSymbol { Body: BoundBlock } funSymbol => [funSymbol],
-                FunSymbol funSymbol => [funSymbol],
-                ScriptSymbol script => [.. Inner(script.Fun), .. script.Members.OfType<FunSymbol>()],
-                NamespaceOrTypeSymbol namespaceOrTypeSymbol => namespaceOrTypeSymbol.Members.OfType<FunSymbol>(),
+                FunDefinitionSymbol { Body: BoundBlock } funSymbol => [funSymbol],
+                FunDefinitionSymbol funSymbol => [funSymbol],
+                FunSymbol => throw new UnreachableException("Non-generic constructed and instantiated funs should not be on compilation."),
+                ScriptSymbol script => [.. Inner(script.Fun), .. script.Members.OfType<FunDefinitionSymbol>()],
+                NamespaceOrTypeSymbol namespaceOrTypeSymbol => namespaceOrTypeSymbol.Members.OfType<FunDefinitionSymbol>(),
 
                 FieldSymbol => [],
                 VariableSymbol => [],
@@ -170,7 +171,7 @@ public class Compilation
         _isComplete = true;
     }
 
-    public LoweredFunBody GetLoweredFunBody(FunSymbol fun)
+    public LoweredFunBody GetLoweredFunBody(FunDefinitionSymbol fun)
     {
         if (fun.Body is not BoundBlock)
             throw new ArgumentException("Cannot lower fun without a bound block.", nameof(fun));

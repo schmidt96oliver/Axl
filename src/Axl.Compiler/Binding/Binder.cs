@@ -501,18 +501,18 @@ public sealed class Binder(Scope scope, BinderSideEffects sideEffects)
         {
             // For multiple funs, we still need to check their signatures.
             // If anything non-fun is on the duplicate list, we know its an error.
-            if (duplicateArray.Any(s => s is not FunSymbol))
+            if (duplicateArray.Any(s => s is not FunDefinitionSymbol))
             {
                 SideEffects.ReportError(new Diagnostic.AlreadyDeclared(duplicateArray));
                 continue;
             }
 
             // Now it is all funs and we need to check the signatures
-            CheckDuplicateDeclarationsInFunGroup([.. duplicateArray.Select(s => (FunSymbol)s)]);
+            CheckDuplicateDeclarationsInFunGroup([.. duplicateArray.Select(s => (FunDefinitionSymbol)s)]);
         }
     }
 
-    private void CheckDuplicateDeclarationsInFunGroup(IEnumerable<FunSymbol> funsWithSameName)
+    private void CheckDuplicateDeclarationsInFunGroup(IEnumerable<FunDefinitionSymbol> funsWithSameName)
     {
         var remaining = funsWithSameName.ToList();
         while (remaining.Count > 0)
@@ -525,7 +525,7 @@ public sealed class Binder(Scope scope, BinderSideEffects sideEffects)
             {
                 // Errors in the signature should not report another error.
                 var duplicatesToReport = sameSignature
-                    .Where(fun => fun.ParameterTypes.All(paramType => paramType is not ErrorTypeSymbol))
+                    .Where(fun => fun.Parameters.All(param => param.Type is not ErrorTypeSymbol))
                     .ToImmutableArray();
 
                 if (duplicatesToReport.Length > 1)
@@ -596,7 +596,7 @@ public sealed class Binder(Scope scope, BinderSideEffects sideEffects)
 
     public BoundBlock BindSourceFunBody(FunBodySyntax syntax)
     {
-        if (Scope.OwnerAsFun is not FunSymbol fun)
+        if (Scope.OwnerAsFun is not SourceFunSymbol fun)
             throw new InvalidOperationException($"{nameof(BindSourceFunBody)} only valid on funs.");
 
         var bodyBinder = EnterFunBody();
@@ -604,7 +604,7 @@ public sealed class Binder(Scope scope, BinderSideEffects sideEffects)
         // --- Empty body
         if (syntax.Expr is null)
         {
-            SideEffects.ReportError(new Diagnostic.MissingFunBody(fun, fun.DeclarationSyntax!));
+            SideEffects.ReportError(new Diagnostic.MissingFunBody(fun, fun.DeclarationSyntax));
             return new BoundBlock([], Unit);
         }
 
@@ -710,30 +710,30 @@ public sealed class Binder(Scope scope, BinderSideEffects sideEffects)
         return symbol;
     }
     
-    public void CheckOperatorSignature(FunSymbol funSymbol)
+    public void CheckOperatorSignature(SourceFunSymbol funSymbol)
     {
         if (funSymbol.Owner is not TypeSymbol)
         {
-            SideEffects.ReportError(new Diagnostic.OperatorOutsideType(funSymbol.DeclarationSyntax!.Name));
+            SideEffects.ReportError(new Diagnostic.OperatorOutsideType(funSymbol.DeclarationSyntax.Name));
             return;
         }
 
         if (funSymbol.SelfParameter is null)
         {
             SideEffects.ReportError(new Diagnostic.OperatorCannotBeStatic(funSymbol.Name,
-                funSymbol.DeclarationSyntax!.StaticKw!));
+                funSymbol.DeclarationSyntax.StaticKw!));
             return;
         }
 
         if (funSymbol.SelfParameter?.IsMut == true)
         {
             SideEffects.ReportError(
-                new Diagnostic.OperatorCannotBeMut(funSymbol.Name, funSymbol.DeclarationSyntax!.MutKw!));
+                new Diagnostic.OperatorCannotBeMut(funSymbol.Name, funSymbol.DeclarationSyntax.MutKw!));
             return;
         }
 
 
-        var opToken = funSymbol.DeclarationSyntax!.Name.Token;
+        var opToken = funSymbol.DeclarationSyntax.Name.Token;
         var isUnary = SyntaxFacts.IsUnaryOperator(opToken.Kind);
         var isBinary = SyntaxFacts.IsBinaryOperator(opToken.Kind);
         Debug.Assert(isUnary || isBinary);
@@ -1546,7 +1546,7 @@ public sealed class Binder(Scope scope, BinderSideEffects sideEffects)
             .Select(s => new BoundTypeArgument(BindType(s, TypeUsage.Local), s))
             .ToImmutableArray();
         
-        return funGroup.WithTypeArguments(typeArgs, syntax.ArgList, syntax);
+        return funGroup.WithTypeArguments(typeArgs, syntax.ArgList);
     }
     
     #endregion 
@@ -1653,6 +1653,7 @@ public sealed class Binder(Scope scope, BinderSideEffects sideEffects)
             // If there are generics, pick the one that has no generic parameters
             candidates.RemoveAll(f =>
                 f.Parameters.Any(p => p.Type is TypeParameterSymbol typeParam && typeParam.Owner == p.Owner));
+            //TODO: Implement proper specificity
         }
         
         if (candidates.Count > 1)
@@ -1661,9 +1662,14 @@ public sealed class Binder(Scope scope, BinderSideEffects sideEffects)
             return null;
         }
 
+        // Construct it
+        var pickedFun = candidates[0].IsGeneric
+            ? candidates[0].GetConstructedFun([.. funGroup.TypeArguments.Select(t => t.Type)])
+            : candidates[0];
+        
         if (funGroup.Syntax is not null)
-            SideEffects.AddResolvedSymbol(funGroup.Syntax.Location, candidates[0]);
-        return candidates[0];
+            SideEffects.AddResolvedSymbol(funGroup.Syntax.Location, pickedFun);
+        return pickedFun;
     }
 
     private FunViability CheckFunCandidate(FunSymbol fun, ImmutableArray<BoundTypeArgument> typeArguments, ImmutableArray<BoundArgument> arguments)
@@ -1774,18 +1780,18 @@ public sealed class Binder(Scope scope, BinderSideEffects sideEffects)
         if (callee is not BoundFunGroup calleeFunGroup)
             return BindError(syntax, new Diagnostic.CannotCall(callee));
 
-        var singleFun = BindSingleFunInGroup(calleeFunGroup, arguments, syntax.ArgList);
-        if (singleFun is null)
+        var fun = BindSingleFunInGroup(calleeFunGroup, arguments, syntax.ArgList);
+        if (fun is null)
             return new BoundError(ErrorType, syntax);
 
-        var receiver = BindFunReceiver(singleFun, calleeFunGroup.Receiver);
+        var receiver = BindFunReceiver(fun, calleeFunGroup.Receiver);
 
         // Correct receiver mutation behavior is checked by CheckCallToSingleFun.
         var receiverArgument = receiver is BoundValue receiverValue
-            ? new BoundArgument(receiverValue, isMut: singleFun.SelfParameter?.IsMut == true)
+            ? new BoundArgument(receiverValue, isMut: fun.SelfParameter?.IsMut == true)
             : null;
-        return ContinueCheckCallToSingleFun(singleFun, receiver, arguments, calleeFunGroup.Syntax!)
-            ? new BoundCall(singleFun, receiverArgument, arguments, syntax)
+        return ContinueCheckCallToSingleFun(fun, receiver, arguments, calleeFunGroup.Syntax!)
+            ? new BoundCall(fun, receiverArgument, arguments, syntax)
             : new BoundError(ErrorType, syntax);
     }
 

@@ -58,14 +58,8 @@ public static class SymbolPrinter
             
             NamespaceOrTypeSymbol => $"{symbol.KindName} {symbol.QualifiedName}",
             
-            FunSymbol fun => $"{fun.KindName} {fun.QualifiedName}{ fun.TypeParameterText }{ fun.ParameterText }{ GetFunAnnotationText(fun) }",
+            FunSymbol fun => $"{fun.KindName} {fun.QualifiedName}{ fun.TypeParameterText }{ fun.ParameterText }",
         };
-
-        
-
-        private static string GetFunAnnotationText(FunSymbol fun)
-            => (fun.Body is Intrinsic intrinsic ? $" @intrinsic {intrinsic.ToString()}" : "") +
-               (fun is SyntheticFunSymbol ? " @synthetic" : "");
     }
 
     extension(FunSymbol fun)
@@ -74,11 +68,13 @@ public static class SymbolPrinter
             string.Join(", ", fun.Parameters.Select(get_TypeDisplayString))})";
 
         public string ParameterText
-            => $"({string.Join(", ", fun.Parameters.Select(get_FullDisplayName))})";
+            => $"({string.Join(", ", fun.Parameters.Select(p => $"{p.Name}: {p.TypeDisplayString}"))})";
 
         public string TypeParameterText
             => fun.TypeParameters.Length > 0
-                ? $"[{string.Join(", ", fun.TypeParameters.Select(p => $"{p.Name}"))}]"
+                ? fun.IsConstructed
+                    ? $"[{string.Join(", ", fun.TypeArguments.Select(p => $"{p.QualifiedName}"))}]"
+                    : $"[{string.Join(", ", fun.TypeParameters.Select(p => $"{p.Name}"))}]"
                 : "";
     }
 

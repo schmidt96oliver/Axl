@@ -36,7 +36,7 @@ public sealed class Miri
         var miri = new Miri(program, output);
         try
         {
-            miri.Call(program.Entry.Symbol, []);
+            miri.Call(program.Entry.Symbol.OriginalDefinition, []);
         }
         catch (PanicException)
         {
@@ -44,7 +44,7 @@ public sealed class Miri
         }
     }
 
-    private object Call(FunSymbol fun, ImmutableArray<object> arguments)
+    private object Call(FunDefinitionSymbol fun, ImmutableArray<object> arguments)
     {
         var mirFun = _program.GetMirFunction(fun);
         if (mirFun is null)
@@ -96,7 +96,7 @@ public sealed class Miri
             
             case Instruction.Call call:
             {
-                var value = Call(call.Fun,
+                var value = Call(call.Fun.OriginalDefinition,
                 [
                     .. call.Arguments.Select(a => Evaluate(a, environment))
                 ]);

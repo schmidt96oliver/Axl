@@ -241,7 +241,7 @@ public partial record Diagnostic
             => $"Number is too big for ‘{TargetType.QualifiedName}‘.";
     }
 
-    public sealed record DuplicateFunDeclarations(ImmutableArray<FunSymbol> Duplicates) : Error
+    public sealed record DuplicateFunDeclarations(ImmutableArray<FunDefinitionSymbol> Duplicates) : Error
     {
         public override ImmutableArray<SourceLocation> Locations
             // Squiggle the name and parameter list, since they are at fault.
@@ -586,7 +586,7 @@ public partial record Diagnostic
             $"Operator ‘{FunName}’ cannot be ‘mut’.";
     }
 
-    public sealed record WrongOperatorParameterCount(FunSymbol Fun) : Error
+    public sealed record WrongOperatorParameterCount(FunDefinitionSymbol Fun) : Error
     {
         /// <inheritdoc />
         public override ImmutableArray<SourceLocation> Locations => [Fun.DeclarationSyntax!.ParameterList.Location];
@@ -612,7 +612,7 @@ public partial record Diagnostic
         }
     }
 
-    public sealed record WrongOperatorReturnType(FunSymbol Fun, TypeSymbol Expected) : Error
+    public sealed record WrongOperatorReturnType(FunDefinitionSymbol Fun, TypeSymbol Expected) : Error
     {
         /// <inheritdoc />
         public override ImmutableArray<SourceLocation> Locations =>

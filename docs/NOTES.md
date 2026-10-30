@@ -3,8 +3,23 @@
 
 # Now
 
-* AmbiguousCall: Candidate insert type arguments
 * Monomorphize :)
+    * Create, add to worklist
+    * Instantiate next on worklist
+    * `fun A[T1]() { B[T1](); }   fun B[T2]() { A[T2](); }` must wokr
+    * Check that MIRI only runs monomorphized MIR
+
+* Rework overload resolution
+  * BindArguments -> Bind each candidate fully, tentatively `BindSingleCall` (returns Viability)
+         -> sort with viability -> 
+  * One left, viable: merge it and return the BoundCall.
+    One left, not viable: merge its diagnostics.
+    Several left, viable: PickBest, then either one result or AmbiguousCall.
+    Several left, not viable: a specific message per grade, for example:
+  * Implement rule for specificity in overload resolution (-> Claude)
+
+* AmbiguousCall: Candidate insert type arguments
+
 
 # Questions / Little ones****
 

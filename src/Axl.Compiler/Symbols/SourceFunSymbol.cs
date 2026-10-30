@@ -11,7 +11,7 @@ public sealed class SourceFunSymbol(
     Scope enclosingScope,
     bool isPublic,
     BoundAnnotation? intrinsicAnnotation)
-    : FunSymbol(enclosingScope.Compilation, declarationSyntax.Name.Text.ToString(), owner: enclosingScope.Owner, isPublic: isPublic)
+    : FunDefinitionSymbol(enclosingScope.Compilation, declarationSyntax.Name.Text.ToString(), owner: enclosingScope.Owner, isPublic: isPublic)
 {
     public override FunDeclSyntax DeclarationSyntax { get; } = declarationSyntax;
 
@@ -50,7 +50,7 @@ public sealed class SourceFunSymbol(
             return field;
         }
     }
-    
+
     public override ImmutableArray<ParameterSymbol> Parameters
     {
         get
