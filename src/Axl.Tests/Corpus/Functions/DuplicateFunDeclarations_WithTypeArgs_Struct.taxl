@@ -1,0 +1,32 @@
+﻿//@check
+
+struct Test
+{
+    fun A() { }
+    fun A[T]() { }      //~error DuplicateFunDeclarations
+    fun A[T]() { }      //~error DuplicateFunDeclarations
+    
+    fun AA[T](t: T) { }
+    fun AA[T](t: I32) { }
+    fun AA[T](t: Bool) { }
+    
+    fun B() {}
+    fun B[T1]() {}
+    fun B[T1, T2]() { } //~error DuplicateFunDeclarations
+    fun B[T1, T2]() { } //~error DuplicateFunDeclarations
+    
+    fun C[T](t: T) { }  //~error DuplicateFunDeclarations
+    fun C[U](t: U) { }  //~error DuplicateFunDeclarations
+    
+    fun D[T1, T2](a: T1) { }
+    fun D[T3, T4](a: T4) { }
+    
+    fun E[T1, T2](a: T2) { }
+    fun E[T3, T4](a: T3) { }
+    
+    fun F[T1, T2](a: T1) { }    //~error DuplicateFunDeclarations
+    fun F[T3, T4](a: T3) { }    //~error DuplicateFunDeclarations
+    
+    fun G[T1, T2](a: T2) { }    //~error DuplicateFunDeclarations
+    fun G[T3, T4](a: T4) { }    //~error DuplicateFunDeclarations
+}

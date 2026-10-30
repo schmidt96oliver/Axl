@@ -537,14 +537,34 @@ public sealed class Binder(Scope scope, BinderSideEffects sideEffects)
 
         bool SignatureEqual(FunSymbol a, FunSymbol b)
         {
+            if (a.TypeParameters.Length != b.TypeParameters.Length) return false;
             if (a.Parameters.Length != b.Parameters.Length) return false;
+            
             for (var i = 0; i < a.Parameters.Length; i++)
             {
-                if (a.Parameters[i].Type != b.Parameters[i].Type || a.Parameters[i].IsMut != b.Parameters[i].IsMut)
+                if (!AreParamsEqual(a.Parameters[i], b.Parameters[i]))
                     return false;
             }
 
             return true;
+        }
+
+        bool AreParamsEqual(ParameterSymbol a, ParameterSymbol b)
+        {
+            // Type parameters compare by ordinal if they belong to
+            // the funs signature (i.e. their owner is the same as the
+            // parameters owner), because they could have different names.
+            
+            if (a.IsMut != b.IsMut) 
+                return false;
+            
+            if (a.Type is TypeParameterSymbol aParam && aParam.Owner == a.Owner &&
+                b.Type is TypeParameterSymbol bParam && bParam.Owner == b.Owner)
+            {
+                return aParam.Ordinal == bParam.Ordinal;
+            }
+
+            return a.Type == b.Type;
         }
     }
 
@@ -683,9 +703,9 @@ public sealed class Binder(Scope scope, BinderSideEffects sideEffects)
         return typeParameters;
     }
 
-    private TypeParameterSymbol BindTypeParameter(TypeParamSyntax syntax)
+    private TypeParameterSymbol BindTypeParameter(TypeParamSyntax syntax, int ordinal)
     {
-        var symbol = new TypeParameterSymbol(syntax.Name.Text.ToString(), Scope.Owner, syntax);
+        var symbol = new TypeParameterSymbol(syntax.Name.Text.ToString(), Scope.Owner, ordinal, syntax);
         SideEffects.AddResolvedSymbol(syntax.Name.Location, symbol);
         return symbol;
     }
