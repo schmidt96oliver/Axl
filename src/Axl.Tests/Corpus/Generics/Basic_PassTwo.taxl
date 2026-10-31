@@ -1,0 +1,21 @@
+﻿//@run
+
+PrintLine(First[I32, I32](1, 2));
+PrintLine(Second[I32, I32](1, 2));
+//= 1
+//= 2
+
+PrintLine(First[String, I32]("A", 0));
+PrintLine(Second[String, I32]("A", 0));
+//= A
+//= 0
+
+PrintLine(First[String, Bool]("A", true));
+PrintLine(Second[String, Bool]("A", true));
+//= A
+//= true
+
+fun First[T, U](t: T, u: U): T
+    = t;
+fun Second[T, U](t: T, u: U): U
+    = u;

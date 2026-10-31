@@ -1,26 +1,25 @@
 ﻿using System.Diagnostics;
 using Axl.Compiler.Diagnostics;
+using Axl.Compiler.Symbols;
 
 namespace Axl.Compiler.Mir.Analysis;
 
 public static class ReturnCheck
 {
-    public static void Check(MutMirFunction function, ReachabilityResult reachability, DiagnosticBag diagnosticBag)
+    public static void Check(FunDefinitionSymbol funDefinition, MutMirFunction mirFunction, ReachabilityResult reachability, DiagnosticBag diagnosticBag)
     {
-        Debug.Assert(function.Symbol.OriginalDefinition == function.Symbol, "Analysis must run on the definition funs.");
-        
-        var missingReturnReachable = function.BasicBlocks
+        var missingReturnReachable = mirFunction.BasicBlocks
             .Any(b => reachability.Reachable[b.Id] && b.Terminator is Terminator.MissingReturn);
         
         if (missingReturnReachable)
         {
-            if (function.Symbol.OriginalDefinition.DeclarationSyntax is null)
+            if (funDefinition.DeclarationSyntax is null)
             {
                 throw new ArgumentException("The given function is synthetic and not all code paths return a value.",
-                    nameof(function));
+                    nameof(mirFunction));
             }
             
-            diagnosticBag.ReportError(new Diagnostic.MissingReturn(function.Symbol.OriginalDefinition));
+            diagnosticBag.ReportError(new Diagnostic.MissingReturn(funDefinition));
         }
     }
 }

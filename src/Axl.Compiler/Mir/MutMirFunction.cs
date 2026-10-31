@@ -1,4 +1,5 @@
 ﻿using System.Collections.Frozen;
+using System.Collections.Immutable;
 using Axl.Compiler.Diagnostics;
 using Axl.Compiler.Mir.Analysis;
 using Axl.Compiler.Symbols;
@@ -34,13 +35,9 @@ public sealed class MutMirFunction
     /// </summary>
     public int Version { get; internal set; } = 0;
 
-    public string DebugName => Symbol.QualifiedName;
-    
-    public FunSymbol Symbol { get; }
+    public string DisplayName { get; }
 
-    public Compilation Compilation => Symbol.Compilation;
-
-    public FrozenDictionary<ParameterSymbol, Place.Local> ParameterPlaces { get; }
+    public ImmutableArray<Place.Local> ParameterPlaces { get; }
 
     public Place.Local ReturnPlace { get; }
 
@@ -52,16 +49,19 @@ public sealed class MutMirFunction
     public MutBasicBlock Entry => BasicBlocks[0];
 
 
-    public MutMirFunction(FunSymbol fun, TypeSymbol returnType, Func<ParameterSymbol, TypeSymbol> getParameterType)
+    public MutMirFunction(string displayName, Place.Local returnPlace, ImmutableArray<Place.Local> parameterPlaces)
     {
-        Symbol = fun;
+        DisplayName = displayName;
 
-        ReturnPlace = AddLocal(returnType, LocalKind.Return);
-        ParameterPlaces = Enumerable
-            .ToDictionary(fun.SelfAndParameters,
-                param => param,
-                param => AddLocal(getParameterType(param), LocalKind.Parameter, param.DeclarationSyntax))
-            .ToFrozenDictionary();
+        Guard.MustBe(returnPlace.Id.Value == 0, $"{nameof(returnPlace)} must be first local.");
+        Guard.MustBe(returnPlace.Kind is LocalKind.Return);
+        Guard.MustBe(Enumerable.Range(0, parameterPlaces.Length).All(i => parameterPlaces[i].Id.Value == i + 1),
+            $"{nameof(parameterPlaces)} must follow each other directly after {nameof(returnPlace)}");
+        Guard.MustBe(parameterPlaces.All(p => p.Kind is LocalKind.Parameter));
+        
+        ReturnPlace = returnPlace;
+        ParameterPlaces = parameterPlaces;
+        _nextLocal = ParameterPlaces.Length > 0 ? ParameterPlaces[^1].Id.Value + 1 : 1;
         
         AddBasicBlock();
     }
@@ -69,10 +69,10 @@ public sealed class MutMirFunction
     /// <summary>
     /// Runs all checks that produce diagnostics.
     /// </summary>
-    public void Analyze(DiagnosticBag diagnosticBag)
+    public void Analyze(FunDefinitionSymbol funDefinition, DiagnosticBag diagnosticBag)
     {
         var reachability = Reachability.Analyze(this);
-        ReturnCheck.Check(this, reachability, diagnosticBag);
+        ReturnCheck.Check(funDefinition, this, reachability, diagnosticBag);
     }
     
 
@@ -88,6 +88,19 @@ public sealed class MutMirFunction
         return block;
     }
 
+    public void AddBasicBlock(MutBasicBlock block)
+    {
+        Guard.MustBe(block.MirFunction == this);
+        Guard.MustBe(_basicBlocks.All(b => b.Id != block.Id));
+        _basicBlocks.Add(block);
+        _nextBasicBlock = _basicBlocks.Max(b => b.Id.Value) + 1;
+    }
+
+    public MutBasicBlock GetBasicBlock(BasicBlockId id)
+    {
+        return _basicBlocks.First(b => b.Id == id);
+    }
+
     public Place.Local AddLocal(TypeSymbol type, LocalKind kind, SyntaxNode? syntax = null)
     {
         var id = new LocalId(_nextLocal);
@@ -98,6 +111,13 @@ public sealed class MutMirFunction
         _locals.Add(local);
         
         return local;
+    }
+
+    public void AddLocal(Place.Local local)
+    {
+        Guard.MustBe(_locals.All(l => l.Id != local.Id));
+        _locals.Add(local);
+        _nextLocal = _locals.Max(l => l.Id.Value) + 1;
     }
     
     public Place.Local AddTemp(TypeSymbol type)

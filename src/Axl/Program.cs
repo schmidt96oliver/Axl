@@ -46,14 +46,19 @@ switch (args[0])
                 : diagnostic.GetDisplayString(testDirectory));
         }
 
-        foreach (var fun in compilation.AllFuns)
+        if (allDiagnostics.HasError)
+            return;
+
+        var program = compilation.Compile(compilation.Scripts[0]);
+
+        foreach (var fun in program.MirFunctions)
         {
-            Console.WriteLine(compilation.GetLoweredFunBody(fun).MirFunction.Print());
+            Console.WriteLine(fun.Print());
             Console.WriteLine();
         }
-
-        if (!allDiagnostics.HasError)
-            Miri.Run(compilation.Lower(compilation.Scripts[0]), Console.Out);
+        
+        Console.WriteLine("----------------");
+        Miri.Run(program, Console.Out);
 
         break;
     }

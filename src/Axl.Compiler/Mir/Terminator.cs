@@ -1,5 +1,4 @@
-﻿using Axl.Compiler.Diagnostics;
-using Axl.Compiler.Syntax;
+﻿using Axl.Compiler.Syntax;
 
 namespace Axl.Compiler.Mir;
 

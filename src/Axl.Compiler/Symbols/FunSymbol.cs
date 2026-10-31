@@ -21,11 +21,6 @@ public closed class FunSymbol(Compilation compilation, string name, Symbol? owne
     public bool IsStatic => SelfParameter is null;
 
     /// <summary>
-    /// Whether this fun has all type arguments that fill its type parameters.
-    /// </summary>
-    public bool IsConstructed => ConstructedFrom is not null;
-
-    /// <summary>
     /// Whether this fun has type parameters.
     /// </summary>
     public bool IsGeneric => TypeParameters.Length > 0;
@@ -74,7 +69,7 @@ public closed class FunSymbol(Compilation compilation, string name, Symbol? owne
 
     public FunSymbol GetConstructedFun(ImmutableArray<TypeSymbol> typeArguments)
     {
-        Guard.IsState(!IsConstructed);
+        Guard.IsState(ConstructedFrom is null);
         Guard.MustBe(TypeParameters.Length == typeArguments.Length);
         
         if (_constructedFunSymbols.FirstOrDefault(s => s.TypeArguments.SequenceEqual(typeArguments))

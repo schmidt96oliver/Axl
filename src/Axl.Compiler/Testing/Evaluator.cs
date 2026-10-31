@@ -175,7 +175,7 @@ public sealed class Evaluator
             return;
         }
         
-        Miri.Run(_compilation.Lower(_compilation.Scripts[0]), output);
+        Miri.Run(_compilation.Compile(_compilation.Scripts[0]), output);
         
         var actualOutput = Normalize(output.ToString());
 

@@ -9,29 +9,42 @@ namespace Axl.Compiler.Mir;
 
 public class Lowerer
 {
-    private readonly MutMirFunction _fun;
+    private readonly MutMirFunction _mirFun;
+    private readonly FunDefinitionSymbol _funDefinition;
+    
     private MutBasicBlock? _currentBlock;
     private readonly Dictionary<VariableSymbol, Place.Local> _variables = [];
     private readonly Dictionary<TypeSymbol, RefTypeSymbol> _refTypeSymbols = [];
     private readonly Stack<(MutBasicBlock Break, MutBasicBlock Continue)> _loopLabels = [];
 
-    private TypeSymbol Unit => _fun.Compilation.BaseLibrary.Unit;
-    private TypeSymbol Never => _fun.Compilation.BaseLibrary.Never;
-    private TypeSymbol Error => _fun.Compilation.BaseLibrary.Error;
-    private TypeSymbol Bool => _fun.Compilation.BaseLibrary.Bool;
+    private TypeSymbol Unit => _funDefinition.Compilation.BaseLibrary.Unit;
+    private TypeSymbol Never => _funDefinition.Compilation.BaseLibrary.Never;
+    private TypeSymbol Error => _funDefinition.Compilation.BaseLibrary.Error;
+    private TypeSymbol Bool => _funDefinition.Compilation.BaseLibrary.Bool;
     
-    private Lowerer(FunSymbol fun)
+    private Lowerer(FunDefinitionSymbol funDefinition)
     {
-        _fun = new MutMirFunction(fun,
-            returnType: fun.IsReturnMut ? GetRefType(fun.ReturnType) : fun.ReturnType,
-            param => param.IsMut
-                ? GetRefType(param.Type)
-                : param.Type);
-
-        foreach (var paramAndPlace in _fun.ParameterPlaces)
-            _variables[paramAndPlace.Key] = paramAndPlace.Value;
+        _funDefinition = funDefinition;
         
-        _currentBlock = _fun.Entry;
+        var returnPlace = new Place.Local(new LocalId(0), LocalKind.Return,
+            funDefinition.IsReturnMut ? GetRefType(funDefinition.ReturnType) : funDefinition.ReturnType);
+        var nextLocal = 1;
+        var paramPlaces = ImmutableArray.CreateBuilder<Place.Local>();
+        foreach (var param in funDefinition.SelfAndParameters)
+        {
+            var local = new Place.Local(new LocalId(nextLocal++),
+                LocalKind.Parameter,
+                param.IsMut
+                    ? GetRefType(param.Type)
+                    : param.Type,
+                param.DeclarationSyntax
+            );
+            _variables[param] = local;
+            paramPlaces.Add(local);
+        }
+        
+        _mirFun = new MutMirFunction(funDefinition.QualifiedName, returnPlace, paramPlaces.DrainToImmutable());
+        _currentBlock = _mirFun.Entry;
     }
 
     public static MutMirFunction Lower(FunDefinitionSymbol fun, Compilation compilation)
@@ -47,26 +60,26 @@ public class Lowerer
         {
             if (fun.ReturnType == compilation.BaseLibrary.Unit)
             {
-                lowerer.Emit(new Instruction.Assign(lowerer._fun.ReturnPlace, new Operand.Empty(compilation.BaseLibrary.Unit)));
+                lowerer.Emit(new Instruction.Assign(lowerer._mirFun.ReturnPlace, new Operand.Empty(compilation.BaseLibrary.Unit)));
                 lowerer.Terminate(new Terminator.Return());
             }
             else
                 lowerer.Terminate(new Terminator.MissingReturn());
         }
 
-        return lowerer._fun;
+        return lowerer._mirFun;
     }
 
 
     private void Emit(Instruction instruction)
     {
-        _currentBlock ??= _fun.AddBasicBlock();
+        _currentBlock ??= _mirFun.AddBasicBlock();
         _currentBlock.Add(instruction);
     }
 
     private void Terminate(Terminator terminator)
     {
-        _currentBlock ??= _fun.AddBasicBlock();
+        _currentBlock ??= _mirFun.AddBasicBlock();
         _currentBlock.Terminator = terminator;
         _currentBlock = null;
     }
@@ -83,7 +96,7 @@ public class Lowerer
         if (_refTypeSymbols.TryGetValue(type, out var refType))
             return refType;
 
-        refType = new RefTypeSymbol(type);
+        refType = RefTypeSymbol.Get(type);
         _refTypeSymbols[type] = refType;
         return refType;
     }
@@ -128,7 +141,7 @@ public class Lowerer
         
         if (!_variables.TryGetValue(varDecl.Variable, out var local))
         {
-            local = _fun.AddLocal(varDecl.Variable.Type, LocalKind.Variable, varDecl.Syntax);
+            local = _mirFun.AddLocal(varDecl.Variable.Type, LocalKind.Variable, varDecl.Syntax);
             _variables[varDecl.Variable] = local;
         }
         
@@ -137,9 +150,9 @@ public class Lowerer
     
     private void LowerWhile(BoundWhile @while)
     {
-        var conditionBlock = _fun.AddBasicBlock("while condition");
-        var blockBlock = _fun.AddBasicBlock("while body");
-        var joinBlock = _fun.AddBasicBlock("while join");
+        var conditionBlock = _mirFun.AddBasicBlock("while condition");
+        var blockBlock = _mirFun.AddBasicBlock("while body");
+        var joinBlock = _mirFun.AddBasicBlock("while join");
         
         Terminate(new Terminator.Goto(conditionBlock));
         
@@ -158,9 +171,9 @@ public class Lowerer
 
     private void LowerIfStmt(BoundIfStmt ifStmt)
     {
-        var trueBlock = _fun.AddBasicBlock("if true");
-        var joinBlock = _fun.AddBasicBlock("if join");
-        var falseBlock = ifStmt.Else is not null ? _fun.AddBasicBlock("if false") : joinBlock;
+        var trueBlock = _mirFun.AddBasicBlock("if true");
+        var joinBlock = _mirFun.AddBasicBlock("if join");
+        var falseBlock = ifStmt.Else is not null ? _mirFun.AddBasicBlock("if false") : joinBlock;
 
         Terminate(new Terminator.Branch(
                 LowerOperand(ifStmt.Condition), 
@@ -202,7 +215,7 @@ public class Lowerer
             case BoundCall { IsMutReturn: true } call:
                 // Lower the call target into a temp with ref type
                 // and hand over the deref.
-                var refTemp = _fun.AddTemp(GetRefType(call.Type));
+                var refTemp = _mirFun.AddTemp(GetRefType(call.Type));
                 LowerCallInstruction(call, refTemp);
 
                 return new Place.Deref(refTemp);
@@ -211,7 +224,7 @@ public class Lowerer
                 return new Place.Error(Error);
                 
             default:
-                var temp = _fun.AddTemp(value.Type);
+                var temp = _mirFun.AddTemp(value.Type);
                 LowerInto(value, temp);
                 return temp;
         }
@@ -225,18 +238,18 @@ public class Lowerer
         BoundConst boundConst => new Operand.Const(boundConst.Value, boundConst.Type, boundConst.Syntax),
         BoundField boundField => new Operand.Copy(LowerPlace(boundField), boundField.Syntax),
 
-        BoundIfExpr boundIfExpr => LowerIfExpr(boundIfExpr, _fun.AddTemp(boundIfExpr.Type)),
+        BoundIfExpr boundIfExpr => LowerIfExpr(boundIfExpr, _mirFun.AddTemp(boundIfExpr.Type)),
 
-        BoundLogicAnd boundLogicAnd => LowerLogicOperator(boundLogicAnd, _fun.AddTemp(boundLogicAnd.Type)),
-        BoundLogicOr boundLogicOr => LowerLogicOperator(boundLogicOr, _fun.AddTemp(boundLogicOr.Type)),
+        BoundLogicAnd boundLogicAnd => LowerLogicOperator(boundLogicAnd, _mirFun.AddTemp(boundLogicAnd.Type)),
+        BoundLogicOr boundLogicOr => LowerLogicOperator(boundLogicOr, _mirFun.AddTemp(boundLogicOr.Type)),
         BoundAssign boundAssign => LowerAssign(boundAssign),
 
         BoundBreak => LowerBreak(),
         BoundReturn boundReturn => LowerReturn(boundReturn),
         BoundContinue => LowerContinue(),
 
-        BoundCall boundCall => LowerCallOperand(boundCall, _fun.AddTemp(boundCall.Type)),
-        BoundStructInit boundStructInit => LowerStructInit(boundStructInit, _fun.AddTemp(boundStructInit.Type)),
+        BoundCall boundCall => LowerCallOperand(boundCall, _mirFun.AddTemp(boundCall.Type)),
+        BoundStructInit boundStructInit => LowerStructInit(boundStructInit, _mirFun.AddTemp(boundStructInit.Type)),
 
         BoundError => new Operand.Error(Error),
         
@@ -286,7 +299,7 @@ public class Lowerer
         
         if (assign.Target is BoundCall)
         {
-            var valueTemp = _fun.AddTemp(assign.Value.Type);
+            var valueTemp = _mirFun.AddTemp(assign.Value.Type);
             LowerInto(assign.Value, valueTemp);
             var place = LowerPlace(assign.Target);
             Emit(new Instruction.Assign(place, new Operand.Copy(valueTemp), assign.Syntax));
@@ -304,7 +317,7 @@ public class Lowerer
             // Call returns a reference. We need to store the ref
             // into a temp and deref it into target, since we are
             // in value position.
-            var refTarget = _fun.AddTemp(GetRefType(call.Type));
+            var refTarget = _mirFun.AddTemp(GetRefType(call.Type));
             LowerCallInstruction(call, refTarget);
             Emit(new Instruction.Assign(target, new Operand.Copy(new Place.Deref(refTarget))));
         }
@@ -362,7 +375,7 @@ public class Lowerer
             else
             {
                 Debug.Assert(!boundArguments[i].IsMut);
-                arguments.Add(LowerInto(boundArguments[i].Value, _fun.AddTemp(boundArguments[i].Type)));
+                arguments.Add(LowerInto(boundArguments[i].Value, _mirFun.AddTemp(boundArguments[i].Type)));
             }
         }
 
@@ -407,9 +420,9 @@ public class Lowerer
     
     private Operand LowerIfExpr(BoundIfExpr ifExpr, Place target)
     {
-        var trueBlock = _fun.AddBasicBlock("if true");
-        var falseBlock = _fun.AddBasicBlock("if false");
-        var joinBlock = _fun.AddBasicBlock("if join");
+        var trueBlock = _mirFun.AddBasicBlock("if true");
+        var falseBlock = _mirFun.AddBasicBlock("if false");
+        var joinBlock = _mirFun.AddBasicBlock("if join");
         
         Terminate(new Terminator.Branch(LowerOperand(ifExpr.Condition), 
                 trueBlock, 
@@ -437,11 +450,11 @@ public class Lowerer
             _ => throw new ArgumentException($"{nameof(logic)} is not a logic operator.", nameof(logic))
         };
 
-        var assignLeftBlock = _fun.AddBasicBlock();
-        var assignRightBlock = _fun.AddBasicBlock();
-        var joinBlock = _fun.AddBasicBlock();
+        var assignLeftBlock = _mirFun.AddBasicBlock();
+        var assignRightBlock = _mirFun.AddBasicBlock();
+        var joinBlock = _mirFun.AddBasicBlock();
 
-        var left = LowerInto(boundLeft, _fun.AddTemp(boundLeft.Type));
+        var left = LowerInto(boundLeft, _mirFun.AddTemp(boundLeft.Type));
         Terminate(new Terminator.Branch(
                 left, 
                 True: logic is BoundLogicAnd ? assignRightBlock : assignLeftBlock, 
@@ -482,13 +495,13 @@ public class Lowerer
             if (@return.IsMut)
             {
                 var place = LowerPlace(@return.Value);
-                Emit(new Instruction.Assign(_fun.ReturnPlace, MakeRef(place)));
+                Emit(new Instruction.Assign(_mirFun.ReturnPlace, MakeRef(place)));
             }
             else
-                LowerInto(@return.Value, _fun.ReturnPlace);
+                LowerInto(@return.Value, _mirFun.ReturnPlace);
         }
         else
-            Emit(new Instruction.Assign(_fun.ReturnPlace, new Operand.Empty(Unit)));
+            Emit(new Instruction.Assign(_mirFun.ReturnPlace, new Operand.Empty(Unit)));
 
         Terminate(new Terminator.Return(@return.Syntax));
         return new Operand.Unreachable(Never);

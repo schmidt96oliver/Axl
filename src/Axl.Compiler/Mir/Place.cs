@@ -20,9 +20,9 @@ public enum LocalKind
 
 public closed record Place(TypeSymbol Type, SyntaxNode? Syntax)
 {
-    public sealed record Local(LocalId Id, LocalKind Kind, TypeSymbol Type, SyntaxNode? Syntax) : Place(Type, Syntax);
+    public sealed record Local(LocalId Id, LocalKind Kind, TypeSymbol Type, SyntaxNode? Syntax = null) : Place(Type, Syntax);
 
-    public sealed record Field(Place Receiver, FieldSymbol FieldSymbol, SyntaxNode? Syntax) : Place(FieldSymbol.Type, Syntax);
+    public sealed record Field(Place Receiver, FieldSymbol FieldSymbol, SyntaxNode? Syntax = null) : Place(FieldSymbol.Type, Syntax);
 
     public sealed record Deref(Place Reference, SyntaxNode? Syntax = null)
         : Place(((RefTypeSymbol)Reference.Type).Inner, Syntax);

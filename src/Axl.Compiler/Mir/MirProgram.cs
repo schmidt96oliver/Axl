@@ -1,17 +1,15 @@
-﻿using Axl.Compiler.Binding.BoundTree;
+﻿using System.Collections.Frozen;
+using System.Collections.Immutable;
 using Axl.Compiler.Symbols;
 
 namespace Axl.Compiler.Mir;
 
-public sealed class MirProgram(Func<FunDefinitionSymbol, MutMirFunction> getMirFun, MutMirFunction entry)
+public sealed class MirProgram(MutMirFunction entry, FrozenDictionary<FunSymbol, MutMirFunction> mirFunctionsBySymbol)
 {
     public MutMirFunction Entry { get; } = entry;
+    public ImmutableArray<MutMirFunction> MirFunctions { get; } = mirFunctionsBySymbol.Values;
 
-    public MutMirFunction GetMirFunction(FunDefinitionSymbol fun)
-    {
-        if (fun.Body is not BoundBlock { HasError: false })
-            throw new InvalidOperationException("Funs without body or with errors are not lowered.");
+    public MutMirFunction GetMirFunction(FunSymbol fun)
+        => mirFunctionsBySymbol[fun];
 
-        return getMirFun(fun);
-    }
 }

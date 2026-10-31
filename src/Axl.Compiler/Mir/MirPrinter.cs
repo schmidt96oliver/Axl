@@ -7,7 +7,7 @@ public static class MirPrinter
 {
     public static string Print(this MutMirFunction function)
         => $"""
-           --- fun {function.DebugName}({ string.Join(", ", function.Locals.Where(l => l.Kind is LocalKind.Parameter).Select(PrintWithType)) })
+           --- fun {function.DisplayName}({ string.Join(", ", function.Locals.Where(l => l.Kind is LocalKind.Parameter).Select(PrintWithType)) })
            { string.Join('\n', function.Locals.Where(l => l.Kind is not LocalKind.Parameter)
                .Select(PrintWithType)) }
            

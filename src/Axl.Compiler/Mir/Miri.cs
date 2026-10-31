@@ -10,7 +10,7 @@ using Environment = Dictionary<LocalId, object>;
 
 public sealed class Miri
 {
-    private sealed class PanicException() : Exception;
+    private sealed class PanicException : Exception;
     
     private sealed class StructValue
     {
@@ -36,7 +36,7 @@ public sealed class Miri
         var miri = new Miri(program, output);
         try
         {
-            miri.Call(program.Entry.Symbol.OriginalDefinition, []);
+            miri.Call(program.Entry, []);
         }
         catch (PanicException)
         {
@@ -44,19 +44,12 @@ public sealed class Miri
         }
     }
 
-    private object Call(FunDefinitionSymbol fun, ImmutableArray<object> arguments)
+    private object Call(MutMirFunction mirFun, ImmutableArray<object> arguments)
     {
-        var mirFun = _program.GetMirFunction(fun);
-        if (mirFun is null)
-            throw new InvalidOperationException("Cannot run MIR with errors.");
-
         var environment = new Environment();
-        for (var i = 0; i < fun.SelfAndParameters.Length; i++)
-        {
-            var place = mirFun.ParameterPlaces[fun.SelfAndParameters[i]];
-            environment[place.Id] = arguments[i];
-        }
-
+        for (var i = 0; i < mirFun.ParameterPlaces.Length; i++)
+            environment[mirFun.ParameterPlaces[i].Id] = arguments[i];
+        
         var block = mirFun.Entry;
         while (true)
         {
@@ -96,7 +89,8 @@ public sealed class Miri
             
             case Instruction.Call call:
             {
-                var value = Call(call.Fun.OriginalDefinition,
+                var mirFun = _program.GetMirFunction(call.Fun);
+                var value = Call(mirFun,
                 [
                     .. call.Arguments.Select(a => Evaluate(a, environment))
                 ]);

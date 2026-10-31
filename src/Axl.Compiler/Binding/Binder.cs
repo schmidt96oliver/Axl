@@ -1665,7 +1665,6 @@ public sealed class Binder(Scope scope, BinderSideEffects sideEffects)
         }
 
         // Construct it
-        Debug.Assert(candidates[0].IsConstructed);
         if (funGroup.Syntax is not null)
             SideEffects.AddResolvedSymbol(funGroup.Syntax.Location, candidates[0]);
         return candidates[0];

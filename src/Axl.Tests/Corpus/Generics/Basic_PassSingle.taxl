@@ -1,0 +1,13 @@
+﻿//@run
+//= 1
+//= Hello
+//= 1.5
+//= true
+
+PrintLine(Pass[I32](1));
+PrintLine(Pass[String]("Hello"));
+PrintLine(Pass[F64](1.5));
+PrintLine(Pass[Bool](true));
+
+fun Pass[T](t: T): T
+    = t;

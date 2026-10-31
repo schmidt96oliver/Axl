@@ -12,7 +12,7 @@ using Binder = Axl.Compiler.Binding.Binder;
 
 namespace Axl.Compiler;
 
-public sealed record LoweredFunBody(MutMirFunction? MirFunction, ImmutableArray<Diagnostic> Diagnostics);
+public sealed record LoweredFunBody(MutMirFunction MirFunction, ImmutableArray<Diagnostic> Diagnostics);
 
 public class Compilation
 {
@@ -184,7 +184,7 @@ public class Compilation
 
         var mirFun = Lowerer.Lower(fun, this);
         var bag = new DiagnosticBag();
-        mirFun.Analyze(bag);
+        mirFun.Analyze(fun, bag);
 
         var loweredBody = new LoweredFunBody(mirFun, bag.Drain());
         _loweredBodies[fun] = loweredBody;
@@ -192,7 +192,7 @@ public class Compilation
     }
 
 
-    public MirProgram Lower(ScriptSymbol entryScript)
+    public MirProgram Compile(ScriptSymbol entryScript)
     {
         if (entryScript.Compilation != this || !Scripts.Contains(entryScript))
             throw new ArgumentException("The given script is not part of this compilation.", nameof(entryScript));
@@ -200,12 +200,11 @@ public class Compilation
         Complete();
         
         if (Diagnostics.HasError || ReferencedCompilations.Any(c => c.Diagnostics.HasError))
-            throw new InvalidOperationException("Cannot lower program with errors.");
+            throw new InvalidOperationException("Cannot compile program with errors.");
 
-        var scriptMirFun = _loweredBodies.GetValueOrDefault(entryScript.Fun)?.MirFunction ??
-                           throw new ArgumentException("The given script is not part of this compilation.",
-                               nameof(entryScript));
-        return new MirProgram(f => GetLoweredFunBody(f).MirFunction!, scriptMirFun);
+        var program = Monomorphizer.Monomorphize(entryScript.Fun,
+            funDefinition => GetLoweredFunBody(funDefinition).MirFunction);
+        return program;
     }
     
 

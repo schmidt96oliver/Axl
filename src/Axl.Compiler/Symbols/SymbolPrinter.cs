@@ -72,7 +72,7 @@ public static class SymbolPrinter
 
         public string TypeParameterText
             => fun.TypeParameters.Length > 0
-                ? fun.IsConstructed
+                ? fun.TypeArguments.Length == fun.TypeParameters.Length
                     ? $"[{string.Join(", ", fun.TypeArguments.Select(p => $"{p.QualifiedName}"))}]"
                     : $"[{string.Join(", ", fun.TypeParameters.Select(p => $"{p.Name}"))}]"
                 : "";

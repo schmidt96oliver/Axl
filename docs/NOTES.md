@@ -3,10 +3,15 @@
 
 # Now
 
+* SymbolsPrinter: FullName `Base.Buffer[T]` and FullDisplayText, ShortDisplayText, ...
+* Good Mir DisplayName
+
+* abstract TypeSymbol.Substitute
+  * TypeMap in Symbol layer; With `strict` parameter
+
+* validator that checks concreteness
+
 * Monomorphize :)
-    * Create, add to worklist
-    * Instantiate next on worklist
-    * `fun A[T1]() { B[T1](); }   fun B[T2]() { A[T2](); }` must wokr
     * Check that MIRI only runs monomorphized MIR
 
 * Rework overload resolution
@@ -20,6 +25,8 @@
 
 
 # Questions / Little ones****
+
+* ?? Symbol.== (IEquatable<Symbol>) for easier use of RefType and `List[I32].F[T]` vs `List[U].F[I32]`
 
 * ?? Miri: `Environment` -> `ActivationFrame` with .GetRef that throws if exited
 * ?? Miri: Store reference as Root (ActivationFrame, LocalId) + Path (FieldSymbol[]). See Claude, think why?

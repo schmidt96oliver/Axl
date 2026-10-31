@@ -1,0 +1,21 @@
+﻿//@run
+//= 01299
+//= 012X
+
+Print(A[I32](0, 99));
+PrintLine();
+
+Print(B[String](0, "X"));
+
+fun A[T1](n: I32, arg: T1): T1
+{
+    if (n > 2) return arg;
+    Print(n);
+    return B[T1](n + 1, arg);
+}
+fun B[T2](n: I32, arg: T2): T2
+{
+    if (n > 2) return arg;
+    Print(n);
+    return A[T2](n + 1, arg);
+}
