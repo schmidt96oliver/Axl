@@ -1,5 +1,6 @@
 ﻿using System.Collections.Immutable;
 using System.Diagnostics;
+using System.Runtime.CompilerServices;
 using Axl.Compiler.Binding;
 using Axl.Compiler.Binding.Scopes;
 using Axl.Compiler.Syntax.Tree;
@@ -68,4 +69,13 @@ public sealed class SourceStructSymbol(
     private Binder MakeBinder()
         => new(new MemberScope(enclosingScope, this), new BinderSideEffects());
 
+
+    /// <inheritdoc />
+    public override bool Equals(Symbol? other)
+        => ReferenceEquals(this,
+            other); // The definition has no substituted types yet, so there will only be one reference.
+
+    /// <inheritdoc />
+    public override int GetHashCode()
+        => RuntimeHelpers.GetHashCode(this);
 }

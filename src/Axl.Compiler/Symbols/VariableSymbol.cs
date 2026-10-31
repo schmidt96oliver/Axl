@@ -1,4 +1,6 @@
-﻿namespace Axl.Compiler.Symbols;
+﻿using System.Runtime.CompilerServices;
+
+namespace Axl.Compiler.Symbols;
 
 public class VariableSymbol(string name, FunSymbol owner, bool isReadOnly, TypeSymbol type)
     : Symbol(owner.Compilation, name, owner)
@@ -13,4 +15,13 @@ public class VariableSymbol(string name, FunSymbol owner, bool isReadOnly, TypeS
 
     /// <inheritdoc />
     public override bool CanBeReferencedByName => true;
+
+    /// <inheritdoc />
+    public override bool Equals(Symbol? other)
+        => ReferenceEquals(this,
+            other); // Variable have no substituted types, so there will only be one reference.
+
+    /// <inheritdoc />
+    public override int GetHashCode()
+        => RuntimeHelpers.GetHashCode(this);
 }

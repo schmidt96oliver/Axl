@@ -96,7 +96,7 @@ public class Lowerer
         if (_refTypeSymbols.TryGetValue(type, out var refType))
             return refType;
 
-        refType = RefTypeSymbol.Get(type);
+        refType = new RefTypeSymbol(type);
         _refTypeSymbols[type] = refType;
         return refType;
     }

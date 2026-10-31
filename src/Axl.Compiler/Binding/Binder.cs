@@ -558,8 +558,8 @@ public sealed class Binder(Scope scope, BinderSideEffects sideEffects)
             if (a.IsMut != b.IsMut) 
                 return false;
             
-            if (a.Type is TypeParameterSymbol aParam && aParam.Owner == a.Owner &&
-                b.Type is TypeParameterSymbol bParam && bParam.Owner == b.Owner)
+            if (a.Type is TypeParameterSymbol aParam && Equals(aParam.Owner, a.Owner) &&
+                b.Type is TypeParameterSymbol bParam && Equals(bParam.Owner, b.Owner))
             {
                 return aParam.Ordinal == bParam.Ordinal;
             }
@@ -1470,7 +1470,7 @@ public sealed class Binder(Scope scope, BinderSideEffects sideEffects)
     {
         // Variables could be captured from outside, which is forbidden.
 
-        if (variable.Owner != Scope.Owner)
+        if (!Equals(variable.Owner, Scope.Owner))
             return BindError(syntax, new Diagnostic.CannotCapture(syntax));
 
         return new BoundVariable(variable, syntax);
@@ -1511,7 +1511,7 @@ public sealed class Binder(Scope scope, BinderSideEffects sideEffects)
                     : asTypeRef;
             }
 
-            if (Scope.OwnerAsFun.SelfParameter.Type != field.OwningType)
+            if (!Equals(Scope.OwnerAsFun.SelfParameter.Type, field.OwningType))
             {
                 return asTypeRef is null
                     ? BindError(syntax, new Diagnostic.MemberOfEnclosingType(field, Scope.OwnerAsFun.SelfParameter.Type, syntax))
@@ -1720,7 +1720,7 @@ public sealed class Binder(Scope scope, BinderSideEffects sideEffects)
             Debug.Assert(receiver is BoundValue);
             var valueReceiver = (receiver as BoundValue)!;
 
-            if (fun.SelfParameter?.Type != valueReceiver.Type)
+            if (!Equals(fun.SelfParameter?.Type, valueReceiver.Type))
             {
                 SideEffects.ReportError(new Diagnostic.MemberOfEnclosingType(fun, Scope.InstanceType!, funSyntax));
                 return false;
@@ -1740,7 +1740,7 @@ public sealed class Binder(Scope scope, BinderSideEffects sideEffects)
     private TypeSymbol GetConcreteParameterType(ParameterSymbol parameter,
         ImmutableArray<BoundTypeArgument> typeArguments)
     {
-        return parameter.Type is TypeParameterSymbol typeParam && typeParam.Owner == parameter.Owner
+        return parameter.Type is TypeParameterSymbol typeParam && Equals(typeParam.Owner, parameter.Owner)
             ? typeArguments[typeParam.Ordinal].Type
             : parameter.Type;
     }

@@ -1,6 +1,7 @@
 ﻿using System.Collections.Concurrent;
 using System.Collections.Immutable;
 using System.Diagnostics;
+using System.Runtime.CompilerServices;
 using Axl.Compiler.Binding.BoundTree;
 using Axl.Compiler.Syntax;
 
@@ -82,5 +83,25 @@ public closed class FunSymbol(Compilation compilation, string name, Symbol? owne
         constructed = new ConstructedFunSymbol(this, typeArguments);
         _constructedFunSymbols.Add(constructed);
         return constructed;
+    }
+
+
+    /// <inheritdoc />
+    public override bool Equals(Symbol? other)
+        => other is FunSymbol otherFun &&
+           ReferenceEquals(otherFun.OriginalDefinition, OriginalDefinition) &&
+           Equals(otherFun.Owner, Owner) &&
+           otherFun.TypeArguments.SequenceEqual(TypeArguments);
+
+    /// <inheritdoc />
+    public override int GetHashCode()
+    {
+        var hash = new HashCode();
+        hash.Add(0x18F2_AAD1);
+        hash.Add(RuntimeHelpers.GetHashCode(OriginalDefinition));
+        hash.Add(Owner);
+        foreach (var typeArg in TypeArguments)
+            hash.Add(typeArg);
+        return hash.ToHashCode();
     }
 }

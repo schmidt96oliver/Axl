@@ -25,7 +25,7 @@ public closed class Scope
 
     public TypeSymbol? InstanceType => OwnerAsFun?.SelfParameter?.Type;
 
-    public bool IsStatic => OwnerAsFun?.SelfParameter == null;
+    public bool IsStatic => OwnerAsFun?.SelfParameter is null;
 
     public bool IsInsideLoop => (Flags & BindingFlags.InsideLoop) != 0;
 

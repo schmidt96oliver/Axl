@@ -81,7 +81,7 @@ public class Monomorphizer
     private TypeSymbol Substitute(TypeSymbol type, TypeMap map)
     {
         if (type is RefTypeSymbol refType)
-            return RefTypeSymbol.Get(Substitute(refType.Inner, map));
+            return new RefTypeSymbol(Substitute(refType.Inner, map));
 
         if (type is TypeParameterSymbol typeParam)
             return map.Get(typeParam);

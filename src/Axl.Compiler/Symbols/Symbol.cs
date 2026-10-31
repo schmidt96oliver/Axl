@@ -3,6 +3,7 @@
 namespace Axl.Compiler.Symbols;
 
 public closed class Symbol(Compilation compilation, string name, Symbol? owner)
+    : IEquatable<Symbol>
 {
     public Compilation Compilation { get; } = compilation;
 
@@ -58,4 +59,30 @@ public closed class Symbol(Compilation compilation, string name, Symbol? owner)
         for (var current = this; current is not null; current = current.Owner)
             yield return current;
     }
+
+    // !!! Equality needs to be overwritten sometimes, because symbols with 
+    //     substituted type parameters could come through different paths.
+    //     Most symbols will implement reference equality, if they are source
+    //     declared. But some use value equality.
+    
+    /// <inheritdoc />
+    public abstract bool Equals(Symbol? other);
+    
+    /// <inheritdoc />
+    public override bool Equals(object? obj)
+    {
+        if (obj is null) return false;
+        if (ReferenceEquals(this, obj)) return true;
+        if (obj is not Symbol otherSymbol) return false;
+        return Equals(otherSymbol);
+    }
+
+    /// <inheritdoc />
+    public abstract override int GetHashCode();
+
+    public static bool operator ==(Symbol left, Symbol right)
+        => left.Equals(right);
+    
+    public static bool operator !=(Symbol left, Symbol right)
+        => !left.Equals(right);
 }

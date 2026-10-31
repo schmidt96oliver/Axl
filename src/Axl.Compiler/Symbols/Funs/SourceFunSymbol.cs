@@ -1,4 +1,5 @@
 ﻿using System.Collections.Immutable;
+using System.Runtime.CompilerServices;
 using Axl.Compiler.Binding;
 using Axl.Compiler.Binding.BoundTree;
 using Axl.Compiler.Binding.Scopes;

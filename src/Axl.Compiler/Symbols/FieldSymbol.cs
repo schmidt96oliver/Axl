@@ -1,4 +1,5 @@
-﻿using Axl.Compiler.Binding;
+﻿using System.Runtime.CompilerServices;
+using Axl.Compiler.Binding;
 using Axl.Compiler.Binding.Scopes;
 using Axl.Compiler.Syntax.Tree;
 
@@ -55,4 +56,13 @@ public sealed class FieldSymbol(
         _binder!.SideEffects.DrainInto(sideEffects);
         _binder = null;
     }
+
+
+    /// <inheritdoc />
+    public override bool Equals(Symbol? other)
+        => ReferenceEquals(this, other);
+
+    /// <inheritdoc />
+    public override int GetHashCode()
+        => RuntimeHelpers.GetHashCode(this);
 }
