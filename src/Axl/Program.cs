@@ -51,7 +51,7 @@ switch (args[0])
 
         var program = compilation.Compile(compilation.Scripts[0]);
 
-        foreach (var fun in program.MirFunctions)
+        foreach (var fun in program.MirFunctions.Where(f => !f.DisplayName.StartsWith("Base")).OrderBy(f => f.DisplayName, StringComparer.Ordinal))
         {
             Console.WriteLine(fun.Print());
             Console.WriteLine();

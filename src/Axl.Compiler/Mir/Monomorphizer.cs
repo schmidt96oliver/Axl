@@ -5,7 +5,7 @@ using Axl.Compiler.Symbols;
 
 namespace Axl.Compiler.Mir;
 
-public readonly record struct FunInstanceKey(FunDefinitionSymbol Definition, ImmutableArray<TypeSymbol> TypeArguments)
+public sealed record FunInstanceKey(FunDefinitionSymbol Definition, ImmutableArray<TypeSymbol> TypeArguments)
 {
     /// <inheritdoc />
     public override int GetHashCode()
@@ -17,11 +17,21 @@ public readonly record struct FunInstanceKey(FunDefinitionSymbol Definition, Imm
         return hash.ToHashCode();
     }
 
+    /// <inheritdoc />
+    public bool Equals(FunInstanceKey? other)
+    {
+        return Equals(other?.Definition, Definition) && other?.TypeArguments.SequenceEqual(TypeArguments) == true;
+    }
+
     public static FunInstanceKey From(FunSymbol symbol)
     {
         Guard.MustBe(symbol.TypeParameters.Length == symbol.TypeArguments.Length);
         return new FunInstanceKey(symbol.OriginalDefinition, symbol.TypeArguments);
     }
+
+    /// <inheritdoc />
+    public override string ToString()
+        => $"{Definition.QualifiedName}[{ string.Join(", ", TypeArguments.Select(a => a.Name)) }]";
 }
 
 public class Monomorphizer
@@ -66,7 +76,15 @@ public class Monomorphizer
 
         return type;
     }
-    
+
+
+    private void AddToWorklist(FunSymbol funSymbol)
+    {
+        var key = FunInstanceKey.From(funSymbol);
+        if (_instantiatedMirFunsByKey.ContainsKey(key) || _worklist.Contains(funSymbol))
+            return;
+        _worklist.Enqueue(funSymbol);
+    }
 
     private void Instantiate(FunSymbol funSymbol)
     {
@@ -162,11 +180,15 @@ public class Monomorphizer
 
     private Instruction.Call InstantiateCall(Instruction.Call original, MutMirFunction instantiatedMirFun, TypeMap map)
     {
-        var key = FunInstanceKey.From(original.Fun);
-        if (!_instantiatedMirFunsByKey.ContainsKey(key))
-            _worklist.Enqueue(original.Fun);
+        // Insert the new type arguments into the fun
+        var fun = original.Fun.ConstructWith(
+        [
+            .. original.Fun.TypeArguments.Select(typeArg => typeArg.Substitute(map))
+        ]);
+        
+        AddToWorklist(fun);
 
-        return new Instruction.Call(original.Fun,
+        return new Instruction.Call(fun,
             InstantiatePlace(original.Target, instantiatedMirFun, map),
             [.. original.Arguments.Select(arg => InstantiateOperand(arg, instantiatedMirFun, map))],
             original.Syntax);
