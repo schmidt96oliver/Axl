@@ -24,6 +24,9 @@ public static class SymbolPrinter
             TypeSymbol => "type",
         };
 
+        /// <summary>
+        /// The full path to this symbol. Excluding type parameters/arguments.
+        /// </summary>
         public string QualifiedName
         {
             get
@@ -38,39 +41,49 @@ public static class SymbolPrinter
         }
 
         /// <summary>
+        /// The qualified name with type parameters/arguments
+        /// if generic.
+        /// </summary>
+        public string FullName => symbol switch
+        {
+            FunSymbol { TypeParameters.Length: > 0 } fun => $"{symbol.QualifiedName}{fun.FullTypeParameterDisplayText}",
+            _ => symbol.QualifiedName
+        };
+
+        /// <summary>
         /// A string like <c>fun 'A'</c>.
         /// </summary>
-        public string ShortDisplayName => symbol switch
+        public string ShortDisplayText => symbol switch
         {
             ErrorTypeSymbol => "error",
             ParameterSymbol parameter => $"parameter {parameter.Name}",
             VariableSymbol { IsReadOnly: false } variable => $"var {variable.Name}",
             VariableSymbol { IsReadOnly: true } variable => $"let {variable.Name}",
-            _ => $"{symbol.KindName} '{symbol.QualifiedName}'"
+            _ => $"{symbol.KindName} '{symbol.FullName}'"
         };
 
-        public string FullDisplayName => symbol switch
+        public string FullDisplayText => symbol switch
         {
-            ParameterSymbol parameter => $"parameter {parameter.Name}: {parameter.TypeDisplayString}",
-            VariableSymbol { IsReadOnly: false } variable => $"var {variable.Name}: {variable.Type.QualifiedName}",
-            VariableSymbol { IsReadOnly: true } variable => $"let {variable.Name}: {variable.Type.QualifiedName}",
-            FieldSymbol fieldSymbol => $"field {fieldSymbol.QualifiedName}: {fieldSymbol.Type.QualifiedName}",
+            ParameterSymbol parameter => $"parameter {parameter.Name}: {parameter.ParameterTypeDisplayText}",
+            VariableSymbol { IsReadOnly: false } variable => $"var {variable.Name}: {variable.Type.FullName}",
+            VariableSymbol { IsReadOnly: true } variable => $"let {variable.Name}: {variable.Type.FullName}",
+            FieldSymbol fieldSymbol => $"field {fieldSymbol.FullName}: {fieldSymbol.Type.FullName}",
             
-            NamespaceOrTypeSymbol => $"{symbol.KindName} {symbol.QualifiedName}",
+            NamespaceOrTypeSymbol => $"{symbol.KindName} {symbol.FullName}",
             
-            FunSymbol fun => $"{fun.KindName} {fun.QualifiedName}{ fun.TypeParameterText }{ fun.ParameterText }",
+            FunSymbol fun => $"{fun.KindName} {fun.FullName}{ fun.FullParameterDisplayText }",
         };
     }
 
     extension(FunSymbol fun)
     {
-        public string DisplayNameWithParameterTypes => $"{fun.KindName} {fun.QualifiedName}{fun.TypeParameterText}({
-            string.Join(", ", fun.Parameters.Select(get_TypeDisplayString))})";
+        public string ShortDisplayTextWithParameterTypes => $"{fun.KindName} {fun.FullName}({
+            string.Join(", ", fun.Parameters.Select(get_ParameterTypeDisplayText))})";
 
-        public string ParameterText
-            => $"({string.Join(", ", fun.Parameters.Select(p => $"{p.Name}: {p.TypeDisplayString}"))})";
+        private string FullParameterDisplayText
+            => $"({string.Join(", ", fun.Parameters.Select(p => $"{p.Name}: {p.ParameterTypeDisplayText}"))})";
 
-        public string TypeParameterText
+        private string FullTypeParameterDisplayText
             => fun.TypeParameters.Length > 0
                 ? fun.TypeArguments.Length == fun.TypeParameters.Length
                     ? $"[{string.Join(", ", fun.TypeArguments.Select(p => $"{p.QualifiedName}"))}]"
@@ -80,18 +93,18 @@ public static class SymbolPrinter
 
     extension(ParameterSymbol parameter)
     {
-        public string TypeDisplayString
+        public string ParameterTypeDisplayText
             => parameter.IsMut ? $"mut {parameter.Type.QualifiedName}" : parameter.Type.QualifiedName;
     }
     extension(BoundArgument argument)
     {
-        public string TypeDisplayString
+        public string ArgumentTypeDisplayText
             => argument.IsMut ? $"mut {argument.Type.QualifiedName}" : argument.Type.QualifiedName;
     }
 
     extension(ImmutableArray<BoundArgument> args)
     {
-        public string TypeListString
-            => string.Join(", ", args.Select(get_TypeDisplayString));
+        public string ArgumentTypesDisplayText
+            => string.Join(", ", args.Select(get_ArgumentTypeDisplayText));
     }
 }

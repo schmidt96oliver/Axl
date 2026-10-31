@@ -42,7 +42,7 @@ public partial record Diagnostic
         }
 
         public override string Message => Fun.ReturnType == Fun.Compilation.BaseLibrary.Never
-            ? $"{Fun.ShortDisplayName.Capitalize()} is declared to never return, but can reach the end of its body."
+            ? $"{Fun.ShortDisplayText.Capitalize()} is declared to never return, but can reach the end of its body."
             : "Not all code-paths return a value.";
     }
 }

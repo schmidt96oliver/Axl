@@ -38,7 +38,7 @@ public class HoverHandler : HoverHandlerBase
         
         return Task.FromResult<Hover?>(new Hover
         {
-            Contents = new MarkedStringsOrMarkupContent(symbol.FullDisplayName), 
+            Contents = new MarkedStringsOrMarkupContent(symbol.FullDisplayText), 
             Range = lspLocation.Range
         });
     }

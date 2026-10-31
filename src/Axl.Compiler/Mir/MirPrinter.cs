@@ -33,11 +33,11 @@ public static class MirPrinter
     public static string PrintWithType(this Place place)
         => place switch
         {
-            Place.Local { Type: RefTypeSymbol { Inner: var inner } } => $"{place.Print()}: ref {inner.QualifiedName}",
-            Place.Local => $"{place.Print()}: {place.Type.QualifiedName}",
+            Place.Local { Type: RefTypeSymbol { Inner: var inner } } => $"{place.Print()}: ref {inner.FullName}",
+            Place.Local => $"{place.Print()}: {place.Type.FullName}",
             Place.Field { Receiver: var receiver, FieldSymbol: var field } =>
-                $"{receiver.Print()}.{field.Name}: {place.Type.QualifiedName}",
-            Place.Deref { Reference: var reference } => $"(deref {reference.Print()}): {reference.Type.QualifiedName}",
+                $"{receiver.Print()}.{field.Name}: {place.Type.FullName}",
+            Place.Deref { Reference: var reference } => $"(deref {reference.Print()}): {reference.Type.FullName}",
             Place.Discard => "_",
             Place.Error => "???",
         };
@@ -70,12 +70,12 @@ public static class MirPrinter
         {
             Instruction.Assign assign => $"{assign.Target.Print()} = {assign.Value.Print()}",
             Instruction.Call call => $"{call.Target.Print()} = call {
-                call.Fun.QualifiedName}({ string.Join(", ", call.Arguments.Select(Print)) })",
+                call.Fun.FullName}({ string.Join(", ", call.Arguments.Select(Print)) })",
             Instruction.Operator intrinsic => $"{intrinsic.Target.Print()} = intrinsic {
                 intrinsic.Kind}({string.Join(", ", intrinsic.Arguments.Select(Print))})",
             Instruction.VmCall vmCall => $"{vmCall.Target.Print()} = vmcall {
                 vmCall.Kind}({string.Join(", ", vmCall.Arguments.Select(Print))})",
-            Instruction.StructInit structInit => $"{structInit.Target.Print()} = struct {structInit.Struct.QualifiedName}({ string.Join(", ", structInit.FieldValues.Select(
+            Instruction.StructInit structInit => $"{structInit.Target.Print()} = struct {structInit.Struct.FullName}({ string.Join(", ", structInit.FieldValues.Select(
                 fieldInit => $"{fieldInit.Key.Name} = {fieldInit.Value.Print()}")) })",
         };
 

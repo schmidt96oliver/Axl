@@ -43,7 +43,7 @@ public class Lowerer
             paramPlaces.Add(local);
         }
         
-        _mirFun = new MutMirFunction(funDefinition.QualifiedName, returnPlace, paramPlaces.DrainToImmutable());
+        _mirFun = new MutMirFunction(funDefinition.FullName, returnPlace, paramPlaces.DrainToImmutable());
         _currentBlock = _mirFun.Entry;
     }
 
