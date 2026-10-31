@@ -3,7 +3,7 @@
 
 # Now
 
-* proper mono subtitution through FunSymbol.Substitute
+* IsConcrete on Types and FunSymbol to assert against (recursive. Everything must be concrete)
 
 * validator that checks concreteness
 
@@ -21,8 +21,6 @@
 
 
 # Questions / Little ones****
-
-* ?? Symbol.== (IEquatable<Symbol>) for easier use of RefType and `List[I32].F[T]` vs `List[U].F[I32]`
 
 * ?? Miri: `Environment` -> `ActivationFrame` with .GetRef that throws if exited
 * ?? Miri: Store reference as Root (ActivationFrame, LocalId) + Path (FieldSymbol[]). See Claude, think why?

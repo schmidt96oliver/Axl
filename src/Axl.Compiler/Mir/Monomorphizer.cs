@@ -1,47 +1,15 @@
 ﻿using System.Collections.Frozen;
-using System.Collections.Immutable;
 using System.Diagnostics;
 using Axl.Compiler.Symbols;
 
 namespace Axl.Compiler.Mir;
 
-public sealed record FunInstanceKey(FunDefinitionSymbol Definition, ImmutableArray<TypeSymbol> TypeArguments)
-{
-    /// <inheritdoc />
-    public override int GetHashCode()
-    {
-        var hash = new HashCode();
-        hash.Add(Definition);
-        foreach (var arg in TypeArguments)
-            hash.Add(arg);
-        return hash.ToHashCode();
-    }
-
-    /// <inheritdoc />
-    public bool Equals(FunInstanceKey? other)
-    {
-        return Equals(other?.Definition, Definition) && other?.TypeArguments.SequenceEqual(TypeArguments) == true;
-    }
-
-    public static FunInstanceKey From(FunSymbol symbol)
-    {
-        Guard.MustBe(symbol.TypeParameters.Length == symbol.TypeArguments.Length);
-        return new FunInstanceKey(symbol.OriginalDefinition, symbol.TypeArguments);
-    }
-
-    /// <inheritdoc />
-    public override string ToString()
-        => $"{Definition.QualifiedName}[{ string.Join(", ", TypeArguments.Select(a => a.Name)) }]";
-}
-
 public class Monomorphizer
 {
     private readonly Queue<FunSymbol> _worklist = [];
-    private readonly Dictionary<FunInstanceKey, MutMirFunction> _instantiatedMirFunsByKey = [];
-    private readonly Dictionary<FunSymbol, MutMirFunction> _instantiatedMirFunsBySymbol = [];
+    private readonly Dictionary<FunSymbol, MutMirFunction> _instantiatedMirFuns = [];
     private readonly Func<FunDefinitionSymbol, MutMirFunction> _lowerDefinition;
 
-    
     
     private Monomorphizer(Func<FunDefinitionSymbol, MutMirFunction> lowerDefinition)
     {
@@ -61,27 +29,13 @@ public class Monomorphizer
             monomorphizer.Instantiate(fun);
         }
 
-        return new MirProgram(monomorphizer._instantiatedMirFunsBySymbol[entryFunSymbol],
-            monomorphizer._instantiatedMirFunsBySymbol.ToFrozenDictionary());
+        return new MirProgram(monomorphizer._instantiatedMirFuns[entryFunSymbol],
+            monomorphizer._instantiatedMirFuns.ToFrozenDictionary());
     }
-
-
-    private TypeSymbol Substitute(TypeSymbol type, TypeMap map)
-    {
-        if (type is RefTypeSymbol refType)
-            return new RefTypeSymbol(Substitute(refType.Inner, map));
-
-        if (type is TypeParameterSymbol typeParam)
-            return map.Get(typeParam);
-
-        return type;
-    }
-
 
     private void AddToWorklist(FunSymbol funSymbol)
     {
-        var key = FunInstanceKey.From(funSymbol);
-        if (_instantiatedMirFunsByKey.ContainsKey(key) || _worklist.Contains(funSymbol))
+        if (_instantiatedMirFuns.ContainsKey(funSymbol) || _worklist.Contains(funSymbol))
             return;
         _worklist.Enqueue(funSymbol);
     }
@@ -92,22 +46,18 @@ public class Monomorphizer
         // But just to test the monomorphizer, we do it anyway and bugs
         // will appear in any corpus test.
         
-        var key = FunInstanceKey.From(funSymbol);
-        if (_instantiatedMirFunsByKey.TryGetValue(key, out var mirFun))
-        {
-            _instantiatedMirFunsBySymbol[funSymbol] = mirFun;
+        if (_instantiatedMirFuns.ContainsKey(funSymbol))
             return;
-        }
         
-        var originalMirFun = _lowerDefinition(key.Definition);
+        var originalMirFun = _lowerDefinition(funSymbol.OriginalDefinition);
         var typeMap = TypeMap.StrictFrom(funSymbol.TypeParameters, funSymbol.TypeArguments);
         
         var instantiatedMirFun = new MutMirFunction(funSymbol.FullName,
             InstantiateLocal(originalMirFun.ReturnPlace, null, typeMap),
             [.. originalMirFun.ParameterPlaces.Select(p => InstantiateLocal(p, null, typeMap))]
         );
-        _instantiatedMirFunsByKey[key] = instantiatedMirFun;
-        _instantiatedMirFunsBySymbol[funSymbol] = instantiatedMirFun;
+        
+        _instantiatedMirFuns[funSymbol] = instantiatedMirFun;
 
         foreach (var originalBlock in originalMirFun.BasicBlocks)
             InstantiateBlock(originalBlock, instantiatedMirFun, typeMap);
@@ -180,7 +130,7 @@ public class Monomorphizer
 
     private Instruction.Call InstantiateCall(Instruction.Call original, MutMirFunction instantiatedMirFun, TypeMap map)
     {
-        // Insert the new type arguments into the fun
+        // Substitute type arguments
         var fun = original.Fun.ConstructWith(
         [
             .. original.Fun.TypeArguments.Select(typeArg => typeArg.Substitute(map))
@@ -220,7 +170,7 @@ public class Monomorphizer
         if (instantiatedMirFun?.Locals.FirstOrDefault(l => l.Id == original.Id) is { } local)
             return local;
 
-        local = new Place.Local(original.Id, original.Kind, Substitute(original.Type, map), original.Syntax);
+        local = new Place.Local(original.Id, original.Kind, original.Type.Substitute(map), original.Syntax);
         instantiatedMirFun?.AddLocal(local);
         return local;
     }
@@ -230,7 +180,7 @@ public class Monomorphizer
         {
             Operand.Const originalConst => new Operand.Const(
                 originalConst.Value,
-                Substitute(originalConst.Type, map),
+                originalConst.Type.Substitute(map),
                 originalConst.Syntax),
 
             Operand.Copy originalCopy => new Operand.Copy(
@@ -238,12 +188,12 @@ public class Monomorphizer
                 originalCopy.Syntax),
 
             Operand.Empty originalEmpty => new Operand.Empty(
-                Substitute(originalEmpty.Type, map),
+                originalEmpty.Type.Substitute(map),
                 originalEmpty.Syntax),
 
             Operand.Ref originalRef => new Operand.Ref(
                 InstantiatePlace(originalRef.Place, instantiatedMirFun, map),
-                Substitute(originalRef.Type, map),
+                originalRef.Type.Substitute(map),
                 originalRef.Syntax),
 
             Operand.Unreachable => original,
