@@ -17,4 +17,8 @@ public sealed class ErrorTypeSymbol(Compilation compilation)
     /// <inheritdoc />
     public override int GetHashCode()
         => 0x4E52_524F; // any fixed value other than 0
+
+    /// <inheritdoc />
+    public override TypeSymbol Substitute(TypeMap map)
+        => this;
 }

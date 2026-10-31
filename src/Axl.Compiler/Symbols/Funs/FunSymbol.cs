@@ -1,6 +1,4 @@
-﻿using System.Collections.Concurrent;
-using System.Collections.Immutable;
-using System.Diagnostics;
+﻿using System.Collections.Immutable;
 using System.Runtime.CompilerServices;
 using Axl.Compiler.Binding.BoundTree;
 using Axl.Compiler.Syntax;
@@ -12,9 +10,6 @@ public union FunBody(Intrinsic, BoundBlock);
 public closed class FunSymbol(Compilation compilation, string name, Symbol? owner, bool isPublic) 
     : Symbol(compilation, name, owner)
 {
-    private readonly List<ConstructedFunSymbol> _constructedFunSymbols = [];
-    
-    
     public override bool IsPublic { get; } = isPublic;
 
     public bool IsOperator => SyntaxFacts.IsOperator(Name);
@@ -68,21 +63,23 @@ public closed class FunSymbol(Compilation compilation, string name, Symbol? owne
     public abstract bool IsReturnMut { get; }
 
 
-    public FunSymbol GetConstructedFun(ImmutableArray<TypeSymbol> typeArguments)
+    /// <summary>
+    /// Returns a <see cref="FunSymbol"/>, where all <see cref="TypeParameters"/> are replaced
+    /// by the given <paramref name="typeArguments"/>.
+    /// </summary>
+    public FunSymbol ConstructWith(ImmutableArray<TypeSymbol> typeArguments)
     {
-        Guard.IsState(ConstructedFrom is null);
         Guard.MustBe(TypeParameters.Length == typeArguments.Length);
-        
-        if (_constructedFunSymbols.FirstOrDefault(s => s.TypeArguments.SequenceEqual(typeArguments))
-            is { } constructed)
-        {
-            Debug.Assert(constructed.ConstructedFrom == this);
-            return constructed;
-        }
 
-        constructed = new ConstructedFunSymbol(this, typeArguments);
-        _constructedFunSymbols.Add(constructed);
-        return constructed;
+        // We don't need to construct, if we are given that same type
+        // parameters or arguments that are already there.
+        if (typeArguments.SequenceEqual(TypeParameters) ||
+            typeArguments.SequenceEqual(TypeArguments))
+        {
+            return this;
+        }
+        
+        return new ConstructedFunSymbol(this, typeArguments);
     }
 
 

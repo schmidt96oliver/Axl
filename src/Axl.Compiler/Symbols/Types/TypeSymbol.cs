@@ -8,4 +8,9 @@ public closed class TypeSymbol(Compilation compilation, string name, Symbol? own
     public PrimitiveKind? PrimitiveKind { get; } = primitiveKind;
 
     public bool IsPrimitive => PrimitiveKind is not null;
+
+    /// <summary>
+    /// Returns this type with the mapped type parameters replaced.
+    /// </summary>
+    public abstract TypeSymbol Substitute(TypeMap map);
 }

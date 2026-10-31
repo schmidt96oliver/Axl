@@ -7,11 +7,6 @@ namespace Axl.Compiler.Mir;
 
 public readonly record struct FunInstanceKey(FunDefinitionSymbol Definition, ImmutableArray<TypeSymbol> TypeArguments)
 {
-    public bool Equals(FunInstanceKey? other)
-    {
-        return other?.Definition == Definition && other?.TypeArguments.SequenceEqual(TypeArguments) == true;
-    }
-
     /// <inheritdoc />
     public override int GetHashCode()
     {
@@ -36,24 +31,7 @@ public class Monomorphizer
     private readonly Dictionary<FunSymbol, MutMirFunction> _instantiatedMirFunsBySymbol = [];
     private readonly Func<FunDefinitionSymbol, MutMirFunction> _lowerDefinition;
 
-    private sealed class TypeMap(FrozenDictionary<TypeParameterSymbol, TypeSymbol> map)
-    {
-        public TypeSymbol Get(TypeParameterSymbol typeParam)
-        {
-            Guard.MustBe(map.ContainsKey(typeParam));
-            return map[typeParam];
-        }
-        
-        public static TypeMap From(FunSymbol constructedFun)
-        {
-            Guard.MustBe(constructedFun.TypeArguments.Length == constructedFun.TypeParameters.Length);
-            return new TypeMap(Enumerable
-                .Range(0, constructedFun.TypeParameters.Length)
-                .ToDictionary(keySelector: i => constructedFun.TypeParameters[i],
-                    elementSelector: i => constructedFun.TypeArguments[i])
-                .ToFrozenDictionary());
-        }
-    }
+    
     
     private Monomorphizer(Func<FunDefinitionSymbol, MutMirFunction> lowerDefinition)
     {
@@ -104,7 +82,7 @@ public class Monomorphizer
         }
         
         var originalMirFun = _lowerDefinition(key.Definition);
-        var typeMap = TypeMap.From(funSymbol);
+        var typeMap = TypeMap.StrictFrom(funSymbol.TypeParameters, funSymbol.TypeArguments);
         
         var instantiatedMirFun = new MutMirFunction(funSymbol.FullName,
             InstantiateLocal(originalMirFun.ReturnPlace, null, typeMap),

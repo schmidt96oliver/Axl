@@ -1,4 +1,5 @@
 ﻿using System.Collections.Immutable;
+using Axl.Compiler.Mir;
 
 namespace Axl.Compiler.Symbols;
 
@@ -16,6 +17,13 @@ public sealed class RefTypeSymbol(TypeSymbol inner) : TypeSymbol(inner.Compilati
     /// <inheritdoc />
     public override ImmutableArray<Symbol> Members => [];
 
+    /// <inheritdoc />
+    public override TypeSymbol Substitute(TypeMap map)
+    {
+        var replaced = map.ReplaceOrKeep(Inner);
+        return replaced != Inner ? new RefTypeSymbol(replaced) : this;
+    }
+    
     /// <inheritdoc />
     public override bool Equals(Symbol? other)
         => other is RefTypeSymbol otherRef &&

@@ -13,4 +13,9 @@ public closed class StructSymbol(
     public override bool CanBeReferencedByName => true;
 
     public ImmutableArray<FieldSymbol> Fields => [.. Members.OfType<FieldSymbol>()];
+
+
+    /// <inheritdoc />
+    public override TypeSymbol Substitute(TypeMap map)
+        => this; //TODO: Implement generic type substitution
 }

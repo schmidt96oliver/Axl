@@ -30,7 +30,7 @@ public sealed class ConstructedFunSymbol : FunSymbol
     public override FunSymbol ConstructedFrom { get; }
 
     /// <inheritdoc />
-    public override ImmutableArray<TypeParameterSymbol> TypeParameters => ConstructedFrom!.TypeParameters;
+    public override ImmutableArray<TypeParameterSymbol> TypeParameters => ConstructedFrom.TypeParameters;
 
     /// <inheritdoc />
     public override ImmutableArray<TypeSymbol> TypeArguments { get; }
@@ -41,19 +41,14 @@ public sealed class ConstructedFunSymbol : FunSymbol
         get
         {
             if (field.IsDefault)
-                field = [.. ConstructedFrom!.Parameters.Select(SubstituteParameter)];
+                field = [.. ConstructedFrom.Parameters.Select(SubstituteParameter)];
 
             return field;
         }
     }
 
-    private TypeSymbol SubstituteType(TypeSymbol original)
-        => original is TypeParameterSymbol typeParameter && TypeParameters.Contains(typeParameter)
-            ? TypeArguments[typeParameter.Ordinal]
-            : original;
-
     private ParameterSymbol SubstituteParameter(ParameterSymbol original)
-        => new(original.Name, owner: this, SubstituteType(original.Type), original.IsMut, original.IsSelf);
+        => new(original.Name, owner: this, original.Type.Substitute(TypeMap), original.IsMut, original.IsSelf);
     
 
     /// <inheritdoc />
@@ -64,7 +59,7 @@ public sealed class ConstructedFunSymbol : FunSymbol
             if (ConstructedFrom.SelfParameter is null)
                 return null;
 
-            field ??= SubstituteParameter(ConstructedFrom!.SelfParameter);
+            field ??= SubstituteParameter(ConstructedFrom.SelfParameter);
             return field;
         }
     }
@@ -74,11 +69,21 @@ public sealed class ConstructedFunSymbol : FunSymbol
     {
         get
         {
-            field ??= SubstituteType(ConstructedFrom.ReturnType);
+            field ??= ConstructedFrom.ReturnType.Substitute(TypeMap);
             return field;
         }
     }
 
     /// <inheritdoc />
     public override bool IsReturnMut => ConstructedFrom.IsReturnMut;
+
+
+    private TypeMap TypeMap
+    {
+        get
+        {
+            field ??= TypeMap.From(TypeParameters, TypeArguments);
+            return field;
+        }
+    }
 }

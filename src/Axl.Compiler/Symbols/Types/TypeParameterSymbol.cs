@@ -19,6 +19,10 @@ public class TypeParameterSymbol(string name, Symbol owner, int ordinal, TypePar
     /// <inheritdoc />
     public override ImmutableArray<Symbol> Members => [];
 
+    /// <inheritdoc />
+    public override TypeSymbol Substitute(TypeMap map)
+        => map.ReplaceOrKeep(this);
+    
 
     /// <inheritdoc />
     public override bool Equals(Symbol? other)

@@ -1604,7 +1604,7 @@ public sealed class Binder(Scope scope, BinderSideEffects sideEffects)
         // All candidates have correct type parameter arity, so we
         // can already construct for better diagnostics.
         for (var i = 0; i < candidates.Count; i++)
-            candidates[i] = candidates[i].GetConstructedFun([.. funGroup.TypeArguments.Select(a => a.Type)]);
+            candidates[i] = candidates[i].ConstructWith([.. funGroup.TypeArguments.Select(a => a.Type)]);
         
         if (viability is FunViability.ArityMismatch)
         {

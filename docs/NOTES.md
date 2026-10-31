@@ -3,15 +3,7 @@
 
 # Now
 
-* Field ref equal; doc on Symbol
-
-* abstract TypeSymbol.Substitute
-  * TypeMap in Symbol layer; With `strict` parameter
 * proper mono subtitution through FunSymbol.Substitute
-
-* SymbolsPrinter: FullName `Base.Buffer[T]` and FullDisplayText, ShortDisplayText, ...
-* Good Mir DisplayName
-
 
 * validator that checks concreteness
 
