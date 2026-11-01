@@ -3,21 +3,6 @@
 
 # Now
 
-Compiler crash on
-```
-fun F[T1, T2](a: T1, b: T2): T1
-{ 
-    G[T2, T1](b, a);
-}
-fun G[T1, T2](a: T1, b: T2) : T
-{ 
-    G[T2, T1](b, a);
-}
-```
-
-
-
-
 # Questions / Little ones
 
 * ?? Miri: `Environment` -> `ActivationFrame` with .GetRef that throws if exited

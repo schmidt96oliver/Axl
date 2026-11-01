@@ -15,7 +15,13 @@ public sealed class ErrorTypeSymbol(Compilation compilation)
 
     /// <inheritdoc />
     public override ImmutableArray<TypeSymbol> TypeArguments => [];
-    
+
+    /// <inheritdoc />
+    public override TypeSymbol Substitute(TypeMap map)
+        // Must be overwritten, because otherwise, it causes crashes
+        // when an error is tried to be substituted.
+        => this;
+
     /// <inheritdoc />
     public override bool Equals(Symbol? other)
         // All errors are equal.
