@@ -83,5 +83,123 @@ public partial class ParserTests
                 · · · ']'
                 · ';'
                 """);
+
+        [Fact]
+        public void TypeName_1()
+            => InlineSnapshot.Validate(Tree("let a: A[];"), """
+                ERROR MissingToken@[9, 9): Expected a type name.
+
+
+                VarDecl
+                · 'let'
+                · IdName 'a'
+                · TypeAnnotationClause
+                · · ':'
+                · · SubscriptExpr
+                · · · IdName 'A'
+                · · · SubscriptArgList
+                · · · · '['
+                · · · · IdName
+                · · · · · ??ID
+                · · · · ']'
+                · ';'
+                """);
+        [Fact]
+        public void TypeName_2()
+            => InlineSnapshot.Validate(Tree("let a: A[T1, T2];"), """
+                VarDecl
+                · 'let'
+                · IdName 'a'
+                · TypeAnnotationClause
+                · · ':'
+                · · SubscriptExpr
+                · · · IdName 'A'
+                · · · SubscriptArgList
+                · · · · '['
+                · · · · IdName 'T1'
+                · · · · ','
+                · · · · IdName 'T2'
+                · · · · ']'
+                · ';'
+                """);
+        [Fact]
+        public void TypeName_3()
+            => InlineSnapshot.Validate(Tree("let a: A.B[T1, T2];"), """
+                VarDecl
+                · 'let'
+                · IdName 'a'
+                · TypeAnnotationClause
+                · · ':'
+                · · SubscriptExpr
+                · · · MemberAccessExpr
+                · · · · IdName 'A'
+                · · · · '.'
+                · · · · IdName 'B'
+                · · · SubscriptArgList
+                · · · · '['
+                · · · · IdName 'T1'
+                · · · · ','
+                · · · · IdName 'T2'
+                · · · · ']'
+                · ';'
+                """);
+        [Fact]
+        public void TypeName_4()
+            => InlineSnapshot.Validate(Tree("let a: A[T].B[T1, T2];"), """
+                VarDecl
+                · 'let'
+                · IdName 'a'
+                · TypeAnnotationClause
+                · · ':'
+                · · SubscriptExpr
+                · · · MemberAccessExpr
+                · · · · SubscriptExpr
+                · · · · · IdName 'A'
+                · · · · · SubscriptArgList
+                · · · · · · '['
+                · · · · · · IdName 'T'
+                · · · · · · ']'
+                · · · · '.'
+                · · · · IdName 'B'
+                · · · SubscriptArgList
+                · · · · '['
+                · · · · IdName 'T1'
+                · · · · ','
+                · · · · IdName 'T2'
+                · · · · ']'
+                · ';'
+                """);
+        [Fact]
+        public void TypeName_5()
+            => InlineSnapshot.Validate(Tree("let a: A[T].B[U].C[W];"), """
+                VarDecl
+                · 'let'
+                · IdName 'a'
+                · TypeAnnotationClause
+                · · ':'
+                · · SubscriptExpr
+                · · · MemberAccessExpr
+                · · · · SubscriptExpr
+                · · · · · MemberAccessExpr
+                · · · · · · SubscriptExpr
+                · · · · · · · IdName 'A'
+                · · · · · · · SubscriptArgList
+                · · · · · · · · '['
+                · · · · · · · · IdName 'T'
+                · · · · · · · · ']'
+                · · · · · · '.'
+                · · · · · · IdName 'B'
+                · · · · · SubscriptArgList
+                · · · · · · '['
+                · · · · · · IdName 'U'
+                · · · · · · ']'
+                · · · · '.'
+                · · · · IdName 'C'
+                · · · SubscriptArgList
+                · · · · '['
+                · · · · IdName 'W'
+                · · · · ']'
+                · ';'
+                """);
     }
 }

@@ -6,30 +6,69 @@ namespace Axl.Compiler.Syntax;
 
 public partial class Parser
 {
-    private MarkClose EnsureTypeName(ExpectedSyntax? expectedSyntax = null)
+    private MarkClose EnsureTypeName(Anchor anchor, ExpectedSyntax? expectedSyntax = null)
     {
-        // Parse into a MemberAccessExpr, because it works exactly the same way.
-        // It just needs to be a subset, so not all expressions are allowed in
-        // type position.
+        // Parse into a MemberAccessExpr / SubscriptExpr, because it works exactly
+        // the same way. It just needs to be a subset, so not all expressions are
+        // allowed in type position.
 
         var lhs = EnsureIdName(expectedSyntax ?? ExpectedSyntax.TypeName);
         
         foreach (var _ in _scanner.MustEatEachIteration())
         {
-            if (!_scanner.IsAt(TokenKind.Dot))
-                break;
+            if (_scanner.IsAt(TokenKind.Dot))
+            {
+                var memberAccess = _scanner.OpenBefore(lhs);
+                _scanner.EatKnown(TokenKind.Dot);
+                EnsureIdName(expectedSyntax ?? ExpectedSyntax.TypeName);
+                lhs = _scanner.Close(memberAccess, SyntaxKind.MemberAccessExpr);
+            }
 
-            var memberAccess = _scanner.OpenBefore(lhs);
-            _scanner.EatKnown(TokenKind.Dot);
-            EnsureIdName();
-            lhs = _scanner.Close(memberAccess, SyntaxKind.MemberAccessExpr);
+            else if (_scanner.IsAt(TokenKind.OpenBracket))
+            {
+                var subscript = _scanner.OpenBefore(lhs);
+                EnsureDelimitedList(anchor,
+                    openToken: TokenKind.OpenBracket,
+                    closeToken: TokenKind.CloseBracket,
+                    listKind: SyntaxKind.SubscriptArgList,
+                    itemFirst: TokenSet.Of(TokenKind.Identifier),
+                    allowEmpty: false,
+                    ensureItem: a => EnsureTypeName(a),
+                    expectedOpenSyntax: null,
+                    expectedItemSyntax: ExpectedSyntax.TypeName);
+                lhs = _scanner.Close(subscript, SyntaxKind.SubscriptExpr);
+            }
+            
+            else
+                break;
         }
 
         return lhs;
     }
 
+    private MarkClose EnsurePlainOrGenericTypeName(Anchor anchor, ExpectedSyntax? expectedSyntax = null)
+    {
+        var typeName = EnsureIdName(expectedSyntax ?? ExpectedSyntax.TypeName);
+        if (_scanner.IsAt(TokenKind.OpenBracket))
+        {
+            var subscript = _scanner.OpenBefore(typeName);
+            EnsureDelimitedList(anchor,
+                openToken: TokenKind.OpenBracket,
+                closeToken: TokenKind.CloseBracket,
+                listKind: SyntaxKind.SubscriptArgList,
+                itemFirst: TokenSet.Of(TokenKind.Identifier),
+                allowEmpty: false,
+                ensureItem: a => EnsureTypeName(a),
+                expectedOpenSyntax: null,
+                expectedItemSyntax: ExpectedSyntax.TypeName);
+            return _scanner.Close(subscript, SyntaxKind.SubscriptExpr);
+        }
+
+        return typeName;
+    }
+
     
-    private MarkClose EnsureTypeAnnotation()
+    private MarkClose EnsureTypeAnnotation(Anchor anchor)
     {
         var typeAnnotation = _scanner.Open();
         if (!EnsureToken(TokenKind.Colon, ExpectedSyntax.TypeAnnotation))
@@ -41,7 +80,7 @@ public partial class Parser
             return _scanner.Close(typeAnnotation, SyntaxKind.TypeAnnotationClause);
         }
         
-        EnsureTypeName();
+        EnsureTypeName(anchor);
         return _scanner.Close(typeAnnotation, SyntaxKind.TypeAnnotationClause);
     }
 }

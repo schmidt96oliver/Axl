@@ -36,7 +36,7 @@ public partial class Parser
         if (_scanner.IsAt(FirstSet.StructDeclAfterHeader))
             return ContinueEatStructDecl(anchor, common);
         if (_scanner.IsAt(FirstSet.FieldDeclAfterHeader))
-            return ContinueEatFieldDecl(common);
+            return ContinueEatFieldDecl(anchor, common);
         
         _scanner.ReportMissingTokenHere(ExpectedSyntax.Member);
         return _scanner.Close(common, SyntaxKind.Garbage);
@@ -56,6 +56,9 @@ public partial class Parser
         _scanner.EatKnown(TokenKind.StructKw);
         
         EnsureIdName();
+
+        if (_scanner.IsAt(TokenKind.OpenBracket))
+            EatTypeParamList(anchor);
 
         if (_scanner.IsAt(TokenKind.Semicolon))
             _scanner.Eat();
@@ -102,12 +105,12 @@ public partial class Parser
         return _scanner.Close(body, SyntaxKind.StructBody);
     }
 
-    private MarkClose ContinueEatFieldDecl(MarkOpen commonHeader)
+    private MarkClose ContinueEatFieldDecl(Anchor anchor, MarkOpen commonHeader)
     {
         Debug.Assert(_scanner.IsAt(FirstSet.FieldDeclAfterHeader));
 
         EnsureIdName(ExpectedSyntax.FieldName);
-        EnsureTypeAnnotation();
+        EnsureTypeAnnotation(anchor | TokenKind.Semicolon);
         EnsureToken(TokenKind.Semicolon);
         return _scanner.Close(commonHeader, SyntaxKind.FieldDecl);
     }
@@ -167,19 +170,19 @@ public partial class Parser
                         TokenKind.Semicolon | TokenKind.Equal);
 
         if (_scanner.IsAt(TokenKind.Colon))
-            EatReturnTypeAnnotation();
+            EatReturnTypeAnnotation(anchor);
 
         EnsureFunBody(anchor);
 
         return _scanner.Close(commonHeader, SyntaxKind.FunDecl);
     }
 
-    private MarkClose EatReturnTypeAnnotation()
+    private MarkClose EatReturnTypeAnnotation(Anchor anchor)
     {
         var annotation = _scanner.Open();
         _scanner.EatKnown(TokenKind.Colon);
         _scanner.EatIfPresent(TokenKind.MutKw);
-        EnsureTypeName();
+        EnsureTypeName(anchor);
         return _scanner.Close(annotation, SyntaxKind.ReturnTypeAnnotation);
     }
 
@@ -258,7 +261,7 @@ public partial class Parser
             expectedOpenSyntax: ExpectedSyntax.ParamList,
             expectedItemSyntax: ExpectedSyntax.Param);
 
-        MarkClose EnsureParam(Anchor _)
+        MarkClose EnsureParam(Anchor paramAnchor)
         {
             var param = _scanner.Open();
 
@@ -267,7 +270,7 @@ public partial class Parser
                 ? TokenKind.Identifier
                 : ExpectedSyntax.Param);
 
-            EnsureTypeAnnotation();
+            EnsureTypeAnnotation(paramAnchor);
             return _scanner.Close(param, SyntaxKind.Param);
         }
     }

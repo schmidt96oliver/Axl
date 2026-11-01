@@ -62,7 +62,7 @@ public partial class Parser
             else if (_scanner.IsAt(TokenKind.NamespaceKw))
                 EatNamespaceDecl();
             else if (_scanner.IsAt(TokenKind.UsingKw))
-                EatUsingDirective();
+                EatUsingDirective(fileAnchor);
             else
             {
                 // Recover to the next Stmt start, which includes Expr.
@@ -94,14 +94,14 @@ public partial class Parser
         _scanner.Close(file, SyntaxKind.File);
     }
 
-    private MarkClose EatUsingDirective()
+    private MarkClose EatUsingDirective(Anchor anchor)
     {
         Debug.Assert(_scanner.IsAt(TokenKind.UsingKw));
 
         var usingDirective = _scanner.Open(); 
 
         _scanner.EatKnown(TokenKind.UsingKw);
-        EnsureTypeName();
+        EnsureTypeName(anchor);
         EnsureToken(TokenKind.Semicolon);
         
         return _scanner.Close(usingDirective, SyntaxKind.UsingDirective);

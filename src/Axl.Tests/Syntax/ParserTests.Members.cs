@@ -306,5 +306,79 @@ public partial class ParserTests
                 · FunBody
                 · · BlockExpr '{' '}'
                 """);
+        
+        [Fact]
+        public void StructTypeParams_0()
+            => InlineSnapshot.Validate(Tree("""
+                                            struct A[] { }
+                                            """), """
+                ERROR MissingToken@[9, 9): Expected a type parameter name.
+
+
+                StructDecl
+                · 'struct'
+                · IdName 'A'
+                · TypeParamList
+                · · '['
+                · · TypeParam
+                · · · IdName
+                · · · · ??ID
+                · · ']'
+                · StructBody '{' '}'
+                """);
+        [Fact]
+        public void StructTypeParams_1()
+            => InlineSnapshot.Validate(Tree("""
+                                            struct A[T1] { }
+                                            """), """
+                StructDecl
+                · 'struct'
+                · IdName 'A'
+                · TypeParamList
+                · · '['
+                · · TypeParam
+                · · · IdName 'T1'
+                · · ']'
+                · StructBody '{' '}'
+                """);
+        [Fact]
+        public void StructTypeParams_2()
+            => InlineSnapshot.Validate(Tree("""
+                                            struct A[T1, T2];
+                                            """), """
+                StructDecl
+                · 'struct'
+                · IdName 'A'
+                · TypeParamList
+                · · '['
+                · · TypeParam
+                · · · IdName 'T1'
+                · · ','
+                · · TypeParam
+                · · · IdName 'T2'
+                · · ']'
+                · ';'
+                """);
+        [Fact]
+        public void StructTypeParams_3()
+            => InlineSnapshot.Validate(Tree("""
+                                            struct A[T1, T2, T3];
+                                            """), """
+                StructDecl
+                · 'struct'
+                · IdName 'A'
+                · TypeParamList
+                · · '['
+                · · TypeParam
+                · · · IdName 'T1'
+                · · ','
+                · · TypeParam
+                · · · IdName 'T2'
+                · · ','
+                · · TypeParam
+                · · · IdName 'T3'
+                · · ']'
+                · ';'
+                """);
     }
 }

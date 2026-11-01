@@ -24,7 +24,7 @@ ParamList       = "(" ")"
                 | "(" Param ("," Param)* ")"
 Param           = "mut"? IdName TypeAnnotation?
 
-StructDecl      = Annotation* "pub"? "struct" IdName (StructBody | ";")
+StructDecl      = Annotation* "pub"? "struct" IdName TypeParamList? (StructBody | ";")
 StructBody      = "{" (FieldDecl | FunDecl)* "}"
 FieldDecl       = "pub"? IdName TypeAnnotation ";"
 
@@ -87,7 +87,9 @@ Continue    = "continue"
 Return      = "return" Expr?
 
 ## Type Names
-TypeName        = IdName | (TypeName ("." IdName))
+TypeName        = IdName 
+                | (TypeName ("." IdName))
+                | IdName "[" TypeName ("," TypeName)* "]"
 > Deliberately a subset of MemberAccess. And the parser produces a MemberAccess
 
 TypeAnnotation  = ":" TypeName

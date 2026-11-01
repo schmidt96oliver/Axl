@@ -53,7 +53,7 @@ public partial class Parser
         // --- Optional type annotation
         if (_scanner.IsAt(TokenKind.Colon))
         {
-            EnsureTypeAnnotation();
+            EnsureTypeAnnotation(anchor | TokenKind.Equal | TokenKind.Semicolon);
         }
 
         // --- Optional initializer
@@ -61,7 +61,7 @@ public partial class Parser
         {
             var initializer = _scanner.Open();
             _scanner.EatKnown(TokenKind.Equal);
-            EnsureExpr(anchor);
+            EnsureExpr(anchor | TokenKind.Semicolon);
             _scanner.Close(initializer, SyntaxKind.InitializerClause);
         }
 
