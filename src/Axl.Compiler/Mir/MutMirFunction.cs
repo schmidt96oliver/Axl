@@ -61,6 +61,7 @@ public sealed class MutMirFunction
         
         ReturnPlace = returnPlace;
         ParameterPlaces = parameterPlaces;
+        _locals = [ReturnPlace, .. ParameterPlaces];
         _nextLocal = ParameterPlaces.Length > 0 ? ParameterPlaces[^1].Id.Value + 1 : 1;
         
         AddBasicBlock();

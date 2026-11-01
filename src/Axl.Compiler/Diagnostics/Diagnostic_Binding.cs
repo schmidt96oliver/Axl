@@ -1,4 +1,5 @@
 ﻿using System.Collections.Immutable;
+using System.Diagnostics;
 using Axl.Compiler.Binding;
 using Axl.Compiler.Binding.BoundTree;
 using Axl.Compiler.Symbols;
@@ -96,7 +97,7 @@ public partial record Diagnostic
                 },
                 BoundFunGroup => "it is a group of overloaded funs",
                 BoundNamespaceRef => "it is a namespace",
-                BoundTypeRef => "it is a type",
+                BoundTypeRef or BoundGenericTypeRef => "it is a type",
                 BoundStmt => "it is a statement",
             };
     }
@@ -194,7 +195,7 @@ public partial record Diagnostic
 
         public override string Message => Candidates.Length == 1
             ? $"‘{Candidates[0].FullName}‘ takes {GetArgCountText(Candidates[0].Parameters.Length)}, but {ArgCountWasOrWere(ArgumentCount)} given."
-            : $"No overload of ‘{Candidates[0].QualifiedName}‘ takes {GetArgCountText(ArgumentCount)}.";
+            : $"No overload of ‘{Candidates[0].FullName}‘ takes {GetArgCountText(ArgumentCount)}.";
 
         private static string GetArgCountText(int number)
             => number == 1 ? $"1 argument" : $"{number} arguments";
@@ -209,8 +210,8 @@ public partial record Diagnostic
             => [FunGroup.TypeArgListSyntax?.Location ?? FunGroup.Syntax!.Location];
 
         public override string Message => Candidates.Length == 1
-            ? $"‘{Candidates[0].FullName}‘ takes {GetArgCountText(Candidates[0].TypeParameters.Length)}, but {ArgCountWasOrWere(FunGroup.TypeArguments.Length)} given."
-            : $"No overload of ‘{Candidates[0].QualifiedName}‘ takes {GetArgCountText(FunGroup.TypeArguments.Length)}.";
+            ? $"‘{Candidates[0].FullNameWithoutOwnTypeArgs}‘ takes {GetArgCountText(Candidates[0].TypeParameters.Length)}, but {ArgCountWasOrWere(FunGroup.TypeArguments.Length)} given."
+            : $"No overload of ‘{Candidates[0].FullNameWithoutOwnTypeArgs}‘ takes {GetArgCountText(FunGroup.TypeArguments.Length)}.";
 
         private static string GetArgCountText(int number)
             => number == 1 ? $"1 type argument" : $"{number} type arguments";
@@ -229,6 +230,7 @@ public partial record Diagnostic
             
             IBoundSymbolRef symbolRef => $"{symbolRef.Symbol.ShortDisplayText.Capitalize()} cannot be called.",
             BoundFunGroup fun => $"Fun ‘{fun.Candidates[0].FullName}‘ cannot be called.",
+            BoundGenericTypeRef typeRef => $"Generic type ‘{typeRef.Candidates[0].FullName}‘ cannot be called.",
             BoundStmt => "A statement cannot be called.",
         };
     }
@@ -254,7 +256,29 @@ public partial record Diagnostic
 
         public override string LocationLabel => "Also declared here.";
 
-        public override string Message => $"‘{Duplicates[0].QualifiedName}‘ with the same signature is already declared.";
+        public override string Message => $"‘{Duplicates[0].FullNameWithoutOwnTypeArgs}‘ with the same signature is already declared.";
+    }
+    public sealed record DuplicateTypeDeclarations(ImmutableArray<TypeSymbol> Duplicates) : Error
+    {
+        public override ImmutableArray<SourceLocation> Locations
+            // Squiggle the name and type parameter list, since they are at fault.
+            => [ .. Duplicates.Select(GetLocation) ];
+
+        private static SourceLocation GetLocation(TypeSymbol type) => type switch
+        {
+            StructSymbol @struct => SourceLocation.FromTo(@struct.DeclarationSyntax.Name.Location,
+                @struct.DeclarationSyntax.TypeParameterList?.Location ?? @struct.DeclarationSyntax.Name.Location),
+
+            ErrorTypeSymbol or RefTypeSymbol or TypeParameterSymbol or SpecializedTypeSymbol
+                => throw new UnreachableException(),
+        };
+
+        public override string LocationLabel => "Also declared here.";
+
+        public override string Message 
+            => $"‘{Duplicates[0].FullNameWithoutOwnTypeArgs}‘ with {Duplicates[0].TypeParameters.Length} type parameters is already declared.";
+        
+        
     }
 
     public sealed record DuplicateParameters(ImmutableArray<ParameterSymbol> Duplicates) : Error
@@ -288,7 +312,7 @@ public partial record Diagnostic
             [Syntax is ArgListSyntax argList ? argList.InsideLocation : Syntax.Location];
 
         public override string Message => $"""
-                                           No overload of ‘{Candidates[0].QualifiedName}‘ accepts ({ Arguments.ArgumentTypesDisplayText })‘. Candidates:
+                                           No overload of ‘{Candidates[0].FullName}‘ accepts ({ Arguments.ArgumentTypesDisplayText })‘. Candidates:
                                            {CandidateString}
                                            """;
 
@@ -307,7 +331,7 @@ public partial record Diagnostic
             [Syntax is ArgListSyntax argList ? argList.InsideLocation : Syntax.Location];
 
         public override string Message => $"""
-                                           Call to ‘{Candidates[0].QualifiedName}‘ is ambiguous between:
+                                           Call to ‘{Candidates[0].FullName}‘ is ambiguous between:
                                            {CandidateString}
                                            """;
 
@@ -329,7 +353,7 @@ public partial record Diagnostic
     public sealed record MissingReturnValue(FunSymbol Fun, SyntaxNode Syntax) : Error
     {
         public override ImmutableArray<SourceLocation> Locations => [Syntax.Location];
-        public override string Message => $"‘{Fun.Name}‘ must return a value of type ‘{Fun.ReturnType.QualifiedName}‘.";
+        public override string Message => $"‘{Fun.Name}‘ must return a value of type ‘{Fun.ReturnType.FullName}‘.";
     }
 
     public sealed record CannotCapture(SyntaxNode Syntax) : Error
@@ -353,8 +377,9 @@ public partial record Diagnostic
         public override string Message => BoundNode switch
         {
             BoundTypeRef type => $"‘{type.Type.FullName}‘ is a type, not a value.",
+            BoundGenericTypeRef genericType => $"‘{genericType.Candidates[0].FullName}‘ is a type, not a value.",
             BoundNamespaceRef ns => $"‘{ns.Namespace.FullName}‘ is a namespace, not a value.",
-            BoundFunGroup funGroup => $"‘{funGroup.Candidates[0].QualifiedName}‘ is a fun, not a value. Did you mean to call it?",
+            BoundFunGroup funGroup => $"‘{funGroup.Candidates[0].FullNameWithoutOwnTypeArgs}‘ is a fun, not a value. Did you mean to call it?",
 
             // TypeRef should of course not report. To be resilient, just include it.
             BoundValue value => $"‘{value.Type.FullName}‘ is a value, _not_? a value.",
@@ -370,12 +395,14 @@ public partial record Diagnostic
         {
             BoundValue value => $"Expected a type, but got value of type ‘{value.Type.FullName}‘.",
             IBoundSymbolRef symbolRef => $"Expected a type, but got {symbolRef.Symbol.ShortDisplayText}.",
-            BoundFunGroup funGroup => $"Expected a type, but got fun ‘{funGroup.Candidates[0].QualifiedName}‘.",
+            BoundGenericTypeRef typeRef => $"‘{typeRef.Candidates[0].FullNameWithoutOwnTypeArgs}‘ is generic and type arguments must be specified.",
+            BoundFunGroup funGroup => $"Expected a type, but got fun ‘{funGroup.Candidates[0].FullNameWithoutOwnTypeArgs}‘.",
             
             BoundStmt => "Expected a type, but got a statement.",
         };
 
     }
+    
     public sealed record NotANamespace(BoundNode BoundNode) : Error
     {
         public override ImmutableArray<SourceLocation> Locations => [BoundNode.Syntax!.Location];
@@ -384,7 +411,8 @@ public partial record Diagnostic
         {
             BoundValue value => $"Expected a namespace, but got value of type ‘{value.Type.FullName}‘.",
             IBoundSymbolRef symbolRef => $"Expected a namespace, but got {symbolRef.Symbol.ShortDisplayText}.",
-            BoundFunGroup funGroup => $"Expected a namespace, but got fun ‘{funGroup.Candidates[0].QualifiedName}‘.",
+            BoundGenericTypeRef typeRef => $"Expected a namespace, but got {typeRef.Candidates[0].ShortDisplayText}.",
+            BoundFunGroup funGroup => $"Expected a namespace, but got fun ‘{funGroup.Candidates[0].FullNameWithoutOwnTypeArgs}‘.",
             
             BoundStmt => "Expected a namespace, but got a statement.",
         };
@@ -414,13 +442,13 @@ public partial record Diagnostic
         
         public override string LocationLabel => "Also declared here.";
 
-        public override string Message => $"‘{OffendingSymbols[0].QualifiedName}‘ is already declared.";
+        public override string Message => $"‘{OffendingSymbols[0].FullNameWithoutOwnTypeArgs}‘ is already declared.";
     }
 
     public sealed record RecursiveStructLayout(StructSymbol StructSymbol, ImmutableArray<FieldDefinitionSymbol> FieldPath) : Error
     {
         public override ImmutableArray<SourceLocation> Locations => [FieldPath[0].DeclarationSyntax.TypeExpr.Location];
-        public override string Message => $"Struct ‘{StructSymbol.FullName}‘ has a cycle in its layout. The cycle is through fields {GetCycleString()}";
+        public override string Message => $"TypeSymbol ‘{StructSymbol.FullName}‘ has a cycle in its layout. The cycle is through fields {GetCycleString()}";
 
         private string GetCycleString()
             => string.Join(" -> ", FieldPath.Select(field => $"‘{field.FullName}: {field.Type.FullName}‘"));
@@ -523,20 +551,25 @@ public partial record Diagnostic
             $"{InstanceMember.ShortDisplayText.Capitalize()} needs an instance of ‘{InstanceMember.OwningType?.FullName ?? "???"}‘. It can not be accessed through the type.";
     }
 
-    public sealed record AmbiguousReference(LookupResult LookupResult, SyntaxNode Syntax) : Error
+    public sealed record AmbiguousReference(ImmutableArray<Symbol> Candidates, SyntaxNode Syntax) : Error
     {
+        public AmbiguousReference(LookupResult lookupResult, SyntaxNode Syntax)
+            : this(lookupResult.Symbols, Syntax)
+        {
+        }
+
         public override ImmutableArray<SourceLocation> Locations => [Syntax.Location];
         public override string Message => $"‘{Syntax.Text}‘ is ambiguous. It could refer to { GetSymbolsText() }.";
 
         private string GetSymbolsText()
         {
-            return LookupResult.Symbols.Length switch
+            return Candidates.Length switch
             {
                 0 => "no symbol",
-                1 => LookupResult.Symbols[0].ShortDisplayText,
-                _ => string.Join(", ", LookupResult.Symbols[..^1].Select(s => s.ShortDisplayText))
+                1 => Candidates[0].ShortDisplayText,
+                _ => string.Join(", ", Candidates[..^1].Select(s => s.ShortDisplayText))
                      + " or "
-                     + LookupResult.Symbols[^1].ShortDisplayText,
+                     + Candidates[^1].ShortDisplayText,
             };
         }
     }
@@ -817,7 +850,7 @@ public partial record Diagnostic
 
         /// <inheritdoc />
         public override string Message =>
-            $"‘{Fun.Name}’ returns ‘mut {Fun.ReturnType.QualifiedName}’. Use ‘return mut ...’.";
+            $"‘{Fun.Name}’ returns ‘mut {Fun.ReturnType.FullName}’. Use ‘return mut ...’.";
     }
 
     public sealed record SubscriptNotAllowed(SubscriptArgListSyntax Syntax, BoundNode Left) : Error
@@ -840,5 +873,35 @@ public partial record Diagnostic
         /// <inheritdoc />
         public override string Message =>
             $"Type parameter ‘{HiddenParameter.Name}‘ hides the type parameter of ‘{HiddenParameter.Owner?.Name ?? "???"}‘.";
+    }
+
+    public sealed record MemberAccessThroughGenericType(
+        BoundGenericTypeRef Left,
+        IdNameSyntax Syntax) : Error
+    {
+        /// <inheritdoc />
+        public override ImmutableArray<SourceLocation> Locations => [Syntax.Location];
+
+        /// <inheritdoc />
+        public override string Message => $"Cannot access members of ‘{Left.Candidates[0].Name}‘, because it is generic.";
+
+        /// <inheritdoc />
+        public override string Hint => "Specify type arguments directly.";
+    }
+
+    public sealed record TypeParameterArityMismatch(ImmutableArray<TypeSymbol> Candidates, int ArgCount, SyntaxNode Syntax) : Error
+    {
+        /// <inheritdoc />
+        public override ImmutableArray<SourceLocation> Locations => [Syntax.Location];
+
+        public override string Message => Candidates.Length == 1
+            ? $"‘{Candidates[0].FullName}‘ takes {GetArgCountText(Candidates[0].TypeParameters.Length)}, but {ArgCountWasOrWere(ArgCount)} given."
+            : $"No variant of ‘{Candidates[0].FullNameWithoutOwnTypeArgs}‘ takes {GetArgCountText(ArgCount)}.";
+
+        private static string GetArgCountText(int number)
+            => number == 1 ? $"1 type argument" : $"{number} type arguments";
+
+        private static string ArgCountWasOrWere(int number)
+            => number == 1 ? "1 was" : $"{number} were";
     }
 }

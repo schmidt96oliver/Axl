@@ -498,16 +498,23 @@ public sealed class Binder(Scope scope, BinderSideEffects sideEffects)
 
         foreach (var duplicateArray in symbolsByName.Where(duplicates => duplicates.Length > 1))
         {
-            // For multiple funs, we still need to check their signatures.
-            // If anything non-fun is on the duplicate list, we know its an error.
-            if (duplicateArray.Any(s => s is not FunDefinitionSymbol))
+            if (duplicateArray.All(s => s is FunDefinitionSymbol))
             {
-                SideEffects.ReportError(new Diagnostic.AlreadyDeclared(duplicateArray));
-                continue;
+                // We need to check their signatures
+                CheckDuplicateDeclarationsInFunGroup([.. duplicateArray.Select(s => (FunDefinitionSymbol)s)]);
             }
 
-            // Now it is all funs and we need to check the signatures
-            CheckDuplicateDeclarationsInFunGroup([.. duplicateArray.Select(s => (FunDefinitionSymbol)s)]);
+            else if (duplicateArray.All(s => s is TypeSymbol))
+            {
+                // We need to check type parameters
+                CheckDuplicateDeclarationsInTypeGroup([.. duplicateArray.Cast<TypeSymbol>()]);
+            }
+            
+            // Anything mixed-type is an error
+            else 
+            {
+                SideEffects.ReportError(new Diagnostic.AlreadyDeclared(duplicateArray));
+            }
         }
     }
 
@@ -564,6 +571,21 @@ public sealed class Binder(Scope scope, BinderSideEffects sideEffects)
             }
 
             return a.Type == b.Type;
+        }
+    }
+
+    private void CheckDuplicateDeclarationsInTypeGroup(IEnumerable<TypeSymbol> typesWithSameName)
+    {
+        // Group based on type parameter arity
+        var duplicatesWithSameArity = typesWithSameName
+            .GroupBy(type => type.TypeParameters.Length)
+            .Select(duplicates => duplicates.ToImmutableArray())
+            .Where(duplicates => duplicates.Length > 1)
+            .ToImmutableArray();
+
+        foreach (var duplicateGroup in duplicatesWithSameArity)
+        {
+            SideEffects.ReportError(new Diagnostic.DuplicateTypeDeclarations(duplicateGroup));
         }
     }
 
@@ -956,6 +978,8 @@ public sealed class Binder(Scope scope, BinderSideEffects sideEffects)
         var typeRef = bound as BoundTypeRef;
         if (bound is BoundValueOrTypeRef valueOrType)
             typeRef = valueOrType.AsTypeRef;
+        else if (bound is BoundGenericTypeRef genericTypeRef)
+            typeRef = TryBindAsNonGenericTypeRef(genericTypeRef);
         if (typeRef is null)
         {
             if (bound is not BoundError)
@@ -1360,9 +1384,16 @@ public sealed class Binder(Scope scope, BinderSideEffects sideEffects)
             return BindError(syntax, new Diagnostic.NotAccessible(lookupResult.Symbols, syntax));
 
         var symbol = lookupResult.Symbols[0];
-        if (symbol is FunSymbol)
+        if (lookupResult.Symbols.All(s => s is FunSymbol))
             return BindFunGroup(lookupResult, SynthesizeFunGroupReceiver(), syntax);
-        
+        if (lookupResult.Symbols.All(s => s is TypeSymbol) && lookupResult.Symbols.Length > 1 ||
+            symbol is TypeSymbol { TypeParameters.Length: > 0 })
+        {
+            // Could be concrete, but many means it could be generics which need
+            // "overload" resolution.
+            return new BoundGenericTypeRef([.. lookupResult.Symbols.Cast<TypeSymbol>()], syntax);
+        }
+
         if (lookupResult.Symbols.Length > 1)
             return BindError(syntax, new Diagnostic.AmbiguousReference(lookupResult, syntax));
 
@@ -1370,7 +1401,7 @@ public sealed class Binder(Scope scope, BinderSideEffects sideEffects)
         {
             NamespaceSymbol @namespace => new BoundNamespaceRef(@namespace, syntax),
             TypeSymbol type => new BoundTypeRef(type, syntax),
-            
+
             VariableSymbol variable => BindVariable(variable, syntax),
             FunSymbol => BindFunGroup(lookupResult, SynthesizeFunGroupReceiver(), syntax),
             FieldSymbol field => BindFieldAccess(field, null, syntax)
@@ -1406,9 +1437,20 @@ public sealed class Binder(Scope scope, BinderSideEffects sideEffects)
         if (syntax.Member.Token.IsMissing)
             return new BoundError(ErrorType, syntax.Member);
         
-        // A fun group cannot have members
         if (left is BoundFunGroup leftAsFunGroup)
             return BindError(syntax, new Diagnostic.FunHasNoMembers(leftAsFunGroup, syntax.Member));
+        if (left is BoundGenericTypeRef leftAsGenericTypeRef)
+        {
+            // If there is a non-generic one, we use this. Otherwise,
+            // type arguments are required.
+            if (leftAsGenericTypeRef.NonGeneric is not null)
+                left = TryBindAsNonGenericTypeRef(leftAsGenericTypeRef)!;
+            else
+            {
+                return BindError(syntax,
+                    new Diagnostic.MemberAccessThroughGenericType(leftAsGenericTypeRef, syntax.Member));
+            }
+        }
         
         NamespaceOrTypeSymbol namespaceOrType = left switch
         {
@@ -1420,6 +1462,7 @@ public sealed class Binder(Scope scope, BinderSideEffects sideEffects)
             BoundTypeRef boundTypeRef => boundTypeRef.Type,
             
             BoundFunGroup => throw new UnreachableException("Fun group handled above."),
+            BoundGenericTypeRef => throw new UnreachableException("Fun group handled above."),
             BoundStmt => throw new UnreachableException("Stmt can never be the left side of member access."),
         };
         if (namespaceOrType is ErrorTypeSymbol)
@@ -1435,9 +1478,17 @@ public sealed class Binder(Scope scope, BinderSideEffects sideEffects)
             return BindError(syntax, new Diagnostic.NotAccessible(lookupResult.Symbols, syntax.Member));
         
         var symbol = lookupResult.Symbols[0];
-        if (symbol is FunSymbol)
+        if (lookupResult.Symbols.All(s => s is FunSymbol))
             return BindFunGroup(lookupResult, receiver: left, syntax.Member);
-
+        if (lookupResult.Symbols.All(s => s is TypeSymbol) && lookupResult.Symbols.Length > 1 ||
+            symbol is TypeSymbol { TypeParameters.Length: > 0 })
+        {
+            // Could be concrete, but many means it could be generics which need
+            // "overload" resolution.
+            return new BoundGenericTypeRef([.. lookupResult.Symbols.Cast<TypeSymbol>()], syntax);
+        }
+        
+        
         if (lookupResult.Symbols.Length > 1)
             return BindError(syntax, new Diagnostic.AmbiguousReference(lookupResult, syntax.Member));
         
@@ -1448,6 +1499,7 @@ public sealed class Binder(Scope scope, BinderSideEffects sideEffects)
         {
             NamespaceSymbol @namespace => new BoundNamespaceRef(@namespace, syntax.Member),
             TypeSymbol type => new BoundTypeRef(type, syntax.Member),
+            // Note that type argument from the left side are already substituted.
 
             VariableSymbol => throw new UnreachableException("Variables are never members."),
             FunSymbol => throw new UnreachableException("Handled above"),
@@ -1549,6 +1601,15 @@ public sealed class Binder(Scope scope, BinderSideEffects sideEffects)
         return asTypeRef is not null ? new BoundValueOrTypeRef(asField, asTypeRef) : asField;
     }
 
+    private BoundTypeRef? TryBindAsNonGenericTypeRef(BoundGenericTypeRef genericTypeRef)
+    {
+        if (genericTypeRef.NonGeneric is null)
+            return null;
+        
+        SideEffects.AddResolvedSymbol(genericTypeRef.Syntax!.Location, genericTypeRef.NonGeneric);
+        return new BoundTypeRef(genericTypeRef.NonGeneric, genericTypeRef.Syntax);
+    }
+    
     #endregion
     
     #region Subscripts
@@ -1560,14 +1621,51 @@ public sealed class Binder(Scope scope, BinderSideEffects sideEffects)
         if (left is BoundError)
             return new BoundError(ErrorType, syntax);
 
-        if (left is not BoundFunGroup funGroup || funGroup.HasTypeArguments)
-            return BindError(syntax.ArgList, new Diagnostic.SubscriptNotAllowed(syntax.ArgList, left));
+        switch (left)
+        {
+            case BoundFunGroup { HasTypeArguments: false } funGroup:
+                var typeArgs = syntax.ArgList.Arguments
+                    .Select(s => new BoundTypeArgument(BindType(s, TypeUsage.Local), s))
+                    .ToImmutableArray();
 
+                return funGroup.WithTypeArguments(typeArgs, syntax.ArgList);
+
+            case BoundGenericTypeRef genericTypeRef:
+                return BindGenericTypeSpecialization(genericTypeRef, syntax);
+            
+            default:
+                return BindError(syntax.ArgList, new Diagnostic.SubscriptNotAllowed(syntax.ArgList, left));
+
+        }
+    }
+
+    private BoundNode BindGenericTypeSpecialization(BoundGenericTypeRef genericTypeRef, SubscriptExprSyntax syntax)
+    {
         var typeArgs = syntax.ArgList.Arguments
-            .Select(s => new BoundTypeArgument(BindType(s, TypeUsage.Local), s))
+            .Select(arg => BindType(arg, TypeUsage.Local))
             .ToImmutableArray();
-        
-        return funGroup.WithTypeArguments(typeArgs, syntax.ArgList);
+        if (typeArgs.OfType<ErrorTypeSymbol>().Any())
+            return new BoundError(ErrorType, syntax);
+
+        var candidates = genericTypeRef.Candidates
+            .Where(t => t.TypeParameters.Length == typeArgs.Length)
+            .ToImmutableArray();
+        if (candidates.Length == 0)
+        {
+            return BindError(syntax,
+                new Diagnostic.TypeParameterArityMismatch(genericTypeRef.Candidates, typeArgs.Length, syntax.ArgList));
+        }
+
+        if (candidates.Length > 1)
+        {
+            return BindError(syntax, new Diagnostic.AmbiguousReference(genericTypeRef.Candidates.CastArray<Symbol>(),
+                genericTypeRef.Syntax!));
+        }
+
+
+        var specializedType = candidates[0].Specialize(typeArgs);
+        SideEffects.AddResolvedSymbol(genericTypeRef.Syntax!.Location, specializedType);
+        return new BoundTypeRef(specializedType, syntax);
     }
     
     #endregion 
@@ -1695,11 +1793,13 @@ public sealed class Binder(Scope scope, BinderSideEffects sideEffects)
     {
         if (fun.TypeParameters.Length != typeArguments.Length)
             return FunViability.TypeParamArityMismatch;
+
+        var specializedFun = fun.Specialize([.. typeArguments.Select(t => t.Type)]);
         
-        if (fun.Parameters.Length != arguments.Length)
+        if (specializedFun.Parameters.Length != arguments.Length)
             return FunViability.ArityMismatch;
 
-        if (!arguments.Zip(fun.Parameters, (arg, param) => IsArgumentAssignableTo(param, typeArguments, arg)).All(x => x))
+        if (!arguments.Zip(specializedFun.Parameters, (arg, param) => IsArgumentAssignableTo(param, typeArguments, arg)).All(x => x))
             return FunViability.ArgumentTypeMismatch;
 
         return FunViability.Viable;
@@ -1783,6 +1883,8 @@ public sealed class Binder(Scope scope, BinderSideEffects sideEffects)
         
         if (callee is BoundTypeRef typeRef)
             return BindTypeInit(typeRef, syntax);
+        if (callee is BoundGenericTypeRef genericTypeRef && TryBindAsNonGenericTypeRef(genericTypeRef) is { } nonGenericTypeRef)
+            return BindTypeInit(nonGenericTypeRef, syntax);
         
         var arguments = syntax.ArgList.Arguments.Select(BindArgument).ToImmutableArray();
 
@@ -1876,16 +1978,16 @@ public sealed class Binder(Scope scope, BinderSideEffects sideEffects)
     
     private BoundValue BindTypeInit(BoundTypeRef typeRef, CallExprSyntax syntax)
     {
-        if (typeRef.Type is not StructSymbol @struct || @struct.IsPrimitive)
+        if (typeRef.Type.OriginalDefinition is not StructSymbol originalDefinition || originalDefinition.IsPrimitive)
             return BindError(syntax, new Diagnostic.CannotInitialize(typeRef));
 
-        var uninitializedFields = @struct.Fields.ToList();
+        var uninitializedFields = typeRef.Type.Members.OfType<FieldSymbol>().ToList();
         var fieldInits = ImmutableArray.CreateBuilder<BoundFieldInit>();
 
         var hadError = false;
         foreach (var argSyntax in syntax.ArgList.Arguments)
         {
-            if (BindFieldInitializer(@struct, argSyntax) is not BoundFieldInit boundFieldInit)
+            if (BindFieldInitializer(typeRef.Type, argSyntax) is not BoundFieldInit boundFieldInit)
             {
                 hadError = true;
                 continue;
@@ -1908,21 +2010,21 @@ public sealed class Binder(Scope scope, BinderSideEffects sideEffects)
         if (uninitializedFields.Count > 0)
             return BindError(syntax, new Diagnostic.MissingFieldInitializers([.. uninitializedFields], syntax.ArgList));
 
-        return new BoundStructInit(@struct, fieldInits.ToImmutable(), syntax);
+        return new BoundStructInit(typeRef.Type, fieldInits.ToImmutable(), syntax);
     }
 
-    private BoundValue BindFieldInitializer(StructSymbol @struct, ArgSyntax argSyntax)
+    private BoundValue BindFieldInitializer(TypeSymbol type, ArgSyntax argSyntax)
     {
         var value = BindValue(argSyntax.Expr, ValueUsage.Read);
 
-        var field = @struct.Fields.FirstOrDefault(field => argSyntax.IsNamed
+        var field = type.Members.OfType<FieldSymbol>().FirstOrDefault(field => argSyntax.IsNamed
             ? field.Name.SequenceEqual(argSyntax.Name!.Text)
             : field.Name.SequenceEqual(argSyntax.Text));
 
         if (field is null)
         {
             return argSyntax.IsNamed
-                ? BindError(argSyntax, new Diagnostic.UndefinedField(@struct, argSyntax.Name!))
+                ? BindError(argSyntax, new Diagnostic.UndefinedField(type, argSyntax.Name!))
                 : BindError(argSyntax, new Diagnostic.MissingFieldName(argSyntax));
         }
         

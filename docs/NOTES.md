@@ -3,6 +3,17 @@
 
 # Now
 
+* wrong type params: Should AddResolvedSymbol ??
+
+* NotAType: Should be TypeParameterArityMismatch instead, see test.taxl
+* SubscriptNotAllowed: Should be TypeParameterArityMismatch instead, see test.taxl
+
+* Name clash `struct S[T] { T: I32 }`
+* Infinite size check, follow into generic fields
+  * `struct Node[T] { next: Node[T] }`
+  * `struct A[T] { x: T } struct B { a: A[B] }`
+  * `struct S[T] { s: S[Box[T]] }`
+
 # Questions / Little ones
 
 * ?? Miri: `Environment` -> `ActivationFrame` with .GetRef that throws if exited
@@ -11,6 +22,9 @@
 * ?? Binder: BoundParameter and BoundSelf again?
 
 * ?? Generic operators: `fun +[T]` or `fun ==[T]`
+  * at least one parameter must be the containing type with its own parameters (`Pair[T]`), not a specialization
+    like `Pair[I32]`. C# has the same rule. Otherwise operator lookup on `Pair[Bool]` would be inconsistent.
+    == and operators on T inside the body: same errors as for generic funs until traits exist.
 
 * Mir: Validator
   * Phase.Monomorphized: Check that everything is concrete. No TypeParams

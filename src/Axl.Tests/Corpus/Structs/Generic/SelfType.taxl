@@ -1,0 +1,14 @@
+﻿//@check
+
+struct List[T]
+{
+    First: T;
+    pub fun Do()
+    {
+        let t: T = self.First;
+        let t: List[T] = self;
+        let t: List[I32] = self;        //~error TypeMismatch
+        let t: List[String] = self;     //~error TypeMismatch
+        let t: List[Bool] = self;       //~error TypeMismatch
+    }
+}

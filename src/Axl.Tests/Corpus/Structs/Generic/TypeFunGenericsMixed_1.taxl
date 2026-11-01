@@ -1,0 +1,39 @@
+﻿//@run
+
+let w = Wonder[I32](Value = 1);
+PrintLine(w.Field[String]("X"));
+PrintLine(w.Field[I32](2));
+PrintLine(w.Field[Bool](true));
+PrintLine(w.Param[String]("X"));
+PrintLine(w.Param[I32](10));
+PrintLine(w.Param[Bool](true));
+//= 1
+//= 1
+//= 1
+//= X
+//= 10
+//= true
+
+let w = Wonder[Bool](Value = false);
+PrintLine(w.Field[String]("X"));
+PrintLine(w.Field[I32](2));
+PrintLine(w.Field[Bool](true));
+PrintLine(w.Param[String]("X"));
+PrintLine(w.Param[I32](10));
+PrintLine(w.Param[Bool](true));
+//= false
+//= false
+//= false
+//= X
+//= 10
+//= true
+
+struct Wonder[T]
+{
+    pub Value: T;
+     
+    pub fun Field[U](u: U): T
+        = Value;
+    pub fun Param[U](u: U): U
+        = u;
+}

@@ -1,0 +1,17 @@
+﻿//@run
+//= 1
+//= 1
+
+let nested: Box[Box[I32]] = Box[Box[I32]](Value = Box[I32](Value = 1));
+PrintLine(nested.Value.Value);
+
+let nested: Box[Box[I32]] = Box[I32](Value = 1).Nest();
+PrintLine(nested.Value.Value);
+
+struct Box[T]
+{
+    pub Value: T;
+    
+    pub fun Nest(): Box[Box[T]]
+        = Box[Box[T]](Value = self);
+}

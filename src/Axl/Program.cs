@@ -46,9 +46,23 @@ switch (args[0])
                 : diagnostic.GetDisplayString(testDirectory));
         }
 
+        Console.WriteLine("---------------");
+        Console.WriteLine("--- GENERIC ---");
+        Console.WriteLine("---------------");
+        
+        foreach (var fun in compilation.AllFuns.Select(compilation.GetLoweredFunBody))
+        {
+            Console.WriteLine(fun.MirFunction.Print());
+            Console.WriteLine();
+        }
+        
         if (allDiagnostics.HasError)
             return;
 
+        Console.WriteLine("---------------");
+        Console.WriteLine("--- MONOMOR ---");
+        Console.WriteLine("---------------");
+        
         var program = compilation.Compile(compilation.Scripts[0]);
 
         foreach (var fun in program.MirFunctions.Where(f => !f.DisplayName.StartsWith("Base")).OrderBy(f => f.DisplayName, StringComparer.Ordinal))

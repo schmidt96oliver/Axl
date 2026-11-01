@@ -4,10 +4,9 @@ using Axl.Compiler.Syntax;
 
 namespace Axl.Compiler.Binding.BoundTree;
 
-public sealed class BoundStructInit(StructSymbol @struct, ImmutableArray<BoundFieldInit> fieldInits, SyntaxNode? syntax)
-    : BoundValue(type: @struct, syntax)
+public sealed class BoundStructInit(TypeSymbol type, ImmutableArray<BoundFieldInit> fieldInits, SyntaxNode? syntax)
+    : BoundValue(type, syntax)
 {
-    public StructSymbol Struct { get; } = @struct;
     public ImmutableArray<BoundFieldInit> FieldInits { get; } = fieldInits;
 
     public override IEnumerable<BoundStmt> GetChildren()

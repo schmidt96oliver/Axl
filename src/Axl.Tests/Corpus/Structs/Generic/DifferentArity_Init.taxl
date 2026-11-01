@@ -1,0 +1,35 @@
+﻿//@check
+
+PrintLine("{Test(X = 1).X}");
+//= 1
+
+PrintLine("{Test[I32](F = 1).F}");
+PrintLine("{Test[String](F = "X").F}");
+PrintLine("{Test[Bool](F = true).F}");
+//= 1
+//= X
+//= true
+
+Print("{Test[I32, I32](F1 = 1, F2 = 2).F1}");
+PrintLine("{Test[I32, I32](F1 = 1, F2 = 2).F2}");
+//= 1
+//= 2
+
+Print("{Test[String, I32](F1 = "X", F2 = 2).F1}");
+PrintLine("{Test[String, I32](F1 = "X", F2 = 2).F2}");
+//= X
+//= 2
+
+struct Test
+{
+    pub X: I32;
+}
+struct Test[T]
+{
+    pub F: T;
+}
+struct Test[T, U]
+{
+    pub F1: T;
+    pub F2: U;
+}

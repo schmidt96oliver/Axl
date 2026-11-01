@@ -1,0 +1,51 @@
+﻿//@check
+
+var b = Box[I32].Make(1);
+PrintLine(b.Get());
+b.Set(2);
+PrintLine(b.Mut());
+b.Mut() = 3;
+PrintLine(b.Get());
+//= 1
+//= 2
+//= 3
+
+var b = Box[String].Make("A");
+PrintLine(b.Get());
+b.Set("B");
+PrintLine(b.Mut());
+b.Mut() = "C";
+PrintLine(b.Get());
+//= A
+//= B
+//= C
+
+var b = Box[String].MakeI32(1);
+PrintLine(b.Get());
+b.Set(2);
+PrintLine(b.Mut());
+b.Mut() = 3;
+PrintLine(b.Get());
+//= 1
+//= 2
+//= 3
+
+struct Box[T]
+{  
+    Value: T;
+    
+    pub fun Get(): T
+        = Value;
+        
+    pub mut fun Set(t: T)
+        = Value = t;
+        
+    pub mut fun Mut(): mut T
+        = mut Value;
+        
+    pub static fun Make(t: T): Box[T]
+        = Box[T](Value = t);
+        
+    pub static fun MakeI32(t: I32): Box[I32]
+        = Box[I32](Value = t);
+}

@@ -1,0 +1,19 @@
+﻿//@run
+//= 123
+
+Test.A();
+Test[I32].A();
+Test[I32, String].A();
+
+struct Test
+{
+    pub static fun A() = Print("1");
+}
+struct Test[T]
+{
+    pub static fun A() = Print("2");
+}
+struct Test[T, U]
+{
+    pub static fun A() = Print("3");
+}

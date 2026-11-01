@@ -1,0 +1,8 @@
+﻿//@check
+
+let a = Test.A();   //~error MemberAccessThroughGenericType
+
+struct Test[T]
+{
+    pub static fun A() { }
+}

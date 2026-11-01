@@ -25,9 +25,10 @@ public static class SymbolPrinter
         };
 
         /// <summary>
-        /// The full path to this symbol. Excluding type parameters/arguments.
+        /// The qualified name with type parameters/arguments
+        /// if generic.
         /// </summary>
-        public string QualifiedName
+        public string FullName
         {
             get
             {
@@ -36,20 +37,37 @@ public static class SymbolPrinter
                 return string.Join(".", symbol.SelfAndOwners()
                     .Where(s => s.CanBeReferencedByName)
                     .Reverse()
-                    .Select(s => s.Name));
+                    .Select(s => s switch
+                    {
+                        TypeSymbol type => $"{type.Name}{type.TypeArguments.FullTypeListDisplayText}",
+                        FunSymbol fun => $"{fun.Name}{fun.TypeArguments.FullTypeListDisplayText}",
+                        _ => s.Name
+                    }));
             }
         }
-
+        
         /// <summary>
-        /// The qualified name with type parameters/arguments
-        /// if generic.
+        /// The full name, but without the symbols own type arguments.
         /// </summary>
-        public string FullName => symbol switch
+        public string FullNameWithoutOwnTypeArgs
         {
-            FunSymbol { TypeParameters.Length: > 0 } fun => $"{symbol.QualifiedName}{fun.FullTypeArgumentDisplayText}",
-            _ => symbol.QualifiedName
-        };
-
+            get
+            {
+                if (symbol is ErrorTypeSymbol) return "???";
+                if (symbol is TypeParameterSymbol) return symbol.Name;
+                return string.Join(".", symbol.Owners()
+                    .Where(s => s.CanBeReferencedByName)
+                    .Reverse()
+                    .Select(s => s switch
+                    {
+                        TypeSymbol type => $"{type.Name}{type.TypeArguments.FullTypeListDisplayText}",
+                        FunSymbol fun => $"{fun.Name}{fun.TypeArguments.FullTypeListDisplayText}",
+                        _ => s.Name
+                    })
+                    .Concat([symbol.Name]));
+            }
+        }
+        
         /// <summary>
         /// A string like <c>fun 'A'</c>.
         /// </summary>
@@ -82,22 +100,25 @@ public static class SymbolPrinter
 
         private string FullParameterDisplayText
             => $"({string.Join(", ", fun.Parameters.Select(p => $"{p.Name}: {p.ParameterTypeDisplayText}"))})";
+    }
 
-        private string FullTypeArgumentDisplayText
-            => fun.TypeArguments.Length > 0
-                ? $"[{string.Join(", ", fun.TypeArguments.Select(p => $"{p.QualifiedName}"))}]"
+    extension(ImmutableArray<TypeSymbol> typeList)
+    {
+        private string FullTypeListDisplayText
+            => typeList.Length > 0
+                ? $"[{string.Join(", ", typeList.Select(p => $"{p.FullName}"))}]"
                 : "";
     }
 
     extension(ParameterSymbol parameter)
     {
         public string ParameterTypeDisplayText
-            => parameter.IsMut ? $"mut {parameter.Type.QualifiedName}" : parameter.Type.QualifiedName;
+            => parameter.IsMut ? $"mut {parameter.Type.FullName}" : parameter.Type.FullName;
     }
     extension(BoundArgument argument)
     {
         public string ArgumentTypeDisplayText
-            => argument.IsMut ? $"mut {argument.Type.QualifiedName}" : argument.Type.QualifiedName;
+            => argument.IsMut ? $"mut {argument.Type.FullName}" : argument.Type.FullName;
     }
 
     extension(ImmutableArray<BoundArgument> args)

@@ -1,0 +1,24 @@
+﻿//@check
+
+let t = Box[I32](Value = 1);
+let t = Box[I32](Value = 1.1);          //~error TypeMismatch
+let t = Box[I32](Value = "1");          //~error TypeMismatch
+let t = Box[I32](Value = true);         //~error TypeMismatch
+
+let t = Box[String](Value = 1);         //~error TypeMismatch
+let t = Box[String](Value = 1.1);       //~error TypeMismatch
+let t = Box[String](Value = "1");
+let t = Box[String](Value = true);      //~error TypeMismatch
+
+let t = Box[Bool](Value = 1);           //~error TypeMismatch
+let t = Box[Bool](Value = 1.1);         //~error TypeMismatch
+let t = Box[Bool](Value = "1");         //~error TypeMismatch
+let t = Box[Bool](Value = true);
+
+let t: Box[I32] = Box[Bool](Value = true);  //~error TypeMismatch
+let t: Box[String] = Box[F64](Value = 1.1); //~error TypeMismatch
+
+struct Box[T]
+{
+    pub Value: T;
+}

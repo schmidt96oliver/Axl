@@ -20,7 +20,7 @@ public static class MirPrinter
             Place.Local { Id: var id, Kind: var kind } => kind switch
             {
                 LocalKind.Return => $"{id}[ret]",
-                LocalKind.Parameter => $"{id}[{(place.Syntax as ParamSyntax)?.Name.Text.ToString() ?? ""}]",
+                LocalKind.Parameter => $"{id}[{(place.Syntax as ParamSyntax)?.Name.Text.ToString() ?? "self"}]",
                 LocalKind.Variable => $"{id}[{(place.Syntax as VarDeclSyntax)?.Name.Text.ToString() ?? ""}]",
                 _ => $"{id}",
             },
@@ -75,7 +75,7 @@ public static class MirPrinter
                 intrinsic.Kind}({string.Join(", ", intrinsic.Arguments.Select(Print))})",
             Instruction.VmCall vmCall => $"{vmCall.Target.Print()} = vmcall {
                 vmCall.Kind}({string.Join(", ", vmCall.Arguments.Select(Print))})",
-            Instruction.StructInit structInit => $"{structInit.Target.Print()} = struct {structInit.Struct.FullName}({ string.Join(", ", structInit.FieldValues.Select(
+            Instruction.TypeInit structInit => $"{structInit.Target.Print()} = struct {structInit.Struct.FullName}({ string.Join(", ", structInit.FieldValues.Select(
                 fieldInit => $"{fieldInit.Key.Name} = {fieldInit.Value.Print()}")) })",
         };
 

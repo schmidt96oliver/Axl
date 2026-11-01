@@ -42,7 +42,7 @@ public closed class Scope
     public abstract ImmutableArray<Symbol> Lookup(string name);
 
     public bool IsAccessible(Symbol symbol)
-        => symbol.AccessibleWithin is null || Owner.SelfAndOwners().Contains(symbol.AccessibleWithin);
+        => symbol.IsAccessibleFrom(Owner);
 
     public Scope WithOwner(Symbol owner)
         => new OwnerScope(this, owner);

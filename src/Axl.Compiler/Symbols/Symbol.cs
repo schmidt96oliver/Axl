@@ -45,9 +45,9 @@ public closed class Symbol(Compilation compilation, string name, Symbol? owner)
     /// visible.
     /// </summary>
     public Symbol? AccessibleWithin => IsPublic
-        ? Owner?.AccessibleWithin
+        ? OriginalDefinition.Owner?.AccessibleWithin
         // A private global symbol is not globally visible.
-        : Owner ?? this;
+        : OriginalDefinition.Owner ?? this;
 
     /// <summary>
     /// Whether this symbol can be accessed from a scope inside
@@ -55,7 +55,7 @@ public closed class Symbol(Compilation compilation, string name, Symbol? owner)
     /// </summary>
     /// <param name="symbol"><c>null</c> means global scope.</param>
     public bool IsAccessibleFrom(Symbol? symbol)
-        => AccessibleWithin is null || symbol?.SelfAndOwners().Contains(AccessibleWithin) == true;
+        => AccessibleWithin is null || symbol?.OriginalDefinition.SelfAndOwners().Contains(AccessibleWithin) == true;
 
     /// <summary>
     /// Replaces all type parameters within this symbol

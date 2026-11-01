@@ -1,0 +1,21 @@
+﻿//@run
+
+let w = Wonder[I32].Make[String]("A");
+PrintLine(w.Value);
+//= A
+
+let w = Wonder[String].Make[I32](1);
+PrintLine(w.Value);
+//= 1
+
+let w = Wonder[Bool].Make[I32](1);
+PrintLine(w.Value);
+//= 1
+
+struct Wonder[T]
+{
+    pub Value: T;
+     
+    pub static fun Make[U](u: U): Wonder[U]
+        = Wonder[U](Value = u);
+}

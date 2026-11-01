@@ -413,7 +413,7 @@ public class Lowerer
         var fields = Enumerable.ToDictionary(structInit.FieldInits, boundFieldInit => 
             boundFieldInit.Field, boundFieldInit => LowerOperand(boundFieldInit.Value));
 
-        Emit(new Instruction.StructInit(structInit.Struct, target, fields.ToFrozenDictionary(), structInit.Syntax));
+        Emit(new Instruction.TypeInit(structInit.Type, target, fields.ToFrozenDictionary(), structInit.Syntax));
         return new Operand.Copy(target);
     }
 

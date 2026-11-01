@@ -1,0 +1,21 @@
+﻿//@check
+
+// A struct name can be declared multiple times, if they
+// differ in generic type parameter count.
+
+struct A;
+struct A[T];
+struct A[T1, T2];
+
+struct B;       //~error DuplicateTypeDeclarations       
+struct B;       //~error DuplicateTypeDeclarations       
+
+struct C;
+struct C[T];        //~error DuplicateTypeDeclarations       
+struct C[U];        //~error DuplicateTypeDeclarations       
+struct C[T1, T2];
+
+struct D;
+struct D[T];
+struct D[T, U];     //~error DuplicateTypeDeclarations       
+struct D[W, X];     //~error DuplicateTypeDeclarations       
