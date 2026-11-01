@@ -1,0 +1,15 @@
+﻿//@run
+
+var a = 0;
+var b = 10;
+Pass[I32](mut a) = 1;
+Scnd[I32, I32](mut a, mut b) = 11;
+
+PrintLine(a);   //= 1
+PrintLine(b);   //= 11
+
+fun Pass[T](mut t: T): mut T
+    = mut t;
+    
+fun Scnd[T1, T2](mut a: T1, mut b: T2): mut T2
+    = mut b;
