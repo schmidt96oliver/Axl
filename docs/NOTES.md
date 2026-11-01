@@ -4,13 +4,6 @@
 # Now
 
 * See Claude for test cases and review
-* tests: More tests + Snapshot tests for monomorphizer
-  * Swapped args `fun F[T1, T2](a: T1, b: T2) { G[T2, T1](b, a); }` as well self-recursive
-  * Mixed open and closed calls with dedup: A[T] always calls B[String]. With A[I32] and A[Bool] both used, B[String]
-    must appear exactly once.
-  * mut parameter, mut return
-  * Never instantiated: a generic fun nobody calls. Nothing is emitted, nothing crashes.
-
 * Rework overload resolution
   * BindArguments -> Bind each candidate fully, tentatively `BindSingleCall` (returns Viability)
          -> sort with viability -> 
@@ -27,6 +20,8 @@
 * ?? Miri: Store reference as Root (ActivationFrame, LocalId) + Path (FieldSymbol[]). See Claude, think why?
 
 * ?? Binder: BoundParameter and BoundSelf again?
+
+* ?? Generic operators: `fun +[T]` or `fun ==[T]`
 
 * Mir: Validator
   * Phase.Monomorphized: Check that everything is concrete. No TypeParams

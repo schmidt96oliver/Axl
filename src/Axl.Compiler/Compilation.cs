@@ -104,11 +104,10 @@ public class Compilation
 
             IEnumerable<FunDefinitionSymbol> Inner(Symbol symbol) => symbol switch
             {
-                FunDefinitionSymbol { Body: BoundBlock } funSymbol => [funSymbol],
                 FunDefinitionSymbol funSymbol => [funSymbol],
-                FunSymbol => throw new UnreachableException("Non-generic constructed and instantiated funs should not be on compilation."),
-                ScriptSymbol script => [.. Inner(script.Fun), .. script.Members.OfType<FunDefinitionSymbol>()],
-                NamespaceOrTypeSymbol namespaceOrTypeSymbol => namespaceOrTypeSymbol.Members.OfType<FunDefinitionSymbol>(),
+                FunSymbol => throw new UnreachableException("Specialized funs should not be on compilation."),
+                ScriptSymbol script => [.. Inner(script.Fun), .. script.Members.SelectMany(Inner)],
+                NamespaceOrTypeSymbol namespaceOrTypeSymbol => namespaceOrTypeSymbol.Members.SelectMany(Inner),
 
                 FieldSymbol => [],
                 VariableSymbol => [],
@@ -159,12 +158,12 @@ public class Compilation
         RootNamespace.Complete(sideEffects);
         foreach (var script in Scripts)
             script.Complete(sideEffects);
-        
+
         Diagnostics =
         [
             .. SyntaxTrees.SelectMany(tree => tree.Diagnostics),
             .. sideEffects.DiagnosticBag.Drain(),
-            .. AllFuns.SelectMany(fun => GetLoweredFunBody(fun).Diagnostics)
+            .. AllFuns.Where(f => f.Body is BoundBlock).SelectMany(fun => GetLoweredFunBody(fun).Diagnostics)
         ];
         
         SemanticSideTable = sideEffects.SemanticSideTable;

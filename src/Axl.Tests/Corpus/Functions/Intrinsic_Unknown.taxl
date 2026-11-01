@@ -5,7 +5,7 @@
 namespace T0;
 @Intrinsic      //~error UnknownIntrinsic
 pub fun Bla();  // wrong name
-
+ 
 //---
 namespace T1;
 @Intrinsic      //~error UnknownIntrinsic
@@ -19,7 +19,8 @@ pub fun Print(a: String);  // correct
 //---
 namespace T3;
 @Intrinsic      //~error UnknownIntrinsic
-pub fun Print(a: String): I32;  // wrong return type
+pub fun Print(a: String): I32;  //~error MissingReturn
+// wrong return type
 
 //---
 namespace T4;
