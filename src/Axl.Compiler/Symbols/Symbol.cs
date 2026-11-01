@@ -74,6 +74,15 @@ public closed class Symbol(Compilation compilation, string name, Symbol? owner)
     }
 
     /// <summary>
+    /// Iterates through all owners starting with the owner of this symbol.
+    /// </summary>
+    public IEnumerable<Symbol> Owners()
+    {
+        for (var current = this.Owner; current is not null; current = current.Owner)
+            yield return current;
+    }
+    
+    /// <summary>
     /// Iterates through all owners starting with this symbol.
     /// </summary>
     public IEnumerable<Symbol> SelfAndOwners()

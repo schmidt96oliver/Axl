@@ -711,6 +711,22 @@ public sealed class Binder(Scope scope, BinderSideEffects sideEffects)
     private TypeParameterSymbol BindTypeParameter(TypeParamSyntax syntax, int ordinal)
     {
         var symbol = new TypeParameterSymbol(syntax.Name.Text.ToString(), Scope.Owner, ordinal, syntax);
+        if (symbol.Name is not "")
+        {
+            var hiddenTypeParameter = Scope.Owner.Owners()
+                .SelectMany(s => s switch
+                {
+                    TypeSymbol type => type.TypeParameters.Where(t => t.Name == symbol.Name),
+                    FunSymbol fun => fun.TypeParameters.Where(t => t.Name == symbol.Name),
+                    _ => []
+                })
+                .FirstOrDefault();
+            if (hiddenTypeParameter is not null)
+            {
+                SideEffects.ReportError(new Diagnostic.TypeParametersHideOuterTypeParameter(syntax, hiddenTypeParameter));
+            }
+        }
+        
         SideEffects.AddResolvedSymbol(syntax.Name.Location, symbol);
         return symbol;
     }

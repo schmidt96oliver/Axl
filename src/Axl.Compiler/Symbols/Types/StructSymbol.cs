@@ -21,8 +21,9 @@ public sealed class StructSymbol(
     /// To avoid unnecessary allocations, the binder is created on first
     /// use and released again after call to <see cref="Complete"/>.
     /// </summary>
-    private Binder? _binder = null;
+    private readonly BinderSideEffects _sideEffects = new();
     private bool _isBindingMembers = false;
+    private bool _isBindingTypeParameters = false;
 
     /// <inheritdoc />
     public override bool CanBeReferencedByName => true;
@@ -31,7 +32,31 @@ public sealed class StructSymbol(
 
 
     /// <inheritdoc />
-    public override ImmutableArray<TypeParameterSymbol> TypeParameters => [];
+    public override ImmutableArray<TypeParameterSymbol> TypeParameters
+    {
+        get
+        {
+            if (field.IsDefault)
+            {
+                if (DeclarationSyntax.TypeParameterList is null)
+                {
+                    field = [];
+                    return field;
+                }
+
+                if (_isBindingTypeParameters)
+                    throw new CycleException();
+                _isBindingTypeParameters = true;
+
+                var binder = new Binder(enclosingScope.WithOwner(this), _sideEffects);
+                field = binder.BindTypeParameters(DeclarationSyntax.TypeParameterList);
+
+                _isBindingTypeParameters = false;
+            }
+
+            return field;
+        }
+    }
     
     public StructDeclSyntax DeclarationSyntax { get; } = declarationSyntax;
 
@@ -45,13 +70,13 @@ public sealed class StructSymbol(
                     throw new CycleException();
                 _isBindingMembers = true;
 
-                _binder ??= MakeBinder();
+                var binder = new Binder(new MemberScope(enclosingScope, this), _sideEffects);
                 field = DeclarationSyntax.Body is null ? [] :
                     [
                         .. DeclarationSyntax.Body.SyntaxNodes().Select(syntax => syntax switch
                         {
-                            FieldDeclSyntax fieldDecl => (Symbol)_binder.BindFieldDeclaration(fieldDecl),
-                            FunDeclSyntax funDecl => _binder.BindSourceFunDeclaration(funDecl),
+                            FieldDeclSyntax fieldDecl => (Symbol)binder.BindFieldDeclaration(fieldDecl),
+                            FunDeclSyntax funDecl => binder.BindSourceFunDeclaration(funDecl),
                             _ => throw new UnreachableException($"Unknown struct member syntax {syntax.GetType().Name}")
 
                         })
@@ -61,8 +86,8 @@ public sealed class StructSymbol(
                 
                 // The following checks accesses members, so they need to run
                 // after binding is done.
-                _binder.CheckDuplicateDeclarations(field);
-                _binder.CheckRecursiveStructLayout(this);
+                binder.CheckDuplicateDeclarations(field);
+                binder.CheckRecursiveStructLayout(this);
             }
 
             return field;
@@ -71,13 +96,10 @@ public sealed class StructSymbol(
 
     public override void Complete(BinderSideEffects sideEffects)
     {
+        _ = TypeParameters;
         foreach (var member in Members)
             member.Complete(sideEffects);
 
-        _binder!.SideEffects.DrainInto(sideEffects);
-        _binder = null;
+        _sideEffects.DrainInto(sideEffects);
     }
-
-    private Binder MakeBinder()
-        => new(new MemberScope(enclosingScope, this), new BinderSideEffects());
 }

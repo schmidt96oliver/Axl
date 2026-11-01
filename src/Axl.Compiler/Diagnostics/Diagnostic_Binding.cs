@@ -829,4 +829,16 @@ public partial record Diagnostic
         public override string Message 
             => "Subscript is not allowed here. It can only be used to name type arguments.";
     }
+
+    public sealed record TypeParametersHideOuterTypeParameter(
+        SyntaxNode Syntax,
+        TypeParameterSymbol HiddenParameter) : Error
+    {
+        /// <inheritdoc />
+        public override ImmutableArray<SourceLocation> Locations => [Syntax.Location];
+
+        /// <inheritdoc />
+        public override string Message =>
+            $"Type parameter ‘{HiddenParameter.Name}‘ hides the type parameter of ‘{HiddenParameter.Owner?.Name ?? "???"}‘.";
+    }
 }

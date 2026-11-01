@@ -8,5 +8,7 @@ public sealed class MemberScope(Scope enclosingScope, NamespaceOrTypeSymbol name
 {
     /// <inheritdoc />
     public override ImmutableArray<Symbol> Lookup(string name)
-        => OwnerAsNamespaceOrType!.LookupMembers(name);
+        => namespaceOrType is TypeSymbol type
+            ? [.. OwnerAsNamespaceOrType!.LookupMembers(name), .. type.TypeParameters.Where(p => p.Name == name)]
+            : OwnerAsNamespaceOrType!.LookupMembers(name);
 }

@@ -1,0 +1,6 @@
+﻿//@check
+
+struct Test[T]
+{
+    fun Inner[T]() { }      //~error TypeParametersHideOuterTypeParameter
+}
