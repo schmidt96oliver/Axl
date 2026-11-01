@@ -11,14 +11,17 @@ public sealed class ErrorTypeSymbol(Compilation compilation)
     public override ImmutableArray<Symbol> Members => [];
 
     /// <inheritdoc />
+    public override ImmutableArray<TypeParameterSymbol> TypeParameters => [];
+
+    /// <inheritdoc />
+    public override ImmutableArray<TypeSymbol> TypeArguments => [];
+    
+    /// <inheritdoc />
     public override bool Equals(Symbol? other)
+        // All errors are equal.
         => other is ErrorTypeSymbol;
 
     /// <inheritdoc />
     public override int GetHashCode()
         => 0x4E52_524F; // any fixed value other than 0
-
-    /// <inheritdoc />
-    public override TypeSymbol Substitute(TypeMap map)
-        => this;
 }

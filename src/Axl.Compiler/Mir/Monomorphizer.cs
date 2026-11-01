@@ -18,7 +18,7 @@ public class Monomorphizer
 
     public static MirProgram Monomorphize(FunSymbol entryFunSymbol, Func<FunDefinitionSymbol, MutMirFunction> lowerDefinition)
     {
-        Guard.MustBe(!entryFunSymbol.IsGeneric);
+        Guard.MustBe(entryFunSymbol.IsConcrete, "Cannot monomorphize generic script symbols.");
         
         var monomorphizer = new Monomorphizer(lowerDefinition);
         monomorphizer._worklist.Enqueue(entryFunSymbol);
@@ -35,6 +35,7 @@ public class Monomorphizer
 
     private void AddToWorklist(FunSymbol funSymbol)
     {
+        Debug.Assert(funSymbol.IsConcrete, "Generic fun symbol enqueued for monomorphization.");
         if (_instantiatedMirFuns.ContainsKey(funSymbol) || _worklist.Contains(funSymbol))
             return;
         _worklist.Enqueue(funSymbol);
@@ -42,7 +43,9 @@ public class Monomorphizer
 
     private void Instantiate(FunSymbol funSymbol)
     {
-        // If the fun is not generic, we don't need to instantiate it, technically.
+        Debug.Assert(funSymbol.IsConcrete, "Generic fun symbol enqueued for monomorphization.");
+        
+        // If the fun and its owners have no type parameters, we don't need to instantiate it.
         // But just to test the monomorphizer, we do it anyway and bugs
         // will appear in any corpus test.
         
@@ -50,7 +53,7 @@ public class Monomorphizer
             return;
         
         var originalMirFun = _lowerDefinition(funSymbol.OriginalDefinition);
-        var typeMap = TypeMap.StrictFrom(funSymbol.TypeParameters, funSymbol.TypeArguments);
+        var typeMap = TypeMap.For(funSymbol, strict: true);
         
         var instantiatedMirFun = new MutMirFunction(funSymbol.FullName,
             InstantiateLocal(originalMirFun.ReturnPlace, null, typeMap),
@@ -113,13 +116,7 @@ public class Monomorphizer
 
             Instruction.Call originalCall => InstantiateCall(originalCall, instantiatedMirFun, map),
 
-            Instruction.StructInit originalStructInit => new Instruction.StructInit(
-                originalStructInit.Struct,
-                InstantiatePlace(originalStructInit.Target, instantiatedMirFun, map),
-                originalStructInit.FieldValues
-                    .ToDictionary(kvp => kvp.Key, kvp => InstantiateOperand(kvp.Value, instantiatedMirFun, map))
-                    .ToFrozenDictionary(),
-                originalStructInit.Syntax),
+            Instruction.StructInit originalStructInit => InstantiateStructInit(originalStructInit, instantiatedMirFun, map),
 
             Instruction.VmCall originalVmCall => new Instruction.VmCall(
                 originalVmCall.Kind,
@@ -128,17 +125,30 @@ public class Monomorphizer
                 originalVmCall.Syntax)
         };
 
+    private Instruction.StructInit InstantiateStructInit(Instruction.StructInit original, MutMirFunction instantiatedMirFun, TypeMap map)
+    {
+        var substitutedStruct = original.Struct.Substitute(map);
+        var instantiatedTarget = InstantiatePlace(original.Target, instantiatedMirFun, map);
+        var fieldValues = original.FieldValues.ToDictionary(
+                keySelector: kvp => kvp.Key.Substitute(map),
+                elementSelector: kvp => InstantiateOperand(kvp.Value, instantiatedMirFun, map))
+            .ToFrozenDictionary();
+        
+        return new Instruction.StructInit(
+            substitutedStruct,
+            instantiatedTarget,
+            fieldValues,
+            original.Syntax);
+    }
+
     private Instruction.Call InstantiateCall(Instruction.Call original, MutMirFunction instantiatedMirFun, TypeMap map)
     {
-        // Substitute type arguments
-        var fun = original.Fun.ConstructWith(
-        [
-            .. original.Fun.TypeArguments.Select(typeArg => typeArg.Substitute(map))
-        ]);
+        var substitutedFun = original.Fun.Substitute(map);
+        Debug.Assert(substitutedFun.IsConcrete, "After substitution, funs must be concrete.");
         
-        AddToWorklist(fun);
+        AddToWorklist(substitutedFun);
 
-        return new Instruction.Call(fun,
+        return new Instruction.Call(substitutedFun,
             InstantiatePlace(original.Target, instantiatedMirFun, map),
             [.. original.Arguments.Select(arg => InstantiateOperand(arg, instantiatedMirFun, map))],
             original.Syntax);
@@ -148,10 +158,7 @@ public class Monomorphizer
     {
         Place.Local originalLocal => InstantiateLocal(originalLocal, instantiatedMirFun, map),
 
-        Place.Field originalField => new Place.Field(
-            InstantiatePlace(originalField.Receiver, instantiatedMirFun, map),
-            originalField.FieldSymbol,
-            originalField.Syntax),
+        Place.Field originalField => InstantiateField(originalField, instantiatedMirFun, map),
 
         Place.Deref originalDeref => new Place.Deref(
             InstantiatePlace(originalDeref.Reference, instantiatedMirFun, map),
@@ -173,6 +180,13 @@ public class Monomorphizer
         local = new Place.Local(original.Id, original.Kind, original.Type.Substitute(map), original.Syntax);
         instantiatedMirFun?.AddLocal(local);
         return local;
+    }
+
+    private Place.Field InstantiateField(Place.Field original, MutMirFunction instantiatedMirFun, TypeMap map)
+    {
+        var specializedField = original.FieldSymbol.Substitute(map);
+        var instantiatedReceiver = InstantiatePlace(original.Receiver, instantiatedMirFun, map);
+        return new Place.Field(instantiatedReceiver, specializedField, original.Syntax);
     }
 
     private Operand InstantiateOperand(Operand original, MutMirFunction instantiatedMirFun, TypeMap map)

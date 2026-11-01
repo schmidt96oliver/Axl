@@ -3,18 +3,6 @@
 
 # Now
 
-* Symbol: IsConcrete, ?? TypeParamters/Args, ?? TypeMap for all
-  * OriginalDefinition: abstract override TypeDefSymbol OriginalDefinition (covariant return on overrides)
-* Argts == Params -> IsConcrete
-* On Def: TypeArgs = TypeParams
-* TypeMap.From(param, arg); .Combine; .AsStrict
-* Symbol.TypeMap = Combine(SelfAndOwners.From)
-* TypeSymbol/TypeDefinitionSymbol: Specialize(owner, args), (args), Substitute
-* FunSymbol/FunDefSymbol: Specialize(owner, args), (args), Substitute
-  * SpecializedFun/Typesymbol(Def, Owner, Args) cached on DefSymbol. Always creates from DefSymbol
-
-* Monomorphizer: Use Substitute fully, use full TypeMaps, assert IsConcrete
-
 * See Claude for test cases and review
 * tests: More tests + Snapshot tests for monomorphizer
   * Swapped args `fun F[T1, T2](a: T1, b: T2) { G[T2, T1](b, a); }` as well self-recursive
@@ -22,11 +10,6 @@
     must appear exactly once.
   * mut parameter, mut return
   * Never instantiated: a generic fun nobody calls. Nothing is emitted, nothing crashes.
-
-* validator that checks concreteness
-
-* Monomorphize :)
-    * Check that MIRI only runs monomorphized MIR
 
 * Rework overload resolution
   * BindArguments -> Bind each candidate fully, tentatively `BindSingleCall` (returns Viability)
@@ -38,7 +21,7 @@
   * Implement rule for specificity in overload resolution (-> Claude)
 
 
-# Questions / Little ones****
+# Questions / Little ones
 
 * ?? Miri: `Environment` -> `ActivationFrame` with .GetRef that throws if exited
 * ?? Miri: Store reference as Root (ActivationFrame, LocalId) + Path (FieldSymbol[]). See Claude, think why?
@@ -46,6 +29,7 @@
 * ?? Binder: BoundParameter and BoundSelf again?
 
 * Mir: Validator
+  * Phase.Monomorphized: Check that everything is concrete. No TypeParams
   * Call with mut return: ref is directly used and never again
 
 # Milestones

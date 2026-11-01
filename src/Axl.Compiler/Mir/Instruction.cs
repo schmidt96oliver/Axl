@@ -18,7 +18,7 @@ public closed record Instruction(Place Target, ImmutableArray<Operand> Operands,
         : Instruction(Target, Arguments, Syntax);
 
     public sealed record StructInit(
-        StructSymbol Struct,
+        TypeSymbol Struct,
         Place Target,
         FrozenDictionary<FieldSymbol, Operand> FieldValues,
         SyntaxNode? Syntax = null)

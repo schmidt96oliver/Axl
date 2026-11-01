@@ -1,5 +1,4 @@
 ﻿using System.Collections.Immutable;
-using System.Runtime.CompilerServices;
 using Axl.Compiler.Syntax.Tree;
 
 namespace Axl.Compiler.Symbols;
@@ -7,31 +6,39 @@ namespace Axl.Compiler.Symbols;
 public closed class FunDefinitionSymbol(Compilation compilation, string name, Symbol? owner, bool isPublic)
     : FunSymbol(compilation, name, owner, isPublic)
 {
+    private readonly List<SpecializedFunSymbol> _specializations = [];
+    
     // This symbol IS the original definition.
     /// <inheritdoc />
     public override FunDefinitionSymbol OriginalDefinition => this;
     
-    // This symbol IS the original definition.
     /// <inheritdoc />
-    public override FunSymbol? ConstructedFrom => null;
-
-    // The definition does not have type arguments yet.
-    /// <inheritdoc />
-    public override ImmutableArray<TypeSymbol> TypeArguments => [];
+    public override ImmutableArray<TypeSymbol> TypeArguments => TypeParameters.CastArray<TypeSymbol>();
 
     public abstract FunDeclSyntax? DeclarationSyntax { get; }
 
     public abstract FunBody Body { get; }
 
+    public FunSymbol Specialize(Symbol? specializedOwner, ImmutableArray<TypeSymbol> typeArguments)
+    {
+        Guard.MustBe(Equals(specializedOwner?.OriginalDefinition, Owner?.OriginalDefinition));
+        Guard.MustBe(typeArguments.Length == TypeParameters.Length);
 
-    // Since this _IS_ the original definition, and it is source declared,
-    // we can override and compare by reference for performance. It keeps
-    // the same behaviour as the override on FunSymbol.
-    /// <inheritdoc />
-    public override bool Equals(Symbol? other)
-        => ReferenceEquals(this, other);
+        // If nothing changes, just return this definition.
+        if (Equals(specializedOwner, Owner) && TypeArguments.SequenceEqual(typeArguments))
+            return this;
 
-    /// <inheritdoc />
-    public override int GetHashCode()
-        => RuntimeHelpers.GetHashCode(this);
+        var specialization = _specializations.FirstOrDefault(s => Equals(s.Owner, specializedOwner) &&
+                                                                  s.TypeArguments.SequenceEqual(typeArguments));
+        if (specialization is null)
+        {
+            specialization = new SpecializedFunSymbol(
+                originalDefinition: this,
+                specializedOwner,
+                typeArguments);
+            _specializations.Add(specialization);
+        }
+
+        return specialization;
+    }
 }

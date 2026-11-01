@@ -1,32 +1,29 @@
-﻿using System.Runtime.CompilerServices;
-using Axl.Compiler.Binding;
+﻿using Axl.Compiler.Binding;
 using Axl.Compiler.Binding.Scopes;
 using Axl.Compiler.Syntax.Tree;
 
 namespace Axl.Compiler.Symbols;
 
-public sealed class FieldSymbol(
+public sealed class FieldDefinitionSymbol(
     FieldDeclSyntax declarationSyntax,
     Scope enclosingScope,
-    StructSymbol owner,
-    bool isPublic)
-    : Symbol(owner.Compilation, declarationSyntax.Name.Text.ToString(), owner)
+    TypeSymbol owner)
+    : FieldSymbol(declarationSyntax.Name.Text.ToString(),
+        owner, isPublic: declarationSyntax.PubKw is not null)
 {
     /// <summary>
     /// To avoid unnecessary allocations, the binder is created on first
     /// use and released again after call to <see cref="Complete"/>.
     /// </summary>
     private Binder? _binder = null;
-
     private bool _isBindingType = false;
+    private readonly List<SpecializedFieldSymbol> _specializations = [];
 
-    /// <inheritdoc />
-    public override bool CanBeReferencedByName => true;
-    
     public FieldDeclSyntax DeclarationSyntax { get; } = declarationSyntax;
-    public override bool IsPublic { get; } = isPublic;
 
-    public TypeSymbol Type
+    public override FieldDefinitionSymbol OriginalDefinition => this;
+    
+    public override TypeSymbol Type
     {
         get
         {
@@ -53,16 +50,26 @@ public sealed class FieldSymbol(
     public override void Complete(BinderSideEffects sideEffects)
     {
         _ = Type;
-        _binder!.SideEffects.DrainInto(sideEffects);
+        _binder?.SideEffects.DrainInto(sideEffects);
         _binder = null;
     }
 
 
-    /// <inheritdoc />
-    public override bool Equals(Symbol? other)
-        => ReferenceEquals(this, other);
+    public FieldSymbol Specialize(TypeSymbol specializedOwner)
+    {
+        Guard.MustBe(Equals(specializedOwner.OriginalDefinition, Owner?.OriginalDefinition));
 
-    /// <inheritdoc />
-    public override int GetHashCode()
-        => RuntimeHelpers.GetHashCode(this);
+        // If nothing changes, just return this definition.
+        if (Equals(specializedOwner, Owner))
+            return this;
+
+        var specialization = _specializations.FirstOrDefault(s => Equals(s.Owner, specializedOwner));
+        if (specialization is null)
+        {
+            specialization = new SpecializedFieldSymbol(originalDefinition: this, specializedOwner);
+            _specializations.Add(specialization);
+        }
+
+        return specialization;
+    }
 }

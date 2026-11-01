@@ -1,4 +1,5 @@
-﻿using Axl.Compiler.Binding;
+﻿using System.Runtime.CompilerServices;
+using Axl.Compiler.Binding;
 
 namespace Axl.Compiler.Symbols;
 
@@ -11,7 +12,26 @@ public closed class Symbol(Compilation compilation, string name, Symbol? owner)
 
     public Symbol? Owner { get; } = owner;
 
+    public TypeSymbol? OwningType
+        => SelfAndOwners().OfType<TypeSymbol>().FirstOrDefault();
+
+
+    /// <summary>
+    /// If it is generic, this
+    /// symbol might be specialized, so <see cref="OriginalDefinition"/>
+    /// refers to the symbol as originally defined in source code.
+    /// </summary>
+    public virtual Symbol OriginalDefinition => this;
+
     public abstract bool IsPublic { get; }
+
+    /// <summary>
+    /// <c>false</c>, if this symbol has unfilled type parameters or if
+    /// they are filled with generic arguments. Intuitively, <c>false</c>,
+    /// if it is generic. <c>true</c>, if all type parameters are substituted
+    /// by concrete types.
+    /// </summary>
+    public abstract bool IsConcrete { get; }
 
     /// <summary>
     /// Whether this symbols name can be written in source code.
@@ -29,9 +49,6 @@ public closed class Symbol(Compilation compilation, string name, Symbol? owner)
         // A private global symbol is not globally visible.
         : Owner ?? this;
 
-    public TypeSymbol? OwningType 
-        => SelfAndOwners().OfType<TypeSymbol>().FirstOrDefault();
-
     /// <summary>
     /// Whether this symbol can be accessed from a scope inside
     /// <paramref name="symbol"/>.
@@ -39,7 +56,12 @@ public closed class Symbol(Compilation compilation, string name, Symbol? owner)
     /// <param name="symbol"><c>null</c> means global scope.</param>
     public bool IsAccessibleFrom(Symbol? symbol)
         => AccessibleWithin is null || symbol?.SelfAndOwners().Contains(AccessibleWithin) == true;
-    
+
+    /// <summary>
+    /// Replaces all type parameters within this symbol
+    /// through the given <paramref name="map"/>.
+    /// </summary>
+    public virtual Symbol Substitute(TypeMap map) => this;
     
     /// <summary>
     /// Completes binding of all lazy symbols and transfers side effects
@@ -64,9 +86,10 @@ public closed class Symbol(Compilation compilation, string name, Symbol? owner)
     //     substituted type parameters could come through different paths.
     //     Most symbols will implement reference equality, if they are source
     //     declared. But some use value equality.
-    
+
     /// <inheritdoc />
-    public abstract bool Equals(Symbol? other);
+    public virtual bool Equals(Symbol? other)
+        => ReferenceEquals(this, other);
     
     /// <inheritdoc />
     public override bool Equals(object? obj)
@@ -78,11 +101,12 @@ public closed class Symbol(Compilation compilation, string name, Symbol? owner)
     }
 
     /// <inheritdoc />
-    public abstract override int GetHashCode();
+    public override int GetHashCode()
+        => RuntimeHelpers.GetHashCode(this);
 
-    public static bool operator ==(Symbol left, Symbol right)
-        => left.Equals(right);
-    
-    public static bool operator !=(Symbol left, Symbol right)
-        => !left.Equals(right);
+    public static bool operator ==(Symbol? left, Symbol? right)
+        => ReferenceEquals(left, right) || (left is not null && left.Equals(right));
+
+    public static bool operator !=(Symbol? left, Symbol? right)
+        => !(left == right);
 }

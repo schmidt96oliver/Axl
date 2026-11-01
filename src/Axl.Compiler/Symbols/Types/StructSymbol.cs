@@ -1,14 +1,29 @@
 ﻿using System.Collections.Immutable;
+using System.Diagnostics;
+using Axl.Compiler.Binding;
+using Axl.Compiler.Binding.Scopes;
+using Axl.Compiler.Syntax.Tree;
 
 namespace Axl.Compiler.Symbols;
 
-public closed class StructSymbol(
-    string name,
-    Symbol owner,
+public sealed class StructSymbol(
+    StructDeclSyntax declarationSyntax,
+    Scope enclosingScope,
     bool isPublic,
     PrimitiveKind? primitiveKind)
-    : TypeSymbol(owner.Compilation, name, owner, isPublic, primitiveKind)
+    : TypeDefinitionSymbol(enclosingScope.Owner.Compilation,
+        declarationSyntax.Name.Text.ToString(), 
+        owner: enclosingScope.Owner, 
+        isPublic: isPublic, 
+        primitiveKind: primitiveKind)
 {
+    /// <summary>
+    /// To avoid unnecessary allocations, the binder is created on first
+    /// use and released again after call to <see cref="Complete"/>.
+    /// </summary>
+    private Binder? _binder = null;
+    private bool _isBindingMembers = false;
+
     /// <inheritdoc />
     public override bool CanBeReferencedByName => true;
 
@@ -16,6 +31,53 @@ public closed class StructSymbol(
 
 
     /// <inheritdoc />
-    public override TypeSymbol Substitute(TypeMap map)
-        => this; //TODO: Implement generic type substitution
+    public override ImmutableArray<TypeParameterSymbol> TypeParameters => [];
+    
+    public StructDeclSyntax DeclarationSyntax { get; } = declarationSyntax;
+
+    public override ImmutableArray<Symbol> Members
+    {
+        get
+        {
+            if (field.IsDefault)
+            {
+                if (_isBindingMembers)
+                    throw new CycleException();
+                _isBindingMembers = true;
+
+                _binder ??= MakeBinder();
+                field = DeclarationSyntax.Body is null ? [] :
+                    [
+                        .. DeclarationSyntax.Body.SyntaxNodes().Select(syntax => syntax switch
+                        {
+                            FieldDeclSyntax fieldDecl => (Symbol)_binder.BindFieldDeclaration(fieldDecl),
+                            FunDeclSyntax funDecl => _binder.BindSourceFunDeclaration(funDecl),
+                            _ => throw new UnreachableException($"Unknown struct member syntax {syntax.GetType().Name}")
+
+                        })
+                    ];
+
+                _isBindingMembers = false;
+                
+                // The following checks accesses members, so they need to run
+                // after binding is done.
+                _binder.CheckDuplicateDeclarations(field);
+                _binder.CheckRecursiveStructLayout(this);
+            }
+
+            return field;
+        }
+    }
+
+    public override void Complete(BinderSideEffects sideEffects)
+    {
+        foreach (var member in Members)
+            member.Complete(sideEffects);
+
+        _binder!.SideEffects.DrainInto(sideEffects);
+        _binder = null;
+    }
+
+    private Binder MakeBinder()
+        => new(new MemberScope(enclosingScope, this), new BinderSideEffects());
 }

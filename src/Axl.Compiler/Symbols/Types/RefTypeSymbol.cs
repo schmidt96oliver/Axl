@@ -1,5 +1,4 @@
 ﻿using System.Collections.Immutable;
-using Axl.Compiler.Mir;
 
 namespace Axl.Compiler.Symbols;
 
@@ -7,9 +6,13 @@ namespace Axl.Compiler.Symbols;
 /// Represents a reference (i.e. a pointer) to an inner type. Used only by
 /// MIR.
 /// </summary>
-public sealed class RefTypeSymbol(TypeSymbol inner) : TypeSymbol(inner.Compilation, $"ref {inner.Name}", null, false)
+public sealed class RefTypeSymbol(TypeSymbol inner) 
+    : TypeSymbol(inner.Compilation, $"ref {inner.Name}", null, false)
 {
     public TypeSymbol Inner { get; } = inner;
+
+    /// <inheritdoc />
+    public override bool IsConcrete => Inner.IsConcrete;
 
     /// <inheritdoc />
     public override bool CanBeReferencedByName => false;
@@ -18,14 +21,21 @@ public sealed class RefTypeSymbol(TypeSymbol inner) : TypeSymbol(inner.Compilati
     public override ImmutableArray<Symbol> Members => [];
 
     /// <inheritdoc />
+    public override ImmutableArray<TypeParameterSymbol> TypeParameters => [];
+
+    /// <inheritdoc />
+    public override ImmutableArray<TypeSymbol> TypeArguments => [];
+
+    /// <inheritdoc />
     public override TypeSymbol Substitute(TypeMap map)
     {
-        var replaced = map.ReplaceOrKeep(Inner);
-        return replaced != Inner ? new RefTypeSymbol(replaced) : this;
+        var substitutedInner = Inner.Substitute(map);
+        return substitutedInner != Inner ? new RefTypeSymbol(substitutedInner) : this;
     }
     
     /// <inheritdoc />
     public override bool Equals(Symbol? other)
+        // Ref types with the same inner type are equal.
         => other is RefTypeSymbol otherRef &&
            otherRef.Inner.Equals(Inner);
 

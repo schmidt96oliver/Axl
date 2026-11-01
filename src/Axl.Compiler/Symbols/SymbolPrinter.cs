@@ -46,7 +46,7 @@ public static class SymbolPrinter
         /// </summary>
         public string FullName => symbol switch
         {
-            FunSymbol { TypeParameters.Length: > 0 } fun => $"{symbol.QualifiedName}{fun.FullTypeParameterDisplayText}",
+            FunSymbol { TypeParameters.Length: > 0 } fun => $"{symbol.QualifiedName}{fun.FullTypeArgumentDisplayText}",
             _ => symbol.QualifiedName
         };
 
@@ -83,11 +83,9 @@ public static class SymbolPrinter
         private string FullParameterDisplayText
             => $"({string.Join(", ", fun.Parameters.Select(p => $"{p.Name}: {p.ParameterTypeDisplayText}"))})";
 
-        private string FullTypeParameterDisplayText
-            => fun.TypeParameters.Length > 0
-                ? fun.TypeArguments.Length == fun.TypeParameters.Length
-                    ? $"[{string.Join(", ", fun.TypeArguments.Select(p => $"{p.QualifiedName}"))}]"
-                    : $"[{string.Join(", ", fun.TypeParameters.Select(p => $"{p.Name}"))}]"
+        private string FullTypeArgumentDisplayText
+            => fun.TypeArguments.Length > 0
+                ? $"[{string.Join(", ", fun.TypeArguments.Select(p => $"{p.QualifiedName}"))}]"
                 : "";
     }
 

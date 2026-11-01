@@ -1,4 +1,5 @@
 ﻿using System.Collections.Immutable;
+using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using Axl.Compiler.Binding.BoundTree;
 using Axl.Compiler.Syntax;
@@ -12,30 +13,25 @@ public closed class FunSymbol(Compilation compilation, string name, Symbol? owne
 {
     public override bool IsPublic { get; } = isPublic;
 
+    /// <inheritdoc />
+    public override bool IsConcrete 
+        => Owner?.IsConcrete != false && TypeArguments.All(arg => arg.IsConcrete);
+
+    /// <inheritdoc/>
+    public abstract override FunDefinitionSymbol OriginalDefinition { get; }
+    
     public bool IsOperator => SyntaxFacts.IsOperator(Name);
 
     public bool IsStatic => SelfParameter is null;
-
-    /// <summary>
-    /// Whether this fun has type parameters.
-    /// </summary>
-    public bool IsGeneric => TypeParameters.Length > 0;
-
-    /// <summary>
-    /// The <see cref="FunDefinitionSymbol"/> that originally declared this fun in
-    /// source text without any type parameter substitutions.
-    /// </summary>
-    public abstract FunDefinitionSymbol OriginalDefinition { get; }
-
-    /// <summary>
-    /// The <see cref="FunSymbol"/> this fun was constructed from by substituting
-    /// its own type parameters. <c>null</c>, if this fun is still generic.
-    /// </summary>
-    public abstract FunSymbol? ConstructedFrom { get; }
-
+    
 
     public abstract ImmutableArray<TypeParameterSymbol> TypeParameters { get; }
 
+    /// <summary>
+    /// The type arguments that fill <see cref="TypeParameters"/>. In their
+    /// initial state, <see cref="TypeArguments"/> is filled with the parameters
+    /// themselves. Might be specialized.
+    /// </summary>
     public abstract ImmutableArray<TypeSymbol> TypeArguments { get; }
 
     /// <summary>
@@ -62,43 +58,20 @@ public closed class FunSymbol(Compilation compilation, string name, Symbol? owne
     /// </summary>
     public abstract bool IsReturnMut { get; }
 
-
-    /// <summary>
-    /// Returns a <see cref="FunSymbol"/>, where all <see cref="TypeParameters"/> are replaced
-    /// by the given <paramref name="typeArguments"/>.
-    /// </summary>
-    public FunSymbol ConstructWith(ImmutableArray<TypeSymbol> typeArguments)
+    public FunSymbol Specialize(ImmutableArray<TypeSymbol> typeArguments)
     {
-        Guard.MustBe(TypeParameters.Length == typeArguments.Length);
-
-        // We don't need to construct, if we are given that same type
-        // parameters or arguments that are already there.
-        if (typeArguments.SequenceEqual(TypeParameters) ||
-            typeArguments.SequenceEqual(TypeArguments))
-        {
+        Guard.MustBe(TypeArguments.SequenceEqual(TypeParameters), "For specialization, the fun must still be open.");
+        Guard.MustBe(typeArguments.Length == TypeParameters.Length);
+        if (typeArguments.Length == 0)
             return this;
-        }
         
-        return new ConstructedFunSymbol(this, typeArguments);
+        return OriginalDefinition.Specialize(Owner, typeArguments);
     }
 
-
-    /// <inheritdoc />
-    public override bool Equals(Symbol? other)
-        => other is FunSymbol otherFun &&
-           ReferenceEquals(otherFun.OriginalDefinition, OriginalDefinition) &&
-           Equals(otherFun.Owner, Owner) &&
-           otherFun.TypeArguments.SequenceEqual(TypeArguments);
-
-    /// <inheritdoc />
-    public override int GetHashCode()
+    public override FunSymbol Substitute(TypeMap map)
     {
-        var hash = new HashCode();
-        hash.Add(0x18F2_AAD1);
-        hash.Add(RuntimeHelpers.GetHashCode(OriginalDefinition));
-        hash.Add(Owner);
-        foreach (var typeArg in TypeArguments)
-            hash.Add(typeArg);
-        return hash.ToHashCode();
+        var specializedOwner = Owner?.Substitute(map);
+        var specializedArgs = TypeArguments.Select(arg => arg.Substitute(map)).ToImmutableArray();
+        return OriginalDefinition.Specialize(specializedOwner, specializedArgs);
     }
 }

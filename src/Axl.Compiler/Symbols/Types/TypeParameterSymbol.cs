@@ -1,5 +1,4 @@
 ﻿using System.Collections.Immutable;
-using System.Runtime.CompilerServices;
 using Axl.Compiler.Syntax.Tree;
 
 namespace Axl.Compiler.Symbols;
@@ -8,12 +7,22 @@ public class TypeParameterSymbol(string name, Symbol owner, int ordinal, TypePar
     : TypeSymbol(owner.Compilation, name, owner, isPublic: true)
     // Should be public, because it must be as visible as the function/type itself.
 {
-    public int Ordinal { get; } = ordinal;
     public TypeParamSyntax? DeclarationSyntax { get; } = declarationSyntax;
 
+    public int Ordinal { get; } = ordinal;
+    
     /// <inheritdoc />
     public override bool CanBeReferencedByName => true;
 
+    /// <inheritdoc />
+    public override bool IsConcrete => false;
+
+    /// <inheritdoc />
+    public override ImmutableArray<TypeParameterSymbol> TypeParameters => [];
+
+    /// <inheritdoc />
+    public override ImmutableArray<TypeSymbol> TypeArguments => [];
+    
     // Type parameters have no members (yet). In the future, lookup on
     // implemented traits will happen here.
     /// <inheritdoc />
@@ -21,15 +30,5 @@ public class TypeParameterSymbol(string name, Symbol owner, int ordinal, TypePar
 
     /// <inheritdoc />
     public override TypeSymbol Substitute(TypeMap map)
-        => map.ReplaceOrKeep(this);
-    
-
-    /// <inheritdoc />
-    public override bool Equals(Symbol? other)
-        => ReferenceEquals(this,
-            other); // Type parameter symbols are source declared, so they have only one reference
-
-    /// <inheritdoc />
-    public override int GetHashCode()
-        => RuntimeHelpers.GetHashCode(this);
+        => map.Map(this);
 }

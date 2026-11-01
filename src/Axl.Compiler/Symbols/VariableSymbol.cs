@@ -14,7 +14,14 @@ public class VariableSymbol(string name, FunSymbol owner, bool isReadOnly, TypeS
     public override bool IsPublic => false;
 
     /// <inheritdoc />
+    public override bool IsConcrete => true;
+
+    /// <inheritdoc />
     public override bool CanBeReferencedByName => true;
+
+    /// <inheritdoc />
+    public override Symbol Substitute(TypeMap map)
+        => throw new InvalidOperationException("Substitution reached a variable, which doesn't make sense.");
 
     /// <inheritdoc />
     public override bool Equals(Symbol? other)

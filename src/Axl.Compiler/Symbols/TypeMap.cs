@@ -1,66 +1,88 @@
 ﻿using System.Collections.Frozen;
 using System.Collections.Immutable;
+using System.Diagnostics;
 
 namespace Axl.Compiler.Symbols;
 
 /// <summary>
-/// A mapping of type parameters to their substituted types. If <paramref name="strict"/>
-/// is true, every type parameters must map to a concrete type (i.e. not a type parameter).
+/// A mapping of type parameters to their substituted types. If the map is strict,
+/// every type parameters must map to a concrete type.
 /// Otherwise, it can be another type parameter or not be present.
 /// </summary>
-public sealed class TypeMap(FrozenDictionary<TypeParameterSymbol, TypeSymbol> map, bool strict)
+public sealed class TypeMap
 {
-    public TypeSymbol Get(TypeParameterSymbol typeParam)
-        => TryGet(typeParam) ?? throw new InvalidOperationException(
-            $"The type '{typeParam.FullName}' is not defined in this {nameof(TypeMap)}.");
-    
-    public TypeSymbol? TryGet(TypeParameterSymbol typeParam)
+    private readonly FrozenDictionary<TypeParameterSymbol, TypeSymbol> _map;
+    private readonly bool _strict;
+
+    private TypeMap(FrozenDictionary<TypeParameterSymbol, TypeSymbol> map, bool strict)
     {
-        if (map.TryGetValue(typeParam, out var type))
+        _map = map;
+        _strict = strict;
+    }
+
+    /// <summary>
+    /// Replaces the given <paramref name="type"/> if it is defined in this
+    /// map, otherwise returns <paramref name="type"/>.
+    /// If this <see cref="TypeMap"/> is strict and <paramref name="type"/> is
+    /// a <see cref="TypeParameterSymbol"/>, throws if it cannot be replaced
+    /// with a concrete type.
+    /// </summary>
+    public TypeSymbol Map(TypeSymbol type)
+    {
+        if (type is not TypeParameterSymbol typeParam)
+            return type;
+
+        if (!_map.TryGetValue(typeParam, out var replacedType))
         {
-            if (strict && type is TypeParameterSymbol)
+            if (_strict)
             {
                 throw new InvalidOperationException(
-                    $"The type '{typeParam.FullName}' maps to a type parameter again: '{type.FullName}'.");
+                    $"The type '{typeParam.FullName}' is not defined in this {nameof(TypeMap)}.");
             }
 
             return type;
         }
 
-        if (strict)
+        if (_strict && !replacedType.IsConcrete)
         {
             throw new InvalidOperationException(
-                $"The type '{typeParam.FullName}' is not defined in this {nameof(TypeMap)}.");
+                $"The type '{typeParam.FullName}' maps to a generic type again: '{replacedType.FullName}'.");
         }
 
-        return null;
+        return replacedType;
     }
-
-    public TypeSymbol ReplaceOrKeep(TypeSymbol type)
-        => type is TypeParameterSymbol typeParam && TryGet(typeParam) is { } replaced ? replaced : type;
     
-    public static TypeMap StrictFrom(ImmutableArray<TypeParameterSymbol> typeParameters,
-        ImmutableArray<TypeSymbol> substitutedTypes)
+    public static TypeMap For(Symbol symbol, bool strict = false)
     {
-        Guard.MustBe(typeParameters.Length == substitutedTypes.Length);
-        Guard.MustBe(substitutedTypes.All(t => t is not TypeParameterSymbol));
+        var map = new Dictionary<TypeParameterSymbol, TypeSymbol>();
+        foreach (var ancestor in symbol.SelfAndOwners())
+        {
+            Add(ancestor switch
+            {
+                TypeSymbol type => (type.TypeParameters, type.TypeArguments),
+                FunSymbol fun => (fun.TypeParameters, fun.TypeArguments),
+                
+                NamespaceSymbol => ([], []),
+                VariableSymbol => ([], []),
+                FieldSymbol => ([], []),
+            });
+        }
+        return new TypeMap(map.ToFrozenDictionary(), strict);
 
-        return new TypeMap(Enumerable
-            .Range(0, typeParameters.Length)
-            .ToDictionary(keySelector: i => typeParameters[i],
-                elementSelector: i => substitutedTypes[i])
-            .ToFrozenDictionary(), strict: true);
-    }
-
-    public static TypeMap From(ImmutableArray<TypeParameterSymbol> typeParameters, ImmutableArray<TypeSymbol>
-        substitutedTypes)
-    {
-        Guard.MustBe(typeParameters.Length == substitutedTypes.Length);
-
-        return new TypeMap(Enumerable
-            .Range(0, typeParameters.Length)
-            .ToDictionary(keySelector: i => typeParameters[i],
-                elementSelector: i => substitutedTypes[i])
-            .ToFrozenDictionary(), strict: false);
+        void Add((ImmutableArray<TypeParameterSymbol> typeParameters, ImmutableArray<TypeSymbol> typeArguments) mapping)
+        {
+            Debug.Assert(mapping.typeParameters.Length == mapping.typeArguments.Length);
+            for (var i = 0; i < mapping.typeParameters.Length; i++)
+            {
+                var param = mapping.typeParameters[i];
+                var arg = mapping.typeArguments[i];
+                
+                // Don't add identity to keep the map clean.
+                if (Equals(param, arg)) 
+                    continue;
+                if (!map.TryAdd(param, arg))
+                    throw new UnreachableException("The same type parameter appears over multiple ancestor symbols.");
+            }
+        }
     }
 }

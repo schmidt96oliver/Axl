@@ -402,9 +402,9 @@ public partial record Diagnostic
 
         private static ImmutableArray<SourceLocation> GetDeclNameLocations(Symbol symbol) => symbol switch
         {
-            SourceStructSymbol structSymbol => [structSymbol.DeclarationSyntax.Name.Location],
+            StructSymbol structSymbol => [structSymbol.DeclarationSyntax.Name.Location],
             SourceFunSymbol sourceFun => [sourceFun.DeclarationSyntax.Name.Location],
-            FieldSymbol fieldSymbol => [fieldSymbol.DeclarationSyntax.Name.Location],
+            FieldDefinitionSymbol fieldSymbol => [fieldSymbol.DeclarationSyntax.Name.Location],
             SourceNamespaceSymbol namespaceSymbol =>
             [
                 .. namespaceSymbol.Declaration.NamespaceDeclSyntaxes.Select(s => s.Name.Location)
@@ -417,7 +417,7 @@ public partial record Diagnostic
         public override string Message => $"‘{OffendingSymbols[0].QualifiedName}‘ is already declared.";
     }
 
-    public sealed record RecursiveStructLayout(StructSymbol StructSymbol, ImmutableArray<FieldSymbol> FieldPath) : Error
+    public sealed record RecursiveStructLayout(StructSymbol StructSymbol, ImmutableArray<FieldDefinitionSymbol> FieldPath) : Error
     {
         public override ImmutableArray<SourceLocation> Locations => [FieldPath[0].DeclarationSyntax.TypeExpr.Location];
         public override string Message => $"Struct ‘{StructSymbol.FullName}‘ has a cycle in its layout. The cycle is through fields {GetCycleString()}";
@@ -426,11 +426,11 @@ public partial record Diagnostic
             => string.Join(" -> ", FieldPath.Select(field => $"‘{field.FullName}: {field.Type.FullName}‘"));
     }
 
-    public record UndefinedField(StructSymbol Struct, SyntaxNode Syntax) : Error
+    public record UndefinedField(TypeSymbol Type, SyntaxNode Syntax) : Error
     {
         public override ImmutableArray<SourceLocation> Locations => [Syntax.Location];
 
-        public override string Message => $"‘{Struct.FullName}‘ has no field ‘{Syntax.Text}‘.";
+        public override string Message => $"‘{Type.FullName}‘ has no field ‘{Syntax.Text}‘.";
     }
 
     public record MissingFieldName(SyntaxNode Syntax) : Error
@@ -464,7 +464,7 @@ public partial record Diagnostic
 
         public override string Message => TypeRef.Type switch
         {
-            StructSymbol { IsPrimitive: true } =>
+            { IsPrimitive: true } =>
                 $"‘{TypeRef.Type.FullName}‘ cannot be initialized, because it is a primitive type.",
             TypeParameterSymbol =>
                 $"‘{TypeRef.Type.FullName}‘ cannot be initialized, because it is a generic type.",
@@ -743,7 +743,7 @@ public partial record Diagnostic
         public override string Message => $"Unknown primitive '{Name}'.";
     }
 
-    public sealed record FieldDeclarationOnPrimitive(FieldDeclSyntax Syntax, StructSymbol Symbol) : Error
+    public sealed record FieldDeclarationOnPrimitive(FieldDeclSyntax Syntax, TypeSymbol Symbol) : Error
     {
         /// <inheritdoc />
         public override ImmutableArray<SourceLocation> Locations => [Syntax.Location];

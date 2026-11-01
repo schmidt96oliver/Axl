@@ -420,7 +420,7 @@ public sealed class Binder(Scope scope, BinderSideEffects sideEffects)
         return funSymbol;
     }
 
-    public SourceStructSymbol BindStructDeclaration(StructDeclSyntax syntax)
+    public StructSymbol BindStructDeclaration(StructDeclSyntax syntax)
     {
         // Primitive annotation
         var annotations = syntax.Annotations.Select(BindAnnotation);
@@ -452,7 +452,7 @@ public sealed class Binder(Scope scope, BinderSideEffects sideEffects)
             isPublic = false;
         }
 
-        var symbol = new SourceStructSymbol(syntax, enclosingScope: Scope, isPublic, primitiveKind);
+        var symbol = new StructSymbol(syntax, enclosingScope: Scope, isPublic, primitiveKind);
         if (symbol.Name.Length > 0)
             SideEffects.AddResolvedSymbol(syntax.Name.Location, symbol);
         return symbol;
@@ -466,8 +466,7 @@ public sealed class Binder(Scope scope, BinderSideEffects sideEffects)
         if (structSymbol.IsPrimitive)
             SideEffects.ReportError(new Diagnostic.FieldDeclarationOnPrimitive(syntax, structSymbol));
         
-        var isPub = syntax.PubKw is not null;
-        var symbol = new FieldSymbol(syntax, Scope, structSymbol, isPub);
+        var symbol = new FieldDefinitionSymbol(syntax, Scope, structSymbol);
         if (symbol.Name.Length > 0)
             SideEffects.AddResolvedSymbol(syntax.Name.Location, symbol);
 
@@ -573,9 +572,9 @@ public sealed class Binder(Scope scope, BinderSideEffects sideEffects)
         Recurse(symbol, []);
         return;
 
-        void Recurse(StructSymbol current, FieldSymbol[] path)
+        void Recurse(StructSymbol current, FieldDefinitionSymbol[] path)
         {
-            foreach (var field in current.Members.OfType<FieldSymbol>())
+            foreach (var field in current.Members.OfType<FieldSymbol>().Select(f => f.OriginalDefinition))
             {
                 if (field.Type is not StructSymbol fieldStructType)
                     continue;
@@ -672,14 +671,20 @@ public sealed class Binder(Scope scope, BinderSideEffects sideEffects)
 
         return parameters;
     }
-    
+
     private ParameterSymbol BindParameter(ParamSyntax syntax)
     {
         if (Scope.OwnerAsFun is null)
             throw new InvalidOperationException($"{nameof(BindParameter)} only valid on funs.");
 
         var type = BindType(syntax.TypeAnnotation, TypeUsage.Signature);
-        var symbol = new ParameterSymbol(syntax.Name.Identifier, Scope.OwnerAsFun!, type, isMut: syntax.MutKw is not null, isSelf: false, syntax);
+        var symbol = new ParameterSymbol(syntax.Name.Identifier, 
+            Scope.OwnerAsFun!, 
+            type,
+            isMut: syntax.MutKw is not null, 
+            isSelf: false, 
+            originalDefinition: null,
+            syntax);
         SideEffects.AddResolvedSymbol(syntax.Name.Location, symbol);
         return symbol;
     }
@@ -1604,7 +1609,7 @@ public sealed class Binder(Scope scope, BinderSideEffects sideEffects)
         // All candidates have correct type parameter arity, so we
         // can already construct for better diagnostics.
         for (var i = 0; i < candidates.Count; i++)
-            candidates[i] = candidates[i].ConstructWith([.. funGroup.TypeArguments.Select(a => a.Type)]);
+            candidates[i] = candidates[i].Specialize([.. funGroup.TypeArguments.Select(a => a.Type)]);
         
         if (viability is FunViability.ArityMismatch)
         {
