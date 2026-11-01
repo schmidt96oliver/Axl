@@ -1,0 +1,13 @@
+﻿//@run
+//= 1
+
+Print(First[I32, String](1, ""));   
+
+fun First[T1, T2](a: T1, b: T2): T1
+{ 
+    return Second[T2, T1](b, a);
+}
+fun Second[T1, T2](a: T1, b: T2) : T2
+{ 
+    return b;
+}
