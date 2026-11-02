@@ -1,0 +1,8 @@
+﻿//@check
+    
+// Print accepts one parameter.
+    
+Test({ }, 1);     //~error WrongArgumentCount
+Test();        //~error WrongArgumentCount
+
+fun Test(arg: String) { }

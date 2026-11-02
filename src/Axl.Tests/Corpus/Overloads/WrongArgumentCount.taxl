@@ -8,9 +8,9 @@ struct Test
     pub fun A(i: I32) 
     { 
         A();        // Here it's valid
-        A(1, 1);    //~error ArityMismatch
+        A(1, 1);    //~error WrongArgumentCount
     }
 } 
 
 let t = Test();
-t.A();              //~error ArityMismatch
+t.A();              //~error WrongArgumentCount

@@ -3,10 +3,6 @@
 
 # Now
 
-* analoguous errors for funs 
-  * MissingTypeArguments, WrongArgumentCount, WrongTypeArgumentCount, NotGeneric
-  * ResolveFunGroup
-
 * Name clash `struct S[T] { T: I32 }`
 * Infinite size check, follow into generic fields
   * `struct Node[T] { next: Node[T] }`

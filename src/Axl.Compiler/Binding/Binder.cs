@@ -1698,7 +1698,7 @@ public sealed class Binder(Scope scope, BinderSideEffects sideEffects)
     {
         NotFound,
         WrongTypeArgumentCount,
-        ArityMismatch,
+        WrongArgumentCount,
         ArgumentTypeMismatch,
         Viable
     }
@@ -1761,16 +1761,16 @@ public sealed class Binder(Scope scope, BinderSideEffects sideEffects)
         for (var i = 0; i < candidates.Count; i++)
             candidates[i] = candidates[i].Specialize([.. funGroup.TypeArguments.Select(a => a.Type)]);
         
-        if (viability is FunViability.ArityMismatch)
+        if (viability is FunViability.WrongArgumentCount)
         {
-            SideEffects.ReportError(new Diagnostic.ArityMismatch(
+            SideEffects.ReportError(new Diagnostic.WrongArgumentCount(
                 [.. candidates],
                 arguments.Length,
                 argListSyntax));
             return null;
         }
 
-        // If any argument had an error, we can only report ArityMismatch
+        // If any argument had an error, we can only report WrongArgumentCount
         // and the rest should be silent, since we can't resolve with erroneous
         // arguments.
         if (argumentTypes.OfType<ErrorTypeSymbol>().Any())
@@ -1833,7 +1833,7 @@ public sealed class Binder(Scope scope, BinderSideEffects sideEffects)
         var specializedFun = fun.Specialize([.. typeArguments.Select(t => t.Type)]);
         
         if (specializedFun.Parameters.Length != arguments.Length)
-            return FunViability.ArityMismatch;
+            return FunViability.WrongArgumentCount;
 
         if (!arguments.Zip(specializedFun.Parameters, (arg, param) => IsArgumentAssignableTo(param, typeArguments, arg)).All(x => x))
             return FunViability.ArgumentTypeMismatch;

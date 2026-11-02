@@ -188,7 +188,7 @@ public partial record Diagnostic
         
     }
 
-    public sealed record ArityMismatch(ImmutableArray<FunSymbol> Candidates, int ArgumentCount, SyntaxNode Syntax) : Error
+    public sealed record WrongArgumentCount(ImmutableArray<FunSymbol> Candidates, int ArgumentCount, SyntaxNode Syntax) : Error
     {
         public override ImmutableArray<SourceLocation> Locations
             => [Syntax is ArgListSyntax argList ? argList.InsideLocation : Syntax.Location];
