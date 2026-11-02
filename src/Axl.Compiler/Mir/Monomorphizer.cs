@@ -44,6 +44,7 @@ public class Monomorphizer
     private void Instantiate(FunSymbol funSymbol)
     {
         Debug.Assert(funSymbol.IsConcrete, "Generic fun symbol enqueued for monomorphization.");
+        CheckTypeArgDepth(funSymbol);
         
         // If the fun and its owners have no type parameters, we don't need to instantiate it.
         // But just to test the monomorphizer, we do it anyway and bugs
@@ -66,6 +67,26 @@ public class Monomorphizer
             InstantiateBlock(originalBlock, instantiatedMirFun, typeMap);
     }
 
+    [Conditional("DEBUG")]
+    private static void CheckTypeArgDepth(FunSymbol fun)
+    {
+        foreach (var typeArg in fun.TypeArguments)
+            CheckTypeArgDepth(typeArg, depth: 0, funName: fun.FullNameWithoutOwnTypeArgs);
+    }
+    
+    [Conditional("DEBUG")]
+    private static void CheckTypeArgDepth(TypeSymbol type, int depth, string funName)
+    {
+        const int depthLimit = 128;
+        if (depth > depthLimit)
+            throw new InvalidOperationException(
+                $"Generic types are nested more than {depthLimit} times, while monomorphizing {funName}. Cannot monomorphize.");
+        
+        foreach (var typeArg in type.TypeArguments)
+            CheckTypeArgDepth(typeArg, depth + 1, funName);
+    }
+    
+    
     private MutBasicBlock InstantiateBlock(MutBasicBlock original, MutMirFunction instantiatedMirFun, TypeMap map)
     {
         MutBasicBlock block;
