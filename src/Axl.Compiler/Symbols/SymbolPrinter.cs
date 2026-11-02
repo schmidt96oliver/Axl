@@ -1,4 +1,5 @@
 ﻿using System.Collections.Immutable;
+using System.Diagnostics;
 using Axl.Compiler.Binding.BoundTree;
 
 namespace Axl.Compiler.Symbols;
@@ -18,10 +19,18 @@ public static class SymbolPrinter
             FunSymbol { IsOperator: false } => "fun",
             FunSymbol { IsOperator: true } => "operator",
 
+            TypeSymbol type => type.OriginalDefinition switch
+            {
+                StructSymbol => "struct",
+                
+                TypeParameterSymbol => "type parameter",
+                ErrorTypeSymbol => "error",
+                RefTypeSymbol refType => $"ref {refType.Inner.KindName}",
+                
+                SpecializedTypeSymbol => throw new UnreachableException(),
+            },
+            
             NamespaceSymbol => "namespace",
-            StructSymbol => "struct",
-            TypeParameterSymbol => "generic type",
-            TypeSymbol => "type",
         };
 
         /// <summary>

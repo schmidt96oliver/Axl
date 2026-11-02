@@ -3,6 +3,10 @@
 
 # Now
 
+* boundTypeGroup. ResolveTypeGroup. ResolveFunGroup
+
+* Mir TypeInit -> StructInit
+
 * wrong type params: Should AddResolvedSymbol ??
 
 * NotAType: Should be TypeParameterArityMismatch instead, see test.taxl
@@ -29,6 +33,8 @@
 * Mir: Validator
   * Phase.Monomorphized: Check that everything is concrete. No TypeParams
   * Call with mut return: ref is directly used and never again
+
+* Mir: StructInit as ImmutableArray<Operand> ordered from declaration/member order. No map
 
 # Milestones
 
