@@ -174,8 +174,18 @@ public sealed class Evaluator
             _failedChecks.Add(new FailedCheck(0, $"Test file must have 1 script to execute, got {_compilation.Scripts.Length}."));
             return;
         }
+
+        var compilationResult = _compilation.Compile(_compilation.Scripts[0]);
+        if (!compilationResult.IsSuccessful)
+        {
+            _failedChecks.AddRange(new FailedCheck(0, "Compilation failed with:" + string.Join('\n',
+                compilationResult.Diagnostics.Select(d => d.GetDisplayString(
+                    Path.GetDirectoryName(_testFile.SourceText.FileName),
+                    l => _testFile.TryMapToTestFile(l) ?? l)))));
+            return;
+        }
         
-        Miri.Run(_compilation.Compile(_compilation.Scripts[0]), output);
+        Miri.Run(compilationResult.Program!, output);
         
         var actualOutput = Normalize(output.ToString());
 

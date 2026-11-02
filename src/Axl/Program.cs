@@ -3,6 +3,7 @@ using Axl.Compiler;
 using Axl.Compiler.Binding.BoundTree;
 using Axl.Compiler.Diagnostics;
 using Axl.Compiler.Mir;
+using Axl.Compiler.Mir.Analysis;
 using Axl.Compiler.Symbols;
 using Axl.Compiler.Testing;
 using Axl.Compiler.Text;
@@ -34,17 +35,18 @@ switch (args[0])
             return;
         }
 
-        var allDiagnostics =
-            compilation.Diagnostics.Concat(compilation.ReferencedCompilations.SelectMany(c => c.Diagnostics))
-                .ToImmutableArray();
-
-        foreach (var diagnostic in allDiagnostics)
+        var result = compilation.Compile(compilation.Scripts[0]);
+        
+        foreach (var diagnostic in result.Diagnostics)
         {
             Console.WriteLine(testFile is not null
                 ? diagnostic.GetDisplayString(testDirectory,
                     l => testFile.TryMapToTestFile(l) ?? l)
                 : diagnostic.GetDisplayString(testDirectory));
         }
+
+        if (!result.IsSuccessful)
+            return;
 
         Console.WriteLine("---------------");
         Console.WriteLine("--- GENERIC ---");
@@ -56,23 +58,18 @@ switch (args[0])
             Console.WriteLine();
         }
         
-        if (allDiagnostics.HasError)
-            return;
-
         Console.WriteLine("---------------");
         Console.WriteLine("--- MONOMOR ---");
         Console.WriteLine("---------------");
         
-        var program = compilation.Compile(compilation.Scripts[0]);
-
-        foreach (var fun in program.MirFunctions.Where(f => !f.DisplayName.StartsWith("Base")).OrderBy(f => f.DisplayName, StringComparer.Ordinal))
+        foreach (var fun in result.Program!.MirFunctions.Where(f => !f.DisplayName.StartsWith("Base")).OrderBy(f => f.DisplayName, StringComparer.Ordinal))
         {
             Console.WriteLine(fun.Print());
             Console.WriteLine();
         }
         
         Console.WriteLine("----------------");
-        Miri.Run(program, Console.Out);
+        Miri.Run(result.Program!, Console.Out);
 
         break;
     }

@@ -11,7 +11,9 @@ public sealed class MonomorphizerTests
     {
         var compilation = Compilation.From(SourceText.From(input)).AddBaseLibrary();
         var program = compilation.Compile(compilation.Scripts[0]);
-        var mirFuns = program.MirFunctions.OrderBy(f => f.DisplayName, StringComparer.InvariantCulture);
+        if (!program.IsSuccessful)
+            Assert.Fail("Compilation unsuccessful.");
+        var mirFuns = program.Program!.MirFunctions.OrderBy(f => f.DisplayName, StringComparer.InvariantCulture);
         return string.Join('\n', mirFuns.Select(f => 
             $"{ f.DisplayName }({ string.Join(", ", f.ParameterPlaces.Select(p => $"{p.Id}: {p.Type.FullName}")) }): {f.ReturnPlace.Type.FullName}"));
     }

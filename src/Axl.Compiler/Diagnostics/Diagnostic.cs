@@ -1,5 +1,4 @@
 using System.Collections.Immutable;
-using Axl.Compiler.Symbols;
 using Axl.Compiler.Text;
 
 namespace Axl.Compiler.Diagnostics;

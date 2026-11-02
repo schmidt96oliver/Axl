@@ -45,4 +45,27 @@ public partial record Diagnostic
             ? $"{Fun.ShortDisplayText.Capitalize()} is declared to never return, but can reach the end of its body."
             : "Not all code-paths return a value.";
     }
+
+    public sealed record InfiniteInstantiation(FunSymbol Fun) : Error
+    {
+        // It's a global diagnostic.
+        /// <inheritdoc />
+        public override ImmutableArray<SourceLocation> Locations => [];
+
+        /// <inheritdoc />
+        public override string Message => $"Reached the recursion limit while instantiating ‘{Fun.FullNameWithoutOwnTypeArgs}{TypeArgText}‘.";
+
+        /// <inheritdoc />
+        public override string Hint => $"‘{Fun.Name}‘ calls itself with a type argument that grows on every call.";
+
+        private string TypeArgText =>
+            $"[{string.Join(", ", Fun.TypeArguments.Select(arg => GetTypeText(arg, 0)))}]";
+
+        private string GetTypeText(TypeSymbol symbol, int depth)
+        {
+            if (symbol.TypeArguments.Length == 0) return symbol.FullNameWithoutOwnTypeArgs;
+            if (depth >= 3) return "...";
+            return $"{symbol.FullNameWithoutOwnTypeArgs}[{ string.Join(", ", symbol.TypeArguments.Select(arg => GetTypeText(arg, depth + 1))) }]";
+        }
+    }
 }

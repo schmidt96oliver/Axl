@@ -1,32 +1,42 @@
 ﻿using System.Collections.Frozen;
 using System.Diagnostics;
+using Axl.Compiler.Diagnostics;
 using Axl.Compiler.Symbols;
+using Axl.Compiler.Text;
 
 namespace Axl.Compiler.Mir;
 
 public class Monomorphizer
 {
+    private readonly DiagnosticBag _diagnosticBag;
     private readonly Queue<FunSymbol> _worklist = [];
     private readonly Dictionary<FunSymbol, MutMirFunction> _instantiatedMirFuns = [];
     private readonly Func<FunDefinitionSymbol, MutMirFunction> _lowerDefinition;
 
     
-    private Monomorphizer(Func<FunDefinitionSymbol, MutMirFunction> lowerDefinition)
+    private Monomorphizer(Func<FunDefinitionSymbol, MutMirFunction> lowerDefinition, DiagnosticBag diagnosticBag)
     {
         _lowerDefinition = lowerDefinition;
+        _diagnosticBag = diagnosticBag;
     }
 
-    public static MirProgram Monomorphize(FunSymbol entryFunSymbol, Func<FunDefinitionSymbol, MutMirFunction> lowerDefinition)
+    /// <summary>
+    /// Instantiates every seen concrete fun and type symbols. Starts at entry.
+    /// <paramref name="lowerDefinition"/> lowers each definition fun symbol and is expected to cache its result.
+    /// Return <c>null</c>, if monomorphization failed and reports it error into <paramref name="diagnosticBag"/>.
+    /// </summary>
+    public static MirProgram? TryMonomorphize(FunSymbol entryFunSymbol, Func<FunDefinitionSymbol, MutMirFunction> lowerDefinition, DiagnosticBag diagnosticBag)
     {
         Guard.MustBe(entryFunSymbol.IsConcrete, "Cannot monomorphize generic script symbols.");
         
-        var monomorphizer = new Monomorphizer(lowerDefinition);
+        var monomorphizer = new Monomorphizer(lowerDefinition, diagnosticBag);
         monomorphizer._worklist.Enqueue(entryFunSymbol);
         
         while (monomorphizer._worklist.Count > 0)
         {
             var fun = monomorphizer._worklist.Dequeue();
-            monomorphizer.Instantiate(fun);
+            if (!monomorphizer.Instantiate(fun))
+                return null;
         }
 
         return new MirProgram(monomorphizer._instantiatedMirFuns[entryFunSymbol],
@@ -41,17 +51,18 @@ public class Monomorphizer
         _worklist.Enqueue(funSymbol);
     }
 
-    private void Instantiate(FunSymbol funSymbol)
+    private bool Instantiate(FunSymbol funSymbol)
     {
         Debug.Assert(funSymbol.IsConcrete, "Generic fun symbol enqueued for monomorphization.");
-        CheckTypeArgDepth(funSymbol);
+        if (!CheckTypeArgumentDepth(funSymbol))
+            return false;
         
         // If the fun and its owners have no type parameters, we don't need to instantiate it.
         // But just to test the monomorphizer, we do it anyway and bugs
         // will appear in any corpus test.
         
         if (_instantiatedMirFuns.ContainsKey(funSymbol))
-            return;
+            return true;
         
         var originalMirFun = _lowerDefinition(funSymbol.OriginalDefinition);
         var typeMap = TypeMap.For(funSymbol, strict: true);
@@ -65,28 +76,25 @@ public class Monomorphizer
 
         foreach (var originalBlock in originalMirFun.BasicBlocks)
             InstantiateBlock(originalBlock, instantiatedMirFun, typeMap);
+        return true;
     }
 
-    [Conditional("DEBUG")]
-    private static void CheckTypeArgDepth(FunSymbol fun)
-    {
-        foreach (var typeArg in fun.TypeArguments)
-            CheckTypeArgDepth(typeArg, depth: 0, funName: fun.FullNameWithoutOwnTypeArgs);
-    }
-    
-    [Conditional("DEBUG")]
-    private static void CheckTypeArgDepth(TypeSymbol type, int depth, string funName)
+    private bool CheckTypeArgumentDepth(FunSymbol fun)
+        => fun.TypeArguments.All(arg => CheckTypeArgumentDepth(fun, arg, 0));
+
+    private bool CheckTypeArgumentDepth(FunSymbol fun, TypeSymbol type, int depth)
     {
         const int depthLimit = 128;
         if (depth > depthLimit)
-            throw new InvalidOperationException(
-                $"Generic types are nested more than {depthLimit} times, while monomorphizing {funName}. Cannot monomorphize.");
-        
-        foreach (var typeArg in type.TypeArguments)
-            CheckTypeArgDepth(typeArg, depth + 1, funName);
+        {
+            _diagnosticBag.ReportError(new Diagnostic.InfiniteInstantiation(fun));
+            return false;
+        }
+
+        return type.TypeArguments.All(arg => CheckTypeArgumentDepth(fun, arg, depth + 1));
     }
-    
-    
+
+
     private MutBasicBlock InstantiateBlock(MutBasicBlock original, MutMirFunction instantiatedMirFun, TypeMap map)
     {
         MutBasicBlock block;

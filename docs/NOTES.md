@@ -3,9 +3,7 @@
 
 # Now
 
-* Monomorphizer depth limit (and try) (see test.taxl)
-
-* Infinite size check, follow into generic fields
+* Infinite STRUCT SIZE check, follow into generic fields
   * `struct Node[T] { next: Node[T] }`
   * `struct A[T] { x: T } struct B { a: A[B] }`
   * `struct S[T] { s: S[Box[T]] }`

@@ -191,19 +191,26 @@ public class Compilation
     }
 
 
-    public MirProgram Compile(ScriptSymbol entryScript)
+    
+
+    public CompilationResult Compile(ScriptSymbol entryScript)
     {
         if (entryScript.Compilation != this || !Scripts.Contains(entryScript))
             throw new ArgumentException("The given script is not part of this compilation.", nameof(entryScript));
         
         Complete();
-        
-        if (Diagnostics.HasError || ReferencedCompilations.Any(c => c.Diagnostics.HasError))
-            throw new InvalidOperationException("Cannot compile program with errors.");
 
-        var program = Monomorphizer.Monomorphize(entryScript.Fun,
-            funDefinition => GetLoweredFunBody(funDefinition).MirFunction);
-        return program;
+        var diagnosticBag = new DiagnosticBag();
+        diagnosticBag.AddRange(Diagnostics);
+        diagnosticBag.AddRange(ReferencedCompilations.SelectMany(c => c.Diagnostics));
+
+        if (diagnosticBag.HasError)
+            return new CompilationResult(null, diagnosticBag.Drain());
+        
+        var program = Monomorphizer.TryMonomorphize(entryScript.Fun,
+            funDefinition => GetLoweredFunBody(funDefinition).MirFunction,
+            diagnosticBag);
+        return new CompilationResult(program, diagnosticBag.Drain());
     }
     
 
