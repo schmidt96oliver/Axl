@@ -248,6 +248,22 @@ public sealed class Binder(Scope scope, BinderSideEffects sideEffects)
     {
         var syntaxNodes = syntax.SyntaxNodes().ToImmutableArray();
         
+        // Skip usings at the start of the file
+        var index = 0;
+        for (; index < syntaxNodes.Length && syntaxNodes[index] is UsingDirectiveSyntax; index++)
+        {
+        }
+
+        var inBlockBinder = EnterBlock();
+
+        var stmts = inBlockBinder.BindStmts(syntaxNodes[index..]);
+        return new BoundBlock(stmts, Unit, syntax);
+    }
+    
+    public ImmutableArray<Symbol> BindScriptMembers(FileSyntax syntax, out LazyUsingsScope usingsScope)
+    {
+        var syntaxNodes = syntax.SyntaxNodes().ToImmutableArray();
+        
         // Usings
         var index = 0;
         var usingSyntaxes = ImmutableArray.CreateBuilder<UsingDirectiveSyntax>();
@@ -256,14 +272,14 @@ public sealed class Binder(Scope scope, BinderSideEffects sideEffects)
 
         // The scope can immediately be completed, since
         // we are not currently binding a namespace.
-        var usingsScope = new LazyUsingsScope(Scope, usingSyntaxes.DrainToImmutable());
-        usingsScope.Complete(SideEffects);
+        usingsScope = new LazyUsingsScope(Scope, usingSyntaxes.DrainToImmutable());
         var usingsBinder = WithScope(usingsScope);
-        
-        var inBlockBinder = usingsBinder.EnterBlock();
 
-        var stmts = inBlockBinder.BindStmts(syntaxNodes[index..]);
-        return new BoundBlock(stmts, Unit, syntax);
+        return
+        [
+            .. syntax.Children.OfType<StructDeclSyntax>().Select(usingsBinder.BindStructDeclaration),
+            .. syntax.Children.OfType<FunDeclSyntax>().Select(usingsBinder.BindSourceFunDeclaration)
+        ];
     }
 
     public NamespaceSymbol BindNamespaceDeclaration(NamespaceDeclaration declaration)

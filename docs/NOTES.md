@@ -3,11 +3,6 @@
 
 # Now
 
-* ScriptSymbol must make usings binder
-
-* TypeParameterHasOwnerName
-* TypeParameterHidesType
-
 * Monomorphizer depth limit (and try) (see test.taxl)
 
 * Infinite size check, follow into generic fields

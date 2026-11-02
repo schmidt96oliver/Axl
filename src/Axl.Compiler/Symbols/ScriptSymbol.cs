@@ -1,4 +1,5 @@
 ﻿using System.Collections.Immutable;
+using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using Axl.Compiler.Binding;
 using Axl.Compiler.Binding.Scopes;
@@ -10,11 +11,8 @@ namespace Axl.Compiler.Symbols;
 public class ScriptSymbol(SyntaxTree syntax, Scope enclosingScope) 
     : NamespaceSymbol(enclosingScope.Compilation, name: "", owner: null, isRoot: false)
 {
-    /// <summary>
-    /// To avoid unnecessary allocations, the binder is created on first
-    /// use and released again after call to <see cref="Complete"/>.
-    /// </summary>
     private Binder? _binder;
+    private LazyUsingsScope? _lazyUsingsScope;
     private bool _isBindingMembers;
     private bool _isBindingScriptFun;
 
@@ -33,11 +31,7 @@ public class ScriptSymbol(SyntaxTree syntax, Scope enclosingScope)
                 _isBindingMembers = true;
 
                 _binder ??= MakeBinder();
-                field =
-                [
-                    .. syntax.FileSyntax.Children.OfType<StructDeclSyntax>().Select(_binder.BindStructDeclaration),
-                    .. syntax.FileSyntax.Children.OfType<FunDeclSyntax>().Select(_binder.BindSourceFunDeclaration)
-                ];
+                field = _binder.BindScriptMembers(syntax.FileSyntax, out _lazyUsingsScope);
                 
                 _isBindingMembers = false;
 
@@ -58,11 +52,15 @@ public class ScriptSymbol(SyntaxTree syntax, Scope enclosingScope)
                     throw new CycleException();
                 _isBindingScriptFun = true;
                 
-                _binder ??= MakeBinder();
+                // Trigger Member completion, so we get the usings scope
+                _ = Members;
+                Debug.Assert(_lazyUsingsScope is not null);
+                
+                var binder = (_binder ??= MakeBinder()).WithScope(_lazyUsingsScope);
 
                 field = new SyntheticFunSymbol(name: "", owner: this, isPublic: false);
-                field.SetSignature(selfParameter: null, [], _binder.Scope.Compilation.BaseLibrary.Unit);
-                field.SetBody(_binder.EnterFunSignature(field).BindScriptBody(syntax.FileSyntax));
+                field.SetSignature(selfParameter: null, [], binder.Scope.Compilation.BaseLibrary.Unit);
+                field.SetBody(binder.EnterFunSignature(field).BindScriptBody(syntax.FileSyntax));
 
                 _isBindingScriptFun = false;
             }
@@ -80,6 +78,7 @@ public class ScriptSymbol(SyntaxTree syntax, Scope enclosingScope)
         foreach (var member in Members)
             member.Complete(sideEffects);
         _ = Fun;
+        _lazyUsingsScope?.Complete(sideEffects);
         
         _binder!.SideEffects.DrainInto(sideEffects);
         _binder = null;
