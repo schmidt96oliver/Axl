@@ -1,0 +1,16 @@
+﻿//@check
+
+let a: Test = 1;    //~error MissingTypeArguments
+let a = Test.A();   //~error MissingTypeArguments
+
+fun A(p: Test) { }  //~error MissingTypeArguments
+fun A(): Test { }   //~error MissingTypeArguments
+
+let a: Test[Test] = 1;  //~error MissingTypeArguments
+
+struct Test[T]
+{
+    pub static fun A() { }
+}
+
+struct Test[T1, T2];

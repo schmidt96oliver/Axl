@@ -8,6 +8,10 @@ public static class ReturnCheck
 {
     public static void Check(FunDefinitionSymbol funDefinition, MutMirFunction mirFunction, ReachabilityResult reachability, DiagnosticBag diagnosticBag)
     {
+        // Suppress missing return if return type is an error.
+        if (mirFunction.ReturnPlace.Type is ErrorTypeSymbol)
+            return;
+        
         var missingReturnReachable = mirFunction.BasicBlocks
             .Any(b => reachability.Reachable[b.Id] && b.Terminator is Terminator.MissingReturn);
         

@@ -1,0 +1,19 @@
+﻿//@check
+
+let a: Test[I32, String] = 1;              //~error WrongTypeArgumentCount
+let a: Test[I32, String, I32] = 1;         //~error WrongTypeArgumentCount
+let a = Test[I32, String].A();             //~error WrongTypeArgumentCount
+let a = Test[I32, String, I32].A();        //~error WrongTypeArgumentCount
+
+fun A(p: Test[I32, String]) { }            //~error WrongTypeArgumentCount
+fun A(p: Test[I32, String, I32]) { }       //~error WrongTypeArgumentCount
+fun A1(): Test[I32, String] { }            //~error WrongTypeArgumentCount
+fun A2(): Test[I32, String, I32] { }       //~error WrongTypeArgumentCount
+
+let a: Test[I32, String] = 1;              //~error WrongTypeArgumentCount
+let a: Test[I32, String, I32] = 1;         //~error WrongTypeArgumentCount
+
+struct Test[T]
+{
+    pub static fun A() { }
+}

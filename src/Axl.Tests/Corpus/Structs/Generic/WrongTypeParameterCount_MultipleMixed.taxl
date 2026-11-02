@@ -1,0 +1,16 @@
+﻿//@check
+
+let a: Test[I32] = 1;              //~error WrongTypeArgumentCount
+let a = Test[I32].A();             //~error WrongTypeArgumentCount
+
+fun A(p: Test[I32]) { }            //~error WrongTypeArgumentCount
+fun A1(): Test[I32] { }            //~error WrongTypeArgumentCount
+
+let a: Test[I32] = 1;              //~error WrongTypeArgumentCount
+
+struct Test
+{
+    pub static fun A() { }
+}
+
+struct Test[T1, T2];

@@ -3,12 +3,9 @@
 
 # Now
 
-* boundTypeGroup. ResolveTypeGroup. ResolveFunGroup
-
-* wrong type params: Should AddResolvedSymbol ??
-
-* NotAType: Should be TypeParameterArityMismatch instead, see test.taxl
-* SubscriptNotAllowed: Should be TypeParameterArityMismatch instead, see test.taxl
+* analoguous errors for funs 
+  * MissingTypeArguments, WrongArgumentCount, WrongTypeArgumentCount, NotGeneric
+  * ResolveFunGroup
 
 * Name clash `struct S[T] { T: I32 }`
 * Infinite size check, follow into generic fields

@@ -3,11 +3,6 @@ using Axl.Compiler.Syntax;
 
 namespace Axl.Compiler.Binding.BoundTree;
 
-/// <summary>
-/// A reference to a type that is specialized or not generic.
-/// Generic type without type arguments are a separate
-/// <see cref="BoundGenericTypeRef"/>.
-/// </summary>
 public sealed class BoundTypeRef(TypeSymbol type, SyntaxNode? syntax) : BoundNode(syntax), IBoundSymbolRef
 {
     public TypeSymbol Type { get; } = type;

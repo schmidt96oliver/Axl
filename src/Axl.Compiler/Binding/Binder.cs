@@ -978,8 +978,12 @@ public sealed class Binder(Scope scope, BinderSideEffects sideEffects)
         var typeRef = bound as BoundTypeRef;
         if (bound is BoundValueOrTypeRef valueOrType)
             typeRef = valueOrType.AsTypeRef;
-        else if (bound is BoundGenericTypeRef genericTypeRef)
-            typeRef = TryBindAsNonGenericTypeRef(genericTypeRef);
+        else if (bound is BoundTypeGroup typeGroup)
+        {
+            if (ResolveTypeGroup(typeGroup, [], null) is not BoundTypeRef boundTypeRef)
+                return ErrorType;
+            typeRef = boundTypeRef;
+        }
         if (typeRef is null)
         {
             if (bound is not BoundError)
@@ -1391,7 +1395,7 @@ public sealed class Binder(Scope scope, BinderSideEffects sideEffects)
         {
             // Could be concrete, but many means it could be generics which need
             // "overload" resolution.
-            return new BoundGenericTypeRef([.. lookupResult.Symbols.Cast<TypeSymbol>()], syntax);
+            return new BoundTypeGroup([.. lookupResult.Symbols.Cast<TypeSymbol>()], syntax);
         }
 
         if (lookupResult.Symbols.Length > 1)
@@ -1439,17 +1443,11 @@ public sealed class Binder(Scope scope, BinderSideEffects sideEffects)
         
         if (left is BoundFunGroup leftAsFunGroup)
             return BindError(syntax, new Diagnostic.FunHasNoMembers(leftAsFunGroup, syntax.Member));
-        if (left is BoundGenericTypeRef leftAsGenericTypeRef)
+        if (left is BoundTypeGroup typeGroup)
         {
-            // If there is a non-generic one, we use this. Otherwise,
-            // type arguments are required.
-            if (leftAsGenericTypeRef.NonGeneric is not null)
-                left = TryBindAsNonGenericTypeRef(leftAsGenericTypeRef)!;
-            else
-            {
-                return BindError(syntax,
-                    new Diagnostic.MemberAccessThroughGenericType(leftAsGenericTypeRef, syntax.Member));
-            }
+            if (ResolveTypeGroup(typeGroup, [], null) is not BoundTypeRef resolvedTypeRef)
+                return new BoundError(ErrorType, syntax);
+            left = resolvedTypeRef;
         }
         
         NamespaceOrTypeSymbol namespaceOrType = left switch
@@ -1462,7 +1460,7 @@ public sealed class Binder(Scope scope, BinderSideEffects sideEffects)
             BoundTypeRef boundTypeRef => boundTypeRef.Type,
             
             BoundFunGroup => throw new UnreachableException("Fun group handled above."),
-            BoundGenericTypeRef => throw new UnreachableException("Fun group handled above."),
+            BoundTypeGroup => throw new UnreachableException("Type group handled above."),
             BoundStmt => throw new UnreachableException("Stmt can never be the left side of member access."),
         };
         if (namespaceOrType is ErrorTypeSymbol)
@@ -1485,7 +1483,7 @@ public sealed class Binder(Scope scope, BinderSideEffects sideEffects)
         {
             // Could be concrete, but many means it could be generics which need
             // "overload" resolution.
-            return new BoundGenericTypeRef([.. lookupResult.Symbols.Cast<TypeSymbol>()], syntax);
+            return new BoundTypeGroup([.. lookupResult.Symbols.Cast<TypeSymbol>()], syntax.Member);
         }
         
         
@@ -1601,15 +1599,6 @@ public sealed class Binder(Scope scope, BinderSideEffects sideEffects)
         return asTypeRef is not null ? new BoundValueOrTypeRef(asField, asTypeRef) : asField;
     }
 
-    private BoundTypeRef? TryBindAsNonGenericTypeRef(BoundGenericTypeRef genericTypeRef)
-    {
-        if (genericTypeRef.NonGeneric is null)
-            return null;
-        
-        SideEffects.AddResolvedSymbol(genericTypeRef.Syntax!.Location, genericTypeRef.NonGeneric);
-        return new BoundTypeRef(genericTypeRef.NonGeneric, genericTypeRef.Syntax);
-    }
-    
     #endregion
     
     #region Subscripts
@@ -1624,48 +1613,81 @@ public sealed class Binder(Scope scope, BinderSideEffects sideEffects)
         switch (left)
         {
             case BoundFunGroup { HasTypeArguments: false } funGroup:
+            {
                 var typeArgs = syntax.ArgList.Arguments
                     .Select(s => new BoundTypeArgument(BindType(s, TypeUsage.Local), s))
                     .ToImmutableArray();
 
                 return funGroup.WithTypeArguments(typeArgs, syntax.ArgList);
+            }
 
-            case BoundGenericTypeRef genericTypeRef:
-                return BindGenericTypeSpecialization(genericTypeRef, syntax);
-            
+            case BoundTypeGroup typeGroup:
+            {
+                var typeArgs = syntax.ArgList.Arguments
+                    .Select(arg => BindType(arg, TypeUsage.Local))
+                    .ToImmutableArray();
+                return ResolveTypeGroup(typeGroup, typeArgs, syntax.ArgList);
+            }
+
+            case BoundTypeRef { Type.TypeParameters.Length: 0 } nonGenericTypeRef:
+                return BindError(syntax.ArgList, new Diagnostic.NotGeneric(syntax.ArgList, nonGenericTypeRef.Type));
+
             default:
                 return BindError(syntax.ArgList, new Diagnostic.SubscriptNotAllowed(syntax.ArgList, left));
 
         }
     }
 
-    private BoundNode BindGenericTypeSpecialization(BoundGenericTypeRef genericTypeRef, SubscriptExprSyntax syntax)
+    private BoundNode ResolveTypeGroup(BoundTypeGroup group, ImmutableArray<TypeSymbol> typeArguments, SyntaxNode? typeArgumentsSyntax)
     {
-        var typeArgs = syntax.ArgList.Arguments
-            .Select(arg => BindType(arg, TypeUsage.Local))
-            .ToImmutableArray();
-        if (typeArgs.OfType<ErrorTypeSymbol>().Any())
-            return new BoundError(ErrorType, syntax);
+        Debug.Assert(typeArguments.Length == 0 || typeArgumentsSyntax is not null);
+        if (typeArguments.OfType<ErrorTypeSymbol>().Any())
+        {
+            if (group.Candidates.Length == 1)
+                SideEffects.AddResolvedSymbol(group.Syntax!.Location, group.Candidates[0]);
+            return new BoundError(ErrorType, group.Syntax);
+        }
 
-        var candidates = genericTypeRef.Candidates
-            .Where(t => t.TypeParameters.Length == typeArgs.Length)
+        var candidates = group.Candidates
+            .Where(t => t.TypeParameters.Length == typeArguments.Length)
             .ToImmutableArray();
         if (candidates.Length == 0)
         {
-            return BindError(syntax,
-                new Diagnostic.TypeParameterArityMismatch(genericTypeRef.Candidates, typeArgs.Length, syntax.ArgList));
+            // If there was only one, register the symbol for good syntax highlighting.
+            // Otherwise, we don't know which one it was.
+            if (group.Candidates.Length == 1)
+                SideEffects.AddResolvedSymbol(group.Syntax!.Location, group.Candidates[0]);
+
+            if (typeArguments.Length == 0)
+            {
+                Debug.Assert(group.Candidates.All(t => t.TypeParameters.Length > 0));
+                return BindError(group.Syntax!, new Diagnostic.MissingTypeArguments(group.Candidates, group.Syntax!));
+            }
+            
+            if (group.Candidates.All(t => t.TypeParameters.Length == 0))
+            {
+                // This only happens, when there are multiple declarations without type parameters.
+                // Still NotGeneric is the more useful error than AmbiguousReference.
+                Debug.Assert(typeArguments.Length > 0 && typeArgumentsSyntax is not null);
+                return BindError(group.Syntax!, new Diagnostic.NotGeneric(typeArgumentsSyntax, group.Candidates[0]));
+            }
+            
+            return BindError(group.Syntax!, new Diagnostic.WrongTypeArgumentCount(
+                group.Candidates, typeArguments.Length, typeArgumentsSyntax!));
         }
 
         if (candidates.Length > 1)
         {
-            return BindError(syntax, new Diagnostic.AmbiguousReference(genericTypeRef.Candidates.CastArray<Symbol>(),
-                genericTypeRef.Syntax!));
+            // This only happens, when there are clashing declaration, which already
+            // produce an error.
+            return BindError(group.Syntax!, new Diagnostic.AmbiguousReference(group.Candidates.CastArray<Symbol>(),
+                group.Syntax!));
         }
 
 
-        var specializedType = candidates[0].Specialize(typeArgs);
-        SideEffects.AddResolvedSymbol(genericTypeRef.Syntax!.Location, specializedType);
-        return new BoundTypeRef(specializedType, syntax);
+        var specializedType = candidates[0].Specialize(typeArguments);
+        SideEffects.AddResolvedSymbol(group.Syntax!.Location, specializedType);
+        return new BoundTypeRef(specializedType, group.Syntax);
     }
     
     #endregion 
@@ -1883,8 +1905,13 @@ public sealed class Binder(Scope scope, BinderSideEffects sideEffects)
         
         if (callee is BoundTypeRef typeRef)
             return BindTypeInit(typeRef, syntax);
-        if (callee is BoundGenericTypeRef genericTypeRef && TryBindAsNonGenericTypeRef(genericTypeRef) is { } nonGenericTypeRef)
-            return BindTypeInit(nonGenericTypeRef, syntax);
+        if (callee is BoundTypeGroup typeGroup)
+        {
+            var resolved = ResolveTypeGroup(typeGroup, [], null);
+            if (resolved is not BoundTypeRef resolvedTypeRef)
+                return new BoundError(ErrorType, syntax);
+            return BindTypeInit(resolvedTypeRef, syntax);
+        }
         
         var arguments = syntax.ArgList.Arguments.Select(BindArgument).ToImmutableArray();
 

@@ -1,0 +1,12 @@
+﻿//@check
+
+let a: Test[T] = 1;      //~error NotGeneric
+let a: Test[T1, T2] = 2; //~error NotGeneric
+
+fun A(p: Test[I32]) { }  //~error NotGeneric
+fun A(): Test[I32] { }   //~error NotGeneric
+  
+let a: Generic[Test[I32]] = 1;      //~error NotGeneric
+  
+struct Test;
+struct Generic[T];

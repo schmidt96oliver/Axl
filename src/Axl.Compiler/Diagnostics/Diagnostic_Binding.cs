@@ -97,7 +97,7 @@ public partial record Diagnostic
                 },
                 BoundFunGroup => "it is a group of overloaded funs",
                 BoundNamespaceRef => "it is a namespace",
-                BoundTypeRef or BoundGenericTypeRef => "it is a type",
+                BoundTypeRef or BoundTypeGroup => "it is a type",
                 BoundStmt => "it is a statement",
             };
     }
@@ -229,8 +229,8 @@ public partial record Diagnostic
             BoundValue value => $"A value of type ‘{value.Type.FullName}‘ cannot be called.",
             
             IBoundSymbolRef symbolRef => $"{symbolRef.Symbol.ShortDisplayText.Capitalize()} cannot be called.",
-            BoundFunGroup fun => $"Fun ‘{fun.Candidates[0].FullName}‘ cannot be called.",
-            BoundGenericTypeRef typeRef => $"Generic type ‘{typeRef.Candidates[0].FullName}‘ cannot be called.",
+            BoundFunGroup fun => "A fun group cannot be called.",
+            BoundTypeGroup => "A type group cannot be called.",
             BoundStmt => "A statement cannot be called.",
         };
     }
@@ -377,7 +377,7 @@ public partial record Diagnostic
         public override string Message => BoundNode switch
         {
             BoundTypeRef type => $"‘{type.Type.FullName}‘ is a type, not a value.",
-            BoundGenericTypeRef genericType => $"‘{genericType.Candidates[0].FullName}‘ is a type, not a value.",
+            BoundTypeGroup => $"Expected a value, got a type group.",
             BoundNamespaceRef ns => $"‘{ns.Namespace.FullName}‘ is a namespace, not a value.",
             BoundFunGroup funGroup => $"‘{funGroup.Candidates[0].FullNameWithoutOwnTypeArgs}‘ is a fun, not a value. Did you mean to call it?",
 
@@ -395,7 +395,7 @@ public partial record Diagnostic
         {
             BoundValue value => $"Expected a type, but got value of type ‘{value.Type.FullName}‘.",
             IBoundSymbolRef symbolRef => $"Expected a type, but got {symbolRef.Symbol.ShortDisplayText}.",
-            BoundGenericTypeRef typeRef => $"‘{typeRef.Candidates[0].FullNameWithoutOwnTypeArgs}‘ is generic and type arguments must be specified.",
+            BoundTypeGroup => "Specify type arguments.",
             BoundFunGroup funGroup => $"Expected a type, but got fun ‘{funGroup.Candidates[0].FullNameWithoutOwnTypeArgs}‘.",
             
             BoundStmt => "Expected a type, but got a statement.",
@@ -411,8 +411,8 @@ public partial record Diagnostic
         {
             BoundValue value => $"Expected a namespace, but got value of type ‘{value.Type.FullName}‘.",
             IBoundSymbolRef symbolRef => $"Expected a namespace, but got {symbolRef.Symbol.ShortDisplayText}.",
-            BoundGenericTypeRef typeRef => $"Expected a namespace, but got {typeRef.Candidates[0].ShortDisplayText}.",
-            BoundFunGroup funGroup => $"Expected a namespace, but got fun ‘{funGroup.Candidates[0].FullNameWithoutOwnTypeArgs}‘.",
+            BoundTypeGroup => $"Expected a namespace, but got a group of types.",
+            BoundFunGroup funGroup => $"Expected a namespace, but got a groups of funs.",
             
             BoundStmt => "Expected a namespace, but got a statement.",
         };
@@ -875,21 +875,7 @@ public partial record Diagnostic
             $"Type parameter ‘{HiddenParameter.Name}‘ hides the type parameter of ‘{HiddenParameter.Owner?.Name ?? "???"}‘.";
     }
 
-    public sealed record MemberAccessThroughGenericType(
-        BoundGenericTypeRef Left,
-        IdNameSyntax Syntax) : Error
-    {
-        /// <inheritdoc />
-        public override ImmutableArray<SourceLocation> Locations => [Syntax.Location];
-
-        /// <inheritdoc />
-        public override string Message => $"Cannot access members of ‘{Left.Candidates[0].Name}‘, because it is generic.";
-
-        /// <inheritdoc />
-        public override string Hint => "Specify type arguments directly.";
-    }
-
-    public sealed record TypeParameterArityMismatch(ImmutableArray<TypeSymbol> Candidates, int ArgCount, SyntaxNode Syntax) : Error
+    public sealed record WrongTypeArgumentCount(ImmutableArray<TypeSymbol> Candidates, int ArgCount, SyntaxNode Syntax) : Error
     {
         /// <inheritdoc />
         public override ImmutableArray<SourceLocation> Locations => [Syntax.Location];
@@ -903,5 +889,29 @@ public partial record Diagnostic
 
         private static string ArgCountWasOrWere(int number)
             => number == 1 ? "1 was" : $"{number} were";
+    }
+
+    public sealed record MissingTypeArguments(
+        ImmutableArray<TypeSymbol> Candidates,
+        SyntaxNode Syntax) : Error
+    {
+        /// <inheritdoc />
+        public override ImmutableArray<SourceLocation> Locations => [Syntax.Location];
+
+        public override string Message => Candidates.Length == 1
+            ? $"‘{Candidates[0].FullName}‘ requires {GetArgCountText(Candidates[0].TypeParameters.Length)}."
+            : $"‘{Candidates[0].FullNameWithoutOwnTypeArgs}‘ requires type arguments.";
+
+        private static string GetArgCountText(int number)
+            => number == 1 ? $"1 type argument" : $"{number} type arguments";
+    }
+
+    public sealed record NotGeneric(SyntaxNode Syntax, TypeSymbol Type) : Error
+    {
+        /// <inheritdoc />
+        public override ImmutableArray<SourceLocation> Locations => [Syntax.Location];
+
+        /// <inheritdoc />
+        public override string Message => $"‘{Type.Name}‘ is not generic, so it cannot take type arguments.";
     }
 }
