@@ -20,14 +20,14 @@ public partial record Diagnostic
             => $"Expected type ‘{Expected.FullName}‘ but got ‘{Value.Type.FullName}‘.";
     }
     
-    public sealed record ArgumentTypeMismatch(BoundArgument Argument, ParameterSymbol Parameter, TypeSymbol ConcreteParamType) : Error
+    public sealed record ArgumentTypeMismatch(BoundArgument Argument, ParameterSymbol Parameter) : Error
     {
         public override ImmutableArray<SourceLocation> Locations
             => [Argument.Syntax!.Location];
 
         public override string Message => Parameter.IsMut
-            ? $"Argument for ‘{Parameter.Name}‘ must be ‘mut {ConcreteParamType.FullName}‘, but got ‘{Argument.ArgumentTypeDisplayText}‘."
-            : $"Argument for ‘{Parameter.Name}‘ must be ‘{ConcreteParamType.FullName}‘, but got ‘{Argument.ArgumentTypeDisplayText}‘.";
+            ? $"Argument for ‘{Parameter.Name}‘ must be ‘mut {Parameter.Type.FullName}‘, but got ‘{Argument.ArgumentTypeDisplayText}‘."
+            : $"Argument for ‘{Parameter.Name}‘ must be ‘{Parameter.Type.FullName}‘, but got ‘{Argument.ArgumentTypeDisplayText}‘.";
     }
 
     public sealed record MissingInitializer(VarDeclSyntax VarDeclSyntax) : Error

@@ -1409,7 +1409,7 @@ public sealed class Binder(Scope scope, BinderSideEffects sideEffects)
 
         var symbol = lookupResult.Symbols[0];
         if (lookupResult.Symbols.All(s => s is FunSymbol))
-            return BindFunGroup(lookupResult, SynthesizeFunGroupReceiver(), syntax);
+            return BindFunGroup(lookupResult, receiver: null, syntax);
         if (lookupResult.Symbols.All(s => s is TypeSymbol) && lookupResult.Symbols.Length > 1 ||
             symbol is TypeSymbol { TypeParameters.Length: > 0 })
         {
@@ -1427,7 +1427,7 @@ public sealed class Binder(Scope scope, BinderSideEffects sideEffects)
             TypeSymbol type => new BoundTypeRef(type, syntax),
 
             VariableSymbol variable => BindVariable(variable, syntax),
-            FunSymbol => BindFunGroup(lookupResult, SynthesizeFunGroupReceiver(), syntax),
+            FunSymbol => BindFunGroup(lookupResult, receiver: null, syntax),
             FieldSymbol field => BindFieldAccess(field, null, syntax)
         };
 
@@ -1549,14 +1549,6 @@ public sealed class Binder(Scope scope, BinderSideEffects sideEffects)
         return replaced;
     }
     
-    private BoundValue? SynthesizeFunGroupReceiver()
-    {
-        if (Scope.OwnerAsFun?.SelfParameter is null)
-            return null;
-        return new BoundVariable(Scope.OwnerAsFun.SelfParameter);
-    }
-
-
     private BoundNode BindVariable(VariableSymbol variable, IdNameSyntax syntax)
     {
         // Variables could be captured from outside, which is forbidden.
@@ -1714,225 +1706,241 @@ public sealed class Binder(Scope scope, BinderSideEffects sideEffects)
     
     #region Call and Struct Initializer
 
-    private enum FunViability
+    /// <summary>
+    /// How far a candidate got before it stopped matching the call.
+    /// Ordered: a higher value is a better match.
+    /// </summary>
+    private enum Applicability
     {
-        NotFound,
         WrongTypeArgumentCount,
         WrongArgumentCount,
-        ArgumentTypeMismatch,
-        Viable
+        ArgumentMismatch,
+        Applicable,
     }
 
     /// <summary>
-    /// Resolves multiple funs inside a <see cref="BoundFunGroup"/> to one
-    /// single <see cref="FunSymbol"/>. If resolution is not possible, reports
-    /// the appropriate error and returns <c>null</c>. If a fun is returned,
-    /// it has the correct arity and matching argument types.
+    /// Everything overload resolution needs to know about one call.
+    /// For synthesized calls (operators, string interpolation) there is no
+    /// callee or argument list syntax, so everything points at <see cref="Syntax"/>.
     /// </summary>
-    private FunSymbol? ResolveFunGroup(BoundFunGroup funGroup, 
-        ImmutableArray<BoundArgument> arguments, 
-        SyntaxNode argListSyntax)
+    private sealed record CallSite(
+        BoundFunGroup Callee,
+        ImmutableArray<BoundArgument> Arguments,
+        SyntaxNode Syntax,
+        SyntaxNode ArgListSyntax)
     {
-        var argumentTypes = arguments.Select(arg => arg.Type).ToImmutableArray();
-        
-        var candidates = new List<FunSymbol>();
-        var viability = FunViability.NotFound;
-
-        foreach (var fun in funGroup.Candidates)
-        {
-            var thisFunViability = CheckFunCandidate(fun, funGroup.TypeArguments, arguments);
-            if (thisFunViability == viability)
-                candidates.Add(fun);
-            if (thisFunViability > viability)
-            {
-                viability = thisFunViability;
-                candidates.Clear();
-                candidates.Add(fun);
-            }
-        }
-        
-        Debug.Assert(viability > FunViability.NotFound);
-        Debug.Assert(candidates.Count >= 1);
-
-        if (viability is FunViability.WrongTypeArgumentCount)
-        {
-            if (funGroup.TypeArguments.Length == 0)
-            {
-                Debug.Assert(candidates.All(t => t.TypeParameters.Length > 0));
-                SideEffects.ReportError(new Diagnostic.MissingTypeArguments([.. candidates], funGroup.Syntax!));
-                return null;
-            }
-
-            if (candidates.All(t => t.TypeParameters.Length == 0))
-            {
-                Debug.Assert(funGroup.TypeArguments.Length > 0 && funGroup.TypeArgListSyntax is not null);
-                SideEffects.ReportError(new Diagnostic.NotGeneric([.. candidates], funGroup.TypeArgListSyntax));
-                return null;
-            }
-
-            Debug.Assert(funGroup.TypeArgListSyntax is not null);
-            SideEffects.ReportError(new Diagnostic.WrongTypeArgumentCount(
-                [.. candidates], funGroup.TypeArguments.Length, funGroup.TypeArgListSyntax));
-            return null;
-        }
-        
-        // All candidates have correct type parameter arity, so we
-        // can already construct for better diagnostics.
-        for (var i = 0; i < candidates.Count; i++)
-            candidates[i] = candidates[i].Specialize([.. funGroup.TypeArguments.Select(a => a.Type)]);
-        
-        if (viability is FunViability.WrongArgumentCount)
-        {
-            SideEffects.ReportError(new Diagnostic.WrongArgumentCount(
-                [.. candidates],
-                arguments.Length,
-                argListSyntax));
-            return null;
-        }
-
-        // If any argument had an error, we can only report WrongArgumentCount
-        // and the rest should be silent, since we can't resolve with erroneous
-        // arguments.
-        if (argumentTypes.OfType<ErrorTypeSymbol>().Any())
-            return null;
-        
-        if (viability is FunViability.ArgumentTypeMismatch)
-        {
-            // If only one candidate was left, report on each argument
-            // individually.
-
-            if (candidates.Count > 1)
-            {
-                SideEffects.ReportError(new Diagnostic.NoMatchingOverload(
-                    [.. candidates],
-                    arguments,
-                    argListSyntax));
-                return null;
-            }
-
-            var candidate = candidates[0];
-            for (var i = 0; i < arguments.Length; i++)
-            {
-                if (!IsAssignableTo(arguments[i].Type, candidate.Parameters[i].Type)
-                    || arguments[i].IsMut != candidate.Parameters[i].IsMut)
-                {
-                    SideEffects.ReportError(new Diagnostic.ArgumentTypeMismatch(
-                        arguments[i],
-                        candidate.Parameters[i],
-                        GetConcreteParameterType(candidate.Parameters[i], funGroup.TypeArguments)));
-                }
-            }
-
-            return null;
-        }
-        
-        Debug.Assert(viability is FunViability.Viable);
-
-        if (candidates.Count > 1)
-        {
-            //TODO: Implement proper specificity
-        }
-        
-        if (candidates.Count > 1)
-        {
-            SideEffects.ReportError(new Diagnostic.AmbiguousCall([.. candidates], funGroup.Syntax!));
-            return null;
-        }
-
-        // Construct it
-        if (funGroup.Syntax is not null)
-            SideEffects.AddResolvedSymbol(funGroup.Syntax.Location, candidates[0]);
-        return candidates[0];
+        public SyntaxNode CalleeSyntax => Callee.Syntax ?? Syntax;
+        public SyntaxNode? TypeArgListSyntax => Callee.TypeArgListSyntax;
+        public bool HasErrorArgument => Arguments.Any(a => a.Type is ErrorTypeSymbol);
     }
 
-    private FunViability CheckFunCandidate(FunSymbol fun, ImmutableArray<BoundTypeArgument> typeArguments, ImmutableArray<BoundArgument> arguments)
+    /// <summary>
+    /// The result of checking one candidate against a call.
+    /// <see cref="Fun"/> is specialized if the candidate got past the type argument check.
+    /// <see cref="SideEffects"/> belongs to this candidate only: it holds the diagnostics
+    /// explaining why it doesn't fit, and is only merged if this candidate is the
+    /// single best one.
+    /// </summary>
+    private sealed record Candidate(FunSymbol Fun, Applicability Applicability, BinderSideEffects SideEffects);
+
+    /// <summary>
+    /// Binds a call written in source. Reports every error.
+    /// </summary>
+    private BoundValue BindFunCall(CallSite site)
     {
+        var best = ResolveOverloads(site);
+
+        // One best candidate: either the winner, or the closest miss.
+        // Either way its own diagnostics are the most specific ones we have.
+        if (best is [var only])
+        {
+            SideEffects.AddResolvedSymbol(site.CalleeSyntax.Location, only.Fun);
+            only.SideEffects.DrainInto(SideEffects);
+            return only.Applicability is Applicability.Applicable
+                ? CompleteCall(only.Fun, site)
+                : new BoundError(ErrorType, site.Syntax);
+        }
+
+        // Several candidates are equally good (or equally bad).
+        // With an error argument we can't tell them apart, so stay silent.
+        var applicability = best[0].Applicability;
+        if (!site.HasErrorArgument || applicability < Applicability.ArgumentMismatch)
+            SideEffects.ReportError(MakeResolutionError(applicability, [.. best.Select(c => c.Fun)], site));
+
+        return new BoundError(ErrorType, site.Syntax);
+    }
+
+    /// <summary>
+    /// Checks every candidate on its own throwaway side effects and returns
+    /// the ones that got furthest. Reports nothing to this binder.
+    /// </summary>
+    private ImmutableArray<Candidate> ResolveOverloads(CallSite site)
+    {
+        Debug.Assert(site.Callee.Candidates.Length > 0);
+
+        var best = ImmutableArray.CreateBuilder<Candidate>();
+        foreach (var fun in site.Callee.Candidates)
+        {
+            var candidate = WithSideEffects(new BinderSideEffects()).CheckCandidate(fun, site);
+
+            if (best.Count > 0)
+            {
+                if (candidate.Applicability < best[0].Applicability)
+                    continue;
+                if (candidate.Applicability > best[0].Applicability)
+                    best.Clear();
+            }
+
+            best.Add(candidate);
+        }
+
+        return best.DrainToImmutable();
+    }
+
+    /// <summary>
+    /// Checks one candidate against the call. Diagnostics go into this binder's
+    /// side effects, which belong to the candidate (see <see cref="ResolveOverloads"/>).
+    /// </summary>
+    private Candidate CheckCandidate(FunSymbol fun, CallSite site)
+    {
+        var typeArguments = site.Callee.TypeArguments;
+        
+        //TODO Add type argument inference
         if (fun.TypeParameters.Length != typeArguments.Length)
-            return FunViability.WrongTypeArgumentCount;
-
-        var specializedFun = fun.Specialize([.. typeArguments.Select(t => t.Type)]);
+            return Fail(Applicability.WrongTypeArgumentCount);
         
-        if (specializedFun.Parameters.Length != arguments.Length)
-            return FunViability.WrongArgumentCount;
+        fun = fun.Specialize([.. typeArguments.Select(t => t.Type)]);
 
-        if (!arguments.Zip(specializedFun.Parameters, (arg, param) => IsArgumentAssignableTo(param, typeArguments, arg)).All(x => x))
-            return FunViability.ArgumentTypeMismatch;
+        if (fun.Parameters.Length != site.Arguments.Length)
+            return Fail(Applicability.WrongArgumentCount);
 
-        return FunViability.Viable;
+        var applicability = Applicability.Applicable;
+        for (var i = 0; i < site.Arguments.Length; i++)
+        {
+            var argument = site.Arguments[i];
+            var parameter = fun.Parameters[i];
+            if (!IsAssignableTo(argument.Type, parameter.Type) || argument.IsMut != parameter.IsMut)
+            {
+                SideEffects.ReportError(new Diagnostic.ArgumentTypeMismatch(argument, parameter));
+                applicability = Applicability.ArgumentMismatch;
+            }
+        }
+
+        return new Candidate(fun, applicability, SideEffects);
+
+        Candidate Fail(Applicability reason)
+        {
+            SideEffects.ReportError(MakeResolutionError(reason, [fun], site));
+            return new Candidate(fun, reason, SideEffects);
+        }
     }
 
+    /// <summary>
+    /// The error for one or more candidates that all stopped at the same step.
+    /// Used for a single candidate as well as for a tie, so each error lives in one place.
+    /// For <see cref="Applicability.Applicable"/> it's the ambiguity error.
+    /// </summary>
+    private static Diagnostic.Error MakeResolutionError(Applicability applicability,
+        ImmutableArray<FunSymbol> funs, CallSite site) => applicability switch
+    {
+        Applicability.WrongTypeArgumentCount => MakeTypeArgumentCountError(funs, site),
+        Applicability.WrongArgumentCount => new Diagnostic.WrongArgumentCount(
+            [.. funs], site.Arguments.Length, site.ArgListSyntax),
+        //Note: Single ArgumentMismatches are reported directly in CheckCandidate
+        Applicability.ArgumentMismatch => new Diagnostic.NoMatchingOverload(
+            [.. funs], site.Arguments, site.ArgListSyntax),
+        Applicability.Applicable => new Diagnostic.AmbiguousCall([.. funs], site.CalleeSyntax),
+        _ => throw new UnreachableException(),
+    };
+
+    private static Diagnostic.Error MakeTypeArgumentCountError(ImmutableArray<FunSymbol> funs, CallSite site)
+    {
+        var count = site.Callee.TypeArguments.Length;
+        if (count == 0)
+        {
+            Debug.Assert(funs.All(f => f.TypeParameters.Length > 0));
+            return new Diagnostic.MissingTypeArguments([.. funs], site.CalleeSyntax);
+        }
+
+        Debug.Assert(site.TypeArgListSyntax is not null);
+        if (funs.All(f => f.TypeParameters.Length == 0))
+            return new Diagnostic.NotGeneric([.. funs], site.TypeArgListSyntax);
+
+        return new Diagnostic.WrongTypeArgumentCount([.. funs], count, site.TypeArgListSyntax);
+    }
 
     /// <summary>
-    /// Checks that a fun can be called. Expects, that arity and argument types are
-    /// already valid.
+    /// Binds the receiver for the chosen fun and builds the call. Runs after
+    /// overload resolution, so receiver errors never decide which fun wins.
     /// </summary>
-    private bool ContinueCheckCallToSingleFun(FunSymbol fun, 
-        BoundNode? receiver,
-        ImmutableArray<BoundArgument> arguments, 
-        SyntaxNode funSyntax)
+    private BoundValue CompleteCall(FunSymbol fun, CallSite site)
     {
-        // Check StaticMismatch
-        var isContextStatic = receiver is (null or not BoundValue);
-        if (isContextStatic != fun.IsStatic)
+        var receiver = BindCallReceiver(fun, site.Callee.Receiver, site.CalleeSyntax);
+        if (receiver is BoundError)
+            return new BoundError(ErrorType, site.Syntax);
+
+        var receiverArgument = receiver is not null
+            ? new BoundArgument(receiver, isMut: fun.SelfParameter!.IsMut)
+            : null;
+        return new BoundCall(fun, receiverArgument, site.Arguments, site.Syntax);
+    }
+
+    /// <summary>
+    /// Returns the value receiver for <paramref name="fun"/>, <c>null</c> for static funs,
+    /// or a <see cref="BoundError"/> (after reporting) if the receiver doesn't fit.
+    /// Uses an implicit self if no receiver is given and the fun is an instance fun.
+    /// </summary>
+    private BoundValue? BindCallReceiver(FunSymbol fun, BoundNode? receiverNode, SyntaxNode calleeSyntax)
+    {
+        if (receiverNode is not null)
+            receiverNode = ReplaceBoundValueOrTypeRef(receiverNode, fun);
+
+        // Try an implicit self, if possible (fun is not static, no receiver specified, self available)
+        var valueReceiver = !fun.IsStatic && receiverNode is null &&
+                            Scope.OwnerAsFun?.SelfParameter is not null
+            ? new BoundVariable(Scope.OwnerAsFun.SelfParameter)
+            : receiverNode as BoundValue;
+
+        if (valueReceiver is null != fun.IsStatic)
         {
-            SideEffects.ReportError(receiver switch
+            // Switch on the original receiver node to get more
+            // specific errors.
+            SideEffects.ReportError(receiverNode switch
             {
                 null => new Diagnostic.InstanceMemberInStaticContext(
                     fun,
                     Scope.Owner,
-                    funSyntax),
+                    calleeSyntax),
                 not BoundValue => new Diagnostic.InstanceMemberThroughType(
                     fun,
-                    funSyntax),
+                    calleeSyntax),
                 BoundValue => new Diagnostic.StaticMemberThroughInstance(
                     fun,
-                    funSyntax)
+                    calleeSyntax)
             });
-            return false;
+            return new BoundError(ErrorType);
         }
 
-        // Check ReceiverMismatch and mutation on methods
-        if (!isContextStatic)
+        if (valueReceiver is null)
+            return null;
+
+        // See, if the receiver is valid
+        if (!Equals(fun.SelfParameter!.Type, valueReceiver.Type))
         {
-            Debug.Assert(receiver is BoundValue);
-            var valueReceiver = (receiver as BoundValue)!;
-
-            if (!Equals(fun.SelfParameter?.Type, valueReceiver.Type))
-            {
-                SideEffects.ReportError(new Diagnostic.MemberOfEnclosingType(fun, Scope.InstanceType!, funSyntax));
-                return false;
-            }
-
-            if (fun.SelfParameter.IsMut && valueReceiver.PlaceKind is not PlaceKind.MutPlace)
-            {
-                SideEffects.ReportError(new Diagnostic.CannotMutateReceiver(valueReceiver, fun, Scope.Owner, funSyntax));
-                return false;
-            }
+            SideEffects.ReportError(new Diagnostic.MemberOfEnclosingType(fun, Scope.InstanceType!, calleeSyntax));
+            return new BoundError(ErrorType);
         }
 
-        return true;
+        if (fun.SelfParameter.IsMut && valueReceiver.PlaceKind is not PlaceKind.MutPlace)
+        {
+            SideEffects.ReportError(new Diagnostic.CannotMutateReceiver(valueReceiver, fun, Scope.Owner, calleeSyntax));
+            return new BoundError(ErrorType);
+        }
+
+        return valueReceiver;
     }
 
 
-    private TypeSymbol GetConcreteParameterType(ParameterSymbol parameter,
-        ImmutableArray<BoundTypeArgument> typeArguments)
-    {
-        return parameter.Type is TypeParameterSymbol typeParam && Equals(typeParam.Owner, parameter.Owner)
-            ? typeArguments[typeParam.Ordinal].Type
-            : parameter.Type;
-    }
-
-    private bool IsArgumentAssignableTo(ParameterSymbol parameter, ImmutableArray<BoundTypeArgument> typeArguments,
-        BoundArgument argument)
-    {
-        if (parameter.IsMut != argument.IsMut)
-            return false;
-        
-        var concreteParamType = GetConcreteParameterType(parameter, typeArguments);
-        return IsAssignableTo(argument.Type, concreteParamType);
-    }
-    
-    
     private BoundValue BindCall(CallExprSyntax syntax)
     {
         var callee = BindExpr(syntax.Callee, LookupOptions.MustBeCallable);
@@ -1962,19 +1970,7 @@ public sealed class Binder(Scope scope, BinderSideEffects sideEffects)
         if (callee is not BoundFunGroup calleeFunGroup)
             return BindError(syntax, new Diagnostic.CannotCall(callee));
 
-        var fun = ResolveFunGroup(calleeFunGroup, arguments, syntax.ArgList);
-        if (fun is null)
-            return new BoundError(ErrorType, syntax);
-
-        var receiver = BindFunReceiver(fun, calleeFunGroup.Receiver);
-
-        // Correct receiver mutation behavior is checked by CheckCallToSingleFun.
-        var receiverArgument = receiver is BoundValue receiverValue
-            ? new BoundArgument(receiverValue, isMut: fun.SelfParameter?.IsMut == true)
-            : null;
-        return ContinueCheckCallToSingleFun(fun, receiver, arguments, calleeFunGroup.Syntax!)
-            ? new BoundCall(fun, receiverArgument, arguments, syntax)
-            : new BoundError(ErrorType, syntax);
+        return BindFunCall(new CallSite(calleeFunGroup, arguments, syntax, syntax.ArgList));
     }
 
     private BoundArgument BindArgument(ArgSyntax syntax)
@@ -1987,21 +1983,10 @@ public sealed class Binder(Scope scope, BinderSideEffects sideEffects)
         return new BoundArgument(BindValue(syntax.Expr, ValueUsage.Read), isMut: false);
     }
 
-    private BoundNode? BindFunReceiver(FunSymbol fun, BoundNode? receiver)
-    {
-        // Receiver could still be implicit or ambiguous between value or typeref.
-        if (receiver is BoundVariable { IsImplicitSelf: true } && fun.IsStatic)
-            receiver = null;
-        if (receiver is not null)
-            receiver = ReplaceBoundValueOrTypeRef(receiver, fun);
-        return receiver;
-    }
-    
-    
     /// <summary>
     /// Looks up <paramref name="methodName"/> on <paramref name="receiver"/> and tries
-    /// to bind a synthesized call to it. Returns <c>null</c>, if it cannot and does _not_
-    /// report any errors.
+    /// to bind a synthesized call to it (operators, string concat, ToString).
+    /// Returns <c>null</c> if it cannot, and does _not_ report any errors.
     /// </summary>
     private BoundCall? TryBindMethodCall(BoundValue receiver, string methodName,
         ImmutableArray<BoundValue> arguments,
@@ -2018,25 +2003,29 @@ public sealed class Binder(Scope scope, BinderSideEffects sideEffects)
         if (funCandidates.Length == 0)
             return null;
 
-        var funGroup = new BoundFunGroup(funCandidates, receiver);
+        // Synthesized calls have no callee or argument list syntax of their own,
+        // and never pass anything as mut.
+        var site = new CallSite(
+            new BoundFunGroup(funCandidates, receiver),
+            [.. arguments.Select(a => new BoundArgument(a, isMut: false))],
+            Syntax: syntax,
+            ArgListSyntax: syntax);
 
-        // Bind the fun call on a discard binder, so we can report our
-        // own error. Note that it cannot attach meaningful information
-        // to the sidetable anyway.
-        
-        // For binding methods, just use non-mut parameters everywhere.
-        var boundArguments = arguments.Select(a => new BoundArgument(a, isMut: false)).ToImmutableArray();
-        var resolutionBinder = WithSideEffects(new BinderSideEffects());
-        var singleFun = resolutionBinder.ResolveFunGroup(funGroup, boundArguments, syntax);
-        if (singleFun is null)
+        if (ResolveOverloads(site) is not [{ Applicability: Applicability.Applicable } winner])
             return null;
 
-        return resolutionBinder.ContinueCheckCallToSingleFun(singleFun, receiver, boundArguments, syntax)
-            ? new BoundCall(singleFun, new BoundArgument(receiver, isMut: false), boundArguments, syntax)
-            : null;
+        // Receiver checks still report, so run them on a scratch binder
+        // and only keep the result if they pass.
+        var receiverBinder = WithSideEffects(new BinderSideEffects());
+        if (receiverBinder.CompleteCall(winner.Fun, site) is not BoundCall call)
+            return null;
+
+        winner.SideEffects.DrainInto(SideEffects);
+        receiverBinder.SideEffects.DrainInto(SideEffects);
+        return call;
     }
-    
-    
+
+
     private BoundValue BindTypeInit(BoundTypeRef typeRef, CallExprSyntax syntax)
     {
         if (typeRef.Type.OriginalDefinition is not StructSymbol originalDefinition || originalDefinition.IsPrimitive)
