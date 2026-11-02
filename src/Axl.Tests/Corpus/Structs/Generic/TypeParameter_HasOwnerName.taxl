@@ -1,0 +1,10 @@
+﻿//@check
+
+struct A[A] { }         //~error TypeParameterHasOwnerName
+struct B[C, B] { }      //~error TypeParameterHasOwnerName
+
+//---
+namespace Test;
+
+struct A[A] { }         //~error TypeParameterHasOwnerName
+struct B[C, B] { }      //~error TypeParameterHasOwnerName

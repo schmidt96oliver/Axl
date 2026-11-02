@@ -920,4 +920,26 @@ public partial record Diagnostic
             _ => "variant",
         };
     }
+
+    public sealed record TypeParameterHasOwnerName(TypeParameterSymbol TypeParameter, Symbol Owner) : Error
+    {
+        /// <inheritdoc />
+        public override ImmutableArray<SourceLocation> Locations => [TypeParameter.DeclarationSyntax!.Name.Location];
+
+        /// <inheritdoc />
+        public override string Message =>
+            $"Type parameter ‘{TypeParameter.Name}‘ has the same name as its {Owner.ShortDisplayText}.";
+    }
+
+    public sealed record TypeParameterHidesType(TypeParameterSymbol TypeParameter, TypeSymbol Type) : Lint
+    {
+        /// <inheritdoc />
+        public override DiagnosticSeverity DefaultSeverity => DiagnosticSeverity.Warning;
+        
+        /// <inheritdoc />
+        public override ImmutableArray<SourceLocation> Locations => [TypeParameter.DeclarationSyntax!.Name.Location];
+
+        /// <inheritdoc />
+        public override string Message => $"Type parameter ‘{TypeParameter.Name}‘ hides the type ‘{Type.Name}‘.";
+    }
 }

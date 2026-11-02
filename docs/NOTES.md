@@ -3,6 +3,8 @@
 
 # Now
 
+* ScriptSymbol must make usings binder
+
 * TypeParameterHasOwnerName
 * TypeParameterHidesType
 

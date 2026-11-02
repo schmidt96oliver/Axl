@@ -725,26 +725,38 @@ public sealed class Binder(Scope scope, BinderSideEffects sideEffects)
     private TypeParameterSymbol BindTypeParameter(TypeParamSyntax syntax, int ordinal)
     {
         var symbol = new TypeParameterSymbol(syntax.Name.Text.ToString(), Scope.Owner, ordinal, syntax);
-        if (symbol.Name is not "")
+
+        // Type Parameter must not
+        // (a) have the same name as its owner
+        // (b) hide type parameter of outer type
+        // (c) hide a visible type (lint)
+        // Only one of those should be reported.
+        if (symbol.Name == Scope.Owner.Name)
         {
-            var hiddenTypeParameter = Scope.Owner.Owners()
-                .SelectMany(s => s switch
-                {
-                    TypeSymbol type => type.TypeParameters.Where(t => t.Name == symbol.Name),
-                    FunSymbol fun => fun.TypeParameters.Where(t => t.Name == symbol.Name),
-                    _ => []
-                })
-                .FirstOrDefault();
-            if (hiddenTypeParameter is not null)
-            {
-                SideEffects.ReportError(new Diagnostic.TypeParametersHideOuterTypeParameter(syntax, hiddenTypeParameter));
-            }
+            SideEffects.ReportError(new Diagnostic.TypeParameterHasOwnerName(symbol, Scope.Owner));
         }
-        
+        else if (symbol.Name is not "" &&
+                 Scope.Owner.Owners()
+                     .SelectMany(s => s switch
+                     {
+                         TypeSymbol type => type.TypeParameters.Where(t => t.Name == symbol.Name),
+                         FunSymbol fun => fun.TypeParameters.Where(t => t.Name == symbol.Name),
+                         _ => []
+                     })
+                     .FirstOrDefault() is { } hiddenTypeParameter)
+        {
+            SideEffects.ReportError(new Diagnostic.TypeParametersHideOuterTypeParameter(syntax, hiddenTypeParameter));
+        }
+        else if (symbol.Name is not "" && LookupName(symbol.Name, LookupOptions.OnlyType) is
+                     { Viability: LookupViability.Viable, Symbols: [TypeSymbol hiddenType, ..] })
+        {
+            SideEffects.ReportLint(new Diagnostic.TypeParameterHidesType(symbol, hiddenType));
+        }
+
         SideEffects.AddResolvedSymbol(syntax.Name.Location, symbol);
         return symbol;
     }
-    
+
     public void CheckOperatorSignature(SourceFunSymbol funSymbol)
     {
         if (funSymbol.Owner is not TypeSymbol)

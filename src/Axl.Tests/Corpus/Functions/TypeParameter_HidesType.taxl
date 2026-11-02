@@ -1,0 +1,17 @@
+﻿//@check
+
+using TestNamespace;
+
+fun Test10[I32](){};     //~lint TypeParameterHidesType
+fun Test11[String](){};  //~lint TypeParameterHidesType
+fun Test12[Bool](){};    //~lint TypeParameterHidesType
+
+struct Dupe;
+fun Test2[Dupe](){};     //~lint TypeParameterHidesType
+
+fun Test3[TestType](){}; //~lint TypeParameterHidesType
+
+//---
+namespace TestNamespace;
+
+pub struct TestType;

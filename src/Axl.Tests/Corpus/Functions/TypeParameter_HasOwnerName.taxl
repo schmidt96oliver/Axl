@@ -1,0 +1,16 @@
+﻿//@check
+
+fun A[A]() { }         //~error TypeParameterHasOwnerName
+fun B[A, B]() { }      //~error TypeParameterHasOwnerName
+
+struct Test
+{
+    fun A[A]() { }         //~error TypeParameterHasOwnerName
+    fun B[A, B]() { }      //~error TypeParameterHasOwnerName
+}
+
+//---
+namespace Test;
+
+fun A[A]() { }         //~error TypeParameterHasOwnerName
+fun B[A, B]() { }      //~error TypeParameterHasOwnerName
