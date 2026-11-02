@@ -275,17 +275,6 @@ public partial record Diagnostic
 
         public override string Message => $"Duplicate parameter ‘{Duplicates[0].Name}‘.";
     }
-    
-    public sealed record DuplicateTypeParameters(ImmutableArray<TypeParameterSymbol> Duplicates) : Error
-    {
-        public override ImmutableArray<SourceLocation> Locations
-            // Squiggle all parameter names
-            => [.. Duplicates.Where(param => param.DeclarationSyntax is not null).Select(param => param.DeclarationSyntax!.Name.Location)];
-
-        public override string LocationLabel => "Also declared here.";
-
-        public override string Message => $"Duplicate type parameter ‘{Duplicates[0].Name}‘.";
-    }
 
     public sealed record NoMatchingOverload(
         ImmutableArray<FunSymbol> Candidates,
@@ -421,12 +410,14 @@ public partial record Diagnostic
             [
                 .. namespaceSymbol.Declaration.NamespaceDeclSyntaxes.Select(s => s.Name.Location)
             ],
+            TypeParameterSymbol typeParamSymbol => typeParamSymbol.DeclarationSyntax is not null
+                ? [typeParamSymbol.DeclarationSyntax.Location]
+                : [],
             _ => []
         };
-        
         public override string LocationLabel => "Also declared here.";
 
-        public override string Message => $"‘{OffendingSymbols[0].FullNameWithoutOwnTypeArgs}‘ is already declared.";
+        public override string Message => $"‘{OffendingSymbols[0].Name}‘ is already declared in this scope.";
     }
 
     public sealed record RecursiveStructLayout(StructSymbol StructSymbol, ImmutableArray<FieldDefinitionSymbol> FieldPath) : Error

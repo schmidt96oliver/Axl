@@ -1,0 +1,18 @@
+﻿//@check
+
+struct Test1[T]      //~error AlreadyDeclared
+{
+    fun T() { }     //~error AlreadyDeclared
+}
+
+struct Test2[T]      //~error AlreadyDeclared
+{
+    static fun T() { }     //~error AlreadyDeclared
+}
+
+struct Test3[T]      //~error AlreadyDeclared
+{
+    // Note that T will resolve to the type
+    // parameter anyway.
+    T: T;     //~error AlreadyDeclared
+}

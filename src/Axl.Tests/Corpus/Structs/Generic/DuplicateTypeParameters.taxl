@@ -1,4 +1,0 @@
-﻿//@check
-
-struct A[T,         //~error DuplicateTypeParameters
-         T] { }     //~error DuplicateTypeParameters

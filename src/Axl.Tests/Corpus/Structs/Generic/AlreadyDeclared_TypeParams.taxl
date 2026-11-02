@@ -1,0 +1,4 @@
+﻿//@check
+
+struct A[T,         //~error AlreadyDeclared
+         T] { }     //~error AlreadyDeclared

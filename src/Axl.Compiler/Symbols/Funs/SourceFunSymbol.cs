@@ -46,6 +46,8 @@ public sealed class SourceFunSymbol(
                 field = binder.BindTypeParameters(DeclarationSyntax.TypeParameterList);
 
                 _isBindingTypeParameters = false;
+                
+                binder.CheckDuplicateDeclarations([.. field]);
             }
 
             return field;

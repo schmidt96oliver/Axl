@@ -1,0 +1,4 @@
+﻿//@check
+ 
+fun A[T,            //~error AlreadyDeclared
+      T] () { }     //~error AlreadyDeclared

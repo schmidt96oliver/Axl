@@ -3,7 +3,11 @@
 
 # Now
 
-* Name clash `struct S[T] { T: I32 }`
+* TypeParameterHasOwnerName
+* TypeParameterHidesType
+
+* Monomorphizer depth limit (and try) (see test.taxl)
+
 * Infinite size check, follow into generic fields
   * `struct Node[T] { next: Node[T] }`
   * `struct A[T] { x: T } struct B { a: A[B] }`
@@ -30,9 +34,7 @@
 # Milestones
 
 **Generic structs** (`Pair[A, B]`, fields, construction, static funs like `List[I32].New()`)
-* Constructed types, interning, member substitution.
 * InfiniteSize check after substitution (see above).
-* and methods
 
 **Inference**
 * Rework overload resolution

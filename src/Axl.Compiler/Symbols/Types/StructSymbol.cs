@@ -86,7 +86,8 @@ public sealed class StructSymbol(
                 
                 // The following checks accesses members, so they need to run
                 // after binding is done.
-                binder.CheckDuplicateDeclarations(field);
+                // Add type parameters here.
+                binder.CheckDuplicateDeclarations([.. field, .. TypeParameters]);
                 binder.CheckRecursiveStructLayout(this);
             }
 

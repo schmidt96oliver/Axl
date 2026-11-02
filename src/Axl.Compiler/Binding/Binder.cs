@@ -504,7 +504,7 @@ public sealed class Binder(Scope scope, BinderSideEffects sideEffects)
                 CheckDuplicateDeclarationsInFunGroup([.. duplicateArray.Select(s => (FunDefinitionSymbol)s)]);
             }
 
-            else if (duplicateArray.All(s => s is TypeSymbol))
+            else if (duplicateArray.All(s => s is TypeSymbol and not TypeParameterSymbol))
             {
                 // We need to check type parameters
                 CheckDuplicateDeclarationsInTypeGroup([.. duplicateArray.Cast<TypeSymbol>()]);
@@ -717,16 +717,8 @@ public sealed class Binder(Scope scope, BinderSideEffects sideEffects)
             .Select(BindTypeParameter)
             .ToImmutableArray();
 
-        // Report duplicate type parameter errors only on parameters
-        // with a non-empty name.
-        var duplicateGroups = typeParameters
-            .Where(param => param.Name is not "")
-            .GroupBy(param => param.Name)
-            .Select(grp => grp.ToImmutableArray())
-            .Where(grp => grp.Length > 1);
-        foreach (var duplicateGroup in duplicateGroups)
-            SideEffects.ReportError(new Diagnostic.DuplicateTypeParameters(duplicateGroup));
-
+        // Note: Duplication will be reported by Member duplication
+        //       check.
         return typeParameters;
     }
 
