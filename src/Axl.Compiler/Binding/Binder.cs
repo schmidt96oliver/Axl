@@ -1630,7 +1630,7 @@ public sealed class Binder(Scope scope, BinderSideEffects sideEffects)
             }
 
             case BoundTypeRef { Type.TypeParameters.Length: 0 } nonGenericTypeRef:
-                return BindError(syntax.ArgList, new Diagnostic.NotGeneric(syntax.ArgList, nonGenericTypeRef.Type));
+                return BindError(syntax.ArgList, new Diagnostic.NotGeneric([nonGenericTypeRef.Type], syntax.ArgList));
 
             default:
                 return BindError(syntax.ArgList, new Diagnostic.SubscriptNotAllowed(syntax.ArgList, left));
@@ -1661,7 +1661,7 @@ public sealed class Binder(Scope scope, BinderSideEffects sideEffects)
             if (typeArguments.Length == 0)
             {
                 Debug.Assert(group.Candidates.All(t => t.TypeParameters.Length > 0));
-                return BindError(group.Syntax!, new Diagnostic.MissingTypeArguments(group.Candidates, group.Syntax!));
+                return BindError(group.Syntax!, new Diagnostic.MissingTypeArguments([.. group.Candidates], group.Syntax!));
             }
             
             if (group.Candidates.All(t => t.TypeParameters.Length == 0))
@@ -1669,11 +1669,11 @@ public sealed class Binder(Scope scope, BinderSideEffects sideEffects)
                 // This only happens, when there are multiple declarations without type parameters.
                 // Still NotGeneric is the more useful error than AmbiguousReference.
                 Debug.Assert(typeArguments.Length > 0 && typeArgumentsSyntax is not null);
-                return BindError(group.Syntax!, new Diagnostic.NotGeneric(typeArgumentsSyntax, group.Candidates[0]));
+                return BindError(group.Syntax!, new Diagnostic.NotGeneric([.. group.Candidates], typeArgumentsSyntax));
             }
             
             return BindError(group.Syntax!, new Diagnostic.WrongTypeArgumentCount(
-                group.Candidates, typeArguments.Length, typeArgumentsSyntax!));
+                [.. group.Candidates], typeArguments.Length, typeArgumentsSyntax!));
         }
 
         if (candidates.Length > 1)
@@ -1697,7 +1697,7 @@ public sealed class Binder(Scope scope, BinderSideEffects sideEffects)
     private enum FunViability
     {
         NotFound,
-        TypeParamArityMismatch,
+        WrongTypeArgumentCount,
         ArityMismatch,
         ArgumentTypeMismatch,
         Viable
@@ -1709,7 +1709,7 @@ public sealed class Binder(Scope scope, BinderSideEffects sideEffects)
     /// the appropriate error and returns <c>null</c>. If a fun is returned,
     /// it has the correct arity and matching argument types.
     /// </summary>
-    private FunSymbol? BindSingleFunInGroup(BoundFunGroup funGroup, 
+    private FunSymbol? ResolveFunGroup(BoundFunGroup funGroup, 
         ImmutableArray<BoundArgument> arguments, 
         SyntaxNode argListSyntax)
     {
@@ -1734,11 +1734,25 @@ public sealed class Binder(Scope scope, BinderSideEffects sideEffects)
         Debug.Assert(viability > FunViability.NotFound);
         Debug.Assert(candidates.Count >= 1);
 
-        if (viability is FunViability.TypeParamArityMismatch)
+        if (viability is FunViability.WrongTypeArgumentCount)
         {
-            SideEffects.ReportError(new Diagnostic.TypeParamArityMismatch(
-                [.. candidates],
-                funGroup));
+            if (funGroup.TypeArguments.Length == 0)
+            {
+                Debug.Assert(candidates.All(t => t.TypeParameters.Length > 0));
+                SideEffects.ReportError(new Diagnostic.MissingTypeArguments([.. candidates], funGroup.Syntax!));
+                return null;
+            }
+
+            if (candidates.All(t => t.TypeParameters.Length == 0))
+            {
+                Debug.Assert(funGroup.TypeArguments.Length > 0 && funGroup.TypeArgListSyntax is not null);
+                SideEffects.ReportError(new Diagnostic.NotGeneric([.. candidates], funGroup.TypeArgListSyntax));
+                return null;
+            }
+
+            Debug.Assert(funGroup.TypeArgListSyntax is not null);
+            SideEffects.ReportError(new Diagnostic.WrongTypeArgumentCount(
+                [.. candidates], funGroup.TypeArguments.Length, funGroup.TypeArgListSyntax));
             return null;
         }
         
@@ -1814,7 +1828,7 @@ public sealed class Binder(Scope scope, BinderSideEffects sideEffects)
     private FunViability CheckFunCandidate(FunSymbol fun, ImmutableArray<BoundTypeArgument> typeArguments, ImmutableArray<BoundArgument> arguments)
     {
         if (fun.TypeParameters.Length != typeArguments.Length)
-            return FunViability.TypeParamArityMismatch;
+            return FunViability.WrongTypeArgumentCount;
 
         var specializedFun = fun.Specialize([.. typeArguments.Select(t => t.Type)]);
         
@@ -1928,7 +1942,7 @@ public sealed class Binder(Scope scope, BinderSideEffects sideEffects)
         if (callee is not BoundFunGroup calleeFunGroup)
             return BindError(syntax, new Diagnostic.CannotCall(callee));
 
-        var fun = BindSingleFunInGroup(calleeFunGroup, arguments, syntax.ArgList);
+        var fun = ResolveFunGroup(calleeFunGroup, arguments, syntax.ArgList);
         if (fun is null)
             return new BoundError(ErrorType, syntax);
 
@@ -1993,7 +2007,7 @@ public sealed class Binder(Scope scope, BinderSideEffects sideEffects)
         // For binding methods, just use non-mut parameters everywhere.
         var boundArguments = arguments.Select(a => new BoundArgument(a, isMut: false)).ToImmutableArray();
         var resolutionBinder = WithSideEffects(new BinderSideEffects());
-        var singleFun = resolutionBinder.BindSingleFunInGroup(funGroup, boundArguments, syntax);
+        var singleFun = resolutionBinder.ResolveFunGroup(funGroup, boundArguments, syntax);
         if (singleFun is null)
             return null;
 

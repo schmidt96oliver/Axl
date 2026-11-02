@@ -1,0 +1,9 @@
+﻿//@check
+
+let a = A[I32, String]();   //~error WrongTypeArgumentCount
+let a = B[I32, String]();   //~error WrongTypeArgumentCount
+
+fun A[T]() { }
+
+fun B[T]() { }
+fun B[T1, T2, T3](i: I32) { }

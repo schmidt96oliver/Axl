@@ -1,0 +1,9 @@
+﻿//@check
+
+let a = A[I32]();   //~error NotGeneric
+let a = B[I32]();   //~error NotGeneric
+
+fun A() { }
+
+fun B() { }
+fun B(i: I32) { }

@@ -204,22 +204,6 @@ public partial record Diagnostic
             => number == 1 ? "1 was" : $"{number} were";
     }
     
-    public sealed record TypeParamArityMismatch(ImmutableArray<FunSymbol> Candidates, BoundFunGroup FunGroup) : Error
-    {
-        public override ImmutableArray<SourceLocation> Locations
-            => [FunGroup.TypeArgListSyntax?.Location ?? FunGroup.Syntax!.Location];
-
-        public override string Message => Candidates.Length == 1
-            ? $"‘{Candidates[0].FullNameWithoutOwnTypeArgs}‘ takes {GetArgCountText(Candidates[0].TypeParameters.Length)}, but {ArgCountWasOrWere(FunGroup.TypeArguments.Length)} given."
-            : $"No overload of ‘{Candidates[0].FullNameWithoutOwnTypeArgs}‘ takes {GetArgCountText(FunGroup.TypeArguments.Length)}.";
-
-        private static string GetArgCountText(int number)
-            => number == 1 ? $"1 type argument" : $"{number} type arguments";
-
-        private static string ArgCountWasOrWere(int number)
-            => number == 1 ? "1 was" : $"{number} were";
-    }
-
     public sealed record CannotCall(BoundNode BoundCallee) : Error
     {
         public override ImmutableArray<SourceLocation> Locations => [BoundCallee.Syntax!.Location];
@@ -875,43 +859,74 @@ public partial record Diagnostic
             $"Type parameter ‘{HiddenParameter.Name}‘ hides the type parameter of ‘{HiddenParameter.Owner?.Name ?? "???"}‘.";
     }
 
-    public sealed record WrongTypeArgumentCount(ImmutableArray<TypeSymbol> Candidates, int ArgCount, SyntaxNode Syntax) : Error
+    public sealed record WrongTypeArgumentCount(ImmutableArray<Symbol> Candidates, int ArgCount, SyntaxNode Syntax) : Error
     {
         /// <inheritdoc />
         public override ImmutableArray<SourceLocation> Locations => [Syntax.Location];
 
         public override string Message => Candidates.Length == 1
-            ? $"‘{Candidates[0].FullName}‘ takes {GetArgCountText(Candidates[0].TypeParameters.Length)}, but {ArgCountWasOrWere(ArgCount)} given."
-            : $"No variant of ‘{Candidates[0].FullNameWithoutOwnTypeArgs}‘ takes {GetArgCountText(ArgCount)}.";
+            ? $"‘{Candidates[0].FullName}‘ takes {TypeArgCountText(Candidates[0])}, but {ArgCountWasOrWere(ArgCount)} given."
+            : $"No { KindName(Candidates[0]) } of ‘{Candidates[0].FullNameWithoutOwnTypeArgs}‘ takes {GetArgCountText(ArgCount)}.";
 
         private static string GetArgCountText(int number)
-            => number == 1 ? $"1 type argument" : $"{number} type arguments";
+            => number == 1 ? "1 type argument" : $"{number} type arguments";
 
         private static string ArgCountWasOrWere(int number)
             => number == 1 ? "1 was" : $"{number} were";
+
+        private static string KindName(Symbol symbol) => symbol switch
+        {
+            FunSymbol => "overload",
+            _ => "variant",
+        };
+
+        private static int TypeArgCount(Symbol symbol) => symbol switch
+        {
+            TypeSymbol type => type.TypeArguments.Length,
+            FunSymbol fun => fun.TypeArguments.Length,
+            _ => throw new UnreachableException(),
+        };
+
+        private static string TypeArgCountText(Symbol symbol)
+            => GetArgCountText(TypeArgCount(symbol));
     }
 
     public sealed record MissingTypeArguments(
-        ImmutableArray<TypeSymbol> Candidates,
+        ImmutableArray<Symbol> Candidates,
         SyntaxNode Syntax) : Error
     {
         /// <inheritdoc />
         public override ImmutableArray<SourceLocation> Locations => [Syntax.Location];
 
         public override string Message => Candidates.Length == 1
-            ? $"‘{Candidates[0].FullName}‘ requires {GetArgCountText(Candidates[0].TypeParameters.Length)}."
+            ? $"‘{Candidates[0].FullName}‘ requires {TypeArgCountText(Candidates[0])}."
             : $"‘{Candidates[0].FullNameWithoutOwnTypeArgs}‘ requires type arguments.";
 
-        private static string GetArgCountText(int number)
-            => number == 1 ? $"1 type argument" : $"{number} type arguments";
+        private static int TypeArgCount(Symbol symbol) => symbol switch
+        {
+            TypeSymbol type => type.TypeArguments.Length,
+            FunSymbol fun => fun.TypeArguments.Length,
+            _ => throw new UnreachableException(),
+        };
+
+        private static string TypeArgCountText(Symbol symbol)
+            => TypeArgCount(symbol) == 1 ? "1 type argument" : $"{TypeArgCount(symbol)} type arguments";
     }
 
-    public sealed record NotGeneric(SyntaxNode Syntax, TypeSymbol Type) : Error
+    public sealed record NotGeneric(ImmutableArray<Symbol> Candidates, SyntaxNode Syntax) : Error
     {
         /// <inheritdoc />
         public override ImmutableArray<SourceLocation> Locations => [Syntax.Location];
 
         /// <inheritdoc />
-        public override string Message => $"‘{Type.Name}‘ is not generic, so it cannot take type arguments.";
+        public override string Message => Candidates.Length == 1
+            ? $"‘{Candidates[0].Name}‘ is not generic, so it cannot take type arguments."
+            : $"No { KindName(Candidates[0]) } of ‘{Candidates[0].Name}‘ is generic, so it cannot take type arguments.";
+
+        private static string KindName(Symbol symbol) => symbol switch
+        {
+            FunSymbol => "overload",
+            _ => "variant",
+        };
     }
 }
