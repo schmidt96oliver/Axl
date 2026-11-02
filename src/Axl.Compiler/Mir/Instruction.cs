@@ -17,7 +17,9 @@ public closed record Instruction(Place Target, ImmutableArray<Operand> Operands,
     public sealed record Call(FunSymbol Fun, Place Target, ImmutableArray<Operand> Arguments, SyntaxNode? Syntax = null)
         : Instruction(Target, Arguments, Syntax);
 
-    public sealed record TypeInit(
+    public sealed record StructInit(
+        // Must be TypeSymbol, because it might be specialized and
+        // the specialized symbol is not StructSymbol anymore.
         TypeSymbol Struct,
         Place Target,
         FrozenDictionary<FieldSymbol, Operand> FieldValues,

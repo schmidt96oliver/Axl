@@ -5,8 +5,6 @@
 
 * boundTypeGroup. ResolveTypeGroup. ResolveFunGroup
 
-* Mir TypeInit -> StructInit
-
 * wrong type params: Should AddResolvedSymbol ??
 
 * NotAType: Should be TypeParameterArityMismatch instead, see test.taxl

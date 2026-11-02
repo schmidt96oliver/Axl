@@ -108,7 +108,7 @@ public sealed class Miri
                 break;
             }
             
-            case Instruction.TypeInit structInit:
+            case Instruction.StructInit structInit:
             {
                 var value = new StructValue();
                 foreach (var kvp in structInit.FieldValues)

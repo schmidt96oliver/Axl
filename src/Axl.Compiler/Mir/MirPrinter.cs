@@ -75,7 +75,7 @@ public static class MirPrinter
                 intrinsic.Kind}({string.Join(", ", intrinsic.Arguments.Select(Print))})",
             Instruction.VmCall vmCall => $"{vmCall.Target.Print()} = vmcall {
                 vmCall.Kind}({string.Join(", ", vmCall.Arguments.Select(Print))})",
-            Instruction.TypeInit structInit => $"{structInit.Target.Print()} = struct {structInit.Struct.FullName}({ string.Join(", ", structInit.FieldValues.Select(
+            Instruction.StructInit structInit => $"{structInit.Target.Print()} = struct {structInit.Struct.FullName}({ string.Join(", ", structInit.FieldValues.Select(
                 fieldInit => $"{fieldInit.Key.Name} = {fieldInit.Value.Print()}")) })",
         };
 

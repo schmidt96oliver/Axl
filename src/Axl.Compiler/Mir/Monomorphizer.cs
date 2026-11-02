@@ -116,7 +116,7 @@ public class Monomorphizer
 
             Instruction.Call originalCall => InstantiateCall(originalCall, instantiatedMirFun, map),
 
-            Instruction.TypeInit originalStructInit => InstantiateStructInit(originalStructInit, instantiatedMirFun, map),
+            Instruction.StructInit originalStructInit => InstantiateStructInit(originalStructInit, instantiatedMirFun, map),
 
             Instruction.VmCall originalVmCall => new Instruction.VmCall(
                 originalVmCall.Kind,
@@ -125,7 +125,7 @@ public class Monomorphizer
                 originalVmCall.Syntax)
         };
 
-    private Instruction.TypeInit InstantiateStructInit(Instruction.TypeInit original, MutMirFunction instantiatedMirFun, TypeMap map)
+    private Instruction.StructInit InstantiateStructInit(Instruction.StructInit original, MutMirFunction instantiatedMirFun, TypeMap map)
     {
         var substitutedStruct = original.Struct.Substitute(map);
         var instantiatedTarget = InstantiatePlace(original.Target, instantiatedMirFun, map);
@@ -134,7 +134,7 @@ public class Monomorphizer
                 elementSelector: kvp => InstantiateOperand(kvp.Value, instantiatedMirFun, map))
             .ToFrozenDictionary();
         
-        return new Instruction.TypeInit(
+        return new Instruction.StructInit(
             substitutedStruct,
             instantiatedTarget,
             fieldValues,
