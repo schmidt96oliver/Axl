@@ -2166,7 +2166,7 @@ public sealed class Binder(Scope scope, BinderSideEffects sideEffects)
         // Single
         if (typeGroupOrSingle is BoundTypeRef typeRef)
         {
-            var candidate = CheckTypeCandidate(typeRef.Type, arguments, typeRef.Syntax!, syntax);
+            var candidate = CheckTypeCandidate(typeRef.Type, arguments, inferTypeArguments: false, typeRef.Syntax!, syntax);
             if (candidate.Applicability is not TypeApplicability.Applicable)
                 return new BoundError(ErrorType, syntax);
             return CompleteTypeInit(candidate, arguments, syntax);
@@ -2179,7 +2179,7 @@ public sealed class Binder(Scope scope, BinderSideEffects sideEffects)
         foreach (var type in typeGroup.Candidates)
         {
             var binder = WithSideEffects(new BinderSideEffects());
-            var candidate = binder.CheckTypeCandidate(type, arguments, typeGroup.Syntax!, syntax);
+            var candidate = binder.CheckTypeCandidate(type, arguments, inferTypeArguments: true, typeGroup.Syntax!, syntax);
             if (candidates.Count == 0 || candidate.Applicability == candidates[0].Applicability)
                 candidates.Add(candidate);
             else if (candidate.Applicability > candidates[0].Applicability)
@@ -2202,7 +2202,7 @@ public sealed class Binder(Scope scope, BinderSideEffects sideEffects)
         return BindError(syntax, MakeTypeResolutionError([.. candidates.Select(c => c.Type)], candidates[0].Applicability, typeGroup.Syntax!, syntax));
     }
 
-    private TypeCandidate CheckTypeCandidate(TypeSymbol type, ImmutableArray<BoundArgument> arguments, SyntaxNode typeSyntax,
+    private TypeCandidate CheckTypeCandidate(TypeSymbol type, ImmutableArray<BoundArgument> arguments, bool inferTypeArguments, SyntaxNode typeSyntax,
         CallExprSyntax syntax)
     {
         if (type.OriginalDefinition is not StructSymbol originalDefinition ||
@@ -2224,7 +2224,7 @@ public sealed class Binder(Scope scope, BinderSideEffects sideEffects)
         }
         
         // Infer type arguments if necessary
-        if (type.TypeArguments.SequenceEqual(type.TypeParameters))
+        if (inferTypeArguments)
         {
             var inferred = InferTypeArguments(type.TypeParameters,
                 [.. fieldPerArgument.Value.Select(f => f.Type)],

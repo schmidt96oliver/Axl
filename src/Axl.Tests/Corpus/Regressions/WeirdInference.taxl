@@ -1,0 +1,18 @@
+﻿//@check
+
+// TypeInit type arg inference logic inferred T to be I32 here, which
+// is of course invalid. A guard was added, so that inference only happens
+// when no explicit type args are written.
+
+var b = Box[I32](Value = 1);
+b.Weird();
+struct Box[T]
+{
+    pub Value: T;
+    pub fun Weird()
+    {  
+        let x = Box[T](Value = 1);  //~error TypeMismatch
+        let y: I32 = x.Value;
+        PrintLine(y);
+    }
+}
