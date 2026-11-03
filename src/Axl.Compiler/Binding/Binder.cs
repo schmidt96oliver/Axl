@@ -131,7 +131,7 @@ public sealed class Binder(Scope scope, BinderSideEffects sideEffects)
     }
 
 
-    private BoundError BindError(SyntaxNode syntax, Diagnostic.Error error)
+    private BoundError BindError(SyntaxNode syntax, Diagnostic.Error? error)
     {
         SideEffects.ReportError(error);
         return new BoundError(ErrorType, syntax);
@@ -1704,13 +1704,13 @@ public sealed class Binder(Scope scope, BinderSideEffects sideEffects)
     
     #endregion 
     
-    #region Call and Struct Initializer
+    #region Call and Type Initializer
 
     /// <summary>
-    /// How far a candidate got before it stopped matching the call.
-    /// Ordered: a higher value is a better match.
+    /// How far a fun overload candidate got before it stopped matching the call.
+    /// A higher value is a better match.
     /// </summary>
-    private enum Applicability
+    private enum FunApplicability
     {
         WrongTypeArgumentCount,
         WrongArgumentCount,
@@ -1742,7 +1742,7 @@ public sealed class Binder(Scope scope, BinderSideEffects sideEffects)
     /// explaining why it doesn't fit, and is only merged if this candidate is the
     /// single best one.
     /// </summary>
-    private sealed record Candidate(FunSymbol Fun, Applicability Applicability, BinderSideEffects SideEffects);
+    private sealed record Candidate(FunSymbol Fun, FunApplicability Applicability, BinderSideEffects SideEffects);
 
     /// <summary>
     /// Binds a call written in source. Reports every error.
@@ -1757,7 +1757,7 @@ public sealed class Binder(Scope scope, BinderSideEffects sideEffects)
         {
             SideEffects.AddResolvedSymbol(site.CalleeSyntax.Location, only.Fun);
             only.SideEffects.DrainInto(SideEffects);
-            return only.Applicability is Applicability.Applicable
+            return only.Applicability is FunApplicability.Applicable
                 ? CompleteCall(only.Fun, site)
                 : new BoundError(ErrorType, site.Syntax);
         }
@@ -1765,7 +1765,7 @@ public sealed class Binder(Scope scope, BinderSideEffects sideEffects)
         // Several candidates are equally good (or equally bad).
         // With an error argument we can't tell them apart, so stay silent.
         var applicability = best[0].Applicability;
-        if (!site.HasErrorArgument || applicability < Applicability.ArgumentMismatch)
+        if (!site.HasErrorArgument || applicability < FunApplicability.ArgumentMismatch)
             SideEffects.ReportError(MakeResolutionError(applicability, [.. best.Select(c => c.Fun)], site));
 
         return new BoundError(ErrorType, site.Syntax);
@@ -1782,7 +1782,7 @@ public sealed class Binder(Scope scope, BinderSideEffects sideEffects)
         var best = ImmutableArray.CreateBuilder<Candidate>();
         foreach (var fun in site.Callee.Candidates)
         {
-            var candidate = WithSideEffects(new BinderSideEffects()).CheckCandidate(fun, site);
+            var candidate = WithSideEffects(new BinderSideEffects()).CheckFunCandidate(fun, site);
 
             if (best.Count > 0)
             {
@@ -1802,7 +1802,7 @@ public sealed class Binder(Scope scope, BinderSideEffects sideEffects)
     /// Checks one candidate against the call. Diagnostics go into this binder's
     /// side effects, which belong to the candidate (see <see cref="ResolveOverloads"/>).
     /// </summary>
-    private Candidate CheckCandidate(FunSymbol fun, CallSite site)
+    private Candidate CheckFunCandidate(FunSymbol fun, CallSite site)
     {
         var typeArguments = site.Callee.TypeArguments;
 
@@ -1811,22 +1811,24 @@ public sealed class Binder(Scope scope, BinderSideEffects sideEffects)
             // Infer type arguments only if arity matches, otherwise
             // it doesn't make sense.
             if (fun.Parameters.Length != site.Arguments.Length)
-                return Fail(Applicability.WrongArgumentCount);
+                return Fail(FunApplicability.WrongArgumentCount);
 
-            var inferred = InferTypeArguments(fun, site);
+            var inferred = InferTypeArguments(fun.TypeParameters,
+                [.. fun.Parameters.Select(p => p.Type)], 
+                [.. site.Arguments.Select(a => a.Type)]);
             if (inferred is null)
-                return Fail(Applicability.CannotInferTypeArguments);
+                return Fail(FunApplicability.CannotInferTypeArguments);
             typeArguments = [.. inferred.Value.Select(t => new BoundTypeArgument(t))];
         }
         else if (fun.TypeParameters.Length != typeArguments.Length)
-            return Fail(Applicability.WrongTypeArgumentCount);
+            return Fail(FunApplicability.WrongTypeArgumentCount);
         
         fun = fun.Specialize([.. typeArguments.Select(t => t.Type)]);
 
         if (fun.Parameters.Length != site.Arguments.Length)
-            return Fail(Applicability.WrongArgumentCount);
+            return Fail(FunApplicability.WrongArgumentCount);
 
-        var applicability = Applicability.Applicable;
+        var applicability = FunApplicability.Applicable;
         for (var i = 0; i < site.Arguments.Length; i++)
         {
             var argument = site.Arguments[i];
@@ -1834,32 +1836,42 @@ public sealed class Binder(Scope scope, BinderSideEffects sideEffects)
             if (!IsAssignableTo(argument.Type, parameter.Type) || argument.IsMut != parameter.IsMut)
             {
                 SideEffects.ReportError(new Diagnostic.ArgumentTypeMismatch(argument, parameter));
-                applicability = Applicability.ArgumentMismatch;
+                applicability = FunApplicability.ArgumentMismatch;
             }
         }
 
         return new Candidate(fun, applicability, SideEffects);
 
-        Candidate Fail(Applicability reason)
+        Candidate Fail(FunApplicability reason)
         {
             SideEffects.ReportError(MakeResolutionError(reason, [fun], site));
             return new Candidate(fun, reason, SideEffects);
         }
     }
 
-    private ImmutableArray<TypeSymbol>? InferTypeArguments(FunSymbol fun, CallSite site)
+    /// <summary>
+    /// Tries to fill all <paramref name="typeParameters"/> by collecting hints from
+    /// <paramref name="arguments"/> that are assigned to <paramref name="parameters"/>.
+    /// Expected that <paramref name="arguments"/> and <paramref name="parameters"/> have
+    /// the same length. Returns an array of same length as <paramref name="typeParameters"/>
+    /// if inference was successful, otherwise <c>null</c>.
+    /// </summary>
+    private ImmutableArray<TypeSymbol>? InferTypeArguments(
+        ImmutableArray<TypeParameterSymbol> typeParameters,
+        ImmutableArray<TypeSymbol> parameters, 
+        ImmutableArray<TypeSymbol> arguments)
     {
         var hints = Enumerable
-            .Range(0, Math.Min(fun.Parameters.Length, site.Arguments.Length))
+            .Range(0, Math.Min(parameters.Length, arguments.Length))
             .SelectMany(i =>
                 CollectTypeArgumentHints(
-                    target: fun.Parameters[i].Type,
-                    argument: site.Arguments[i].Type));
+                    target: parameters[i],
+                    argument: arguments[i]));
 
         var hintsByParam = new Dictionary<TypeParameterSymbol, TypeSymbol>();
         foreach (var hint in hints)
         {
-            if (!fun.TypeParameters.Contains(hint.Param))
+            if (!typeParameters.Contains(hint.Param))
             {
                 // The hint belongs to a different type param.
                 continue;
@@ -1884,7 +1896,7 @@ public sealed class Binder(Scope scope, BinderSideEffects sideEffects)
         }
         
         var typeArgs = ImmutableArray.CreateBuilder<TypeSymbol>();
-        foreach (var param in fun.TypeParameters)
+        foreach (var param in typeParameters)
         {
             if (!hintsByParam.TryGetValue(param, out var argumentHint))
                 return null;
@@ -1915,26 +1927,26 @@ public sealed class Binder(Scope scope, BinderSideEffects sideEffects)
     /// <summary>
     /// The error for one or more candidates that all stopped at the same step.
     /// Used for a single candidate as well as for a tie, so each error lives in one place.
-    /// For <see cref="Applicability.Applicable"/> it's the ambiguity error.
+    /// For <see cref="FunApplicability.Applicable"/> it's the ambiguity error.
     /// </summary>
-    private static Diagnostic.Error? MakeResolutionError(Applicability applicability,
+    private static Diagnostic.Error? MakeResolutionError(FunApplicability applicability,
         ImmutableArray<FunSymbol> funs, CallSite site) => applicability switch
     {
-        Applicability.WrongTypeArgumentCount => MakeTypeArgumentCountError(funs, site),
-        Applicability.WrongArgumentCount => new Diagnostic.WrongArgumentCount(
+        FunApplicability.WrongTypeArgumentCount => MakeTypeArgumentCountError(funs, site),
+        FunApplicability.WrongArgumentCount => new Diagnostic.WrongArgumentCount(
             [.. funs], site.Arguments.Length, site.ArgListSyntax),
 
-        Applicability.CannotInferTypeArguments => site.Arguments.All(a => a.Type is not ErrorTypeSymbol)
-            ? new Diagnostic.CannotInferTypeArguments(funs, site.CalleeSyntax)
+        FunApplicability.CannotInferTypeArguments => site.Arguments.All(a => a.Type is not ErrorTypeSymbol)
+            ? new Diagnostic.CannotInferTypeArguments([.. funs], site.CalleeSyntax)
             : null,
 
-        Applicability.ArgumentMismatch => site.Arguments.All(a => a.Type is not ErrorTypeSymbol)
+        FunApplicability.ArgumentMismatch => site.Arguments.All(a => a.Type is not ErrorTypeSymbol)
             ? funs.Length > 1
                 ? new Diagnostic.NoMatchingOverload([.. funs], site.Arguments, site.ArgListSyntax)
                 : throw new UnreachableException("Single argument mismatches are reported in candidate checking.")
             : null,
 
-        Applicability.Applicable => new Diagnostic.AmbiguousCall([.. funs], site.CalleeSyntax),
+        FunApplicability.Applicable => new Diagnostic.AmbiguousCall([.. funs], site.CalleeSyntax),
         _ => throw new UnreachableException(),
     };
 
@@ -1965,7 +1977,7 @@ public sealed class Binder(Scope scope, BinderSideEffects sideEffects)
             return new BoundError(ErrorType, site.Syntax);
 
         var receiverArgument = receiver is not null
-            ? new BoundArgument(receiver, isMut: fun.SelfParameter!.IsMut)
+            ? new BoundArgument(null, receiver, isMut: fun.SelfParameter!.IsMut, null)
             : null;
         return new BoundCall(fun, receiverArgument, site.Arguments, site.Syntax);
     }
@@ -2030,18 +2042,13 @@ public sealed class Binder(Scope scope, BinderSideEffects sideEffects)
     {
         var callee = BindExpr(syntax.Callee, LookupOptions.MustBeCallable);
         
-        if (callee is BoundTypeRef typeRef)
-            return BindTypeInit(typeRef, syntax);
-        if (callee is BoundTypeGroup typeGroup)
-        {
-            var resolved = ResolveTypeGroup(typeGroup, [], null);
-            if (resolved is not BoundTypeRef resolvedTypeRef)
-                return new BoundError(ErrorType, syntax);
-            return BindTypeInit(resolvedTypeRef, syntax);
-        }
-        
         var arguments = syntax.ArgList.Arguments.Select(BindArgument).ToImmutableArray();
-
+        
+        if (callee is BoundTypeRef typeRef)
+            return BindTypeInit(typeRef, arguments, syntax);
+        if (callee is BoundTypeGroup typeGroup)
+            return BindTypeInit(typeGroup, arguments, syntax);
+        
         //TODO: Implement named arguments
         if (syntax.ArgList.Arguments.Any(argSyntax => argSyntax.IsNamed))
         {
@@ -2063,9 +2070,9 @@ public sealed class Binder(Scope scope, BinderSideEffects sideEffects)
         if (syntax.Expr is MutExprSyntax mutExpr)
         {
             var value = BindValue(mutExpr.Expr, ValueUsage.PassAsMut);
-            return new BoundArgument(value, isMut: true);
+            return new BoundArgument(syntax.Name, value, isMut: true, syntax);
         }
-        return new BoundArgument(BindValue(syntax.Expr, ValueUsage.Read), isMut: false);
+        return new BoundArgument(syntax.Name, BindValue(syntax.Expr, ValueUsage.Read), isMut: false, syntax);
     }
 
     /// <summary>
@@ -2092,11 +2099,11 @@ public sealed class Binder(Scope scope, BinderSideEffects sideEffects)
         // and never pass anything as mut.
         var site = new CallSite(
             new BoundFunGroup(funCandidates, receiver),
-            [.. arguments.Select(a => new BoundArgument(a, isMut: false))],
+            [.. arguments.Select(a => new BoundArgument(null, a, isMut: false, null))],
             Syntax: syntax,
             ArgListSyntax: syntax);
 
-        if (ResolveOverloads(site) is not [{ Applicability: Applicability.Applicable } winner])
+        if (ResolveOverloads(site) is not [{ Applicability: FunApplicability.Applicable } winner])
             return null;
 
         // Receiver checks still report, so run them on a scratch binder
@@ -2111,63 +2118,205 @@ public sealed class Binder(Scope scope, BinderSideEffects sideEffects)
     }
 
 
-    private BoundValue BindTypeInit(BoundTypeRef typeRef, CallExprSyntax syntax)
+
+    /// <summary>
+    /// How far a candidate for type group resolution got before it
+    /// stopped matching. A higher value is a better match.
+    /// </summary>
+    private enum TypeApplicability
     {
-        if (typeRef.Type.OriginalDefinition is not StructSymbol originalDefinition || originalDefinition.IsPrimitive)
-            return BindError(syntax, new Diagnostic.CannotInitialize(typeRef));
-
-        var uninitializedFields = typeRef.Type.Members.OfType<FieldSymbol>().ToList();
-        var fieldInits = ImmutableArray.CreateBuilder<BoundFieldInit>();
-
-        var hadError = false;
-        foreach (var argSyntax in syntax.ArgList.Arguments)
-        {
-            if (BindFieldInitializer(typeRef.Type, argSyntax) is not BoundFieldInit boundFieldInit)
-            {
-                hadError = true;
-                continue;
-            }
-
-            if (!uninitializedFields.Contains(boundFieldInit.Field))
-            {
-                hadError = true;
-                SideEffects.ReportError(new Diagnostic.FieldAlreadyInitialized(argSyntax, boundFieldInit.Field));
-                continue;
-            }
-
-            uninitializedFields.Remove(boundFieldInit.Field);
-            fieldInits.Add(boundFieldInit);
-        }
-
-        if (hadError)
-            return new BoundError(ErrorType, syntax);
-
-        if (uninitializedFields.Count > 0)
-            return BindError(syntax, new Diagnostic.MissingFieldInitializers([.. uninitializedFields], syntax.ArgList));
-
-        return new BoundStructInit(typeRef.Type, fieldInits.ToImmutable(), syntax);
+        CannotInitialize,
+        FieldNameMismatch,
+        CannotInferTypeArguments,
+        Applicable
     }
 
-    private BoundValue BindFieldInitializer(TypeSymbol type, ArgSyntax argSyntax)
+    private sealed record TypeCandidate(
+        TypeSymbol Type,
+        TypeApplicability Applicability,
+        BinderSideEffects SideEffects);
+    
+    
+    private BoundValue BindTypeInit(BoundNode typeGroupOrSingle, ImmutableArray<BoundArgument> arguments,
+        CallExprSyntax syntax)
     {
-        var value = BindValue(argSyntax.Expr, ValueUsage.Read);
+        Debug.Assert(typeGroupOrSingle is BoundTypeGroup or BoundTypeRef);
 
-        var field = type.Members.OfType<FieldSymbol>().FirstOrDefault(field => argSyntax.IsNamed
-            ? field.Name.SequenceEqual(argSyntax.Name!.Text)
-            : field.Name.SequenceEqual(argSyntax.Text));
-
-        if (field is null)
+        // Arguments must all be named and distinct
+        var missingNameArguments = arguments.Where(a => a.FieldNameSyntax is null).ToImmutableArray();
+        if (missingNameArguments.Length > 0)
         {
-            return argSyntax.IsNamed
-                ? BindError(argSyntax, new Diagnostic.UndefinedField(type, argSyntax.Name!))
-                : BindError(argSyntax, new Diagnostic.MissingFieldName(argSyntax));
+            foreach (var arg in missingNameArguments)
+                SideEffects.ReportError(new Diagnostic.MissingFieldName(arg.Syntax!));
+            return new BoundError(ErrorType, syntax);
+        }
+
+        var duplicateNames = arguments
+            .GroupBy(a => a.FieldNameSyntax!.Text.ToString())
+            .Select(grp => grp.ToImmutableArray())
+            .Where(grp => grp.Length > 1)
+            .ToImmutableArray();
+        if (duplicateNames.Length > 0)
+        {
+            foreach (var duplicates in duplicateNames)
+                SideEffects.ReportError(new Diagnostic.DuplicateArgumentNames(duplicates));
+            return new BoundError(ErrorType, syntax);
         }
         
-        if (!CheckAccessibility(field, argSyntax.IsNamed ? argSyntax.Name! : argSyntax) ||
-            !CheckType(value, field.Type))
-            return new BoundError(ErrorType, argSyntax);
+        // Single
+        if (typeGroupOrSingle is BoundTypeRef typeRef)
+        {
+            var candidate = CheckTypeCandidate(typeRef.Type, arguments, typeRef.Syntax!, syntax);
+            if (candidate.Applicability is not TypeApplicability.Applicable)
+                return new BoundError(ErrorType, syntax);
+            return CompleteTypeInit(candidate, arguments, syntax);
+        }
 
-        return new BoundFieldInit(field, value, argSyntax);
+        // Type group resolution
+        var typeGroup = (BoundTypeGroup)typeGroupOrSingle;
+        var candidates = new List<TypeCandidate>();
+
+        foreach (var type in typeGroup.Candidates)
+        {
+            var binder = WithSideEffects(new BinderSideEffects());
+            var candidate = binder.CheckTypeCandidate(type, arguments, typeGroup.Syntax!, syntax);
+            if (candidates.Count == 0 || candidate.Applicability == candidates[0].Applicability)
+                candidates.Add(candidate);
+            else if (candidate.Applicability > candidates[0].Applicability)
+            {
+                candidates.Clear();
+                candidates.Add(candidate);
+            }
+        }
+
+        Debug.Assert(candidates.Count > 0);
+        if (candidates.Count == 1)
+        {
+            var candidate = candidates[0];
+            candidate.SideEffects.DrainInto(SideEffects);
+            if (candidate.Applicability is not TypeApplicability.Applicable)
+                return new BoundError(ErrorType, syntax);
+            return CompleteTypeInit(candidate, arguments, syntax);
+        }
+
+        return BindError(syntax, MakeTypeResolutionError([.. candidates.Select(c => c.Type)], candidates[0].Applicability, typeGroup.Syntax!, syntax));
+    }
+
+    private TypeCandidate CheckTypeCandidate(TypeSymbol type, ImmutableArray<BoundArgument> arguments, SyntaxNode typeSyntax,
+        CallExprSyntax syntax)
+    {
+        if (type.OriginalDefinition is not StructSymbol originalDefinition ||
+            originalDefinition.IsPrimitive)
+            return Fail(TypeApplicability.CannotInitialize);
+
+        // All fields bound and none left out?
+        var fieldPerArgument = BindFieldsToArguments(arguments, type);
+        if (fieldPerArgument is null)
+            return Fail(TypeApplicability.FieldNameMismatch);
+
+        var uninitializedFields = type.Members.OfType<FieldSymbol>()
+            .Where(f => !fieldPerArgument.Value.Contains(f))
+            .ToImmutableArray();
+        if (uninitializedFields.Length > 0)
+        {
+            SideEffects.ReportError(new Diagnostic.MissingFieldInitializers(uninitializedFields, syntax.ArgList));
+            return new TypeCandidate(type, TypeApplicability.FieldNameMismatch, SideEffects);
+        }
+        
+        // Infer type arguments if necessary
+        if (type.TypeArguments.SequenceEqual(type.TypeParameters))
+        {
+            var inferred = InferTypeArguments(type.TypeParameters,
+                [.. fieldPerArgument.Value.Select(f => f.Type)],
+                [.. arguments.Select(a => a.Type)]);
+            if (inferred is null)
+                return Fail(TypeApplicability.CannotInferTypeArguments);
+
+            var specializedType = type.Specialize(inferred.Value);
+            SideEffects.AddResolvedSymbol(typeSyntax.Location, specializedType);
+            
+            return new TypeCandidate(specializedType, TypeApplicability.Applicable, SideEffects);
+        }
+
+        return new TypeCandidate(type, TypeApplicability.Applicable, SideEffects);
+        
+        TypeCandidate Fail(TypeApplicability applicability)
+        {
+            SideEffects.AddResolvedSymbol(typeSyntax.Location, type);
+            SideEffects.ReportError(MakeTypeResolutionError([type], applicability, typeSyntax, syntax));
+            return new TypeCandidate(type, applicability, SideEffects);
+        }
+    }
+
+    private Diagnostic.Error? MakeTypeResolutionError(ImmutableArray<TypeSymbol> candidates, TypeApplicability applicability,
+        SyntaxNode typeSyntax, CallExprSyntax callSyntax)
+        => applicability switch
+        {
+            TypeApplicability.CannotInitialize => new Diagnostic.CannotInitialize(candidates, typeSyntax),
+            
+            TypeApplicability.FieldNameMismatch when candidates.Length == 1 => null,    // Individual UndefinedField is reported
+            TypeApplicability.FieldNameMismatch  => new Diagnostic.NoMatchingType(candidates, callSyntax.ArgList),
+            
+            TypeApplicability.CannotInferTypeArguments when candidates.Length == 1 => new Diagnostic.MissingTypeArguments(candidates.CastArray<Symbol>(), typeSyntax),
+            TypeApplicability.CannotInferTypeArguments  => new Diagnostic.CannotInferTypeArguments([.. candidates], typeSyntax),
+            
+            TypeApplicability.Applicable => new Diagnostic.AmbiguousTypeInit(candidates, typeSyntax),
+            _ => throw new UnreachableException()
+        };
+
+    private ImmutableArray<FieldSymbol>? BindFieldsToArguments(ImmutableArray<BoundArgument> arguments, TypeSymbol type)
+    {
+        var fields = ImmutableArray.CreateBuilder<FieldSymbol?>();
+
+        foreach (var argument in arguments)
+        {
+            Debug.Assert(argument.FieldNameSyntax is not null, "Missing field names must be handled before.");
+
+            var fieldName = argument.FieldNameSyntax.Text.ToString();
+            var field = type.Members.OfType<FieldSymbol>().FirstOrDefault(field => field.Name == fieldName);
+
+            if (field is null)
+                SideEffects.ReportError(new Diagnostic.UndefinedField(type, argument.FieldNameSyntax!));
+
+            fields.Add(field);
+        }
+
+        if (fields.Any(f => f is null))
+            return null;
+        
+        return fields.DrainToImmutable()!;
+    }
+
+    /// <summary>
+    /// Completes to bind a type init. Expected that
+    /// (a) all fields are assigned to (they don't need to match types)
+    /// (b) all arguments match a unique field
+    /// (c) the type is specialized
+    /// </summary>
+    private BoundValue CompleteTypeInit(TypeCandidate candidate, ImmutableArray<BoundArgument> arguments, CallExprSyntax syntax)
+    {
+        var fieldsToArguments = BindFieldsToArguments(arguments, candidate.Type);
+        Debug.Assert(fieldsToArguments is not null);
+        Debug.Assert(fieldsToArguments.Value.Length == arguments.Length);
+
+        var fieldInits = Enumerable.Range(0, arguments.Length)
+            .Select(i => BindFieldInitializer(arguments[i], fieldsToArguments.Value[i]))
+            .ToImmutableArray();
+        if (fieldInits.Any(f => f is not BoundFieldInit))
+            return new BoundError(ErrorType, syntax);
+        
+        return new BoundStructInit(candidate.Type, [.. fieldInits.Cast<BoundFieldInit>()], syntax);
+    }
+    
+    private BoundValue BindFieldInitializer(BoundArgument argument, FieldSymbol field)
+    {
+        if (!CheckAccessibility(field, argument.FieldNameSyntax!) ||
+            !CheckType(argument.Value, field.Type))
+        {
+            return new BoundError(ErrorType, argument.Syntax!);
+        }
+
+        return new BoundFieldInit(field, argument.Value, argument.Syntax);
     }
 
     #endregion

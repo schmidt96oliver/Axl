@@ -3,7 +3,8 @@
 
 # Now
 
-* generic inference
+* Argument syntax: mut and named
+* TypeInit: reject mut arguments
 
 * Infinite STRUCT SIZE check, follow into generic fields
   * `struct Node[T] { next: Node[T] }`
@@ -21,6 +22,9 @@
   * at least one parameter must be the containing type with its own parameters (`Pair[T]`), not a specialization
     like `Pair[I32]`. C# has the same rule. Otherwise operator lookup on `Pair[Bool]` would be inconsistent.
     == and operators on T inside the body: same errors as for generic funs until traits exist.
+
+* ?? SyntaxLocations.CalleeOf, CalleeAndTypeArgs, CalleeAndArgs, ...
+  * Pass CallSyntax and similar to Diagnostics. They find out where to put it.
 
 * Mir: Validator
   * Phase.Monomorphized: Check that everything is concrete. No TypeParams

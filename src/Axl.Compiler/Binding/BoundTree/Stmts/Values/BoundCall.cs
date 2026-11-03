@@ -1,6 +1,7 @@
 ﻿using System.Collections.Immutable;
 using Axl.Compiler.Symbols;
 using Axl.Compiler.Syntax;
+using Axl.Compiler.Syntax.Tree;
 
 namespace Axl.Compiler.Binding.BoundTree;
 
@@ -31,11 +32,13 @@ public sealed class BoundCall(
         => ReceiverAndArguments.Select(arg => arg.Value);
 }
 
-public sealed class BoundArgument(BoundValue value, bool isMut)
+public sealed class BoundArgument(IdNameSyntax? nameSyntax, BoundValue value, bool isMut, ArgSyntax? syntax)
 {
+    public IdNameSyntax? NameSyntax => nameSyntax;
+    public IdNameSyntax? FieldNameSyntax => nameSyntax ?? (Syntax as ArgSyntax)?.Expr as IdNameSyntax;
     public BoundValue Value { get; } = value;
     public bool IsMut { get; } = isMut;
 
     public TypeSymbol Type => Value.Type;
-    public SyntaxNode? Syntax => Value.Syntax;
+    public ArgSyntax? Syntax { get; } = syntax;
 }

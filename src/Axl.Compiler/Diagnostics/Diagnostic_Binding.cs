@@ -296,6 +296,25 @@ public partial record Diagnostic
             + (Candidates.Length > 5 ? $"... and { Candidates.Length - 5 } more." : "");
     }
 
+    public sealed record NoMatchingType(
+        ImmutableArray<TypeSymbol> Candidates,
+        SyntaxNode Syntax) : Error
+    {
+        public override ImmutableArray<SourceLocation> Locations =>
+            [Syntax is ArgListSyntax argList ? argList.InsideLocation : Syntax.Location];
+
+        public override string Message => $"""
+                                           No variant of ‘{Candidates[0].FullNameWithoutOwnTypeArgs}‘ accepts the given field names. Candidates:
+                                           {CandidateString}
+                                           """;
+
+        private string CandidateString =>
+            string.Join('\n', Candidates
+                .Take(5)
+                .Select(t => t.ShortDisplayText))
+            + (Candidates.Length > 5 ? $"... and { Candidates.Length - 5 } more." : "");
+    }
+
     public sealed record AmbiguousCall(
         ImmutableArray<FunSymbol> Candidates,
         SyntaxNode Syntax) : Error
@@ -312,6 +331,24 @@ public partial record Diagnostic
             string.Join('\n', Candidates
                 .Take(5)
                 .Select(fun => fun.ShortDisplayTextWithParameterTypes))
+            + (Candidates.Length > 5 ? $"... and {Candidates.Length - 5} more." : "");
+    }
+    
+    public sealed record AmbiguousTypeInit(
+        ImmutableArray<TypeSymbol> Candidates,
+        SyntaxNode Syntax) : Error
+    {
+        public override ImmutableArray<SourceLocation> Locations => [Syntax.Location];
+
+        public override string Message => $"""
+                                           ‘{Candidates[0].FullName}‘ is ambiguous between:
+                                           {CandidateString}
+                                           """;
+
+        private string CandidateString =>
+            string.Join('\n', Candidates
+                .Take(5)
+                .Select(fun => fun.FullName))
             + (Candidates.Length > 5 ? $"... and {Candidates.Length - 5} more." : "");
     }
 
@@ -454,25 +491,28 @@ public partial record Diagnostic
                 : $"{string.Join(", ", MissingFields[..^1].Select(f => $"‘{f.Name}‘"))} and ‘{MissingFields[^1].Name}‘";
     }
 
-    public sealed record FieldAlreadyInitialized(ArgSyntax ArgSyntax, FieldSymbol Field) : Error
+    public sealed record DuplicateArgumentNames(ImmutableArray<BoundArgument> Duplicates) : Error
     {
-        public override ImmutableArray<SourceLocation> Locations => [ArgSyntax.IsNamed ? ArgSyntax.Name!.Location : ArgSyntax.Location];
-        public override string Message => $"Field ‘{Field.Name}‘ is already initialized.";
+        public override ImmutableArray<SourceLocation> Locations =>
+            [.. Duplicates.Select(a => a.FieldNameSyntax!.Location)];
+
+        public override string Message =>
+            $"Duplicate argument name ‘{Duplicates[0].FieldNameSyntax!.Text}‘.";
     }
 
-    public sealed record CannotInitialize(BoundTypeRef TypeRef) : Error
+    public sealed record CannotInitialize(ImmutableArray<TypeSymbol> Candidates, SyntaxNode Syntax) : Error
     {
         public override ImmutableArray<SourceLocation> Locations
-            => [TypeRef.Syntax!.Location];
+            => [Syntax.Location];
 
-        public override string Message => TypeRef.Type switch
-        {
-            { IsPrimitive: true } =>
-                $"‘{TypeRef.Type.FullName}‘ cannot be initialized, because it is a primitive type.",
-            TypeParameterSymbol =>
-                $"‘{TypeRef.Type.FullName}‘ cannot be initialized, because it is a generic type.",
-            _ => $"‘{TypeRef.Type.FullName}‘ cannot be initialized."
-        };
+        public override string Message => Candidates.Length > 1
+            ? $"No variant of { Candidates[0].FullNameWithoutOwnTypeArgs } can be initialized."
+            : Candidates[0] switch
+            {
+                { IsPrimitive: true } => $"‘{Candidates[0].FullName}‘ cannot be initialized, because it is a primitive type.",
+                TypeParameterSymbol => $"‘{Candidates[0].FullName}‘ cannot be initialized, because it is a generic type.",
+                _ => $"‘{Candidates[0].FullName}‘ cannot be initialized."
+            };
     }
 
     public sealed record NotAccessible(ImmutableArray<Symbol> Symbols, SyntaxNode Syntax) : Error
@@ -943,20 +983,22 @@ public partial record Diagnostic
         public override string Message => $"Type parameter ‘{TypeParameter.Name}‘ hides the type ‘{Type.Name}‘.";
     }
 
-    public sealed record CannotInferTypeArguments(ImmutableArray<FunSymbol> Candidates, SyntaxNode Syntax) : Error
+    public sealed record CannotInferTypeArguments(ImmutableArray<Symbol> Candidates, SyntaxNode Syntax) : Error
     {
         /// <inheritdoc />
         public override ImmutableArray<SourceLocation> Locations => [Syntax.Location];
 
         /// <inheritdoc />
         public override string Message => Candidates.Length == 1
-            ? $"Cannot infer type arguments for ‘{Candidates[0].ShortDisplayTextWithParameterTypes}‘ from usage. Specify them explicitly."
+            ? $"Cannot infer type arguments for ‘{Candidates[0].ShortDisplayText}‘ from usage. Specify them explicitly."
             : $"Cannot infer type arguments from usage. Specify them explicitly. Candidates are:\n{CandidateString}";
 
         private string CandidateString =>
             string.Join('\n', Candidates
                 .Take(5)
-                .Select(fun => fun.ShortDisplayTextWithParameterTypes))
+                .Select(symbol => symbol is FunSymbol fun 
+                    ? fun.ShortDisplayTextWithParameterTypes 
+                    : symbol.ShortDisplayText))
             + (Candidates.Length > 5 ? $"... and {Candidates.Length - 5} more." : "");
     }
 }
