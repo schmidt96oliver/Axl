@@ -607,24 +607,10 @@ public sealed class Binder(Scope scope, BinderSideEffects sideEffects)
 
     public void CheckRecursiveStructLayout(StructSymbol symbol)
     {
-        Recurse(symbol, []);
-        return;
-
-        void Recurse(StructSymbol current, FieldDefinitionSymbol[] path)
-        {
-            foreach (var field in current.Members.OfType<FieldSymbol>().Select(f => f.OriginalDefinition))
-            {
-                if (field.Type is not StructSymbol fieldStructType)
-                    continue;
-
-                if (fieldStructType == symbol)
-                {
-                    SideEffects.ReportError(new Diagnostic.RecursiveStructLayout(symbol, [.. path, field]));
-                }
-                else
-                    Recurse(fieldStructType, [.. path, field]);
-            }
-        }
+        //TODO: Move layout graph to compilation
+        var graph = new LayoutGraph();
+        if (graph.TryGetCyclicPath(symbol) is { } cyclePath)
+            SideEffects.ReportError(new Diagnostic.RecursiveStructLayout(symbol, [.. cyclePath.Fields.Select(f => f.OriginalDefinition)]));
     }
     
     #endregion

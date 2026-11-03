@@ -1,0 +1,18 @@
+﻿//@check
+
+// The point here is, that it doesn't take forever for it
+// to check the struct layout.
+
+struct S0 { }
+struct S1 { a: S0; b: S0; c: S0; d: S0; }
+struct S2 { a: S1; b: S1; c: S1; d: S1; }
+struct S3 { a: S2; b: S2; c: S2; d: S2; }
+struct S4 { a: S3; b: S3; c: S3; d: S3; }
+struct S5 { a: S4; b: S4; c: S4; d: S4; }
+struct S6 { a: S5; b: S5; c: S5; d: S5; }
+struct S7 { a: S6; b: S6; c: S6; d: S6; }
+struct S8 { a: S7; b: S7; c: S7; d: S7; }
+struct S9 { a: S8; b: S8; c: S8; d: S8; }
+struct S10 { a: S9; b: S9; c: S9; d: S9; }
+struct S11 { a: S10; b: S10; c: S10; d: S10; }
+struct S12 { a: S11; b: S11; c: S11; d: S11; }

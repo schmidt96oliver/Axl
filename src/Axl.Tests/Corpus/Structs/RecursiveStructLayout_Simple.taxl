@@ -11,3 +11,12 @@ struct W { X: X; }          //~error RecursiveStructLayout
 struct X { X: Y; }          //~error RecursiveStructLayout
 struct Y { X: Z; }          //~error RecursiveStructLayout
 struct Z { X: W; }          //~error RecursiveStructLayout
+
+struct C { b: D; }
+struct D { b: D; }          //~error RecursiveStructLayout
+
+//---
+
+struct A { c: C; }          //~error RecursiveStructLayout
+struct C { d: D; }          //~error RecursiveStructLayout
+struct D { c: C; a: A; }    //~error RecursiveStructLayout

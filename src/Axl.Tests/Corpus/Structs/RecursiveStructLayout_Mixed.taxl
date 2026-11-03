@@ -1,0 +1,11 @@
+﻿//@check
+
+struct A { c: C; }          //~error RecursiveStructLayout
+struct C { b: B; a: A; }    //~error RecursiveStructLayout
+struct B { b: B; }          //~error RecursiveStructLayout
+
+//---
+struct A[T] { x: T; }
+struct B { a: A[B]; }       //~error RecursiveStructLayout
+struct D { b: B; c: C; }    //~error RecursiveStructLayout
+struct C { d: D; }          //~error RecursiveStructLayout

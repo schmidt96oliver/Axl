@@ -3,10 +3,12 @@
 
 # Now
 
-* Infinite STRUCT SIZE check, follow into generic fields
-  * `struct Node[T] { next: Node[T] }`
-  * `struct A[T] { x: T } struct B { a: A[B] }`
-  * `struct S[T] { s: S[Box[T]] }`
+* Infinite Struct Size check
+* Cleanup `LayoutGraph`, maybe rename it to be clearer
+* Check if target actually contains T by value
+`struct F[T] { s: Empty[F[T]]; }`
+`struct H[T] { g: A[H[Empty[T]]]; }`
+`struct Empty[T];`
 
 # Questions / Little ones
 
@@ -34,11 +36,10 @@
 
 # Milestones
 
-**Infinite instantiation detection**
-* Depth limit first, then the static cycle check.
-* Build static graph cycle detection
-
 **BaseLib: `Buffer[T]`, `List[T]/MutList[T]`**
+
+**Classes, ByRef types**
+* RecursiveStructLayout: Only check type args/fields that store by value
 
 # Later
 

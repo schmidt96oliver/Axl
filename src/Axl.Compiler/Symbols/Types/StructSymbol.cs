@@ -28,9 +28,6 @@ public sealed class StructSymbol(
     /// <inheritdoc />
     public override bool CanBeReferencedByName => true;
 
-    public ImmutableArray<FieldSymbol> Fields => [.. Members.OfType<FieldSymbol>()];
-
-
     /// <inheritdoc />
     public override ImmutableArray<TypeParameterSymbol> TypeParameters
     {
@@ -88,7 +85,6 @@ public sealed class StructSymbol(
                 // after binding is done.
                 // Add type parameters here.
                 binder.CheckDuplicateDeclarations([.. field, .. TypeParameters]);
-                binder.CheckRecursiveStructLayout(this);
             }
 
             return field;
@@ -100,7 +96,12 @@ public sealed class StructSymbol(
         _ = TypeParameters;
         foreach (var member in Members)
             member.Complete(sideEffects);
-
+        
+        // The layout graph check will access type members and therefore
+        // run recursively inside each other. So just do it herem, since
+        // it's just a check that doesn't compute any real values.
+        new Binder(new MemberScope(enclosingScope, this), _sideEffects).CheckRecursiveStructLayout(this);
+        
         _sideEffects.DrainInto(sideEffects);
     }
 }
