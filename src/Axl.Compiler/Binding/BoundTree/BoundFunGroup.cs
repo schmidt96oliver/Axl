@@ -11,7 +11,7 @@ namespace Axl.Compiler.Binding.BoundTree;
 public sealed class BoundFunGroup(
     ImmutableArray<FunSymbol> candidates,
     BoundNode? receiver,
-    ImmutableArray<BoundTypeArgument> typeArguments,
+    ImmutableArray<BoundTypeRef> typeArguments,
     SyntaxNode? typeArgListSyntax = null,
     SyntaxNode? funSyntax = null)
     : BoundNode(funSyntax)
@@ -23,13 +23,13 @@ public sealed class BoundFunGroup(
 
     public ImmutableArray<FunSymbol> Candidates { get; } = candidates;
 
-    public ImmutableArray<BoundTypeArgument> TypeArguments { get; } = typeArguments;
+    public ImmutableArray<BoundTypeRef> TypeArguments { get; } = typeArguments;
     public SyntaxNode? TypeArgListSyntax { get; } = typeArgListSyntax;
 
     public bool HasTypeArguments => TypeArguments.Length > 0;
     
     public BoundNode? Receiver { get; } = receiver;
 
-    public BoundFunGroup WithTypeArguments(ImmutableArray<BoundTypeArgument> typeArguments, SyntaxNode? typeArgListSyntax)
+    public BoundFunGroup WithTypeArguments(ImmutableArray<BoundTypeRef> typeArguments, SyntaxNode? typeArgListSyntax)
         => new(Candidates, Receiver, typeArguments, typeArgListSyntax, Syntax);
 }

@@ -7,7 +7,7 @@ fun A(p: Test) { }  //~error MissingTypeArguments
 fun A(): Test { }   //~error MissingTypeArguments
 
 let a: Test[Test] = 1;  //~error MissingTypeArguments
-
+ 
 struct Test[T]
 {
     pub static fun A() { }

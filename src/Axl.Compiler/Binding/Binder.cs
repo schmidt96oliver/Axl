@@ -687,7 +687,7 @@ public sealed class Binder(Scope scope, BinderSideEffects sideEffects)
     public (TypeSymbol Type, bool IsMut) BindFunReturnType(ReturnTypeAnnotationSyntax? returnTypeAnnotation)
     {
         return returnTypeAnnotation is not null
-            ? (BindType(returnTypeAnnotation.TypeExpr, TypeUsage.Signature), returnTypeAnnotation.MutKw is not null)
+            ? (BindType(returnTypeAnnotation.TypeExpr, TypeUsage.Signature).Type, returnTypeAnnotation.MutKw is not null)
             : (Unit, false);
     }
     
@@ -715,7 +715,7 @@ public sealed class Binder(Scope scope, BinderSideEffects sideEffects)
         if (Scope.OwnerAsFun is null)
             throw new InvalidOperationException($"{nameof(BindParameter)} only valid on funs.");
 
-        var type = BindType(syntax.TypeAnnotation, TypeUsage.Signature);
+        var type = BindType(syntax.TypeAnnotation, TypeUsage.Signature).Type;
         var symbol = new ParameterSymbol(syntax.Name.Identifier, 
             Scope.OwnerAsFun!, 
             type,
@@ -838,7 +838,7 @@ public sealed class Binder(Scope scope, BinderSideEffects sideEffects)
     private BoundStmt BindVarDecl(VarDeclSyntax syntax)
     {
         var variableType = syntax.TypeAnnotation is not null
-            ? BindType(syntax.TypeAnnotation, TypeUsage.Local)
+            ? BindType(syntax.TypeAnnotation, TypeUsage.Local).Type
             : null;
         
         var boundInitializer = BindVarDeclInitializer(syntax);
@@ -992,7 +992,7 @@ public sealed class Binder(Scope scope, BinderSideEffects sideEffects)
         _ => false,
     };
     
-    public TypeSymbol BindType(ExprSyntax syntax, TypeUsage usage)
+    public BoundTypeRef BindType(ExprSyntax syntax, TypeUsage usage)
     {
         var bound = BindExpr(syntax, LookupOptions.OnlyType);
         var typeRef = bound as BoundTypeRef;
@@ -1001,26 +1001,44 @@ public sealed class Binder(Scope scope, BinderSideEffects sideEffects)
         else if (bound is BoundTypeGroup typeGroup)
         {
             if (ResolveTypeGroup(typeGroup, [], null) is not BoundTypeRef boundTypeRef)
-                return ErrorType;
+                return new BoundTypeRef(ErrorType, [], syntax);
             typeRef = boundTypeRef;
         }
         if (typeRef is null)
         {
             if (bound is not BoundError)
                 SideEffects.ReportError(new Diagnostic.NotAType(bound));
-            return ErrorType;
+            return new BoundTypeRef(ErrorType, [], syntax);
         }
 
-        // Check consistent accessibility
-        if (usage is TypeUsage.Signature && !typeRef.Type.IsAccessibleFrom(Scope.Owner.AccessibleWithin))
-        {
-            SideEffects.DiagnosticBag.ReportError(new Diagnostic.InconsistentAccessibility(typeRef, Scope.Owner));
-            return ErrorType;
-        }
+        if (!CheckTypeUsage(typeRef, usage))
+            return new BoundTypeRef(ErrorType, [], syntax);
         
-        return typeRef.Type;
+        return typeRef;
     }
 
+    private bool CheckTypeUsage(BoundTypeRef typeRef, TypeUsage usage)
+    {
+        if (usage is TypeUsage.Local)
+            return true;
+
+        // We must recurse into all type argument to check if they
+        // are accessible.
+        
+        var requiredAccessibility = Scope.Owner.AccessibleWithin;
+        return CheckRecursive(typeRef);
+        
+        bool CheckRecursive(BoundTypeRef currentRef)
+        {
+            if (!currentRef.Type.IsAccessibleFrom(requiredAccessibility))
+            {
+                SideEffects.DiagnosticBag.ReportError(new Diagnostic.InconsistentAccessibility(currentRef, Scope.Owner));
+                return false;
+            }
+            
+            return currentRef.TypeArguments.All(CheckRecursive);
+        }
+    }
     
     #region Literals and Strings and Self
 
@@ -1424,7 +1442,7 @@ public sealed class Binder(Scope scope, BinderSideEffects sideEffects)
         var boundSymbol = symbol switch
         {
             NamespaceSymbol @namespace => new BoundNamespaceRef(@namespace, syntax),
-            TypeSymbol type => new BoundTypeRef(type, syntax),
+            TypeSymbol type => new BoundTypeRef(type, typeArguments: [], syntax),
 
             VariableSymbol variable => BindVariable(variable, syntax),
             FunSymbol => BindFunGroup(lookupResult, receiver: null, syntax),
@@ -1516,7 +1534,7 @@ public sealed class Binder(Scope scope, BinderSideEffects sideEffects)
         return symbol switch
         {
             NamespaceSymbol @namespace => new BoundNamespaceRef(@namespace, syntax.Member),
-            TypeSymbol type => new BoundTypeRef(type, syntax.Member),
+            TypeSymbol type => new BoundTypeRef(type, typeArguments: [], syntax.Member),
             // Note that type argument from the left side are already substituted.
 
             VariableSymbol => throw new UnreachableException("Variables are never members."),
@@ -1579,8 +1597,8 @@ public sealed class Binder(Scope scope, BinderSideEffects sideEffects)
         {
             // Try to bind it as type as well.
             var typeLookup = LookupName(syntax.Text.ToString(), LookupOptions.OnlyType);
-            if (typeLookup.SingleViable is TypeSymbol type)
-                asTypeRef = new BoundTypeRef(type, syntax);
+            if (typeLookup.SingleViable is TypeSymbol { TypeParameters.Length: 0 } type)
+                asTypeRef = new BoundTypeRef(type, typeArguments: [], syntax);
         }
 
         if (receiver is null)
@@ -1627,7 +1645,7 @@ public sealed class Binder(Scope scope, BinderSideEffects sideEffects)
             case BoundFunGroup { HasTypeArguments: false } funGroup:
             {
                 var typeArgs = syntax.ArgList.Arguments
-                    .Select(s => new BoundTypeArgument(BindType(s, TypeUsage.Local), s))
+                    .Select(s => BindType(s, TypeUsage.Local))
                     .ToImmutableArray();
 
                 return funGroup.WithTypeArguments(typeArgs, syntax.ArgList);
@@ -1650,10 +1668,10 @@ public sealed class Binder(Scope scope, BinderSideEffects sideEffects)
         }
     }
 
-    private BoundNode ResolveTypeGroup(BoundTypeGroup group, ImmutableArray<TypeSymbol> typeArguments, SyntaxNode? typeArgumentsSyntax)
+    private BoundNode ResolveTypeGroup(BoundTypeGroup group, ImmutableArray<BoundTypeRef> typeArguments, SyntaxNode? typeArgumentsSyntax)
     {
         Debug.Assert(typeArguments.Length == 0 || typeArgumentsSyntax is not null);
-        if (typeArguments.OfType<ErrorTypeSymbol>().Any())
+        if (typeArguments.Any(a => a.Type is ErrorTypeSymbol))
         {
             if (group.Candidates.Length == 1)
                 SideEffects.AddResolvedSymbol(group.Syntax!.Location, group.Candidates[0]);
@@ -1697,9 +1715,9 @@ public sealed class Binder(Scope scope, BinderSideEffects sideEffects)
         }
 
 
-        var specializedType = candidates[0].Specialize(typeArguments);
+        var specializedType = candidates[0].Specialize([.. typeArguments.Select(t => t.Type)]);
         SideEffects.AddResolvedSymbol(group.Syntax!.Location, specializedType);
-        return new BoundTypeRef(specializedType, group.Syntax);
+        return new BoundTypeRef(specializedType, typeArguments, group.Syntax);
     }
     
     #endregion 
@@ -1804,7 +1822,7 @@ public sealed class Binder(Scope scope, BinderSideEffects sideEffects)
     /// </summary>
     private Candidate CheckFunCandidate(FunSymbol fun, CallSite site)
     {
-        var typeArguments = site.Callee.TypeArguments;
+        var typeArguments = site.Callee.TypeArguments.Select(t => t.Type).ToImmutableArray();
 
         if (typeArguments.Length == 0 && fun.TypeParameters.Length > 0)
         {
@@ -1818,12 +1836,12 @@ public sealed class Binder(Scope scope, BinderSideEffects sideEffects)
                 [.. site.Arguments.Select(a => a.Type)]);
             if (inferred is null)
                 return Fail(FunApplicability.CannotInferTypeArguments);
-            typeArguments = [.. inferred.Value.Select(t => new BoundTypeArgument(t))];
+            typeArguments = inferred.Value;
         }
         else if (fun.TypeParameters.Length != typeArguments.Length)
             return Fail(FunApplicability.WrongTypeArgumentCount);
         
-        fun = fun.Specialize([.. typeArguments.Select(t => t.Type)]);
+        fun = fun.Specialize(typeArguments);
 
         if (fun.Parameters.Length != site.Arguments.Length)
             return Fail(FunApplicability.WrongArgumentCount);

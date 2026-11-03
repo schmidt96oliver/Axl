@@ -34,7 +34,7 @@ public sealed class FieldDefinitionSymbol(
                 _isBindingType = true;
                 
                 _binder ??= MakeBinder();
-                field = _binder.BindType(DeclarationSyntax.TypeExpr, TypeUsage.Signature);
+                field = _binder.BindType(DeclarationSyntax.TypeExpr, TypeUsage.Signature).Type;
 
                 _isBindingType = false;
             }

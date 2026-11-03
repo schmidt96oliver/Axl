@@ -1,0 +1,15 @@
+﻿//@check
+
+namespace Test;
+
+struct Private;
+pub struct Box[T] { pub Value: T; }
+
+pub fun Leak1(): Box[Private]               //~error InconsistentAccessibility
+    = Box(Value = Private());
+pub fun Leak2(t: Box[Private])              //~error InconsistentAccessibility
+    { }
+pub fun Leak3(): Box[Box[Private]]          //~error InconsistentAccessibility
+    = Box(Value = Box(Value = Private()));
+pub fun Leak4(t: Box[Box[Private]])         //~error InconsistentAccessibility
+    { }
