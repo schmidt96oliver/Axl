@@ -3,9 +3,6 @@
 
 # Now
 
-* Argument syntax: mut and named
-* TypeInit: reject mut arguments
-
 * Infinite STRUCT SIZE check, follow into generic fields
   * `struct Node[T] { next: Node[T] }`
   * `struct A[T] { x: T } struct B { a: A[B] }`
@@ -15,6 +12,9 @@
 
 * ?? Miri: `Environment` -> `ActivationFrame` with .GetRef that throws if exited
 * ?? Miri: Store reference as Root (ActivationFrame, LocalId) + Path (FieldSymbol[]). See Claude, think why?
+* Miri: `1 / 0` must panic
+* Miri: Allow return code and panic tests
+* Try Assert tests :)
 
 * ?? Binder: BoundParameter and BoundSelf again?
 
@@ -33,17 +33,6 @@
 * Mir: StructInit as ImmutableArray<Operand> ordered from declaration/member order. No map
 
 # Milestones
-
-**Generic structs** (`Pair[A, B]`, fields, construction, static funs like `List[I32].New()`)
-* InfiniteSize check after substitution (see above).
-
-**Inference**
-* Implement rule for specificity in overload resolution (-> Claude)
-* Errors: CannotInferTypeArgument (hint: “Specify them explicitly, like ‘F[…]‘.”); conflicting inferences
-        (“Inferred both
-        ‘I32‘ and ‘String‘ for ‘T‘.”).
-* Never: treat it as the bottom type, so F(panic(), 1) infers I32 rather than conflicting.
-* Overload resolution: decide the tie-break between generic and non-generic candidates (usually non-generic wins).
 
 **Infinite instantiation detection**
 * Depth limit first, then the static cycle check.

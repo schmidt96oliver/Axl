@@ -1,4 +1,4 @@
-﻿//@check
+﻿//@run
 
 PrintLine("{Test(X = 1).X}");
 //= 1
@@ -10,12 +10,12 @@ PrintLine("{Test[Bool](F = true).F}");
 //= X
 //= true
 
-Print("{Test[I32, I32](F1 = 1, F2 = 2).F1}");
+PrintLine("{Test[I32, I32](F1 = 1, F2 = 2).F1}");
 PrintLine("{Test[I32, I32](F1 = 1, F2 = 2).F2}");
 //= 1
 //= 2
 
-Print("{Test[String, I32](F1 = "X", F2 = 2).F1}");
+PrintLine("{Test[String, I32](F1 = "X", F2 = 2).F1}");
 PrintLine("{Test[String, I32](F1 = "X", F2 = 2).F2}");
 //= X
 //= 2

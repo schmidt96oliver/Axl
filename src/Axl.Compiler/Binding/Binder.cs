@@ -2174,7 +2174,7 @@ public sealed class Binder(Scope scope, BinderSideEffects sideEffects)
     {
         Debug.Assert(typeGroupOrSingle is BoundTypeGroup or BoundTypeRef);
 
-        // Arguments must all be named and distinct
+        // Arguments must all be named and distinct and without mut
         var missingNameArguments = arguments.Where(a => a.FieldNameSyntax is null).ToImmutableArray();
         if (missingNameArguments.Length > 0)
         {
@@ -2342,6 +2342,11 @@ public sealed class Binder(Scope scope, BinderSideEffects sideEffects)
     
     private BoundValue BindFieldInitializer(BoundArgument argument, FieldSymbol field)
     {
+        if (argument.IsMut)
+        {
+            SideEffects.ReportError(new Diagnostic.UnexpectedMutInTypeInit(argument.Syntax!));
+        }
+        
         if (!CheckAccessibility(field, argument.FieldNameSyntax!) ||
             !CheckType(argument.Value, field.Type))
         {

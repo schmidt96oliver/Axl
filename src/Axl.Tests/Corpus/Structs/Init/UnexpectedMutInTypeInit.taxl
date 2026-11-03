@@ -1,0 +1,7 @@
+﻿//@check
+
+var i = 1;
+let t = Test(X = mut i);        //~error UnexpectedMutInTypeInit
+PrintLine(t.X);
+
+struct Test { pub X: I32; }

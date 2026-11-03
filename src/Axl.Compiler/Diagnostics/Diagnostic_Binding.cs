@@ -1007,4 +1007,14 @@ public partial record Diagnostic
                     : symbol.ShortDisplayText))
             + (Candidates.Length > 5 ? $"... and {Candidates.Length - 5} more." : "");
     }
+
+    public sealed record UnexpectedMutInTypeInit(ArgSyntax ArgSyntax) : Error
+    {
+        /// <inheritdoc />
+        public override ImmutableArray<SourceLocation> Locations =>
+            [(ArgSyntax.Expr as MutExprSyntax)?.MutKw.Location ?? ArgSyntax.Location];
+
+        /// <inheritdoc />
+        public override string Message => "‘mut‘ is not valid in type initializers.";
+    }
 }

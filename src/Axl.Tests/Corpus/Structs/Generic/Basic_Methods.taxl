@@ -1,4 +1,4 @@
-﻿//@check
+﻿//@run
 
 var b = Box[I32].Make(1);
 PrintLine(b.Get());
