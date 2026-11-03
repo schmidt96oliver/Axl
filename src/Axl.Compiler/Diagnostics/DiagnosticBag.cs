@@ -8,8 +8,8 @@ public sealed class DiagnosticBag
     
     private readonly ImmutableArray<Diagnostic>.Builder? _diagnostics = ImmutableArray.CreateBuilder<Diagnostic>();
     private bool _isDrained = false;
-    
-    public bool HasError { get; private set; }
+
+    public bool HasError => _diagnostics?.OfType<Diagnostic.Error>().Any() ?? false;
 
     public DiagnosticBag() 
         : this(isDiscard: false)
@@ -51,7 +51,6 @@ public sealed class DiagnosticBag
         Guard.IsState(!_isDrained);
 
         _diagnostics?.Add(error);
-        HasError = true;
     }
 
     public void ReportLint(Diagnostic.Lint lint)
