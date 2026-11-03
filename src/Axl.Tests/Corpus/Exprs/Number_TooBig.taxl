@@ -1,7 +1,15 @@
 ﻿//@check
 
 // Numbers that would produce an overflow must give an error.
+// - must be special cased, because it allows one value "higher".
  
 let a = 10000000000i32;             //~error NumberTooBig
 let a = 10000000000i64; 
 let a = 10000000000000000000i64;    //~error NumberTooBig
+
+// These must be valid
+let max: I32 = 2147483647;        
+let min: I32 = -2147483648;
+
+let big: I32 = 2147483648;        //~error NumberTooBig
+let big: I32 = -2147483649;       //~error NumberTooBig

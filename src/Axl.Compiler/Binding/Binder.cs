@@ -899,7 +899,7 @@ public sealed class Binder(Scope scope, BinderSideEffects sideEffects)
         MutExprSyntax => BindError(syntax, new Diagnostic.MutNotAllowedHere(syntax)),
         
         // Strings and Literals
-        NumberLiteralSyntax numberLiteralSyntax => BindNumberLiteral(numberLiteralSyntax),
+        NumberLiteralSyntax numberLiteralSyntax => BindNumberLiteral(numberLiteralSyntax, numberLiteralSyntax.Token.Suffix),
         TrueLiteralSyntax => new BoundConst(value: true, type: Bool, syntax),
         FalseLiteralSyntax => new BoundConst(value: false, type: Bool, syntax),
         StringExprSyntax stringExprSyntax => BindString(stringExprSyntax),
@@ -1050,20 +1050,25 @@ public sealed class Binder(Scope scope, BinderSideEffects sideEffects)
         return new BoundVariable(Scope.OwnerAsFun.SelfParameter, syntax);
     }
 
-    private BoundValue BindNumberLiteral(NumberLiteralSyntax syntax)
+    private BoundValue BindNumberLiteral(SyntaxNode syntax, NumberLiteralSuffix suffix)
     {
-        var type = syntax.Token.Suffix switch
+        var textEnd = Enumerable.Range(0, syntax.Text.Length).FirstOrDefault(i => 
+            char.IsAsciiLetter(syntax.Text[i]), syntax.Text.Length);
+        var text = syntax.Text[..textEnd].ToString().Replace("_", "");
+        var hasDecimalPoint = text.Contains('.');
+        
+        var type = suffix switch
         {
             NumberLiteralSuffix.I32 => Scope.Compilation.BaseLibrary.I32,
             NumberLiteralSuffix.I64 => Scope.Compilation.BaseLibrary.I64,
             NumberLiteralSuffix.F32 => Scope.Compilation.BaseLibrary.F32,
             NumberLiteralSuffix.F64 => Scope.Compilation.BaseLibrary.F64,
 
-            _ => syntax.Token.HasDecimalPoint ? Scope.Compilation.BaseLibrary.DefaultFloatType : Scope.Compilation.BaseLibrary.DefaultIntType
+            _ => hasDecimalPoint ? Scope.Compilation.BaseLibrary.DefaultFloatType : Scope.Compilation.BaseLibrary.DefaultIntType
         };
 
         // Literals like "1.1i32" need to be rejected.
-        if (syntax.Token.HasDecimalPoint &&
+        if (hasDecimalPoint &&
             type != Scope.Compilation.BaseLibrary.F32 && type != Scope.Compilation.BaseLibrary.F64)
         {
             return BindError(syntax, new Diagnostic.SuffixInvalidForDecimalNumber(syntax));
@@ -1071,7 +1076,7 @@ public sealed class Binder(Scope scope, BinderSideEffects sideEffects)
 
         if (type == Scope.Compilation.BaseLibrary.I32)
         {
-            if (!int.TryParse(syntax.Token.Body, out var value))
+            if (!int.TryParse(text, out var value))
                 return BindError(syntax, new Diagnostic.NumberTooBig(type, syntax));
 
             return new BoundConst(value, type, syntax);
@@ -1079,7 +1084,7 @@ public sealed class Binder(Scope scope, BinderSideEffects sideEffects)
 
         if (type == Scope.Compilation.BaseLibrary.I64)
         {
-            if (!long.TryParse(syntax.Token.Body, out var value))
+            if (!long.TryParse(text, out var value))
                 return BindError(syntax, new Diagnostic.NumberTooBig(type, syntax));
 
             return new BoundConst(value, type, syntax);
@@ -1087,13 +1092,13 @@ public sealed class Binder(Scope scope, BinderSideEffects sideEffects)
 
         if (type == Scope.Compilation.BaseLibrary.F32)
         {
-            var value = float.Parse(syntax.Token.Body, CultureInfo.InvariantCulture);
+            var value = float.Parse(text, CultureInfo.InvariantCulture);
             return new BoundConst(value, type, syntax);
         }
 
         if (type == Scope.Compilation.BaseLibrary.F64)
         {
-            var value = double.Parse(syntax.Token.Body, CultureInfo.InvariantCulture);
+            var value = double.Parse(text, CultureInfo.InvariantCulture);
             return new BoundConst(value, type, syntax);
         }
 
@@ -1162,7 +1167,16 @@ public sealed class Binder(Scope scope, BinderSideEffects sideEffects)
     #region Operators and Assignment
 
     private BoundValue BindUnary(UnaryExprSyntax syntax)
-        => BindSynthesizedOperatorCall(BindValue(syntax.Operand, ValueUsage.Read), syntax.Operator, [], syntax);
+    {
+        // Special case "-10" to go into number literal binding directly,
+        // because "2147483648" is too big, but "-2147483648" isn't.
+        if (syntax.Operator.Kind is TokenKind.Minus && syntax.Operand is NumberLiteralSyntax numberOperand)
+        {
+            return BindNumberLiteral(syntax, numberOperand.Token.Suffix);
+        }
+        
+        return BindSynthesizedOperatorCall(BindValue(syntax.Operand, ValueUsage.Read), syntax.Operator, [], syntax);
+    }
     
     private BoundValue BindBinary(BinaryExprSyntax syntax)
     {

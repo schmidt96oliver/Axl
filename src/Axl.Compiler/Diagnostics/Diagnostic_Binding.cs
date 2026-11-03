@@ -39,13 +39,19 @@ public partial record Diagnostic
             => "Initializer must be specified.";
     }
 
-    public sealed record SuffixInvalidForDecimalNumber(NumberLiteralSyntax NumberLiteralSyntax) : Error
+    public sealed record SuffixInvalidForDecimalNumber(SyntaxNode Syntax) : Error
     {
         public override ImmutableArray<SourceLocation> Locations 
-            => [NumberLiteralSyntax.Location];
+            => [SuffixLocation];
 
         public override string Message
-            => $"Suffix ‘{NumberLiteralSyntax.Token.Suffix.ToString().ToLowerInvariant()}‘ describes an integral type. Expected a type that describes a decimal number.";
+            => $"Suffix ‘{SuffixLocation.Text.ToString().ToLowerInvariant()}‘ describes an integral type. Expected a type that describes a decimal number.";
+
+        private SourceLocation SuffixLocation =>
+            (Syntax as NumberLiteralSyntax ?? (Syntax as UnaryExprSyntax)?.Operand as NumberLiteralSyntax)
+            is { } numberLiteral
+                ? new SourceLocation(numberLiteral.Tree.SourceText, numberLiteral.Token.SuffixRange)
+                : Syntax.Location;
     }
 
     public sealed record UndefinedName(IdNameSyntax Syntax) : Error
