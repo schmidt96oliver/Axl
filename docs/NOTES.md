@@ -3,6 +3,8 @@
 
 # Now
 
+* generic inference
+
 * Infinite STRUCT SIZE check, follow into generic fields
   * `struct Node[T] { next: Node[T] }`
   * `struct A[T] { x: T } struct B { a: A[B] }`
@@ -32,14 +34,7 @@
 * InfiniteSize check after substitution (see above).
 
 **Inference**
-* Rework overload resolution
-    * BindArguments -> Bind each candidate fully, tentatively `BindSingleCall` (returns Viability)
-      -> sort with viability ->
-    * One left, viable: merge it and return the BoundCall.
-      One left, not viable: merge its diagnostics.
-      Several left, viable: PickBest, then either one result or AmbiguousCall.
-      Several left, not viable: a specific message per grade, for example:
-    * Implement rule for specificity in overload resolution (-> Claude)
+* Implement rule for specificity in overload resolution (-> Claude)
 * Errors: CannotInferTypeArgument (hint: “Specify them explicitly, like ‘F[…]‘.”); conflicting inferences
         (“Inferred both
         ‘I32‘ and ‘String‘ for ‘T‘.”).

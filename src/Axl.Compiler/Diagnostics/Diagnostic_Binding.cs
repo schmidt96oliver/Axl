@@ -942,4 +942,21 @@ public partial record Diagnostic
         /// <inheritdoc />
         public override string Message => $"Type parameter ‘{TypeParameter.Name}‘ hides the type ‘{Type.Name}‘.";
     }
+
+    public sealed record CannotInferTypeArguments(ImmutableArray<FunSymbol> Candidates, SyntaxNode Syntax) : Error
+    {
+        /// <inheritdoc />
+        public override ImmutableArray<SourceLocation> Locations => [Syntax.Location];
+
+        /// <inheritdoc />
+        public override string Message => Candidates.Length == 1
+            ? $"Cannot infer type arguments for ‘{Candidates[0].ShortDisplayTextWithParameterTypes}‘ from usage. Specify them explicitly."
+            : $"Cannot infer type arguments from usage. Specify them explicitly. Candidates are:\n{CandidateString}";
+
+        private string CandidateString =>
+            string.Join('\n', Candidates
+                .Take(5)
+                .Select(fun => fun.ShortDisplayTextWithParameterTypes))
+            + (Candidates.Length > 5 ? $"... and {Candidates.Length - 5} more." : "");
+    }
 }

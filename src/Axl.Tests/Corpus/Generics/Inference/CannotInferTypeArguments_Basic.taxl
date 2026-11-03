@@ -1,0 +1,9 @@
+﻿//@check
+
+let a = A();   //~error CannotInferTypeArguments
+let a = B();   //~error CannotInferTypeArguments
+
+fun A[T]() { }
+
+fun B[T]() { }
+fun B[T1, T2, T3](i: I32) { }

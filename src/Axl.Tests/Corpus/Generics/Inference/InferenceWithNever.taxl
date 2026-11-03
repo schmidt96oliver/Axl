@@ -1,0 +1,6 @@
+﻿//@check
+  
+let a: I32 = A(return, 1);
+let a: I32 = A(1, return);
+
+fun A[T](a: T, b: T): T = b;

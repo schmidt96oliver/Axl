@@ -1,0 +1,13 @@
+﻿//@run
+//= 1
+//= X
+
+PrintLine(First(Pair[I32, String](First = 1, Scnd = "X")));
+PrintLine(Scnd(Pair[I32, String](First = 1, Scnd = "X")));
+
+fun First[A, B](a: Pair[A,B]): A
+    = a.First;
+fun Scnd[A, B](a: Pair[A,B]): B
+    = a.Scnd;
+
+struct Pair[A, B] { pub First: A; pub Scnd: B; }

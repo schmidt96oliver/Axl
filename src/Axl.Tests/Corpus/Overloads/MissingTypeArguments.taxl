@@ -1,9 +1,0 @@
-﻿//@check
-
-let a = A();   //~error MissingTypeArguments
-let a = B();   //~error MissingTypeArguments
-
-fun A[T]() { }
-
-fun B[T]() { }
-fun B[T1, T2, T3](i: I32) { }

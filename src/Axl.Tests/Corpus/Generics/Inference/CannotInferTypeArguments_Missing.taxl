@@ -1,0 +1,5 @@
+﻿//@check
+  
+A(1, 1);        //~error CannotInferTypeArguments
+
+fun A[T, U](a: T, b: T): T = b;

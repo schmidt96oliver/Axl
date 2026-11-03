@@ -1,0 +1,8 @@
+﻿//@check
+  
+A(asd);         //~error UndefinedName
+B(asd);         //~error UndefinedName
+
+fun A[T](a: T) { }
+fun B[T](a: T) { }
+fun B[T, U](a: T) { }

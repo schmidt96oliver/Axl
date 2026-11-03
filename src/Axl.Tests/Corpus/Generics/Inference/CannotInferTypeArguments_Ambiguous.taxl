@@ -1,0 +1,7 @@
+﻿//@check
+
+A(1, 1.5);      //~error CannotInferTypeArguments
+A("1", 1.5);      //~error CannotInferTypeArguments
+A(1, 1);    // valid
+
+fun A[T](a: T, b: T) { }

@@ -1,0 +1,20 @@
+﻿//@run
+//= 1
+//= X
+//= true
+
+let p = Pair[I32, Pair[String, Bool]](First = 1,
+    Scnd = Pair[String, Bool](First= "X", Scnd=true));
+
+PrintLine(First(p));
+PrintLine(Scnd(p));
+PrintLine(Third(p));
+
+fun First[A, B, C](a: Pair[A,Pair[B,C]]): A
+    = a.First;
+fun Scnd[A, B, C](a: Pair[A,Pair[B,C]]): B
+    = a.Scnd.First;
+fun Third[A, B, C](a: Pair[A,Pair[B,C]]): C
+    = a.Scnd.Scnd;
+
+struct Pair[A, B] { pub First: A; pub Scnd: B; }

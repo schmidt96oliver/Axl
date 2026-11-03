@@ -1714,6 +1714,7 @@ public sealed class Binder(Scope scope, BinderSideEffects sideEffects)
     {
         WrongTypeArgumentCount,
         WrongArgumentCount,
+        CannotInferTypeArguments,
         ArgumentMismatch,
         Applicable,
     }
@@ -1804,9 +1805,20 @@ public sealed class Binder(Scope scope, BinderSideEffects sideEffects)
     private Candidate CheckCandidate(FunSymbol fun, CallSite site)
     {
         var typeArguments = site.Callee.TypeArguments;
-        
-        //TODO Add type argument inference
-        if (fun.TypeParameters.Length != typeArguments.Length)
+
+        if (typeArguments.Length == 0 && fun.TypeParameters.Length > 0)
+        {
+            // Infer type arguments only if arity matches, otherwise
+            // it doesn't make sense.
+            if (fun.Parameters.Length != site.Arguments.Length)
+                return Fail(Applicability.WrongArgumentCount);
+
+            var inferred = InferTypeArguments(fun, site);
+            if (inferred is null)
+                return Fail(Applicability.CannotInferTypeArguments);
+            typeArguments = [.. inferred.Value.Select(t => new BoundTypeArgument(t))];
+        }
+        else if (fun.TypeParameters.Length != typeArguments.Length)
             return Fail(Applicability.WrongTypeArgumentCount);
         
         fun = fun.Specialize([.. typeArguments.Select(t => t.Type)]);
@@ -1835,20 +1847,93 @@ public sealed class Binder(Scope scope, BinderSideEffects sideEffects)
         }
     }
 
+    private ImmutableArray<TypeSymbol>? InferTypeArguments(FunSymbol fun, CallSite site)
+    {
+        var hints = Enumerable
+            .Range(0, Math.Min(fun.Parameters.Length, site.Arguments.Length))
+            .SelectMany(i =>
+                CollectTypeArgumentHints(
+                    target: fun.Parameters[i].Type,
+                    argument: site.Arguments[i].Type));
+
+        var hintsByParam = new Dictionary<TypeParameterSymbol, TypeSymbol>();
+        foreach (var hint in hints)
+        {
+            if (!fun.TypeParameters.Contains(hint.Param))
+            {
+                // The hint belongs to a different type param.
+                continue;
+            }
+
+            // Don't infer never or error
+            if (hint.Type is ErrorTypeSymbol || hint.Type == NeverType)
+                continue;
+
+            if (!hintsByParam.TryAdd(hint.Param, hint.Type))
+            {
+                // It's already there, they must be assignable.
+                // Swap if this hint is better.
+                var lastHintArgument = hintsByParam[hint.Param];
+                if (IsAssignableTo(hint.Type, lastHintArgument))
+                    continue;
+                if (IsAssignableTo(lastHintArgument, hint.Type))
+                    hintsByParam[hint.Param] = lastHintArgument;
+                else
+                    return null;
+            }
+        }
+        
+        var typeArgs = ImmutableArray.CreateBuilder<TypeSymbol>();
+        foreach (var param in fun.TypeParameters)
+        {
+            if (!hintsByParam.TryGetValue(param, out var argumentHint))
+                return null;
+            typeArgs.Add(argumentHint);
+        }
+        
+        return typeArgs.DrainToImmutable();
+    }
+
+    private IEnumerable<(TypeParameterSymbol Param, TypeSymbol Type)> CollectTypeArgumentHints(
+        TypeSymbol target, TypeSymbol argument)
+    {
+        // These could be T <- I32, Pair[T, U] <- Pair[I32, F64]
+        // or don't match at all.
+        if (target is TypeParameterSymbol targetParam)
+            return [(targetParam, argument)];
+
+        if (Equals(target.OriginalDefinition, argument.OriginalDefinition))
+        {
+            return Enumerable.Range(0, target.TypeArguments.Length)
+                .SelectMany(i => CollectTypeArgumentHints(target.TypeArguments[i], argument.TypeArguments[i]));
+        }
+
+        return [];
+    }
+
+
     /// <summary>
     /// The error for one or more candidates that all stopped at the same step.
     /// Used for a single candidate as well as for a tie, so each error lives in one place.
     /// For <see cref="Applicability.Applicable"/> it's the ambiguity error.
     /// </summary>
-    private static Diagnostic.Error MakeResolutionError(Applicability applicability,
+    private static Diagnostic.Error? MakeResolutionError(Applicability applicability,
         ImmutableArray<FunSymbol> funs, CallSite site) => applicability switch
     {
         Applicability.WrongTypeArgumentCount => MakeTypeArgumentCountError(funs, site),
         Applicability.WrongArgumentCount => new Diagnostic.WrongArgumentCount(
             [.. funs], site.Arguments.Length, site.ArgListSyntax),
-        //Note: Single ArgumentMismatches are reported directly in CheckCandidate
-        Applicability.ArgumentMismatch => new Diagnostic.NoMatchingOverload(
-            [.. funs], site.Arguments, site.ArgListSyntax),
+
+        Applicability.CannotInferTypeArguments => site.Arguments.All(a => a.Type is not ErrorTypeSymbol)
+            ? new Diagnostic.CannotInferTypeArguments(funs, site.CalleeSyntax)
+            : null,
+
+        Applicability.ArgumentMismatch => site.Arguments.All(a => a.Type is not ErrorTypeSymbol)
+            ? funs.Length > 1
+                ? new Diagnostic.NoMatchingOverload([.. funs], site.Arguments, site.ArgListSyntax)
+                : throw new UnreachableException("Single argument mismatches are reported in candidate checking.")
+            : null,
+
         Applicability.Applicable => new Diagnostic.AmbiguousCall([.. funs], site.CalleeSyntax),
         _ => throw new UnreachableException(),
     };
