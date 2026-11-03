@@ -6,11 +6,15 @@ pub fun Panic(message: String): Never;
 pub fun Panic() : Never
     = Panic("");
 
-pub fun Assert(condition: Bool, message: String): Never
-    = Panic("Assertion failed. {message}");
+pub fun Assert(condition: Bool, message: String)
+{
+    if (!condition) Panic("Assertion failed. {message}");
+}
     
-pub fun Assert(condition: Bool): Never
-    = Panic("Assertion failed.");
+pub fun Assert(condition: Bool)
+{
+    if (!condition) Panic("Assertion failed.");
+}
     
 pub fun TODO() : Never
     = Panic("TODO");
