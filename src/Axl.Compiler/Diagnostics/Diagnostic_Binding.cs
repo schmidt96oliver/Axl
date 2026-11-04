@@ -466,7 +466,7 @@ public partial record Diagnostic
     public sealed record RecursiveStructLayout(StructSymbol StructSymbol, ImmutableArray<FieldSymbol> FieldPath) : Error
     {
         public override ImmutableArray<SourceLocation> Locations => [FieldPath[0].OriginalDefinition.DeclarationSyntax.TypeExpr.Location];
-        public override string Message => $"TypeSymbol ‘{StructSymbol.FullName}‘ has a cycle in its layout. The cycle is through fields {GetCycleString()}";
+        public override string Message => $"Type ‘{StructSymbol.FullName}‘ has a cycle in its layout. The cycle is through fields {GetCycleString()}";
 
         private string GetCycleString()
             => string.Join(" -> ", FieldPath.Select(field => $"‘{field.FullName}: {field.Type.FullName}‘"));

@@ -1905,7 +1905,7 @@ public sealed class Binder(Scope scope, BinderSideEffects sideEffects)
                 if (IsAssignableTo(hint.Type, lastHintArgument))
                     continue;
                 if (IsAssignableTo(lastHintArgument, hint.Type))
-                    hintsByParam[hint.Param] = lastHintArgument;
+                    hintsByParam[hint.Param] = hint.Type;
                 else
                     return null;
             }

@@ -7,18 +7,12 @@
 * Miri: Allow return code and panic tests
 * Try Assert tests :)
 
-
 # Questions / Little ones
 
 * ?? Miri: `Environment` -> `ActivationFrame` with .GetRef that throws if exited
 * ?? Miri: Store reference as Root (ActivationFrame, LocalId) + Path (FieldSymbol[]). See Claude, think why?
 
 * ?? Binder: BoundParameter and BoundSelf again?
-
-* ?? Generic operators: `fun +[T]` or `fun ==[T]`
-  * at least one parameter must be the containing type with its own parameters (`Pair[T]`), not a specialization
-    like `Pair[I32]`. C# has the same rule. Otherwise operator lookup on `Pair[Bool]` would be inconsistent.
-    == and operators on T inside the body: same errors as for generic funs until traits exist.
 
 * ?? SyntaxLocations.CalleeOf, CalleeAndTypeArgs, CalleeAndArgs, ...
   * Pass CallSyntax and similar to Diagnostics. They find out where to put it.
@@ -31,20 +25,39 @@
 
 # Milestones
 
-**BaseLib: `Buffer[T]`, `List[T]/MutList[T]`**
+**Panic**: `1/0` panics, return code, taxl panic, Assert tests
 
-**Classes, ByRef types**
+**Buffer**: `Buffer[T]`, `List[T]/MutList[T]`
+
+**Classes, ByRef types**: Class, `===` operator
 * RecursiveStructLayout: Only check type args/fields that store by value
 
+**Mir Analysis**
+* Unreachable code analysis
+    * Build HashSet for reachable StmtSyntax by walk on MIR. Then walk over syntax tree to report.
+* Read/Write analysis
+    * Unused variables
+    * 'var' can be 'let'
+    * unecessary parameter 'mut' + self
+    * unecessary assignment
+
+**LSP Work**: Completion context, signature help, folding ranges, symbol highlighting, rename
+* Churns the data structure heavily
+
+**Enums/Exhaustiveness/Patterns**
+
+**Traits/Constraints**
+
+# Loose Ends
+* Overload resolution specificity
+   `fun A[T](t: T){} fun A[T](t: I32){}   A[I32](1);`
+* Operators and generics: `pub fun +[T](t: T)` how do they interact?
+* Mut exclusivity check
+* RecursiveStructLayout: Only check type args/fields that store by value
+* 
 # Later
 
-* Unreachable code analysis
-  * Build HashSet for reachable StmtSyntax by walk on MIR. Then walk over syntax tree to report.
-* Read/Write analysis
-  * Unused variables
-  * 'var' can be 'let'
-  * unecessary parameter 'mut' + self
-  * unecessary assignment
+
 * ?? Drop initializers + definite assignment
 * Miri flat execution + stack trace + @StackTraceHidden
 
