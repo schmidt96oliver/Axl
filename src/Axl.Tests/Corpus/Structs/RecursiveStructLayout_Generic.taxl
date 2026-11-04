@@ -6,10 +6,13 @@ struct A[T] { x: T; }
 struct B { a: A[B]; }                   //~error RecursiveStructLayout
 struct C { b: B; }
 
-struct D[T] { s: D[Empty[T]]; }           //~error RecursiveStructLayout
+struct D[T] { s: D[Empty[T]]; }         //~error RecursiveStructLayout
 struct E[T] { p: Pair[E[I32]]; }        //~error RecursiveStructLayout
-
+ 
 struct Empty[T];
+
+struct X[T] { next: Y[I32]; }           //~error RecursiveStructLayout
+struct Y[T] { next: X[T]; }             //~error RecursiveStructLayout
 
 // Must NOT fire:
 struct Pair[T] { a: T; }

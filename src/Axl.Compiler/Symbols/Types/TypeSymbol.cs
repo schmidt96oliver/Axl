@@ -1,4 +1,5 @@
 ﻿using System.Collections.Immutable;
+using Axl.Compiler.Binding;
 
 namespace Axl.Compiler.Symbols;
 
@@ -25,6 +26,16 @@ public closed class TypeSymbol(Compilation compilation, string name, Symbol? own
     /// themselves. Might be specialized.
     /// </summary>
     public abstract ImmutableArray<TypeSymbol> TypeArguments { get; }
+
+    public LayoutGraphNode LayoutGraphNode
+    {
+        get
+        {
+            field ??= new LayoutGraphNode(this);
+            return field;
+        }
+    }
+
 
     public override TypeSymbol Substitute(TypeMap map)
     {

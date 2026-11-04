@@ -463,9 +463,9 @@ public partial record Diagnostic
         public override string Message => $"‘{OffendingSymbols[0].Name}‘ is already declared in this scope.";
     }
 
-    public sealed record RecursiveStructLayout(StructSymbol StructSymbol, ImmutableArray<FieldDefinitionSymbol> FieldPath) : Error
+    public sealed record RecursiveStructLayout(StructSymbol StructSymbol, ImmutableArray<FieldSymbol> FieldPath) : Error
     {
-        public override ImmutableArray<SourceLocation> Locations => [FieldPath[0].DeclarationSyntax.TypeExpr.Location];
+        public override ImmutableArray<SourceLocation> Locations => [FieldPath[0].OriginalDefinition.DeclarationSyntax.TypeExpr.Location];
         public override string Message => $"TypeSymbol ‘{StructSymbol.FullName}‘ has a cycle in its layout. The cycle is through fields {GetCycleString()}";
 
         private string GetCycleString()

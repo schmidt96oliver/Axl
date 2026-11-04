@@ -3,20 +3,15 @@
 
 # Now
 
-* Infinite Struct Size check
-* Cleanup `LayoutGraph`, maybe rename it to be clearer
-* Check if target actually contains T by value
-`struct F[T] { s: Empty[F[T]]; }`
-`struct H[T] { g: A[H[Empty[T]]]; }`
-`struct Empty[T];`
+* Miri: `1 / 0` must panic
+* Miri: Allow return code and panic tests
+* Try Assert tests :)
+
 
 # Questions / Little ones
 
 * ?? Miri: `Environment` -> `ActivationFrame` with .GetRef that throws if exited
 * ?? Miri: Store reference as Root (ActivationFrame, LocalId) + Path (FieldSymbol[]). See Claude, think why?
-* Miri: `1 / 0` must panic
-* Miri: Allow return code and panic tests
-* Try Assert tests :)
 
 * ?? Binder: BoundParameter and BoundSelf again?
 

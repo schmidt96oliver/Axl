@@ -607,10 +607,8 @@ public sealed class Binder(Scope scope, BinderSideEffects sideEffects)
 
     public void CheckRecursiveStructLayout(StructSymbol symbol)
     {
-        //TODO: Move layout graph to compilation
-        var graph = new LayoutGraph();
-        if (graph.TryGetCyclicPath(symbol) is { } cyclePath)
-            SideEffects.ReportError(new Diagnostic.RecursiveStructLayout(symbol, [.. cyclePath.Fields.Select(f => f.OriginalDefinition)]));
+        if (symbol.LayoutGraphNode.TryGetCyclicPath() is { } cyclePath)
+            SideEffects.ReportError(new Diagnostic.RecursiveStructLayout(symbol, cyclePath));
     }
     
     #endregion
