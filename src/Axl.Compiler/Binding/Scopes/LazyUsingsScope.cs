@@ -8,11 +8,7 @@ namespace Axl.Compiler.Binding.Scopes;
 public sealed class LazyUsingsScope(Scope enclosingScope, ImmutableArray<UsingDirectiveSyntax> usingSyntaxes)
     : Scope(enclosingScope)
 {
-    /// <summary>
-    /// To avoid unnecessary allocations, the binder is created on first
-    /// use and released again after call to <see cref="Complete"/>.
-    /// </summary>
-    private Binder? _binder = null;
+    private readonly BinderSideEffects _sideEffects = new();
     private bool _isBindingUsings = false;
 
     private ImmutableArray<NamespaceSymbol> Usings
@@ -26,8 +22,7 @@ public sealed class LazyUsingsScope(Scope enclosingScope, ImmutableArray<UsingDi
                 throw new CycleException();
             _isBindingUsings = true;
 
-            _binder ??= new Binder(EnclosingScope!, new BinderSideEffects());
-            field = _binder.BindUsingDirectives(usingSyntaxes);
+            field = new Binder(EnclosingScope!, _sideEffects).BindUsingDirectives(usingSyntaxes);
             _isBindingUsings = false;
 
             return field;
@@ -45,6 +40,6 @@ public sealed class LazyUsingsScope(Scope enclosingScope, ImmutableArray<UsingDi
     public void Complete(BinderSideEffects sideEffects)
     {
         _ = Usings;
-        _binder!.SideEffects.DrainInto(sideEffects);
+        sideEffects.AddFrom(_sideEffects);
     }
 }

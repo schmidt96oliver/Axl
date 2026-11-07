@@ -64,9 +64,9 @@ public closed class Symbol(Compilation compilation, string name, Symbol? owner)
     public virtual Symbol Substitute(TypeMap map) => this;
     
     /// <summary>
-    /// Completes binding of all lazy symbols and transfers side effects
-    /// to <paramref name="sideEffects"/>. Completes any members or
-    /// owned symbols as well.
+    /// Ensures that lazy symbols are fully bound and analyzed and
+    /// transfers side effects to <paramref name="sideEffects"/>. Completes
+    /// members as well and can by called multiple times.
     /// </summary>
     public virtual void Complete(BinderSideEffects sideEffects)
     {

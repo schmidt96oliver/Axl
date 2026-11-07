@@ -19,10 +19,7 @@ public class Compilation
     public static string BaseLibraryDirectory
         => Path.Combine(AppContext.BaseDirectory, "BaseLib");
 
-    
-
     private readonly Dictionary<FunSymbol, LoweredFunBody> _loweredBodies = [];
-    private bool _isComplete = false;
     
     
     /// <summary>
@@ -150,24 +147,25 @@ public class Compilation
 
     private void Complete()
     {
-        if (_isComplete) return;
-        
         var sideEffects = new BinderSideEffects();
-        
+        Complete(sideEffects);
+
+        Diagnostics = sideEffects.DiagnosticBag.Drain();
+        SemanticSideTable = sideEffects.SemanticSideTable;
+    }
+
+    public void Complete(BinderSideEffects sideEffects)
+    {
+        sideEffects.DiagnosticBag.AddRange(SyntaxTrees.SelectMany(tree => tree.Diagnostics));
+
         BaseLibrary.Complete(sideEffects.DiagnosticBag);
         RootNamespace.Complete(sideEffects);
         foreach (var script in Scripts)
             script.Complete(sideEffects);
 
-        Diagnostics =
-        [
-            .. SyntaxTrees.SelectMany(tree => tree.Diagnostics),
-            .. sideEffects.DiagnosticBag.Drain(),
-            .. AllFuns.Where(f => f.Body is BoundBlock).SelectMany(fun => GetLoweredFunBody(fun).Diagnostics)
-        ];
-        
-        SemanticSideTable = sideEffects.SemanticSideTable;
-        _isComplete = true;
+        sideEffects.DiagnosticBag.AddRange(AllFuns
+            .Where(f => f.Body is BoundBlock)
+            .SelectMany(fun => GetLoweredFunBody(fun).Diagnostics));
     }
 
     public LoweredFunBody GetLoweredFunBody(FunDefinitionSymbol fun)
@@ -197,20 +195,20 @@ public class Compilation
     {
         if (entryScript.Compilation != this || !Scripts.Contains(entryScript))
             throw new ArgumentException("The given script is not part of this compilation.", nameof(entryScript));
-        
-        Complete();
 
-        var diagnosticBag = new DiagnosticBag();
-        diagnosticBag.AddRange(Diagnostics);
-        diagnosticBag.AddRange(ReferencedCompilations.SelectMany(c => c.Diagnostics));
+        var globalSideEffects = new BinderSideEffects();
 
-        if (diagnosticBag.HasError)
-            return new CompilationResult(null, diagnosticBag.Drain());
+        foreach (var referencedCompilation in ReferencedCompilations)
+            referencedCompilation.Complete(globalSideEffects);
+        Complete(globalSideEffects);
+
+        if (globalSideEffects.DiagnosticBag.HasError)
+            return new CompilationResult(null, globalSideEffects.DiagnosticBag.Drain());
         
         var program = Monomorphizer.TryMonomorphize(entryScript.Fun,
             funDefinition => GetLoweredFunBody(funDefinition).MirFunction,
-            diagnosticBag);
-        return new CompilationResult(program, diagnosticBag.Drain());
+            globalSideEffects.DiagnosticBag);
+        return new CompilationResult(program, globalSideEffects.DiagnosticBag.Drain());
     }
     
 

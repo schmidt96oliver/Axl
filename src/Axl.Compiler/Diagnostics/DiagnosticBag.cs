@@ -10,6 +10,7 @@ public sealed class DiagnosticBag
     private bool _isDrained = false;
 
     public bool HasError => _diagnostics?.OfType<Diagnostic.Error>().Any() ?? false;
+    public IEnumerable<Diagnostic> Diagnostics => _diagnostics ?? Enumerable.Empty<Diagnostic>();
 
     public DiagnosticBag() 
         : this(isDiscard: false)
@@ -32,20 +33,6 @@ public sealed class DiagnosticBag
         return _diagnostics?.DrainToImmutable() ?? [];
     }
     
-    public void DrainInto(DiagnosticBag bag)
-    {
-        Guard.IsState(!_isDrained);
-        
-        _isDrained = true;
-        
-        if (_diagnostics is not null)
-        {
-            bag.AddRange(_diagnostics);
-            _diagnostics.Clear();
-        }
-    }
-    
-
     public void ReportError(Diagnostic.Error error)
     {
         Guard.IsState(!_isDrained);

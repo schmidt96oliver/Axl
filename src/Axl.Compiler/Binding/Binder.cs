@@ -1491,7 +1491,7 @@ public sealed class Binder(Scope scope, BinderSideEffects sideEffects)
         
         NamespaceOrTypeSymbol namespaceOrType = left switch
         {
-            // Note that BoundValueOrTypeRef goes through BoundValue here
+            // Note that BoundValueOrTypeRef is a BoundValue here
             // and returns it's type.
             BoundValue value => value.Type,
             
@@ -1775,7 +1775,7 @@ public sealed class Binder(Scope scope, BinderSideEffects sideEffects)
         if (best is [var only])
         {
             SideEffects.AddResolvedSymbol(site.CalleeSyntax.Location, only.Fun);
-            only.SideEffects.DrainInto(SideEffects);
+            SideEffects.AddFrom(only.SideEffects);
             return only.Applicability is FunApplicability.Applicable
                 ? CompleteCall(only.Fun, site)
                 : new BoundError(ErrorType, site.Syntax);
@@ -2131,8 +2131,8 @@ public sealed class Binder(Scope scope, BinderSideEffects sideEffects)
         if (receiverBinder.CompleteCall(winner.Fun, site) is not BoundCall call)
             return null;
 
-        winner.SideEffects.DrainInto(SideEffects);
-        receiverBinder.SideEffects.DrainInto(SideEffects);
+        SideEffects.AddFrom(winner.SideEffects);
+        SideEffects.AddFrom(receiverBinder.SideEffects);
         return call;
     }
 
@@ -2212,7 +2212,7 @@ public sealed class Binder(Scope scope, BinderSideEffects sideEffects)
         if (candidates.Count == 1)
         {
             var candidate = candidates[0];
-            candidate.SideEffects.DrainInto(SideEffects);
+            SideEffects.AddFrom(candidate.SideEffects);
             if (candidate.Applicability is not TypeApplicability.Applicable)
                 return new BoundError(ErrorType, syntax);
             return CompleteTypeInit(candidate, arguments, syntax);

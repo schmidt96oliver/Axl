@@ -11,7 +11,7 @@ namespace Axl.Compiler.Symbols;
 public class ScriptSymbol(SyntaxTree syntax, Scope enclosingScope) 
     : NamespaceSymbol(enclosingScope.Compilation, name: "", owner: null, isRoot: false)
 {
-    private Binder? _binder;
+    private readonly BinderSideEffects _sideEffects = new();
     private LazyUsingsScope? _lazyUsingsScope;
     private bool _isBindingMembers;
     private bool _isBindingScriptFun;
@@ -30,12 +30,12 @@ public class ScriptSymbol(SyntaxTree syntax, Scope enclosingScope)
                     throw new CycleException();
                 _isBindingMembers = true;
 
-                _binder ??= MakeBinder();
-                field = _binder.BindScriptMembers(syntax.FileSyntax, out _lazyUsingsScope);
+                var binder = new Binder(new MemberScope(enclosingScope, this), _sideEffects);
+                field = binder.BindScriptMembers(syntax.FileSyntax, out _lazyUsingsScope);
                 
                 _isBindingMembers = false;
 
-                _binder.CheckDuplicateDeclarations(field);
+                binder.CheckDuplicateDeclarations(field);
             }
 
             return field;
@@ -56,7 +56,7 @@ public class ScriptSymbol(SyntaxTree syntax, Scope enclosingScope)
                 _ = Members;
                 Debug.Assert(_lazyUsingsScope is not null);
                 
-                var binder = (_binder ??= MakeBinder()).WithScope(_lazyUsingsScope);
+                var binder = new Binder(_lazyUsingsScope, _sideEffects);
 
                 field = new SyntheticFunSymbol(name: "", owner: this, isPublic: false);
                 field.SetSignature(selfParameter: null, [], binder.Scope.Compilation.BaseLibrary.Unit);
@@ -69,9 +69,6 @@ public class ScriptSymbol(SyntaxTree syntax, Scope enclosingScope)
         }
     }
 
-    private Binder MakeBinder()
-        => new(new MemberScope(enclosingScope, this), new BinderSideEffects());
-
     /// <inheritdoc />
     public override void Complete(BinderSideEffects sideEffects)
     {
@@ -80,7 +77,6 @@ public class ScriptSymbol(SyntaxTree syntax, Scope enclosingScope)
         _ = Fun;
         _lazyUsingsScope?.Complete(sideEffects);
         
-        _binder!.SideEffects.DrainInto(sideEffects);
-        _binder = null;
+        sideEffects.AddFrom(_sideEffects);
     }
 }

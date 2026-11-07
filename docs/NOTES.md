@@ -1,6 +1,31 @@
 # ------------------------------------ Axl Project ------------------------------------
                                        ≽(◕ ᴗ ◕)≼                                      
 
+* Make complete callable often
+
+* Scope name listing
+* SemanticModel.VisibleSymbolsAt(SourceLocation)
+  * Fork compilation with `Probe` and marker, `Compilation.WithProbe(Token token)`
+  * `Compilation.MarkerToken(SourceLocation, name)` returns marker in current Compilation through `FindMarkerProbe`
+  
+  * Simple for now: Hook in LookupName/Member.
+
+* Complete only whats necessary
+  * Symbol.PartiallyComplete; e.g. signature vs body; don't complete members
+  * Symbol.DeclaringSyntaxes
+  * Complete the lowermost symbol => Put Marker on BinderSideEffects
+
+* A way to show completion status of symbols along the way?
+  * `Compilation.WithDebugTrace`
+  * `using var _ = Compilation.TraceCompletion(this, nameof(Body))`
+  * use in SemanticModel tests
+
+* Getting scope + scope context
+  * Reparse/rebind with marker at caret. Hooks in BindIdName, BindMemberAccess
+  * Fully bind the member access / id name, return only valid result.
+  * BoundFunGroup -> Call BindCallReceiver before
+  * Flag: StopAfterCaret: Stops after returning the carets result
+
 # Now
 
 # Questions / Little ones

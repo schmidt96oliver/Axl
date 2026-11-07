@@ -94,6 +94,6 @@ public sealed class BaseLibrary(Compilation compilation)
         foreach (var baseKind in Enum.GetValues<BaseTypeKind>())
             _ = Get(baseKind);
         
-        _diagnosticBag.DrainInto(diagnosticBag);
+        diagnosticBag.AddRange(_diagnosticBag.Diagnostics);
     }
 }

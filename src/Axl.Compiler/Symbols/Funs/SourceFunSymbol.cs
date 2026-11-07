@@ -16,7 +16,7 @@ public sealed class SourceFunSymbol(
 {
     public override FunDeclSyntax DeclarationSyntax { get; } = declarationSyntax;
 
-    private BinderSideEffects _sideEffects = new();
+    private readonly BinderSideEffects _sideEffects = new();
     private bool _isBindingTypeParameters = false;
     private bool _isBindingParameters = false;
     private bool _isBindingReturnType = false;
@@ -168,7 +168,7 @@ public sealed class SourceFunSymbol(
         _ = ReturnType;
         _ = Body;
         
-        _sideEffects.DrainInto(sideEffects);
+        sideEffects.AddFrom(_sideEffects);
     }
 
     private Binder MakeSignatureBinder()

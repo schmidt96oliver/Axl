@@ -17,10 +17,6 @@ public sealed class StructSymbol(
         isPublic: isPublic, 
         primitiveKind: primitiveKind)
 {
-    /// <summary>
-    /// To avoid unnecessary allocations, the binder is created on first
-    /// use and released again after call to <see cref="Complete"/>.
-    /// </summary>
     private readonly BinderSideEffects _sideEffects = new();
     private bool _isBindingMembers = false;
     private bool _isBindingTypeParameters = false;
@@ -98,10 +94,10 @@ public sealed class StructSymbol(
             member.Complete(sideEffects);
         
         // The layout graph check will access type members and therefore
-        // run recursively inside each other. So just do it herem, since
+        // run recursively inside each other. So just do it here, since
         // it's just a check that doesn't compute any real values.
         new Binder(new MemberScope(enclosingScope, this), _sideEffects).CheckRecursiveStructLayout(this);
         
-        _sideEffects.DrainInto(sideEffects);
+        sideEffects.AddFrom(_sideEffects);
     }
 }

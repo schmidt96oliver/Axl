@@ -17,11 +17,7 @@ public sealed class SourceNamespaceSymbol(
     bool isRoot)
     : NamespaceSymbol(compilation, declaration.Name, owner, isRoot)
 {
-    /// <summary>
-    /// To avoid unnecessary allocations, the binder is created on first
-    /// use and released again after call to <see cref="Complete"/>.
-    /// </summary>
-    private Binder? _binder = null;
+    private readonly BinderSideEffects _sideEffects = new();
     private bool _isBindingMembers = false;
 
     private ImmutableArray<LazyUsingsScope> _scopes;
@@ -45,7 +41,11 @@ public sealed class SourceNamespaceSymbol(
                 throw new CycleException();
             _isBindingMembers = true;
 
-            _binder ??= MakeBinder();
+            // Global scope already sees root namespace.
+            var binder = new Binder(Owner is null 
+                    ? enclosingScope.WithOwner(this) 
+                    : new MemberScope(enclosingScope, this),
+                _sideEffects);
             
             // Binding namespace files produces the usings scopes of
             // that file, which is lazy and must be completed by this
@@ -55,7 +55,7 @@ public sealed class SourceNamespaceSymbol(
             field =
             [
                 .. Declaration.SyntaxTrees.SelectMany(tree => BindNamespaceFile(tree)),
-                .. Declaration.Children.Select(_binder.BindNamespaceDeclaration)
+                .. Declaration.Children.Select(binder.BindNamespaceDeclaration)
             ];
 
             _scopes = scopes.DrainToImmutable();
@@ -64,13 +64,13 @@ public sealed class SourceNamespaceSymbol(
 
             // The following checks accesses members, so they need to run
             // after binding is done.
-            _binder.CheckDuplicateDeclarations(field);
+            binder.CheckDuplicateDeclarations(field);
 
             return field;
 
             ImmutableArray<Symbol> BindNamespaceFile(SyntaxTree tree)
             {
-                var result = _binder.BindNamespaceFile(tree, out var scope);
+                var result = binder.BindNamespaceFile(tree, out var scope);
                 scopes.Add(scope);
                 return result;
             }
@@ -86,12 +86,6 @@ public sealed class SourceNamespaceSymbol(
         foreach (var scope in _scopes)
             scope.Complete(sideEffects);
         
-        _binder!.SideEffects.DrainInto(sideEffects);
-        _binder = null;
+        sideEffects.AddFrom(_sideEffects);
     }
-
-    private Binder MakeBinder()
-        // Global scope already sees root namespace.
-        => new(Owner is null ? enclosingScope.WithOwner(this) : new MemberScope(enclosingScope, this),
-            new BinderSideEffects());
 }

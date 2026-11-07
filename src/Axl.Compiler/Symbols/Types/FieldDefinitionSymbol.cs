@@ -11,11 +11,7 @@ public sealed class FieldDefinitionSymbol(
     : FieldSymbol(declarationSyntax.Name.Text.ToString(),
         owner, isPublic: declarationSyntax.PubKw is not null)
 {
-    /// <summary>
-    /// To avoid unnecessary allocations, the binder is created on first
-    /// use and released again after call to <see cref="Complete"/>.
-    /// </summary>
-    private Binder? _binder = null;
+    private readonly BinderSideEffects _sideEffects = new();
     private bool _isBindingType = false;
     private readonly List<SpecializedFieldSymbol> _specializations = [];
 
@@ -32,9 +28,9 @@ public sealed class FieldDefinitionSymbol(
                 if (_isBindingType)
                     throw new CycleException();
                 _isBindingType = true;
-                
-                _binder ??= MakeBinder();
-                field = _binder.BindType(DeclarationSyntax.TypeExpr, TypeUsage.Signature).Type;
+
+                field = new Binder(enclosingScope.WithOwner(this), _sideEffects)
+                    .BindType(DeclarationSyntax.TypeExpr, TypeUsage.Signature).Type;
 
                 _isBindingType = false;
             }
@@ -43,15 +39,11 @@ public sealed class FieldDefinitionSymbol(
         }
     }
 
-    private Binder MakeBinder()
-        => new(enclosingScope.WithOwner(this), new BinderSideEffects());
-
     /// <inheritdoc />
     public override void Complete(BinderSideEffects sideEffects)
     {
         _ = Type;
-        _binder?.SideEffects.DrainInto(sideEffects);
-        _binder = null;
+        sideEffects.AddFrom(_sideEffects);
     }
 
 

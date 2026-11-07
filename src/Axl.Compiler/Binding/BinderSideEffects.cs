@@ -6,45 +6,34 @@ namespace Axl.Compiler.Binding;
 
 public sealed class BinderSideEffects
 {
-    private bool _isDrained = false;
-    
     public DiagnosticBag DiagnosticBag { get; } = new();
     public SemanticSideTable SemanticSideTable { get; } = new();
 
     public void ReportError(Diagnostic.Error? error)
     {
-        Guard.IsState(!_isDrained);
         if (error is not null)
             DiagnosticBag.ReportError(error);
     }
 
     public void ReportLint(Diagnostic.Lint? lint)
     {
-        Guard.IsState(!_isDrained);
         if (lint is not null)
             DiagnosticBag.ReportLint(lint);
     }
     
     public void AddResolvedSymbol(SourceLocation location, Symbol? symbol)
     {
-        Guard.IsState(!_isDrained);
         SemanticSideTable.AddResolvedSymbol(location, symbol);
     }
 
     /// <summary>
-    /// Adds all side effects inside this object into <paramref name="sideEffects"/>.
-    /// This object is not usable thereafter.
+    /// Merges all given side effects into this object.
     /// </summary>
-    /// <param name="sideEffects"></param>
-    public void DrainInto(BinderSideEffects sideEffects)
+    public void AddFrom(BinderSideEffects sideEffects)
     {
-        Guard.IsState(!_isDrained);
-        _isDrained = true;
-        
-        DiagnosticBag.DrainInto(sideEffects.DiagnosticBag);
+        DiagnosticBag.AddRange(sideEffects.DiagnosticBag.Diagnostics);
         foreach (var (location, symbol) in SemanticSideTable.ResolvedSymbols)
             sideEffects.SemanticSideTable.AddResolvedSymbol(location, symbol);
     }
-
     
 }
