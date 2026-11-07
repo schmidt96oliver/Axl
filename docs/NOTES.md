@@ -3,10 +3,6 @@
 
 # Now
 
-* Miri: `1 / 0` must panic
-* Miri: Allow return code and panic tests
-* Try Assert tests :)
-
 # Questions / Little ones
 
 * ?? Miri: `Environment` -> `ActivationFrame` with .GetRef that throws if exited
