@@ -122,15 +122,22 @@ public static class ProjectStore
             .FirstOrDefault(lspLocation => lspLocation is not null);
     }
 
-    public static SourceLocation? TryMapToAxl(Location lspLocation)
+    public static ProjectLocation? TryMapToAxl(Location lspLocation)
     {
         if (BaseLibraryProject.HasDocument(lspLocation.Uri))
-            return BaseLibraryProject.TryMapToAxl(lspLocation);
+            return TryMapToAxl(BaseLibraryProject, lspLocation);
+        
         if (OpenDocuments.TryGetValue(lspLocation.Uri, out var project))
-            return project.TryMapToAxl(lspLocation);
-        return OpenProjects.FirstOrDefault(p => p.HasDocument(lspLocation.Uri))?.TryMapToAxl(lspLocation);
+            return TryMapToAxl(project, lspLocation);
+
+        return TryMapToAxl(OpenProjects.FirstOrDefault(p => p.HasDocument(lspLocation.Uri)), lspLocation);
     }
 
-    public static SourceLocation? TryMapToAxl(DocumentUri uri, Position position)
+    public static ProjectLocation? TryMapToAxl(DocumentUri uri, Position position)
         => TryMapToAxl(new Location { Uri = uri, Range = new Range(position, position) });
+
+    private static ProjectLocation? TryMapToAxl(IProject? project, Location lspLocation)
+        => project is not null
+            ? project.TryMapToAxl(lspLocation) is { } axlLocation ? new ProjectLocation(project, axlLocation) : null
+            : null;
 }

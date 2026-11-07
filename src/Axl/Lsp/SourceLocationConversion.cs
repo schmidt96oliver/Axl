@@ -26,7 +26,7 @@ public static class SourceLocationConversion
             return null;
 
         var line = sourceText.Lines[lspPosition.Line];
-        if (lspPosition.Character < 0 || lspPosition.Character >= line.Length)
+        if (lspPosition.Character < 0 || lspPosition.Character > line.LengthWithLineBreak)
             return null;
 
         return line.Start + lspPosition.Character;

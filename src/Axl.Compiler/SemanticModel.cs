@@ -26,8 +26,9 @@ public sealed class SemanticModel(Compilation compilation)
     public ImmutableArray<Symbol> VisibleSymbolsAt(SyntaxTree tree, int position)
     {
         const string probeText = "__AXL_HOH_HOH_CARET__";
-        
-        Guard.MustBe(tree.SourceText.Range.Contains(position) || position == tree.SourceText.Range.End);
+
+        if (!tree.SourceText.Range.Contains(position) && position != tree.SourceText.Range.End)
+            return [];
 
         // We work by forking the compilation and inserting a probe. The binder
         // cooperates and returns visible symbols through its side effects,
@@ -35,9 +36,13 @@ public sealed class SemanticModel(Compilation compilation)
 
         var textWithProbe = SourceText.From(tree.SourceText.Text.Insert(position, probeText));
         var treeWithProbe = Parser.Parse(textWithProbe);
-        var probeToken = TryFindProbeToken(treeWithProbe.FileSyntax, position, probeText)
-                         ?? throw new UnreachableException(
-                             "Could not find probe token in the syntax tree we prepared.");
+        var probeToken = TryFindProbeToken(treeWithProbe.FileSyntax, position, probeText);
+        if (probeToken is null)
+        {
+            // The probe did not parse as an identifier, which means that it would
+            // not produce names anyway. E.g. in a comment or string.
+            return [];
+        }
 
         var compilationWithProbe = compilation
             .Replace(tree, with: treeWithProbe)

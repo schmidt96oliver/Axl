@@ -1,15 +1,6 @@
 # ------------------------------------ Axl Project ------------------------------------
                                        ≽(◕ ᴗ ◕)≼                                      
 
-* Make complete callable often
-
-* Scope name listing
-* SemanticModel.VisibleSymbolsAt(SourceLocation)
-  * Fork compilation with `Probe` and marker, `Compilation.WithProbe(Token token)`
-  * `Compilation.MarkerToken(SourceLocation, name)` returns marker in current Compilation through `FindMarkerProbe`
-  
-  * Simple for now: Hook in LookupName/Member.
-
 * Complete only whats necessary
   * Symbol.PartiallyComplete; e.g. signature vs body; don't complete members
   * Symbol.DeclaringSyntaxes
@@ -25,6 +16,8 @@
   * Fully bind the member access / id name, return only valid result.
   * BoundFunGroup -> Call BindCallReceiver before
   * Flag: StopAfterCaret: Stops after returning the carets result
+
+* For funs, insert `()`
 
 # Now
 

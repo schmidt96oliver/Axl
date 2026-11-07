@@ -24,6 +24,7 @@ public static class Lsp
                 .WithHandler<DiagnosticHandler>()
                 .WithHandler<SemanticTokensHandler>()
                 .WithHandler<HoverHandler>()
+                .WithHandler<CompletionHandler>()
             );
         await server.WaitForExit;
     }

@@ -19,15 +19,11 @@ public class HoverHandler : HoverHandlerBase
     {
         var uri = request.TextDocument.Uri;
 
-        if (ProjectStore.TryMapToAxl(uri, request.Position) is not SourceLocation axlLocation)
-            return Task.FromResult<Hover?>(null);
-        
-        var project = ProjectStore.TryGetProject(uri);
-        if (project is null)
+        if (ProjectStore.TryMapToAxl(uri, request.Position) is not { } axlLocation)
             return Task.FromResult<Hover?>(null);
 
-        var token = project.Compilation.TokenAt(axlLocation);
-        var symbol = project.Compilation.SemanticSideTable.TryGetSymbol(token.Location);
+        var token = axlLocation.Compilation.TokenAt(axlLocation.Location);
+        var symbol = axlLocation.Compilation.SemanticSideTable.TryGetSymbol(token.Location);
         
         if (symbol is null)
             return Task.FromResult<Hover?>(null);
