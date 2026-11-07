@@ -67,6 +67,7 @@ public class Lowerer
                 lowerer.Terminate(new Terminator.MissingReturn());
         }
 
+        Janitor.Clean(lowerer._mirFun);
         return lowerer._mirFun;
     }
 

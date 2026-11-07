@@ -1,19 +1,22 @@
-﻿using System.Diagnostics;
-using Axl.Compiler.Diagnostics;
+﻿using Axl.Compiler.Diagnostics;
 using Axl.Compiler.Symbols;
 
 namespace Axl.Compiler.Mir.Analysis;
 
 public static class ReturnCheck
 {
-    public static void Check(FunDefinitionSymbol funDefinition, MutMirFunction mirFunction, ReachabilityResult reachability, DiagnosticBag diagnosticBag)
+    /// <summary>
+    /// Expects that <see cref="Janitor"/> has cleaned up <paramref name="mirFunction"/> before use.
+    /// </summary>
+    public static void Check(FunDefinitionSymbol funDefinition, MutMirFunction mirFunction, DiagnosticBag diagnosticBag)
     {
         // Suppress missing return if return type is an error.
         if (mirFunction.ReturnPlace.Type is ErrorTypeSymbol)
             return;
         
-        var missingReturnReachable = mirFunction.BasicBlocks
-            .Any(b => reachability.Reachable[b.Id] && b.Terminator is Terminator.MissingReturn);
+        // Note: Cleanup after lowering removes unreachable blocks.
+        
+        var missingReturnReachable = mirFunction.BasicBlocks.Any(b => b.Terminator is Terminator.MissingReturn);
         
         if (missingReturnReachable)
         {

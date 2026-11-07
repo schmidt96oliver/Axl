@@ -72,8 +72,7 @@ public sealed class MutMirFunction
     /// </summary>
     public void Analyze(FunDefinitionSymbol funDefinition, DiagnosticBag diagnosticBag)
     {
-        var reachability = Reachability.Analyze(this);
-        ReturnCheck.Check(funDefinition, this, reachability, diagnosticBag);
+        ReturnCheck.Check(funDefinition, this, diagnosticBag);
     }
     
 
@@ -95,6 +94,14 @@ public sealed class MutMirFunction
         Guard.MustBe(_basicBlocks.All(b => b.Id != block.Id));
         _basicBlocks.Add(block);
         _nextBasicBlock = _basicBlocks.Max(b => b.Id.Value) + 1;
+    }
+
+    public int RemoveAllBasicBlocks(Predicate<MutBasicBlock> predicate)
+    {
+        var removed = _basicBlocks.RemoveAll(predicate);
+        if (removed > 0)
+            CfgVersion++;
+        return removed;
     }
 
     public MutBasicBlock GetBasicBlock(BasicBlockId id)

@@ -1,0 +1,11 @@
+﻿//@run
+//= 1
+
+// This would insert a "missing return" mir terminator at the fun bodies ending, which
+// was unreachable. The Monomorphizer threw on that because it is an error. Now there
+// is a cleanup pass after lowering to MIR.
+
+fun F(c: Bool): I32 
+{ if (c) { return 1; } else { return 2; } }
+
+PrintLine(F(true));
