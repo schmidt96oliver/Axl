@@ -1,6 +1,9 @@
 # ------------------------------------ Axl Project ------------------------------------
                                        ≽(◕ ᴗ ◕)≼                                      
 
+* Improve Symbol -> CompletionItem. Explore possibilites.
+* For funs, insert `()`
+
 * Complete only whats necessary
   * Symbol.PartiallyComplete; e.g. signature vs body; don't complete members
   * Symbol.DeclaringSyntaxes
@@ -11,13 +14,8 @@
   * `using var _ = Compilation.TraceCompletion(this, nameof(Body))`
   * use in SemanticModel tests
 
-* Getting scope + scope context
-  * Reparse/rebind with marker at caret. Hooks in BindIdName, BindMemberAccess
-  * Fully bind the member access / id name, return only valid result.
-  * BoundFunGroup -> Call BindCallReceiver before
-  * Flag: StopAfterCaret: Stops after returning the carets result
 
-* For funs, insert `()`
+
 
 # Now
 

@@ -116,6 +116,18 @@ public static class SyntaxFacts
 
     public static bool IsOperator(string text)
         => text is "+" or "-" or "*" or "/" or "!" or "==" or "!=" or "<" or ">" or "<=" or ">=" or "&&" or "||";
+
+    public static bool IsIdentifier(ReadOnlySpan<char> name)
+    {
+        if (name.Length == 0) return false;
+        if (!char.IsAsciiLetter(name[0]) && name[0] is not '_') return false;
+        foreach (var c in name)
+        {
+            if (!char.IsAsciiLetterOrDigit(c) && c is not '_') return false;
+        }
+
+        return true;
+    }
     
     public static Precedence? TryGetPrefixPrecedence(TokenKind kind)
         => kind switch

@@ -197,25 +197,62 @@ public sealed class SemanticModelTests
         => InlineSnapshot.Validate(VisibleSymbolsAt("""
                                                     let a = 10;
                                                     a.|
-                                                    """), """
-            ToString (fun 'Base.I32.ToString')
-            + (operator 'Base.I32.+')
-            - (operator 'Base.I32.-')
-            - (operator 'Base.I32.-')
-            * (operator 'Base.I32.*')
-            / (operator 'Base.I32./')
-            < (operator 'Base.I32.<')
-            <= (operator 'Base.I32.<=')
-            > (operator 'Base.I32.>')
-            >= (operator 'Base.I32.>=')
-            == (operator 'Base.I32.==')
-            != (operator 'Base.I32.!=')
-            """);
+                                                    """), "ToString (fun 'Base.I32.ToString')");
     [Fact]
     public void VisibleSymbols_Member_2()
         => InlineSnapshot.Validate(VisibleSymbolsAt("""
                                                     Base.|
                                                     """), """
+            Bool (struct 'Base.Bool')
+            F32 (struct 'Base.F32')
+            F64 (struct 'Base.F64')
+            I32 (struct 'Base.I32')
+            I64 (struct 'Base.I64')
+            Never (struct 'Base.Never')
+            Panic (fun 'Base.Panic')
+            Panic (fun 'Base.Panic')
+            Assert (fun 'Base.Assert')
+            Assert (fun 'Base.Assert')
+            TODO (fun 'Base.TODO')
+            Unreachable (fun 'Base.Unreachable')
+            Unreachable (fun 'Base.Unreachable')
+            Print (fun 'Base.Print')
+            Print (fun 'Base.Print')
+            Print (fun 'Base.Print')
+            Print (fun 'Base.Print')
+            Print (fun 'Base.Print')
+            Print (fun 'Base.Print')
+            PrintLine (fun 'Base.PrintLine')
+            PrintLine (fun 'Base.PrintLine')
+            PrintLine (fun 'Base.PrintLine')
+            PrintLine (fun 'Base.PrintLine')
+            PrintLine (fun 'Base.PrintLine')
+            PrintLine (fun 'Base.PrintLine')
+            PrintLine (fun 'Base.PrintLine')
+            String (struct 'Base.String')
+            Unit (struct 'Base.Unit')
+            """);
+
+
+    [Fact]
+    public void VisibleSymbols_Comment()
+        => InlineSnapshot.Validate(VisibleSymbolsAt("""
+                                                    let a = 10;
+                                                    // |
+                                                    """), "");
+    [Fact]
+    public void VisibleSymbols_String()
+        => InlineSnapshot.Validate(VisibleSymbolsAt("""
+                                                    let a = "|";
+                                                    """), "");
+    [Fact]
+    public void VisibleSymbols_StringInterpolation()
+        => InlineSnapshot.Validate(VisibleSymbolsAt("""
+                                                    let a = 1;
+                                                    let b = "{|
+                                                    """), """
+            a (let a)
+            Base (namespace 'Base')
             Bool (struct 'Base.Bool')
             F32 (struct 'Base.F32')
             F64 (struct 'Base.F64')

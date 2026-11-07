@@ -33,7 +33,18 @@ public sealed class CompletionHandler : CompletionHandlerBase
     private CompletionItem Make(string name, ImmutableArray<Symbol> symbols) => new()
     {
         Label = name,
-        Kind = CompletionItemKind.Text
+        Kind = CompletionItemKind.Text,
+        //TODO: Improve CompletionItem
+        
+        // LabelDetails = symbols[0] is FunSymbol fun ?
+        //     new CompletionItemLabelDetails
+        // {
+        //     Detail = "(" +string.Join(", ", fun.Parameters.Select(p => $"{p.Name}: {p.Type.Name}")) + ")",
+        //     Description = fun.ReturnType.Name,
+        // } : null,
+        // Documentation = "DOC COMMENT YAAY",
+        // InsertText = symbols[0].Name + "(${0:a}, ${1:b})",
+        // InsertTextFormat = InsertTextFormat.Snippet
     };
 
     /// <inheritdoc />

@@ -1412,48 +1412,81 @@ public sealed class Binder(Scope scope, BinderSideEffects sideEffects)
     #endregion
 
     #region Names and Member access
-    
-    private BoundNode BindIdName(IdNameSyntax syntax, LookupOptions lookupOptions)
+
+    private void ResolveProbedVisibleSymbols(IEnumerable<Symbol> visible, BoundNode? left, LookupOptions lookupOptions, IdNameSyntax probeSyntax)
     {
-        if (syntax.Token.IsMissing)
-            return new BoundError(ErrorType, syntax);
-
-        //TODO: Handle probing properly
-        if (syntax.Token == Scope.Compilation.Probe)
-            SideEffects.AddVisibleSymbols([.. Scope.SelfAndEnclosingScopes().SelectMany(s => s.VisibleSymbols)]);
+        // We need to filter all symbols that would not make it through binding
+        // and filter as well as possible.
         
-        var lookupResult = LookupName(syntax.Token.Identifier, lookupOptions);
+        var symbols = ImmutableArray.CreateBuilder<Symbol>();
+        var binder = WithSideEffects(new BinderSideEffects());
+        foreach (var symbol in visible)
+        {
+            if (!SyntaxFacts.IsIdentifier(symbol.Name))
+                continue;
+            if (GetViability(symbol, lookupOptions) < LookupViability.Viable)
+                continue;
 
-        if (lookupResult.Viability is LookupViability.NotFound)
-            return BindError(syntax, new Diagnostic.UndefinedName(syntax));
+            var lookupResult = new LookupResult();
+            lookupResult.MergeSingle(symbol, LookupViability.Viable);
+            
+            var bound = binder.BindLookupResult(lookupResult, left, probeSyntax);
+            if (bound is BoundError)
+                continue;
+            
+            if (bound is IBoundSymbolRef symbolRef)
+                symbols.Add(symbolRef.Symbol);
+            else if (bound is BoundFunGroup funGroup)
+            {
+                Debug.Assert(funGroup.Candidates.Length == 1);
+                if (binder.BindCallReceiver(funGroup.Candidates[0], receiverNode: left, probeSyntax) is not BoundError)
+                    symbols.Add(funGroup.Candidates[0]);
+            }
+            else if (bound is BoundTypeGroup typeGroup)
+                symbols.AddRange(typeGroup.Candidates);
+        }
 
-        if (lookupResult.Viability is LookupViability.NotAccessible)
-            return BindError(syntax, new Diagnostic.NotAccessible(lookupResult.Symbols, syntax));
+        SideEffects.AddVisibleSymbols(symbols.DrainToImmutable());
+    }
+    
+    private BoundNode BindLookupResult(LookupResult result, BoundNode? left, IdNameSyntax syntax)
+    {
+        if (result.Viability is LookupViability.NotFound)
+        {
+            return BindError(syntax, left is null
+                ? new Diagnostic.UndefinedName(syntax)
+                : new Diagnostic.UndefinedMember(left, syntax));
+        }
 
+        Debug.Assert(result.Symbols.Length >= 1);
         
-        
-        var symbol = lookupResult.Symbols[0];
-        if (lookupResult.Symbols.All(s => s is FunSymbol))
-            return BindFunGroup(lookupResult, receiver: null, syntax);
-        if (lookupResult.Symbols.All(s => s is TypeSymbol) && lookupResult.Symbols.Length > 1 ||
-            symbol is TypeSymbol { TypeParameters.Length: > 0 })
+        if (result.Viability is LookupViability.NotAccessible)
+            return BindError(syntax, new Diagnostic.NotAccessible(result.Symbols, syntax));
+
+        if (result.Symbols.All(s => s is FunSymbol))
+            return BindFunGroup(result, receiver: left, syntax);
+        if (result.Symbols.All(s => s is TypeSymbol) && result.Symbols.Length > 1 ||
+            result.Symbols is [TypeSymbol { TypeParameters.Length: > 0 }])
         {
             // Could be concrete, but many means it could be generics which need
             // "overload" resolution.
-            return new BoundTypeGroup([.. lookupResult.Symbols.Cast<TypeSymbol>()], syntax);
+            return new BoundTypeGroup([.. result.Symbols.Cast<TypeSymbol>()], syntax);
         }
 
-        if (lookupResult.Symbols.Length > 1)
-            return BindError(syntax, new Diagnostic.AmbiguousReference(lookupResult, syntax));
+        if (result.Symbols.Length > 1)
+            return BindError(syntax, new Diagnostic.AmbiguousReference(result, syntax));
 
+        var symbol = result.Symbols[0];
+
+        var receiver = left is not null ? ReplaceBoundValueOrTypeRef(left, symbol) : null;
         var boundSymbol = symbol switch
         {
             NamespaceSymbol @namespace => new BoundNamespaceRef(@namespace, syntax),
             TypeSymbol type => new BoundTypeRef(type, typeArguments: [], syntax),
 
             VariableSymbol variable => BindVariable(variable, syntax),
-            FunSymbol => BindFunGroup(lookupResult, receiver: null, syntax),
-            FieldSymbol field => BindFieldAccess(field, null, syntax)
+            FieldSymbol field => BindFieldAccess(field, receiver, syntax),
+            FunSymbol => throw new UnreachableException("Handled above"),
         };
 
         // Note that the symbol that was bound might differ from the symbol
@@ -1461,11 +1494,30 @@ public sealed class Binder(Scope scope, BinderSideEffects sideEffects)
         // a type of the same name.
         if (boundSymbol is IBoundSymbolRef symbolRef)
             SideEffects.AddResolvedSymbol(syntax.Location, symbolRef.Symbol);
-            
-        if (lookupResult.Viability is LookupViability.WrongKind)
-            return BindIdNameWithWrongKind(boundSymbol, lookupOptions);
 
         return boundSymbol;
+    }
+    
+    private BoundNode BindIdName(IdNameSyntax syntax, LookupOptions lookupOptions)
+    {
+        if (syntax.Token.IsMissing)
+            return new BoundError(ErrorType, syntax);
+
+        if (syntax.Token == Scope.Compilation.Probe)
+        {
+            // The probed symbol will for sure return nothing useful.
+            ResolveProbedVisibleSymbols(Scope.SelfAndEnclosingScopes().SelectMany(s => s.VisibleSymbols),
+                left: null, lookupOptions, syntax);
+            return new BoundError(ErrorType, syntax);
+        }
+        
+        var lookupResult = LookupName(syntax.Token.Identifier, lookupOptions);
+        var bound = BindLookupResult(lookupResult, left: null, syntax);
+            
+        if (lookupResult.Viability is LookupViability.WrongKind)
+            return BindIdNameWithWrongKind(bound, lookupOptions);
+
+        return bound;
     }
 
     private BoundError BindIdNameWithWrongKind(BoundNode boundNode, LookupOptions lookupOptions)
@@ -1481,79 +1533,50 @@ public sealed class Binder(Scope scope, BinderSideEffects sideEffects)
 
     private BoundNode BindMemberAccess(MemberAccessExprSyntax syntax)
     {
-        var left = BindExpr(syntax.Left, LookupOptions.Any);
+        var left = BindMemberAccessLeftSide(syntax.Left, syntax.Member);
+        if (left is BoundError)
+            return left;
 
-        if (syntax.Member.Token.IsMissing)
-            return new BoundError(ErrorType, syntax.Member);
-        
-        if (left is BoundFunGroup leftAsFunGroup)
-            return BindError(syntax, new Diagnostic.FunHasNoMembers(leftAsFunGroup, syntax.Member));
-        if (left is BoundTypeGroup typeGroup)
+        NamespaceOrTypeSymbol type = left switch
         {
-            if (ResolveTypeGroup(typeGroup, [], null) is not BoundTypeRef resolvedTypeRef)
-                return new BoundError(ErrorType, syntax);
-            left = resolvedTypeRef;
-        }
-        
-        NamespaceOrTypeSymbol namespaceOrType = left switch
-        {
-            // Note that BoundValueOrTypeRef is a BoundValue here
-            // and returns it's type.
+            BoundTypeRef typeRef => typeRef.Type,
+            BoundNamespaceRef namespaceRef => namespaceRef.Namespace,
             BoundValue value => value.Type,
-            
-            BoundNamespaceRef boundNamespaceRef => boundNamespaceRef.Namespace,
-            BoundTypeRef boundTypeRef => boundTypeRef.Type,
-            
-            BoundFunGroup => throw new UnreachableException("Fun group handled above."),
-            BoundTypeGroup => throw new UnreachableException("Type group handled above."),
-            BoundStmt => throw new UnreachableException("Stmt can never be the left side of member access."),
+            _ => throw new UnreachableException()
         };
-        if (namespaceOrType is ErrorTypeSymbol)
-            return new BoundError(ErrorType, syntax.Member);
-
-        //TODO: Handle probing properly
+        if (type is ErrorTypeSymbol)
+            return new BoundError(ErrorType, syntax);
+        
         if (syntax.Member.Token == Scope.Compilation.Probe)
-            SideEffects.AddVisibleSymbols(namespaceOrType.Members);
+        {
+            ResolveProbedVisibleSymbols(type.Members, left, LookupOptions.Any, syntax.Member);
+            return new BoundError(ErrorType, syntax);
+        }
         
         var memberName = syntax.Member.Text.ToString();
-        var lookupResult = LookupMembers(namespaceOrType, memberName);
-
-        if (lookupResult.Viability is LookupViability.NotFound)
-            return BindError(syntax, new Diagnostic.UndefinedMember(left, syntax.Member));
-
-        if (lookupResult.Viability is LookupViability.NotAccessible)
-            return BindError(syntax, new Diagnostic.NotAccessible(lookupResult.Symbols, syntax.Member));
-
-        var symbol = lookupResult.Symbols[0];
-        if (lookupResult.Symbols.All(s => s is FunSymbol))
-            return BindFunGroup(lookupResult, receiver: left, syntax.Member);
-        if (lookupResult.Symbols.All(s => s is TypeSymbol) && lookupResult.Symbols.Length > 1 ||
-            symbol is TypeSymbol { TypeParameters.Length: > 0 })
-        {
-            // Could be concrete, but many means it could be generics which need
-            // "overload" resolution.
-            return new BoundTypeGroup([.. lookupResult.Symbols.Cast<TypeSymbol>()], syntax.Member);
-        }
+        if (memberName is "")
+            return new BoundError(ErrorType, syntax);
         
-        
-        if (lookupResult.Symbols.Length > 1)
-            return BindError(syntax, new Diagnostic.AmbiguousReference(lookupResult, syntax.Member));
-        
-        var receiver = ReplaceBoundValueOrTypeRef(left, symbol);
-        SideEffects.AddResolvedSymbol(syntax.Member.Location, symbol);
-        
-        return symbol switch
-        {
-            NamespaceSymbol @namespace => new BoundNamespaceRef(@namespace, syntax.Member),
-            TypeSymbol type => new BoundTypeRef(type, typeArguments: [], syntax.Member),
-            // Note that type argument from the left side are already substituted.
+        var lookupResult = LookupMembers(type, memberName);
 
-            VariableSymbol => throw new UnreachableException("Variables are never members."),
-            FunSymbol => throw new UnreachableException("Handled above"),
-            FieldSymbol field => BindFieldAccess(field, receiver, syntax.Member),
-        };
+        return BindLookupResult(lookupResult, left, syntax.Member);
     }
 
+    private BoundNode BindMemberAccessLeftSide(ExprSyntax syntax, IdNameSyntax memberSyntax)
+    {
+        var left = BindExpr(syntax, LookupOptions.Any);
+
+        return left switch
+        {
+            BoundValue or BoundTypeRef or BoundNamespaceRef => left,
+            BoundTypeGroup typeGroup => ResolveTypeGroup(typeGroup, [], null),
+
+            BoundFunGroup funGroup => BindError(syntax, new Diagnostic.FunHasNoMembers(funGroup, memberSyntax)),
+
+            BoundStmt => throw new UnreachableException("Stmt can never be the left side of member access.")
+        };
+    }
+    
     private BoundNode ReplaceBoundValueOrTypeRef(BoundNode receiver, Symbol symbol)
     {
         if (receiver is not BoundValueOrTypeRef valueOrType)
