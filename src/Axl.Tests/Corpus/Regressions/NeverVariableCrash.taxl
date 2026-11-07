@@ -1,0 +1,9 @@
+﻿//@run
+//= PANIC: boom
+
+// This would crash during lowering, because assigning to a
+// never typed variable was lowered as a discard. It still
+// lowers to discard, but the variable now exists.
+
+fun F() { let x = Panic("boom"); let y: I32 = x; }
+F(); 

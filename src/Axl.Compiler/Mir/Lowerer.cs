@@ -133,20 +133,21 @@ public class Lowerer
 
     private void LowerVarDecl(BoundVarDecl varDecl)
     {
-        if (varDecl.Variable.Type == Never)
-        {
-            // Never does not create a variable that is written to.
-            LowerInto(varDecl.Initializer, new Place.Discard(Error));
-            return;
-        }
-        
         if (!_variables.TryGetValue(varDecl.Variable, out var local))
         {
             local = _mirFun.AddLocal(varDecl.Variable.Type, LocalKind.Variable, varDecl.Syntax);
             _variables[varDecl.Variable] = local;
         }
         
-        LowerInto(varDecl.Initializer, local);
+        if (varDecl.Variable.Type == Never)
+        {
+            // A variable will be created, because it might be accessed during lowering.
+            // But since this never returns, we can safely assign to a discard and 
+            // leave the variable uninitialized.
+            LowerInto(varDecl.Initializer, new Place.Discard(Error));
+        }
+        else
+            LowerInto(varDecl.Initializer, local);
     }
     
     private void LowerWhile(BoundWhile @while)
