@@ -183,6 +183,38 @@ public sealed class Binder(Scope scope, BinderSideEffects sideEffects)
         return result;
     }
 
+    private ImmutableArray<Symbol> LookupVisibleSymbols(LookupOptions options)
+    {
+        // Mirror the lookup by name exactly, but lookup all visible
+        // symbols.
+
+        var lookupByName = new Dictionary<string, LookupResult>();
+
+        for (var scope = Scope; scope != null; scope = scope.EnclosingScope)
+        {
+            var byName = scope.VisibleSymbols.Where(s => s.Name is not "").GroupBy(s => s.Name);
+            
+            foreach (var grp in byName)
+            {
+                if (!lookupByName.TryGetValue(grp.Key, out var result))
+                {
+                    result = new LookupResult();
+                    lookupByName.Add(grp.Key, result);
+                }
+                if (result.Viability is LookupViability.Viable)
+                    continue;
+                
+                var here = new LookupResult();
+                foreach (var s in grp)
+                    here.MergeSingle(s, GetViability(s, options));
+
+                result.MergeWith(here);
+            }
+        }
+
+        return [.. lookupByName.SelectMany(kvp => kvp.Value.Symbols)];
+    }
+
     private LookupResult LookupMembers(NamespaceOrTypeSymbol parent, string name)
     {
         var result = new LookupResult();
@@ -1506,8 +1538,7 @@ public sealed class Binder(Scope scope, BinderSideEffects sideEffects)
         if (syntax.Token == Scope.Compilation.Probe)
         {
             // The probed symbol will for sure return nothing useful.
-            ResolveProbedVisibleSymbols(Scope.SelfAndEnclosingScopes().SelectMany(s => s.VisibleSymbols),
-                left: null, lookupOptions, syntax);
+            ResolveProbedVisibleSymbols(LookupVisibleSymbols(lookupOptions), left: null, lookupOptions, syntax);
             return new BoundError(ErrorType, syntax);
         }
         

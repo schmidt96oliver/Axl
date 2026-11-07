@@ -52,14 +52,41 @@ public sealed class SemanticModelTests
                                                         let a = "";
                                                         |
                                                     }
-                                                    """, noBase: true));
+                                                    """, noBase: true), """
+            a (let a: Base.String)
+            Base (namespace Base)
+            """);
+    
     [Fact]
     public void VisibleSymbols_Shadowing_2()
         => InlineSnapshot.Validate(VisibleSymbolsAt("""
                                                     struct Test;
                                                     let Test = 10;
                                                     |
-                                                    """, noBase: true));
+                                                    """, noBase: true), """
+            Test (let Test: Base.I32)
+            Base (namespace Base)
+            """);
+    
+    [Fact]
+    public void VisibleSymbols_Shadowing_3()
+        // Here, P is shadowed, but lookup is specific to types only.
+        => InlineSnapshot.Validate(VisibleSymbolsAt("""
+                                                    struct P { pub X: I32; }
+                                                    let P = 2;
+                                                    let a: |
+                                                    """, noBase: true), "P (struct P)");
+    [Fact]
+    public void VisibleSymbols_Shadowing_4()
+        // Here, P is shadowed normally.
+        => InlineSnapshot.Validate(VisibleSymbolsAt("""
+                                                    struct P { pub X: I32; }
+                                                    let P = 2;
+                                                    |
+                                                    """, noBase: true), """
+            P (let P: Base.I32)
+            Base (namespace Base)
+            """);
     
     
     [Fact]
