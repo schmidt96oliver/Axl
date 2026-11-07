@@ -7,6 +7,7 @@ using Axl.Compiler.Diagnostics;
 using Axl.Compiler.Symbols;
 using Axl.Compiler.Syntax;
 using Axl.Compiler.Syntax.Tree;
+using Axl.Compiler.Text;
 
 namespace Axl.Compiler.Binding;
 
@@ -1154,7 +1155,9 @@ public sealed class Binder(Scope scope, BinderSideEffects sideEffects)
     {
         // Special case "-10" to go into number literal binding directly,
         // because "2147483648" is too big, but "-2147483648" isn't.
-        if (syntax.Operator.Kind is TokenKind.Minus && syntax.Operand is NumberLiteralSyntax numberOperand)
+        if (syntax.Operator.Kind is TokenKind.Minus && 
+            syntax.Operand is NumberLiteralSyntax numberOperand &&
+            SourceRange.Between(syntax.Operator.Location.Range, syntax.Operand.Location.Range).IsEmpty)
         {
             return BindNumberLiteral(syntax, numberOperand.Token.Suffix);
         }

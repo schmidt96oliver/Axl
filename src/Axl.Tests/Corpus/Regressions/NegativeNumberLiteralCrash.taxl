@@ -1,0 +1,11 @@
+﻿//@run
+//= -1.5
+//= -2.5
+
+// Before, the binder put any unary operator "-" and following number
+// literal together, ignoring anything in between. Now, it only puts
+// them together, if there is nothing between.
+
+PrintLine(- 1.5);
+PrintLine(- // bla
+          2.5);
