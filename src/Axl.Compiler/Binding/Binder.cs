@@ -1418,6 +1418,10 @@ public sealed class Binder(Scope scope, BinderSideEffects sideEffects)
         if (syntax.Token.IsMissing)
             return new BoundError(ErrorType, syntax);
 
+        //TODO: Handle probing properly
+        if (syntax.Token == Scope.Compilation.Probe)
+            SideEffects.AddVisibleSymbols([.. Scope.SelfAndEnclosingScopes().SelectMany(s => s.VisibleSymbols)]);
+        
         var lookupResult = LookupName(syntax.Token.Identifier, lookupOptions);
 
         if (lookupResult.Viability is LookupViability.NotFound)
@@ -1426,9 +1430,7 @@ public sealed class Binder(Scope scope, BinderSideEffects sideEffects)
         if (lookupResult.Viability is LookupViability.NotAccessible)
             return BindError(syntax, new Diagnostic.NotAccessible(lookupResult.Symbols, syntax));
 
-        //TODO: Handle probing properly
-        if (syntax.Token == Scope.Compilation.Probe)
-            SideEffects.AddVisibleSymbols(lookupResult.Symbols);
+        
         
         var symbol = lookupResult.Symbols[0];
         if (lookupResult.Symbols.All(s => s is FunSymbol))
@@ -1509,6 +1511,10 @@ public sealed class Binder(Scope scope, BinderSideEffects sideEffects)
         if (namespaceOrType is ErrorTypeSymbol)
             return new BoundError(ErrorType, syntax.Member);
 
+        //TODO: Handle probing properly
+        if (syntax.Member.Token == Scope.Compilation.Probe)
+            SideEffects.AddVisibleSymbols(namespaceOrType.Members);
+        
         var memberName = syntax.Member.Text.ToString();
         var lookupResult = LookupMembers(namespaceOrType, memberName);
 
@@ -1518,10 +1524,6 @@ public sealed class Binder(Scope scope, BinderSideEffects sideEffects)
         if (lookupResult.Viability is LookupViability.NotAccessible)
             return BindError(syntax, new Diagnostic.NotAccessible(lookupResult.Symbols, syntax.Member));
 
-        //TODO: Handle probing properly
-        if (syntax.Member.Token == Scope.Compilation.Probe)
-            SideEffects.AddVisibleSymbols(lookupResult.Symbols);
-        
         var symbol = lookupResult.Symbols[0];
         if (lookupResult.Symbols.All(s => s is FunSymbol))
             return BindFunGroup(lookupResult, receiver: left, syntax.Member);

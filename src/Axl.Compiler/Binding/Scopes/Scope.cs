@@ -17,6 +17,9 @@ public closed class Scope
 
     public BindingFlags Flags { get; }
 
+    /// <summary>
+    /// Returns symbols that are visible here.
+    /// </summary>
     public ImmutableArray<Symbol> VisibleSymbols
     {
         get
@@ -67,4 +70,10 @@ public closed class Scope
 
     public Scope WithOwner(Symbol owner)
         => new OwnerScope(this, owner);
+
+    public IEnumerable<Scope> SelfAndEnclosingScopes()
+    {
+        for (var current = this; current is not null; current = current.EnclosingScope)
+            yield return current;
+    }
 }

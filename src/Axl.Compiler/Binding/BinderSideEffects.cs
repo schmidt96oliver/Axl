@@ -36,8 +36,10 @@ public sealed class BinderSideEffects
     public void AddFrom(BinderSideEffects sideEffects)
     {
         DiagnosticBag.AddRange(sideEffects.DiagnosticBag.Diagnostics);
-        foreach (var (location, symbol) in SemanticSideTable.ResolvedSymbols)
-            sideEffects.SemanticSideTable.AddResolvedSymbol(location, symbol);
+        foreach (var (location, symbol) in sideEffects.SemanticSideTable.ResolvedSymbols)
+            AddResolvedSymbol(location, symbol);
+
+        VisibleSymbolsAtProbe ??= sideEffects.VisibleSymbolsAtProbe;
     }
 
     public void AddVisibleSymbols(ImmutableArray<Symbol> symbols)

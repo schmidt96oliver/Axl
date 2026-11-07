@@ -118,6 +118,15 @@ public class Compilation
     /// </summary>
     public Token? Probe { get; init; }
 
+    public SemanticModel SemanticModel
+    {
+        get
+        {
+            field ??= new SemanticModel(this);
+            return field;
+        }
+    }
+
 
     private Compilation(ImmutableArray<SyntaxTree> syntaxTrees, ImmutableArray<Compilation> referencedCompilations)
     {
@@ -154,6 +163,9 @@ public class Compilation
         };
         return compilation;
     }
+
+    public Compilation Replace(SyntaxTree tree, SyntaxTree with)
+        => Without(tree).With(with);
     
     public Compilation WithBaseLibrary()
         => With(LoadBaseLibrary());
