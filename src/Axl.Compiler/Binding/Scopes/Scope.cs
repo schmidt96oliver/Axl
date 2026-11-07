@@ -15,13 +15,25 @@ public closed class Scope
     /// </summary>
     public virtual Symbol Owner { get; }
 
+    public BindingFlags Flags { get; }
+
+    public ImmutableArray<Symbol> VisibleSymbols
+    {
+        get
+        {
+            if (field.IsDefault)
+                field = MakeVisibleSymbols();
+            return field;
+        }
+    }
+    
+    
+    
     public FunSymbol? OwnerAsFun => Owner as FunSymbol;
 
     public TypeSymbol? OwnerAsType => Owner as TypeSymbol;
 
     public NamespaceOrTypeSymbol? OwnerAsNamespaceOrType => Owner as NamespaceOrTypeSymbol;
-
-    public BindingFlags Flags { get; }
 
     public TypeSymbol? InstanceType => OwnerAsFun?.SelfParameter?.Type;
 
@@ -37,9 +49,18 @@ public closed class Scope
 
     protected Scope(Scope? enclosingScope, Symbol owner, BindingFlags flags)
         => (EnclosingScope, Owner, Flags) = (enclosingScope, owner, flags);
-    
 
-    public abstract ImmutableArray<Symbol> Lookup(string name);
+
+    public virtual ImmutableArray<Symbol> Lookup(string name)
+        => [.. VisibleSymbols.Where(s => s.Name == name)];
+
+    /// <summary>
+    /// Called only once and then cached. Returns all symbols that are visible
+    /// inside _this_ scope.
+    /// </summary>
+    public abstract ImmutableArray<Symbol> MakeVisibleSymbols();
+    
+    
 
     public bool IsAccessible(Symbol symbol)
         => symbol.IsAccessibleFrom(Owner);

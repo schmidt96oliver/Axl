@@ -9,7 +9,7 @@ public sealed class MonomorphizerTests
 {
     private string Signatures(string input)
     {
-        var compilation = Compilation.From(SourceText.From(input)).AddBaseLibrary();
+        var compilation = Compilation.From(SourceText.From(input)).WithBaseLibrary();
         var program = compilation.Compile(compilation.Scripts[0]);
         if (!program.IsSuccessful)
             Assert.Fail("Compilation unsuccessful.");

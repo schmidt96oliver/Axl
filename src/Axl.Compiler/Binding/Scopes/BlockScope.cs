@@ -5,9 +5,9 @@ namespace Axl.Compiler.Binding.Scopes;
 
 public sealed class BlockScope : Scope
 {
-    private readonly ImmutableArray<VariableSymbol> _variables;
+    private readonly ImmutableArray<Symbol> _variables;
 
-    private BlockScope(Scope enclosingScope, ImmutableArray<VariableSymbol> variables)
+    private BlockScope(Scope enclosingScope, ImmutableArray<Symbol> variables)
         : base(enclosingScope)
     {
         _variables = variables;
@@ -34,6 +34,6 @@ public sealed class BlockScope : Scope
     }
 
     /// <inheritdoc />
-    public override ImmutableArray<Symbol> Lookup(string name)
-        => [.. _variables.Where(variable => variable.Name == name)];
+    public override ImmutableArray<Symbol> MakeVisibleSymbols()
+        => _variables;
 }

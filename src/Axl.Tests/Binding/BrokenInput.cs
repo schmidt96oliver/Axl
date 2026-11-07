@@ -9,7 +9,7 @@ public class BrokenInput
     private string Diagnostics(string input)
     {
         var source = SourceText.From(input);
-        var compilation = Compilation.From(source).AddBaseLibrary();
+        var compilation = Compilation.From(source).WithBaseLibrary();
         return new Dump(source)
             .Add(compilation.Diagnostics)
             .ToString();

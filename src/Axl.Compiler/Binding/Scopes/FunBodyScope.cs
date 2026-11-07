@@ -12,6 +12,6 @@ public sealed class FunBodyScope : Scope
     }
 
     /// <inheritdoc />
-    public override ImmutableArray<Symbol> Lookup(string name)
-        => [.. OwnerAsFun!.Parameters.Where(p => p.Name == name)];
+    public override ImmutableArray<Symbol> MakeVisibleSymbols()
+        => [.. OwnerAsFun!.Parameters];
 }

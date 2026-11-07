@@ -37,7 +37,7 @@ public sealed class Evaluator
     {
         var compilation = Compilation
             .From(testFile.Fragments.Select(f => f.SourceText))
-            .AddBaseLibrary();
+            .WithBaseLibrary();
         
         // The test file might still contain unsupported features.
         // In that case, tests should be skipped instead of failing.

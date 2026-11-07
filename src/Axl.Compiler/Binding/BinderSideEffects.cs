@@ -1,4 +1,5 @@
-﻿using Axl.Compiler.Diagnostics;
+﻿using System.Collections.Immutable;
+using Axl.Compiler.Diagnostics;
 using Axl.Compiler.Symbols;
 using Axl.Compiler.Text;
 
@@ -8,6 +9,9 @@ public sealed class BinderSideEffects
 {
     public DiagnosticBag DiagnosticBag { get; } = new();
     public SemanticSideTable SemanticSideTable { get; } = new();
+
+    public ImmutableArray<Symbol>? VisibleSymbolsAtProbe { get; private set; }
+
 
     public void ReportError(Diagnostic.Error? error)
     {
@@ -34,6 +38,15 @@ public sealed class BinderSideEffects
         DiagnosticBag.AddRange(sideEffects.DiagnosticBag.Diagnostics);
         foreach (var (location, symbol) in SemanticSideTable.ResolvedSymbols)
             sideEffects.SemanticSideTable.AddResolvedSymbol(location, symbol);
+    }
+
+    public void AddVisibleSymbols(ImmutableArray<Symbol> symbols)
+    {
+        // Ignore if the probe has already been answered. This will not
+        // commonly happen anyway. Only if the user wrote the probe itself :D.
+        if (VisibleSymbolsAtProbe is not null)
+            return;
+        VisibleSymbolsAtProbe = symbols;
     }
     
 }

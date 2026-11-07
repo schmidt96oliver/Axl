@@ -7,6 +7,6 @@ public sealed class OwnerScope(Scope enclosingScope, Symbol owner)
     : Scope(enclosingScope, owner: owner, flags: BindingFlags.None)
 {
     /// <inheritdoc />
-    public override ImmutableArray<Symbol> Lookup(string name)
+    public override ImmutableArray<Symbol> MakeVisibleSymbols()
         => [];
 }

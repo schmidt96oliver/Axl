@@ -27,7 +27,7 @@ switch (args[0])
             .From(testFile is not null
                 ? testFile.Fragments.Select(f => f.SourceText)
                 : [sourceText])
-            .AddBaseLibrary();
+            .WithBaseLibrary();
 
         if (compilation.Scripts.Length != 1)
         {

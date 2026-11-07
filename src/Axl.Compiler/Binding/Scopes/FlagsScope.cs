@@ -7,6 +7,6 @@ public sealed class FlagsScope(Scope enclosingScope, BindingFlags flags)
     : Scope(enclosingScope, flags: flags)
 {
     /// <inheritdoc />
-    public override ImmutableArray<Symbol> Lookup(string name)
+    public override ImmutableArray<Symbol> MakeVisibleSymbols()
         => [];
 }

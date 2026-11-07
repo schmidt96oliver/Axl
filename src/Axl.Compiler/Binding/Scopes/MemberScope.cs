@@ -7,8 +7,8 @@ public sealed class MemberScope(Scope enclosingScope, NamespaceOrTypeSymbol name
     : Scope(enclosingScope, owner: namespaceOrType, flags: BindingFlags.None)
 {
     /// <inheritdoc />
-    public override ImmutableArray<Symbol> Lookup(string name)
+    public override ImmutableArray<Symbol> MakeVisibleSymbols()
         => namespaceOrType is TypeSymbol type
-            ? [.. OwnerAsNamespaceOrType!.LookupMembers(name), .. type.TypeParameters.Where(p => p.Name == name)]
-            : OwnerAsNamespaceOrType!.LookupMembers(name);
+            ? [.. OwnerAsNamespaceOrType!.Members, .. type.TypeParameters]
+            : OwnerAsNamespaceOrType!.Members;
 }

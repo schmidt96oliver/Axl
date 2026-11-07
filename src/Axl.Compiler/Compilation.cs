@@ -111,8 +111,14 @@ public class Compilation
             };
         }
     }
-    
-    
+
+    /// <summary>
+    /// A token used for extracting information from the binder through its
+    /// side effects. E.g. used by the SemanticModel to get visible symbols.
+    /// </summary>
+    public Token? Probe { get; init; }
+
+
     private Compilation(ImmutableArray<SyntaxTree> syntaxTrees, ImmutableArray<Compilation> referencedCompilations)
     {
         SyntaxTrees = syntaxTrees;
@@ -128,14 +134,31 @@ public class Compilation
     public static Compilation From(SourceText text)
         => From([text]);
 
-    public Compilation AddReference(Compilation referencedCompilation)
+    public Compilation With(Compilation referencedCompilation)
         => new(SyntaxTrees, [referencedCompilation, .. ReferencedCompilations]);
 
-    public Compilation WithoutReference(Compilation compilation)
-        => new(SyntaxTrees, [.. ReferencedCompilations.Where(c => c != compilation)]);
+    public Compilation Without(Compilation referencedCompilation)
+        => new(SyntaxTrees, [.. ReferencedCompilations.Where(c => c != referencedCompilation)]);
+
+    public Compilation Without(SyntaxTree tree)
+        => new([.. SyntaxTrees.Except([tree])], ReferencedCompilations);
+
+    public Compilation With(SyntaxTree tree)
+        => new([.. SyntaxTrees, tree], ReferencedCompilations);
+
+    public Compilation WithProbe(Token probe)
+    {
+        var compilation = new Compilation(SyntaxTrees, ReferencedCompilations)
+        {
+            Probe = probe
+        };
+        return compilation;
+    }
     
-    public Compilation AddBaseLibrary()
-        => AddReference(LoadBaseLibrary());
+    public Compilation WithBaseLibrary()
+        => With(LoadBaseLibrary());
+
+    
     
 
     public static Compilation LoadBaseLibrary()

@@ -1426,6 +1426,10 @@ public sealed class Binder(Scope scope, BinderSideEffects sideEffects)
         if (lookupResult.Viability is LookupViability.NotAccessible)
             return BindError(syntax, new Diagnostic.NotAccessible(lookupResult.Symbols, syntax));
 
+        //TODO: Handle probing properly
+        if (syntax.Token == Scope.Compilation.Probe)
+            SideEffects.AddVisibleSymbols(lookupResult.Symbols);
+        
         var symbol = lookupResult.Symbols[0];
         if (lookupResult.Symbols.All(s => s is FunSymbol))
             return BindFunGroup(lookupResult, receiver: null, syntax);
@@ -1513,6 +1517,10 @@ public sealed class Binder(Scope scope, BinderSideEffects sideEffects)
 
         if (lookupResult.Viability is LookupViability.NotAccessible)
             return BindError(syntax, new Diagnostic.NotAccessible(lookupResult.Symbols, syntax.Member));
+
+        //TODO: Handle probing properly
+        if (syntax.Member.Token == Scope.Compilation.Probe)
+            SideEffects.AddVisibleSymbols(lookupResult.Symbols);
         
         var symbol = lookupResult.Symbols[0];
         if (lookupResult.Symbols.All(s => s is FunSymbol))

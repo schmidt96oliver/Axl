@@ -32,7 +32,7 @@ public sealed class SingleFileProject : IProject
         var sourceText = SourceText.From(text, uri.GetFileSystemPath());
         var compilation = Compilation
             .From(sourceText)
-            .AddReference(ProjectStore.BaseLibraryProject.Compilation);
+            .With(ProjectStore.BaseLibraryProject.Compilation);
         return new SingleFileProject(uri, compilation);
     }
 
@@ -57,7 +57,7 @@ public sealed class SingleFileProject : IProject
         var oldCompilation = Compilation;
         Compilation = Compilation
             .From(SourceText.From(text, uri.GetFileSystemPath()))
-            .AddReference(ProjectStore.BaseLibraryProject.Compilation);
+            .With(ProjectStore.BaseLibraryProject.Compilation);
         Updated?.Invoke(new UpdatedEvent(oldCompilation, Compilation));
     }
 
@@ -65,8 +65,8 @@ public sealed class SingleFileProject : IProject
     {
         var oldCompilation = Compilation;
         Compilation = Compilation
-            .WithoutReference(baseLibUpdated.OldCompilation)
-            .AddReference(baseLibUpdated.NewCompilation);
+            .Without(baseLibUpdated.OldCompilation)
+            .With(baseLibUpdated.NewCompilation);
         Updated?.Invoke(new UpdatedEvent(oldCompilation, Compilation));
     }
 

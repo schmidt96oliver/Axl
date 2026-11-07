@@ -37,7 +37,7 @@ public sealed class TaxlProject : IProject
         var testFile = TestFile.From(sourceText);
         var compilation = Compilation
             .From(testFile.Fragments.Select(f => f.SourceText))
-            .AddReference(ProjectStore.BaseLibraryProject.Compilation);
+            .With(ProjectStore.BaseLibraryProject.Compilation);
         return new TaxlProject(uri, testFile, compilation);
     }
 
@@ -65,7 +65,7 @@ public sealed class TaxlProject : IProject
         TestFile = testFile;
         Compilation = Compilation
             .From(testFile.Fragments.Select(f => f.SourceText))
-            .AddReference(ProjectStore.BaseLibraryProject.Compilation);
+            .With(ProjectStore.BaseLibraryProject.Compilation);
         Updated?.Invoke(new UpdatedEvent(oldCompilation, Compilation));
     }
 
@@ -73,8 +73,8 @@ public sealed class TaxlProject : IProject
     {
         var oldCompilation = Compilation;
         Compilation = Compilation
-            .WithoutReference(baseLibUpdated.OldCompilation)
-            .AddReference(baseLibUpdated.NewCompilation);
+            .Without(baseLibUpdated.OldCompilation)
+            .With(baseLibUpdated.NewCompilation);
         Updated?.Invoke(new UpdatedEvent(oldCompilation, Compilation));
     }
 

@@ -11,35 +11,22 @@ public sealed class LazyUsingsScope(Scope enclosingScope, ImmutableArray<UsingDi
     private readonly BinderSideEffects _sideEffects = new();
     private bool _isBindingUsings = false;
 
-    private ImmutableArray<NamespaceSymbol> Usings
-    {
-        get
-        {
-            if (!field.IsDefault)
-                return field;
-
-            if (_isBindingUsings)
-                throw new CycleException();
-            _isBindingUsings = true;
-
-            field = new Binder(EnclosingScope!, _sideEffects).BindUsingDirectives(usingSyntaxes);
-            _isBindingUsings = false;
-
-            return field;
-        }
-    }
-    
-    
     /// <inheritdoc />
-    public override ImmutableArray<Symbol> Lookup(string name)
+    public override ImmutableArray<Symbol> MakeVisibleSymbols()
     {
-        return [
-        .. Usings.SelectMany(u => u.LookupMembers(name))];
+        if (_isBindingUsings)
+            throw new CycleException();
+        _isBindingUsings = true;
+
+        var usedNamespaces = new Binder(EnclosingScope!, _sideEffects).BindUsingDirectives(usingSyntaxes);
+        _isBindingUsings = false;
+
+        return [.. usedNamespaces.SelectMany(ns => ns.Members)];
     }
 
     public void Complete(BinderSideEffects sideEffects)
     {
-        _ = Usings;
+        _ = VisibleSymbols;
         sideEffects.AddFrom(_sideEffects);
     }
 }

@@ -13,16 +13,13 @@ public sealed class GlobalScope(Compilation compilation)
     public override Symbol Owner => compilation.RootNamespace;
 
     /// <inheritdoc />
-    public override ImmutableArray<Symbol> Lookup(string name)
-    {
+    public override ImmutableArray<Symbol> MakeVisibleSymbols()
         // Everything on Base is implicitly visible.
-
-        return
+        =>
         [
-            .. Compilation.RootNamespace.LookupMembers(name),
+            .. Compilation.RootNamespace.Members,
             .. Compilation.ReferencedCompilations.SelectMany(refCompilation =>
-                refCompilation.RootNamespace.LookupMembers(name)),
-            .. Compilation.BaseLibrary.BaseNamespace.LookupMembers(name)
+                refCompilation.RootNamespace.Members),
+            .. Compilation.BaseLibrary.BaseNamespace.Members
         ];
-    }
 }
