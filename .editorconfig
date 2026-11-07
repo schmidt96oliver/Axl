@@ -19,3 +19,7 @@ dotnet_diagnostic.CS1591.severity = none
 
 # CS1573: Missing <param> tag for one of the method parameters
 dotnet_diagnostic.CS1573.severity = none
+
+[*.cs]
+# CS1591: Missing XML comment for publicly visible type or member
+dotnet_diagnostic.CS1591.severity = none

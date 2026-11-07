@@ -130,4 +130,12 @@ public sealed class MutMirFunction
     
     public Place.Local AddTemp(TypeSymbol type)
         => AddLocal(type, LocalKind.Temp);
+
+    public int RemoveAllLocals(Predicate<Place.Local> predicate)
+    {
+        var removed = _locals.RemoveAll(predicate);
+        if (removed > 0)
+            Version++;
+        return removed;
+    }
 }
