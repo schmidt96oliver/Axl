@@ -45,8 +45,6 @@ public partial class Parser
 
     public static TokenSet ContinuationsAt(SourceText sourceText, int position)
     {
-        Guard.MustBe(sourceText.Range.Contains(position));
-
         var tokens = InsertContinuationProbe(Lexer.Lex(sourceText, DiagnosticBag.Discard), position);
 
         var scanner = new Scanner(sourceText, tokens);
@@ -62,8 +60,8 @@ public partial class Parser
         Debug.Assert(tokens.Length >= 1, "There must be at least EOF!");
         
         // Insert the probe before the token it is at.
-        // E.g. "12 ab|cd" needs to insert at "12 | abcd",
-        // while "12 | abcd" stays that way.
+        // E.g. "12 ab|cd" needs to insert at "12 |abcd",
+        // while "12 |abcd" stays that way.
 
         var lo = 0;
         var hi = tokens.Length - 1;
@@ -78,8 +76,19 @@ public partial class Parser
                 hi = pivot - 1;
         }
 
-        return tokens.Insert(hi, Token.MakeSimple(
-            SourceRange.EmptyAfter(tokens[^1].FullRange), TokenKind.ContinuationProbe));
+        // If the probe is at the end of an identifier or keyword,
+        // snap it before that token, so that completion sees the
+        // keyword as well. E.g. "12 abc|" => "12 |abc".
+        var probeIndex = hi;
+        var isAtEndOfIdToken = hi > 0 &&
+                                (tokens[hi - 1].Kind is TokenKind.Identifier ||
+                                 SyntaxFacts.IsKeyword(tokens[hi - 1].Kind)) &&
+                                position == tokens[hi - 1].FullRange.End;
+        if (isAtEndOfIdToken)
+            probeIndex--;
+
+        return tokens.Insert(probeIndex, Token.MakeSimple(
+            SourceRange.EmptyBefore(tokens[probeIndex].FullRange), TokenKind.ContinuationProbe));
     }
     
     
@@ -131,7 +140,10 @@ public partial class Parser
             }
         }
 
-        _scanner.EatKnown(TokenKind.Eof);
+        // There might be an early stop, in case the continuation probe is finished.
+        // So EOF might not be present.
+        
+        _scanner.EatIfPresent(TokenKind.Eof);
         _scanner.Close(file, SyntaxKind.File);
     }
 
@@ -286,7 +298,8 @@ public partial class Parser
         foreach (var _ in _scanner.MustEatEachIteration())
         {
             // --- Item
-            RecoverToAndReport(itemAnchor | itemFirst, expectedSyntax: expectedItemSyntax);
+            if (!_scanner.IsAt(TokenKind.ContinuationProbe))
+                RecoverToAndReport(itemAnchor | itemFirst, expectedSyntax: expectedItemSyntax);
             ensureItem(itemAnchor);
             
             // --- Comma

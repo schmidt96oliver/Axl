@@ -27,6 +27,12 @@ public partial class Parser
         {
             if (scanner.IsAtEnd)
                 return false;
+            
+            // Can stop means that the continuation probe is finished,
+            // but only stop if the scanner has made any progress. Otherwise,
+            // empty nodes might be closed.
+            if (scanner.CanStop && scanner.Position > _lastToken && _lastToken >= 0)
+                return false;
                 
             Debug.Assert(scanner.Position >= _lastToken, "Scanner moved backwards. Weird!");
             if (scanner.Position == _lastToken)
@@ -103,7 +109,9 @@ public partial class Parser
         /// </summary>
         private readonly List<Token> _tokens;
         private readonly List<ParseEvent> _events;
-        private readonly SourceText _sourceText;
+        internal readonly SourceText _sourceText;
+        private bool _continuationProbeSeen = false;
+        private bool _continuationProbeFrozen = false;
 
         
         /// <summary>
@@ -114,7 +122,13 @@ public partial class Parser
 
         public Token? Last => Position > 0 ? _tokens[Position - 1] : null;
 
-        public bool IsAtEnd => IsAt(TokenKind.Eof);
+        public bool IsAtEnd => IsAt(TokenKind.Eof, isGrammarCheck: false);
+
+        /// <summary>
+        /// Whether the parser can stop parsing. This happens, when the scanner
+        /// is at the end or the continuation probes has been seen and frozen.
+        /// </summary>
+        public bool CanStop =>  IsAtEnd || _continuationProbeSeen && _continuationProbeFrozen;
 
         public TokenSet ContinuationsAtProbe { get; private set; } = TokenSet.Empty;
 
@@ -194,6 +208,9 @@ public partial class Parser
         {
             Debug.Assert(Position < _tokens.Count);
 
+            if (Peek().Kind is TokenKind.ContinuationProbe)
+                _continuationProbeFrozen = true;
+            
             _events.Add(new ParseEvent.Eat());
             _fuel = MaxFuel;
             return _tokens[Position++];
@@ -256,6 +273,8 @@ public partial class Parser
         
         public void ReportMissingTokenHere(ExpectedSyntax expectedSyntax)
         {
+            if (_continuationProbeSeen) _continuationProbeFrozen = true;
+            
             var error = new Diagnostic.MissingToken(
                 _sourceText,
                 Previous: Last,
@@ -272,6 +291,8 @@ public partial class Parser
         {
             Debug.Assert(first >= 0);
             Debug.Assert(first < Position, "Empty unexpected token error.");
+
+            if (_continuationProbeSeen) _continuationProbeFrozen = true;
             
             // @@ @@ ;
             // ^^       Error
@@ -325,12 +346,14 @@ public partial class Parser
         public bool IsAt(TokenSet set, int skip = 0, bool isGrammarCheck = true)
         {
             var token = Peek(skip);
-            if (isGrammarCheck && token.Kind is TokenKind.ContinuationProbe)
+            if (token.Kind is TokenKind.ContinuationProbe)
             {
+                _continuationProbeSeen = true;
+                if (isGrammarCheck && !_continuationProbeFrozen)
+                    ContinuationsAtProbe |= set;
+
                 // The continuation probe must never pass a check, so it
                 // collects every continuation.
-
-                ContinuationsAtProbe |= set;
                 return false;
             }
 
@@ -344,9 +367,13 @@ public partial class Parser
         /// if scanner is at the probe.
         /// </summary>
         public bool IsAt(TokenKind kind, int skip = 0, bool isGrammarCheck = true)
-            => IsAt(TokenSet.Of(kind), skip, isGrammarCheck);
+        {
+            if (kind is TokenKind.ContinuationProbe && Peek().Kind is TokenKind.ContinuationProbe)
+                return true;
+            return IsAt(TokenSet.Of(kind), skip, isGrammarCheck);
+        }
 
-        public bool IsAt(Anchor anchor, bool isGrammarCheck, int skip = 0)
+        public bool IsAt(Anchor anchor, bool isGrammarCheck, int skip = 0) 
             => IsAt(anchor.Set, skip, isGrammarCheck);
     }
 }
