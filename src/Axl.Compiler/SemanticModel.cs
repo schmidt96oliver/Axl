@@ -1,6 +1,7 @@
 ﻿using System.Collections.Immutable;
 using System.Diagnostics;
 using Axl.Compiler.Binding;
+using Axl.Compiler.Diagnostics;
 using Axl.Compiler.Symbols;
 using Axl.Compiler.Syntax;
 using Axl.Compiler.Text;
@@ -46,18 +47,44 @@ public sealed class SemanticModel(Compilation compilation)
             return [];
         }
 
+        var sideEffects = new BinderSideEffects();
         var compilationWithProbe = compilation
             .Replace(tree, with: treeWithProbe)
             .WithProbe(probeToken);
-
-        var sideEffects = new BinderSideEffects();
-        
-        //TODO: Complete more fine-grained instead of just binding the entire fucking world
-        compilationWithProbe.Complete(sideEffects);
+        CompleteAtProbe(probeToken, compilationWithProbe, sideEffects);
 
         return sideEffects.VisibleSymbolsAtProbe ?? [];
     }
 
+    private void CompleteAtProbe(Token probe, Compilation probeCompilation, BinderSideEffects sideEffects)
+    {
+        // Complete only the lowest most symbol that contains the probe,
+        // as not to bind any unnecessary symbols.
+        foreach (var symbol in probeCompilation.Scripts.Concat([probeCompilation.RootNamespace]))
+        {
+            if (!symbol.DeclaringSyntax.Any(declSyntax => declSyntax.Location.Contains(probe.Location)))
+                continue;
+
+            Symbol current = symbol;
+            while (true)
+            {
+                var next = current.Members.FirstOrDefault(member =>
+                    member.DeclaringSyntax.Any(declSyntax => declSyntax.Location.Contains(probe.Location)));
+                if (next is null)
+                {
+                    current.Complete(sideEffects);
+                    return;
+                }
+
+                current = next;
+            }
+        }
+        
+        // The loop did not complete anything. So fall back to completing the entire
+        // compilation.
+        probeCompilation.Complete(sideEffects);
+    }
+    
     private static Token? TryFindProbeToken(SyntaxNode node, int position, string probeText)
     {
         // The probe will start somewhere to the right of the given

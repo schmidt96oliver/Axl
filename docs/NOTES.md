@@ -4,10 +4,6 @@
 * Improve Symbol -> CompletionItem. Explore possibilites.
 * For funs, insert `()`
 
-* Complete only whats necessary
-  * Symbol.PartiallyComplete; e.g. signature vs body; don't complete members
-  * Complete the lowermost symbol => Put Marker on BinderSideEffects
-
 * A way to show completion status of symbols along the way?
   * `Compilation.WithDebugTrace`
   * `using var _ = Compilation.TraceCompletion(this, nameof(Body))`
