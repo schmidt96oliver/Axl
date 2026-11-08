@@ -4,14 +4,14 @@ public partial class Parser
 {
     private readonly record struct Anchor
     {
-        public static readonly Anchor Forced = new Anchor(TokenSet.Of(TokenKind.Eof));
-        
-        
-        private readonly TokenSet _set;
+        public static readonly Anchor Forced = new(TokenSet.Of(TokenKind.Eof));
+
+
+        public TokenSet Set { get; }
 
         private Anchor(TokenSet set)
         {
-            _set = set;
+            Set = set;
         }
 
 
@@ -19,17 +19,17 @@ public partial class Parser
             => Forced | tokenSet;
         
         
-        public static Anchor operator |(Anchor a, TokenSet b) => new Anchor(a._set | b);
+        public static Anchor operator |(Anchor a, TokenSet b) => new(a.Set | b);
 
-        public static Anchor operator |(Anchor a, TokenKind b) => new Anchor(a._set | b);
+        public static Anchor operator |(Anchor a, TokenKind b) => new(a.Set | b);
         
-        public static Anchor operator |(Anchor a, Anchor b) => new Anchor(a._set | b._set);
+        public static Anchor operator |(Anchor a, Anchor b) => new(a.Set | b.Set);
 
 
         public bool Contains(TokenKind kind)
-            => _set.Contains(kind);
+            => Set.Contains(kind);
 
         public override string ToString()
-            => $"Anchor {_set}";
+            => $"Anchor {Set}";
     }
 }

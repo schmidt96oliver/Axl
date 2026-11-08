@@ -215,19 +215,6 @@ public partial class Parser
                 Eat();
         }
         
-        /// <summary>
-        /// Eats the next token and rewrites its <see cref="TokenKind"/>
-        /// to <paramref name="kind"/>. Only for tokens that don't carry a value.
-        /// </summary>
-        public void EatAs(TokenKind kind)
-        {
-            Debug.Assert(!kind.HasValue);
-            
-            _events.Add(new ParseEvent.EatAs(kind));
-            _fuel = MaxFuel;
-            Position++;
-        }
-        
         
         /// <summary>
         /// Creates a missing token of <paramref name="kind"/> and reports a
@@ -327,15 +314,39 @@ public partial class Parser
                 throw new ParserStuckException("Parser peeked too often without advancing and is stuck.");
             return _tokens.Skip(Position);
         }
-        
-        
-        public bool IsAt(TokenKind kind)
-            => Peek().Kind == kind;
 
-        public bool IsAt(Anchor anchor)
-            => anchor.Contains(Peek().Kind);
 
-        public bool IsAt(TokenSet set)
-            => set.Contains(Peek().Kind);
+        /// <summary>
+        /// Checks whether the scanner is at one of the tokens inside <paramref name="set"/>
+        /// after skipping the given amount of tokens. If <paramref name="isGrammarCheck"/> is
+        /// <c>true</c>, the <paramref name="set"/> will be added to the <see cref="ContinuationsAtProbe"/>
+        /// if scanner is at the probe.
+        /// </summary>
+        public bool IsAt(TokenSet set, int skip = 0, bool isGrammarCheck = true)
+        {
+            var token = Peek(skip);
+            if (isGrammarCheck && token.Kind is TokenKind.ContinuationProbe)
+            {
+                // The continuation probe must never pass a check, so it
+                // collects every continuation.
+
+                ContinuationsAtProbe |= set;
+                return false;
+            }
+
+            return set.Contains(token.Kind);
+        }
+
+        /// <summary>
+        /// Checks whether the scanner is at a token of the given <paramref name="kind"/>
+        /// after skipping the given amount of tokens. If <paramref name="isGrammarCheck"/> is
+        /// <c>true</c>, the <paramref name="kind"/> will be added to the <see cref="ContinuationsAtProbe"/>
+        /// if scanner is at the probe.
+        /// </summary>
+        public bool IsAt(TokenKind kind, int skip = 0, bool isGrammarCheck = true)
+            => IsAt(TokenSet.Of(kind), skip, isGrammarCheck);
+
+        public bool IsAt(Anchor anchor, int skip = 0, bool isGrammarCheck = false)
+            => IsAt(anchor.Set, skip, isGrammarCheck);
     }
 }

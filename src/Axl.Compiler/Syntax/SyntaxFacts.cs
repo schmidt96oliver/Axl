@@ -1,4 +1,6 @@
-﻿namespace Axl.Compiler.Syntax;
+﻿using System.Diagnostics;
+
+namespace Axl.Compiler.Syntax;
 
 public static class SyntaxFacts
 {
@@ -128,36 +130,76 @@ public static class SyntaxFacts
 
         return true;
     }
+
+    public static readonly TokenSet PrefixOperators = TokenSet.Of(TokenKind.Minus, TokenKind.Bang);
+    public static readonly TokenSet InfixOperators = TokenSet.Of(TokenKind.Star, TokenKind.Slash, TokenKind.Plus, TokenKind.Minus,
+        TokenKind.LessThan, TokenKind.LessThanEqual, TokenKind.GreaterThan, TokenKind.GreaterThanEqual,
+        TokenKind.DoubleEqual, TokenKind.BangEqual,
+        TokenKind.DoubleAmpersand, TokenKind.DoubleVerticalBar, TokenKind.Equal);
+    public static readonly TokenSet PostfixOperators = TokenSet.Of(TokenKind.Dot, TokenKind.OpenParen, TokenKind.OpenBracket);
+    
     
     public static Precedence? TryGetPrefixPrecedence(TokenKind kind)
-        => kind switch
+    {
+        if (!PrefixOperators.Contains(kind)) return null;
+        
+        return kind switch
         {
             TokenKind.Minus => Precedence.Negate,
             TokenKind.Bang => Precedence.LogicNot,
-            _ => null
+            _ => throw new UnreachableException()
         };
+    }
 
-    public static Precedence? TryGetInfixPrecedence(TokenKind kind) => kind switch
+    public static Precedence GetPrefixPrecedence(TokenKind kind)
     {
-        TokenKind.Star or TokenKind.Slash => Precedence.Factor,
-        TokenKind.Plus or TokenKind.Minus => Precedence.Sum,
+        Guard.MustBe(PrefixOperators.Contains(kind));
+        return TryGetPrefixPrecedence(kind)!.Value;
+    }
 
-        TokenKind.LessThan or TokenKind.LessThanEqual or TokenKind.GreaterThan or TokenKind.GreaterThanEqual
-            or TokenKind.DoubleEqual or TokenKind.BangEqual => Precedence.Comparison,
-
-        TokenKind.DoubleAmpersand => Precedence.LogicAnd,
-        TokenKind.DoubleVerticalBar => Precedence.LogicOr,
-
-        TokenKind.Equal => Precedence.Assign,
-
-        _ => null
-    };
-
-    public static Precedence? TryGetPostfixPrecedence(TokenKind kind) => kind switch
+    public static Precedence? TryGetInfixPrecedence(TokenKind kind)
     {
-        TokenKind.Dot => Precedence.Dot,
-        TokenKind.OpenParen => Precedence.ArgList,
-        TokenKind.OpenBracket => Precedence.ArgList,
-        _ => null,
-    };
+        if (!InfixOperators.Contains(kind)) return null;
+        
+        return kind switch
+        {
+            TokenKind.Star or TokenKind.Slash => Precedence.Factor,
+            TokenKind.Plus or TokenKind.Minus => Precedence.Sum,
+
+            TokenKind.LessThan or TokenKind.LessThanEqual or TokenKind.GreaterThan or TokenKind.GreaterThanEqual
+                or TokenKind.DoubleEqual or TokenKind.BangEqual => Precedence.Comparison,
+
+            TokenKind.DoubleAmpersand => Precedence.LogicAnd,
+            TokenKind.DoubleVerticalBar => Precedence.LogicOr,
+
+            TokenKind.Equal => Precedence.Assign,
+
+            _ => throw new UnreachableException()
+        };
+    }
+
+    public static Precedence GetInfixPrecedence(TokenKind kind)
+    {
+        Guard.MustBe(InfixOperators.Contains(kind));
+        return TryGetInfixPrecedence(kind)!.Value;
+    }
+
+    public static Precedence? TryGetPostfixPrecedence(TokenKind kind)
+    {
+        if (!PostfixOperators.Contains(kind)) return null;
+        
+        return kind switch
+        {
+            TokenKind.Dot => Precedence.Dot,
+            TokenKind.OpenParen => Precedence.ArgList,
+            TokenKind.OpenBracket => Precedence.ArgList,
+            _ => throw new UnreachableException(),
+        };
+    }
+
+    public static Precedence GetPostfixPrecedence(TokenKind kind)
+    {
+        Guard.MustBe(PostfixOperators.Contains(kind));
+        return TryGetPostfixPrecedence(kind)!.Value;
+    }
 }

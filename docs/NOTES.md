@@ -1,6 +1,8 @@
 # ------------------------------------ Axl Project ------------------------------------
                                        ≽(◕ ᴗ ◕)≼                                      
 
+* Parser: Freeze and stop after probe, missing inserted
+
 * Improve Symbol -> CompletionItem. Explore possibilites.
 * For funs, insert `()`
 

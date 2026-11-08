@@ -1,5 +1,6 @@
 using System.Collections.Immutable;
 using System.Diagnostics;
+using System.Runtime.CompilerServices;
 using Axl.Compiler.Diagnostics;
 // ReSharper disable UnusedMethodReturnValue.Local
 
@@ -29,19 +30,18 @@ public partial class Parser
         // --- Pratt loop
         foreach (var _ in _scanner.MustEatEachIteration())
         {
-            // --- Read operator and check precedence
-            var opToken = _scanner.Peek();
-            var infixPrecedence = SyntaxFacts.TryGetInfixPrecedence(opToken.Kind);
-            var postfixPrecedence = SyntaxFacts.TryGetPostfixPrecedence(opToken.Kind);
-            if (infixPrecedence is null && postfixPrecedence is null)
+            if (!_scanner.IsAt(SyntaxFacts.PostfixOperators | SyntaxFacts.InfixOperators))
                 break;
-            Debug.Assert(infixPrecedence is null || postfixPrecedence is null, "Operator is both infix and postfix. This might trap something here.");
-
-            var opPrecedence = postfixPrecedence ?? infixPrecedence;
-            Debug.Assert(opPrecedence is not null);
-
+            Debug.Assert(!_scanner.IsAt(SyntaxFacts.PostfixOperators) || !_scanner.IsAt(SyntaxFacts.InfixOperators), 
+                "Operator is both infix and postfix. This might trap something here.");
+            
+            // --- Read operator and check precedence
+            var precedence = _scanner.IsAt(SyntaxFacts.PostfixOperators)
+                ? SyntaxFacts.GetPostfixPrecedence(_scanner.Peek().Kind)
+                : SyntaxFacts.GetInfixPrecedence(_scanner.Peek().Kind);
+            
             var precedenceComparison = left is LeftOperator actualLeft
-                ? PrecedenceComparison.Compare(actualLeft.Precedence, opPrecedence.Value)
+                ? PrecedenceComparison.Compare(actualLeft.Precedence, precedence)
                 : PrecedenceComparisonResult.RightBindsTighter;
 
             // --- Ambiguous?
@@ -66,14 +66,14 @@ public partial class Parser
             }
 
             // --- Advance operator and parse
-            if (postfixPrecedence is not null)
+            if (_scanner.IsAt(SyntaxFacts.PostfixOperators))
                 lhs = EatPostfixExpr(lhs, anchor);
             else // Infix expr
             {
                 var expr = _scanner.OpenBefore(lhs);
-                _scanner.Eat();
+                var opToken = _scanner.Eat();
 
-                EnsureExprRhs(new LeftOperator(opPrecedence.Value, opToken), anchor, out var wasAmbiguous);
+                EnsureExprRhs(new LeftOperator(precedence, opToken), anchor, out var wasAmbiguous);
                 lhs = _scanner.Close(expr, wasAmbiguous ? SyntaxKind.ErrorExpr : SyntaxKind.BinaryExpr);
             }
         }
@@ -99,52 +99,58 @@ public partial class Parser
     {
         Debug.Assert(_scanner.IsAt(FirstSet.Expr));
 
-        switch (_scanner.Peek().Kind)
+        // --- Literals
+        if (_scanner.IsAt(TokenKind.Identifier))
+            return EnsureIdName();
+
+        if (_scanner.IsAt(TokenKind.NumberLiteral))
+            return _scanner.EatInto(SyntaxKind.NumberLiteral);
+
+        if (_scanner.IsAt(TokenKind.SelfKw))
+            return _scanner.EatInto(SyntaxKind.Self);
+
+        if (_scanner.IsAt(TokenKind.TrueKw))
+            return _scanner.EatInto(SyntaxKind.TrueLiteral);
+
+        if (_scanner.IsAt(TokenKind.FalseKw))
+            return _scanner.EatInto(SyntaxKind.FalseLiteral);
+        
+        if (_scanner.IsAt(TokenKind.StringStart))
+            return EnsureStringExpr(anchor);
+        
+        // --- Group
+        if (_scanner.IsAt(TokenKind.OpenParen))
+            return EatGroupExpr(anchor);
+        
+        // --- Mut Expr
+        if (_scanner.IsAt(TokenKind.MutKw))
         {
-            // --- Literals
-            case TokenKind.Identifier:
-                return EnsureIdName();
-            case TokenKind.NumberLiteral:
-                return _scanner.EatInto(SyntaxKind.NumberLiteral);
-            case TokenKind.SelfKw:
-                return _scanner.EatInto(SyntaxKind.Self);
+            var mutExpr = _scanner.Open();
+            _scanner.EatKnown(TokenKind.MutKw);
+            EnsureExpr(anchor);
+            return _scanner.Close(mutExpr, SyntaxKind.MutExpr);
+        }
+        
+        // --- Blocks, Control Flow
+        if (_scanner.IsAt(TokenKind.OpenBrace))
+            return EnsureBlock(anchor);
 
-            case TokenKind.TrueKw:
-                return _scanner.EatInto(SyntaxKind.TrueLiteral);
-            case TokenKind.FalseKw:
-                return _scanner.EatInto(SyntaxKind.FalseLiteral);
+        if (_scanner.IsAt(TokenKind.IfKw))
+            return EatIf(anchor);
 
-            // --- Strings
-            case TokenKind.StringStart:
-                return EnsureStringExpr(anchor);
+        if (_scanner.IsAt(TokenKind.BreakKw))
+            return _scanner.EatInto(SyntaxKind.BreakExpr);
 
-            // --- Group
-            case TokenKind.OpenParen:
-                return EatGroupExpr(anchor);
+        if (_scanner.IsAt(TokenKind.ContinueKw))
+            return _scanner.EatInto(SyntaxKind.ContinueExpr);
 
-            // --- Mut Expr
-            case TokenKind.MutKw:
-                var mutExpr = _scanner.Open();
-                _scanner.EatKnown(TokenKind.MutKw);
+        if (_scanner.IsAt(TokenKind.ReturnKw))
+        {
+            var returnExpr = _scanner.Open();
+            _scanner.EatKnown(TokenKind.ReturnKw);
+            if (_scanner.IsAt(FirstSet.Expr))
                 EnsureExpr(anchor);
-                return _scanner.Close(mutExpr, SyntaxKind.MutExpr);
-            
-            // --- Blocks, Control Flow
-            case TokenKind.OpenBrace:
-                return EnsureBlock(anchor);
-
-            case TokenKind.IfKw:
-                return EatIf(anchor);
-            case TokenKind.BreakKw:
-                return _scanner.EatInto(SyntaxKind.BreakExpr);
-            case TokenKind.ContinueKw:
-                return _scanner.EatInto(SyntaxKind.ContinueExpr);
-            case TokenKind.ReturnKw:
-                var returnExpr = _scanner.Open();
-                _scanner.EatKnown(TokenKind.ReturnKw);
-                if (_scanner.IsAt(FirstSet.Expr))
-                    EnsureExpr(anchor);
-                return _scanner.Close(returnExpr, SyntaxKind.ReturnExpr);
+            return _scanner.Close(returnExpr, SyntaxKind.ReturnExpr);
         }
 
         // --- Prefix operator
@@ -162,27 +168,29 @@ public partial class Parser
 
     private MarkClose EatPostfixExpr(MarkClose lhs, Anchor anchor)
     {
+        // --- MemberAccess        
         var expr = _scanner.OpenBefore(lhs);
-        switch (_scanner.Peek().Kind)
+        if (_scanner.IsAt(TokenKind.Dot))
         {
-            // --- MemberAccess
-            case TokenKind.Dot:
-                _scanner.EatKnown(TokenKind.Dot);
-                EnsureIdName();
-                return _scanner.Close(expr, SyntaxKind.MemberAccessExpr);
-
-            // --- Call, Subscript
-            case TokenKind.OpenParen:
-                EnsureArgList(anchor);
-                return _scanner.Close(expr, SyntaxKind.CallExpr);
-            
-            case TokenKind.OpenBracket:
-                EnsureSubscriptArgList(anchor);
-                return _scanner.Close(expr, SyntaxKind.SubscriptExpr);
-
-            default:
-                throw new UnreachableException("Not a postfix op.");
+            _scanner.EatKnown(TokenKind.Dot);
+            EnsureIdName();
+            return _scanner.Close(expr, SyntaxKind.MemberAccessExpr);
         }
+        
+        // --- Call, Subscript
+        if (_scanner.IsAt(TokenKind.OpenParen))
+        {
+            EnsureArgList(anchor);
+            return _scanner.Close(expr, SyntaxKind.CallExpr);
+        }
+
+        if (_scanner.IsAt(TokenKind.OpenBracket))
+        {
+            EnsureSubscriptArgList(anchor);
+            return _scanner.Close(expr, SyntaxKind.SubscriptExpr);
+        }
+
+        throw new UnreachableException("Not a postfix op.");
     }
 
     /// <summary>
@@ -207,7 +215,7 @@ public partial class Parser
         }
         
         ImmutableArray<Token>.Builder? ambiguousOperators = null;
-        var previousOperatorPrecedence = left.Precedence;
+        var previousPrecedence = left.Precedence;
 
         foreach (var _ in _scanner.MustEatEachIteration())
         {
@@ -215,24 +223,21 @@ public partial class Parser
 
             // Peek and check if next token is
             // an operator with ambiguous comparison.
-            var nextOpToken = _scanner.Peek();
-            if (SyntaxFacts.TryGetInfixPrecedence(nextOpToken.Kind)
-                is not Precedence nextOpPrecedence)
-            {
+            if (!_scanner.IsAt(SyntaxFacts.InfixOperators))
                 break;
-            }
 
-            if (PrecedenceComparison.Compare(previousOperatorPrecedence, nextOpPrecedence)
+            var nextPrecedence = SyntaxFacts.GetInfixPrecedence(_scanner.Peek().Kind);
+            if (PrecedenceComparison.Compare(previousPrecedence, nextPrecedence)
                 is not PrecedenceComparisonResult.Ambiguous)
             {
                 break;
             }
 
-            previousOperatorPrecedence = nextOpPrecedence;
+            previousPrecedence = nextPrecedence;
 
             // Next operator is ambiguous.
             // Advance it and parse another expression.
-            _scanner.Eat();
+            var opToken = _scanner.Eat();
 
             // If ambiguous operators was empty before, we need to add
             // the operator that was passed in, because that was already
@@ -243,7 +248,7 @@ public partial class Parser
                 ambiguousOperators.Add(left.Token);
             }
 
-            ambiguousOperators.Add(nextOpToken);
+            ambiguousOperators.Add(opToken);
         }
 
         wasAmbiguous = ambiguousOperators is not null;
@@ -286,7 +291,7 @@ public partial class Parser
             
             var arg = _scanner.Open();
             
-            if (_scanner.IsAt(TokenKind.Identifier) && _scanner.Peek(1).Kind is TokenKind.Equal)
+            if (_scanner.IsAt(TokenKind.Identifier) && _scanner.IsAt(TokenKind.Equal, skip: 1))
             {
                 // Named argument
                 _scanner.EatInto(SyntaxKind.IdName);
@@ -323,7 +328,7 @@ public partial class Parser
         EnsureParenthesizedExpr(ifAnchor, SyntaxKind.ConditionClause);
         EnsureExpr(ifAnchor);
 
-        if (_scanner.IsAt(TokenKind.Semicolon) && _scanner.Peek(1).Kind is TokenKind.ElseKw)
+        if (_scanner.IsAt(TokenKind.Semicolon) && _scanner.IsAt(TokenKind.ElseKw, skip: 1))
             _scanner.Eat();
         
         // --- Else

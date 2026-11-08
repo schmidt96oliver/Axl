@@ -24,40 +24,25 @@ public partial class Parser
             // comes after a newline. This is the same, since Lexer will
             // terminate the string early only if it hit a newline.
             if (HasNewlineBeforeNextToken())
-                goto breakLoop;
+                break;
 
-            switch (_scanner.Peek().Kind)
+            if (_scanner.IsAt(TokenKind.StringText))
+                _scanner.EatInto(SyntaxKind.StringText);
+            else if (_scanner.IsAt(TokenKind.StringEnd))
+                break;
+            else if (_scanner.IsAt(TokenKind.OpenBrace))
             {
-                // --- StringText: Just add
-                case TokenKind.StringText:
-                    _scanner.EatInto(SyntaxKind.StringText);
-                    break;
+                // Anchor on StringText, StringEnd and OpenBrace. Those are the only valid
+                // continuations after an interpolation the Lexer will produce if it thinks
+                // it's inside a string. Everything else is an unclosed string.
 
-                // --- StringEnd: Finish
-                case TokenKind.StringEnd:
-                    goto breakLoop;
-
-                // --- Interpolation
-                case TokenKind.OpenBrace:
-                    // Anchor on StringText, StringEnd and OpenBrace. Those are the only valid
-                    // continuations after an interpolation the Lexer will produce if it thinks
-                    // it's inside a string. Everything else is an unclosed string.
-
-                    EatStringInterpolation(anchor | FirstSet.StringContinuation);
-                    // The next iteration will handle StringText, StringEnd or OpenBrace. If it
-                    // finds anything else (e.g. the enclosing anchor), it breaks off.
-
-                    break;
-
-                // --- Anything else is an unclosed string
-                // Note: Whitespace token will terminate the string as well. The
-                // check is done above, since the scanner does not see whitespace.
-                default:
-                    goto breakLoop;
+                EatStringInterpolation(anchor | FirstSet.StringContinuation);
+                // The next iteration will handle StringText, StringEnd or OpenBrace. If it
+                // finds anything else (e.g. the enclosing anchor), it breaks off.
             }
+            else
+                break;
         }
-
-        breakLoop:
 
         EnsureToken(TokenKind.StringEnd);
         return _scanner.Close(expr, SyntaxKind.StringExpr);
@@ -100,8 +85,8 @@ public partial class Parser
         // (starts a new interpolation directly). If that is not the case, the
         // string is unclosed. If } is on the same line, take it as closing the
         // interpolation, otherwise leave it to enclosing loops.
-        if (_scanner.IsAt(TokenKind.CloseBrace) && (FirstSet.StringContinuation.Contains(_scanner.Peek(1).Kind) ||
-                                                    !HasNewlineBeforeNextToken()))
+        if (_scanner.IsAt(TokenKind.CloseBrace) && 
+            (_scanner.IsAt(FirstSet.StringContinuation, skip: 1) || !HasNewlineBeforeNextToken()))
         {
             _scanner.EatKnown(TokenKind.CloseBrace);
         }
