@@ -36,8 +36,6 @@ public closed class Scope
 
     public TypeSymbol? OwnerAsType => Owner as TypeSymbol;
 
-    public NamespaceOrTypeSymbol? OwnerAsNamespaceOrType => Owner as NamespaceOrTypeSymbol;
-
     public TypeSymbol? InstanceType => OwnerAsFun?.SelfParameter?.Type;
 
     public bool IsStatic => OwnerAsFun?.SelfParameter is null;

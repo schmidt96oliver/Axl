@@ -139,7 +139,7 @@ public class SemanticTokensHandler : SemanticTokensHandlerBase
         {
             TypeSymbol => [(token.Location, SemanticTokenType.Type)],
             VariableSymbol => [(token.Location, SemanticTokenType.Variable)],
-            NamespaceOrTypeSymbol => [(token.Location, SemanticTokenType.Namespace)],
+            NamespaceSymbol => [(token.Location, SemanticTokenType.Namespace)],
             FunSymbol => [(token.Location, SemanticTokenType.Method)],
             _ => []
         };

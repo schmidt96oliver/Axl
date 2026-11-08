@@ -96,7 +96,7 @@ public static class SymbolPrinter
             VariableSymbol { IsReadOnly: true } variable => $"let {variable.Name}: {variable.Type.FullName}",
             FieldSymbol fieldSymbol => $"field {fieldSymbol.FullName}: {fieldSymbol.Type.FullName}",
             
-            NamespaceOrTypeSymbol => $"{symbol.KindName} {symbol.FullName}",
+            NamespaceSymbol or TypeSymbol => $"{symbol.KindName} {symbol.FullName}",
             
             FunSymbol fun => $"{fun.KindName} {fun.FullName}{ fun.FullParameterDisplayText }",
         };

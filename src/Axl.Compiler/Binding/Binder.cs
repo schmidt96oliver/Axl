@@ -215,7 +215,7 @@ public sealed class Binder(Scope scope, BinderSideEffects sideEffects)
         return [.. lookupByName.SelectMany(kvp => kvp.Value.Symbols)];
     }
 
-    private LookupResult LookupMembers(NamespaceOrTypeSymbol parent, string name)
+    private LookupResult LookupMembers(Symbol parent, string name)
     {
         var result = new LookupResult();
 
@@ -436,8 +436,8 @@ public sealed class Binder(Scope scope, BinderSideEffects sideEffects)
     
     public SourceFunSymbol BindSourceFunDeclaration(FunDeclSyntax syntax)
     {
-        Debug.Assert(Scope.OwnerAsNamespaceOrType is not null);
-
+        Debug.Assert(Scope.Owner is TypeSymbol or NamespaceSymbol);
+        
         // Primitive annotation
         var annotations = syntax.Annotations.Select(BindAnnotation);
         BoundAnnotation? intrinsicAnnotation = null;
@@ -1569,19 +1569,19 @@ public sealed class Binder(Scope scope, BinderSideEffects sideEffects)
         if (left is BoundError)
             return left;
 
-        NamespaceOrTypeSymbol type = left switch
+        Symbol lookupOn = left switch
         {
             BoundTypeRef typeRef => typeRef.Type,
             BoundNamespaceRef namespaceRef => namespaceRef.Namespace,
             BoundValue value => value.Type,
             _ => throw new UnreachableException()
         };
-        if (type is ErrorTypeSymbol)
+        if (lookupOn is ErrorTypeSymbol)
             return new BoundError(ErrorType, syntax);
         
         if (syntax.Member.Token == Scope.Compilation.Probe)
         {
-            ResolveProbedVisibleSymbols(type.Members, left, LookupOptions.Any, syntax.Member);
+            ResolveProbedVisibleSymbols(lookupOn.Members, left, LookupOptions.Any, syntax.Member);
             return new BoundError(ErrorType, syntax);
         }
         
@@ -1589,7 +1589,7 @@ public sealed class Binder(Scope scope, BinderSideEffects sideEffects)
         if (memberName is "")
             return new BoundError(ErrorType, syntax);
         
-        var lookupResult = LookupMembers(type, memberName);
+        var lookupResult = LookupMembers(lookupOn, memberName);
 
         return BindLookupResult(lookupResult, left, syntax.Member);
     }
@@ -1624,7 +1624,7 @@ public sealed class Binder(Scope scope, BinderSideEffects sideEffects)
             FunSymbol fun => fun.IsStatic ? valueOrType.AsTypeRef : valueOrType.AsValue,
             
             // Types are always accessed through the type.
-            NamespaceOrTypeSymbol => valueOrType.AsTypeRef,
+            TypeSymbol or NamespaceSymbol => valueOrType.AsTypeRef,
         };
 
         if (replaced is IBoundSymbolRef symbolRef)

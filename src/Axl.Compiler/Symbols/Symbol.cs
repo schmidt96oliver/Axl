@@ -41,11 +41,19 @@ public closed class Symbol(Compilation compilation, string name, Symbol? owner)
     public abstract bool CanBeReferencedByName { get; }
 
     /// <summary>
-    /// All syntax nodes that declare this symbol. Empty for generated
-    /// symbols.
+    /// All syntax nodes that originally declared this symbol.
+    /// Empty for generated symbols.
     /// </summary>
     public abstract ImmutableArray<SyntaxNode> DeclaringSyntax { get; }
 
+    public virtual ImmutableArray<Symbol> Members => [];
+
+    /// <summary>
+    /// Returns all members that match the specified <paramref name="name"/>
+    /// in no particular order.
+    /// </summary>
+    public virtual ImmutableArray<Symbol> LookupMembers(string name)
+        => [.. Members.Where(s => s.Name == name)];
 
     /// <summary>
     /// The greatest owner where this symbol is still

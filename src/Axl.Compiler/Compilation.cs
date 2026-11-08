@@ -104,10 +104,8 @@ public class Compilation
                 FunDefinitionSymbol funSymbol => [funSymbol],
                 FunSymbol => throw new UnreachableException("Specialized funs should not be on compilation."),
                 ScriptSymbol script => [.. Inner(script.Fun), .. script.Members.SelectMany(Inner)],
-                NamespaceOrTypeSymbol namespaceOrTypeSymbol => namespaceOrTypeSymbol.Members.SelectMany(Inner),
-
-                FieldSymbol => [],
-                VariableSymbol => [],
+                
+                _ => symbol.Members.SelectMany(Inner),
             };
         }
     }
