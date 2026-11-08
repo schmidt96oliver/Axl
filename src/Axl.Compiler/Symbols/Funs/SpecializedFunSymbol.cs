@@ -1,5 +1,6 @@
 ﻿using System.Collections.Immutable;
 using System.Runtime.CompilerServices;
+using Axl.Compiler.Syntax;
 
 namespace Axl.Compiler.Symbols;
 
@@ -8,6 +9,9 @@ public sealed class SpecializedFunSymbol : FunSymbol
     /// <inheritdoc />
     public override bool CanBeReferencedByName => OriginalDefinition.CanBeReferencedByName;
 
+    /// <inheritdoc />
+    public override ImmutableArray<SyntaxNode> DeclaringSyntax => OriginalDefinition.DeclaringSyntax;
+    
     /// <inheritdoc />
     public override FunDefinitionSymbol OriginalDefinition { get; }
 

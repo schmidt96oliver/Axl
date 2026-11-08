@@ -881,7 +881,8 @@ public sealed class Binder(Scope scope, BinderSideEffects sideEffects)
             syntax.Name.Identifier, 
             Scope.OwnerAsFun ?? throw new InvalidOperationException("Values can only be bound on fun bodies."),
             isReadOnly, 
-            variableType);
+            variableType,
+            syntax);
         SideEffects.AddResolvedSymbol(syntax.Name.Location, variable);
     
         return new BoundVarDecl(variable, boundInitializer, syntax);

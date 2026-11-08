@@ -1,4 +1,5 @@
 ﻿using System.Collections.Immutable;
+using Axl.Compiler.Syntax;
 using Axl.Compiler.Syntax.Tree;
 
 namespace Axl.Compiler.Symbols;
@@ -12,6 +13,9 @@ public sealed class SyntheticFunSymbol(string name, Symbol owner, bool isPublic)
     /// <inheritdoc />
     public override bool CanBeReferencedByName => Name is not "";
 
+    /// <inheritdoc />
+    public override ImmutableArray<SyntaxNode> DeclaringSyntax => [];
+    
     /// <inheritdoc />
     public override ImmutableArray<TypeParameterSymbol> TypeParameters => [];
 

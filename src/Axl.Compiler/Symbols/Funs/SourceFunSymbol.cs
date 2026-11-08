@@ -3,6 +3,7 @@ using System.Runtime.CompilerServices;
 using Axl.Compiler.Binding;
 using Axl.Compiler.Binding.BoundTree;
 using Axl.Compiler.Binding.Scopes;
+using Axl.Compiler.Syntax;
 using Axl.Compiler.Syntax.Tree;
 
 namespace Axl.Compiler.Symbols;
@@ -26,6 +27,9 @@ public sealed class SourceFunSymbol(
     /// <inheritdoc />
     public override bool CanBeReferencedByName => true;
 
+    /// <inheritdoc />
+    public override ImmutableArray<SyntaxNode> DeclaringSyntax => [DeclarationSyntax];
+    
     public override ImmutableArray<TypeParameterSymbol> TypeParameters
     {
         get

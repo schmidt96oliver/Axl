@@ -1,4 +1,7 @@
-﻿namespace Axl.Compiler.Symbols;
+﻿using System.Collections.Immutable;
+using Axl.Compiler.Syntax;
+
+namespace Axl.Compiler.Symbols;
 
 public sealed class SpecializedFieldSymbol : FieldSymbol
 {
@@ -23,6 +26,9 @@ public sealed class SpecializedFieldSymbol : FieldSymbol
     /// <inheritdoc />
     public override FieldDefinitionSymbol OriginalDefinition { get; }
 
+    /// <inheritdoc />
+    public override ImmutableArray<SyntaxNode> DeclaringSyntax => OriginalDefinition.DeclaringSyntax;
+    
     /// <inheritdoc />
     public override bool Equals(Symbol? other)
         => other is FieldSymbol otherField &&

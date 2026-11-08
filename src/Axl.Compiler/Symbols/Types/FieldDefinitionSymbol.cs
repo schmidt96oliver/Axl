@@ -1,5 +1,7 @@
-﻿using Axl.Compiler.Binding;
+﻿using System.Collections.Immutable;
+using Axl.Compiler.Binding;
 using Axl.Compiler.Binding.Scopes;
+using Axl.Compiler.Syntax;
 using Axl.Compiler.Syntax.Tree;
 
 namespace Axl.Compiler.Symbols;
@@ -17,6 +19,9 @@ public sealed class FieldDefinitionSymbol(
 
     public FieldDeclSyntax DeclarationSyntax { get; } = declarationSyntax;
 
+    /// <inheritdoc />
+    public override ImmutableArray<SyntaxNode> DeclaringSyntax => [DeclarationSyntax];
+    
     public override FieldDefinitionSymbol OriginalDefinition => this;
     
     public override TypeSymbol Type

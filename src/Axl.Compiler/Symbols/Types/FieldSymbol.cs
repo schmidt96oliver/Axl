@@ -1,4 +1,7 @@
-﻿namespace Axl.Compiler.Symbols;
+﻿using System.Collections.Immutable;
+using Axl.Compiler.Syntax;
+
+namespace Axl.Compiler.Symbols;
 
 public closed class FieldSymbol(string name, TypeSymbol owner, bool isPublic) 
     : Symbol(owner.Compilation, name, owner)

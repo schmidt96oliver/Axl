@@ -12,7 +12,7 @@ public sealed class ParameterSymbol(
     bool isSelf,
     ParameterSymbol? originalDefinition = null,
     ParamSyntax? declarationSyntax = null)
-    : VariableSymbol(name, owner, isReadOnly: !isMut, type)
+    : VariableSymbol(name, owner, isReadOnly: !isMut, type, declarationSyntax)
 {
     public override ParameterSymbol OriginalDefinition => originalDefinition ?? this;
     

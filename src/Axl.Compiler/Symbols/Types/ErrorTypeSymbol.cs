@@ -1,4 +1,5 @@
 ﻿using System.Collections.Immutable;
+using Axl.Compiler.Syntax;
 
 namespace Axl.Compiler.Symbols;
 
@@ -8,6 +9,9 @@ public sealed class ErrorTypeSymbol(Compilation compilation)
     /// <inheritdoc />
     public override bool CanBeReferencedByName => false;
 
+    /// <inheritdoc />
+    public override ImmutableArray<SyntaxNode> DeclaringSyntax => [];
+    
     public override ImmutableArray<Symbol> Members => [];
 
     /// <inheritdoc />

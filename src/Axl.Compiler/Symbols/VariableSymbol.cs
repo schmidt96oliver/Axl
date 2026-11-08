@@ -1,8 +1,10 @@
-﻿using System.Runtime.CompilerServices;
+﻿using System.Collections.Immutable;
+using System.Runtime.CompilerServices;
+using Axl.Compiler.Syntax;
 
 namespace Axl.Compiler.Symbols;
 
-public class VariableSymbol(string name, FunSymbol owner, bool isReadOnly, TypeSymbol type)
+public class VariableSymbol(string name, FunSymbol owner, bool isReadOnly, TypeSymbol type, SyntaxNode? declarationSyntax)
     : Symbol(owner.Compilation, name, owner)
 {
     public bool IsReadOnly { get; } = isReadOnly;
@@ -19,6 +21,10 @@ public class VariableSymbol(string name, FunSymbol owner, bool isReadOnly, TypeS
     /// <inheritdoc />
     public override bool CanBeReferencedByName => true;
 
+    /// <inheritdoc />
+    public override ImmutableArray<SyntaxNode> DeclaringSyntax =>
+        declarationSyntax is not null ? [declarationSyntax] : [];
+    
     /// <inheritdoc />
     public override Symbol Substitute(TypeMap map)
         => throw new InvalidOperationException("Substitution reached a variable, which doesn't make sense.");

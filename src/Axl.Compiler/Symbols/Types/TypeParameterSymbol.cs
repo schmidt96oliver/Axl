@@ -1,4 +1,5 @@
 ﻿using System.Collections.Immutable;
+using Axl.Compiler.Syntax;
 using Axl.Compiler.Syntax.Tree;
 
 namespace Axl.Compiler.Symbols;
@@ -14,6 +15,9 @@ public class TypeParameterSymbol(string name, Symbol owner, int ordinal, TypePar
     /// <inheritdoc />
     public override bool CanBeReferencedByName => true;
 
+    /// <inheritdoc />
+    public override ImmutableArray<SyntaxNode> DeclaringSyntax => DeclarationSyntax is not null ? [DeclarationSyntax] : [];
+    
     /// <inheritdoc />
     public override bool IsConcrete => false;
 

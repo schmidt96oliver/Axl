@@ -1,4 +1,5 @@
 ﻿using System.Collections.Immutable;
+using Axl.Compiler.Syntax;
 
 namespace Axl.Compiler.Symbols;
 
@@ -13,6 +14,9 @@ public class SpecializedTypeSymbol : TypeSymbol
     /// <inheritdoc />
     public override bool CanBeReferencedByName => OriginalDefinition.CanBeReferencedByName;
 
+    /// <inheritdoc />
+    public override ImmutableArray<SyntaxNode> DeclaringSyntax => OriginalDefinition.DeclaringSyntax;
+    
     /// <inheritdoc />
     public override ImmutableArray<Symbol> Members
     {

@@ -1,4 +1,5 @@
 ﻿using System.Collections.Immutable;
+using Axl.Compiler.Syntax;
 
 namespace Axl.Compiler.Symbols;
 
@@ -16,6 +17,9 @@ public sealed class RefTypeSymbol(TypeSymbol inner)
 
     /// <inheritdoc />
     public override bool CanBeReferencedByName => false;
+
+    /// <inheritdoc />
+    public override ImmutableArray<SyntaxNode> DeclaringSyntax => [];
 
     /// <inheritdoc />
     public override ImmutableArray<Symbol> Members => [];

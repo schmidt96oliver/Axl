@@ -1,5 +1,6 @@
 ﻿using System.Collections.Immutable;
 using System.Runtime.CompilerServices;
+using Axl.Compiler.Syntax;
 
 namespace Axl.Compiler.Symbols;
 
@@ -11,6 +12,9 @@ public sealed class MissingBaseNamespaceSymbol(Symbol owner)
 
     /// <inheritdoc />
     public override ImmutableArray<Symbol> Members => [];
+
+    /// <inheritdoc />
+    public override ImmutableArray<SyntaxNode> DeclaringSyntax => [];
 
     /// <summary>
     /// Since base namespace is missing, always return an error symbol

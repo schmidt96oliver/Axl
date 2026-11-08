@@ -1,5 +1,7 @@
-﻿using System.Runtime.CompilerServices;
+﻿using System.Collections.Immutable;
+using System.Runtime.CompilerServices;
 using Axl.Compiler.Binding;
+using Axl.Compiler.Syntax;
 
 namespace Axl.Compiler.Symbols;
 
@@ -37,6 +39,13 @@ public closed class Symbol(Compilation compilation, string name, Symbol? owner)
     /// Whether this symbols name can be written in source code.
     /// </summary>
     public abstract bool CanBeReferencedByName { get; }
+
+    /// <summary>
+    /// All syntax nodes that declare this symbol. Empty for generated
+    /// symbols.
+    /// </summary>
+    public abstract ImmutableArray<SyntaxNode> DeclaringSyntax { get; }
+
 
     /// <summary>
     /// The greatest owner where this symbol is still

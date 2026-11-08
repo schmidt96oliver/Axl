@@ -4,11 +4,8 @@
 * Improve Symbol -> CompletionItem. Explore possibilites.
 * For funs, insert `()`
 
-* VisibleSymbols tests: Dedicated file, Caret helper, filter other compilations
-
 * Complete only whats necessary
   * Symbol.PartiallyComplete; e.g. signature vs body; don't complete members
-  * Symbol.DeclaringSyntaxes
   * Complete the lowermost symbol => Put Marker on BinderSideEffects
 
 * A way to show completion status of symbols along the way?

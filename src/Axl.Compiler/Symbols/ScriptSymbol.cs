@@ -18,7 +18,10 @@ public class ScriptSymbol(SyntaxTree syntax, Scope enclosingScope)
 
     /// <inheritdoc />
     public override bool CanBeReferencedByName => false;
-    
+
+    /// <inheritdoc />
+    public override ImmutableArray<SyntaxNode> DeclaringSyntax => [syntax.FileSyntax];
+
     /// <inheritdoc />
     public override ImmutableArray<Symbol> Members
     {
