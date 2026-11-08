@@ -118,7 +118,7 @@ public partial class Parser
                                     | TokenKind.Semicolon;
                 var recovered = RecoverToAndReport(recoverAnchor, ExpectedSyntax.Stmt);
 
-                if (_scanner.IsAt(TokenKind.Semicolon))
+                if (_scanner.IsAt(TokenKind.Semicolon, isGrammarCheck: false))
                 {
                     // If the parser has recovered before, there already is an error
                     // and we eat the ';' silently. Otherwise, report the error.
@@ -175,7 +175,7 @@ public partial class Parser
     /// <returns><c>True</c> iff garbage was collected and an error node added.</returns>
     private bool RecoverTo(Anchor anchor)
     {
-        if (_scanner.IsAt(anchor))
+        if (_scanner.IsAt(anchor, isGrammarCheck: false))
             return false;
 
         var error = _scanner.Open();
@@ -196,7 +196,7 @@ public partial class Parser
             }
 
             // Only allow breaking off, if braces are balanced.
-            if (_scanner.IsAt(anchor) && braceCount == 0)
+            if (_scanner.IsAt(anchor, isGrammarCheck: false) && braceCount == 0)
                 break;
         }
         
@@ -274,7 +274,7 @@ public partial class Parser
             // --- Already at anchor?
             // Special-case here, so we report "expected close" instead of
             // "expected item" in cases like `Call( `.
-            if (!_scanner.IsAt(itemFirst) && _scanner.IsAt(anchor))
+            if (!_scanner.IsAt(itemFirst) && _scanner.IsAt(anchor, isGrammarCheck: false))
             {
                 EnsureToken(closeToken);
                 return _scanner.Close(list, listKind);
@@ -297,7 +297,8 @@ public partial class Parser
             if (RecoverTo(itemAnchor | itemFirst))
             {
                 _scanner.ReportUnexpectedTokensUntilHere(firstUnexpected,
-                    expectedSyntax: _scanner.IsAt(closeToken) || _scanner.IsAt(anchor)
+                    expectedSyntax: _scanner.IsAt(closeToken, isGrammarCheck: false) || _scanner.IsAt(anchor,
+                        isGrammarCheck: false)
                         ? closeToken
                         : TokenKind.Comma);
             }
@@ -309,7 +310,7 @@ public partial class Parser
                 continue;
             }
             
-            if (_scanner.IsAt(closeToken) || _scanner.IsAt(anchor))
+            if (_scanner.IsAt(closeToken) || _scanner.IsAt(anchor, isGrammarCheck: false))
                 break;
             
             EnsureToken(TokenKind.Comma);

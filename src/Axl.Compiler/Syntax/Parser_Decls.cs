@@ -81,13 +81,13 @@ public partial class Parser
                 EatMember(bodyAnchor, allowedAfterHeader: FirstSet.FunDeclAfterHeader | FirstSet.FieldDeclAfterHeader);
             
             // --- lone ";" special case
-            else if (_scanner.IsAt(TokenKind.Semicolon))
+            else if (_scanner.IsAt(TokenKind.Semicolon, isGrammarCheck: false))
                 _scanner.EatIntoGarbageAndReport(ExpectedSyntax.Stmt);
             
             // --- Closing tokens
             else if (_scanner.IsAt(TokenKind.CloseBrace))
                 break;
-            else if (_scanner.IsAt(anchor))
+            else if (_scanner.IsAt(anchor, isGrammarCheck: false))
                 break;
 
             // --- Garbage
@@ -96,7 +96,7 @@ public partial class Parser
                 var recovered = RecoverToAndReport(bodyAnchor | FirstSet.FieldDecl, ExpectedSyntax.Stmt);
 
                 // If it's followed by a ';', eat it into an error silently.
-                if (recovered && _scanner.IsAt(TokenKind.Semicolon))
+                if (recovered && _scanner.IsAt(TokenKind.Semicolon, isGrammarCheck: false))
                     _scanner.EatInto(SyntaxKind.Garbage);
             }
         }

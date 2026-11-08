@@ -346,7 +346,7 @@ public partial class Parser
         public bool IsAt(TokenKind kind, int skip = 0, bool isGrammarCheck = true)
             => IsAt(TokenSet.Of(kind), skip, isGrammarCheck);
 
-        public bool IsAt(Anchor anchor, int skip = 0, bool isGrammarCheck = false)
+        public bool IsAt(Anchor anchor, bool isGrammarCheck, int skip = 0)
             => IsAt(anchor.Set, skip, isGrammarCheck);
     }
 }

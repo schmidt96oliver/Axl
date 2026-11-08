@@ -46,27 +46,6 @@ public partial class Parser
         return lhs;
     }
 
-    private MarkClose EnsurePlainOrGenericTypeName(Anchor anchor, ExpectedSyntax? expectedSyntax = null)
-    {
-        var typeName = EnsureIdName(expectedSyntax ?? ExpectedSyntax.TypeName);
-        if (_scanner.IsAt(TokenKind.OpenBracket))
-        {
-            var subscript = _scanner.OpenBefore(typeName);
-            EnsureDelimitedList(anchor,
-                openToken: TokenKind.OpenBracket,
-                closeToken: TokenKind.CloseBracket,
-                listKind: SyntaxKind.SubscriptArgList,
-                itemFirst: TokenSet.Of(TokenKind.Identifier),
-                allowEmpty: false,
-                ensureItem: a => EnsureTypeName(a),
-                expectedOpenSyntax: null,
-                expectedItemSyntax: ExpectedSyntax.TypeName);
-            return _scanner.Close(subscript, SyntaxKind.SubscriptExpr);
-        }
-
-        return typeName;
-    }
-
     
     private MarkClose EnsureTypeAnnotation(Anchor anchor)
     {

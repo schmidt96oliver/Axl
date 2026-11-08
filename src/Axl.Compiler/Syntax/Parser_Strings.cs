@@ -132,15 +132,15 @@ public partial class Parser
             // We must exit this loop, when we see a `}` that closes
             // the interpolation. For that, we must keep track of inner braces.
             // In cases like `"Foo { a {} b`, `b` must be gobbled.
-            if (_scanner.IsAt(TokenKind.OpenBrace))
+            if (_scanner.IsAt(TokenKind.OpenBrace, isGrammarCheck: false))
                 braceCount++;
-            else if (_scanner.IsAt(TokenKind.CloseBrace))
+            else if (_scanner.IsAt(TokenKind.CloseBrace, isGrammarCheck: false))
             {
                 if (braceCount == 0)
                     break;
                 braceCount--;
             }
-            else if (_scanner.IsAt(anchor))
+            else if (_scanner.IsAt(anchor, isGrammarCheck: false))
             {
                 // {, }, StringStart/Text/End will be handled by this loop, so
                 // we ignore the anchor if it has them.
