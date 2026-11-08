@@ -292,8 +292,6 @@ public partial class Parser
             Debug.Assert(first >= 0);
             Debug.Assert(first < Position, "Empty unexpected token error.");
 
-            if (_continuationProbeSeen) _continuationProbeFrozen = true;
-            
             // @@ @@ ;
             // ^^       Error
             //   ^  ^   Claimed positions

@@ -179,5 +179,24 @@ public partial class ParserTests
             => InlineSnapshot.Validate(Continuations("fun main() { if (x) {} el| }"), """
                 var let return if else while break continue self mut true false Identifier NumberLiteral " . ; && || ! = ( { } [ + - * / == != < <= > >=
                 """);
+
+        [Fact]
+        public void Continuations_AfterError1()
+            => InlineSnapshot.Validate(Continuations("## |"), """
+                fun var let namespace return if while break continue using struct pub static self mut true false Identifier NumberLiteral " ! @ ( { -
+                """);
+        [Fact]
+        public void Continuations_AfterError2()
+            => InlineSnapshot.Validate(Continuations("## pu|b"), """
+                fun var let namespace return if while break continue using struct pub static self mut true false Identifier NumberLiteral " ! @ ( { -
+                """);
+        [Fact]
+        public void Continuations_AfterError3()
+            => InlineSnapshot.Validate(Continuations("#|"), """
+                fun var let namespace return if while break continue using struct pub static self mut true false Identifier NumberLiteral " ! @ ( { -
+                """);
+        [Fact]
+        public void Continuations_AfterError4()
+            => InlineSnapshot.Validate(Continuations("## pub |"), "fun struct static mut");
     }
 }

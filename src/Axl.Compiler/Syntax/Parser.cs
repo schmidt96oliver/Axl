@@ -99,7 +99,7 @@ public partial class Parser
         // Don't anchor on namespace or using, because these are expected at
         // the start of a file, and it makes sense to eat them as garbage
         // inside each grammar.
-        var fileAnchor = Anchor.Forced | TokenKind.FunKw | TokenKind.StructKw | FirstSet.NonExprStmt;
+        var fileAnchor = Anchor.Forced | FirstSet.StructDecl | FirstSet.FunDecl | FirstSet.NonExprStmt;
 
         foreach (var _ in _scanner.MustEatEachIteration())
         {
@@ -122,8 +122,7 @@ public partial class Parser
                 var recoverAnchor = Anchor.From(FirstSet.Stmt)
                                     | TokenKind.NamespaceKw
                                     | TokenKind.UsingKw
-                                    | TokenKind.FunKw
-                                    | TokenKind.StructKw
+                                    | FirstSet.StructDecl | FirstSet.FunDecl
                                     | TokenKind.Semicolon;
                 var recovered = RecoverToAndReport(recoverAnchor, ExpectedSyntax.Stmt);
 
@@ -187,6 +186,11 @@ public partial class Parser
     /// <returns><c>True</c> iff garbage was collected and an error node added.</returns>
     private bool RecoverTo(Anchor anchor)
     {
+        // The continuation probe might be the first error token we
+        // get and then we _must_ eat it, because nothing will match
+        // it. Otherwise, we must stop at the continuation token,
+        // to allow the parser to report its stuff.
+        
         if (_scanner.IsAt(anchor, isGrammarCheck: false))
             return false;
 
@@ -209,6 +213,8 @@ public partial class Parser
 
             // Only allow breaking off, if braces are balanced.
             if (_scanner.IsAt(anchor, isGrammarCheck: false) && braceCount == 0)
+                break;
+            if (_scanner.IsAt(TokenKind.ContinuationProbe) && braceCount == 0)
                 break;
         }
         

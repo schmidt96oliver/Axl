@@ -7,6 +7,7 @@
   * `mut` only in valid position; reject `mut mut`
   * Fun modifiers (static -> not mut)
   * Stmt in namespace file
+  * Comments
 
 * Improve Symbol -> CompletionItem. Explore possibilites.
 * For funs, insert `()`
