@@ -1,3 +1,4 @@
+using System.Collections.Immutable;
 using System.Diagnostics;
 using Axl.Compiler.Diagnostics;
 using Axl.Compiler.Text;
@@ -42,6 +43,46 @@ public partial class Parser
         return tree;
     }
 
+    public static TokenSet ContinuationsAt(SourceText sourceText, int position)
+    {
+        Guard.MustBe(sourceText.Range.Contains(position));
+
+        var tokens = InsertContinuationProbe(Lexer.Lex(sourceText, DiagnosticBag.Discard), position);
+
+        var scanner = new Scanner(sourceText, tokens);
+        var parser = new Parser(sourceText, scanner);
+        parser.EatRoot();
+
+        return scanner.ContinuationsAtProbe;
+    }
+
+    // Internal for testing.
+    internal static ImmutableArray<Token> InsertContinuationProbe(ImmutableArray<Token> tokens, int position)
+    {
+        Debug.Assert(tokens.Length >= 1, "There must be at least EOF!");
+        
+        // Insert the probe before the token it is at.
+        // E.g. "12 ab|cd" needs to insert at "12 | abcd",
+        // while "12 | abcd" stays that way.
+
+        var lo = 0;
+        var hi = tokens.Length - 1;
+
+        while (lo <= hi)
+        {
+            var pivot = (lo + hi) / 2;
+            var token = tokens[pivot];
+            if (token.FullRange.Start <= position)
+                lo = pivot + 1;
+            else
+                hi = pivot - 1;
+        }
+
+        return tokens.Insert(hi, Token.MakeSimple(
+            SourceRange.EmptyAfter(tokens[^1].FullRange), TokenKind.ContinuationProbe));
+    }
+    
+    
     private void EatRoot()
     {
         var file = _scanner.Open();

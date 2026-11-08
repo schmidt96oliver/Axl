@@ -115,7 +115,9 @@ public partial class Parser
         public Token? Last => Position > 0 ? _tokens[Position - 1] : null;
 
         public bool IsAtEnd => IsAt(TokenKind.Eof);
-        
+
+        public TokenSet ContinuationsAtProbe { get; private set; } = TokenSet.Empty;
+
 
         public Scanner(SourceText sourceText, ImmutableArray<Token> tokens)
         {

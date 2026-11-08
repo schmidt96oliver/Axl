@@ -7,6 +7,11 @@ public enum TokenKind
     Whitespace,
     UnknownCharacters,
     Eof,
+    
+    /// <summary>
+    /// A token inserted for retrieving possible continuations at a given point.
+    /// </summary>
+    ContinuationProbe,
 
     // --- Keywords
     FunKw,
