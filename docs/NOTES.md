@@ -6,6 +6,7 @@
 * Completion Context
   * `mut` only in valid position; reject `mut mut`
   * Fun modifiers (static -> not mut)
+  * Stmt in namespace file
 
 * Improve Symbol -> CompletionItem. Explore possibilites.
 * For funs, insert `()`
