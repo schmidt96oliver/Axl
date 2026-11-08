@@ -14,16 +14,18 @@ public sealed class SemanticModel(Compilation compilation)
     /// <paramref name="location"/>. All symbols that are returned
     /// will be bound correctly, given a valid continuation.
     /// </summary>
-    public ImmutableArray<Symbol> VisibleSymbolsAt(SourceLocation location)
-        => VisibleSymbolsAt(compilation.GetSyntaxTree(location.SourceText), location.Start);
+    public ImmutableArray<Symbol> VisibleSymbolsAtUnmapped(SourceLocation location)
+        => VisibleSymbolsAtUnmapped(compilation.GetSyntaxTree(location.SourceText), location.Start);
 
     /// <summary>
-    /// Returns all symbols that are visible at the given
+    /// Returns representations of all symbols that are visible at the given
     /// <paramref name="position"/> inside the given <paramref name="tree"/>.
+    /// The returned symbols will not be part of the original compilation and
+    /// will not compare equal to their according symbols (hence, unmapped).
     /// All symbols that are returned will be bound correctly, given a
-    /// valid continuation.
+    /// valid continuation. 
     /// </summary>
-    public ImmutableArray<Symbol> VisibleSymbolsAt(SyntaxTree tree, int position)
+    public ImmutableArray<Symbol> VisibleSymbolsAtUnmapped(SyntaxTree tree, int position)
     {
         const string probeText = "__AXL_HOH_HOH_CARET__";
 

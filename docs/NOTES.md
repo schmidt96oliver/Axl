@@ -4,6 +4,8 @@
 * Improve Symbol -> CompletionItem. Explore possibilites.
 * For funs, insert `()`
 
+* VisibleSymbols tests: Dedicated file, Caret helper, filter other compilations
+
 * Complete only whats necessary
   * Symbol.PartiallyComplete; e.g. signature vs body; don't complete members
   * Symbol.DeclaringSyntaxes
@@ -14,7 +16,8 @@
   * `using var _ = Compilation.TraceCompletion(this, nameof(Body))`
   * use in SemanticModel tests
 
-
+* Identifier completion context
+  * SyntaxTree.TokenAt binary search from lazy flat token list
 
 
 # Now
@@ -28,6 +31,8 @@
 
 * ?? SyntaxLocations.CalleeOf, CalleeAndTypeArgs, CalleeAndArgs, ...
   * Pass CallSyntax and similar to Diagnostics. They find out where to put it.
+
+* ?? LayoutGraphNode to TypeDefinitionSymbol
 
 * Mir: Validator
   * Phase.Monomorphized: Check that everything is concrete. No TypeParams
@@ -66,12 +71,12 @@
 * Operators and generics: `pub fun +[T](t: T)` how do they interact?
 * Mut exclusivity check
 * RecursiveStructLayout: Only check type args/fields that store by value
-* 
-# Later
 
+# Later
 
 * ?? Drop initializers + definite assignment
 * Miri flat execution + stack trace + @StackTraceHidden
+* LSP Debug through Code Lens (show MIR through external file), Code Actions, Document Symbols (Syntax tree, Bound tree, Symbol tree)
 
 # Ideas
 [Ideas](IDEAS.md)

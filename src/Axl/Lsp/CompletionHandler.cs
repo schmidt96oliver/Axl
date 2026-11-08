@@ -24,7 +24,7 @@ public sealed class CompletionHandler : CompletionHandlerBase
         
         var compilation = axlLocation.Compilation;
 
-        var symbols = compilation.SemanticModel.VisibleSymbolsAt(axlLocation.Location);
+        var symbols = compilation.SemanticModel.VisibleSymbolsAtUnmapped(axlLocation.Location);
         return Task.FromResult(new CompletionList(symbols
             .GroupBy(s => s.Name)
             .Select(grp => Make(grp.Key, [.. grp]))));
