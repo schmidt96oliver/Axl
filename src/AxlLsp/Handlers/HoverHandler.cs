@@ -22,7 +22,7 @@ public class HoverHandler : HoverHandlerBase
         if (ProjectStore.TryMapToAxl(uri, request.Position) is not { } axlLocation)
             return Task.FromResult<Hover?>(null);
 
-        var token = axlLocation.Compilation.TokenAt(axlLocation.Location);
+        var token = axlLocation.Compilation.SyntaxTreeFor(axlLocation.Location.SourceText).TokenAt(axlLocation.Location.Start);
         var symbol = axlLocation.Compilation.SemanticSideTable.TryGetSymbol(token.Location);
         
         if (symbol is null)

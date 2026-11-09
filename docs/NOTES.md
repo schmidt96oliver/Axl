@@ -17,10 +17,6 @@
   * `using var _ = Compilation.TraceCompletion(this, nameof(Body))`
   * use in SemanticModel tests
 
-* Identifier completion context
-  * SyntaxTree.TokenAt binary search from lazy flat token list
-
-
 # Now
 
 # Questions / Little ones

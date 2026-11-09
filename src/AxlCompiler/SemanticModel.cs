@@ -16,7 +16,7 @@ public sealed class SemanticModel(Compilation compilation)
     /// will be bound correctly, given a valid continuation.
     /// </summary>
     public ImmutableArray<Symbol> VisibleSymbolsAtUnmapped(SourceLocation location)
-        => VisibleSymbolsAtUnmapped(compilation.GetSyntaxTree(location.SourceText), location.Start);
+        => VisibleSymbolsAtUnmapped(compilation.SyntaxTreeFor(location.SourceText), location.Start);
 
     /// <summary>
     /// Returns representations of all symbols that are visible at the given

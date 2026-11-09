@@ -245,54 +245,10 @@ public class Compilation
     }
     
 
-    public SyntaxTree GetSyntaxTree(SourceText text)
+    public SyntaxTree SyntaxTreeFor(SourceText text)
     {
         return SyntaxTrees.FirstOrDefault(tree => tree.SourceText == text)
                ?? throw new ArgumentException($"Syntax tree for given {nameof(text)} does not exit.", nameof(text));
-    }
-
-
-    /// <summary>
-    /// The bottom-most <see cref="SyntaxNode"/> that contains the given
-    /// <paramref name="location"/>.
-    /// </summary>
-    public SyntaxNode SyntaxNodeAt(SourceLocation location)
-    {
-        SyntaxNode currentNode = GetSyntaxTree(location.SourceText).FileSyntax;
-        Debug.Assert(currentNode.FullRange.Contains(location.Range));
-
-        while (true)
-        {
-            var nextNode = currentNode
-                .SyntaxNodes()
-                .SingleOrDefault(child => child.Range?.Contains(location.Range) == true);
-
-            if (nextNode is null)
-                return currentNode;
-
-            currentNode = nextNode;
-        }
-    }
-
-    public Token TokenAt(SourceLocation location)
-    {
-        SyntaxElement current = GetSyntaxTree(location.SourceText).FileSyntax;
-        Debug.Assert(current.FullRange.Contains(location.Range));
-
-        while (true)
-        {
-            if (current is Token token)
-            {
-                Debug.Assert(token.FullRange.Contains(location.Range));
-                return token;
-            }
-            
-            var nextNode = (current as SyntaxNode)!
-                .Children
-                .Single(child => child.Range?.Contains(location.Range) == true);
-
-            current = nextNode;
-        }
     }
 
     
