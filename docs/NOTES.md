@@ -1,11 +1,6 @@
 # ------------------------------------ Axl Project ------------------------------------
                                        ≽(◕ ᴗ ◕)≼                                      
 
-* Completion Context
-  * `break, continue` -> Binder probe to get scope
-  * `self` -> Binder probe to get scope
-  * `static`
-
 * Improve Symbol -> CompletionItem. Explore possibilites.
 * For funs, insert `()`
 

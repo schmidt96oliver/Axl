@@ -39,7 +39,7 @@ public sealed class CompletionTests
 
     [Fact]
     public void Empty()
-        => InlineSnapshot.Validate(Items("|"), "Keyword: fun, var, let, namespace, return, if, while, break, continue, using, struct, pub, self, true, false");
+        => InlineSnapshot.Validate(Items("|"), "Keyword: fun, var, let, namespace, return, if, while, using, struct, pub, true, false");
 
     [Fact]
     public void Nothing_Comment1()
@@ -89,14 +89,14 @@ public sealed class CompletionTests
     public void StringInterpolation1()
         => InlineSnapshot.Validate(Items("let a = 10; \"te{|\";"), """
             Function: a
-            Keyword: return, if, break, continue, self, true, false
+            Keyword: return, if, true, false
             """);
     
     [Fact]
     public void StringInterpolation2()
         => InlineSnapshot.Validate(Items("let a = 10; \"te{|"), """
             Function: a
-            Keyword: return, if, break, continue, self, true, false
+            Keyword: return, if, true, false
             """);
 
     [Theory]
@@ -183,5 +183,43 @@ public sealed class CompletionTests
     {
         if (available) ItemsWithBase(input).ShouldContain("static");
         else ItemsWithBase(input).ShouldNotContain("static");
+    }
+    
+    [Theory]
+    [InlineData("|", false)] 
+    [InlineData("fun A() { | }", false)]
+    [InlineData("namespace Test; fun A() { | }", false)]
+    [InlineData("fun A() { let a = | }", false)]
+    [InlineData("struct A { | }", false)]
+    [InlineData("struct A { fun T() { | } }", true)]
+    [InlineData("struct A { static fun T() { | } }", false)]
+    public void Self(string input, bool available)
+    {
+        if (available) ItemsWithBase(input).ShouldContain("self");
+        else ItemsWithBase(input).ShouldNotContain("self");
+    }
+    
+    [Theory]
+    [InlineData("|", false)]
+    [InlineData("{ | }", false)]
+    [InlineData("let a = |", false)]
+    [InlineData("while (true) { | }", true)]
+    [InlineData("while (true) { let a = | }", true)]
+    [InlineData("fun A() { | }", false)]
+    [InlineData("fun A() { let a = | }", false)]
+    [InlineData("fun A() { return | }", false)]
+    [InlineData("fun A() { while (true) { | }", true)]
+    public void BreakContinue(string input, bool available)
+    {
+        if (available)
+        {
+            ItemsWithBase(input).ShouldSatisfyAllConditions(
+                i => i.ShouldContain("break"), i => i.ShouldContain("continue"));
+        }
+        else
+        {
+            ItemsWithBase(input).ShouldSatisfyAllConditions(
+                i => i.ShouldNotContain("break"), i => i.ShouldNotContain("continue"));
+        }
     }
 }

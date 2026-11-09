@@ -146,7 +146,11 @@ public sealed class CompletionHandler : CompletionHandlerBase
             return null;
         if (keywordKind is TokenKind.StaticKw && !IsStaticValid(context))
             return null;
-        
+        if (keywordKind is TokenKind.SelfKw && !IsSelfValid(context))
+            return null;
+        if (keywordKind is TokenKind.BreakKw or TokenKind.ContinueKw && !IsBreakOrContinueValid(context))
+            return null;
+
         return new CompletionItem
         {
             Label = SyntaxFacts.GetText(keywordKind) ?? "??",
@@ -183,4 +187,10 @@ public sealed class CompletionHandler : CompletionHandlerBase
 
     private static bool IsStaticValid(Context context)
         => context.SignificantLeftOf?.Ancestors().OfType<StructDeclSyntax>().Any() == true;
+
+    private static bool IsSelfValid(Context context)
+        => context.Scope?.InstanceType is not null;
+
+    private static bool IsBreakOrContinueValid(Context context)
+        => context.Scope?.IsInsideLoop == true;
 }
