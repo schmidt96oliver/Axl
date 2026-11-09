@@ -57,6 +57,9 @@ public readonly record struct SourceLocation
     public static SourceLocation EmptyBefore(SourceLocation location)
         => new(location.SourceText, SourceRange.EmptyBefore(location.Range));
 
+    public static SourceLocation EmptyAt(SourceText sourceText, int position)
+        => new(sourceText, SourceRange.EmptyAt(position));
+    
     public static SourceLocation FromTo(SourceLocation from, SourceLocation to)
     {
         Guard.MustBe(from.SourceText == to.SourceText);
@@ -68,4 +71,6 @@ public readonly record struct SourceLocation
         => SourceText == location.SourceText && Range.Contains(location.Range);
 
     public SourceLocation this[Range range] => new (SourceText, Range[range]);
+
+    
 }

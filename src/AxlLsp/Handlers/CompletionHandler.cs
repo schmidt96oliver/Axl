@@ -1,6 +1,8 @@
 ﻿using System.Collections.Immutable;
+using AxlCompiler;
 using AxlCompiler.Symbols;
 using AxlCompiler.Syntax;
+using AxlCompiler.Text;
 using AxlLsp.Projects;
 using OmniSharp.Extensions.LanguageServer.Protocol.Client.Capabilities;
 using OmniSharp.Extensions.LanguageServer.Protocol.Document;
@@ -24,26 +26,40 @@ public sealed class CompletionHandler : CompletionHandlerBase
         if (axlLocation is null)
             return Task.FromResult(new CompletionList([]));
 
-        var continuationTokens = Parser.ContinuationsAt(axlLocation.Location.SourceText, axlLocation.Location.Start);
-        var completionItems = new List<CompletionItem>();
-        
-        foreach (var kw in continuationTokens.GetKinds().Where(SyntaxFacts.IsKeyword))
-            completionItems.Add(Make(kw));
-        
-        if (continuationTokens.Contains(TokenKind.Identifier))
-        {
-            var compilation = axlLocation.Compilation;
-
-            var symbols = compilation.SemanticModel.VisibleSymbolsAtUnmapped(axlLocation.Location);
-            completionItems.AddRange(symbols
-                .GroupBy(s => s.Name)
-                .Select(grp => Make(grp.Key, [.. grp])));
-        }
-
-        return Task.FromResult(new CompletionList(completionItems));
+        return Task.FromResult(new CompletionList(GetCompletionItems(axlLocation.Location, axlLocation.Compilation)));
     }
 
-    private CompletionItem Make(string name, ImmutableArray<Symbol> symbols) => new()
+    /// <inheritdoc />
+    public override Task<CompletionItem> Handle(CompletionItem request, CancellationToken cancellationToken)
+    {
+        return Task.FromResult(request);
+    } 
+
+
+    /// <param name="excludeReferencedCompilations">
+    /// If <c>true</c>, only shows completion items that belong to <paramref name="compilation"/>.
+    /// Used mainly for testing.
+    /// </param>
+    internal static IEnumerable<CompletionItem> GetCompletionItems(SourceLocation at, Compilation compilation, bool excludeReferencedCompilations = false)
+    {
+        var continuationTokens = Parser.ContinuationsAt(at.SourceText, at.Start);
+
+        foreach (var kw in continuationTokens.GetKinds().Where(SyntaxFacts.IsKeyword))
+            yield return Make(kw);
+
+        if (continuationTokens.Contains(TokenKind.Identifier))
+        {
+            var symbolsByName = compilation.SemanticModel
+                .VisibleSymbolsAtUnmapped(at)
+                .Where(s => !excludeReferencedCompilations || !compilation.ReferencedCompilations.Contains(s.Compilation))
+                .GroupBy(s => s.Name);
+            foreach (var symbolGrp in symbolsByName)
+                yield return Make(symbolGrp.Key, [.. symbolGrp]);
+        }
+    }
+    
+
+    private static CompletionItem Make(string name, ImmutableArray<Symbol> symbols) => new()
     {
         Label = name,
         Kind = CompletionItemKind.Function,
@@ -60,15 +76,11 @@ public sealed class CompletionHandler : CompletionHandlerBase
         // InsertTextFormat = InsertTextFormat.Snippet
     };
 
-    private CompletionItem Make(TokenKind keywordKind) => new()
+    private static CompletionItem Make(TokenKind keywordKind) => new()
     {
         Label = SyntaxFacts.GetText(keywordKind) ?? "??",
         Kind = CompletionItemKind.Keyword
     };
 
-    /// <inheritdoc />
-    public override Task<CompletionItem> Handle(CompletionItem request, CancellationToken cancellationToken)
-    {
-        return Task.FromResult(request);
-    }
+    
 }

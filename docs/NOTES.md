@@ -1,10 +1,18 @@
 # ------------------------------------ Axl Project ------------------------------------
                                        ≽(◕ ᴗ ◕)≼                                      
 
+* Completion tests: 
+  * fulfill tests one-by-one
+  * private struct member
+  * only keywords
+  * Items.Contains("break").ShouldBe(val) InlineTests
+
 * Completion Context
   * `break, continue` -> Binder probe to get scope
   * `self` -> Binder probe to get scope
-  * `mut` -> Parent is Arg, Param, or return value 
+  * `mut` -> Parent is Arg (LeftSigToken is `(`), Param, return (leftsig is `return`), expr body (leftsig is `=`)
+  * `namespace` -> only on top, if no other namespace exists; maybe probe binder !! Turn into grammar !!
+  * `using`-> only on top; maybe probe binder !! Turn into grammar !!
   * Fun modifiers (static -> not mut)
   * Stmt in namespace file
   * Comments
@@ -91,5 +99,17 @@
 
 * LSP: Completion Context (SemanticModel and ad-hoc binding)
 
+* refactor: Split (Lex)Token and SyntaxToken
+  * Id => .Text
+  * StringText => Text Token + StringEscape token; SyntaxFacts.IsEscape/GetEsxcapedText is source of truth
+  * NumLiteral => Split into Number + Suffix
+  * Lexer emits Token (struct, Kind + Range)
+  * Parser translates to SyntaxToken (Kind + Range, with Parent, trivia and whatnot)
 * refactor: Rework syntax tree; Trivia to Tokens; Concrete SyntaxNode construction
-* refactor: Single sealed Token class (Id => .Text; StringText => .EscapedText lazy on every token; NumLiteral => Split Number + Suffix)
+  * SyntaxToken = SyntaxNode; removed SyntaxElement
+  * Put trivia on tokens; Range not nullable!!
+  * Put GarbageSyntax as trivia on tokens
+  * Parser TryXX returns null, if grammar does not start here. Remove FirstSets that way
+  * Remove diagnostics from events
+  * construct Tree directly; remove events
+  * Take slots in tree constructor

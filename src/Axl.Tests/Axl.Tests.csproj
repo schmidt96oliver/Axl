@@ -22,5 +22,6 @@
 
     <ItemGroup>
       <ProjectReference Include="..\AxlCompiler\AxlCompiler.csproj" />
+      <ProjectReference Include="..\AxlLsp\AxlLsp.csproj" />
     </ItemGroup>
 </Project>
