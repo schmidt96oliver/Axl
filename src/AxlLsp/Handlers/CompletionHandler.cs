@@ -160,22 +160,12 @@ public sealed class CompletionHandler : CompletionHandlerBase
 
     private static bool IsMutValid(Context context)
     {
-        //TODO: Ask scope for context.
-        //      I would really love to, but inside e.g. structs, the binder never sees the probe.
-        
         // `mut` can start a `mut fun` at declaration level
         // or `mut` argument, parameter, return or expression body on expression level.
 
         if (context.SignificantLeftOf is null)
         {
             // File level, where it is never valid.
-            return false;
-        }
-
-        if (context.SignificantLeftOf is { Kind: TokenKind.MutKw })
-        {
-            // Any kind of repetition is wrong and cannot fully
-            // be rejected by the parser.
             return false;
         }
 

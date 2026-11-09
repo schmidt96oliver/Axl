@@ -268,7 +268,7 @@ public partial class Parser
             var param = _scanner.Open();
 
             _scanner.EatIfPresent(TokenKind.MutKw);
-            EnsureIdName(expectedSyntax: _scanner.IsAt(itemFirst)
+            EnsureIdName(expectedSyntax: _scanner.IsAt(itemFirst, isGrammarCheck: false)
                 ? TokenKind.Identifier
                 : ExpectedSyntax.Param);
 

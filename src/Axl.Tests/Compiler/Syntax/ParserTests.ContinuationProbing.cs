@@ -132,7 +132,7 @@ public partial class ParserTests
 
         [Fact]
         public void Continuations_Fun3()
-            => InlineSnapshot.Validate(Continuations("fun foo(mut |"), "mut Identifier :");
+            => InlineSnapshot.Validate(Continuations("fun foo(mut |"), "Identifier");
 
         [Fact]
         public void Continuations_Fun4()
