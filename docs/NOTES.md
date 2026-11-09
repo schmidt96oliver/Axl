@@ -1,15 +1,10 @@
 # ------------------------------------ Axl Project ------------------------------------
                                        ≽(◕ ᴗ ◕)≼                                      
 
-* A way to get scope everywhere: `CheckProbe(SyntaxNode)` descends and sees if it can find the probe
-
-* Improve Symbol -> CompletionItem. Explore possibilites.
-* For funs, insert `()`
-
-* A way to show completion status of symbols along the way?
-  * `Compilation.WithDebugTrace`
-  * `using var _ = Compilation.TraceCompletion(this, nameof(Body))`
-  * use in SemanticModel tests
+* Completion:
+  * Insert []
+  * Insert ()
+  * StructInit: Only offer remaining field names
 
 # Now
 
@@ -49,7 +44,7 @@
     * unecessary parameter 'mut' + self
     * unecessary assignment
 
-**LSP Work**: Completion context, signature help, folding ranges, symbol highlighting, rename
+**LSP Work**: signature help, folding ranges, symbol highlighting, rename
 * Churns the data structure heavily
 
 **Enums/Exhaustiveness/Patterns**

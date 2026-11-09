@@ -28,7 +28,8 @@ public sealed class CompletionHandler : CompletionHandlerBase
         if (axlLocation is null)
             return Task.FromResult(new CompletionList([]));
 
-        return Task.FromResult(new CompletionList(GetCompletionItems(axlLocation.Location, axlLocation.Compilation)));
+        var items = GetCompletionItems(axlLocation.Location, axlLocation.Compilation);
+        return Task.FromResult(new CompletionList(items));
     }
 
     /// <inheritdoc />
@@ -107,7 +108,7 @@ public sealed class CompletionHandler : CompletionHandlerBase
 
         foreach (var kw in continuationTokens.GetKinds().Where(SyntaxFacts.IsKeyword))
         {
-            if (Make(kw, context) is { } item)
+            if (MaybeMake(kw, context) is { } item)
                 yield return item;
         }
 
@@ -118,29 +119,139 @@ public sealed class CompletionHandler : CompletionHandlerBase
                 .Where(s => !excludeReferencedCompilations || !compilation.ReferencedCompilations.Contains(s.Compilation))
                 .GroupBy(s => s.Name);
             foreach (var symbolGrp in symbolsByName)
-                yield return Make(symbolGrp.Key, [.. symbolGrp]);
+            {
+                if (MaybeMake(symbolGrp.Key, [.. symbolGrp]) is { } item)
+                    yield return item;
+            }
         }
     }
-    
 
-    private static CompletionItem Make(string name, ImmutableArray<Symbol> symbols) => new()
+    
+    // !!! CompletionItemKind is picked based on what symbol it maps in LSP4IJ for Rider.
+    // !!! These do _not_ map to the correct symbol type.
+    
+    
+    private static CompletionItem? MaybeMake(string name, ImmutableArray<Symbol> symbols)
+    {
+        if (symbols.All(s => s is FunSymbol))
+            return MakeFunItem(name, [.. symbols.Cast<FunSymbol>()]);
+        if (symbols.All(s => s is TypeSymbol))
+            return MakeTypeItem(name, [.. symbols.Cast<TypeSymbol>()]);
+
+        if (symbols.Length != 1) return null;
+
+        return symbols[0] switch
+        {
+            FieldSymbol @field => MakeFieldItem(name, @field),
+            VariableSymbol var => MakeVariableItem(name, var),
+            
+            NamespaceSymbol ns => MakeNamespaceItem(name, ns),
+            
+            TypeSymbol type => null,
+            FunSymbol => null,
+        };
+    }
+        
+    private static CompletionItem MakeFunItem(string name, ImmutableArray<FunSymbol> symbols)
+    {
+        if (symbols.Length > 1)
+        {
+            return new CompletionItem
+            {
+                Label = name,
+                Kind = CompletionItemKind.Function,
+
+                LabelDetails = new CompletionItemLabelDetails
+                {
+                    Detail = $"+{symbols.Length - 1} overload" + (symbols.Length != 2 ? "s" : ""),
+                    Description = null,
+                },
+            };
+        }
+
+        return new CompletionItem()
+        {
+            Label = name,
+            Kind = symbols[0].IsStatic ? CompletionItemKind.Function : CompletionItemKind.Method,
+
+            LabelDetails = new CompletionItemLabelDetails
+            {
+                Detail = TypeParamText(symbols[0]) + ParamListText(symbols[0]),
+                Description = symbols[0].ReturnType.Name,
+            },
+        };
+
+        string TypeParamText(FunSymbol symbol) => symbol.TypeParameters.Length > 0
+            ? $"[{string.Join(", ", symbol.TypeParameters.Select(t => t.Name))}]"
+            : "";
+        string ParamListText(FunSymbol symbol) =>
+            $"({string.Join(", ", symbol.Parameters.Select(ParamText))})";
+
+        string ParamText(ParameterSymbol param) => param.IsMut
+            ? $"{param.Name}: mut {param.Type.Name}"
+            : $"{param.Name}: {param.Type.Name}";
+    }
+    private static CompletionItem MakeTypeItem(string name, ImmutableArray<TypeSymbol> symbols)
+    {
+        if (symbols.Length > 1)
+        {
+            return new CompletionItem
+            {
+                Label = name,
+                Kind = CompletionItemKind.Class,
+
+                LabelDetails = new CompletionItemLabelDetails
+                {
+                    Detail = $"+{ symbols.Length - 1 } variant" + (symbols.Length != 2 ? "s" : ""),
+                    Description = null,
+                },
+            };
+        }
+        
+        return new CompletionItem()
+        {
+            Label = name,
+            Kind = CompletionItemKind.Class,
+
+            LabelDetails = new CompletionItemLabelDetails
+            {
+                Detail = symbols[0].TypeParameters.Length > 0 ? $"[{ string.Join(", ", symbols[0].TypeParameters.Select(t => t.Name)) }]" : null,
+                Description = null,
+            },
+        };
+    }
+
+    private static CompletionItem MakeNamespaceItem(string name, NamespaceSymbol symbol) => new()
     {
         Label = name,
-        Kind = CompletionItemKind.Function,
-        //TODO: Improve CompletionItem
-        
-        // LabelDetails = symbols[0] is FunSymbol fun ?
-        //     new CompletionItemLabelDetails
-        // {
-        //     Detail = "(" +string.Join(", ", fun.Parameters.Select(p => $"{p.Name}: {p.Type.Name}")) + ")",
-        //     Description = fun.ReturnType.Name,
-        // } : null,
-        // Documentation = "DOC COMMENT YAAY",
-        // InsertText = symbols[0].Name + "(${0:a}, ${1:b})",
-        // InsertTextFormat = InsertTextFormat.Snippet
+        Kind = CompletionItemKind.Struct,
     };
-
-    private static CompletionItem? Make(TokenKind keywordKind, Context context)
+    
+    private static CompletionItem MakeVariableItem(string name, VariableSymbol symbol) => new()
+    {
+        Label = name,
+        Kind = symbol is ParameterSymbol ? CompletionItemKind.TypeParameter : CompletionItemKind.Variable,
+        LabelDetails = new CompletionItemLabelDetails
+        {
+            Detail = null,
+            Description = symbol is ParameterSymbol { IsMut: true }
+                ? $"mut {symbol.Type.Name}"
+                : $"{symbol.Type.Name}",
+        },
+    };
+    
+    private static CompletionItem MakeFieldItem(string name, FieldSymbol symbol) => new()
+    {
+        Label = name,
+        Kind = CompletionItemKind.Field,
+        LabelDetails = new CompletionItemLabelDetails
+        {
+            Detail = null,
+            Description = $"{symbol.Type.Name}",
+        },
+    };
+    
+    private static CompletionItem? MaybeMake(TokenKind keywordKind, Context context)
     {
         if (keywordKind is TokenKind.MutKw && !IsMutValid(context))
             return null;
@@ -154,7 +265,7 @@ public sealed class CompletionHandler : CompletionHandlerBase
         return new CompletionItem
         {
             Label = SyntaxFacts.GetText(keywordKind) ?? "??",
-            Kind = CompletionItemKind.Keyword
+            Kind = CompletionItemKind.Event
         };
     }
 
