@@ -251,5 +251,7 @@ public class Compilation
                ?? throw new ArgumentException($"Syntax tree for given {nameof(text)} does not exit.", nameof(text));
     }
 
-    
+    public SyntaxTree SyntaxTreeFor(SourceLocation location)
+        => SyntaxTreeFor(location.SourceText);
+
 }

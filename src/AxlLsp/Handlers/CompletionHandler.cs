@@ -42,6 +42,10 @@ public sealed class CompletionHandler : CompletionHandlerBase
     /// </param>
     internal static IEnumerable<CompletionItem> GetCompletionItems(SourceLocation at, Compilation compilation, bool excludeReferencedCompilations = false)
     {
+        var tokenLeft = compilation.SyntaxTreeFor(at).TryTokenLeftOf(at.Start);
+        if (tokenLeft is { Kind: TokenKind.Comment or TokenKind.StringStart or TokenKind.StringText } ) 
+            yield break;
+        
         var continuationTokens = Parser.ContinuationsAt(at.SourceText, at.Start);
 
         foreach (var kw in continuationTokens.GetKinds().Where(SyntaxFacts.IsKeyword))

@@ -8,14 +8,28 @@ namespace Axl.Tests.Lsp;
 
 public sealed class CompletionTests
 {
-    private static string Items(string input, bool withBase = false)
+    private static string Items(string input)
     {
         input = input.RemoveCaret(out var caret);
         var sourceText = SourceText.From(input);
         var compilation = Compilation.From(sourceText).WithBaseLibrary();
 
         var itemTexts = CompletionHandler
-            .GetCompletionItems(SourceLocation.EmptyAt(sourceText, caret), compilation, excludeReferencedCompilations: !withBase)
+            .GetCompletionItems(SourceLocation.EmptyAt(sourceText, caret), compilation, excludeReferencedCompilations: true)
+            .GroupBy(item => item.Kind)
+            .Select(grp => $"{grp.Key}: { string.Join(", ", grp.Select(item => item.Label)) }")
+            .Order();
+        return string.Join("\n", itemTexts);
+    }
+    
+    private static string ItemsWithBase(string input)
+    {
+        input = input.RemoveCaret(out var caret);
+        var sourceText = SourceText.From(input);
+        var compilation = Compilation.From(sourceText).WithBaseLibrary();
+
+        var itemTexts = CompletionHandler
+            .GetCompletionItems(SourceLocation.EmptyAt(sourceText, caret), compilation, excludeReferencedCompilations: false)
             .GroupBy(item => item.Kind)
             .Select(grp => $"{grp.Key}: { string.Join(", ", grp.Select(item => item.Label)) }")
             .Order();
@@ -24,9 +38,62 @@ public sealed class CompletionTests
 
     [Fact]
     public void Empty()
-        => InlineSnapshot.Validate(Items("|"));
+        => InlineSnapshot.Validate(Items("|"), "Keyword: fun, var, let, namespace, return, if, while, break, continue, using, struct, pub, static, self, mut, true, false");
 
     [Fact]
-    public void Comment1()
-        => InlineSnapshot.Validate(Items("// p|"), "Keyword: fun, var, let, namespace, return, if, while, break, continue, using, struct, pub, static, self, mut, true, false");
+    public void Nothing_Comment1()
+        => InlineSnapshot.Validate(ItemsWithBase("// p|"), "");
+
+    [Fact]
+    public void Nothing_Comment2()
+        => InlineSnapshot.Validate(ItemsWithBase("let a = 1; // ab|"), "");
+
+    [Fact]
+    public void Nothing_String1()
+        => InlineSnapshot.Validate(ItemsWithBase("\"te|xt\";"), "");
+    [Fact]
+    public void Nothing_String2()
+        => InlineSnapshot.Validate(ItemsWithBase("\"|text\";"), "");
+    
+    [Fact]
+    public void Nothing_String3()
+        => InlineSnapshot.Validate(ItemsWithBase("\"text|\";"), "");
+    
+    [Fact]
+    public void Nothing_String4()
+        => InlineSnapshot.Validate(ItemsWithBase("\"te|{\";"), "");
+
+    [Fact]
+    public void Nothing_AfterExpr()
+        => InlineSnapshot.Validate(ItemsWithBase("1|;"), "");
+
+    [Fact]
+    public void Nothing_LetName()
+        => InlineSnapshot.Validate(ItemsWithBase("let |"), "");
+
+    [Fact]
+    public void Nothing_FunName()
+        => InlineSnapshot.Validate(ItemsWithBase("fun |"), "");
+
+    [Fact]
+    public void Nothing_StructName()
+        => InlineSnapshot.Validate(ItemsWithBase("struct |"), "");
+
+    [Fact]
+    public void Nothing_NamespaceName()
+        => InlineSnapshot.Validate(ItemsWithBase("struct |"), "");
+
+
+    [Fact]
+    public void StringInterpolation1()
+        => InlineSnapshot.Validate(Items("let a = 10; \"te{|\";"), """
+            Function: a
+            Keyword: return, if, break, continue, self, mut, true, false
+            """);
+    [Fact]
+    public void StringInterpolation2()
+        => InlineSnapshot.Validate(Items("let a = 10; \"te{|"), """
+            Function: a
+            Keyword: return, if, break, continue, self, mut, true, false
+            """);
 }
