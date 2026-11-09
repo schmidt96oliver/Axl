@@ -39,7 +39,7 @@ public sealed class CompletionTests
 
     [Fact]
     public void Empty()
-        => InlineSnapshot.Validate(Items("|"), "Keyword: fun, var, let, namespace, return, if, while, break, continue, using, struct, pub, static, self, true, false");
+        => InlineSnapshot.Validate(Items("|"), "Keyword: fun, var, let, namespace, return, if, while, break, continue, using, struct, pub, self, true, false");
 
     [Fact]
     public void Nothing_Comment1()
@@ -113,7 +113,7 @@ public sealed class CompletionTests
 
     [Fact]
     public void NamespaceFile()
-        => InlineSnapshot.Validate(ItemsWithBase("namespace Test; |"), "Keyword: fun, using, struct, pub, static");
+        => InlineSnapshot.Validate(ItemsWithBase("namespace Test; |"), "Keyword: fun, using, struct, pub");
     
     [Theory]
     [InlineData("|", true)]
@@ -171,5 +171,17 @@ public sealed class CompletionTests
     {
         if (available) ItemsWithBase(input).ShouldContain("mut");
         else ItemsWithBase(input).ShouldNotContain("mut");
+    }
+    
+    [Theory]
+    [InlineData("|", false)]
+    [InlineData("| fun A(){}", false)]
+    [InlineData("namespace A; |", false)]
+    [InlineData("struct A { | }", true)]
+    [InlineData("struct A { | fun A(){} }", true)]
+    public void Static(string input, bool available)
+    {
+        if (available) ItemsWithBase(input).ShouldContain("static");
+        else ItemsWithBase(input).ShouldNotContain("static");
     }
 }

@@ -144,6 +144,8 @@ public sealed class CompletionHandler : CompletionHandlerBase
     {
         if (keywordKind is TokenKind.MutKw && !IsMutValid(context))
             return null;
+        if (keywordKind is TokenKind.StaticKw && !IsStaticValid(context))
+            return null;
         
         return new CompletionItem
         {
@@ -178,4 +180,7 @@ public sealed class CompletionHandler : CompletionHandlerBase
         
         return false;
     }
+
+    private static bool IsStaticValid(Context context)
+        => context.SignificantLeftOf?.Ancestors().OfType<StructDeclSyntax>().Any() == true;
 }
