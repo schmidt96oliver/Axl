@@ -18,7 +18,7 @@ public sealed class CompletionTests
         var itemTexts = CompletionHandler
             .GetCompletionItems(SourceLocation.EmptyAt(sourceText, caret), compilation, excludeReferencedCompilations: true)
             .GroupBy(item => item.Kind)
-            .Select(grp => $"{grp.Key}: { string.Join(", ", grp.Select(item => item.Label)) }")
+            .Select(grp => string.Join(" ", grp.Select(item => item.Label)))
             .Order();
         return string.Join("\n", itemTexts);
     }
@@ -32,14 +32,14 @@ public sealed class CompletionTests
         var itemTexts = CompletionHandler
             .GetCompletionItems(SourceLocation.EmptyAt(sourceText, caret), compilation, excludeReferencedCompilations: false)
             .GroupBy(item => item.Kind)
-            .Select(grp => $"{grp.Key}: { string.Join(", ", grp.Select(item => item.Label)) }")
+            .Select(grp => string.Join(" ", grp.Select(item => item.Label)))
             .Order();
         return string.Join("\n", itemTexts);
     }
 
     [Fact]
     public void Empty()
-        => InlineSnapshot.Validate(Items("|"), "Keyword: fun, var, let, namespace, return, if, while, using, struct, pub, true, false");
+        => InlineSnapshot.Validate(Items("|"), "fun var let namespace return if while using struct pub true false");
 
     [Fact]
     public void Nothing_Comment1()
@@ -90,14 +90,14 @@ public sealed class CompletionTests
 
     [Fact]
     public void InStruct()
-        => InlineSnapshot.Validate(ItemsWithBase("struct S { | }"), "Keyword: fun, pub, static, mut");
+        => InlineSnapshot.Validate(ItemsWithBase("struct S { | }"), "fun pub static mut");
     
     [Fact]
     public void AfterPub1()
-        => InlineSnapshot.Validate(ItemsWithBase("pub |"), "Keyword: fun, struct");
+        => InlineSnapshot.Validate(ItemsWithBase("pub |"), "fun struct");
     [Fact]
     public void AfterPub2()
-        => InlineSnapshot.Validate(ItemsWithBase("namespace Test; pub |"), "Keyword: fun, struct");
+        => InlineSnapshot.Validate(ItemsWithBase("namespace Test; pub |"), "fun struct");
 
     [Fact]
     public void Members1()
@@ -113,7 +113,10 @@ public sealed class CompletionTests
                                                  
                                                  let t: Test;   // Never mind the missing initializer
                                                  t.|
-                                                 """), "Function: Yes1, Yes2");
+                                                 """), """
+            Yes1
+            Yes2
+            """);
     [Fact]
     public void Members2()
         => InlineSnapshot.Validate(ItemsWithBase("""
@@ -127,7 +130,7 @@ public sealed class CompletionTests
                                                  }
                                                  
                                                  Test.|
-                                                 """), "Function: Yes");
+                                                 """), "Yes");
     [Fact]
     public void Members_ColorColor()
         => InlineSnapshot.Validate(ItemsWithBase("""
@@ -146,32 +149,32 @@ public sealed class CompletionTests
                                                     pub fun Do()
                                                     { Test.| }
                                                  }
-                                                 """), "Function: Yes1, Yes2, Yes3");
+                                                 """), """
+            Yes1
+            Yes2
+            Yes3
+            """);
     
     [Fact]
     public void AfterIf1()
-        => InlineSnapshot.Validate(Items("if (c) {} |"), """
-            Keyword: fun, var, let, return, if, else, while, struct, pub, true, false
-            """);
+        => InlineSnapshot.Validate(Items("if (c) {} |"), "fun var let return if else while struct pub true false");
     
     [Fact]
     public void AfterIf2()
-        => InlineSnapshot.Validate(Items("if (c) {}; |"), """
-            Keyword: fun, var, let, return, if, else, while, struct, pub, true, false
-            """);
+        => InlineSnapshot.Validate(Items("if (c) {}; |"), "fun var let return if else while struct pub true false");
 
     [Fact]
     public void StringInterpolation1()
         => InlineSnapshot.Validate(Items("let a = 10; \"te{|\";"), """
-            Function: a
-            Keyword: return, if, true, false
+            a
+            return if true false
             """);
     
     [Fact]
     public void StringInterpolation2()
         => InlineSnapshot.Validate(Items("let a = 10; \"te{|"), """
-            Function: a
-            Keyword: return, if, true, false
+            a
+            return if true false
             """);
 
     [Theory]
@@ -188,7 +191,7 @@ public sealed class CompletionTests
 
     [Fact]
     public void NamespaceFile()
-        => InlineSnapshot.Validate(ItemsWithBase("namespace Test; |"), "Keyword: fun, using, struct, pub");
+        => InlineSnapshot.Validate(ItemsWithBase("namespace Test; |"), "fun using struct pub");
     
     [Theory]
     [InlineData("|", true)]
