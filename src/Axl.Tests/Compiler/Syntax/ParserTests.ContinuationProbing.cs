@@ -99,7 +99,7 @@ public partial class ParserTests
         [Fact]
         public void Continuations_Var5()
             => InlineSnapshot.Validate(Continuations("let a = |"), """
-                return if break continue self mut true false Identifier NumberLiteral " ! ( { -
+                return if break continue self true false Identifier NumberLiteral " ! ( { -
                 """);
 
         [Fact]
@@ -165,19 +165,19 @@ public partial class ParserTests
         [Fact]
         public void Continuations_If1()
             => InlineSnapshot.Validate(Continuations("fun main() { if (x) {} | }"), """
-                var let return if else while break continue self mut true false Identifier NumberLiteral " . ; && || ! = ( { } [ + - * / == != < <= > >=
+                var let return if else while break continue self true false Identifier NumberLiteral " . ; && || ! = ( { } [ + - * / == != < <= > >=
                 """);
 
         [Fact]
         public void Continuations_If2()
             => InlineSnapshot.Validate(Continuations("fun main() { if (| }"), """
-                return if break continue self mut true false Identifier NumberLiteral " ! ( { -
+                return if break continue self true false Identifier NumberLiteral " ! ( { -
                 """);
 
         [Fact]
         public void Continuations_If3()
             => InlineSnapshot.Validate(Continuations("fun main() { if (x) {} el| }"), """
-                var let return if else while break continue self mut true false Identifier NumberLiteral " . ; && || ! = ( { } [ + - * / == != < <= > >=
+                var let return if else while break continue self true false Identifier NumberLiteral " . ; && || ! = ( { } [ + - * / == != < <= > >=
                 """);
 
         [Fact]

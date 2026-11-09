@@ -7,19 +7,7 @@ public partial class ParserTests
     public sealed class Stuff
     {
         [Fact]
-        public void MutExpr_1()
-            => InlineSnapshot.Validate(Tree("mut 1 + 2;"), """
-                ExprStmt
-                · MutExpr
-                · · 'mut'
-                · · BinaryExpr
-                · · · NumberLiteral '1'
-                · · · '+'
-                · · · NumberLiteral '2'
-                · ';'
-                """);
-        [Fact]
-        public void MutExpr_2()
+        public void Mut_Arg1()
             => InlineSnapshot.Validate(Tree("A(mut a);"), """
                 ExprStmt
                 · CallExpr
@@ -27,11 +15,91 @@ public partial class ParserTests
                 · · ArgList
                 · · · '('
                 · · · Arg
-                · · · · MutExpr
-                · · · · · 'mut'
-                · · · · · IdName 'a'
+                · · · · 'mut'
+                · · · · IdName 'a'
                 · · · ')'
                 · ';'
+                """);
+        [Fact]
+        public void Mut_Arg2()
+            => InlineSnapshot.Validate(Tree("A(mut a, mut b);"), """
+                ExprStmt
+                · CallExpr
+                · · IdName 'A'
+                · · ArgList
+                · · · '('
+                · · · Arg
+                · · · · 'mut'
+                · · · · IdName 'a'
+                · · · ','
+                · · · Arg
+                · · · · 'mut'
+                · · · · IdName 'b'
+                · · · ')'
+                · ';'
+                """);
+        [Fact]
+        public void Mut_Arg3()
+            => InlineSnapshot.Validate(Tree("A(mut mut a);"), """
+                ERROR MissingToken@[5, 5): Expected an expression.
+
+
+                ExprStmt
+                · CallExpr
+                · · IdName 'A'
+                · · ArgList
+                · · · '('
+                · · · Arg
+                · · · · 'mut'
+                · · · · IdName
+                · · · · · ??ID
+                · · · ??','
+                · · · Arg
+                · · · · 'mut'
+                · · · · IdName 'a'
+                · · · ')'
+                · ';'
+                """);
+
+        [Fact]
+        public void Mut_Param()
+            => InlineSnapshot.Validate(Tree("fun A(mut a: I32);"), """
+                FunDecl
+                · 'fun'
+                · FunName 'A'
+                · ParamList
+                · · '('
+                · · Param
+                · · · 'mut'
+                · · · IdName 'a'
+                · · · TypeAnnotationClause
+                · · · · ':'
+                · · · · IdName 'I32'
+                · · ')'
+                · FunBody ';'
+                """);
+        [Fact]
+        public void Mut_Return()
+            => InlineSnapshot.Validate(Tree("return mut a;"), """
+                ExprStmt
+                · ReturnExpr
+                · · 'return'
+                · · 'mut'
+                · · IdName 'a'
+                · ';'
+                """);
+        [Fact]
+        public void Mut_ExprBody()
+            => InlineSnapshot.Validate(Tree("fun A() = mut a;"), """
+                FunDecl
+                · 'fun'
+                · FunName 'A'
+                · ParamList '(' ')'
+                · FunBody
+                · · '='
+                · · 'mut'
+                · · IdName 'a'
+                · · ';'
                 """);
 
         [Fact]

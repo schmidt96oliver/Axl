@@ -89,14 +89,14 @@ public sealed class CompletionTests
     public void StringInterpolation1()
         => InlineSnapshot.Validate(Items("let a = 10; \"te{|\";"), """
             Function: a
-            Keyword: return, if, break, continue, self, mut, true, false
+            Keyword: return, if, break, continue, self, true, false
             """);
     
     [Fact]
     public void StringInterpolation2()
         => InlineSnapshot.Validate(Items("let a = 10; \"te{|"), """
             Function: a
-            Keyword: return, if, break, continue, self, mut, true, false
+            Keyword: return, if, break, continue, self, true, false
             """);
 
     [Theory]
@@ -105,9 +105,9 @@ public sealed class CompletionTests
     [InlineData("using Test; |", false)]
     [InlineData("let a = 1; |", false)]
     [InlineData("{ | }", false)]
-    public void Namespace(string input, bool namespaceAvailable)
+    public void Namespace(string input, bool available)
     {
-        if (namespaceAvailable) ItemsWithBase(input).ShouldContain("namespace");
+        if (available) ItemsWithBase(input).ShouldContain("namespace");
         else ItemsWithBase(input).ShouldNotContain("namespace");
     }
 
@@ -122,9 +122,42 @@ public sealed class CompletionTests
     [InlineData("using Test; let a = 1; |", false)]
     [InlineData("let a = 1; |", false)]
     [InlineData("{ | }", false)]
-    public void Using(string input, bool namespaceAvailable)
+    public void Using(string input, bool available)
     {
-        if (namespaceAvailable) ItemsWithBase(input).ShouldContain("using");
+        if (available) ItemsWithBase(input).ShouldContain("using");
         else ItemsWithBase(input).ShouldNotContain("using");
+    }
+    
+    [Theory]
+    [InlineData("|", false)]
+    [InlineData("namespace Test; |", false)]
+    [InlineData("struct Test { | }", true)]
+    [InlineData("fun A(|", true)]
+    [InlineData("fun A(mut |", false)]
+    [InlineData("fun A()|", false)]
+    [InlineData("fun A(): |", true)]
+    [InlineData("fun A(): mut |", false)]
+    public void Mut_Declaration(string input, bool available)
+    {
+        if (available) ItemsWithBase(input).ShouldContain("mut");
+        else ItemsWithBase(input).ShouldNotContain("mut");
+    }
+    
+    [Theory]
+    [InlineData("let a = 1; |", false)]
+    [InlineData("let a = |", false)]
+    [InlineData("{ | }", false)]
+    [InlineData("Call(|", true)]
+    [InlineData("Call(mut |", false)]
+    [InlineData("Call(a, |", true)]
+    [InlineData("Call(a, mut |", false)]
+    [InlineData("return |", true)]
+    [InlineData("return mut |", false)]
+    [InlineData("fun A() = |", true)]
+    [InlineData("fun A() = mut |", false)]
+    public void Mut_Stmt(string input, bool available)
+    {
+        if (available) ItemsWithBase(input).ShouldContain("mut");
+        else ItemsWithBase(input).ShouldNotContain("mut");
     }
 }

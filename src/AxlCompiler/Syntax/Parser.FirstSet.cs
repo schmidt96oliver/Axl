@@ -16,7 +16,7 @@ public partial class Parser
     /// </remarks>
     private static class FirstSet
     {
-        public static readonly TokenSet Expr = TokenSet.Of(TokenKind.MutKw,
+        public static readonly TokenSet Expr = TokenSet.Of(
             TokenKind.TrueKw, TokenKind.FalseKw,
             TokenKind.NumberLiteral,
             TokenKind.Identifier,
@@ -56,6 +56,9 @@ public partial class Parser
         public static readonly TokenSet FunDeclAfterHeader =
             TokenSet.Of(TokenKind.StaticKw, TokenKind.MutKw, TokenKind.FunKw);
 
+        public static readonly TokenSet FunDeclRecovery =
+            Annotation | TokenKind.PubKw | TokenKind.StaticKw | TokenKind.FunKw;
+        
         public static readonly TokenSet FunDecl = Annotation | TokenKind.PubKw | FunDeclAfterHeader;
 
         public static readonly TokenSet FunName = TokenSet.Of(TokenKind.Identifier,

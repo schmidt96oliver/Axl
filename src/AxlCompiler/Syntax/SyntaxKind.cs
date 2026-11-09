@@ -56,7 +56,6 @@ public enum SyntaxKind
     
     BlockExpr,
     IfExpr,
-    MutExpr,
     
     // Clauses
     Arg,

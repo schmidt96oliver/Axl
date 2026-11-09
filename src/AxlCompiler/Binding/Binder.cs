@@ -631,8 +631,8 @@ public sealed class Binder(Scope scope, BinderSideEffects sideEffects)
         // --- Expression body
         if (syntax.IsExpressionBodied)
         {
-            var value = bodyBinder.BindReturnValue(syntax.Expr, out var isMutReturn);
-            return new BoundBlock([new BoundReturn(value, isMutReturn, NeverType)], Unit);
+            var value = bodyBinder.BindReturnValue(syntax.Expr, syntax.MutKw);
+            return new BoundBlock([new BoundReturn(value, isMut: syntax.MutKw is not null, NeverType)], Unit);
         }
 
         // --- Block body
@@ -880,7 +880,6 @@ public sealed class Binder(Scope scope, BinderSideEffects sideEffects)
         SelfSyntax selfSyntax => BindSelf(selfSyntax),
         CallExprSyntax callExprSyntax => BindCall(callExprSyntax),
         SubscriptExprSyntax subscriptExprSyntax => BindSubscript(subscriptExprSyntax),
-        MutExprSyntax => BindError(syntax, new Diagnostic.MutNotAllowedHere(syntax)),
         
         // Strings and Literals
         NumberLiteralSyntax numberLiteralSyntax => BindNumberLiteral(numberLiteralSyntax, numberLiteralSyntax.Token.Suffix),
@@ -1368,38 +1367,29 @@ public sealed class Binder(Scope scope, BinderSideEffects sideEffects)
             return new BoundReturn(null, isMut: false, NeverType, syntax);
         }
 
-        var value = BindReturnValue(syntax.Expr, out var isMutReturn);
-        return new BoundReturn(value, isMutReturn, NeverType, syntax);
+        var value = BindReturnValue(syntax.Expr, syntax.MutKw);
+        return new BoundReturn(value, isMut: syntax.MutKw is not null, NeverType, syntax);
     }
 
-    private BoundValue BindReturnValue(ExprSyntax syntax, out bool isMutReturn)
+    private BoundValue BindReturnValue(ExprSyntax syntax, Token? mutKw)
     {
         if (Scope.OwnerAsFun is not FunSymbol fun)
             throw new InvalidOperationException("Return values can only be bound on fun bodies.");
 
-        if (syntax is MutExprSyntax mutExprSyntax)
+        if (mutKw is not null)
         {
             if (!fun.IsReturnMut)
-            {
-                isMutReturn = false;
-                return BindError(syntax, new Diagnostic.UnexpectedMutReturn(mutExprSyntax, fun));
-            }
-
-            isMutReturn = true;
-
-            var mutValue = BindValue(mutExprSyntax.Expr, ValueUsage.ReturnAsMut);
+                return BindError(syntax, new Diagnostic.UnexpectedMutReturn(mutKw, fun));
+            
+            var mutValue = BindValue(syntax, ValueUsage.ReturnAsMut);
             if (!CheckType(mutValue, fun.ReturnType))
-                return new BoundError(ErrorType, mutExprSyntax.Expr);
+                return new BoundError(ErrorType, syntax);
             return mutValue;
         }
 
         if (fun.IsReturnMut)
-        {
-            isMutReturn = false;
             return BindError(syntax, new Diagnostic.MissingMutReturn(syntax, fun));
-        }
 
-        isMutReturn = false;
         var value = BindValue(syntax, ValueUsage.Read);
         if (!CheckType(value, fun.ReturnType))
             return new BoundError(ErrorType, syntax);
@@ -2115,9 +2105,9 @@ public sealed class Binder(Scope scope, BinderSideEffects sideEffects)
 
     private BoundArgument BindArgument(ArgSyntax syntax)
     {
-        if (syntax.Expr is MutExprSyntax mutExpr)
+        if (syntax.MutKw is not null)
         {
-            var value = BindValue(mutExpr.Expr, ValueUsage.PassAsMut);
+            var value = BindValue(syntax.Expr, ValueUsage.PassAsMut);
             return new BoundArgument(syntax.Name, value, isMut: true, syntax);
         }
         return new BoundArgument(syntax.Name, BindValue(syntax.Expr, ValueUsage.Read), isMut: false, syntax);

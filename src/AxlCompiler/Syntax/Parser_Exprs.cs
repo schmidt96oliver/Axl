@@ -1,6 +1,5 @@
 using System.Collections.Immutable;
 using System.Diagnostics;
-using System.Runtime.CompilerServices;
 using AxlCompiler.Diagnostics;
 
 // ReSharper disable UnusedMethodReturnValue.Local
@@ -123,15 +122,6 @@ public partial class Parser
         if (_scanner.IsAt(TokenKind.OpenParen))
             return EatGroupExpr(anchor);
         
-        // --- Mut Expr
-        if (_scanner.IsAt(TokenKind.MutKw))
-        {
-            var mutExpr = _scanner.Open();
-            _scanner.EatKnown(TokenKind.MutKw);
-            EnsureExpr(anchor);
-            return _scanner.Close(mutExpr, SyntaxKind.MutExpr);
-        }
-        
         // --- Blocks, Control Flow
         if (_scanner.IsAt(TokenKind.OpenBrace))
             return EnsureBlock(anchor);
@@ -149,6 +139,7 @@ public partial class Parser
         {
             var returnExpr = _scanner.Open();
             _scanner.EatKnown(TokenKind.ReturnKw);
+            _scanner.EatIfPresent(TokenKind.MutKw);
             if (_scanner.IsAt(FirstSet.Expr))
                 EnsureExpr(anchor);
             return _scanner.Close(returnExpr, SyntaxKind.ReturnExpr);
@@ -280,7 +271,7 @@ public partial class Parser
             openToken: TokenKind.OpenParen,
             closeToken: TokenKind.CloseParen,
             listKind: SyntaxKind.ArgList,
-            itemFirst: FirstSet.Expr,
+            itemFirst: FirstSet.Expr | TokenKind.MutKw,
             allowEmpty: true,
             ensureItem: EnsureArg, 
             expectedOpenSyntax: null,
@@ -288,7 +279,7 @@ public partial class Parser
 
         MarkClose EnsureArg(Anchor argAnchor)
         {
-            // Arg can be "name = EXPR" or "EXPR"
+            // (IdName "=")? "mut"? Expr
             
             var arg = _scanner.Open();
             
@@ -298,6 +289,8 @@ public partial class Parser
                 _scanner.EatInto(SyntaxKind.IdName);
                 _scanner.EatKnown(TokenKind.Equal);
             }
+            
+            _scanner.EatIfPresent(TokenKind.MutKw);
             
             EnsureExpr(argAnchor);
             return _scanner.Close(arg, SyntaxKind.Arg);

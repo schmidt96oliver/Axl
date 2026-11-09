@@ -806,19 +806,10 @@ public partial record Diagnostic
             $"Cannot build interpolated string, because '{String.FullName}.{Names.StringConcatMethod}' does not exist.";
     }
 
-    public sealed record MutNotAllowedHere(SyntaxNode Syntax) : Error
+    public sealed record UnexpectedMutReturn(Token MutKw, FunSymbol Fun) : Error
     {
         /// <inheritdoc />
-        public override ImmutableArray<SourceLocation> Locations => [Syntax.Location];
-
-        /// <inheritdoc />
-        public override string Message => "'mut' is only allowed on arguments or after return.";
-    }
-
-    public sealed record UnexpectedMutReturn(MutExprSyntax Syntax, FunSymbol Fun) : Error
-    {
-        /// <inheritdoc />
-        public override ImmutableArray<SourceLocation> Locations => [Syntax.MutKw.Location];
+        public override ImmutableArray<SourceLocation> Locations => [MutKw.Location];
 
         /// <inheritdoc />
         public override string Message =>
@@ -973,7 +964,7 @@ public partial record Diagnostic
     {
         /// <inheritdoc />
         public override ImmutableArray<SourceLocation> Locations =>
-            [(ArgSyntax.Expr as MutExprSyntax)?.MutKw.Location ?? ArgSyntax.Location];
+            [ArgSyntax.MutKw?.Location ?? ArgSyntax.Location];
 
         /// <inheritdoc />
         public override string Message => "‘mut‘ is not valid in type initializers.";

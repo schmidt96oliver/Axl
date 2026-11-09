@@ -227,6 +227,7 @@ public partial class Parser
         {
             _scanner.EatKnown(TokenKind.Equal);
 
+            _scanner.EatIfPresent(TokenKind.MutKw);
             EnsureExpr(anchor);
             EnsureToken(TokenKind.Semicolon);
         }

@@ -129,26 +129,24 @@ public partial class Parser
 
     private void EatNamespaceFile()
     {
-        var fileAnchor = Anchor.Forced | FirstSet.StructDecl | FirstSet.FunDecl;
+        var fileAnchor = Anchor.Forced | FirstSet.StructDecl | FirstSet.FunDeclRecovery;
 
         foreach (var _ in _scanner.MustEatEachIteration())
         {
             if (_scanner.IsAt(FirstSet.StructDecl | FirstSet.FunDecl))
                 EatMember(fileAnchor, allowedAfterHeader: FirstSet.StructDeclAfterHeader | FirstSet.FunDeclAfterHeader);
             else
-                RecoverToAndReport(fileAnchor, ExpectedSyntax.Member);
+                RecoverToAndReport(fileAnchor | FirstSet.FunDecl, ExpectedSyntax.Member);
         }
     }
 
     private void EatScriptFile()
     {
-        var fileAnchor = Anchor.Forced | FirstSet.StructDecl | FirstSet.FunDecl | FirstSet.NonExprStmt;
+        var fileAnchor = Anchor.Forced | FirstSet.StructDecl | FirstSet.FunDeclRecovery | FirstSet.NonExprStmt;
 
         foreach (var _ in _scanner.MustEatEachIteration())
         {
-            if (_scanner.IsAt(TokenKind.MutKw) && _scanner.IsAt(TokenKind.FunKw, skip: 1))
-                EatMember(fileAnchor, allowedAfterHeader: FirstSet.FunDeclAfterHeader);
-            else if (_scanner.IsAt(FirstSet.Stmt))
+            if (_scanner.IsAt(FirstSet.Stmt))
                 EatStmt(fileAnchor | TokenKind.Semicolon);
             else if (_scanner.IsAt(FirstSet.StructDecl | FirstSet.FunDecl))
                 EatMember(fileAnchor, allowedAfterHeader: FirstSet.StructDeclAfterHeader | FirstSet.FunDeclAfterHeader);

@@ -14,7 +14,7 @@ MemberDecl       = FnDecl | StructDecl
                 
 FunDecl          = Annotation* "pub"? "static"? "mut"? "fun" FunName TypeParamList? ParamList ReturnTypeAnnotation? FunBody
 FunName          = Identifier | "+" | "-" | "*" | "/" | "<" | "<=" | ">" | ">=" |"==" | "!=" | "!"
-FunBody          = "=>" Expr ";"
+FunBody          = "=>" "mut"? Expr ";"
                 | BlockExpr
                 | ";"
 ReturnTypeAnnotation = ":" "mut"? TypeName
@@ -54,9 +54,6 @@ Expr        = BlockExpr
             | Call
             | MemberAccess
             | AssignExpr
-            | MutExpr
-
-MutExpr     = "mut" Expr
 
 BlockExpr   = "{" Stmt* "}"
 
@@ -77,7 +74,7 @@ Call        = Expr ArgList
 
 ArgList     = "(" ")"
             | "(" Arg ("," Arg)* ")"
-Arg         = Expr
+Arg         = (IdName "=") "mut"? Expr
 
 StringExpr            = StringStart (StringText | StringInterpolation)* StringEnd
 StringInterpolation   = "{" Expr? "}"
@@ -85,7 +82,7 @@ StringInterpolation   = "{" Expr? "}"
 
 Break       = "break"
 Continue    = "continue"
-Return      = "return" Expr?
+Return      = "return" ("mut"? Expr)?
 
 ## Type Names
 TypeName        = IdName 
