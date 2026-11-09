@@ -1,0 +1,12 @@
+﻿using System.Collections.Immutable;
+
+namespace AxlCompiler.Syntax.Tree;
+
+public sealed class IdNameSyntax(ImmutableArray<SyntaxElement> children)
+    : ExprSyntax(SyntaxKind.IdName, children)
+{
+    public IdentifierToken Token => Children.FirstNonTriviaToken() as IdentifierToken
+                                    ?? throw new ArgumentException(
+                                        $"Token on {nameof(IdNameSyntax)} was not {nameof(IdentifierToken)}",
+                                        nameof(children));
+}

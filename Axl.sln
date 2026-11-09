@@ -1,12 +1,10 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Axl", "src\Axl\Axl.csproj", "{93F0DF31-4DB4-4D70-B4C3-57600614A4A5}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AxlLsp", "src\AxlLsp\AxlLsp.csproj", "{93F0DF31-4DB4-4D70-B4C3-57600614A4A5}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Axl.Compiler", "src\Axl.Compiler\Axl.Compiler.csproj", "{51B5B62B-5899-4926-9933-C2C3928B8B5C}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AxlCompiler", "src\AxlCompiler\AxlCompiler.csproj", "{51B5B62B-5899-4926-9933-C2C3928B8B5C}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Axl.Benchmarks", "benchmarks\Axl.Benchmarks\Axl.Benchmarks.csproj", "{C2A5E6B4-D8A4-4E91-92B6-4165D584DF62}"
-EndProject
-Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Scratch", "Scratch", "{7497C523-8AFC-4100-981F-F755FB2244B1}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Axl.Tests", "src\Axl.Tests\Axl.Tests.csproj", "{CE82BE1A-FFA8-4824-9165-6BD1D8C93312}"
 EndProject
@@ -49,6 +47,5 @@ Global
 		{B7F19E6B-689B-4104-A9BB-0B488B77CFFC}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(NestedProjects) = preSolution
-		{C2A5E6B4-D8A4-4E91-92B6-4165D584DF62} = {7497C523-8AFC-4100-981F-F755FB2244B1}
 	EndGlobalSection
 EndGlobal

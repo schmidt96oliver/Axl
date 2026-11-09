@@ -21,6 +21,6 @@
     </ItemGroup>
 
     <ItemGroup>
-      <ProjectReference Include="..\Axl.Compiler\Axl.Compiler.csproj" />
+      <ProjectReference Include="..\AxlCompiler\AxlCompiler.csproj" />
     </ItemGroup>
 </Project>

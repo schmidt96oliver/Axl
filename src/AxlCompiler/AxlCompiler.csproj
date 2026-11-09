@@ -1,0 +1,36 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+    <PropertyGroup>
+        <TargetFramework>net11.0</TargetFramework>
+        <ImplicitUsings>enable</ImplicitUsings>
+        <Nullable>enable</Nullable>
+        <LangVersion>15</LangVersion>
+        <OutputType>Exe</OutputType>
+    </PropertyGroup>
+
+    <PropertyGroup Condition=" '$(Configuration)' == 'Debug' ">
+      <DocumentationFile>C:\Users\schmi\Source\Axl\artifacts\bin\AxlCompiler\debug\AxlCompiler.xml</DocumentationFile>
+    </PropertyGroup>
+
+    <PropertyGroup Condition=" '$(Configuration)' == 'Release' ">
+      <DocumentationFile>C:\Users\schmi\Source\Axl\artifacts\bin\AxlCompiler\release\AxlCompiler.xml</DocumentationFile>
+    </PropertyGroup>
+
+    <ItemGroup>
+        <AssemblyAttribute Include="System.Runtime.CompilerServices.InternalsVisibleToAttribute">
+            <_Parameter1>Axl.Compiler.UnitTests</_Parameter1>
+        </AssemblyAttribute>
+        <AssemblyAttribute Include="System.Runtime.CompilerServices.InternalsVisibleToAttribute">
+            <_Parameter1>Axl.Tests</_Parameter1>
+        </AssemblyAttribute>
+    </ItemGroup>
+
+    <ItemGroup>
+        <None Include="..\BaseLib\**\*.axl"
+              Exclude="..\BaseLib\bin\**;..\BaseLib\obj\**"
+              LinkBase="BaseLib"
+              CopyToOutputDirectory="PreserveNewest"
+              Visible="false"/>
+    </ItemGroup>
+    
+</Project>

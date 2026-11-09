@@ -1,0 +1,35 @@
+﻿using AxlCompiler.Text;
+
+namespace AxlCompiler.Syntax;
+
+public enum NumberLiteralSuffix
+{
+    None,
+    I32,
+    I64,
+    F32,
+    F64,
+}
+
+public sealed class NumberLiteralToken(SourceRange range, string body, NumberLiteralSuffix suffix, SourceRange suffixRange) 
+    : Token(range, TokenKind.NumberLiteral, isMissing: body.Length == 0)
+{
+    /// <summary>
+    /// Empty, if <see cref="Token.IsMissing"/> is <c>true</c>.
+    /// Otherwise, one of these forms:
+    /// <list type="bullet">
+    /// <item>0x[0-9A-Fa-f]+</item>
+    /// <item>0b[01]+</item>
+    /// <item>[0-9]*.[0-9]+</item>
+    /// <item>[0-9]+</item>
+    /// </list>
+    /// Underscores have been removed.
+    /// </summary>
+    public string Body { get; } = body;
+
+    public NumberLiteralSuffix Suffix { get; } = suffix;
+
+    public SourceRange SuffixRange { get; } = suffixRange;
+
+    public bool HasDecimalPoint => Body.Contains('.');
+}

@@ -1,0 +1,24 @@
+﻿using AxlCompiler.Binding.BoundTree;
+using AxlCompiler.Symbols;
+using AxlCompiler.Syntax;
+
+namespace AxlCompiler.Mir;
+
+public closed record Operand(TypeSymbol Type, SyntaxNode? Syntax)
+{
+    public sealed record Copy(Place Place, SyntaxNode? Syntax = null) 
+        : Operand(Place.Type, Syntax);
+
+    public sealed record Ref(Place Place, TypeSymbol Type, SyntaxNode? Syntax = null) : 
+        Operand(Type, Syntax);
+    
+    public sealed record Const(ConstValue Value, TypeSymbol Type, SyntaxNode? Syntax = null) 
+        : Operand(Type, Syntax);
+
+    public sealed record Empty(TypeSymbol Type, SyntaxNode? Syntax = null) 
+        : Operand(Type, Syntax);
+
+    public sealed record Unreachable(TypeSymbol Type) : Operand(Type, null);
+
+    public sealed record Error(TypeSymbol Type) : Operand(Type, null);
+}

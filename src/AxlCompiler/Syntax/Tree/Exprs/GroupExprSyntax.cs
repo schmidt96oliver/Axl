@@ -1,0 +1,9 @@
+﻿using System.Collections.Immutable;
+
+namespace AxlCompiler.Syntax.Tree;
+
+public sealed class GroupExprSyntax(ImmutableArray<SyntaxElement> children)
+    : ExprSyntax(SyntaxKind.GroupExpr, children)
+{
+    public ExprSyntax Inner => Children.FirstOfType<ExprSyntax>();
+}

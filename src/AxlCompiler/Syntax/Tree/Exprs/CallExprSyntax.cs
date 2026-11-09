@@ -1,0 +1,11 @@
+﻿using System.Collections.Immutable;
+
+namespace AxlCompiler.Syntax.Tree;
+
+public sealed class CallExprSyntax(ImmutableArray<SyntaxElement> children)
+    : ExprSyntax(SyntaxKind.CallExpr, children)
+{
+    public ExprSyntax Callee => Children.FirstOfType<ExprSyntax>();
+
+    public ArgListSyntax ArgList => Children.FirstOfType<ArgListSyntax>();
+}

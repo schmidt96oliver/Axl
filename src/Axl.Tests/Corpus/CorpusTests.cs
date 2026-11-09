@@ -1,5 +1,5 @@
-﻿using Axl.Compiler.Testing;
-using Axl.Compiler.Text;
+﻿using AxlCompiler.Testing;
+using AxlCompiler.Text;
 
 namespace Axl.Tests.Corpus;
 

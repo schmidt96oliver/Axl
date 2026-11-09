@@ -1,10 +1,10 @@
 # ------------------------------------ Axl Project ------------------------------------
                                        ≽(◕ ᴗ ◕)≼                                      
 
-* Parser: Freeze and stop after probe, missing inserted
-
 * Completion Context
-  * `mut` only in valid position; reject `mut mut`
+  * `break, continue` -> Binder probe to get scope
+  * `self` -> Binder probe to get scope
+  * `mut` -> Parent is Arg, Param, or return value 
   * Fun modifiers (static -> not mut)
   * Stmt in namespace file
   * Comments

@@ -1,0 +1,503 @@
+﻿using System.Collections.Immutable;
+using System.Diagnostics;
+using System.Text;
+using AxlCompiler.Diagnostics;
+using AxlCompiler.Text;
+
+namespace AxlCompiler.Syntax;
+
+public sealed class Lexer
+{
+    private ref struct Scanner(SourceText sourceText, DiagnosticBag diagnosticBag)
+    {
+        public readonly DiagnosticBag DiagnosticBag = diagnosticBag;
+        public readonly SourceText SourceText = sourceText;
+        
+        private int _start = 0, _next = 0;
+        private ImmutableArray<Token>.Builder _tokens = ImmutableArray.CreateBuilder<Token>();
+
+        public bool IsAtEnd
+            => _next >= SourceText.Length;
+
+        public ReadOnlySpan<char> CurrentText
+            => SourceText[_start.._next];
+
+        public int StartIndex => _start;
+
+        public int NextIndex => _next;
+
+        
+        public char Peek(int skip = 0)
+        {
+            Debug.Assert(skip >= 0);
+            return _next + skip < SourceText.Length ? SourceText[_next + skip] : '\0';
+        }
+
+        public char Advance()
+        {
+            Debug.Assert(_next < SourceText.Length);
+            return SourceText[_next++];
+        }
+
+        public void AdvanceWhile(Func<char, bool> predicate)
+        {
+            while (!IsAtEnd && predicate(Peek()))
+                Advance();
+        }
+
+        public bool Match(char expected)
+        {
+            if (Peek() == expected)
+            {
+                Advance();
+                return true;
+            }
+
+            return false;
+        }
+
+        public Token LastToken => _tokens[^1];
+
+        
+        public void AddToken(TokenKind kind)
+        {
+            Debug.Assert(_next > _start);
+            
+            _tokens.Add(Token.MakeSimple(SourceRange.FromBounds(_start, _next), kind));
+            _start = _next;
+        }
+
+        public void AddUnknownCharacter()
+        {
+            Debug.Assert(_next == _start + 1);
+            
+            // Note: No diagnostic reported here. The parser is bound to
+            // complain about an invalid character token, so it will
+            // report the appropriate diagnostic.
+            
+            // Combine, if previous token was error as well
+            var range = SourceRange.FromLength(_start, 1);
+            if (_tokens.Count > 0 && _tokens[^1].Kind is TokenKind.UnknownCharacters)
+            {
+                _tokens[^1] = Token.MakeSimple(
+                    SourceRange.FromTo(_tokens[^1].FullRange, range),
+                    TokenKind.UnknownCharacters);
+            }
+            else
+                _tokens.Add(Token.MakeSimple(range, TokenKind.UnknownCharacters));
+
+            _start = _next;
+        }
+
+        public void AddStringText(string processedText)
+        {
+            Debug.Assert(_next > _start);
+            _tokens.Add(Token.MakeStringText(SourceRange.FromBounds(_start, _next), processedText));
+            _start = _next;
+        }
+
+        public void AddIdentifier()
+        {
+            Debug.Assert(_next > _start);
+            _tokens.Add(Token.MakeIdentifier(SourceRange.FromBounds(_start, _next),
+                SourceText[_start.._next].ToString()));
+            _start = _next;
+        }
+
+        public void AddNumberLiteralWithoutSuffix(string body)
+        {
+            Debug.Assert(_next > _start);
+            var range = SourceRange.FromBounds(_start, _next);
+            var suffixRange = SourceRange.EmptyAfter(range);
+            _tokens.Add(Token.MakeNumberLiteral(range, body, NumberLiteralSuffix.None, suffixRange));
+            _start = _next;
+        }
+        
+        public void AddNumberLiteralWithSuffix(string body, NumberLiteralSuffix suffix, SourceRange suffixRange)
+        {
+            Debug.Assert(_next > _start);
+            
+            var range = SourceRange.FromBounds(_start, _next);
+            Debug.Assert(range.Contains(suffixRange));
+            
+            _tokens.Add(Token.MakeNumberLiteral(range, body, suffix, suffixRange));
+            _start = _next;
+        }
+
+        public void AddEof()
+        {
+            Debug.Assert(IsAtEnd);
+            Debug.Assert(_start == _next, "Every token must have been added before Eof.");
+
+            _tokens.Add(Token.MakeSimple(SourceRange.FromBounds(_start, _next), TokenKind.Eof));
+        }
+
+
+        public ImmutableArray<Token> DrainTokens()
+            => _tokens.DrainToImmutable();
+    }
+    
+    
+    public static ImmutableArray<Token> Lex(SourceText sourceText, DiagnosticBag diagnosticBag)
+    {
+        var scanner = new Scanner(sourceText, diagnosticBag);
+        while (!scanner.IsAtEnd)
+            LexSingle(ref scanner);
+        scanner.AddEof();
+        return scanner.DrainTokens();
+    }
+
+    private static void LexSingle(ref Scanner scanner)
+    {
+        Debug.Assert(!scanner.IsAtEnd);
+        switch (scanner.Advance())
+        {
+            // --- Whitespace
+            case var c when char.IsWhiteSpace(c):
+                scanner.AdvanceWhile(char.IsWhiteSpace);
+                scanner.AddToken(TokenKind.Whitespace);
+                break;
+
+            // --- Comment
+            case '/' when scanner.Match('/'):
+                scanner.AdvanceWhile(c => c is not ('\n' or '\r'));
+                scanner.AddToken(TokenKind.Comment);
+                break;
+
+            // --- Identifier or Keyword
+            case var c when char.IsAsciiLetter(c) || c is '_':
+                scanner.AdvanceWhile(cc => char.IsAsciiLetterOrDigit(cc) || cc is '_');
+                AddIdentifierOrKeyword(ref scanner);
+                break;
+
+            // --- Numbers
+            case var c when char.IsAsciiDigit(c):
+            case '.' when char.IsAsciiDigit(scanner.Peek()):
+                LexNumber(ref scanner);
+                break;
+            
+            // --- String
+            case '\"':
+                LexString(ref scanner);
+                break;
+
+            // --- Symbols
+            // !!! When adding symbols, also update SyntaxFacts.IsOperator !!!
+            case '.':
+                scanner.AddToken(TokenKind.Dot);
+                break;
+            case ',':
+                scanner.AddToken(TokenKind.Comma);
+                break;
+            case ';':
+                scanner.AddToken(TokenKind.Semicolon);
+                break;
+            case ':':
+                scanner.AddToken(TokenKind.Colon);
+                break;
+            
+            case '{':
+                scanner.AddToken(TokenKind.OpenBrace);
+                break;
+            case '}':
+                scanner.AddToken(TokenKind.CloseBrace);
+                break;
+            case '(':
+                scanner.AddToken(TokenKind.OpenParen);
+                break;
+            case ')':
+                scanner.AddToken(TokenKind.CloseParen);
+                break;
+            case '[':
+                scanner.AddToken(TokenKind.OpenBracket);
+                break;
+            case ']':
+                scanner.AddToken(TokenKind.CloseBracket);
+                break;
+
+            case '=':
+                scanner.AddToken(scanner.Match('=') ? TokenKind.DoubleEqual : TokenKind.Equal);
+                break;
+
+            case '!':
+                scanner.AddToken(scanner.Match('=') ? TokenKind.BangEqual : TokenKind.Bang);
+                break;
+            
+            case '&' when scanner.Match('&'):
+                scanner.AddToken(TokenKind.DoubleAmpersand);
+                break;
+            
+            case '|' when scanner.Match('|'):
+                scanner.AddToken(TokenKind.DoubleVerticalBar);
+                break;
+
+            case '-':
+                scanner.AddToken(TokenKind.Minus);
+                break;
+            case '+':
+                scanner.AddToken(TokenKind.Plus);
+                break;
+            case '*':
+                scanner.AddToken(TokenKind.Star);
+                break;
+            case '/':
+                scanner.AddToken(TokenKind.Slash);
+                break;
+
+            case '<':
+                scanner.AddToken(scanner.Match('=')
+                    ? TokenKind.LessThanEqual
+                    : TokenKind.LessThan);
+                break;
+
+            case '>':
+                scanner.AddToken(scanner.Match('=')
+                    ? TokenKind.GreaterThanEqual
+                    : TokenKind.GreaterThan);
+                break;
+            
+            case '@':
+                scanner.AddToken(TokenKind.At);
+                break;
+            
+            default:
+                scanner.AddUnknownCharacter();
+                break;
+        }
+    }
+
+    private static void AddIdentifierOrKeyword(ref Scanner scanner)
+    {
+        var text = scanner.CurrentText;
+        
+        if (SyntaxFacts.GetKeywordKind(text) is TokenKind keywordKind)
+            scanner.AddToken(keywordKind);
+        else
+            scanner.AddIdentifier();
+    }
+
+    private static void LexNumber(ref Scanner scanner)
+    {
+        Debug.Assert(scanner.CurrentText.Length == 1);
+        Debug.Assert(char.IsAsciiDigit(scanner.CurrentText[0]) || scanner.CurrentText is ".");
+
+        var bodyBuilder = new StringBuilder();
+        
+        // --- Hex form?
+        if (scanner.CurrentText is "0" && scanner.Peek() is 'x' && char.IsAsciiHexDigit(scanner.Peek(1)))
+        {
+            scanner.Advance();  // x
+            bodyBuilder.Append(scanner.CurrentText);  // 0x
+            
+            AdvanceBody(ref scanner, char.IsAsciiHexDigit);
+            scanner.AddNumberLiteralWithoutSuffix(bodyBuilder.ToString());
+            return;
+        }
+        
+        // --- Binary form?
+        if (scanner.CurrentText is "0" && scanner.Peek() is 'b' && scanner.Peek(1) is '0' or '1')
+        {
+            scanner.Advance();  // b
+            bodyBuilder.Append(scanner.CurrentText); // 0b
+            
+            AdvanceBody(ref scanner, c => c is '0' or '1');
+            scanner.AddNumberLiteralWithoutSuffix(bodyBuilder.ToString());
+            return;
+        }
+
+        // --- Digits including dot
+        bodyBuilder.Append(scanner.CurrentText);    // Digit or .
+        AdvanceBody(ref scanner, char.IsAsciiDigit);
+
+        if (scanner.CurrentText[0] is not '.' && scanner.Peek() is '.' && char.IsAsciiDigit(scanner.Peek(1)))
+        {
+            bodyBuilder.Append(scanner.Advance()); // .
+            bodyBuilder.Append(scanner.Advance()); // digit
+            
+            AdvanceBody(ref scanner, char.IsAsciiDigit);
+        }
+
+        // --- Suffix
+        if (char.IsAsciiLetter(scanner.Peek()))
+        {
+            // Advance an entire identifier
+            var suffixStart = scanner.CurrentText.Length;
+            scanner.AdvanceWhile(c => char.IsAsciiLetterOrDigit(c) || c is '_');
+            
+            // Parse it as a suffix
+            var suffix = scanner.CurrentText[suffixStart..] switch
+            {
+                "i32" => NumberLiteralSuffix.I32,
+                "i64" => NumberLiteralSuffix.I64,
+                "f32" => NumberLiteralSuffix.F32,
+                "f64" => NumberLiteralSuffix.F64,
+                _ => NumberLiteralSuffix.None
+            };
+
+            var suffixRange = SourceRange.FromBounds(scanner.StartIndex + suffixStart, scanner.NextIndex);
+            
+            // Invalid?
+            if (suffix is NumberLiteralSuffix.None)
+            {
+                // Suffix is invalid. Report an error and let suffix be Unit.
+                // The invalid suffix text will be part of the token, but practically,
+                // this will never be read. The block is still valid.
+                
+                scanner.DiagnosticBag.ReportError(new Diagnostic.UnknownNumberSuffix(
+                    new SourceLocation(scanner.SourceText, suffixRange)));
+            }
+            
+            scanner.AddNumberLiteralWithSuffix(bodyBuilder.ToString(), suffix, suffixRange);
+            return;
+        }
+        
+        scanner.AddNumberLiteralWithoutSuffix(bodyBuilder.ToString());
+        return;
+
+        void AdvanceBody(ref Scanner scanner, Func<char, bool> isDigit)
+        {
+            while (scanner.Peek() is var c && (c is '_' || isDigit(c)))
+            {
+                scanner.Advance();
+                if (c is not '_')
+                    bodyBuilder.Append(c);
+            }
+        }
+    }
+
+    private static void LexString(ref Scanner scanner)
+    {
+        Debug.Assert(scanner.CurrentText is "\"");
+
+        // --- StringStart
+        scanner.AddToken(TokenKind.StringStart);
+
+        // --- Block with text and expressions
+        // Eof or Newline just end the string and the Lexer goes back into
+        // normal mode. No StringEnd/StringText is created empty.
+        while (scanner.Peek() is var c && c is not ('\0' or '\n' or '\r'))
+        {
+            switch (c)
+            {
+                // --- Interpolation start `{`
+                case '{':
+                    // This function handles { and } itself and emits those tokens.
+                    // When it is finished, the scanner will be at string end or another text.
+                    LexStringInterpolation(ref scanner);
+                    break;
+        
+                // --- StringEnd `"`
+                case '\"':
+                    scanner.Advance();
+                    scanner.AddToken(TokenKind.StringEnd);
+        
+                    return;
+                default:
+                    // This only consumes the inner text and stops
+                    // at ", eof/newline, {
+                    LexStringText(ref scanner);
+                    break;
+            }
+        }
+    }
+
+    private static void LexStringText(ref Scanner scanner)
+    {
+        var textBuilder = new StringBuilder();
+        
+        // Infinite loop here, because Eof is a case inside the switch :).
+        while (true)
+        {
+            switch (scanner.Peek())
+            {
+                // --- Escape
+                case '\\':
+                {
+                    scanner.Advance(); // "\"
+                    if (scanner.Peek() is '\0' or '\n' or '\r')
+                    {
+                        // Eof and newline will end the entire string, so we need to stop here.
+                        // '\' will be discarded (not included in ProcessedText).
+                        scanner.DiagnosticBag.ReportError(new Diagnostic.UnknownEscapeSequence(
+                            SourceLocation.FromLength(scanner.SourceText, scanner.NextIndex - 1, 1)));
+                        goto case '\0';
+                    }
+
+                    // Handle escape character
+                    switch (scanner.Advance())
+                    {
+                        case 'n':
+                            textBuilder.Append('\n');
+                            break;
+                        case 'r':
+                            textBuilder.Append('\r');
+                            break;
+                        case 't':
+                            textBuilder.Append('\t');
+                            break;
+                        case '{':
+                            textBuilder.Append('{');
+                            break;
+                        case '}':
+                            textBuilder.Append('}');
+                            break;
+                        case '\\':
+                            textBuilder.Append('\\');
+                            break;
+                        case '\"':
+                            textBuilder.Append('\"');
+                            break;
+
+                        default:
+                            // Report error. The escaped sequence will not be part of the
+                            // processed text.
+                            scanner.DiagnosticBag.ReportError(new Diagnostic.UnknownEscapeSequence(
+                                SourceLocation.FromLength(scanner.SourceText, scanner.NextIndex - 2, 2)));
+                            break;
+                    }
+
+                    break;
+                }
+                
+                // --- Stop
+                case '\n':
+                case '\r':
+                case '\0':
+                case '\"':
+                case '{':
+                    if (scanner.CurrentText.Length > 0)
+                        scanner.AddStringText(textBuilder.ToString());
+                    return;
+                
+                // --- Any character just proceeds
+                default:
+                    textBuilder.Append(scanner.Advance());
+                    break;
+            }
+        }
+    }
+    
+    private static void LexStringInterpolation(ref Scanner scanner)
+    {
+        Debug.Assert(scanner.CurrentText.IsEmpty);
+
+        var braceCount = 0;
+        while (!scanner.IsAtEnd)
+        {
+            LexSingle(ref scanner);
+            switch (scanner.LastToken)
+            {
+                case {Kind: TokenKind.OpenBrace}:
+                    braceCount++;
+                    break;
+                
+                case {Kind: TokenKind.CloseBrace}:
+                    braceCount--;
+
+                    if (braceCount == 0)
+                        return;
+                    break;
+            }
+        }
+    }
+}

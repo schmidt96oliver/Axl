@@ -1,9 +1,9 @@
 ﻿using System.Collections.Immutable;
 using System.Text;
-using Axl.Compiler.Diagnostics;
-using Axl.Compiler.Syntax;
-using Axl.Compiler.Testing;
-using Axl.Compiler.Text;
+using AxlCompiler.Diagnostics;
+using AxlCompiler.Syntax;
+using AxlCompiler.Testing;
+using AxlCompiler.Text;
 
 namespace Axl.Tests;
 
