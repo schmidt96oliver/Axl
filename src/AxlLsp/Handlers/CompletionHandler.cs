@@ -1,7 +1,9 @@
 ﻿using System.Collections.Immutable;
 using AxlCompiler;
+using AxlCompiler.Binding.Scopes;
 using AxlCompiler.Symbols;
 using AxlCompiler.Syntax;
+using AxlCompiler.Syntax.Tree;
 using AxlCompiler.Text;
 using AxlLsp.Projects;
 using OmniSharp.Extensions.LanguageServer.Protocol.Client.Capabilities;
@@ -36,7 +38,59 @@ public sealed class CompletionHandler : CompletionHandlerBase
     }
 
 
-    private readonly record struct Context(SourceLocation At, SyntaxTree Tree, Token? LeftOf, Compilation Compilation);
+    private record Context(SourceLocation At, Compilation Compilation)
+    {
+        private bool _hasScope = false;
+        public Scope? Scope
+        {
+            get
+            {
+                if (!_hasScope)
+                {
+                    field = Compilation.SemanticModel.TryScopeAt(At);
+                    _hasScope = true;
+                }
+                return field;
+            }
+        }
+        
+        private bool _hasLeftOf = false;
+        public Token? LeftOf
+        {
+            get
+            {
+                if (!_hasLeftOf)
+                {
+                    field = Tree.TryTokenLeftOf(At.Start);
+                    _hasLeftOf = true;
+                }
+                return field;
+            }
+        }
+        
+        private bool _hasSignificantLeftOf = false;
+        public Token? SignificantLeftOf
+        {
+            get
+            {
+                if (!_hasSignificantLeftOf)
+                {
+                    field = Tree.TrySignificantTokenLeftOf(At.Start);
+                    _hasSignificantLeftOf = true;
+                }
+                return field;
+            }
+        }
+
+        public SyntaxTree Tree
+        {
+            get
+            {
+                field ??= Compilation.SyntaxTreeFor(At);
+                return field;
+            }
+        }
+    }
 
     /// <param name="excludeReferencedCompilations">
     /// If <c>true</c>, only shows completion items that belong to <paramref name="compilation"/>.
@@ -44,13 +98,11 @@ public sealed class CompletionHandler : CompletionHandlerBase
     /// </param>
     internal static IEnumerable<CompletionItem> GetCompletionItems(SourceLocation at, Compilation compilation, bool excludeReferencedCompilations = false)
     {
-        var tree = compilation.SyntaxTreeFor(at);
+        var context = new Context(at, compilation);
         
-        var tokenLeft = tree.TryTokenLeftOf(at.Start);
-        if (tokenLeft is { Kind: TokenKind.Comment or TokenKind.StringStart or TokenKind.StringText } ) 
+        if (context.LeftOf is { Kind: TokenKind.Comment or TokenKind.StringStart or TokenKind.StringText } ) 
             yield break;
 
-        var context = new Context(at, tree, tokenLeft, compilation);
         var continuationTokens = Parser.ContinuationsAt(at.SourceText, at.Start);
 
         foreach (var kw in continuationTokens.GetKinds().Where(SyntaxFacts.IsKeyword))
@@ -90,10 +142,40 @@ public sealed class CompletionHandler : CompletionHandlerBase
 
     private static CompletionItem? Make(TokenKind keywordKind, Context context)
     {
+        if (keywordKind is TokenKind.MutKw && !IsMutValid(context))
+            return null;
+        
         return new CompletionItem
         {
             Label = SyntaxFacts.GetText(keywordKind) ?? "??",
             Kind = CompletionItemKind.Keyword
         };
+    }
+
+    private static bool IsMutValid(Context context)
+    {
+        //TODO: Ask scope for context.
+        //      I would really love to, but inside e.g. structs, the binder never sees the probe.
+        
+        // `mut` can start a `mut fun` at declaration level
+        // or `mut` argument, parameter, return or expression body on expression level.
+
+        if (context.SignificantLeftOf is null)
+        {
+            // File level, where it is never valid.
+            return false;
+        }
+
+        if (context.SignificantLeftOf is { Kind: TokenKind.MutKw })
+        {
+            // Any kind of repetition is wrong and cannot fully
+            // be rejected by the parser.
+            return false;
+        }
+
+        if (context.SignificantLeftOf?.Ancestors().Any(n => n is ArgListSyntax or FunDeclSyntax or StructDeclSyntax) == true)
+            return true;
+        
+        return false;
     }
 }

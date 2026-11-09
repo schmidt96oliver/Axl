@@ -55,4 +55,11 @@ public closed class SyntaxElement
     public SourceLocation Location => new(Tree.SourceText, Range ?? FullRange);
 
     public ReadOnlySpan<char> Text => Location.Text;
+
+
+    public IEnumerable<SyntaxNode> Ancestors()
+    {
+        for (var ancestor = Parent; ancestor is not null; ancestor = ancestor.Parent)
+            yield return ancestor;
+    }
 }

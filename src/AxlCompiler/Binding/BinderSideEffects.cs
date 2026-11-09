@@ -1,4 +1,5 @@
 ﻿using System.Collections.Immutable;
+using AxlCompiler.Binding.Scopes;
 using AxlCompiler.Diagnostics;
 using AxlCompiler.Symbols;
 using AxlCompiler.Text;
@@ -11,6 +12,7 @@ public sealed class BinderSideEffects
     public SemanticSideTable SemanticSideTable { get; } = new();
 
     public ImmutableArray<Symbol>? VisibleSymbolsAtProbe { get; private set; }
+    public Scope? ScopeAtProbe { get; private set; }
 
 
     public void ReportError(Diagnostic.Error? error)
@@ -40,15 +42,17 @@ public sealed class BinderSideEffects
             AddResolvedSymbol(location, symbol);
 
         VisibleSymbolsAtProbe ??= sideEffects.VisibleSymbolsAtProbe;
+        ScopeAtProbe ??= sideEffects.ScopeAtProbe;
     }
 
-    public void AddVisibleSymbols(ImmutableArray<Symbol> symbols)
+    public void ResolveProbe(ImmutableArray<Symbol> symbols, Scope scope)
     {
         // Ignore if the probe has already been answered. This will not
         // commonly happen anyway. Only if the user wrote the probe itself :D.
-        if (VisibleSymbolsAtProbe is not null)
+        if (VisibleSymbolsAtProbe is not null || ScopeAtProbe is not null)
             return;
         VisibleSymbolsAtProbe = symbols;
+        ScopeAtProbe = scope;
     }
     
 }

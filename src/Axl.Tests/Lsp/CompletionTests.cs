@@ -39,7 +39,7 @@ public sealed class CompletionTests
 
     [Fact]
     public void Empty()
-        => InlineSnapshot.Validate(Items("|"), "Keyword: fun, var, let, namespace, return, if, while, break, continue, using, struct, pub, static, self, mut, true, false");
+        => InlineSnapshot.Validate(Items("|"), "Keyword: fun, var, let, namespace, return, if, while, break, continue, using, struct, pub, static, self, true, false");
 
     [Fact]
     public void Nothing_Comment1()
@@ -113,7 +113,7 @@ public sealed class CompletionTests
 
     [Fact]
     public void NamespaceFile()
-        => InlineSnapshot.Validate(ItemsWithBase("namespace Test; |"), "Keyword: fun, using, struct, pub, static, mut");
+        => InlineSnapshot.Validate(ItemsWithBase("namespace Test; |"), "Keyword: fun, using, struct, pub, static");
     
     [Theory]
     [InlineData("|", true)]
@@ -133,9 +133,13 @@ public sealed class CompletionTests
     [InlineData("namespace Test; |", false)]
     [InlineData("struct Test { | }", true)]
     [InlineData("fun A(|", true)]
+    [InlineData("fun A(m|", true)]
+    [InlineData("fun A(m|u", true)]
     [InlineData("fun A(mut |", false)]
     [InlineData("fun A()|", false)]
     [InlineData("fun A(): |", true)]
+    [InlineData("fun A(): m|", true)]
+    [InlineData("fun A(): m|u", true)]
     [InlineData("fun A(): mut |", false)]
     public void Mut_Declaration(string input, bool available)
     {
@@ -148,12 +152,20 @@ public sealed class CompletionTests
     [InlineData("let a = |", false)]
     [InlineData("{ | }", false)]
     [InlineData("Call(|", true)]
+    [InlineData("Call(m|", true)]
+    [InlineData("Call(m|u", true)]
     [InlineData("Call(mut |", false)]
     [InlineData("Call(a, |", true)]
+    [InlineData("Call(a, m|", true)]
     [InlineData("Call(a, mut |", false)]
-    [InlineData("return |", true)]
-    [InlineData("return mut |", false)]
+    [InlineData("return |", false)]
+    [InlineData("fun A() { return | }", true)]
+    [InlineData("fun A() { return m| }", true)]
+    [InlineData("fun A() { return m|u }", true)]
+    [InlineData("fun A() { return mut | }", false)]
     [InlineData("fun A() = |", true)]
+    [InlineData("fun A() = m|", true)]
+    [InlineData("fun A() = m|u", true)]
     [InlineData("fun A() = mut |", false)]
     public void Mut_Stmt(string input, bool available)
     {

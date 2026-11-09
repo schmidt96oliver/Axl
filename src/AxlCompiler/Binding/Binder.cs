@@ -1400,7 +1400,7 @@ public sealed class Binder(Scope scope, BinderSideEffects sideEffects)
 
     #region Names and Member access
 
-    private void ResolveProbedVisibleSymbols(IEnumerable<Symbol> visible, BoundNode? left, LookupOptions lookupOptions, IdNameSyntax probeSyntax)
+    private void ResolveProbe(IEnumerable<Symbol> visible, BoundNode? left, LookupOptions lookupOptions, IdNameSyntax probeSyntax)
     {
         // We need to filter all symbols that would not make it through binding
         // and filter as well as possible.
@@ -1433,7 +1433,7 @@ public sealed class Binder(Scope scope, BinderSideEffects sideEffects)
                 symbols.AddRange(typeGroup.Candidates);
         }
 
-        SideEffects.AddVisibleSymbols(symbols.DrainToImmutable());
+        SideEffects.ResolveProbe(symbols.DrainToImmutable(), Scope);
     }
     
     private BoundNode BindLookupResult(LookupResult result, BoundNode? left, IdNameSyntax syntax)
@@ -1493,7 +1493,7 @@ public sealed class Binder(Scope scope, BinderSideEffects sideEffects)
         if (syntax.Token == Scope.Compilation.Probe)
         {
             // The probed symbol will for sure return nothing useful.
-            ResolveProbedVisibleSymbols(LookupVisibleSymbols(lookupOptions), left: null, lookupOptions, syntax);
+            ResolveProbe(LookupVisibleSymbols(lookupOptions), left: null, lookupOptions, syntax);
             return new BoundError(ErrorType, syntax);
         }
         
@@ -1535,7 +1535,7 @@ public sealed class Binder(Scope scope, BinderSideEffects sideEffects)
         
         if (syntax.Member.Token == Scope.Compilation.Probe)
         {
-            ResolveProbedVisibleSymbols(lookupOn.Members, left, LookupOptions.Any, syntax.Member);
+            ResolveProbe(lookupOn.Members, left, LookupOptions.Any, syntax.Member);
             return new BoundError(ErrorType, syntax);
         }
         

@@ -2,6 +2,7 @@
 using System.Diagnostics;
 using AxlCompiler.Diagnostics;
 using AxlCompiler.Binding;
+using AxlCompiler.Binding.Scopes;
 using AxlCompiler.Symbols;
 using AxlCompiler.Syntax;
 using AxlCompiler.Text;
@@ -10,6 +11,8 @@ namespace AxlCompiler;
 
 public sealed class SemanticModel(Compilation compilation)
 {
+    private Dictionary<(SyntaxTree, int), BinderSideEffects?> _probes = [];
+    
     /// <summary>
     /// Returns all symbols that are visible at the start of the given
     /// <paramref name="location"/>. All symbols that are returned
@@ -27,11 +30,27 @@ public sealed class SemanticModel(Compilation compilation)
     /// valid continuation. 
     /// </summary>
     public ImmutableArray<Symbol> VisibleSymbolsAtUnmapped(SyntaxTree tree, int position)
+        => ProbeAt(tree, position)?.VisibleSymbolsAtProbe ?? [];
+
+
+    public Scope? TryScopeAt(SourceLocation location)
+        => TryScopeAt(compilation.SyntaxTreeFor(location.SourceText), location.Start);
+    
+    public Scope? TryScopeAt(SyntaxTree tree, int position)
+        => ProbeAt(tree, position)?.ScopeAtProbe;
+
+    private BinderSideEffects? ProbeAt(SyntaxTree tree, int position)
     {
         const string probeText = "__AXL_HOH_HOH_CARET__";
 
+        if (_probes.TryGetValue((tree, position), out var probe))
+            return probe;
+        
         if (!tree.SourceText.Range.Contains(position) && position != tree.SourceText.Range.End)
-            return [];
+        {
+            _probes[(tree, position)] = null;
+            return null;
+        }
 
         // We work by forking the compilation and inserting a probe. The binder
         // cooperates and returns visible symbols through its side effects,
@@ -44,18 +63,20 @@ public sealed class SemanticModel(Compilation compilation)
         {
             // The probe did not parse as an identifier, which means that it would
             // not produce names anyway. E.g. in a comment or string.
-            return [];
+            _probes[(tree, position)] = null;
+            return null;
         }
 
-        var sideEffects = new BinderSideEffects();
+        probe = new BinderSideEffects();
         var compilationWithProbe = compilation
             .Replace(tree, with: treeWithProbe)
             .WithProbe(probeToken);
-        CompleteAtProbe(probeToken, compilationWithProbe, sideEffects);
+        CompleteAtProbe(probeToken, compilationWithProbe, probe);
 
-        return sideEffects.VisibleSymbolsAtProbe ?? [];
+        _probes[(tree, position)] = probe;
+        return probe;
     }
-
+    
     private void CompleteAtProbe(Token probe, Compilation probeCompilation, BinderSideEffects sideEffects)
     {
         // Complete only the lowest most symbol that contains the probe,

@@ -63,4 +63,10 @@ public closed class SyntaxNode : SyntaxElement
     /// </summary>
     public IEnumerable<SyntaxNode> SyntaxNodes()
         => Children.OfType<SyntaxNode>().Where(node => node.Kind is not SyntaxKind.Garbage);
+
+    public IEnumerable<SyntaxNode> SelfAndAncestors()
+    {
+        for (var ancestor = this; ancestor is not null; ancestor = ancestor.Parent)
+            yield return ancestor;
+    }
 }

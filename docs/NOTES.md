@@ -4,8 +4,7 @@
 * Completion Context
   * `break, continue` -> Binder probe to get scope
   * `self` -> Binder probe to get scope
-  * `mut` -> Parent is Arg (LeftSigToken is `(`), Param, return (leftsig is `return`), expr body (leftsig is `=`)
-  * Fun modifiers (static -> not mut)
+  * `static`
 
 * Improve Symbol -> CompletionItem. Explore possibilites.
 * For funs, insert `()`
