@@ -1,6 +1,8 @@
 # ------------------------------------ Axl Project ------------------------------------
                                        ≽(◕ ᴗ ◕)≼                                      
 
+* A way to get scope everywhere: `CheckProbe(SyntaxNode)` descends and sees if it can find the probe
+
 * Improve Symbol -> CompletionItem. Explore possibilites.
 * For funs, insert `()`
 

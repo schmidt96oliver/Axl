@@ -84,6 +84,81 @@ public sealed class CompletionTests
     public void Nothing_NamespaceName()
         => InlineSnapshot.Validate(ItemsWithBase("struct |"), "");
 
+    [Fact]
+    public void Nother_AfterLet()
+        => InlineSnapshot.Validate(ItemsWithBase("let a = 1 |"), "");
+
+    [Fact]
+    public void InStruct()
+        => InlineSnapshot.Validate(ItemsWithBase("struct S { | }"), "Keyword: fun, pub, static, mut");
+    
+    [Fact]
+    public void AfterPub1()
+        => InlineSnapshot.Validate(ItemsWithBase("pub |"), "Keyword: fun, struct");
+    [Fact]
+    public void AfterPub2()
+        => InlineSnapshot.Validate(ItemsWithBase("namespace Test; pub |"), "Keyword: fun, struct");
+
+    [Fact]
+    public void Members1()
+        => InlineSnapshot.Validate(ItemsWithBase("""
+                                                 struct Test
+                                                 { 
+                                                    pub Yes1: I32; Nope1: F64;
+                                                    pub fun Yes2() { }
+                                                    fun Nope2() { }
+                                                    pub static fun Nope3() { }
+                                                    static fun Nope4() { }
+                                                 }
+                                                 
+                                                 let t: Test;   // Never mind the missing initializer
+                                                 t.|
+                                                 """), "Function: Yes1, Yes2");
+    [Fact]
+    public void Members2()
+        => InlineSnapshot.Validate(ItemsWithBase("""
+                                                 struct Test
+                                                 { 
+                                                    pub Nope0: I32; Nope1: F64;
+                                                    pub fun Nop2() { }
+                                                    fun Nope3() { }
+                                                    pub static fun Yes() { }
+                                                    static fun Nope4() { }
+                                                 }
+                                                 
+                                                 Test.|
+                                                 """), "Function: Yes");
+    [Fact]
+    public void Members_ColorColor()
+        => InlineSnapshot.Validate(ItemsWithBase("""
+                                                 struct Test
+                                                 {
+                                                    pub Yes1: I32; Nope1: F64;
+                                                    pub fun Yes2() { }
+                                                    fun Nope2() { }
+                                                    pub static fun Yes3() { }
+                                                    static fun Nope3() { }
+                                                 }
+                                                 
+                                                 struct Outer 
+                                                 {
+                                                    pub Test: Test;
+                                                    pub fun Do()
+                                                    { Test.| }
+                                                 }
+                                                 """), "Function: Yes1, Yes2, Yes3");
+    
+    [Fact]
+    public void AfterIf1()
+        => InlineSnapshot.Validate(Items("if (c) {} |"), """
+            Keyword: fun, var, let, return, if, else, while, struct, pub, true, false
+            """);
+    
+    [Fact]
+    public void AfterIf2()
+        => InlineSnapshot.Validate(Items("if (c) {}; |"), """
+            Keyword: fun, var, let, return, if, else, while, struct, pub, true, false
+            """);
 
     [Fact]
     public void StringInterpolation1()
