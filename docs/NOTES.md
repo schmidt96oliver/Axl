@@ -1,12 +1,31 @@
 # ------------------------------------ Axl Project ------------------------------------
                                        ≽(◕ ᴗ ◕)≼                                      
 
-* Completion:
-  * Insert []
-  * Insert ()
-  * StructInit: Only offer remaining field names
+
 
 # Now
+
+* Completion:
+    * Insert []
+    * Insert ()
+
+* GoTo Def
+  * Symbol.NameSyntax: IdNameSyntax that introduces its name ("namespace A._B_.C" for B)
+  * DeclSyntax: Add subnamespaces "namespace A.B.C", A, B and C have this FileSyntax
+  * See Claude advice
+
+* Completion: Number suffixes? (a split might break it !!)
+
+* StructInit: Only offer remaining field names
+  * ExprSyntax -> BoundNode map
+  * Expose BoundTypeInitError(Candidates, BoundArguments)
+  * TargetToken.Parent is ArgListSyntax + BoundCall is BoundTypeInit or BoundTypeInitError
+    trigger it
+  * Show only left-over names
+  * Insert "X =", except when "X" is a visible symbol
+
+* SignatureHelp
+  * Expose BoundErrorCall
 
 # Questions / Little ones
 

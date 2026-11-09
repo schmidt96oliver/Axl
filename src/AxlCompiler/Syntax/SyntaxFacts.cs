@@ -103,6 +103,9 @@ public static class SyntaxFacts
     public static bool IsKeyword(TokenKind kind)
         => GetText(kind) is { } text && GetKeywordKind(text) is not null;
 
+    public static bool IsWord(TokenKind kind)
+        => kind is TokenKind.Identifier or TokenKind.NumberLiteral || IsKeyword(kind);
+
     public static bool IsTrivia(TokenKind kind)
         => kind is TokenKind.Whitespace or TokenKind.Comment;
 

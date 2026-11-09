@@ -39,7 +39,7 @@ public sealed class CompletionHandler : CompletionHandlerBase
     }
 
 
-    private record Context(SourceLocation At, Compilation Compilation)
+    private record Context(Compilation Compilation, SyntaxContext SyntaxContext)
     {
         private bool _hasScope = false;
         public Scope? Scope
@@ -48,74 +48,60 @@ public sealed class CompletionHandler : CompletionHandlerBase
             {
                 if (!_hasScope)
                 {
-                    field = Compilation.SemanticModel.TryScopeAt(At);
+                    field = Compilation.SemanticModel.TryScopeAt(SyntaxContext.SyntaxTree, SyntaxContext.Caret);
                     _hasScope = true;
                 }
                 return field;
             }
         }
-        
-        private bool _hasLeftOf = false;
-        public Token? LeftOf
+
+        public ImmutableArray<Symbol> VisibleSymbolsUnmapped
         {
             get
             {
-                if (!_hasLeftOf)
-                {
-                    field = Tree.TryTokenLeftOf(At.Start);
-                    _hasLeftOf = true;
-                }
-                return field;
-            }
-        }
-        
-        private bool _hasSignificantLeftOf = false;
-        public Token? SignificantLeftOf
-        {
-            get
-            {
-                if (!_hasSignificantLeftOf)
-                {
-                    field = Tree.TrySignificantTokenLeftOf(At.Start);
-                    _hasSignificantLeftOf = true;
-                }
+                if (field.IsDefault)
+                    field = Compilation.SemanticModel.VisibleSymbolsAtUnmapped(SyntaxContext.SyntaxTree, SyntaxContext.Caret);
                 return field;
             }
         }
 
-        public SyntaxTree Tree
+        private bool _hasContinuations = false;
+        public TokenSet Continuations
         {
             get
             {
-                field ??= Compilation.SyntaxTreeFor(At);
+                if (!_hasContinuations)
+                {
+                    field = Parser.ContinuationsAt(SyntaxContext.SyntaxTree.SourceText, SyntaxContext.Caret);
+                    _hasContinuations = true;
+                }
+
                 return field;
             }
         }
     }
 
+    
     /// <param name="excludeReferencedCompilations">
     /// If <c>true</c>, only shows completion items that belong to <paramref name="compilation"/>.
     /// Used mainly for testing.
     /// </param>
     internal static IEnumerable<CompletionItem> GetCompletionItems(SourceLocation at, Compilation compilation, bool excludeReferencedCompilations = false)
     {
-        var context = new Context(at, compilation);
+        var context = new Context(compilation, SyntaxContext.At(at.Start, compilation.SyntaxTreeFor(at.SourceText)));
         
-        if (context.LeftOf is { Kind: TokenKind.Comment or TokenKind.StringStart or TokenKind.StringText } ) 
+        if (context.SyntaxContext.IsInsideComment || context.SyntaxContext.IsInsideString) 
             yield break;
 
-        var continuationTokens = Parser.ContinuationsAt(at.SourceText, at.Start);
-
-        foreach (var kw in continuationTokens.GetKinds().Where(SyntaxFacts.IsKeyword))
+        foreach (var kw in context.Continuations.GetKinds().Where(SyntaxFacts.IsKeyword))
         {
             if (MaybeMake(kw, context) is { } item)
                 yield return item;
         }
 
-        if (continuationTokens.Contains(TokenKind.Identifier))
+        if (context.Continuations.Contains(TokenKind.Identifier))
         {
-            var symbolsByName = compilation.SemanticModel
-                .VisibleSymbolsAtUnmapped(at)
+            var symbolsByName = context.VisibleSymbolsUnmapped
                 .Where(s => !excludeReferencedCompilations || !compilation.ReferencedCompilations.Contains(s.Compilation))
                 .GroupBy(s => s.Name);
             foreach (var symbolGrp in symbolsByName)
@@ -274,20 +260,20 @@ public sealed class CompletionHandler : CompletionHandlerBase
         // `mut` can start a `mut fun` at declaration level
         // or `mut` argument, parameter, return or expression body on expression level.
 
-        if (context.SignificantLeftOf is null)
+        if (context.SyntaxContext.TargetToken is null)
         {
             // File level, where it is never valid.
             return false;
         }
 
-        if (context.SignificantLeftOf?.Ancestors().Any(n => n is ArgListSyntax or FunDeclSyntax or StructDeclSyntax) == true)
+        if (context.SyntaxContext.TargetToken?.Ancestors().Any(n => n is ArgListSyntax or FunDeclSyntax or StructDeclSyntax) == true)
             return true;
         
         return false;
     }
 
     private static bool IsStaticValid(Context context)
-        => context.SignificantLeftOf?.Ancestors().OfType<StructDeclSyntax>().Any() == true;
+        => context.SyntaxContext.TargetToken?.Ancestors().OfType<StructDeclSyntax>().Any() == true;
 
     private static bool IsSelfValid(Context context)
         => context.Scope?.InstanceType is not null;

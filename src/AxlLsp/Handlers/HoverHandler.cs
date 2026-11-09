@@ -22,13 +22,13 @@ public class HoverHandler : HoverHandlerBase
         if (ProjectStore.TryMapToAxl(uri, request.Position) is not { } axlLocation)
             return Task.FromResult<Hover?>(null);
 
-        var token = axlLocation.Compilation.SyntaxTreeFor(axlLocation.Location.SourceText).TokenAt(axlLocation.Location.Start);
-        var symbol = axlLocation.Compilation.SemanticSideTable.TryGetSymbol(token.Location);
+        var word = SyntaxContext.At(axlLocation).TouchingWord;
+        if (word is null) return Task.FromResult<Hover?>(null);
         
-        if (symbol is null)
-            return Task.FromResult<Hover?>(null);
+        var symbol = axlLocation.Compilation.SemanticSideTable.TryGetSymbol(word.Location);
+        if (symbol is null) return Task.FromResult<Hover?>(null);
 
-        var lspLocation = ProjectStore.TryMapToLsp(token.Location);
+        var lspLocation = ProjectStore.TryMapToLsp(word.Location);
         if (lspLocation is null || lspLocation.Uri != uri)
             return Task.FromResult<Hover?>(null);
         
