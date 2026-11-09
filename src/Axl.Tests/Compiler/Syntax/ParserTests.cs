@@ -1,4 +1,6 @@
-﻿using AxlCompiler.Syntax;
+﻿using System.Collections.Immutable;
+using AxlCompiler.Syntax;
+using AxlCompiler.Testing;
 using AxlCompiler.Text;
 using Shouldly;
 
@@ -39,19 +41,21 @@ public partial class ParserTests
     [Theory, Corpus]
     public void Corpus_ParsesWithoutDiagnostics(string path)
     {
-        var sourceText = SourceText.LoadFile(path);
-        var tree = Parser.Parse(sourceText);
+        var testFile = TestFile.From(SourceText.LoadFile(path));
+        var trees = testFile.Fragments.Select(f => Parser.Parse(f.SourceText)).ToImmutableArray();
 
-        foreach (var diagnostic in tree.Diagnostics)
+        foreach (var diagnostic in trees.SelectMany(t => t.Diagnostics))
         {
             TestContext.Current.TestOutputHelper?.WriteLine(
                 $"[{diagnostic.DefaultSeverity}] {diagnostic.Id}: {diagnostic.Message}");
+
+            var mapped = testFile.MapToTestFile(diagnostic.Locations[0]);
             TestContext.Current.TestOutputHelper?.WriteLine(
-                $"    at {path}:line {sourceText.GetLineIndex(diagnostic.Locations[0].Range.Start) + 1}");
+                $"    at {path}:line {mapped.StartLine + 1}");
         }
-        
-        tree.HasError.ShouldBeFalse();
-        tree.Diagnostics.ShouldBeEmpty();
+
+        trees.ShouldAllBe(t => !t.HasError);
+        trees.ShouldAllBe(t => t.Diagnostics.IsEmpty);
     }
 
     [Theory, Corpus]

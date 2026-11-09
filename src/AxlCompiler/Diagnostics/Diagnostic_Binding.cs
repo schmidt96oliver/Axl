@@ -679,27 +679,6 @@ public partial record Diagnostic
             $"Operator ‘{Fun.Name}’ must return ´{Expected.Name}´, but returns ’{Fun.ReturnType.Name}’.";
     }
 
-    public sealed record DuplicateNamespaceDeclaration(SyntaxNode Syntax) : Error
-    {
-        /// <inheritdoc />
-        public override ImmutableArray<SourceLocation> Locations => [Syntax.Location];
-
-        /// <inheritdoc />
-        public override string Message => "A file can only have one namespace declaration.";
-    }
-
-    public sealed record StmtInNamespaceFile(SyntaxNode Syntax) : Error
-    {
-        /// <inheritdoc />
-        public override ImmutableArray<SourceLocation> Locations => [Syntax.Location];
-
-        /// <inheritdoc />
-        public override string Message => "Statements are not allowed in a namespace file.";
-
-        /// <inheritdoc />
-        public override string Hint => "Remove the namespace declaration at the top of this file to make it a script.";
-    }
-
     public sealed record NamespaceAlreadyDeclared(NamespaceDeclaration Declaration) : Error
     {
         /// <inheritdoc />
@@ -711,15 +690,6 @@ public partial record Diagnostic
         /// <inheritdoc />
         public override string Message =>
             $"The namespace '{Declaration.Name}' is already declared in a dependency. Namespaces are only open across the same project.";
-    }
-
-    public sealed record NamespaceDeclarationInScript(SyntaxNode Syntax) : Error
-    {
-        /// <inheritdoc />
-        public override ImmutableArray<SourceLocation> Locations => [Syntax.Location];
-
-        /// <inheritdoc />
-        public override string Message => "The namespace declaration must be the first declaration in the file.";
     }
 
     public sealed record InvalidScriptStructModifier(Token Syntax) : Error
@@ -738,15 +708,6 @@ public partial record Diagnostic
         public override string Message => Owner is not null
             ? $"{TypeRef.Type.ShortDisplayText} is less accessible than {Owner.ShortDisplayText}."
             : $"{TypeRef.Type.ShortDisplayText} is not globally accessible.";
-    }
-
-    public sealed record UsingDirectiveAfterCode(SyntaxNode Syntax) : Error
-    {
-        /// <inheritdoc />
-        public override ImmutableArray<SourceLocation> Locations => [Syntax.Location];
-
-        /// <inheritdoc />
-        public override string Message => "Using directives must appear before all declarations and code.";
     }
 
     public sealed record UnnecessaryUsing(UsingDirectiveSyntax Syntax) : Lint

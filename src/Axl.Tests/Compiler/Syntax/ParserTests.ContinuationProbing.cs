@@ -183,17 +183,17 @@ public partial class ParserTests
         [Fact]
         public void Continuations_AfterError1()
             => InlineSnapshot.Validate(Continuations("## |"), """
-                fun var let namespace return if while break continue using struct pub static self mut true false Identifier NumberLiteral " ! @ ( { -
+                fun var let return if while break continue struct pub static self mut true false Identifier NumberLiteral " ! @ ( { -
                 """);
         [Fact]
         public void Continuations_AfterError2()
             => InlineSnapshot.Validate(Continuations("## pu|b"), """
-                fun var let namespace return if while break continue using struct pub static self mut true false Identifier NumberLiteral " ! @ ( { -
+                fun var let return if while break continue struct pub static self mut true false Identifier NumberLiteral " ! @ ( { -
                 """);
         [Fact]
         public void Continuations_AfterError3()
             => InlineSnapshot.Validate(Continuations("#|"), """
-                fun var let namespace return if while break continue using struct pub static self mut true false Identifier NumberLiteral " ! @ ( { -
+                fun var let return if while break continue struct pub static self mut true false Identifier NumberLiteral " ! @ ( { -
                 """);
         [Fact]
         public void Continuations_AfterError4()

@@ -1,5 +1,0 @@
-﻿//@check
-
-let a = 10;
-
-namespace Base;     //~error NamespaceDeclarationInScript

@@ -33,8 +33,10 @@ public sealed class CompletionHandler : CompletionHandlerBase
     public override Task<CompletionItem> Handle(CompletionItem request, CancellationToken cancellationToken)
     {
         return Task.FromResult(request);
-    } 
+    }
 
+
+    private readonly record struct Context(SourceLocation At, SyntaxTree Tree, Token? LeftOf, Compilation Compilation);
 
     /// <param name="excludeReferencedCompilations">
     /// If <c>true</c>, only shows completion items that belong to <paramref name="compilation"/>.
@@ -42,14 +44,20 @@ public sealed class CompletionHandler : CompletionHandlerBase
     /// </param>
     internal static IEnumerable<CompletionItem> GetCompletionItems(SourceLocation at, Compilation compilation, bool excludeReferencedCompilations = false)
     {
-        var tokenLeft = compilation.SyntaxTreeFor(at).TryTokenLeftOf(at.Start);
+        var tree = compilation.SyntaxTreeFor(at);
+        
+        var tokenLeft = tree.TryTokenLeftOf(at.Start);
         if (tokenLeft is { Kind: TokenKind.Comment or TokenKind.StringStart or TokenKind.StringText } ) 
             yield break;
-        
+
+        var context = new Context(at, tree, tokenLeft, compilation);
         var continuationTokens = Parser.ContinuationsAt(at.SourceText, at.Start);
 
         foreach (var kw in continuationTokens.GetKinds().Where(SyntaxFacts.IsKeyword))
-            yield return Make(kw);
+        {
+            if (Make(kw, context) is { } item)
+                yield return item;
+        }
 
         if (continuationTokens.Contains(TokenKind.Identifier))
         {
@@ -80,11 +88,12 @@ public sealed class CompletionHandler : CompletionHandlerBase
         // InsertTextFormat = InsertTextFormat.Snippet
     };
 
-    private static CompletionItem Make(TokenKind keywordKind) => new()
+    private static CompletionItem? Make(TokenKind keywordKind, Context context)
     {
-        Label = SyntaxFacts.GetText(keywordKind) ?? "??",
-        Kind = CompletionItemKind.Keyword
-    };
-
-    
+        return new CompletionItem
+        {
+            Label = SyntaxFacts.GetText(keywordKind) ?? "??",
+            Kind = CompletionItemKind.Keyword
+        };
+    }
 }

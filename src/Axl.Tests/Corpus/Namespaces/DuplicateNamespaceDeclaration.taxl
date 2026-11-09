@@ -1,9 +1,0 @@
-﻿//@check
-
-// Namespace declarations are allowed only once per file.
-// This is to avoid any confusion, because multiple flat
-// namespace declarations are hard to reason about.
-
-namespace A;
-namespace B;   //~error DuplicateNamespaceDeclaration
-namespace C;   //~error DuplicateNamespaceDeclaration

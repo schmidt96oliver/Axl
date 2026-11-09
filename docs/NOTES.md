@@ -1,21 +1,11 @@
 # ------------------------------------ Axl Project ------------------------------------
                                        ≽(◕ ᴗ ◕)≼                                      
 
-* Completion tests: 
-  * fulfill tests one-by-one
-  * private struct member
-  * only keywords
-  * Items.Contains("break").ShouldBe(val) InlineTests
-
 * Completion Context
   * `break, continue` -> Binder probe to get scope
   * `self` -> Binder probe to get scope
   * `mut` -> Parent is Arg (LeftSigToken is `(`), Param, return (leftsig is `return`), expr body (leftsig is `=`)
-  * `namespace` -> only on top, if no other namespace exists; maybe probe binder !! Turn into grammar !!
-  * `using`-> only on top; maybe probe binder !! Turn into grammar !!
   * Fun modifiers (static -> not mut)
-  * Stmt in namespace file
-  * Comments
 
 * Improve Symbol -> CompletionItem. Explore possibilites.
 * For funs, insert `()`

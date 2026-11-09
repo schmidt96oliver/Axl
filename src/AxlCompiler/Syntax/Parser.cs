@@ -27,7 +27,7 @@ public partial class Parser
 
         var scanner = new Scanner(sourceText, tokens);
         var parser = new Parser(sourceText, scanner);
-        parser.EatRoot();
+        parser.EatFile();
 
         var parserDiagnostics = new DiagnosticBag();
         var rootNode = parser.BuildTree(tokens, parserDiagnostics);
@@ -49,7 +49,7 @@ public partial class Parser
 
         var scanner = new Scanner(sourceText, tokens);
         var parser = new Parser(sourceText, scanner);
-        parser.EatRoot();
+        parser.EatFile();
 
         return scanner.ContinuationsAtProbe;
     }
@@ -92,13 +92,56 @@ public partial class Parser
     }
     
     
-    private void EatRoot()
+    private void EatFile()
     {
         var file = _scanner.Open();
 
-        // Don't anchor on namespace or using, because these are expected at
-        // the start of a file, and it makes sense to eat them as garbage
-        // inside each grammar.
+        var isNamespace = false;
+        if (_scanner.IsAt(TokenKind.NamespaceKw))
+        {
+            EatNamespaceDecl();
+            isNamespace = true;
+        }
+        
+        // --- Usings
+        var usingsAnchor = Anchor.Forced | 
+                           TokenKind.NamespaceKw | TokenKind.UsingKw  | 
+                           FirstSet.StructDecl | FirstSet.FunDecl | 
+                           FirstSet.NonExprStmt;
+        foreach (var _ in _scanner.MustEatEachIteration())
+        {
+            if (!_scanner.IsAt(TokenKind.UsingKw)) break;
+            EatUsingDirective(usingsAnchor);
+        }
+        
+        // --- Namespace decl
+        if (isNamespace)
+            EatNamespaceFile();
+        else
+            EatScriptFile();
+
+        // There might be an early stop, in case the continuation probe is finished.
+        // So EOF might not be present.
+
+        _scanner.EatIfPresent(TokenKind.Eof);
+        _scanner.Close(file, SyntaxKind.File);
+    }
+
+    private void EatNamespaceFile()
+    {
+        var fileAnchor = Anchor.Forced | FirstSet.StructDecl | FirstSet.FunDecl;
+
+        foreach (var _ in _scanner.MustEatEachIteration())
+        {
+            if (_scanner.IsAt(FirstSet.StructDecl | FirstSet.FunDecl))
+                EatMember(fileAnchor, allowedAfterHeader: FirstSet.StructDeclAfterHeader | FirstSet.FunDeclAfterHeader);
+            else
+                RecoverToAndReport(fileAnchor, ExpectedSyntax.Member);
+        }
+    }
+
+    private void EatScriptFile()
+    {
         var fileAnchor = Anchor.Forced | FirstSet.StructDecl | FirstSet.FunDecl | FirstSet.NonExprStmt;
 
         foreach (var _ in _scanner.MustEatEachIteration())
@@ -109,10 +152,6 @@ public partial class Parser
                 EatStmt(fileAnchor | TokenKind.Semicolon);
             else if (_scanner.IsAt(FirstSet.StructDecl | FirstSet.FunDecl))
                 EatMember(fileAnchor, allowedAfterHeader: FirstSet.StructDeclAfterHeader | FirstSet.FunDeclAfterHeader);
-            else if (_scanner.IsAt(TokenKind.NamespaceKw))
-                EatNamespaceDecl();
-            else if (_scanner.IsAt(TokenKind.UsingKw))
-                EatUsingDirective(fileAnchor);
             else
             {
                 // Recover to the next Stmt start, which includes Expr.
@@ -120,8 +159,6 @@ public partial class Parser
                 // If the parser is already confused, we recover to any position that
                 // can start a new statement.
                 var recoverAnchor = Anchor.From(FirstSet.Stmt)
-                                    | TokenKind.NamespaceKw
-                                    | TokenKind.UsingKw
                                     | FirstSet.StructDecl | FirstSet.FunDecl
                                     | TokenKind.Semicolon;
                 var recovered = RecoverToAndReport(recoverAnchor, ExpectedSyntax.Stmt);
@@ -138,14 +175,8 @@ public partial class Parser
                 }
             }
         }
-
-        // There might be an early stop, in case the continuation probe is finished.
-        // So EOF might not be present.
-        
-        _scanner.EatIfPresent(TokenKind.Eof);
-        _scanner.Close(file, SyntaxKind.File);
     }
-
+    
     private MarkClose EatUsingDirective(Anchor anchor)
     {
         Debug.Assert(_scanner.IsAt(TokenKind.UsingKw));

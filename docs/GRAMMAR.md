@@ -1,7 +1,8 @@
 ﻿
 # Top-Level
 
-File            = (Stmt | UsingDirective | NamespaceDecl | FnDecl | StructDecl)*
+NamespaceFile    = NamespaceDecl UsingDirective* MemberDecl*
+ScriptFile       = UsingDirective* Stmt*
 
 NamespaceDecl      = "namespace" NamespaceName ";"
 UsingDirective     = "using" TypeName ";"

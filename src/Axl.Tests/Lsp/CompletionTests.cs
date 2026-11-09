@@ -2,6 +2,7 @@
 using AxlCompiler.Text;
 using AxlLsp.Handlers;
 using Meziantou.Framework.InlineSnapshotTesting;
+using Shouldly;
 
 
 namespace Axl.Tests.Lsp;
@@ -90,10 +91,40 @@ public sealed class CompletionTests
             Function: a
             Keyword: return, if, break, continue, self, mut, true, false
             """);
+    
     [Fact]
     public void StringInterpolation2()
         => InlineSnapshot.Validate(Items("let a = 10; \"te{|"), """
             Function: a
             Keyword: return, if, break, continue, self, mut, true, false
             """);
+
+    [Theory]
+    [InlineData("|", true)]
+    [InlineData("namespace Test; |", false)]
+    [InlineData("using Test; |", false)]
+    [InlineData("let a = 1; |", false)]
+    [InlineData("{ | }", false)]
+    public void Namespace(string input, bool namespaceAvailable)
+    {
+        if (namespaceAvailable) ItemsWithBase(input).ShouldContain("namespace");
+        else ItemsWithBase(input).ShouldNotContain("namespace");
+    }
+
+    [Fact]
+    public void NamespaceFile()
+        => InlineSnapshot.Validate(ItemsWithBase("namespace Test; |"), "Keyword: fun, using, struct, pub, static, mut");
+    
+    [Theory]
+    [InlineData("|", true)]
+    [InlineData("namespace Test; |", true)]
+    [InlineData("using Test; |", true)]
+    [InlineData("using Test; let a = 1; |", false)]
+    [InlineData("let a = 1; |", false)]
+    [InlineData("{ | }", false)]
+    public void Using(string input, bool namespaceAvailable)
+    {
+        if (namespaceAvailable) ItemsWithBase(input).ShouldContain("using");
+        else ItemsWithBase(input).ShouldNotContain("using");
+    }
 }
