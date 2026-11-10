@@ -38,49 +38,6 @@ public sealed class CompletionHandler : CompletionHandlerBase
         return Task.FromResult(request);
     }
 
-
-    private record Context(Compilation Compilation, SyntaxContext SyntaxContext)
-    {
-        private bool _hasScope = false;
-        public Scope? Scope
-        {
-            get
-            {
-                if (!_hasScope)
-                {
-                    field = Compilation.SemanticModel.TryScopeAt(SyntaxContext.SyntaxTree, SyntaxContext.Caret);
-                    _hasScope = true;
-                }
-                return field;
-            }
-        }
-
-        public ImmutableArray<Symbol> VisibleSymbolsUnmapped
-        {
-            get
-            {
-                if (field.IsDefault)
-                    field = Compilation.SemanticModel.VisibleSymbolsAtUnmapped(SyntaxContext.SyntaxTree, SyntaxContext.Caret);
-                return field;
-            }
-        }
-
-        private bool _hasContinuations = false;
-        public TokenSet Continuations
-        {
-            get
-            {
-                if (!_hasContinuations)
-                {
-                    field = Parser.ContinuationsAt(SyntaxContext.SyntaxTree.SourceText, SyntaxContext.Caret);
-                    _hasContinuations = true;
-                }
-
-                return field;
-            }
-        }
-    }
-
     
     /// <param name="excludeReferencedCompilations">
     /// If <c>true</c>, only shows completion items that belong to <paramref name="compilation"/>.
@@ -88,9 +45,9 @@ public sealed class CompletionHandler : CompletionHandlerBase
     /// </param>
     internal static IEnumerable<CompletionItem> GetCompletionItems(SourceLocation at, Compilation compilation, bool excludeReferencedCompilations = false)
     {
-        var context = new Context(compilation, SyntaxContext.At(at.Start, compilation.SyntaxTreeFor(at.SourceText)));
+        var context = SyntaxContext.At(at, compilation);
         
-        if (context.SyntaxContext.IsInsideComment || context.SyntaxContext.IsInsideString) 
+        if (context.IsInsideComment || context.IsInsideString) 
             yield break;
 
         foreach (var kw in context.Continuations.GetKinds().Where(SyntaxFacts.IsKeyword))
@@ -101,7 +58,7 @@ public sealed class CompletionHandler : CompletionHandlerBase
 
         if (context.Continuations.Contains(TokenKind.Identifier))
         {
-            var symbolsByName = context.VisibleSymbolsUnmapped
+            var symbolsByName = compilation.SemanticModel.VisibleSymbolsAtUnmapped(at)
                 .Where(s => !excludeReferencedCompilations || !compilation.ReferencedCompilations.Contains(s.Compilation))
                 .GroupBy(s => s.Name);
             foreach (var symbolGrp in symbolsByName)
@@ -237,7 +194,7 @@ public sealed class CompletionHandler : CompletionHandlerBase
         },
     };
     
-    private static CompletionItem? MaybeMake(TokenKind keywordKind, Context context)
+    private static CompletionItem? MaybeMake(TokenKind keywordKind, SyntaxContext context)
     {
         if (keywordKind is TokenKind.MutKw && !IsMutValid(context))
             return null;
@@ -255,29 +212,35 @@ public sealed class CompletionHandler : CompletionHandlerBase
         };
     }
 
-    private static bool IsMutValid(Context context)
+    private static bool IsMutValid(SyntaxContext context)
     {
         // `mut` can start a `mut fun` at declaration level
         // or `mut` argument, parameter, return or expression body on expression level.
 
-        if (context.SyntaxContext.TargetToken is null)
+        if (context.TargetToken is null)
         {
             // File level, where it is never valid.
             return false;
         }
 
-        if (context.SyntaxContext.TargetToken?.Ancestors().Any(n => n is ArgListSyntax or FunDeclSyntax or StructDeclSyntax) == true)
+        if (context.TargetToken?.Ancestors().Any(n => n is ArgListSyntax or FunDeclSyntax or StructDeclSyntax) == true)
             return true;
         
         return false;
     }
 
-    private static bool IsStaticValid(Context context)
-        => context.SyntaxContext.TargetToken?.Ancestors().OfType<StructDeclSyntax>().Any() == true;
+    private static bool IsStaticValid(SyntaxContext context)
+        => context.TargetToken?.Ancestors().OfType<StructDeclSyntax>().Any() == true;
 
-    private static bool IsSelfValid(Context context)
-        => context.Scope?.InstanceType is not null;
+    private static bool IsSelfValid(SyntaxContext context)
+    {
+        var scope = context.Compilation.SemanticModel.TryScopeAt(context.SyntaxTree, context.Caret);
+        return scope?.InstanceType is not null;
+    }
 
-    private static bool IsBreakOrContinueValid(Context context)
-        => context.Scope?.IsInsideLoop == true;
+    private static bool IsBreakOrContinueValid(SyntaxContext context)
+    {
+        var scope = context.Compilation.SemanticModel.TryScopeAt(context.SyntaxTree, context.Caret);
+        return scope?.IsInsideLoop == true;
+    }
 }

@@ -1,12 +1,15 @@
 ﻿using AxlCompiler;
 using AxlCompiler.Syntax;
 using AxlCompiler.Syntax.Tree;
+using AxlCompiler.Text;
 using AxlLsp.Projects;
 
 namespace AxlLsp;
 
 public sealed class SyntaxContext
 {
+    public Compilation Compilation { get; }
+
     public SyntaxTree SyntaxTree { get; }
 
     /// <summary>
@@ -77,20 +80,35 @@ public sealed class SyntaxContext
         }
     }
 
+    public TokenSet Continuations
+    {
+        get
+        {
+            if (field.IsEmpty)
+                field = Parser.ContinuationsAt(SyntaxTree.SourceText, Caret);
 
+            return field;
+        }
+    }
+    
 
-    private SyntaxContext(int caret, SyntaxTree syntaxTree)
+    private SyntaxContext(int caret, SyntaxTree syntaxTree, Compilation compilation)
     {
         SyntaxTree = syntaxTree;
+        Compilation = compilation;
         Caret = caret;
     }
     
-    public static SyntaxContext At(int caret, SyntaxTree syntaxTree)
+    public static SyntaxContext At(int caret, SyntaxTree syntaxTree, Compilation compilation)
     {
+        Guard.MustBe(compilation.SyntaxTrees.Contains(syntaxTree));
         Guard.MustBe(caret >= 0 && caret <= syntaxTree.SourceText.Length);
-        return new SyntaxContext(caret, syntaxTree);
+        return new SyntaxContext(caret, syntaxTree, compilation);
     }
 
+    public static SyntaxContext At(SourceLocation location, Compilation compilation)
+        => At(location.Start, compilation.SyntaxTreeFor(location.SourceText), compilation);
+    
     public static SyntaxContext At(ProjectLocation location)
-        => At(location.Location.Start, location.Compilation.SyntaxTreeFor(location.Location.SourceText));
+        => At(location.Location, location.Compilation);
 }

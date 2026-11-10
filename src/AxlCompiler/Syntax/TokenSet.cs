@@ -9,6 +9,8 @@ public readonly struct TokenSet
     private readonly ulong _lo, _hi;
     private static readonly TokenKind[] AllKinds = Enum.GetValues<TokenKind>();
 
+    public bool IsEmpty => _lo == 0 && _hi == 0;
+    
     private TokenSet(ulong lo, ulong hi)
     {
         _lo = lo;

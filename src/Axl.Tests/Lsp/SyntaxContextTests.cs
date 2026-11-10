@@ -12,7 +12,8 @@ public sealed class SyntaxContextTests
     {
         input = input.RemoveCaret(out var caret);
         var tree = Parser.Parse(SourceText.From(input));
-        return SyntaxContext.At(caret, tree);
+        var compilation = Compilation.From([tree]);
+        return SyntaxContext.At(caret, tree, compilation);
     }
 
     [Theory]
