@@ -12,6 +12,8 @@ var server = await LanguageServer.From(options => options
     .WithHandler<SemanticTokensHandler>()
     .WithHandler<HoverHandler>()
     .WithHandler<CompletionHandler>()
+    .WithHandler<CodeActionHandler>()
+    .WithHandler<ExecuteCommandHandler>()
 );
 await server.WaitForExit;
 

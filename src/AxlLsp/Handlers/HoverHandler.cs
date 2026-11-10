@@ -3,6 +3,7 @@ using AxlLsp.Projects;
 using OmniSharp.Extensions.LanguageServer.Protocol.Client.Capabilities;
 using OmniSharp.Extensions.LanguageServer.Protocol.Document;
 using OmniSharp.Extensions.LanguageServer.Protocol.Models;
+using Range = OmniSharp.Extensions.LanguageServer.Protocol.Models.Range;
 
 namespace AxlLsp.Handlers;
 
@@ -19,6 +20,15 @@ public class HoverHandler : HoverHandlerBase
     {
         var uri = request.TextDocument.Uri;
 
+        if (Settings.ShowBoundExprAtHover)
+        {
+            return Task.FromResult<Hover?>(new Hover
+            {
+                Contents = new MarkedStringsOrMarkupContent("Hello!"),
+                Range = new Range(request.Position, request.Position)
+            });
+        }
+        
         if (ProjectStore.TryMapToAxl(uri, request.Position) is not { } axlLocation)
             return Task.FromResult<Hover?>(null);
 
@@ -31,6 +41,8 @@ public class HoverHandler : HoverHandlerBase
         var lspLocation = ProjectStore.TryMapToLsp(word.Location);
         if (lspLocation is null || lspLocation.Uri != uri)
             return Task.FromResult<Hover?>(null);
+
+        
         
         return Task.FromResult<Hover?>(new Hover
         {
