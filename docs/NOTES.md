@@ -6,6 +6,10 @@
 # Now
 
 * What to do if syntax and BoundNode diverge (they might)? Fix or keep?
+* Cache bound nodes per ?? body, found nodes ??
+
+* TypeGroup resolution: Remove candidates with wrong fields
+* tests: Basic ("|Field=", "F|", "(|"); type group resolution; only remaining
 
 * Completion:
     * Insert []
@@ -17,14 +21,6 @@
   * See Claude advice
 
 * Completion: Number suffixes? (a split might break it !!)
-
-* StructInit: Only offer remaining field names
-  * ExprSyntax -> BoundNode map
-  * Expose BoundTypeInitError(Candidates, BoundArguments)
-  * TargetToken.Parent is ArgListSyntax + BoundCall is BoundTypeInit or BoundTypeInitError
-    trigger it
-  * Show only left-over names
-  * Insert "X =", except when "X" is a visible symbol
 
 * SignatureHelp
   * Expose BoundErrorCall

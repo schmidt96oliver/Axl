@@ -2187,13 +2187,15 @@ public sealed class Binder(Scope scope, BinderSideEffects sideEffects)
     {
         Debug.Assert(typeGroupOrSingle is BoundTypeGroup or BoundTypeRef);
 
+        var initialCandidates = (typeGroupOrSingle as BoundTypeGroup)?.Candidates ?? [((BoundTypeRef)typeGroupOrSingle).Type];
+        
         // Arguments must all be named and distinct and without mut
         var missingNameArguments = arguments.Where(a => a.FieldNameSyntax is null).ToImmutableArray();
         if (missingNameArguments.Length > 0)
         {
             foreach (var arg in missingNameArguments)
                 SideEffects.ReportError(new Diagnostic.MissingFieldName(arg.Syntax!));
-            return new BoundError(ErrorType, syntax);
+            return new BoundStructInitError(initialCandidates, arguments, ErrorType, syntax);
         }
 
         var duplicateNames = arguments
@@ -2205,7 +2207,7 @@ public sealed class Binder(Scope scope, BinderSideEffects sideEffects)
         {
             foreach (var duplicates in duplicateNames)
                 SideEffects.ReportError(new Diagnostic.DuplicateArgumentNames(duplicates));
-            return new BoundError(ErrorType, syntax);
+            return new BoundStructInitError(initialCandidates, arguments, ErrorType, syntax);
         }
         
         // Single
@@ -2213,7 +2215,7 @@ public sealed class Binder(Scope scope, BinderSideEffects sideEffects)
         {
             var candidate = CheckTypeCandidate(typeRef.Type, arguments, inferTypeArguments: false, typeRef.Syntax!, syntax);
             if (candidate.Applicability is not TypeApplicability.Applicable)
-                return new BoundError(ErrorType, syntax);
+                return new BoundStructInitError(candidates: [candidate.Type], arguments, ErrorType, syntax);
             return CompleteTypeInit(candidate, arguments, syntax);
         }
 
@@ -2240,11 +2242,13 @@ public sealed class Binder(Scope scope, BinderSideEffects sideEffects)
             var candidate = candidates[0];
             SideEffects.MergeWith(candidate.SideEffects);
             if (candidate.Applicability is not TypeApplicability.Applicable)
-                return new BoundError(ErrorType, syntax);
+                return new BoundStructInitError([.. candidates.Select(t => t.Type)], arguments, ErrorType, syntax);
             return CompleteTypeInit(candidate, arguments, syntax);
         }
 
-        return BindError(syntax, MakeTypeResolutionError([.. candidates.Select(c => c.Type)], candidates[0].Applicability, typeGroup.Syntax!, syntax));
+        SideEffects.ReportError(MakeTypeResolutionError([.. candidates.Select(c => c.Type)],
+            candidates[0].Applicability, typeGroup.Syntax!, syntax));
+        return new BoundStructInitError([.. candidates.Select(t => t.Type)], arguments, ErrorType, syntax);
     }
 
     private TypeCandidate CheckTypeCandidate(TypeSymbol type, ImmutableArray<BoundArgument> arguments, bool inferTypeArguments, SyntaxNode typeSyntax,
@@ -2348,7 +2352,7 @@ public sealed class Binder(Scope scope, BinderSideEffects sideEffects)
             .Select(i => BindFieldInitializer(arguments[i], fieldsToArguments.Value[i]))
             .ToImmutableArray();
         if (fieldInits.Any(f => f is not BoundFieldInit))
-            return new BoundError(ErrorType, syntax);
+            return new BoundStructInitError([candidate.Type], arguments, ErrorType, syntax);
         
         return new BoundStructInit(candidate.Type, [.. fieldInits.Cast<BoundFieldInit>()], syntax);
     }

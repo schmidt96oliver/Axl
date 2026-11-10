@@ -1,5 +1,6 @@
 ﻿using System.Collections.Immutable;
 using AxlCompiler;
+using AxlCompiler.Binding.BoundTree;
 using AxlCompiler.Binding.Scopes;
 using AxlCompiler.Symbols;
 using AxlCompiler.Syntax;
@@ -38,6 +39,25 @@ public sealed class CompletionHandler : CompletionHandlerBase
         return Task.FromResult(request);
     }
 
+
+    internal static IEnumerable<CompletionItem> GetStructInitFieldItems(BoundStructInitError structInitError)
+    {
+        var filledFieldNames = structInitError.BoundArguments
+            .Where(arg => arg.FieldNameSyntax is not null)
+            .Select(arg => arg.FieldNameSyntax!.Text.ToString())
+            .ToHashSet();
+        var remainingFieldNames = structInitError.Candidates
+            .SelectMany(t => t.Members.OfType<FieldSymbol>())
+            .Select(field => field.Name)
+            .Where(fieldName => !filledFieldNames.Contains(fieldName))
+            .Distinct();
+        
+        return remainingFieldNames.Select(fieldName => new CompletionItem
+        {
+            Label = $"{fieldName} = ",
+            Kind = CompletionItemKind.File
+        });
+    }
     
     /// <param name="excludeReferencedCompilations">
     /// If <c>true</c>, only shows completion items that belong to <paramref name="compilation"/>.
@@ -47,9 +67,23 @@ public sealed class CompletionHandler : CompletionHandlerBase
     {
         var context = SyntaxContext.At(at, compilation);
         
+        // Nothing to show
         if (context.IsInsideComment || context.IsInsideString) 
             yield break;
 
+        // Args for struct initializers
+        if (context.TargetToken?.Parent is ArgListSyntax argListSyntax)
+        {
+            var callSyntax = argListSyntax.Ancestors().OfType<CallExprSyntax>().First();
+            if (compilation.SemanticModel.BoundNodeFor(callSyntax) is BoundStructInitError error)
+            {
+                foreach (var item in GetStructInitFieldItems(error))
+                    yield return item;
+                yield break;
+            }
+        }
+        
+        // Normal completion
         foreach (var kw in context.Continuations.GetKinds().Where(SyntaxFacts.IsKeyword))
         {
             if (MaybeMake(kw, context) is { } item)
