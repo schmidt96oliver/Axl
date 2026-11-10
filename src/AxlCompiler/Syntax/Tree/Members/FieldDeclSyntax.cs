@@ -9,7 +9,7 @@ public sealed class FieldDeclSyntax(ImmutableArray<SyntaxElement> children)
         ? pubToken
         : null;
     
-    public IdNameSyntax Name => Children.FirstOfType<IdNameSyntax>();
+    public NameRefSyntax NameRef => Children.FirstOfType<NameRefSyntax>();
 
     public ExprSyntax TypeExpr => Children.FirstOfType<TypeAnnotationClauseSyntax>().TypeExpr;
 }

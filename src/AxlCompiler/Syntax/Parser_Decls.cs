@@ -47,7 +47,7 @@ public partial class Parser
     {
         var annotation = _scanner.Open();
         _scanner.EatKnown(TokenKind.At);
-        EnsureIdName();
+        EnsureNameRef();
         return _scanner.Close(annotation, SyntaxKind.Annotation);
     }
 
@@ -56,7 +56,7 @@ public partial class Parser
     {
         _scanner.EatKnown(TokenKind.StructKw);
         
-        EnsureIdName();
+        EnsureNameRef();
 
         if (_scanner.IsAt(TokenKind.OpenBracket))
             EatTypeParamList(anchor);
@@ -110,7 +110,7 @@ public partial class Parser
     {
         Debug.Assert(_scanner.IsAt(FirstSet.FieldDeclAfterHeader));
 
-        EnsureIdName(ExpectedSyntax.FieldName);
+        EnsureNameRef(ExpectedSyntax.FieldName);
         EnsureTypeAnnotation(anchor | TokenKind.Semicolon);
         EnsureToken(TokenKind.Semicolon);
         return _scanner.Close(commonHeader, SyntaxKind.FieldDecl);
@@ -119,14 +119,14 @@ public partial class Parser
     private MarkClose EnsureNamespaceName()
     {
         var namespaceName = _scanner.Open();
-        EnsureIdName(ExpectedSyntax.NamespaceName);
+        EnsureNameRef(ExpectedSyntax.NamespaceName);
 
         foreach (var _ in _scanner.MustEatEachIteration())
         {
             if (_scanner.IsAt(TokenKind.Dot))
             {
                 _scanner.Eat();
-                EnsureIdName();
+                EnsureNameRef();
             }
             else
                 break;
@@ -214,7 +214,7 @@ public partial class Parser
         MarkClose EnsureTypeParam(Anchor _)
         {
             var typeParam = _scanner.Open();
-            EnsureIdName(ExpectedSyntax.TypeParamName);
+            EnsureNameRef(ExpectedSyntax.TypeParamName);
             return _scanner.Close(typeParam, SyntaxKind.TypeParam);
         }
     }
@@ -268,7 +268,7 @@ public partial class Parser
             var param = _scanner.Open();
 
             _scanner.EatIfPresent(TokenKind.MutKw);
-            EnsureIdName(expectedSyntax: _scanner.IsAt(itemFirst, isGrammarCheck: false)
+            EnsureNameRef(expectedSyntax: _scanner.IsAt(itemFirst, isGrammarCheck: false)
                 ? TokenKind.Identifier
                 : ExpectedSyntax.Param);
 

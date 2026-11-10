@@ -17,7 +17,7 @@ public partial class ParserTests
                     NamespaceDecl
                     · 'namespace'
                     · NamespaceName
-                    · · IdName 'A'
+                    · · NameRef 'A'
                     · ??';'
                     """);
             
@@ -39,7 +39,7 @@ public partial class ParserTests
                     · · · '{'
                     · · · Garbage 'namespace'
                     · · · ExprStmt
-                    · · · · IdName 'Global'
+                    · · · · NameRef 'Global'
                     · · · · ';'
                     · · · ExprStmt
                     · · · · NumberLiteral '1'
@@ -57,7 +57,7 @@ public partial class ParserTests
                     · · '{'
                     · · Garbage 'namespace'
                     · · ExprStmt
-                    · · · IdName 'Global'
+                    · · · NameRef 'Global'
                     · · · ';'
                     · · '}'
                     """);

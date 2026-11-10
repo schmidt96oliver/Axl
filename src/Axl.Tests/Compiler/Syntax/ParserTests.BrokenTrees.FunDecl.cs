@@ -66,11 +66,11 @@ public partial class ParserTests
                     · ParamList
                     · · '('
                     · · Param
-                    · · · IdName
+                    · · · NameRef
                     · · · · ??ID
                     · · · TypeAnnotationClause
                     · · · · ':'
-                    · · · · IdName 'I32'
+                    · · · · NameRef 'I32'
                     · · ??')'
                     · FunBody
                     · · BlockExpr '{' '}'
@@ -87,17 +87,17 @@ public partial class ParserTests
                     · ParamList
                     · · '('
                     · · Param
-                    · · · IdName 'a'
+                    · · · NameRef 'a'
                     · · · TypeAnnotationClause
                     · · · · ':'
-                    · · · · IdName 'I32'
+                    · · · · NameRef 'I32'
                     · · ','
                     · · Param
-                    · · · IdName
+                    · · · NameRef
                     · · · · ??ID
                     · · · TypeAnnotationClause
                     · · · · ??':'
-                    · · · · IdName
+                    · · · · NameRef
                     · · · · · ??ID
                     · · ??')'
                     · FunBody
@@ -116,17 +116,17 @@ public partial class ParserTests
                     · ParamList
                     · · '('
                     · · Param
-                    · · · IdName 'a'
+                    · · · NameRef 'a'
                     · · · TypeAnnotationClause
                     · · · · ':'
-                    · · · · IdName 'I32'
+                    · · · · NameRef 'I32'
                     · · ','
                     · · Param
-                    · · · IdName
+                    · · · NameRef
                     · · · · ??ID
                     · · · TypeAnnotationClause
                     · · · · ':'
-                    · · · · IdName 'I32'
+                    · · · · NameRef 'I32'
                     · · ??')'
                     · FunBody
                     · · BlockExpr '{' '}'
@@ -143,18 +143,18 @@ public partial class ParserTests
                     · ParamList
                     · · '('
                     · · Param
-                    · · · IdName 'a'
+                    · · · NameRef 'a'
                     · · · TypeAnnotationClause
                     · · · · ':'
-                    · · · · IdName 'I32'
+                    · · · · NameRef 'I32'
                     · · ','
                     · · Garbage '##'
                     · · Param
-                    · · · IdName
+                    · · · NameRef
                     · · · · ??ID
                     · · · TypeAnnotationClause
                     · · · · ??':'
-                    · · · · IdName
+                    · · · · NameRef
                     · · · · · ??ID
                     · · ??')'
                     · FunBody
@@ -173,18 +173,18 @@ public partial class ParserTests
                     · ParamList
                     · · '('
                     · · Param
-                    · · · IdName 'a'
+                    · · · NameRef 'a'
                     · · · TypeAnnotationClause
                     · · · · ':'
-                    · · · · IdName 'I32'
+                    · · · · NameRef 'I32'
                     · · ','
                     · · Garbage '##'
                     · · Param
-                    · · · IdName
+                    · · · NameRef
                     · · · · ??ID
                     · · · TypeAnnotationClause
                     · · · · ':'
-                    · · · · IdName 'String'
+                    · · · · NameRef 'String'
                     · · ??')'
                     · FunBody
                     · · BlockExpr '{' '}'
@@ -202,17 +202,17 @@ public partial class ParserTests
                     · ParamList
                     · · '('
                     · · Param
-                    · · · IdName 'a'
+                    · · · NameRef 'a'
                     · · · TypeAnnotationClause
                     · · · · ':'
-                    · · · · IdName 'I32'
+                    · · · · NameRef 'I32'
                     · · ','
                     · · Param
-                    · · · IdName
+                    · · · NameRef
                     · · · · ??ID
                     · · · TypeAnnotationClause
                     · · · · ??':'
-                    · · · · IdName
+                    · · · · NameRef
                     · · · · · ??ID
                     · · ??')'
                     · FunBody
@@ -233,17 +233,17 @@ public partial class ParserTests
                     · ParamList
                     · · '('
                     · · Param
-                    · · · IdName 'a'
+                    · · · NameRef 'a'
                     · · · TypeAnnotationClause
                     · · · · ':'
-                    · · · · IdName 'I32'
+                    · · · · NameRef 'I32'
                     · · ','
                     · · Param
-                    · · · IdName
+                    · · · NameRef
                     · · · · ??ID
                     · · · TypeAnnotationClause
                     · · · · ??':'
-                    · · · · IdName
+                    · · · · NameRef
                     · · · · · ??ID
                     · · ??')'
                     · FunBody
@@ -266,17 +266,17 @@ public partial class ParserTests
                     · ParamList
                     · · '('
                     · · Param
-                    · · · IdName 'a'
+                    · · · NameRef 'a'
                     · · · TypeAnnotationClause
                     · · · · ??':'
-                    · · · · IdName
+                    · · · · NameRef
                     · · · · · ??ID
                     · · ??','
                     · · Param
-                    · · · IdName 'b'
+                    · · · NameRef 'b'
                     · · · TypeAnnotationClause
                     · · · · ??':'
-                    · · · · IdName
+                    · · · · NameRef
                     · · · · · ??ID
                     · · ')'
                     · FunBody
@@ -295,16 +295,16 @@ public partial class ParserTests
                     · ParamList
                     · · '('
                     · · Param
-                    · · · IdName 'a'
+                    · · · NameRef 'a'
                     · · · TypeAnnotationClause
                     · · · · ':'
-                    · · · · IdName 'I32'
+                    · · · · NameRef 'I32'
                     · · ??','
                     · · Param
-                    · · · IdName 'b'
+                    · · · NameRef 'b'
                     · · · TypeAnnotationClause
                     · · · · ':'
-                    · · · · IdName 'String'
+                    · · · · NameRef 'String'
                     · · ')'
                     · FunBody
                     · · BlockExpr '{' '}'
@@ -324,29 +324,29 @@ public partial class ParserTests
                     · ParamList
                     · · '('
                     · · Param
-                    · · · IdName 'a'
+                    · · · NameRef 'a'
                     · · · TypeAnnotationClause
                     · · · · ':'
-                    · · · · IdName 'I32'
+                    · · · · NameRef 'I32'
                     · · ??','
                     · · Param
-                    · · · IdName 'b'
+                    · · · NameRef 'b'
                     · · · TypeAnnotationClause
                     · · · · ??':'
-                    · · · · IdName
+                    · · · · NameRef
                     · · · · · ??ID
                     · · ??','
                     · · Param
-                    · · · IdName 'c'
+                    · · · NameRef 'c'
                     · · · TypeAnnotationClause
                     · · · · ':'
-                    · · · · IdName 'Bool'
+                    · · · · NameRef 'Bool'
                     · · ','
                     · · Param
-                    · · · IdName 'd'
+                    · · · NameRef 'd'
                     · · · TypeAnnotationClause
                     · · · · ??':'
-                    · · · · IdName
+                    · · · · NameRef
                     · · · · · ??ID
                     · · ')'
                     · FunBody
@@ -366,11 +366,11 @@ public partial class ParserTests
                     · ParamList
                     · · '('
                     · · Param
-                    · · · IdName
+                    · · · NameRef
                     · · · · ??ID
                     · · · TypeAnnotationClause
                     · · · · ':'
-                    · · · · IdName 'I32'
+                    · · · · NameRef 'I32'
                     · · ')'
                     · FunBody
                     · · BlockExpr '{' '}'
@@ -388,10 +388,10 @@ public partial class ParserTests
                     · ParamList
                     · · '('
                     · · Param
-                    · · · IdName 'a'
+                    · · · NameRef 'a'
                     · · · TypeAnnotationClause
                     · · · · ':'
-                    · · · · IdName
+                    · · · · NameRef
                     · · · · · ??ID
                     · · ')'
                     · FunBody
@@ -411,19 +411,19 @@ public partial class ParserTests
                     · ParamList
                     · · '('
                     · · Param
-                    · · · IdName
+                    · · · NameRef
                     · · · · ??ID
                     · · · TypeAnnotationClause
                     · · · · ??':'
-                    · · · · IdName
+                    · · · · NameRef
                     · · · · · ??ID
                     · · ','
                     · · Param
-                    · · · IdName
+                    · · · NameRef
                     · · · · ??ID
                     · · · TypeAnnotationClause
                     · · · · ??':'
-                    · · · · IdName
+                    · · · · NameRef
                     · · · · · ??ID
                     · · ')'
                     · FunBody
@@ -444,27 +444,27 @@ public partial class ParserTests
                     · ParamList
                     · · '('
                     · · Param
-                    · · · IdName
+                    · · · NameRef
                     · · · · ??ID
                     · · · TypeAnnotationClause
                     · · · · ??':'
-                    · · · · IdName
+                    · · · · NameRef
                     · · · · · ??ID
                     · · ','
                     · · Param
-                    · · · IdName
+                    · · · NameRef
                     · · · · ??ID
                     · · · TypeAnnotationClause
                     · · · · ??':'
-                    · · · · IdName
+                    · · · · NameRef
                     · · · · · ??ID
                     · · ','
                     · · Param
-                    · · · IdName
+                    · · · NameRef
                     · · · · ??ID
                     · · · TypeAnnotationClause
                     · · · · ??':'
-                    · · · · IdName
+                    · · · · NameRef
                     · · · · · ??ID
                     · · ')'
                     · FunBody
@@ -484,18 +484,18 @@ public partial class ParserTests
                     · ParamList
                     · · '('
                     · · Param
-                    · · · IdName 'a'
+                    · · · NameRef 'a'
                     · · · TypeAnnotationClause
                     · · · · ??':'
-                    · · · · IdName
+                    · · · · NameRef
                     · · · · · ??ID
                     · · ','
                     · · Param
-                    · · · IdName
+                    · · · NameRef
                     · · · · ??ID
                     · · · TypeAnnotationClause
                     · · · · ??':'
-                    · · · · IdName
+                    · · · · NameRef
                     · · · · · ??ID
                     · · ')'
                     · FunBody
@@ -550,7 +550,7 @@ public partial class ParserTests
                     · · ??')'
                     · ReturnTypeAnnotation
                     · · ':'
-                    · · IdName 'I32'
+                    · · NameRef 'I32'
                     · FunBody
                     · · BlockExpr '{' '}'
                     """);
@@ -571,18 +571,18 @@ public partial class ParserTests
                     · ParamList
                     · · '('
                     · · Param
-                    · · · IdName 'a'
+                    · · · NameRef 'a'
                     · · · TypeAnnotationClause
                     · · · · ??':'
-                    · · · · IdName
+                    · · · · NameRef
                     · · · · · ??ID
                     · · Garbage '##'
                     · · ??','
                     · · Param
-                    · · · IdName 'b'
+                    · · · NameRef 'b'
                     · · · TypeAnnotationClause
                     · · · · ??':'
-                    · · · · IdName
+                    · · · · NameRef
                     · · · · · ??ID
                     · · ')'
                     · FunBody
@@ -604,17 +604,17 @@ public partial class ParserTests
                     · · '('
                     · · Garbage '##'
                     · · Param
-                    · · · IdName 'a'
+                    · · · NameRef 'a'
                     · · · TypeAnnotationClause
                     · · · · ??':'
-                    · · · · IdName
+                    · · · · NameRef
                     · · · · · ??ID
                     · · ','
                     · · Param
-                    · · · IdName 'b'
+                    · · · NameRef 'b'
                     · · · TypeAnnotationClause
                     · · · · ??':'
-                    · · · · IdName
+                    · · · · NameRef
                     · · · · · ??ID
                     · · ')'
                     · FunBody
@@ -636,25 +636,25 @@ public partial class ParserTests
                     · · '('
                     · · Garbage '##'
                     · · Param
-                    · · · IdName
+                    · · · NameRef
                     · · · · ??ID
                     · · · TypeAnnotationClause
                     · · · · ??':'
-                    · · · · IdName
+                    · · · · NameRef
                     · · · · · ??ID
                     · · ','
                     · · Param
-                    · · · IdName 'a'
+                    · · · NameRef 'a'
                     · · · TypeAnnotationClause
                     · · · · ??':'
-                    · · · · IdName
+                    · · · · NameRef
                     · · · · · ??ID
                     · · ','
                     · · Param
-                    · · · IdName 'b'
+                    · · · NameRef 'b'
                     · · · TypeAnnotationClause
                     · · · · ??':'
-                    · · · · IdName
+                    · · · · NameRef
                     · · · · · ??ID
                     · · ')'
                     · FunBody
@@ -674,11 +674,11 @@ public partial class ParserTests
                     · · '('
                     · · Garbage '##'
                     · · Param
-                    · · · IdName
+                    · · · NameRef
                     · · · · ??ID
                     · · · TypeAnnotationClause
                     · · · · ??':'
-                    · · · · IdName
+                    · · · · NameRef
                     · · · · · ??ID
                     · · ')'
                     · FunBody
@@ -699,19 +699,19 @@ public partial class ParserTests
                     · · '('
                     · · Garbage '##'
                     · · Param
-                    · · · IdName
+                    · · · NameRef
                     · · · · ??ID
                     · · · TypeAnnotationClause
                     · · · · ??':'
-                    · · · · IdName
+                    · · · · NameRef
                     · · · · · ??ID
                     · · ','
                     · · Param
-                    · · · IdName
+                    · · · NameRef
                     · · · · ??ID
                     · · · TypeAnnotationClause
                     · · · · ??':'
-                    · · · · IdName
+                    · · · · NameRef
                     · · · · · ??ID
                     · · ')'
                     · FunBody
@@ -732,20 +732,20 @@ public partial class ParserTests
                     · ParamList
                     · · '('
                     · · Param
-                    · · · IdName 'a'
+                    · · · NameRef 'a'
                     · · · TypeAnnotationClause
                     · · · · ??':'
-                    · · · · IdName
+                    · · · · NameRef
                     · · · · · ??ID
                     · · Garbage '##'
                     · · ','
                     · · Garbage '##'
                     · · Param
-                    · · · IdName
+                    · · · NameRef
                     · · · · ??ID
                     · · · TypeAnnotationClause
                     · · · · ??':'
-                    · · · · IdName
+                    · · · · NameRef
                     · · · · · ??ID
                     · · ')'
                     · FunBody
@@ -768,25 +768,25 @@ public partial class ParserTests
                     · · '('
                     · · Garbage '##'
                     · · Param
-                    · · · IdName
+                    · · · NameRef
                     · · · · ??ID
                     · · · TypeAnnotationClause
                     · · · · ??':'
-                    · · · · IdName
+                    · · · · NameRef
                     · · · · · ??ID
                     · · ','
                     · · Param
-                    · · · IdName 'a'
+                    · · · NameRef 'a'
                     · · · TypeAnnotationClause
                     · · · · ??':'
-                    · · · · IdName
+                    · · · · NameRef
                     · · · · · ??ID
                     · · ','
                     · · Param
-                    · · · IdName 'b'
+                    · · · NameRef 'b'
                     · · · TypeAnnotationClause
                     · · · · ??':'
-                    · · · · IdName
+                    · · · · NameRef
                     · · · · · ??ID
                     · · Garbage '##'
                     · · ')'
@@ -808,20 +808,20 @@ public partial class ParserTests
                     · · '('
                     · · Garbage '##'
                     · · Param
-                    · · · IdName
+                    · · · NameRef
                     · · · · ??ID
                     · · · TypeAnnotationClause
                     · · · · ??':'
-                    · · · · IdName
+                    · · · · NameRef
                     · · · · · ??ID
                     · · ','
                     · · Garbage '##'
                     · · Param
-                    · · · IdName
+                    · · · NameRef
                     · · · · ??ID
                     · · · TypeAnnotationClause
                     · · · · ??':'
-                    · · · · IdName
+                    · · · · NameRef
                     · · · · · ??ID
                     · · ')'
                     · FunBody

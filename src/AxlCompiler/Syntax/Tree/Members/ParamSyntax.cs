@@ -7,7 +7,7 @@ public sealed class ParamSyntax(ImmutableArray<SyntaxElement> children)
 {
     public Token? MutKw => Children.OfType<Token>().FirstOrDefault(t => t .Kind is TokenKind.MutKw);
     
-    public IdentifierToken Name => Children.FirstOfType<IdNameSyntax>().Token;
+    public IdentifierToken Name => Children.FirstOfType<NameRefSyntax>().Token;
 
     public ExprSyntax TypeAnnotation => Children
         .FirstOfType<TypeAnnotationClauseSyntax>().TypeExpr;

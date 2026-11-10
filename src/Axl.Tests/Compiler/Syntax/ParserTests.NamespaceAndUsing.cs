@@ -14,11 +14,11 @@ public partial class ParserTests
 
                 UsingDirective
                 · 'using'
-                · IdName 'A'
+                · NameRef 'A'
                 · ';'
                 Garbage 'namespace'
                 ExprStmt
-                · IdName 'A'
+                · NameRef 'A'
                 · ';'
                 """);
         
@@ -30,14 +30,14 @@ public partial class ParserTests
 
                 VarDecl
                 · 'var'
-                · IdName 'a'
+                · NameRef 'a'
                 · InitializerClause
                 · · '='
                 · · NumberLiteral '1'
                 · ';'
                 Garbage 'namespace'
                 ExprStmt
-                · IdName 'A'
+                · NameRef 'A'
                 · ';'
                 """);
         
@@ -49,14 +49,14 @@ public partial class ParserTests
 
                 VarDecl
                 · 'let'
-                · IdName 'a'
+                · NameRef 'a'
                 · InitializerClause
                 · · '='
                 · · NumberLiteral '1'
                 · ';'
                 Garbage 'using'
                 ExprStmt
-                · IdName 'A'
+                · NameRef 'A'
                 · ';'
                 """);
         
@@ -69,7 +69,7 @@ public partial class ParserTests
                 NamespaceDecl
                 · 'namespace'
                 · NamespaceName
-                · · IdName 'A'
+                · · NameRef 'A'
                 · ';'
                 Garbage 'let' 'a' '=' '1' ';'
                 """);

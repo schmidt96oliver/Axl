@@ -32,10 +32,10 @@ public sealed class BoundCall(
         => ReceiverAndArguments.Select(arg => arg.Value);
 }
 
-public sealed class BoundArgument(IdNameSyntax? nameSyntax, BoundValue value, bool isMut, ArgSyntax? syntax)
+public sealed class BoundArgument(NameRefSyntax? nameSyntax, BoundValue value, bool isMut, ArgSyntax? syntax)
 {
-    public IdNameSyntax? NameSyntax => nameSyntax;
-    public IdNameSyntax? FieldNameSyntax => nameSyntax ?? (Syntax as ArgSyntax)?.Expr as IdNameSyntax;
+    public NameRefSyntax? NameSyntax => nameSyntax;
+    public NameRefSyntax? FieldNameSyntax => nameSyntax ?? (Syntax as ArgSyntax)?.Expr as NameRefSyntax;
     public BoundValue Value { get; } = value;
     public bool IsMut { get; } = isMut;
 

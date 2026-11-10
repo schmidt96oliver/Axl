@@ -11,12 +11,12 @@ public partial class ParserTests
             => InlineSnapshot.Validate(Tree("A(mut a);"), """
                 ExprStmt
                 · CallExpr
-                · · IdName 'A'
+                · · NameRef 'A'
                 · · ArgList
                 · · · '('
                 · · · Arg
                 · · · · 'mut'
-                · · · · IdName 'a'
+                · · · · NameRef 'a'
                 · · · ')'
                 · ';'
                 """);
@@ -25,16 +25,16 @@ public partial class ParserTests
             => InlineSnapshot.Validate(Tree("A(mut a, mut b);"), """
                 ExprStmt
                 · CallExpr
-                · · IdName 'A'
+                · · NameRef 'A'
                 · · ArgList
                 · · · '('
                 · · · Arg
                 · · · · 'mut'
-                · · · · IdName 'a'
+                · · · · NameRef 'a'
                 · · · ','
                 · · · Arg
                 · · · · 'mut'
-                · · · · IdName 'b'
+                · · · · NameRef 'b'
                 · · · ')'
                 · ';'
                 """);
@@ -46,17 +46,17 @@ public partial class ParserTests
 
                 ExprStmt
                 · CallExpr
-                · · IdName 'A'
+                · · NameRef 'A'
                 · · ArgList
                 · · · '('
                 · · · Arg
                 · · · · 'mut'
-                · · · · IdName
+                · · · · NameRef
                 · · · · · ??ID
                 · · · ??','
                 · · · Arg
                 · · · · 'mut'
-                · · · · IdName 'a'
+                · · · · NameRef 'a'
                 · · · ')'
                 · ';'
                 """);
@@ -71,10 +71,10 @@ public partial class ParserTests
                 · · '('
                 · · Param
                 · · · 'mut'
-                · · · IdName 'a'
+                · · · NameRef 'a'
                 · · · TypeAnnotationClause
                 · · · · ':'
-                · · · · IdName 'I32'
+                · · · · NameRef 'I32'
                 · · ')'
                 · FunBody ';'
                 """);
@@ -85,7 +85,7 @@ public partial class ParserTests
                 · ReturnExpr
                 · · 'return'
                 · · 'mut'
-                · · IdName 'a'
+                · · NameRef 'a'
                 · ';'
                 """);
         [Fact]
@@ -98,7 +98,7 @@ public partial class ParserTests
                 · FunBody
                 · · '='
                 · · 'mut'
-                · · IdName 'a'
+                · · NameRef 'a'
                 · · ';'
                 """);
 
@@ -108,12 +108,12 @@ public partial class ParserTests
                 ExprStmt
                 · CallExpr
                 · · SubscriptExpr
-                · · · IdName 'f'
+                · · · NameRef 'f'
                 · · · SubscriptArgList
                 · · · · '['
-                · · · · IdName 'a'
+                · · · · NameRef 'a'
                 · · · · ','
-                · · · · IdName 'b'
+                · · · · NameRef 'b'
                 · · · · ']'
                 · · ArgList '(' ')'
                 · ';'
@@ -125,18 +125,18 @@ public partial class ParserTests
                 · SubscriptExpr
                 · · CallExpr
                 · · · SubscriptExpr
-                · · · · IdName 'f'
+                · · · · NameRef 'f'
                 · · · · SubscriptArgList
                 · · · · · '['
                 · · · · · BinaryExpr
-                · · · · · · IdName 'a'
+                · · · · · · NameRef 'a'
                 · · · · · · '+'
-                · · · · · · IdName 'b'
+                · · · · · · NameRef 'b'
                 · · · · · ','
                 · · · · · CallExpr
                 · · · · · · SubscriptExpr
                 · · · · · · · CallExpr
-                · · · · · · · · IdName 'a'
+                · · · · · · · · NameRef 'a'
                 · · · · · · · · ArgList '(' ')'
                 · · · · · · · SubscriptArgList
                 · · · · · · · · '['
@@ -147,7 +147,7 @@ public partial class ParserTests
                 · · · ArgList '(' ')'
                 · · SubscriptArgList
                 · · · '['
-                · · · IdName 'a'
+                · · · NameRef 'a'
                 · · · ']'
                 · ';'
                 """);
@@ -160,14 +160,14 @@ public partial class ParserTests
 
                 VarDecl
                 · 'let'
-                · IdName 'a'
+                · NameRef 'a'
                 · TypeAnnotationClause
                 · · ':'
                 · · SubscriptExpr
-                · · · IdName 'A'
+                · · · NameRef 'A'
                 · · · SubscriptArgList
                 · · · · '['
-                · · · · IdName
+                · · · · NameRef
                 · · · · · ??ID
                 · · · · ']'
                 · ';'
@@ -177,16 +177,16 @@ public partial class ParserTests
             => InlineSnapshot.Validate(Tree("let a: A[T1, T2];"), """
                 VarDecl
                 · 'let'
-                · IdName 'a'
+                · NameRef 'a'
                 · TypeAnnotationClause
                 · · ':'
                 · · SubscriptExpr
-                · · · IdName 'A'
+                · · · NameRef 'A'
                 · · · SubscriptArgList
                 · · · · '['
-                · · · · IdName 'T1'
+                · · · · NameRef 'T1'
                 · · · · ','
-                · · · · IdName 'T2'
+                · · · · NameRef 'T2'
                 · · · · ']'
                 · ';'
                 """);
@@ -195,19 +195,19 @@ public partial class ParserTests
             => InlineSnapshot.Validate(Tree("let a: A.B[T1, T2];"), """
                 VarDecl
                 · 'let'
-                · IdName 'a'
+                · NameRef 'a'
                 · TypeAnnotationClause
                 · · ':'
                 · · SubscriptExpr
                 · · · MemberAccessExpr
-                · · · · IdName 'A'
+                · · · · NameRef 'A'
                 · · · · '.'
-                · · · · IdName 'B'
+                · · · · NameRef 'B'
                 · · · SubscriptArgList
                 · · · · '['
-                · · · · IdName 'T1'
+                · · · · NameRef 'T1'
                 · · · · ','
-                · · · · IdName 'T2'
+                · · · · NameRef 'T2'
                 · · · · ']'
                 · ';'
                 """);
@@ -216,24 +216,24 @@ public partial class ParserTests
             => InlineSnapshot.Validate(Tree("let a: A[T].B[T1, T2];"), """
                 VarDecl
                 · 'let'
-                · IdName 'a'
+                · NameRef 'a'
                 · TypeAnnotationClause
                 · · ':'
                 · · SubscriptExpr
                 · · · MemberAccessExpr
                 · · · · SubscriptExpr
-                · · · · · IdName 'A'
+                · · · · · NameRef 'A'
                 · · · · · SubscriptArgList
                 · · · · · · '['
-                · · · · · · IdName 'T'
+                · · · · · · NameRef 'T'
                 · · · · · · ']'
                 · · · · '.'
-                · · · · IdName 'B'
+                · · · · NameRef 'B'
                 · · · SubscriptArgList
                 · · · · '['
-                · · · · IdName 'T1'
+                · · · · NameRef 'T1'
                 · · · · ','
-                · · · · IdName 'T2'
+                · · · · NameRef 'T2'
                 · · · · ']'
                 · ';'
                 """);
@@ -242,7 +242,7 @@ public partial class ParserTests
             => InlineSnapshot.Validate(Tree("let a: A[T].B[U].C[W];"), """
                 VarDecl
                 · 'let'
-                · IdName 'a'
+                · NameRef 'a'
                 · TypeAnnotationClause
                 · · ':'
                 · · SubscriptExpr
@@ -250,22 +250,22 @@ public partial class ParserTests
                 · · · · SubscriptExpr
                 · · · · · MemberAccessExpr
                 · · · · · · SubscriptExpr
-                · · · · · · · IdName 'A'
+                · · · · · · · NameRef 'A'
                 · · · · · · · SubscriptArgList
                 · · · · · · · · '['
-                · · · · · · · · IdName 'T'
+                · · · · · · · · NameRef 'T'
                 · · · · · · · · ']'
                 · · · · · · '.'
-                · · · · · · IdName 'B'
+                · · · · · · NameRef 'B'
                 · · · · · SubscriptArgList
                 · · · · · · '['
-                · · · · · · IdName 'U'
+                · · · · · · NameRef 'U'
                 · · · · · · ']'
                 · · · · '.'
-                · · · · IdName 'C'
+                · · · · NameRef 'C'
                 · · · SubscriptArgList
                 · · · · '['
-                · · · · IdName 'W'
+                · · · · NameRef 'W'
                 · · · · ']'
                 · ';'
                 """);

@@ -12,7 +12,7 @@ public partial class Parser
         // the same way. It just needs to be a subset, so not all expressions are
         // allowed in type position.
 
-        var lhs = EnsureIdName(expectedSyntax ?? ExpectedSyntax.TypeName);
+        var lhs = EnsureNameRef(expectedSyntax ?? ExpectedSyntax.TypeName);
         
         foreach (var _ in _scanner.MustEatEachIteration())
         {
@@ -20,7 +20,7 @@ public partial class Parser
             {
                 var memberAccess = _scanner.OpenBefore(lhs);
                 _scanner.EatKnown(TokenKind.Dot);
-                EnsureIdName(expectedSyntax ?? ExpectedSyntax.TypeName);
+                EnsureNameRef(expectedSyntax ?? ExpectedSyntax.TypeName);
                 lhs = _scanner.Close(memberAccess, SyntaxKind.MemberAccessExpr);
             }
 
@@ -53,9 +53,9 @@ public partial class Parser
         if (!EnsureToken(TokenKind.Colon, ExpectedSyntax.TypeAnnotation))
         {
             // Make an id name
-            var idName = _scanner.Open();
+            var nameRef = _scanner.Open();
             _scanner.MakeAndReport(TokenKind.Identifier);
-            _scanner.Close(idName, SyntaxKind.IdName);
+            _scanner.Close(nameRef, SyntaxKind.NameRef);
             return _scanner.Close(typeAnnotation, SyntaxKind.TypeAnnotationClause);
         }
         

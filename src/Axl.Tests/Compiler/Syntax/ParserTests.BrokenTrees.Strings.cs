@@ -123,7 +123,7 @@ public partial class ParserTests
                     · · · · · · BinaryExpr
                     · · · · · · · NumberLiteral '1'
                     · · · · · · · '+'
-                    · · · · · · · IdName
+                    · · · · · · · NameRef
                     · · · · · · · · ??ID
                     · · · · · · ??'}'
                     · · · · · ??'"'
@@ -384,9 +384,9 @@ public partial class ParserTests
                     ExprStmt
                     · CallExpr
                     · · MemberAccessExpr
-                    · · · IdName 'Standard'
+                    · · · NameRef 'Standard'
                     · · · '.'
-                    · · · IdName 'PrintLine'
+                    · · · NameRef 'PrintLine'
                     · · ArgList
                     · · · '('
                     · · · Arg
@@ -400,7 +400,7 @@ public partial class ParserTests
                     · ??';'
                     VarDecl
                     · 'var'
-                    · IdName 'a'
+                    · NameRef 'a'
                     · InitializerClause
                     · · '='
                     · · NumberLiteral '2'

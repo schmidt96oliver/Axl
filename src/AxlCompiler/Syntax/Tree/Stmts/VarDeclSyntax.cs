@@ -16,7 +16,7 @@ public sealed class VarDeclSyntax(ImmutableArray<SyntaxElement> children)
         }
     }
     
-    public IdentifierToken Name => Children.FirstOfType<IdNameSyntax>().Token;
+    public IdentifierToken Name => Children.FirstOfType<NameRefSyntax>().Token;
 
     public ExprSyntax? TypeAnnotation => Children
         .FirstOfTypeOrNull<TypeAnnotationClauseSyntax>()?

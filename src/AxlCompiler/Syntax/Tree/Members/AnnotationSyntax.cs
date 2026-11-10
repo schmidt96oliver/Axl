@@ -5,5 +5,5 @@ namespace AxlCompiler.Syntax.Tree;
 public sealed class AnnotationSyntax(ImmutableArray<SyntaxElement> children)
     : SyntaxNode(SyntaxKind.Annotation, children)
 {
-    public IdNameSyntax Name => Children.FirstOfType<IdNameSyntax>();
+    public NameRefSyntax NameRef => Children.FirstOfType<NameRefSyntax>();
 }

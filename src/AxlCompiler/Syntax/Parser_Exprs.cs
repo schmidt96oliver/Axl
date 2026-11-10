@@ -23,7 +23,7 @@ public partial class Parser
     private MarkClose EnsureExpr(LeftOperator? left, Anchor anchor)
     {
         if (!_scanner.IsAt(FirstSet.Expr))
-            return EnsureIdName(ExpectedSyntax.Expr);
+            return EnsureNameRef(ExpectedSyntax.Expr);
 
         var lhs = EatExprHead(anchor);
         
@@ -101,7 +101,7 @@ public partial class Parser
 
         // --- Literals
         if (_scanner.IsAt(TokenKind.Identifier))
-            return EnsureIdName();
+            return EnsureNameRef();
 
         if (_scanner.IsAt(TokenKind.NumberLiteral))
             return _scanner.EatInto(SyntaxKind.NumberLiteral);
@@ -165,7 +165,7 @@ public partial class Parser
         if (_scanner.IsAt(TokenKind.Dot))
         {
             _scanner.EatKnown(TokenKind.Dot);
-            EnsureIdName();
+            EnsureNameRef();
             return _scanner.Close(expr, SyntaxKind.MemberAccessExpr);
         }
         
@@ -252,11 +252,11 @@ public partial class Parser
     }
 
 
-    private MarkClose EnsureIdName(ExpectedSyntax? expectedSyntax = null)
+    private MarkClose EnsureNameRef(ExpectedSyntax? expectedSyntax = null)
     {
-        var idName = _scanner.Open();
+        var nameRef = _scanner.Open();
         EnsureToken(TokenKind.Identifier, expectedSyntax);
-        return _scanner.Close(idName, SyntaxKind.IdName);
+        return _scanner.Close(nameRef, SyntaxKind.NameRef);
     }
     
     private MarkClose EatGroupExpr(Anchor anchor)
@@ -279,14 +279,14 @@ public partial class Parser
 
         MarkClose EnsureArg(Anchor argAnchor)
         {
-            // (IdName "=")? "mut"? Expr
+            // (NameRef "=")? "mut"? Expr
             
             var arg = _scanner.Open();
             
             if (_scanner.IsAt(TokenKind.Identifier) && _scanner.IsAt(TokenKind.Equal, skip: 1))
             {
                 // Named argument
-                _scanner.EatInto(SyntaxKind.IdName);
+                _scanner.EatInto(SyntaxKind.NameRef);
                 _scanner.EatKnown(TokenKind.Equal);
             }
             

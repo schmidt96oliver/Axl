@@ -11,13 +11,13 @@ public partial class ParserTests
             => InlineSnapshot.Validate(Tree("call(name = value);"), """
                 ExprStmt
                 · CallExpr
-                · · IdName 'call'
+                · · NameRef 'call'
                 · · ArgList
                 · · · '('
                 · · · Arg
-                · · · · IdName 'name'
+                · · · · NameRef 'name'
                 · · · · '='
-                · · · · IdName 'value'
+                · · · · NameRef 'value'
                 · · · ')'
                 · ';'
                 """);
@@ -27,15 +27,15 @@ public partial class ParserTests
             => InlineSnapshot.Validate(Tree("call(name = val * 1 && 10 - -10);"), """
                 ExprStmt
                 · CallExpr
-                · · IdName 'call'
+                · · NameRef 'call'
                 · · ArgList
                 · · · '('
                 · · · Arg
-                · · · · IdName 'name'
+                · · · · NameRef 'name'
                 · · · · '='
                 · · · · BinaryExpr
                 · · · · · BinaryExpr
-                · · · · · · IdName 'val'
+                · · · · · · NameRef 'val'
                 · · · · · · '*'
                 · · · · · · NumberLiteral '1'
                 · · · · · '&&'
@@ -54,18 +54,18 @@ public partial class ParserTests
             => InlineSnapshot.Validate(Tree("call(name = A().Member);"), """
                 ExprStmt
                 · CallExpr
-                · · IdName 'call'
+                · · NameRef 'call'
                 · · ArgList
                 · · · '('
                 · · · Arg
-                · · · · IdName 'name'
+                · · · · NameRef 'name'
                 · · · · '='
                 · · · · MemberAccessExpr
                 · · · · · CallExpr
-                · · · · · · IdName 'A'
+                · · · · · · NameRef 'A'
                 · · · · · · ArgList '(' ')'
                 · · · · · '.'
-                · · · · · IdName 'Member'
+                · · · · · NameRef 'Member'
                 · · · ')'
                 · ';'
                 """);
@@ -75,16 +75,16 @@ public partial class ParserTests
             => InlineSnapshot.Validate(Tree("call(name = value = chained);"), """
                 ExprStmt
                 · CallExpr
-                · · IdName 'call'
+                · · NameRef 'call'
                 · · ArgList
                 · · · '('
                 · · · Arg
-                · · · · IdName 'name'
+                · · · · NameRef 'name'
                 · · · · '='
                 · · · · BinaryExpr
-                · · · · · IdName 'value'
+                · · · · · NameRef 'value'
                 · · · · · '='
-                · · · · · IdName 'chained'
+                · · · · · NameRef 'chained'
                 · · · ')'
                 · ';'
                 """);
@@ -94,7 +94,7 @@ public partial class ParserTests
             => InlineSnapshot.Validate(Tree("call(1 + 2 = value);"), """
                 ExprStmt
                 · CallExpr
-                · · IdName 'call'
+                · · NameRef 'call'
                 · · ArgList
                 · · · '('
                 · · · Arg
@@ -104,7 +104,7 @@ public partial class ParserTests
                 · · · · · · '+'
                 · · · · · · NumberLiteral '2'
                 · · · · · '='
-                · · · · · IdName 'value'
+                · · · · · NameRef 'value'
                 · · · ')'
                 · ';'
                 """);
@@ -114,16 +114,16 @@ public partial class ParserTests
             => InlineSnapshot.Validate(Tree("call((name = value));"), """
                 ExprStmt
                 · CallExpr
-                · · IdName 'call'
+                · · NameRef 'call'
                 · · ArgList
                 · · · '('
                 · · · Arg
                 · · · · GroupExpr
                 · · · · · '('
                 · · · · · BinaryExpr
-                · · · · · · IdName 'name'
+                · · · · · · NameRef 'name'
                 · · · · · · '='
-                · · · · · · IdName 'value'
+                · · · · · · NameRef 'value'
                 · · · · · ')'
                 · · · ')'
                 · ';'

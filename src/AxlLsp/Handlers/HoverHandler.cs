@@ -35,10 +35,10 @@ public class HoverHandler : HoverHandlerBase
         // var symbol = axlLocation.Compilation.SemanticSideTable.TryGetSymbol(word.Location);
         // if (symbol is null) return Task.FromResult<Hover?>(null);
         
-        if (word.Parent is not IdNameSyntax idNameWord)
+        if (word.Parent is not NameRefSyntax nameRef)
             return Task.FromResult<Hover?>(null);
 
-        var symbol = axlLocation.Compilation.SemanticModel.ReferencedSymbolFor(idNameWord);
+        var symbol = axlLocation.Compilation.SemanticModel.ReferencedSymbolFor(nameRef);
         if (symbol is null)
             return Task.FromResult<Hover?>(null);
 

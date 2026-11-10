@@ -54,7 +54,7 @@ public sealed class SemanticModel(Compilation compilation)
             return new BoundError(compilation.BaseLibrary.Error, syntax);
     }
 
-    public Symbol? ReferencedSymbolFor(IdNameSyntax syntax)
+    public Symbol? ReferencedSymbolFor(NameRefSyntax syntax)
     {
         var bindableSyntax = BindableSyntaxFor(syntax);
         if (bindableSyntax is null) return null;
@@ -127,7 +127,7 @@ public sealed class SemanticModel(Compilation compilation)
                 => null, 
             
             // Annotation don't resolve to symbols. We can early exit them.
-            AnnotationSyntax annotation when annotation.Name == syntax
+            AnnotationSyntax annotation when annotation.NameRef == syntax
                 => null,
 
             _ => syntax,

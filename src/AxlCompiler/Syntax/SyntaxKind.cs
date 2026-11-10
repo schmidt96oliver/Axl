@@ -42,7 +42,7 @@ public enum SyntaxKind
     StringText,
     
     // Expressions
-    IdName,
+    NameRef,
     GroupExpr,
     BinaryExpr,
     UnaryExpr,

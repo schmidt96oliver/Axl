@@ -483,7 +483,7 @@ public sealed class Binder(Scope scope, BinderSideEffects sideEffects)
         
         var symbol = new FieldDefinitionSymbol(syntax, Scope, structSymbol);
         if (symbol.Name.Length > 0)
-            SideEffects.AddResolvedSymbol(syntax.Name.Location, symbol);
+            SideEffects.AddResolvedSymbol(syntax.NameRef.Location, symbol);
 
         return symbol;
     }
@@ -492,10 +492,10 @@ public sealed class Binder(Scope scope, BinderSideEffects sideEffects)
 
     public BoundAnnotation? BindAnnotation(AnnotationSyntax syntax)
     {
-        if (syntax.Name.Text is "")
+        if (syntax.NameRef.Text is "")
             return null;
 
-        if (Enum.TryParse(syntax.Name.Text, out AnnotationKind kind))
+        if (Enum.TryParse(syntax.NameRef.Text, out AnnotationKind kind))
             return new BoundAnnotation(kind, syntax);
         
         SideEffects.ReportError(new Diagnostic.UnknownAnnotation(syntax));
@@ -878,7 +878,7 @@ public sealed class Binder(Scope scope, BinderSideEffects sideEffects)
         var node = syntax switch
         {
             MemberAccessExprSyntax memberAccessExprSyntax => BindMemberAccess(memberAccessExprSyntax),
-            IdNameSyntax idNameSyntax => BindIdName(idNameSyntax, lookupOptions),
+            NameRefSyntax nameRefSyntax => BindNameRef(nameRefSyntax, lookupOptions),
             SelfSyntax selfSyntax => BindSelf(selfSyntax),
             CallExprSyntax callExprSyntax => BindCall(callExprSyntax),
             SubscriptExprSyntax subscriptExprSyntax => BindSubscript(subscriptExprSyntax),
@@ -1407,7 +1407,7 @@ public sealed class Binder(Scope scope, BinderSideEffects sideEffects)
 
     #region Names and Member access
 
-    private void ResolveProbe(IEnumerable<Symbol> visible, BoundNode? left, LookupOptions lookupOptions, IdNameSyntax probeSyntax)
+    private void ResolveProbe(IEnumerable<Symbol> visible, BoundNode? left, LookupOptions lookupOptions, NameRefSyntax probeSyntax)
     {
         // We need to filter all symbols that would not make it through binding
         // and filter as well as possible.
@@ -1443,7 +1443,7 @@ public sealed class Binder(Scope scope, BinderSideEffects sideEffects)
         SideEffects.ResolveProbe(symbols.DrainToImmutable(), Scope);
     }
     
-    private BoundNode BindLookupResult(LookupResult result, BoundNode? left, IdNameSyntax syntax)
+    private BoundNode BindLookupResult(LookupResult result, BoundNode? left, NameRefSyntax syntax)
     {
         if (result.Viability is LookupViability.NotFound)
         {
@@ -1492,7 +1492,7 @@ public sealed class Binder(Scope scope, BinderSideEffects sideEffects)
         return boundSymbol;
     }
     
-    private BoundNode BindIdName(IdNameSyntax syntax, LookupOptions lookupOptions)
+    private BoundNode BindNameRef(NameRefSyntax syntax, LookupOptions lookupOptions)
     {
         if (syntax.Token.IsMissing)
             return new BoundError(ErrorType, syntax);
@@ -1508,19 +1508,19 @@ public sealed class Binder(Scope scope, BinderSideEffects sideEffects)
         var bound = BindLookupResult(lookupResult, left: null, syntax);
             
         if (lookupResult.Viability is LookupViability.WrongKind)
-            return BindIdNameWithWrongKind(bound, lookupOptions);
+            return BindNameRefWithWrongKind(bound, lookupOptions);
 
         return bound;
     }
 
-    private BoundError BindIdNameWithWrongKind(BoundNode boundNode, LookupOptions lookupOptions)
+    private BoundError BindNameRefWithWrongKind(BoundNode boundNode, LookupOptions lookupOptions)
         => lookupOptions switch
         {
             { } when boundNode is BoundError error => error,
             LookupOptions.MustBeCallable => BindError(boundNode.Syntax!, new Diagnostic.CannotCall(boundNode)),
             LookupOptions.OnlyType => BindError(boundNode.Syntax!, new Diagnostic.NotAType(boundNode)),
             LookupOptions.OnlyNamespace => BindError(boundNode.Syntax!, new Diagnostic.NotANamespace(boundNode)),
-            _ => throw new UnreachableException($"{nameof(LookupOptions)}.{lookupOptions} is unknown to {nameof(BindIdNameWithWrongKind)}")
+            _ => throw new UnreachableException($"{nameof(LookupOptions)}.{lookupOptions} is unknown to {nameof(BindNameRefWithWrongKind)}")
         };
     
 
@@ -1555,7 +1555,7 @@ public sealed class Binder(Scope scope, BinderSideEffects sideEffects)
         return BindLookupResult(lookupResult, left, syntax.Member);
     }
 
-    private BoundNode BindMemberAccessLeftSide(ExprSyntax syntax, IdNameSyntax memberSyntax)
+    private BoundNode BindMemberAccessLeftSide(ExprSyntax syntax, NameRefSyntax memberSyntax)
     {
         var left = BindExpr(syntax, LookupOptions.Any);
 
@@ -1594,7 +1594,7 @@ public sealed class Binder(Scope scope, BinderSideEffects sideEffects)
         return replaced;
     }
     
-    private BoundNode BindVariable(VariableSymbol variable, IdNameSyntax syntax)
+    private BoundNode BindVariable(VariableSymbol variable, NameRefSyntax syntax)
     {
         // Variables could be captured from outside, which is forbidden.
 
@@ -1604,7 +1604,7 @@ public sealed class Binder(Scope scope, BinderSideEffects sideEffects)
         return new BoundVariable(variable, syntax);
     }
 
-    private BoundNode BindFunGroup(LookupResult lookupResult, BoundNode? receiver, IdNameSyntax syntax)
+    private BoundNode BindFunGroup(LookupResult lookupResult, BoundNode? receiver, NameRefSyntax syntax)
     {
         if (lookupResult.Symbols.Any(s => s is not FunSymbol))
         {
@@ -1615,7 +1615,7 @@ public sealed class Binder(Scope scope, BinderSideEffects sideEffects)
         return new BoundFunGroup([.. lookupResult.Symbols.Cast<FunSymbol>()], receiver, syntax);
     }
 
-    private BoundNode BindFieldAccess(FieldSymbol field, BoundNode? receiver, IdNameSyntax syntax)
+    private BoundNode BindFieldAccess(FieldSymbol field, BoundNode? receiver, NameRefSyntax syntax)
     {
         // A field name could still be interpreted as a type ref if
         // the field is named after its type.

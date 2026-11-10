@@ -54,7 +54,7 @@ public partial record Diagnostic
                 : Syntax.Location;
     }
 
-    public sealed record UndefinedName(IdNameSyntax Syntax) : Error
+    public sealed record UndefinedName(NameRefSyntax Syntax) : Error
     {
         public override ImmutableArray<SourceLocation> Locations
             => [Syntax.Location];
@@ -448,7 +448,7 @@ public partial record Diagnostic
         {
             StructSymbol structSymbol => [structSymbol.DeclarationSyntax.Name.Location],
             SourceFunSymbol sourceFun => [sourceFun.DeclarationSyntax.Name.Location],
-            FieldDefinitionSymbol fieldSymbol => [fieldSymbol.DeclarationSyntax.Name.Location],
+            FieldDefinitionSymbol fieldSymbol => [fieldSymbol.DeclarationSyntax.NameRef.Location],
             SourceNamespaceSymbol namespaceSymbol =>
             [
                 .. namespaceSymbol.Declaration.NamespaceDeclSyntaxes.Select(s => s.Name.Location)

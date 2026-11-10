@@ -17,7 +17,7 @@ public partial class ParserTests
                 Garbage
                 · Annotation
                 · · '@'
-                · · IdName
+                · · NameRef
                 · · · ??ID
                 """);
         [Fact]
@@ -32,11 +32,11 @@ public partial class ParserTests
                 Garbage
                 · Annotation
                 · · '@'
-                · · IdName
+                · · NameRef
                 · · · ??ID
                 · Annotation
                 · · '@'
-                · · IdName
+                · · NameRef
                 · · · ??ID
                 """);
         [Fact]
@@ -50,7 +50,7 @@ public partial class ParserTests
                 Garbage
                 · Annotation
                 · · '@'
-                · · IdName 'ID'
+                · · NameRef 'ID'
                 """);
         [Fact]
         public void Annotations_Alone_4()
@@ -63,10 +63,10 @@ public partial class ParserTests
                 Garbage
                 · Annotation
                 · · '@'
-                · · IdName 'ID'
+                · · NameRef 'ID'
                 · Annotation
                 · · '@'
-                · · IdName 'ID2'
+                · · NameRef 'ID2'
                 """);
         [Fact]
         public void Annotations_Pub_1()
@@ -79,7 +79,7 @@ public partial class ParserTests
                 Garbage
                 · Annotation
                 · · '@'
-                · · IdName 'ID'
+                · · NameRef 'ID'
                 · 'pub'
                 """);
         [Fact]
@@ -93,10 +93,10 @@ public partial class ParserTests
                 Garbage
                 · Annotation
                 · · '@'
-                · · IdName 'ID'
+                · · NameRef 'ID'
                 · Annotation
                 · · '@'
-                · · IdName 'ID2'
+                · · NameRef 'ID2'
                 · 'pub'
                 """);
         [Fact]
@@ -107,7 +107,7 @@ public partial class ParserTests
                 FunDecl
                 · Annotation
                 · · '@'
-                · · IdName 'ID'
+                · · NameRef 'ID'
                 · 'fun'
                 · FunName 'A'
                 · ParamList '(' ')'
@@ -122,10 +122,10 @@ public partial class ParserTests
                 FunDecl
                 · Annotation
                 · · '@'
-                · · IdName 'ID'
+                · · NameRef 'ID'
                 · Annotation
                 · · '@'
-                · · IdName 'ID'
+                · · NameRef 'ID'
                 · 'fun'
                 · FunName 'A'
                 · ParamList '(' ')'
@@ -140,7 +140,7 @@ public partial class ParserTests
                 FunDecl
                 · Annotation
                 · · '@'
-                · · IdName 'ID'
+                · · NameRef 'ID'
                 · 'pub'
                 · 'fun'
                 · FunName 'A'
@@ -156,7 +156,7 @@ public partial class ParserTests
                 FunDecl
                 · Annotation
                 · · '@'
-                · · IdName 'ID'
+                · · NameRef 'ID'
                 · 'static'
                 · 'fun'
                 · FunName 'A'
@@ -172,7 +172,7 @@ public partial class ParserTests
                 FunDecl
                 · Annotation
                 · · '@'
-                · · IdName 'ID'
+                · · NameRef 'ID'
                 · 'mut'
                 · 'fun'
                 · FunName 'A'
@@ -188,9 +188,9 @@ public partial class ParserTests
                 StructDecl
                 · Annotation
                 · · '@'
-                · · IdName 'ID'
+                · · NameRef 'ID'
                 · 'struct'
-                · IdName 'T'
+                · NameRef 'T'
                 · ';'
                 """);
         [Fact]
@@ -201,10 +201,10 @@ public partial class ParserTests
                 StructDecl
                 · Annotation
                 · · '@'
-                · · IdName 'ID'
+                · · NameRef 'ID'
                 · 'pub'
                 · 'struct'
-                · IdName 'T'
+                · NameRef 'T'
                 · ';'
                 """);
         [Fact]
@@ -215,13 +215,13 @@ public partial class ParserTests
                 StructDecl
                 · Annotation
                 · · '@'
-                · · IdName 'ID'
+                · · NameRef 'ID'
                 · Annotation
                 · · '@'
-                · · IdName 'ID2'
+                · · NameRef 'ID2'
                 · 'pub'
                 · 'struct'
-                · IdName 'T'
+                · NameRef 'T'
                 · ';'
                 """);
 
@@ -239,7 +239,7 @@ public partial class ParserTests
                 · TypeParamList
                 · · '['
                 · · TypeParam
-                · · · IdName
+                · · · NameRef
                 · · · · ??ID
                 · · ']'
                 · ParamList '(' ')'
@@ -257,7 +257,7 @@ public partial class ParserTests
                 · TypeParamList
                 · · '['
                 · · TypeParam
-                · · · IdName 'T1'
+                · · · NameRef 'T1'
                 · · ']'
                 · ParamList '(' ')'
                 · FunBody
@@ -274,10 +274,10 @@ public partial class ParserTests
                 · TypeParamList
                 · · '['
                 · · TypeParam
-                · · · IdName 'T1'
+                · · · NameRef 'T1'
                 · · ','
                 · · TypeParam
-                · · · IdName 'T2'
+                · · · NameRef 'T2'
                 · · ']'
                 · ParamList '(' ')'
                 · FunBody
@@ -294,13 +294,13 @@ public partial class ParserTests
                 · TypeParamList
                 · · '['
                 · · TypeParam
-                · · · IdName 'T1'
+                · · · NameRef 'T1'
                 · · ','
                 · · TypeParam
-                · · · IdName 'T2'
+                · · · NameRef 'T2'
                 · · ','
                 · · TypeParam
-                · · · IdName 'T3'
+                · · · NameRef 'T3'
                 · · ']'
                 · ParamList '(' ')'
                 · FunBody
@@ -317,11 +317,11 @@ public partial class ParserTests
 
                 StructDecl
                 · 'struct'
-                · IdName 'A'
+                · NameRef 'A'
                 · TypeParamList
                 · · '['
                 · · TypeParam
-                · · · IdName
+                · · · NameRef
                 · · · · ??ID
                 · · ']'
                 · StructBody '{' '}'
@@ -333,11 +333,11 @@ public partial class ParserTests
                                             """), """
                 StructDecl
                 · 'struct'
-                · IdName 'A'
+                · NameRef 'A'
                 · TypeParamList
                 · · '['
                 · · TypeParam
-                · · · IdName 'T1'
+                · · · NameRef 'T1'
                 · · ']'
                 · StructBody '{' '}'
                 """);
@@ -348,14 +348,14 @@ public partial class ParserTests
                                             """), """
                 StructDecl
                 · 'struct'
-                · IdName 'A'
+                · NameRef 'A'
                 · TypeParamList
                 · · '['
                 · · TypeParam
-                · · · IdName 'T1'
+                · · · NameRef 'T1'
                 · · ','
                 · · TypeParam
-                · · · IdName 'T2'
+                · · · NameRef 'T2'
                 · · ']'
                 · ';'
                 """);
@@ -366,17 +366,17 @@ public partial class ParserTests
                                             """), """
                 StructDecl
                 · 'struct'
-                · IdName 'A'
+                · NameRef 'A'
                 · TypeParamList
                 · · '['
                 · · TypeParam
-                · · · IdName 'T1'
+                · · · NameRef 'T1'
                 · · ','
                 · · TypeParam
-                · · · IdName 'T2'
+                · · · NameRef 'T2'
                 · · ','
                 · · TypeParam
-                · · · IdName 'T3'
+                · · · NameRef 'T3'
                 · · ']'
                 · ';'
                 """);

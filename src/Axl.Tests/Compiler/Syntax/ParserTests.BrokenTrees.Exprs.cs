@@ -20,10 +20,10 @@ public partial class ParserTests
                     · · 'if'
                     · · ConditionClause
                     · · · ??'('
-                    · · · IdName
+                    · · · NameRef
                     · · · · ??ID
                     · · · ??')'
-                    · · IdName
+                    · · NameRef
                     · · · ??ID
                     · ??';'
                     """);
@@ -41,7 +41,7 @@ public partial class ParserTests
                     · · · ??'('
                     · · · NumberLiteral '1'
                     · · · ??')'
-                    · · IdName
+                    · · NameRef
                     · · · ??ID
                     · ??';'
                     """);
@@ -79,14 +79,14 @@ public partial class ParserTests
                     · · ConditionClause
                     · · · '('
                     · · · BinaryExpr
-                    · · · · IdName 'a'
+                    · · · · NameRef 'a'
                     · · · · '>'
-                    · · · · IdName 'b'
+                    · · · · NameRef 'b'
                     · · · ??')'
                     · · BlockExpr
                     · · · '{'
                     · · · ExprStmt
-                    · · · · IdName 'inner'
+                    · · · · NameRef 'inner'
                     · · · · ';'
                     · · · '}'
                     """);
@@ -107,11 +107,11 @@ public partial class ParserTests
                     · · ConditionClause
                     · · · '('
                     · · · BinaryExpr
-                    · · · · IdName 'a'
+                    · · · · NameRef 'a'
                     · · · · '>'
-                    · · · · IdName 'b'
+                    · · · · NameRef 'b'
                     · · · ??')'
-                    · · IdName 'inner'
+                    · · NameRef 'inner'
                     · ';'
                     """);
             
@@ -131,15 +131,15 @@ public partial class ParserTests
                     · · ConditionClause
                     · · · '('
                     · · · BinaryExpr
-                    · · · · IdName 'a'
+                    · · · · NameRef 'a'
                     · · · · '>'
-                    · · · · IdName 'b'
+                    · · · · NameRef 'b'
                     · · · ??')'
-                    · · IdName
+                    · · NameRef
                     · · · ??ID
                     · · ElseClause
                     · · · 'else'
-                    · · · IdName 'inner'
+                    · · · NameRef 'inner'
                     · ';'
                     """);
         }

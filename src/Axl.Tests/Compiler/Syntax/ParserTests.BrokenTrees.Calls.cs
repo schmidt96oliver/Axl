@@ -16,14 +16,14 @@ public partial class ParserTests
 
                     ExprStmt
                     · CallExpr
-                    · · IdName 'Foo'
+                    · · NameRef 'Foo'
                     · · ArgList
                     · · · '('
                     · · · Arg
-                    · · · · IdName 'a'
+                    · · · · NameRef 'a'
                     · · · ??','
                     · · · Arg
-                    · · · · IdName 'b'
+                    · · · · NameRef 'b'
                     · · · ')'
                     · ';'
                     """);
@@ -36,18 +36,18 @@ public partial class ParserTests
 
                     ExprStmt
                     · CallExpr
-                    · · IdName 'Foo'
+                    · · NameRef 'Foo'
                     · · ArgList
                     · · · '('
                     · · · Arg
                     · · · · BinaryExpr
-                    · · · · · IdName 'a'
+                    · · · · · NameRef 'a'
                     · · · · · '+'
                     · · · · · CallExpr
                     · · · · · · MemberAccessExpr
-                    · · · · · · · IdName 'b'
+                    · · · · · · · NameRef 'b'
                     · · · · · · · '.'
-                    · · · · · · · IdName 'c'
+                    · · · · · · · NameRef 'c'
                     · · · · · · ArgList '(' ')'
                     · · · ??','
                     · · · Arg
@@ -65,20 +65,20 @@ public partial class ParserTests
 
                     ExprStmt
                     · CallExpr
-                    · · IdName 'Foo'
+                    · · NameRef 'Foo'
                     · · ArgList
                     · · · '('
                     · · · Arg
-                    · · · · IdName 'a'
+                    · · · · NameRef 'a'
                     · · · ??','
                     · · · Arg
-                    · · · · IdName 'b'
+                    · · · · NameRef 'b'
                     · · · ','
                     · · · Arg
-                    · · · · IdName 'c'
+                    · · · · NameRef 'c'
                     · · · ??','
                     · · · Arg
-                    · · · · IdName 'd'
+                    · · · · NameRef 'd'
                     · · · ')'
                     · ';'
                     """);

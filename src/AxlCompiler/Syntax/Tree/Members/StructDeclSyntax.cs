@@ -12,7 +12,7 @@ public sealed class StructDeclSyntax(ImmutableArray<SyntaxElement> children)
     
     public TypeParamListSyntax? TypeParameterList => Children.FirstOfTypeOrNull<TypeParamListSyntax>();
     
-    public IdentifierToken Name => Children.FirstOfType<IdNameSyntax>().Token;
+    public IdentifierToken Name => Children.FirstOfType<NameRefSyntax>().Token;
     
     public StructBodySyntax? Body => Children.FirstOfTypeOrNull<StructBodySyntax>();
 }

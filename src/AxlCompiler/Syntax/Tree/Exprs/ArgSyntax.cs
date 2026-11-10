@@ -5,11 +5,11 @@ namespace AxlCompiler.Syntax.Tree;
 public sealed class ArgSyntax(ImmutableArray<SyntaxElement> children)
     : SyntaxNode(SyntaxKind.Arg, children)
 {
-    // Arg = (IdName "=")? "mut"? Expr
+    // Arg = (NameRef "=")? "mut"? Expr
 
     public bool IsNamed => Children.Any(el => el is Token { Kind: TokenKind.Equal });
     
-    public IdNameSyntax? Name => IsNamed ? Children.FirstOfType<IdNameSyntax>() : null;
+    public NameRefSyntax? Name => IsNamed ? Children.FirstOfType<NameRefSyntax>() : null;
 
     public Token? MutKw => Children.OfType<Token>().FirstOrDefault(el => el.Kind == TokenKind.MutKw);
     
