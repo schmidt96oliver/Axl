@@ -35,10 +35,10 @@ public sealed class SemanticModel(Compilation compilation)
         => ProbeAt(tree, position)?.VisibleSymbolsAtProbe ?? [];
 
 
-    public Scope? TryScopeAt(SourceLocation location)
-        => TryScopeAt(compilation.SyntaxTreeFor(location.SourceText), location.Start);
+    public Scope? TryScopeAtUnmapped(SourceLocation location)
+        => TryScopeAtUnmapped(compilation.SyntaxTreeFor(location.SourceText), location.Start);
     
-    public Scope? TryScopeAt(SyntaxTree tree, int position)
+    public Scope? TryScopeAtUnmapped(SyntaxTree tree, int position)
         => ProbeAt(tree, position)?.ScopeAtProbe;
 
 

@@ -7,7 +7,7 @@ using Shouldly;
 
 namespace Axl.Tests.Lsp;
 
-public sealed class CompletionTests
+public sealed partial class CompletionTests
 {
     private static string Items(string input)
     {

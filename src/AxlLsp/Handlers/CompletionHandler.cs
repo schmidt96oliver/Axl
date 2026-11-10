@@ -40,23 +40,34 @@ public sealed class CompletionHandler : CompletionHandlerBase
     }
 
 
-    internal static IEnumerable<CompletionItem> GetStructInitFieldItems(BoundStructInitError structInitError)
+    internal static IEnumerable<CompletionItem> GetStructInitFieldItems(BoundStructInitError structInitError, SyntaxContext context)
     {
+        // Show only those candidates that have all the fields
+        // that have been written. The binder does not filter
+        // those out.
         var filledFieldNames = structInitError.BoundArguments
-            .Where(arg => arg.FieldNameSyntax is not null)
-            .Select(arg => arg.FieldNameSyntax!.Text.ToString())
+            .Select(arg => arg.FieldNameSyntax?.Text.ToString() ?? "")
+            .Where(fieldName => fieldName is not "" &&
+                context.TouchingWord?.Text.SequenceEqual(fieldName) != true)
             .ToHashSet();
-        var remainingFieldNames = structInitError.Candidates
-            .SelectMany(t => t.Members.OfType<FieldSymbol>())
-            .Select(field => field.Name)
-            .Where(fieldName => !filledFieldNames.Contains(fieldName))
-            .Distinct();
+
+        var names = structInitError.Candidates.SelectMany(RemainingFields).Distinct();
         
-        return remainingFieldNames.Select(fieldName => new CompletionItem
+        return names.Select(fieldName => new CompletionItem
         {
             Label = $"{fieldName} = ",
             Kind = CompletionItemKind.File
         });
+
+        IEnumerable<string> RemainingFields(TypeSymbol type)
+        {
+            var fields = type.Members.OfType<FieldSymbol>().ToImmutableArray();
+            if (filledFieldNames.Any(name => !fields.Any(f => f.Name == name)))
+                return [];
+
+            return fields.Where(f => !filledFieldNames.Contains(f.Name))
+                .Select(f => f.Name);
+        }
     }
     
     /// <param name="excludeReferencedCompilations">
@@ -77,7 +88,7 @@ public sealed class CompletionHandler : CompletionHandlerBase
             var callSyntax = argListSyntax.Ancestors().OfType<CallExprSyntax>().First();
             if (compilation.SemanticModel.BoundNodeFor(callSyntax) is BoundStructInitError error)
             {
-                foreach (var item in GetStructInitFieldItems(error))
+                foreach (var item in GetStructInitFieldItems(error, context))
                     yield return item;
                 yield break;
             }
@@ -268,13 +279,13 @@ public sealed class CompletionHandler : CompletionHandlerBase
 
     private static bool IsSelfValid(SyntaxContext context)
     {
-        var scope = context.Compilation.SemanticModel.TryScopeAt(context.SyntaxTree, context.Caret);
+        var scope = context.Compilation.SemanticModel.TryScopeAtUnmapped(context.SyntaxTree, context.Caret);
         return scope?.InstanceType is not null;
     }
 
     private static bool IsBreakOrContinueValid(SyntaxContext context)
     {
-        var scope = context.Compilation.SemanticModel.TryScopeAt(context.SyntaxTree, context.Caret);
+        var scope = context.Compilation.SemanticModel.TryScopeAtUnmapped(context.SyntaxTree, context.Caret);
         return scope?.IsInsideLoop == true;
     }
 }

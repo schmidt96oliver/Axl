@@ -8,9 +8,6 @@
 * What to do if syntax and BoundNode diverge (they might)? Fix or keep?
 * Cache bound nodes per ?? body, found nodes ??
 
-* TypeGroup resolution: Remove candidates with wrong fields
-* tests: Basic ("|Field=", "F|", "(|"); type group resolution; only remaining
-
 * Completion:
     * Insert []
     * Insert ()
