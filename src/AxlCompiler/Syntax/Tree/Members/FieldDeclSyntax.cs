@@ -8,8 +8,8 @@ public sealed class FieldDeclSyntax(ImmutableArray<SyntaxElement> children)
     public Token? PubKw => Children.FirstNonTriviaToken() is { Kind: TokenKind.PubKw } pubToken
         ? pubToken
         : null;
-    
-    public NameRefSyntax NameRef => Children.FirstOfType<NameRefSyntax>();
+
+    public IdentifierToken Name => Children.FirstOfType<IdentifierToken>();
 
     public ExprSyntax TypeExpr => Children.FirstOfType<TypeAnnotationClauseSyntax>().TypeExpr;
 }

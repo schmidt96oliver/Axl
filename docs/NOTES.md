@@ -5,25 +5,45 @@
 
 # Now
 
-* Change FieldDeclSyntax to IdentifierToken
-* Renamed "IdNameSyntax" to "NameRefSyntax"
+* tests: SemanticModel.ReferencedSymbolFor
+  * on entire Corpus: Every NameRef needs to resolve to a symbol in valid files
+  * fix ColorColor case (should probably record in binder)
 
-* What to do if syntax and BoundNode diverge (they might)? Fix or keep?
-* Cache bound nodes per ?? body, found nodes ??
+* How to walk symbol tree for syntax node?
+  * Clarify DeclaringSyntaxes
+  * Maybe add NameSyntax already
 
+* Bind per fun/script body
+  * Cache body -> BoundBody
+  * exhaustive switch on BoundBodyFor(Symbol) (might add exprs later or something)
+    * Also, fun offer the body anyway already :).
+  * map Syntax -> *one* BoundNode (pick most current from side effects)
+  * Should resolvers bind concrete nodes. ColorColor cases?
+
+* move semantic tokens to ReferencedSymbolFor/DeclaredSymbolFor
+
+* Add `SemanticModel.DeclaredSymbolFor(IdentifierToken)`
+  * Symbol tree walk (for struct, fun, field, type parameter)
+  * parameter: Inside fun
+  * let/var: Record in BindStmt, bind the body
+  * namespace: walk name parts
+
+
+* Remove `AddResolvedSymbols` (run differential test first)
+  
 * Completion:
     * Insert []
     * Insert ()
 
-* GoTo Def
-  * Symbol.NameSyntax: IdNameSyntax that introduces its name ("namespace A._B_.C" for B)
-  * DeclSyntax: Add subnamespaces "namespace A.B.C", A, B and C have this FileSyntax
-  * See Claude advice
+* [ ] GoTo Def (ReferencedSymbolFor + NameSyntax)
+* [ ] Rename (about the same)
+* [ ] Document Highlight
+  * FindReferences(SourceLocation? scope) =
+    (a) narrow search scope (block for local, fun for param, ...)
+    (b) search for identifier tokens with that name
+    (c) check against ReferencedSymbolFor
 
-* Completion: Number suffixes? (a split might break it !!)
-
-* SignatureHelp
-  * Expose BoundErrorCall
+* [ ] SignatureHelp (through BoundCallError)
 
 # Questions / Little ones
 
@@ -60,9 +80,6 @@
     * 'var' can be 'let'
     * unecessary parameter 'mut' + self
     * unecessary assignment
-
-**LSP Work**: signature help, folding ranges, symbol highlighting, rename
-* Churns the data structure heavily
 
 **Enums/Exhaustiveness/Patterns**
 

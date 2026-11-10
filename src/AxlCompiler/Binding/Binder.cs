@@ -483,7 +483,7 @@ public sealed class Binder(Scope scope, BinderSideEffects sideEffects)
         
         var symbol = new FieldDefinitionSymbol(syntax, Scope, structSymbol);
         if (symbol.Name.Length > 0)
-            SideEffects.AddResolvedSymbol(syntax.NameRef.Location, symbol);
+            SideEffects.AddResolvedSymbol(syntax.Name.Location, symbol);
 
         return symbol;
     }

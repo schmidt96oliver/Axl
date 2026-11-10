@@ -10,7 +10,7 @@ public sealed class FieldDefinitionSymbol(
     FieldDeclSyntax declarationSyntax,
     Scope enclosingScope,
     TypeSymbol owner)
-    : FieldSymbol(declarationSyntax.NameRef.Text.ToString(),
+    : FieldSymbol(declarationSyntax.Name.Text.ToString(),
         owner, isPublic: declarationSyntax.PubKw is not null)
 {
     private readonly BinderSideEffects _sideEffects = new();

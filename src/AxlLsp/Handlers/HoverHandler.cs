@@ -32,9 +32,8 @@ public class HoverHandler : HoverHandlerBase
         var word = context.TouchingWord;
         if (word is null) return Task.FromResult<Hover?>(null);
         
-        // var symbol = axlLocation.Compilation.SemanticSideTable.TryGetSymbol(word.Location);
-        // if (symbol is null) return Task.FromResult<Hover?>(null);
-        
+        //TODO: Parent NameRef => ReferencedSymbolFor
+        //                   _ => DeclaredSymbolFor
         if (word.Parent is not NameRefSyntax nameRef)
             return Task.FromResult<Hover?>(null);
 

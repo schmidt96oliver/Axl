@@ -448,7 +448,7 @@ public partial record Diagnostic
         {
             StructSymbol structSymbol => [structSymbol.DeclarationSyntax.Name.Location],
             SourceFunSymbol sourceFun => [sourceFun.DeclarationSyntax.Name.Location],
-            FieldDefinitionSymbol fieldSymbol => [fieldSymbol.DeclarationSyntax.NameRef.Location],
+            FieldDefinitionSymbol fieldSymbol => [fieldSymbol.DeclarationSyntax.Name.Location],
             SourceNamespaceSymbol namespaceSymbol =>
             [
                 .. namespaceSymbol.Declaration.NamespaceDeclSyntaxes.Select(s => s.Name.Location)

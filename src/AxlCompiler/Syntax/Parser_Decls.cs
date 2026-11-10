@@ -110,7 +110,7 @@ public partial class Parser
     {
         Debug.Assert(_scanner.IsAt(FirstSet.FieldDeclAfterHeader));
 
-        EnsureNameRef(ExpectedSyntax.FieldName);
+        EnsureToken(TokenKind.Identifier);
         EnsureTypeAnnotation(anchor | TokenKind.Semicolon);
         EnsureToken(TokenKind.Semicolon);
         return _scanner.Close(commonHeader, SyntaxKind.FieldDecl);
