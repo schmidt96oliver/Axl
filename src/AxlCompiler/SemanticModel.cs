@@ -53,8 +53,88 @@ public sealed class SemanticModel(Compilation compilation)
         else
             return new BoundError(compilation.BaseLibrary.Error, syntax);
     }
+
+    public Symbol? ReferencedSymbolFor(IdNameSyntax syntax)
+    {
+        var bindableSyntax = BindableSyntaxFor(syntax);
+        if (bindableSyntax is null) return null;
+
+        return ReferencedSymbolFor(bindableSyntax);
+    }
+
+    private Symbol? ReferencedSymbolFor(ExprSyntax syntax)
+        => BoundNodeFor(syntax) switch
+        {
+            IBoundSymbolRef symbolRef => symbolRef.Symbol,
+            BoundTypeGroup typeGroup => ReferencedSymbolFor(typeGroup, syntax),
+            BoundFunGroup funGroup => ReferencedSymbolFor(funGroup, syntax),
+            _ => null
+        };
+
+    private Symbol? ReferencedSymbolFor(BoundTypeGroup typeGroup, ExprSyntax syntax)
+    {
+        if (typeGroup.Candidates is [var single])
+            return single;
+        
+        // Type groups are specialized through call expressions otherwise
+        if (syntax.Ancestors().FirstOfTypeOrNull<CallExprSyntax>() is { } callExprSyntax)
+        {
+            var boundCall = BoundNodeFor(callExprSyntax);
+            if (boundCall is BoundStructInit structInit)
+                return structInit.Type;
+            if (boundCall is BoundStructInitError structInitError)
+                return structInitError.Candidates.Length == 1 ? structInitError.Candidates[0] : null;
+        }
+
+        return null;    // Ambiguous
+    }
+
+    private Symbol? ReferencedSymbolFor(BoundFunGroup funGroup, ExprSyntax syntax)
+    {
+        // If it's a single one, we can return it directly
+        // if it needs no generic type inference.
+        if (funGroup.Candidates is [var single] && single.TypeParameters.Length == funGroup.TypeArguments.Length)
+        {
+            return single.TypeParameters.Length > 0
+                ? single.Specialize([.. funGroup.TypeArguments.Select(t => t.Type)])
+                : single;
+        }
+
+        // Bind the overlaying call and return it's callee
+        var callSyntax = syntax.Ancestors().OfType<CallExprSyntax>().FirstOrDefault();
+        if (callSyntax is null || callSyntax.Callee != syntax)
+            return funGroup.Candidates is [var singleFun]
+                ? singleFun
+                : null; //TODO: Return candidates (then also add subscript)
+        var boundCall = BoundNodeFor(callSyntax) as BoundCall;
+        if (boundCall is null)
+            return funGroup.Candidates is [var singleFun] ? singleFun : null;
+
+        return boundCall.Fun;
+    }
     
-    
+    private ExprSyntax? BindableSyntaxFor(ExprSyntax syntax)
+    {
+        return syntax.Parent switch
+        {
+            MemberAccessExprSyntax memberAccess when memberAccess.Member == syntax
+                => memberAccess,
+            SubscriptExprSyntax subscript when subscript.Left == syntax
+                => subscript,
+
+            //TODO: Handle argument names through BoundCall / whatnot
+            ArgSyntax arg when arg.Name == syntax 
+                => null, 
+            
+            // Annotation don't resolve to symbols. We can early exit them.
+            AnnotationSyntax annotation when annotation.Name == syntax
+                => null,
+
+            _ => syntax,
+        };
+    }
+
+
     private BinderSideEffects? ProbeAt(SyntaxTree tree, int position)
     {
         const string probeText = "__AXL_HOH_HOH_CARET__";

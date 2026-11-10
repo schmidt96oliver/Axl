@@ -32,8 +32,15 @@ public class HoverHandler : HoverHandlerBase
         var word = context.TouchingWord;
         if (word is null) return Task.FromResult<Hover?>(null);
         
-        var symbol = axlLocation.Compilation.SemanticSideTable.TryGetSymbol(word.Location);
-        if (symbol is null) return Task.FromResult<Hover?>(null);
+        // var symbol = axlLocation.Compilation.SemanticSideTable.TryGetSymbol(word.Location);
+        // if (symbol is null) return Task.FromResult<Hover?>(null);
+        
+        if (word.Parent is not IdNameSyntax idNameWord)
+            return Task.FromResult<Hover?>(null);
+
+        var symbol = axlLocation.Compilation.SemanticModel.ReferencedSymbolFor(idNameWord);
+        if (symbol is null)
+            return Task.FromResult<Hover?>(null);
 
         var lspLocation = ProjectStore.TryMapToLsp(word.Location);
         if (lspLocation is null || lspLocation.Uri != uri)

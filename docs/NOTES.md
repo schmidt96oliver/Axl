@@ -5,6 +5,9 @@
 
 # Now
 
+* Change FieldDeclSyntax to IdentifierToken
+* Renamed "IdNameSyntax" to "NameRefSyntax"
+
 * What to do if syntax and BoundNode diverge (they might)? Fix or keep?
 * Cache bound nodes per ?? body, found nodes ??
 

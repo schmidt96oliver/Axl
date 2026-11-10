@@ -65,7 +65,6 @@ public enum SyntaxKind
     TypeParam,
     TypeParamList,
     
-    NativeClause,
     ElseClause,
     TypeAnnotationClause,
     ReturnTypeAnnotation,
