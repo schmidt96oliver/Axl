@@ -102,6 +102,6 @@ public sealed class StructSymbol(
         // it's just a check that doesn't compute any real values.
         new Binder(new MemberScope(enclosingScope, this), _sideEffects).CheckRecursiveStructLayout(this);
         
-        sideEffects.AddFrom(_sideEffects);
+        sideEffects.MergeWith(_sideEffects);
     }
 }

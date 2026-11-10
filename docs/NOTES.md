@@ -5,6 +5,8 @@
 
 # Now
 
+* What to do if syntax and BoundNode diverge (they might)? Fix or keep?
+
 * Completion:
     * Insert []
     * Insert ()

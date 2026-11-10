@@ -27,6 +27,6 @@ public sealed class LazyUsingsScope(Scope enclosingScope, ImmutableArray<UsingDi
     public void Complete(BinderSideEffects sideEffects)
     {
         _ = VisibleSymbols;
-        sideEffects.AddFrom(_sideEffects);
+        sideEffects.MergeWith(_sideEffects);
     }
 }

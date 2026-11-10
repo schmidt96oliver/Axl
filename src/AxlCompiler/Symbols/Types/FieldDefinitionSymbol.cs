@@ -48,7 +48,7 @@ public sealed class FieldDefinitionSymbol(
     public override void Complete(BinderSideEffects sideEffects)
     {
         _ = Type;
-        sideEffects.AddFrom(_sideEffects);
+        sideEffects.MergeWith(_sideEffects);
     }
 
 

@@ -1,4 +1,5 @@
 ﻿using AxlCompiler.Symbols;
+using AxlCompiler.Syntax.Tree;
 using AxlLsp.Projects;
 using OmniSharp.Extensions.LanguageServer.Protocol.Client.Capabilities;
 using OmniSharp.Extensions.LanguageServer.Protocol.Document;
@@ -20,19 +21,15 @@ public class HoverHandler : HoverHandlerBase
     {
         var uri = request.TextDocument.Uri;
 
-        if (Settings.ShowBoundExprAtHover)
-        {
-            return Task.FromResult<Hover?>(new Hover
-            {
-                Contents = new MarkedStringsOrMarkupContent("Hello!"),
-                Range = new Range(request.Position, request.Position)
-            });
-        }
-        
         if (ProjectStore.TryMapToAxl(uri, request.Position) is not { } axlLocation)
             return Task.FromResult<Hover?>(null);
 
-        var word = SyntaxContext.At(axlLocation).TouchingWord;
+        var context = SyntaxContext.At(axlLocation);
+        
+        if (Settings.ShowBoundExprAtHover)
+            return Task.FromResult(DebugBoundNodeHover(context));
+        
+        var word = context.TouchingWord;
         if (word is null) return Task.FromResult<Hover?>(null);
         
         var symbol = axlLocation.Compilation.SemanticSideTable.TryGetSymbol(word.Location);
@@ -42,13 +39,29 @@ public class HoverHandler : HoverHandlerBase
         if (lspLocation is null || lspLocation.Uri != uri)
             return Task.FromResult<Hover?>(null);
 
-        
-        
         return Task.FromResult<Hover?>(new Hover
         {
             Contents = new MarkedStringsOrMarkupContent(symbol.FullDisplayText), 
             Range = lspLocation.Range
         });
+    }
+
+    private static Hover? DebugBoundNodeHover(SyntaxContext context)
+    {
+        var token = context.SyntaxTree.TokenAt(context.Caret);
+        var exprSyntax = token.Ancestors().OfType<ExprSyntax>().FirstOrDefault();
+        if (exprSyntax is null) return null;
+        
+        var node = context.Compilation.SemanticModel.BoundNodeFor(exprSyntax);
+        var lspLocation = ProjectStore.TryMapToLsp(exprSyntax.Location);
+        if (lspLocation is null)
+            return null;
+
+        return new Hover
+        {
+            Contents = new MarkedStringsOrMarkupContent(node.GetType().Name),
+            Range = lspLocation.Range
+        };
     }
 
 }

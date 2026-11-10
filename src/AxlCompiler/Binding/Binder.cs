@@ -873,36 +873,43 @@ public sealed class Binder(Scope scope, BinderSideEffects sideEffects)
     #endregion
 
     
-    private BoundNode BindExpr(ExprSyntax syntax, LookupOptions lookupOptions) => syntax switch
+    private BoundNode BindExpr(ExprSyntax syntax, LookupOptions lookupOptions)
     {
-        MemberAccessExprSyntax memberAccessExprSyntax => BindMemberAccess(memberAccessExprSyntax),
-        IdNameSyntax idNameSyntax => BindIdName(idNameSyntax, lookupOptions),
-        SelfSyntax selfSyntax => BindSelf(selfSyntax),
-        CallExprSyntax callExprSyntax => BindCall(callExprSyntax),
-        SubscriptExprSyntax subscriptExprSyntax => BindSubscript(subscriptExprSyntax),
+        var node = syntax switch
+        {
+            MemberAccessExprSyntax memberAccessExprSyntax => BindMemberAccess(memberAccessExprSyntax),
+            IdNameSyntax idNameSyntax => BindIdName(idNameSyntax, lookupOptions),
+            SelfSyntax selfSyntax => BindSelf(selfSyntax),
+            CallExprSyntax callExprSyntax => BindCall(callExprSyntax),
+            SubscriptExprSyntax subscriptExprSyntax => BindSubscript(subscriptExprSyntax),
+
+            // Strings and Literals
+            NumberLiteralSyntax numberLiteralSyntax => BindNumberLiteral(numberLiteralSyntax,
+                numberLiteralSyntax.Token.Suffix),
+            TrueLiteralSyntax => new BoundConst(value: true, type: Bool, syntax),
+            FalseLiteralSyntax => new BoundConst(value: false, type: Bool, syntax),
+            StringExprSyntax stringExprSyntax => BindString(stringExprSyntax),
+
+            // Operators
+            BinaryExprSyntax binaryExprSyntax => BindBinary(binaryExprSyntax),
+            UnaryExprSyntax unaryExprSyntax => BindUnary(unaryExprSyntax),
+
+            // Blocks and Control Flow
+            BlockExprSyntax blockExprSyntax => BindBlock(blockExprSyntax),
+            IfExprSyntax ifExprSyntax => BindIfExpr(ifExprSyntax),
+            GroupExprSyntax groupExprSyntax => BindValue(groupExprSyntax.Inner, ValueUsage.Read),
+            BreakExprSyntax breakExprSyntax => BindBreakOrContinue(breakExprSyntax),
+            ContinueExprSyntax or BreakExprSyntax => BindBreakOrContinue(syntax),
+            ReturnExprSyntax returnExprSyntax => BindReturn(returnExprSyntax),
+
+            // Error
+            ErrorExprSyntax errorExprSyntax => new BoundError(ErrorType, errorExprSyntax),
+            FunNameSyntax => throw new UnreachableException(),
+        };
         
-        // Strings and Literals
-        NumberLiteralSyntax numberLiteralSyntax => BindNumberLiteral(numberLiteralSyntax, numberLiteralSyntax.Token.Suffix),
-        TrueLiteralSyntax => new BoundConst(value: true, type: Bool, syntax),
-        FalseLiteralSyntax => new BoundConst(value: false, type: Bool, syntax),
-        StringExprSyntax stringExprSyntax => BindString(stringExprSyntax),
-        
-        // Operators
-        BinaryExprSyntax binaryExprSyntax => BindBinary(binaryExprSyntax),
-        UnaryExprSyntax unaryExprSyntax => BindUnary(unaryExprSyntax),
-        
-        // Blocks and Control Flow
-        BlockExprSyntax blockExprSyntax => BindBlock(blockExprSyntax),
-        IfExprSyntax ifExprSyntax => BindIfExpr(ifExprSyntax),
-        GroupExprSyntax groupExprSyntax => BindValue(groupExprSyntax.Inner, ValueUsage.Read),
-        BreakExprSyntax breakExprSyntax => BindBreakOrContinue(breakExprSyntax),
-        ContinueExprSyntax or BreakExprSyntax => BindBreakOrContinue(syntax),
-        ReturnExprSyntax returnExprSyntax => BindReturn(returnExprSyntax),
-        
-        // Error
-        ErrorExprSyntax errorExprSyntax => new BoundError(ErrorType, errorExprSyntax),
-        FunNameSyntax => throw new UnreachableException(),
-    };
+        SideEffects.ResolveBoundNode(syntax, node);
+        return node;
+    }
 
     private BoundValue BindValue(ExprSyntax syntax, ValueUsage usage)
     {
@@ -1794,7 +1801,7 @@ public sealed class Binder(Scope scope, BinderSideEffects sideEffects)
         if (best is [var only])
         {
             SideEffects.AddResolvedSymbol(site.CalleeSyntax.Location, only.Fun);
-            SideEffects.AddFrom(only.SideEffects);
+            SideEffects.MergeWith(only.SideEffects);
             return only.Applicability is FunApplicability.Applicable
                 ? CompleteCall(only.Fun, site)
                 : new BoundError(ErrorType, site.Syntax);
@@ -2150,8 +2157,8 @@ public sealed class Binder(Scope scope, BinderSideEffects sideEffects)
         if (receiverBinder.CompleteCall(winner.Fun, site) is not BoundCall call)
             return null;
 
-        SideEffects.AddFrom(winner.SideEffects);
-        SideEffects.AddFrom(receiverBinder.SideEffects);
+        SideEffects.MergeWith(winner.SideEffects);
+        SideEffects.MergeWith(receiverBinder.SideEffects);
         return call;
     }
 
@@ -2231,7 +2238,7 @@ public sealed class Binder(Scope scope, BinderSideEffects sideEffects)
         if (candidates.Count == 1)
         {
             var candidate = candidates[0];
-            SideEffects.AddFrom(candidate.SideEffects);
+            SideEffects.MergeWith(candidate.SideEffects);
             if (candidate.Applicability is not TypeApplicability.Applicable)
                 return new BoundError(ErrorType, syntax);
             return CompleteTypeInit(candidate, arguments, syntax);

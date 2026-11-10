@@ -89,6 +89,6 @@ public sealed class SourceNamespaceSymbol(
         foreach (var scope in _scopes)
             scope.Complete(sideEffects);
         
-        sideEffects.AddFrom(_sideEffects);
+        sideEffects.MergeWith(_sideEffects);
     }
 }

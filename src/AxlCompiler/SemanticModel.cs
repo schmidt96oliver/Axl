@@ -2,9 +2,11 @@
 using System.Diagnostics;
 using AxlCompiler.Diagnostics;
 using AxlCompiler.Binding;
+using AxlCompiler.Binding.BoundTree;
 using AxlCompiler.Binding.Scopes;
 using AxlCompiler.Symbols;
 using AxlCompiler.Syntax;
+using AxlCompiler.Syntax.Tree;
 using AxlCompiler.Text;
 
 namespace AxlCompiler;
@@ -39,6 +41,20 @@ public sealed class SemanticModel(Compilation compilation)
     public Scope? TryScopeAt(SyntaxTree tree, int position)
         => ProbeAt(tree, position)?.ScopeAtProbe;
 
+
+    public BoundNode BoundNodeFor(ExprSyntax syntax)
+    {
+        //TODO: Cache the results
+        var sideEffects = new BinderSideEffects();
+        CompleteAt(syntax.Location, compilation, sideEffects);
+
+        if (sideEffects.BoundNodes.TryGetValue(syntax, out var boundNodes))
+            return boundNodes[^1];  //TODO: Which one to pick?
+        else
+            return new BoundError(compilation.BaseLibrary.Error, syntax);
+    }
+    
+    
     private BinderSideEffects? ProbeAt(SyntaxTree tree, int position)
     {
         const string probeText = "__AXL_HOH_HOH_CARET__";
@@ -71,26 +87,26 @@ public sealed class SemanticModel(Compilation compilation)
         var compilationWithProbe = compilation
             .Replace(tree, with: treeWithProbe)
             .WithProbe(probeToken);
-        CompleteAtProbe(probeToken, compilationWithProbe, probe);
+        CompleteAt(probeToken.Location, compilationWithProbe, probe);
 
         _probes[(tree, position)] = probe;
         return probe;
     }
     
-    private void CompleteAtProbe(Token probe, Compilation probeCompilation, BinderSideEffects sideEffects)
+    private static void CompleteAt(SourceLocation location, Compilation compilation, BinderSideEffects sideEffects)
     {
         // Complete only the lowest most symbol that contains the probe,
         // as not to bind any unnecessary symbols.
-        foreach (var symbol in probeCompilation.Scripts.Concat([probeCompilation.RootNamespace]))
+        foreach (var symbol in compilation.Scripts.Concat([compilation.RootNamespace]))
         {
-            if (!symbol.DeclaringSyntax.Any(declSyntax => declSyntax.Location.Contains(probe.Location)))
+            if (!symbol.DeclaringSyntax.Any(declSyntax => declSyntax.Location.Contains(location)))
                 continue;
 
             Symbol current = symbol;
             while (true)
             {
                 var next = current.Members.FirstOrDefault(member =>
-                    member.DeclaringSyntax.Any(declSyntax => declSyntax.Location.Contains(probe.Location)));
+                    member.DeclaringSyntax.Any(declSyntax => declSyntax.Location.Contains(location)));
                 if (next is null)
                 {
                     current.Complete(sideEffects);
@@ -103,7 +119,7 @@ public sealed class SemanticModel(Compilation compilation)
         
         // The loop did not complete anything. So fall back to completing the entire
         // compilation.
-        probeCompilation.Complete(sideEffects);
+        compilation.Complete(sideEffects);
     }
     
     private static Token? TryFindProbeToken(SyntaxNode node, int position, string probeText)

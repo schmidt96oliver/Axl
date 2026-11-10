@@ -80,6 +80,6 @@ public class ScriptSymbol(SyntaxTree syntax, Scope enclosingScope)
         _ = Fun;
         _lazyUsingsScope?.Complete(sideEffects);
         
-        sideEffects.AddFrom(_sideEffects);
+        sideEffects.MergeWith(_sideEffects);
     }
 }

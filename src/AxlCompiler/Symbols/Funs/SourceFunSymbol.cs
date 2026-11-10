@@ -172,7 +172,7 @@ public sealed class SourceFunSymbol(
         _ = ReturnType;
         _ = Body;
         
-        sideEffects.AddFrom(_sideEffects);
+        sideEffects.MergeWith(_sideEffects);
     }
 
     private Binder MakeSignatureBinder()
