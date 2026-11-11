@@ -7,6 +7,8 @@ public enum UnresolvedSymbolReason
 {
     NotFound,
     Ambiguous,
+    NotUsable,
+    NotAccessible,
     NoApplicableType,
     NoApplicableOverload,
 }

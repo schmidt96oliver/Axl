@@ -4,7 +4,7 @@
 
 
 # Now
-```  ```
+
 * RefSymbol: 
   * SymbolInfo with candidates (overloads, ambiguous refs, ...)
   * Arg names: BindFieldInitializer in CheckTypeCandidate; BoundStructInitError carries TypeCandidate, which has
@@ -19,6 +19,8 @@
 
 * tests: SemanticModel.ReferencedSymbolFor
   * do a few correctness tests (ambigous; types in structs, params, returns; locals, ...)
+  * overloads, ambiguous overloads
+  * type overloads, ambiguous type overloads
 
 * How to walk symbol tree for syntax node?
   * Clarify DeclaringSyntaxes

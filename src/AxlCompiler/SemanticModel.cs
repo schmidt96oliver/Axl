@@ -84,7 +84,7 @@ public sealed class SemanticModel(Compilation compilation)
             IBoundSymbolRef symbolRef => new SymbolInfo.Resolved(symbolRef.Symbol),
             BoundTypeGroup typeGroup => ReferencedSymbolFor(typeGroup, syntax),
             BoundFunGroup funGroup => ReferencedSymbolFor(funGroup, syntax),
-            BoundError => null, // TODO: Don't make errors a gap
+            BoundLookupError lookupError => new SymbolInfo.Unresolved(lookupError.Candidates, lookupError.Reason),
             _ => null
         };
 

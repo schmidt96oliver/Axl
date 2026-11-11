@@ -1447,15 +1447,19 @@ public sealed class Binder(Scope scope, BinderSideEffects sideEffects)
     {
         if (result.Viability is LookupViability.NotFound)
         {
-            return BindError(syntax, left is null
+            SideEffects.ReportError(left is null
                 ? new Diagnostic.UndefinedName(syntax)
                 : new Diagnostic.UndefinedMember(left, syntax));
+            return new BoundLookupError([.. result.Symbols], UnresolvedSymbolReason.NotFound, ErrorType, syntax);
         }
 
         Debug.Assert(result.Symbols.Length >= 1);
         
         if (result.Viability is LookupViability.NotAccessible)
-            return BindError(syntax, new Diagnostic.NotAccessible(result.Symbols, syntax));
+        {
+            SideEffects.ReportError(new Diagnostic.NotAccessible(result.Symbols, syntax));
+            return new BoundLookupError([.. result.Symbols], UnresolvedSymbolReason.NotAccessible, ErrorType, syntax);
+        }
 
         if (result.Symbols.All(s => s is FunSymbol))
             return BindFunGroup(result, receiver: left, syntax);
@@ -1468,7 +1472,10 @@ public sealed class Binder(Scope scope, BinderSideEffects sideEffects)
         }
 
         if (result.Symbols.Length > 1)
-            return BindError(syntax, new Diagnostic.AmbiguousReference(result, syntax));
+        {
+            SideEffects.ReportError(new Diagnostic.AmbiguousReference(result, syntax));
+            return new BoundLookupError([.. result.Symbols], UnresolvedSymbolReason.Ambiguous, ErrorType, syntax);
+        }
 
         var symbol = result.Symbols[0];
 
@@ -1495,7 +1502,7 @@ public sealed class Binder(Scope scope, BinderSideEffects sideEffects)
     private BoundNode BindNameRef(NameRefSyntax syntax, LookupOptions lookupOptions)
     {
         if (syntax.Token.IsMissing)
-            return new BoundError(ErrorType, syntax);
+            return new BoundLookupError([], UnresolvedSymbolReason.NotFound, ErrorType, syntax);
 
         if (syntax.Token == Scope.Compilation.Probe)
         {
@@ -1508,27 +1515,33 @@ public sealed class Binder(Scope scope, BinderSideEffects sideEffects)
         var bound = BindLookupResult(lookupResult, left: null, syntax);
             
         if (lookupResult.Viability is LookupViability.WrongKind)
-            return BindNameRefWithWrongKind(bound, lookupOptions);
+            return BindNameRefWithWrongKind(bound, lookupResult, lookupOptions);
 
         return bound;
     }
 
-    private BoundError BindNameRefWithWrongKind(BoundNode boundNode, LookupOptions lookupOptions)
-        => lookupOptions switch
+    private BoundError BindNameRefWithWrongKind(BoundNode boundNode, LookupResult result, LookupOptions lookupOptions)
+    {
+        if (boundNode is BoundError errorNode) return errorNode;
+        
+        Diagnostic.Error error = lookupOptions switch
         {
-            { } when boundNode is BoundError error => error,
-            LookupOptions.MustBeCallable => BindError(boundNode.Syntax!, new Diagnostic.CannotCall(boundNode)),
-            LookupOptions.OnlyType => BindError(boundNode.Syntax!, new Diagnostic.NotAType(boundNode)),
-            LookupOptions.OnlyNamespace => BindError(boundNode.Syntax!, new Diagnostic.NotANamespace(boundNode)),
-            _ => throw new UnreachableException($"{nameof(LookupOptions)}.{lookupOptions} is unknown to {nameof(BindNameRefWithWrongKind)}")
+            LookupOptions.MustBeCallable => new Diagnostic.CannotCall(boundNode),
+            LookupOptions.OnlyType => new Diagnostic.NotAType(boundNode),
+            LookupOptions.OnlyNamespace => new Diagnostic.NotANamespace(boundNode),
+            _ => throw new UnreachableException(
+                $"{nameof(LookupOptions)}.{lookupOptions} is unknown to {nameof(BindNameRefWithWrongKind)}")
         };
-    
+        SideEffects.ReportError(error);
+        return new BoundLookupError([.. result.Symbols], UnresolvedSymbolReason.NotUsable, ErrorType, boundNode.Syntax!);
+    }
+
 
     private BoundNode BindMemberAccess(MemberAccessExprSyntax syntax)
     {
         var left = BindMemberAccessLeftSide(syntax.Left, syntax.Member);
         if (left is BoundError)
-            return left;
+            return new BoundLookupError([], UnresolvedSymbolReason.NotFound, ErrorType, syntax);
 
         Symbol lookupOn = left switch
         {
@@ -1538,7 +1551,7 @@ public sealed class Binder(Scope scope, BinderSideEffects sideEffects)
             _ => throw new UnreachableException()
         };
         if (lookupOn is ErrorTypeSymbol)
-            return new BoundError(ErrorType, syntax);
+            return new BoundLookupError([], UnresolvedSymbolReason.NotFound, ErrorType, syntax);
         
         if (syntax.Member.Token == Scope.Compilation.Probe)
         {
@@ -1548,7 +1561,7 @@ public sealed class Binder(Scope scope, BinderSideEffects sideEffects)
         
         var memberName = syntax.Member.Text.ToString();
         if (memberName is "")
-            return new BoundError(ErrorType, syntax);
+            return new BoundLookupError([], UnresolvedSymbolReason.NotFound, ErrorType, syntax);
         
         var lookupResult = LookupMembers(lookupOn, memberName);
 
@@ -1599,7 +1612,10 @@ public sealed class Binder(Scope scope, BinderSideEffects sideEffects)
         // Variables could be captured from outside, which is forbidden.
 
         if (!Equals(variable.Owner, Scope.Owner))
-            return BindError(syntax, new Diagnostic.CannotCapture(syntax));
+        {
+            SideEffects.ReportError(new Diagnostic.CannotCapture(syntax));
+            return new BoundLookupError([variable], UnresolvedSymbolReason.NotUsable, ErrorType, syntax);
+        }
 
         return new BoundVariable(variable, syntax);
     }
@@ -1634,23 +1650,35 @@ public sealed class Binder(Scope scope, BinderSideEffects sideEffects)
             // It can be interpreted as type (if possible) or with an implicit self.
             if (Scope.OwnerAsFun?.SelfParameter?.Type is null)
             {
-                return asTypeRef is null
-                    ? BindError(syntax, new Diagnostic.InstanceMemberInStaticContext(field, Scope.Owner, syntax))
-                    : asTypeRef;
+                if (asTypeRef is null)
+                {
+                    SideEffects.ReportError(new Diagnostic.InstanceMemberInStaticContext(field, Scope.Owner, syntax));
+                    return new BoundLookupError([field], UnresolvedSymbolReason.NotUsable, ErrorType, syntax);
+                }
+
+                return asTypeRef;
             }
 
             if (!Equals(Scope.OwnerAsFun.SelfParameter.Type, field.OwningType))
             {
-                return asTypeRef is null
-                    ? BindError(syntax, new Diagnostic.MemberOfEnclosingType(field, Scope.OwnerAsFun.SelfParameter.Type, syntax))
-                    : asTypeRef;
+                if (asTypeRef is null)
+                {
+                    SideEffects.ReportError(
+                        new Diagnostic.MemberOfEnclosingType(field, Scope.OwnerAsFun.SelfParameter.Type, syntax));
+                    return new BoundLookupError([field], UnresolvedSymbolReason.NotUsable, ErrorType, syntax);
+                }
+
+                return asTypeRef;
             }
 
             receiver = new BoundVariable(Scope.OwnerAsFun.SelfParameter);    
         }
 
         if (receiver is not BoundValue valueReceiver)
-            return BindError(syntax, new Diagnostic.InstanceMemberThroughType(field, syntax));
+        {
+            SideEffects.ReportError(new Diagnostic.InstanceMemberThroughType(field, syntax));
+            return new BoundLookupError([field], UnresolvedSymbolReason.NotUsable, ErrorType, syntax);
+        }
 
         var asField = new BoundField(valueReceiver, field, syntax);
         return asTypeRef is not null ? new BoundValueOrTypeRef(asField, asTypeRef) : asField;
