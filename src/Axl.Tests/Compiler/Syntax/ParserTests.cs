@@ -64,7 +64,7 @@ public partial class ParserTests
         var sourceText = SourceText.LoadFile(path);
         var tree = Parser.Parse(sourceText);
 
-        AllNodesRecursive(tree.FileSyntax).ShouldAllBe(node => node.FullRange.IsPartitionedBy(node.Children.Select(child => child.FullRange)));
+        tree.FileSyntax.Traverse().OfType<SyntaxNode>().ShouldAllBe(node => node.FullRange.IsPartitionedBy(node.Children.Select(child => child.FullRange)));
     }
 
     [Theory, Corpus]
@@ -73,28 +73,6 @@ public partial class ParserTests
         var sourceText = SourceText.LoadFile(path);
         var tree = Parser.Parse(sourceText);
 
-        sourceText.Range.IsPartitionedBy(AllTokensRecursive(tree.FileSyntax).Select(t => t.FullRange)).ShouldBeTrue();
-    }
-    
-    
-    public static IEnumerable<SyntaxNode> AllNodesRecursive(SyntaxNode node)
-    {
-        yield return node;
-
-        foreach (var child in node.Children.OfType<SyntaxNode>())
-        foreach (var childNode in AllNodesRecursive(child))
-            yield return childNode;
-    }
-
-    public static IEnumerable<Token> AllTokensRecursive(SyntaxElement element)
-    {
-        if (element is Token token)
-            yield return token;
-        else if (element is SyntaxNode node)
-        {
-            foreach (var child in node.Children)
-            foreach (var childTokens in AllTokensRecursive(child))
-                yield return childTokens;
-        }
+        sourceText.Range.IsPartitionedBy(tree.FileSyntax.TraverseTokens().Select(t => t.FullRange)).ShouldBeTrue();
     }
 }

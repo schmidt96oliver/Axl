@@ -5,6 +5,8 @@
 
 # Now
 
+* Use Traverse in: ParserTests, syntax tree tokens
+
 * tests: SemanticModel.ReferencedSymbolFor
   * on entire Corpus: Every NameRef needs to resolve to a symbol in valid files
   * fix ColorColor case (should probably record in binder)

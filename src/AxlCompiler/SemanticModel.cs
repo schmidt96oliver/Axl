@@ -175,6 +175,8 @@ public sealed class SemanticModel(Compilation compilation)
     
     private static void CompleteAt(SourceLocation location, Compilation compilation, BinderSideEffects sideEffects)
     {
+        //TODO: Symbol.Traverse?
+        
         // Complete only the lowest most symbol that contains the probe,
         // as not to bind any unnecessary symbols.
         foreach (var symbol in compilation.Scripts.Concat([compilation.RootNamespace]))

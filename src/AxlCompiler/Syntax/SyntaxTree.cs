@@ -28,24 +28,7 @@ public sealed class SyntaxTree
         get
         {
             if (field.IsDefault)
-            {
-                var tokens = ImmutableArray.CreateBuilder<Token>();
-                Recurse(FileSyntax);
-                
-                field = tokens.DrainToImmutable();
-                Debug.Assert(FileSyntax.FullRange.IsPartitionedBy(field.Select(t => t.FullRange)));
-
-                void Recurse(SyntaxNode node)
-                {
-                    foreach (var child in node.Children)
-                    {
-                        if (child is Token token)
-                            tokens.Add(token);
-                        if (child is SyntaxNode childNode)
-                            Recurse(childNode);
-                    }
-                }
-            }
+                field = [.. FileSyntax.TraverseTokens()];
 
             return field;
         }

@@ -5,7 +5,7 @@ using Meziantou.Framework.InlineSnapshotTesting;
 
 namespace Axl.Tests.Compiler;
 
-public sealed class SemanticModelTests
+public sealed partial class SemanticModelTests
 {
     public sealed class VisibleSymbols
     {
