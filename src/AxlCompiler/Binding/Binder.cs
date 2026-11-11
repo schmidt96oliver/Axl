@@ -914,20 +914,14 @@ public sealed class Binder(Scope scope, BinderSideEffects sideEffects)
     private BoundValue BindValue(ExprSyntax syntax, ValueUsage usage)
     {
         var bound = BindExpr(syntax, LookupOptions.Any);
-        
-        BoundValue value;
-        if (bound is BoundValueOrTypeRef valueOrType)
-            value = valueOrType.AsValue;
-        else
-        {
-            if (bound is not BoundValue boundValue)
-                return BindError(syntax, new Diagnostic.NotAValue(bound));
-            value = boundValue;
-        }
+        bound = ReplaceBoundValueOrTypeRef(bound, null, syntax);
+
+        if (bound is not BoundValue value)
+            return BindError(syntax, new Diagnostic.NotAValue(bound));
 
         if (value is BoundError || !CheckValueUsage(value, usage))
             return new BoundError(ErrorType, syntax);
-        
+
         return value;
     }
 
@@ -1420,7 +1414,7 @@ public sealed class Binder(Scope scope, BinderSideEffects sideEffects)
             var lookupResult = new LookupResult();
             lookupResult.MergeSingle(symbol, LookupViability.Viable);
             
-            var bound = binder.BindLookupResult(lookupResult, left, probeSyntax);
+            var bound = binder.BindLookupResult(lookupResult, left, probeSyntax, probeSyntax);
             if (bound is BoundError)
                 continue;
             
@@ -1439,7 +1433,7 @@ public sealed class Binder(Scope scope, BinderSideEffects sideEffects)
         SideEffects.ResolveProbe(symbols.DrainToImmutable(), Scope);
     }
     
-    private BoundNode BindLookupResult(LookupResult result, BoundNode? left, NameRefSyntax syntax)
+    private BoundNode BindLookupResult(LookupResult result, BoundNode? left, NameRefSyntax syntax, ExprSyntax? leftSyntax)
     {
         if (result.Viability is LookupViability.NotFound)
         {
@@ -1475,7 +1469,7 @@ public sealed class Binder(Scope scope, BinderSideEffects sideEffects)
 
         var symbol = result.Symbols[0];
 
-        var receiver = left is not null ? ReplaceBoundValueOrTypeRef(left, symbol) : null;
+        var receiver = left is not null ? ReplaceBoundValueOrTypeRef(left, symbol, leftSyntax!) : null;
         var boundSymbol = symbol switch
         {
             NamespaceSymbol @namespace => new BoundNamespaceRef(@namespace, syntax),
@@ -1508,7 +1502,7 @@ public sealed class Binder(Scope scope, BinderSideEffects sideEffects)
         }
         
         var lookupResult = LookupName(syntax.Token.Identifier, lookupOptions);
-        var bound = BindLookupResult(lookupResult, left: null, syntax);
+        var bound = BindLookupResult(lookupResult, left: null, syntax, leftSyntax: null);
             
         if (lookupResult.Viability is LookupViability.WrongKind)
             return BindNameRefWithWrongKind(bound, lookupResult, lookupOptions);
@@ -1561,7 +1555,7 @@ public sealed class Binder(Scope scope, BinderSideEffects sideEffects)
         
         var lookupResult = LookupMembers(lookupOn, memberName);
 
-        return BindLookupResult(lookupResult, left, syntax.Member);
+        return BindLookupResult(lookupResult, left, syntax.Member, syntax.Left);
     }
 
     private BoundNode BindMemberAccessLeftSide(ExprSyntax syntax, NameRefSyntax memberSyntax)
@@ -1579,12 +1573,12 @@ public sealed class Binder(Scope scope, BinderSideEffects sideEffects)
         };
     }
     
-    private BoundNode ReplaceBoundValueOrTypeRef(BoundNode receiver, Symbol symbol)
+    private BoundNode ReplaceBoundValueOrTypeRef(BoundNode node, Symbol? resolvedSymbol, ExprSyntax fullSyntax)
     {
-        if (receiver is not BoundValueOrTypeRef valueOrType)
-            return receiver;
+        if (node is not BoundValueOrTypeRef valueOrType)
+            return node;
 
-        BoundNode replaced = symbol switch
+        BoundNode replaced = resolvedSymbol switch
         {
             // Fields are instance members.
             // Variables should not be here, but for resilience, return as value anyway.
@@ -1595,11 +1589,15 @@ public sealed class Binder(Scope scope, BinderSideEffects sideEffects)
             
             // Types are always accessed through the type.
             TypeSymbol or NamespaceSymbol => valueOrType.AsTypeRef,
+            
+            // No symbol access through it means it's a value
+            _ => valueOrType.AsValue,
         };
 
         if (replaced is IBoundSymbolRef symbolRef)
             SideEffects.AddResolvedSymbol(replaced.Syntax!.Location, symbolRef.Symbol);
-
+        SideEffects.ResolveBoundNode(fullSyntax, replaced);
+        
         return replaced;
     }
     
@@ -1709,66 +1707,70 @@ public sealed class Binder(Scope scope, BinderSideEffects sideEffects)
     private BoundNode ResolveTypeGroup(BoundTypeGroup group, ImmutableArray<BoundTypeRef> typeArguments, 
         SyntaxNode? typeArgumentsSyntax, ExprSyntax syntax)
     {
-        Debug.Assert(typeArguments.Length == 0 || typeArgumentsSyntax is not null);
-        if (typeArguments.Any(a => a.Type is ErrorTypeSymbol))
+        var node = Bind();
+        SideEffects.ResolveBoundNode(syntax, node);
+        return node;
+        
+        BoundNode Bind()
         {
-            if (group.Candidates.Length == 1)
-                SideEffects.AddResolvedSymbol(group.Syntax!.Location, group.Candidates[0]);
-            return new BoundLookupError([.. group.Candidates], UnresolvedSymbolReason.NoApplicableType, 
-                ErrorType, group.Syntax);
-        }
-
-        var candidates = group.Candidates
-            .Where(t => t.TypeParameters.Length == typeArguments.Length)
-            .ToImmutableArray();
-        if (candidates.Length == 0)
-        {
-            // If there was only one, register the symbol for good syntax highlighting.
-            // Otherwise, we don't know which one it was.
-            if (group.Candidates.Length == 1)
-                SideEffects.AddResolvedSymbol(group.Syntax!.Location, group.Candidates[0]);
-
-            if (typeArguments.Length == 0)
+            Debug.Assert(typeArguments.Length == 0 || typeArgumentsSyntax is not null);
+            if (typeArguments.Any(a => a.Type is ErrorTypeSymbol))
             {
-                Debug.Assert(group.Candidates.All(t => t.TypeParameters.Length > 0));
-                SideEffects.ReportError(new Diagnostic.MissingTypeArguments([.. group.Candidates], group.Syntax!));
+                if (group.Candidates.Length == 1)
+                    SideEffects.AddResolvedSymbol(group.Syntax!.Location, group.Candidates[0]);
                 return new BoundLookupError([.. group.Candidates], UnresolvedSymbolReason.NoApplicableType,
                     ErrorType, group.Syntax);
             }
 
-            if (group.Candidates.All(t => t.TypeParameters.Length == 0))
+            var candidates = group.Candidates
+                .Where(t => t.TypeParameters.Length == typeArguments.Length)
+                .ToImmutableArray();
+            if (candidates.Length == 0)
             {
-                // This only happens, when there are multiple declarations without type parameters.
-                // Still NotGeneric is the more useful error than AmbiguousReference.
-                Debug.Assert(typeArguments.Length > 0 && typeArgumentsSyntax is not null);
-                SideEffects.ReportError(new Diagnostic.NotGeneric([.. group.Candidates], typeArgumentsSyntax));
+                // If there was only one, register the symbol for good syntax highlighting.
+                // Otherwise, we don't know which one it was.
+                if (group.Candidates.Length == 1)
+                    SideEffects.AddResolvedSymbol(group.Syntax!.Location, group.Candidates[0]);
+
+                if (typeArguments.Length == 0)
+                {
+                    Debug.Assert(group.Candidates.All(t => t.TypeParameters.Length > 0));
+                    SideEffects.ReportError(new Diagnostic.MissingTypeArguments([.. group.Candidates], group.Syntax!));
+                    return new BoundLookupError([.. group.Candidates], UnresolvedSymbolReason.NoApplicableType,
+                        ErrorType, group.Syntax);
+                }
+
+                if (group.Candidates.All(t => t.TypeParameters.Length == 0))
+                {
+                    // This only happens, when there are multiple declarations without type parameters.
+                    // Still NotGeneric is the more useful error than AmbiguousReference.
+                    Debug.Assert(typeArguments.Length > 0 && typeArgumentsSyntax is not null);
+                    SideEffects.ReportError(new Diagnostic.NotGeneric([.. group.Candidates], typeArgumentsSyntax));
+                    return new BoundLookupError([.. group.Candidates], UnresolvedSymbolReason.Ambiguous,
+                        ErrorType, group.Syntax);
+                }
+
+                SideEffects.ReportError(new Diagnostic.WrongTypeArgumentCount(
+                    [.. group.Candidates], typeArguments.Length, typeArgumentsSyntax!));
+                return new BoundLookupError([.. group.Candidates], UnresolvedSymbolReason.NoApplicableType,
+                    ErrorType, group.Syntax);
+            }
+
+            if (candidates.Length > 1)
+            {
+                // This only happens, when there are clashing declaration, which already
+                // produce an error.
+                SideEffects.ReportError(new Diagnostic.AmbiguousReference(group.Candidates.CastArray<Symbol>(),
+                    group.Syntax!));
                 return new BoundLookupError([.. group.Candidates], UnresolvedSymbolReason.Ambiguous,
                     ErrorType, group.Syntax);
             }
 
-            SideEffects.ReportError(new Diagnostic.WrongTypeArgumentCount(
-                [.. group.Candidates], typeArguments.Length, typeArgumentsSyntax!));
-            return new BoundLookupError([.. group.Candidates], UnresolvedSymbolReason.NoApplicableType,
-                ErrorType, group.Syntax);
+
+            var specializedType = candidates[0].Specialize([.. typeArguments.Select(t => t.Type)]);
+            SideEffects.AddResolvedSymbol(group.Syntax!.Location, specializedType);
+            return new BoundTypeRef(specializedType, typeArguments, group.Syntax);
         }
-
-        if (candidates.Length > 1)
-        {
-            // This only happens, when there are clashing declaration, which already
-            // produce an error.
-            SideEffects.ReportError(new Diagnostic.AmbiguousReference(group.Candidates.CastArray<Symbol>(),
-                group.Syntax!));
-            return new BoundLookupError([.. group.Candidates], UnresolvedSymbolReason.Ambiguous,
-                ErrorType, group.Syntax);
-        }
-
-
-        var specializedType = candidates[0].Specialize([.. typeArguments.Select(t => t.Type)]);
-        SideEffects.AddResolvedSymbol(group.Syntax!.Location, specializedType);
-
-        var node = new BoundTypeRef(specializedType, typeArguments, group.Syntax);
-        SideEffects.ResolveBoundNode(syntax, node);
-        return node;
     }
     
     #endregion 
@@ -2059,7 +2061,7 @@ public sealed class Binder(Scope scope, BinderSideEffects sideEffects)
     private BoundValue? BindCallReceiver(FunSymbol fun, BoundNode? receiverNode, SyntaxNode calleeSyntax)
     {
         if (receiverNode is not null)
-            receiverNode = ReplaceBoundValueOrTypeRef(receiverNode, fun);
+            receiverNode = ReplaceBoundValueOrTypeRef(receiverNode, fun, (receiverNode.Syntax as ExprSyntax)!);
 
         // Try an implicit self, if possible (fun is not static, no receiver specified, self available)
         var valueReceiver = !fun.IsStatic && receiverNode is null &&

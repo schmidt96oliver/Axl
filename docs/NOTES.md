@@ -9,7 +9,6 @@
   * Arg names: BindFieldInitializer in CheckTypeCandidate; BoundStructInitError carries TypeCandidate, which has
                (BoundFieldInitializers, UnmatchedArguments, UninitializedFields)
     * Do it after type argument inference
-  * fix ColorColor case (should probably record in binder)
 
 * tests: SemanticModel.ReferencedSymbolFor
   * do a few correctness tests (ambigous; types in structs, params, returns; locals, ...)

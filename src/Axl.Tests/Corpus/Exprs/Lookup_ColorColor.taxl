@@ -27,11 +27,11 @@ struct Test
         // as the field, rather than the type.
         PrintLine(Color.Field);
         Color.MethodPrint();
-        
+         
         // Assignment is on the field as well.
         Color = Color(Field = 2);
         PrintLine(Color.Field);
-    }
+    }  
     
     pub static fun Static()
     {
