@@ -66,8 +66,7 @@ public partial class ParserTests
                     · ParamList
                     · · '('
                     · · Param
-                    · · · NameRef
-                    · · · · ??ID
+                    · · · ??ID
                     · · · TypeAnnotationClause
                     · · · · ':'
                     · · · · NameRef 'I32'
@@ -87,14 +86,13 @@ public partial class ParserTests
                     · ParamList
                     · · '('
                     · · Param
-                    · · · NameRef 'a'
+                    · · · 'a'
                     · · · TypeAnnotationClause
                     · · · · ':'
                     · · · · NameRef 'I32'
                     · · ','
                     · · Param
-                    · · · NameRef
-                    · · · · ??ID
+                    · · · ??ID
                     · · · TypeAnnotationClause
                     · · · · ??':'
                     · · · · NameRef
@@ -116,14 +114,13 @@ public partial class ParserTests
                     · ParamList
                     · · '('
                     · · Param
-                    · · · NameRef 'a'
+                    · · · 'a'
                     · · · TypeAnnotationClause
                     · · · · ':'
                     · · · · NameRef 'I32'
                     · · ','
                     · · Param
-                    · · · NameRef
-                    · · · · ??ID
+                    · · · ??ID
                     · · · TypeAnnotationClause
                     · · · · ':'
                     · · · · NameRef 'I32'
@@ -143,15 +140,14 @@ public partial class ParserTests
                     · ParamList
                     · · '('
                     · · Param
-                    · · · NameRef 'a'
+                    · · · 'a'
                     · · · TypeAnnotationClause
                     · · · · ':'
                     · · · · NameRef 'I32'
                     · · ','
                     · · Garbage '##'
                     · · Param
-                    · · · NameRef
-                    · · · · ??ID
+                    · · · ??ID
                     · · · TypeAnnotationClause
                     · · · · ??':'
                     · · · · NameRef
@@ -173,15 +169,14 @@ public partial class ParserTests
                     · ParamList
                     · · '('
                     · · Param
-                    · · · NameRef 'a'
+                    · · · 'a'
                     · · · TypeAnnotationClause
                     · · · · ':'
                     · · · · NameRef 'I32'
                     · · ','
                     · · Garbage '##'
                     · · Param
-                    · · · NameRef
-                    · · · · ??ID
+                    · · · ??ID
                     · · · TypeAnnotationClause
                     · · · · ':'
                     · · · · NameRef 'String'
@@ -202,14 +197,13 @@ public partial class ParserTests
                     · ParamList
                     · · '('
                     · · Param
-                    · · · NameRef 'a'
+                    · · · 'a'
                     · · · TypeAnnotationClause
                     · · · · ':'
                     · · · · NameRef 'I32'
                     · · ','
                     · · Param
-                    · · · NameRef
-                    · · · · ??ID
+                    · · · ??ID
                     · · · TypeAnnotationClause
                     · · · · ??':'
                     · · · · NameRef
@@ -233,14 +227,13 @@ public partial class ParserTests
                     · ParamList
                     · · '('
                     · · Param
-                    · · · NameRef 'a'
+                    · · · 'a'
                     · · · TypeAnnotationClause
                     · · · · ':'
                     · · · · NameRef 'I32'
                     · · ','
                     · · Param
-                    · · · NameRef
-                    · · · · ??ID
+                    · · · ??ID
                     · · · TypeAnnotationClause
                     · · · · ??':'
                     · · · · NameRef
@@ -266,14 +259,14 @@ public partial class ParserTests
                     · ParamList
                     · · '('
                     · · Param
-                    · · · NameRef 'a'
+                    · · · 'a'
                     · · · TypeAnnotationClause
                     · · · · ??':'
                     · · · · NameRef
                     · · · · · ??ID
                     · · ??','
                     · · Param
-                    · · · NameRef 'b'
+                    · · · 'b'
                     · · · TypeAnnotationClause
                     · · · · ??':'
                     · · · · NameRef
@@ -295,13 +288,13 @@ public partial class ParserTests
                     · ParamList
                     · · '('
                     · · Param
-                    · · · NameRef 'a'
+                    · · · 'a'
                     · · · TypeAnnotationClause
                     · · · · ':'
                     · · · · NameRef 'I32'
                     · · ??','
                     · · Param
-                    · · · NameRef 'b'
+                    · · · 'b'
                     · · · TypeAnnotationClause
                     · · · · ':'
                     · · · · NameRef 'String'
@@ -324,26 +317,26 @@ public partial class ParserTests
                     · ParamList
                     · · '('
                     · · Param
-                    · · · NameRef 'a'
+                    · · · 'a'
                     · · · TypeAnnotationClause
                     · · · · ':'
                     · · · · NameRef 'I32'
                     · · ??','
                     · · Param
-                    · · · NameRef 'b'
+                    · · · 'b'
                     · · · TypeAnnotationClause
                     · · · · ??':'
                     · · · · NameRef
                     · · · · · ??ID
                     · · ??','
                     · · Param
-                    · · · NameRef 'c'
+                    · · · 'c'
                     · · · TypeAnnotationClause
                     · · · · ':'
                     · · · · NameRef 'Bool'
                     · · ','
                     · · Param
-                    · · · NameRef 'd'
+                    · · · 'd'
                     · · · TypeAnnotationClause
                     · · · · ??':'
                     · · · · NameRef
@@ -366,8 +359,7 @@ public partial class ParserTests
                     · ParamList
                     · · '('
                     · · Param
-                    · · · NameRef
-                    · · · · ??ID
+                    · · · ??ID
                     · · · TypeAnnotationClause
                     · · · · ':'
                     · · · · NameRef 'I32'
@@ -388,7 +380,7 @@ public partial class ParserTests
                     · ParamList
                     · · '('
                     · · Param
-                    · · · NameRef 'a'
+                    · · · 'a'
                     · · · TypeAnnotationClause
                     · · · · ':'
                     · · · · NameRef
@@ -411,16 +403,14 @@ public partial class ParserTests
                     · ParamList
                     · · '('
                     · · Param
-                    · · · NameRef
-                    · · · · ??ID
+                    · · · ??ID
                     · · · TypeAnnotationClause
                     · · · · ??':'
                     · · · · NameRef
                     · · · · · ??ID
                     · · ','
                     · · Param
-                    · · · NameRef
-                    · · · · ??ID
+                    · · · ??ID
                     · · · TypeAnnotationClause
                     · · · · ??':'
                     · · · · NameRef
@@ -444,24 +434,21 @@ public partial class ParserTests
                     · ParamList
                     · · '('
                     · · Param
-                    · · · NameRef
-                    · · · · ??ID
+                    · · · ??ID
                     · · · TypeAnnotationClause
                     · · · · ??':'
                     · · · · NameRef
                     · · · · · ??ID
                     · · ','
                     · · Param
-                    · · · NameRef
-                    · · · · ??ID
+                    · · · ??ID
                     · · · TypeAnnotationClause
                     · · · · ??':'
                     · · · · NameRef
                     · · · · · ??ID
                     · · ','
                     · · Param
-                    · · · NameRef
-                    · · · · ??ID
+                    · · · ??ID
                     · · · TypeAnnotationClause
                     · · · · ??':'
                     · · · · NameRef
@@ -484,15 +471,14 @@ public partial class ParserTests
                     · ParamList
                     · · '('
                     · · Param
-                    · · · NameRef 'a'
+                    · · · 'a'
                     · · · TypeAnnotationClause
                     · · · · ??':'
                     · · · · NameRef
                     · · · · · ??ID
                     · · ','
                     · · Param
-                    · · · NameRef
-                    · · · · ??ID
+                    · · · ??ID
                     · · · TypeAnnotationClause
                     · · · · ??':'
                     · · · · NameRef
@@ -571,7 +557,7 @@ public partial class ParserTests
                     · ParamList
                     · · '('
                     · · Param
-                    · · · NameRef 'a'
+                    · · · 'a'
                     · · · TypeAnnotationClause
                     · · · · ??':'
                     · · · · NameRef
@@ -579,7 +565,7 @@ public partial class ParserTests
                     · · Garbage '##'
                     · · ??','
                     · · Param
-                    · · · NameRef 'b'
+                    · · · 'b'
                     · · · TypeAnnotationClause
                     · · · · ??':'
                     · · · · NameRef
@@ -604,14 +590,14 @@ public partial class ParserTests
                     · · '('
                     · · Garbage '##'
                     · · Param
-                    · · · NameRef 'a'
+                    · · · 'a'
                     · · · TypeAnnotationClause
                     · · · · ??':'
                     · · · · NameRef
                     · · · · · ??ID
                     · · ','
                     · · Param
-                    · · · NameRef 'b'
+                    · · · 'b'
                     · · · TypeAnnotationClause
                     · · · · ??':'
                     · · · · NameRef
@@ -636,22 +622,21 @@ public partial class ParserTests
                     · · '('
                     · · Garbage '##'
                     · · Param
-                    · · · NameRef
-                    · · · · ??ID
+                    · · · ??ID
                     · · · TypeAnnotationClause
                     · · · · ??':'
                     · · · · NameRef
                     · · · · · ??ID
                     · · ','
                     · · Param
-                    · · · NameRef 'a'
+                    · · · 'a'
                     · · · TypeAnnotationClause
                     · · · · ??':'
                     · · · · NameRef
                     · · · · · ??ID
                     · · ','
                     · · Param
-                    · · · NameRef 'b'
+                    · · · 'b'
                     · · · TypeAnnotationClause
                     · · · · ??':'
                     · · · · NameRef
@@ -674,8 +659,7 @@ public partial class ParserTests
                     · · '('
                     · · Garbage '##'
                     · · Param
-                    · · · NameRef
-                    · · · · ??ID
+                    · · · ??ID
                     · · · TypeAnnotationClause
                     · · · · ??':'
                     · · · · NameRef
@@ -699,16 +683,14 @@ public partial class ParserTests
                     · · '('
                     · · Garbage '##'
                     · · Param
-                    · · · NameRef
-                    · · · · ??ID
+                    · · · ??ID
                     · · · TypeAnnotationClause
                     · · · · ??':'
                     · · · · NameRef
                     · · · · · ??ID
                     · · ','
                     · · Param
-                    · · · NameRef
-                    · · · · ??ID
+                    · · · ??ID
                     · · · TypeAnnotationClause
                     · · · · ??':'
                     · · · · NameRef
@@ -732,7 +714,7 @@ public partial class ParserTests
                     · ParamList
                     · · '('
                     · · Param
-                    · · · NameRef 'a'
+                    · · · 'a'
                     · · · TypeAnnotationClause
                     · · · · ??':'
                     · · · · NameRef
@@ -741,8 +723,7 @@ public partial class ParserTests
                     · · ','
                     · · Garbage '##'
                     · · Param
-                    · · · NameRef
-                    · · · · ??ID
+                    · · · ??ID
                     · · · TypeAnnotationClause
                     · · · · ??':'
                     · · · · NameRef
@@ -768,22 +749,21 @@ public partial class ParserTests
                     · · '('
                     · · Garbage '##'
                     · · Param
-                    · · · NameRef
-                    · · · · ??ID
+                    · · · ??ID
                     · · · TypeAnnotationClause
                     · · · · ??':'
                     · · · · NameRef
                     · · · · · ??ID
                     · · ','
                     · · Param
-                    · · · NameRef 'a'
+                    · · · 'a'
                     · · · TypeAnnotationClause
                     · · · · ??':'
                     · · · · NameRef
                     · · · · · ??ID
                     · · ','
                     · · Param
-                    · · · NameRef 'b'
+                    · · · 'b'
                     · · · TypeAnnotationClause
                     · · · · ??':'
                     · · · · NameRef
@@ -808,8 +788,7 @@ public partial class ParserTests
                     · · '('
                     · · Garbage '##'
                     · · Param
-                    · · · NameRef
-                    · · · · ??ID
+                    · · · ??ID
                     · · · TypeAnnotationClause
                     · · · · ??':'
                     · · · · NameRef
@@ -817,8 +796,7 @@ public partial class ParserTests
                     · · ','
                     · · Garbage '##'
                     · · Param
-                    · · · NameRef
-                    · · · · ??ID
+                    · · · ??ID
                     · · · TypeAnnotationClause
                     · · · · ??':'
                     · · · · NameRef

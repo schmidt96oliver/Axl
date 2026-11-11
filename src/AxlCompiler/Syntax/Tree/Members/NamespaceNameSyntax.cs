@@ -5,5 +5,5 @@ namespace AxlCompiler.Syntax.Tree;
 public sealed class NamespaceNameSyntax(ImmutableArray<SyntaxElement> children)
     : SyntaxNode(SyntaxKind.NamespaceName, children)
 {
-    public IEnumerable<NameRefSyntax> Parts => Children.OfType<NameRefSyntax>();
+    public IEnumerable<IdentifierToken> Parts => Children.OfType<IdentifierToken>();
 }

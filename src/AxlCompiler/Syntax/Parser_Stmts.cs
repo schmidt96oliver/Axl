@@ -47,8 +47,7 @@ public partial class Parser
         var varDecl = _scanner.Open();
         _scanner.Eat();
 
-        // --- NameRef
-        EnsureNameRef();
+        EnsureToken(TokenKind.Identifier);
 
         // --- Optional type annotation
         if (_scanner.IsAt(TokenKind.Colon))

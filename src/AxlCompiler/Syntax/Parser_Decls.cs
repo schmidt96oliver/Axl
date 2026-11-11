@@ -55,8 +55,8 @@ public partial class Parser
     private MarkClose ContinueEatStructDecl(Anchor anchor, MarkOpen commonHeader)
     {
         _scanner.EatKnown(TokenKind.StructKw);
-        
-        EnsureNameRef();
+
+        EnsureToken(TokenKind.Identifier);
 
         if (_scanner.IsAt(TokenKind.OpenBracket))
             EatTypeParamList(anchor);
@@ -119,14 +119,14 @@ public partial class Parser
     private MarkClose EnsureNamespaceName()
     {
         var namespaceName = _scanner.Open();
-        EnsureNameRef(ExpectedSyntax.NamespaceName);
+        EnsureToken(TokenKind.Identifier, ExpectedSyntax.NamespaceName);
 
         foreach (var _ in _scanner.MustEatEachIteration())
         {
             if (_scanner.IsAt(TokenKind.Dot))
             {
                 _scanner.Eat();
-                EnsureNameRef();
+                EnsureToken(TokenKind.Identifier);
             }
             else
                 break;
@@ -214,7 +214,7 @@ public partial class Parser
         MarkClose EnsureTypeParam(Anchor _)
         {
             var typeParam = _scanner.Open();
-            EnsureNameRef(ExpectedSyntax.TypeParamName);
+            EnsureToken(TokenKind.Identifier, ExpectedSyntax.TypeParamName);
             return _scanner.Close(typeParam, SyntaxKind.TypeParam);
         }
     }
@@ -268,9 +268,10 @@ public partial class Parser
             var param = _scanner.Open();
 
             _scanner.EatIfPresent(TokenKind.MutKw);
-            EnsureNameRef(expectedSyntax: _scanner.IsAt(itemFirst, isGrammarCheck: false)
-                ? TokenKind.Identifier
-                : ExpectedSyntax.Param);
+            EnsureToken(TokenKind.Identifier,
+                expectedSyntax: _scanner.IsAt(itemFirst, isGrammarCheck: false)
+                    ? TokenKind.Identifier
+                    : ExpectedSyntax.Param);
 
             EnsureTypeAnnotation(paramAnchor);
             return _scanner.Close(param, SyntaxKind.Param);

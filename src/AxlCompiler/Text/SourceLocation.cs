@@ -65,12 +65,19 @@ public readonly record struct SourceLocation
         Guard.MustBe(from.SourceText == to.SourceText);
         return new SourceLocation(from.SourceText, SourceRange.FromTo(from.Range, to.Range));
     }
-    
-
     public bool Contains(SourceLocation location)
         => SourceText == location.SourceText && Range.Contains(location.Range);
 
-    public SourceLocation this[Range range] => new (SourceText, Range[range]);
+    /// <summary>
+    /// Adds <paramref name="amount"/> to both <see cref="Start"/> and
+    /// <see cref="End"/> while clamped to start or end of file.
+    /// </summary>
+    public SourceLocation Expand(int amount)
+    {
+        var start = Math.Max(SourceText.Range.Start, Start - amount);
+        var end = Math.Min(SourceText.Range.End, End + amount);
+        return new SourceLocation(SourceText, SourceRange.FromBounds(start, end));
+    }
 
-    
+    public SourceLocation this[Range range] => new (SourceText, Range[range]);
 }

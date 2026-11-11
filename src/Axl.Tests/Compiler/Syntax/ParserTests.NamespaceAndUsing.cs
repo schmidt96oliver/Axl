@@ -30,7 +30,7 @@ public partial class ParserTests
 
                 VarDecl
                 · 'var'
-                · NameRef 'a'
+                · 'a'
                 · InitializerClause
                 · · '='
                 · · NumberLiteral '1'
@@ -49,7 +49,7 @@ public partial class ParserTests
 
                 VarDecl
                 · 'let'
-                · NameRef 'a'
+                · 'a'
                 · InitializerClause
                 · · '='
                 · · NumberLiteral '1'
@@ -68,8 +68,7 @@ public partial class ParserTests
 
                 NamespaceDecl
                 · 'namespace'
-                · NamespaceName
-                · · NameRef 'A'
+                · NamespaceName 'A'
                 · ';'
                 Garbage 'let' 'a' '=' '1' ';'
                 """);

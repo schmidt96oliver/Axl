@@ -400,7 +400,7 @@ public partial class ParserTests
                     · ??';'
                     VarDecl
                     · 'var'
-                    · NameRef 'a'
+                    · 'a'
                     · InitializerClause
                     · · '='
                     · · NumberLiteral '2'

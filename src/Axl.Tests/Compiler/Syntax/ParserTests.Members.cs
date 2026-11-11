@@ -190,7 +190,7 @@ public partial class ParserTests
                 · · '@'
                 · · NameRef 'ID'
                 · 'struct'
-                · NameRef 'T'
+                · 'T'
                 · ';'
                 """);
         [Fact]
@@ -204,7 +204,7 @@ public partial class ParserTests
                 · · NameRef 'ID'
                 · 'pub'
                 · 'struct'
-                · NameRef 'T'
+                · 'T'
                 · ';'
                 """);
         [Fact]
@@ -221,7 +221,7 @@ public partial class ParserTests
                 · · NameRef 'ID2'
                 · 'pub'
                 · 'struct'
-                · NameRef 'T'
+                · 'T'
                 · ';'
                 """);
 
@@ -239,8 +239,7 @@ public partial class ParserTests
                 · TypeParamList
                 · · '['
                 · · TypeParam
-                · · · NameRef
-                · · · · ??ID
+                · · · ??ID
                 · · ']'
                 · ParamList '(' ')'
                 · FunBody
@@ -256,8 +255,7 @@ public partial class ParserTests
                 · FunName 'A'
                 · TypeParamList
                 · · '['
-                · · TypeParam
-                · · · NameRef 'T1'
+                · · TypeParam 'T1'
                 · · ']'
                 · ParamList '(' ')'
                 · FunBody
@@ -273,11 +271,9 @@ public partial class ParserTests
                 · FunName 'A'
                 · TypeParamList
                 · · '['
-                · · TypeParam
-                · · · NameRef 'T1'
+                · · TypeParam 'T1'
                 · · ','
-                · · TypeParam
-                · · · NameRef 'T2'
+                · · TypeParam 'T2'
                 · · ']'
                 · ParamList '(' ')'
                 · FunBody
@@ -293,14 +289,11 @@ public partial class ParserTests
                 · FunName 'A'
                 · TypeParamList
                 · · '['
-                · · TypeParam
-                · · · NameRef 'T1'
+                · · TypeParam 'T1'
                 · · ','
-                · · TypeParam
-                · · · NameRef 'T2'
+                · · TypeParam 'T2'
                 · · ','
-                · · TypeParam
-                · · · NameRef 'T3'
+                · · TypeParam 'T3'
                 · · ']'
                 · ParamList '(' ')'
                 · FunBody
@@ -317,12 +310,11 @@ public partial class ParserTests
 
                 StructDecl
                 · 'struct'
-                · NameRef 'A'
+                · 'A'
                 · TypeParamList
                 · · '['
                 · · TypeParam
-                · · · NameRef
-                · · · · ??ID
+                · · · ??ID
                 · · ']'
                 · StructBody '{' '}'
                 """);
@@ -333,11 +325,10 @@ public partial class ParserTests
                                             """), """
                 StructDecl
                 · 'struct'
-                · NameRef 'A'
+                · 'A'
                 · TypeParamList
                 · · '['
-                · · TypeParam
-                · · · NameRef 'T1'
+                · · TypeParam 'T1'
                 · · ']'
                 · StructBody '{' '}'
                 """);
@@ -348,14 +339,12 @@ public partial class ParserTests
                                             """), """
                 StructDecl
                 · 'struct'
-                · NameRef 'A'
+                · 'A'
                 · TypeParamList
                 · · '['
-                · · TypeParam
-                · · · NameRef 'T1'
+                · · TypeParam 'T1'
                 · · ','
-                · · TypeParam
-                · · · NameRef 'T2'
+                · · TypeParam 'T2'
                 · · ']'
                 · ';'
                 """);
@@ -366,17 +355,14 @@ public partial class ParserTests
                                             """), """
                 StructDecl
                 · 'struct'
-                · NameRef 'A'
+                · 'A'
                 · TypeParamList
                 · · '['
-                · · TypeParam
-                · · · NameRef 'T1'
+                · · TypeParam 'T1'
                 · · ','
-                · · TypeParam
-                · · · NameRef 'T2'
+                · · TypeParam 'T2'
                 · · ','
-                · · TypeParam
-                · · · NameRef 'T3'
+                · · TypeParam 'T3'
                 · · ']'
                 · ';'
                 """);

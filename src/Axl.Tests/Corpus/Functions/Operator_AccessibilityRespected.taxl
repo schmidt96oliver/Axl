@@ -1,7 +1,7 @@
 ﻿//@check
 
 // Accessibility of operators is respected.
-
+ 
 struct Vec2
 {
     pub X: F64;

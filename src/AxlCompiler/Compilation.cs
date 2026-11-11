@@ -7,6 +7,7 @@ using AxlCompiler.Diagnostics;
 using AxlCompiler.Mir;
 using AxlCompiler.Symbols;
 using AxlCompiler.Syntax;
+using AxlCompiler.Testing;
 using AxlCompiler.Text;
 using Binder = AxlCompiler.Binding.Binder;
 
@@ -140,6 +141,9 @@ public class Compilation
     
     public static Compilation From(SourceText text)
         => From([text]);
+
+    public static Compilation From(TestFile testFile)
+        => From(testFile.Fragments.Select(f => f.SourceText));
 
     public Compilation With(Compilation referencedCompilation)
         => new(SyntaxTrees, [referencedCompilation, .. ReferencedCompilations]);

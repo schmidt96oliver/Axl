@@ -5,7 +5,12 @@
 
 # Now
 
-* Use Traverse in: ParserTests, syntax tree tokens
+* RefSymbol: 
+  * Arg names
+  * SymbolInfo with candidates (overloads, ambiguous refs, ...)
+  * Bind subscript expressions before validating; `1[I32]` should get a ref
+  * MissingMutReturn.taxl, UnexpectedMutReturn.taxl; Bind value before rejecting
+  * Bind NotGeneric.taxl
 
 * tests: SemanticModel.ReferencedSymbolFor
   * on entire Corpus: Every NameRef needs to resolve to a symbol in valid files

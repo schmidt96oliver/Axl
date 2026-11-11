@@ -71,7 +71,7 @@ public partial class ParserTests
                 · · '('
                 · · Param
                 · · · 'mut'
-                · · · NameRef 'a'
+                · · · 'a'
                 · · · TypeAnnotationClause
                 · · · · ':'
                 · · · · NameRef 'I32'
@@ -160,7 +160,7 @@ public partial class ParserTests
 
                 VarDecl
                 · 'let'
-                · NameRef 'a'
+                · 'a'
                 · TypeAnnotationClause
                 · · ':'
                 · · SubscriptExpr
@@ -177,7 +177,7 @@ public partial class ParserTests
             => InlineSnapshot.Validate(Tree("let a: A[T1, T2];"), """
                 VarDecl
                 · 'let'
-                · NameRef 'a'
+                · 'a'
                 · TypeAnnotationClause
                 · · ':'
                 · · SubscriptExpr
@@ -195,7 +195,7 @@ public partial class ParserTests
             => InlineSnapshot.Validate(Tree("let a: A.B[T1, T2];"), """
                 VarDecl
                 · 'let'
-                · NameRef 'a'
+                · 'a'
                 · TypeAnnotationClause
                 · · ':'
                 · · SubscriptExpr
@@ -216,7 +216,7 @@ public partial class ParserTests
             => InlineSnapshot.Validate(Tree("let a: A[T].B[T1, T2];"), """
                 VarDecl
                 · 'let'
-                · NameRef 'a'
+                · 'a'
                 · TypeAnnotationClause
                 · · ':'
                 · · SubscriptExpr
@@ -242,7 +242,7 @@ public partial class ParserTests
             => InlineSnapshot.Validate(Tree("let a: A[T].B[U].C[W];"), """
                 VarDecl
                 · 'let'
-                · NameRef 'a'
+                · 'a'
                 · TypeAnnotationClause
                 · · ':'
                 · · SubscriptExpr

@@ -4,7 +4,7 @@
 A.Do1();
 A.Do2();
 A.Do3();
-
+ 
 //---
 namespace A;
 
