@@ -27,6 +27,9 @@ public closed class TypeSymbol(Compilation compilation, string name, Symbol? own
     /// </summary>
     public abstract ImmutableArray<TypeSymbol> TypeArguments { get; }
 
+    public bool HasFilledTypeParameters
+        => TypeParameters.Length == 0 || !TypeArguments.SequenceEqual(TypeParameters);
+    
     public LayoutGraphNode LayoutGraphNode
     {
         get

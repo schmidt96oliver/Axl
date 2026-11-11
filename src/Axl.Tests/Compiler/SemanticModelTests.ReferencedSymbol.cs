@@ -17,13 +17,7 @@ public partial class SemanticModelTests
             var compilation = Compilation.From(TestFile.From(SourceText.LoadFile(path))).WithBaseLibrary();
             var nameRefs = compilation.SyntaxTrees[0].FileSyntax.Traverse().OfType<NameRefSyntax>();
             var nullSymbols = nameRefs
-                    // Skip annotations
-                .Where(nameRef => nameRef.Parent is not AnnotationSyntax)
-                    // Skip undefined names/members
-                .Where(nameRef => compilation.Diagnostics.OfType<Diagnostic.UndefinedName>().All(d => d.Locations[0] != nameRef.Location))
-                .Where(nameRef => compilation.Diagnostics.OfType<Diagnostic.UndefinedMember>().All(d => d.Locations[0] != nameRef.Location))
-                    
-                .Where(nameRef => compilation.SemanticModel.ReferencedSymbolFor(nameRef) is null)
+                .Where(nameRef => compilation.SemanticModel.InternalReferencedSymbolFor(nameRef) is null)
                 .ToList();
             if (nullSymbols.Count > 0)
             {

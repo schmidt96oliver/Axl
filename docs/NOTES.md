@@ -4,11 +4,7 @@
 
 
 # Now
-
-* Remove struct-init short-hand `P(X)`
-    * Variables are lowercase, fields are uppercase, so it doesn't make sens
-    * It churns the SymbolInfo data structure :/.
-
+```  ```
 * RefSymbol: 
   * SymbolInfo with candidates (overloads, ambiguous refs, ...)
   * Arg names: BindFieldInitializer in CheckTypeCandidate; BoundStructInitError carries TypeCandidate, which has

@@ -1,4 +1,5 @@
-﻿using AxlCompiler.Symbols;
+﻿using AxlCompiler;
+using AxlCompiler.Symbols;
 using AxlCompiler.Syntax.Tree;
 using AxlLsp.Projects;
 using OmniSharp.Extensions.LanguageServer.Protocol.Client.Capabilities;
@@ -25,33 +26,53 @@ public class HoverHandler : HoverHandlerBase
             return Task.FromResult<Hover?>(null);
 
         var context = SyntaxContext.At(axlLocation);
-        
+
         if (Settings.ShowBoundExprAtHover)
             return Task.FromResult(DebugBoundNodeHover(context));
-        
+
         var word = context.TouchingWord;
         if (word is null) return Task.FromResult<Hover?>(null);
-        
+
         //TODO: Parent NameRef => ReferencedSymbolFor
         //                   _ => DeclaredSymbolFor
         if (word.Parent is not NameRefSyntax nameRef)
             return Task.FromResult<Hover?>(null);
 
         var symbol = axlLocation.Compilation.SemanticModel.ReferencedSymbolFor(nameRef);
-        if (symbol is null)
-            return Task.FromResult<Hover?>(null);
 
-        var lspLocation = ProjectStore.TryMapToLsp(word.Location);
-        if (lspLocation is null || lspLocation.Uri != uri)
-            return Task.FromResult<Hover?>(null);
-
-        return Task.FromResult<Hover?>(new Hover
+        if (HoverTextFor(symbol) is { } markup)
         {
-            Contents = new MarkedStringsOrMarkupContent(symbol.FullDisplayText), 
-            Range = lspLocation.Range
-        });
+            var lspLocation = ProjectStore.TryMapToLsp(word.Location);
+            if (lspLocation is null || lspLocation.Uri != uri)
+                return Task.FromResult<Hover?>(null);
+
+            return Task.FromResult<Hover?>(new Hover
+            {
+                Contents = new MarkedStringsOrMarkupContent(markup),
+                Range = lspLocation.Range
+            });
+        }
+
+        return Task.FromResult<Hover?>(null);
     }
 
+    private static MarkupContent? HoverTextFor(SymbolInfo info) => info switch
+    {
+        SymbolInfo.Resolved resolved => new MarkupContent{ Kind = MarkupKind.Markdown, Value =
+            $"```axl\n{resolved.Symbol.FullDisplayText}\n```"
+        },
+        SymbolInfo.Unresolved unresolved => HoverTextFor(unresolved),
+    };
+
+    private static MarkupContent? HoverTextFor(SymbolInfo.Unresolved unresolved)
+    {
+        if (unresolved.Reason is UnresolvedSymbolReason.NotFound || unresolved.Candidates.Length == 0)
+            return null;
+
+        var candidatesText = string.Join('\n', unresolved.Candidates.Select(s => s.FullDisplayText));
+        return new MarkupContent { Kind = MarkupKind.Markdown, Value = $"```axl\n{candidatesText}\n```" };
+    }
+    
     private static Hover? DebugBoundNodeHover(SyntaxContext context)
     {
         var token = context.SyntaxTree.TokenAt(context.Caret);

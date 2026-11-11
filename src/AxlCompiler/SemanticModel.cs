@@ -13,7 +13,7 @@ namespace AxlCompiler;
 
 public sealed class SemanticModel(Compilation compilation)
 {
-    private Dictionary<(SyntaxTree, int), BinderSideEffects?> _probes = [];
+    private readonly Dictionary<(SyntaxTree, int), BinderSideEffects?> _probes = [];
     
     /// <summary>
     /// Returns all symbols that are visible at the start of the given
@@ -42,94 +42,104 @@ public sealed class SemanticModel(Compilation compilation)
         => ProbeAt(tree, position)?.ScopeAtProbe;
 
 
-    public BoundNode BoundNodeFor(ExprSyntax syntax)
+    public BoundNode BoundNodeFor(ExprSyntax syntax) 
+        => TryBoundNodeFor(syntax) ?? new BoundError(compilation.BaseLibrary.Error, syntax);
+
+    private BoundNode? TryBoundNodeFor(ExprSyntax syntax)
     {
         //TODO: Cache the results
         var sideEffects = new BinderSideEffects();
         CompleteAt(syntax.Location, compilation, sideEffects);
 
         if (sideEffects.BoundNodes.TryGetValue(syntax, out var boundNodes))
-            return boundNodes[^1];  //TODO: Which one to pick?
-        else
-            return new BoundError(compilation.BaseLibrary.Error, syntax);
+            return boundNodes[^1]; //TODO: Which one to pick?
+
+        return null;
     }
 
-    public Symbol? ReferencedSymbolFor(NameRefSyntax syntax)
+    public SymbolInfo ReferencedSymbolFor(NameRefSyntax syntax)
+        => InternalReferencedSymbolFor(syntax) ?? new SymbolInfo.Unresolved([], UnresolvedSymbolReason.NotFound);
+    
+    /// <summary>
+    /// Returns the referenced symbol, but <c>null</c> if it
+    /// could not be resolved due to an internal error. Used for
+    /// testing.
+    /// </summary>
+    internal SymbolInfo? InternalReferencedSymbolFor(NameRefSyntax syntax)
     {
-        var bindableSyntax = BindableSyntaxFor(syntax);
-        if (bindableSyntax is null) return null;
-
-        return ReferencedSymbolFor(bindableSyntax);
+        // Annotations are no symbols
+        if (syntax.Parent is AnnotationSyntax)
+            return new SymbolInfo.Unresolved([], UnresolvedSymbolReason.NotFound);
+        
+        //TODO: Handle argument names
+        if (syntax.Parent is ArgSyntax arg && arg.Name == syntax)
+            return null;
+        
+        return ReferencedSymbolFor(BindableSyntaxFor(syntax));
     }
 
-    private Symbol? ReferencedSymbolFor(ExprSyntax syntax)
-        => BoundNodeFor(syntax) switch
+    private SymbolInfo? ReferencedSymbolFor(ExprSyntax syntax)
+        => TryBoundNodeFor(syntax) switch
         {
-            IBoundSymbolRef symbolRef => symbolRef.Symbol,
+            IBoundSymbolRef symbolRef => new SymbolInfo.Resolved(symbolRef.Symbol),
             BoundTypeGroup typeGroup => ReferencedSymbolFor(typeGroup, syntax),
             BoundFunGroup funGroup => ReferencedSymbolFor(funGroup, syntax),
+            BoundError => null, // TODO: Don't make errors a gap
             _ => null
         };
 
-    private Symbol? ReferencedSymbolFor(BoundTypeGroup typeGroup, ExprSyntax syntax)
+    private SymbolInfo ReferencedSymbolFor(BoundTypeGroup typeGroup, ExprSyntax syntax)
     {
-        if (typeGroup.Candidates is [var single])
-            return single;
-        
-        // Type groups are specialized through call expressions otherwise
-        if (syntax.Ancestors().FirstOfTypeOrNull<CallExprSyntax>() is { } callExprSyntax)
+        if (syntax.Parent is CallExprSyntax callExprSyntax && callExprSyntax.Callee == syntax)
         {
             var boundCall = BoundNodeFor(callExprSyntax);
             if (boundCall is BoundStructInit structInit)
-                return structInit.Type;
+                return new SymbolInfo.Resolved(structInit.Type);
             if (boundCall is BoundStructInitError structInitError)
-                return structInitError.Candidates.Length == 1 ? structInitError.Candidates[0] : null;
+            {
+                // If there is only a single candidate that has its type
+                // parameters filled, it resolves correctly. Otherwise,
+                // it's unresolved (too many types or failed inference).
+                if (structInitError.Candidates is [{ HasFilledTypeParameters: true } singleType])
+                    return new SymbolInfo.Resolved(singleType);
+
+                return new SymbolInfo.Unresolved(
+                    structInitError.Candidates.CastArray<Symbol>(),
+                    UnresolvedSymbolReason.NoApplicableType);
+            }
         }
 
-        return null;    // Ambiguous
+        // Same as above
+        if (typeGroup.Candidates is [{ HasFilledTypeParameters: true } single])
+            return new SymbolInfo.Resolved(single);
+        
+        return new SymbolInfo.Unresolved(
+            typeGroup.Candidates.CastArray<Symbol>(),
+            UnresolvedSymbolReason.Ambiguous);
     }
 
-    private Symbol? ReferencedSymbolFor(BoundFunGroup funGroup, ExprSyntax syntax)
+    private SymbolInfo ReferencedSymbolFor(BoundFunGroup funGroup, ExprSyntax syntax)
     {
-        // If it's a single one, we can return it directly
-        // if it needs no generic type inference.
-        if (funGroup.Candidates is [var single] && single.TypeParameters.Length == funGroup.TypeArguments.Length)
+        var callSyntax = syntax.Ancestors().OfType<CallExprSyntax>().FirstOrDefault();
+        if (callSyntax is null || callSyntax.Callee != syntax ||
+            BoundNodeFor(callSyntax) is not BoundCall boundCall)
         {
-            return single.TypeParameters.Length > 0
-                ? single.Specialize([.. funGroup.TypeArguments.Select(t => t.Type)])
-                : single;
+            // The fun group is not part of a call or it had an error.
+            return new SymbolInfo.Unresolved(funGroup.Candidates.CastArray<Symbol>(), UnresolvedSymbolReason.NoApplicableOverload);
         }
 
-        // Bind the overlaying call and return it's callee
-        var callSyntax = syntax.Ancestors().OfType<CallExprSyntax>().FirstOrDefault();
-        if (callSyntax is null || callSyntax.Callee != syntax)
-            return funGroup.Candidates is [var singleFun]
-                ? singleFun
-                : null; //TODO: Return candidates (then also add subscript)
-        var boundCall = BoundNodeFor(callSyntax) as BoundCall;
-        if (boundCall is null)
-            return funGroup.Candidates is [var singleFun] ? singleFun : null;
-
-        return boundCall.Fun;
+        return new SymbolInfo.Resolved(boundCall.Fun);
     }
     
-    private ExprSyntax? BindableSyntaxFor(ExprSyntax syntax)
+    private ExprSyntax BindableSyntaxFor(ExprSyntax syntax)
     {
         return syntax.Parent switch
         {
             MemberAccessExprSyntax memberAccess when memberAccess.Member == syntax
-                => memberAccess,
+                => BindableSyntaxFor(memberAccess),
             SubscriptExprSyntax subscript when subscript.Left == syntax
                 => subscript,
-
-            //TODO: Handle argument names through BoundCall / whatnot
-            ArgSyntax arg when arg.Name == syntax 
-                => null, 
             
-            // Annotation don't resolve to symbols. We can early exit them.
-            AnnotationSyntax annotation when annotation.NameRef == syntax
-                => null,
-
             _ => syntax,
         };
     }
