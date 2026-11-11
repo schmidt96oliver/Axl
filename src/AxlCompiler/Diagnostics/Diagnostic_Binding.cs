@@ -219,7 +219,7 @@ public partial record Diagnostic
             BoundValue value => $"A value of type ‘{value.Type.FullName}‘ cannot be called.",
             
             IBoundSymbolRef symbolRef => $"{symbolRef.Symbol.ShortDisplayText.Capitalize()} cannot be called.",
-            BoundFunGroup fun => "A fun group cannot be called.",
+            BoundFunGroup => "A fun group cannot be called.",
             BoundTypeGroup => "A type group cannot be called.",
             BoundStmt => "A statement cannot be called.",
         };
@@ -427,8 +427,8 @@ public partial record Diagnostic
         {
             BoundValue value => $"Expected a namespace, but got value of type ‘{value.Type.FullName}‘.",
             IBoundSymbolRef symbolRef => $"Expected a namespace, but got {symbolRef.Symbol.ShortDisplayText}.",
-            BoundTypeGroup => $"Expected a namespace, but got a group of types.",
-            BoundFunGroup funGroup => $"Expected a namespace, but got a groups of funs.",
+            BoundTypeGroup => "Expected a namespace, but got a group of types.",
+            BoundFunGroup => "Expected a namespace, but got a groups of funs.",
             
             BoundStmt => "Expected a namespace, but got a statement.",
         };
@@ -500,10 +500,10 @@ public partial record Diagnostic
     public sealed record DuplicateArgumentNames(ImmutableArray<BoundArgument> Duplicates) : Error
     {
         public override ImmutableArray<SourceLocation> Locations =>
-            [.. Duplicates.Select(a => a.FieldNameSyntax!.Location)];
+            [.. Duplicates.Select(a => a.NameSyntax!.Location)];
 
         public override string Message =>
-            $"Duplicate argument name ‘{Duplicates[0].FieldNameSyntax!.Text}‘.";
+            $"Duplicate argument name ‘{Duplicates[0].NameSyntax!.Text}‘.";
     }
 
     public sealed record CannotInitialize(ImmutableArray<TypeSymbol> Candidates, SyntaxNode Syntax) : Error

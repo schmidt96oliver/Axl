@@ -46,7 +46,7 @@ public sealed class CompletionHandler : CompletionHandlerBase
         // that have been written. The binder does not filter
         // those out.
         var filledFieldNames = structInitError.BoundArguments
-            .Select(arg => arg.FieldNameSyntax?.Text.ToString() ?? "")
+            .Select(arg => arg.NameSyntax?.Text.ToString() ?? "")
             .Where(fieldName => fieldName is not "" &&
                 context.TouchingWord?.Text.SequenceEqual(fieldName) != true)
             .ToHashSet();

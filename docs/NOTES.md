@@ -5,16 +5,24 @@
 
 # Now
 
+* Remove struct-init short-hand `P(X)`
+    * Variables are lowercase, fields are uppercase, so it doesn't make sens
+    * It churns the SymbolInfo data structure :/.
+
 * RefSymbol: 
-  * Arg names
   * SymbolInfo with candidates (overloads, ambiguous refs, ...)
+  * Arg names: BindFieldInitializer in CheckTypeCandidate; BoundStructInitError carries TypeCandidate, which has
+               (BoundFieldInitializers, UnmatchedArguments, UninitializedFields)
+    * Do it after type argument inference
   * Bind subscript expressions before validating; `1[I32]` should get a ref
   * MissingMutReturn.taxl, UnexpectedMutReturn.taxl; Bind value before rejecting
   * Bind NotGeneric.taxl
+  * fix ColorColor case (should probably record in binder)
+
+
 
 * tests: SemanticModel.ReferencedSymbolFor
-  * on entire Corpus: Every NameRef needs to resolve to a symbol in valid files
-  * fix ColorColor case (should probably record in binder)
+  * do a few correctness tests (ambigous; types in structs, params, returns; locals, ...)
 
 * How to walk symbol tree for syntax node?
   * Clarify DeclaringSyntaxes

@@ -2190,7 +2190,7 @@ public sealed class Binder(Scope scope, BinderSideEffects sideEffects)
         var initialCandidates = (typeGroupOrSingle as BoundTypeGroup)?.Candidates ?? [((BoundTypeRef)typeGroupOrSingle).Type];
         
         // Arguments must all be named and distinct and without mut
-        var missingNameArguments = arguments.Where(a => a.FieldNameSyntax is null).ToImmutableArray();
+        var missingNameArguments = arguments.Where(a => a.NameSyntax is null).ToImmutableArray();
         if (missingNameArguments.Length > 0)
         {
             foreach (var arg in missingNameArguments)
@@ -2199,7 +2199,7 @@ public sealed class Binder(Scope scope, BinderSideEffects sideEffects)
         }
 
         var duplicateNames = arguments
-            .GroupBy(a => a.FieldNameSyntax!.Text.ToString())
+            .GroupBy(a => a.NameSyntax!.Text.ToString())
             .Select(grp => grp.ToImmutableArray())
             .Where(grp => grp.Length > 1)
             .ToImmutableArray();
@@ -2319,13 +2319,13 @@ public sealed class Binder(Scope scope, BinderSideEffects sideEffects)
 
         foreach (var argument in arguments)
         {
-            Debug.Assert(argument.FieldNameSyntax is not null, "Missing field names must be handled before.");
+            Debug.Assert(argument.NameSyntax is not null, "Missing field names must be handled before.");
 
-            var fieldName = argument.FieldNameSyntax.Text.ToString();
+            var fieldName = argument.NameSyntax.Text.ToString();
             var field = type.Members.OfType<FieldSymbol>().FirstOrDefault(field => field.Name == fieldName);
 
             if (field is null)
-                SideEffects.ReportError(new Diagnostic.UndefinedField(type, argument.FieldNameSyntax!));
+                SideEffects.ReportError(new Diagnostic.UndefinedField(type, argument.NameSyntax!));
 
             fields.Add(field);
         }
@@ -2364,7 +2364,7 @@ public sealed class Binder(Scope scope, BinderSideEffects sideEffects)
             SideEffects.ReportError(new Diagnostic.UnexpectedMutInTypeInit(argument.Syntax!));
         }
         
-        if (!CheckAccessibility(field, argument.FieldNameSyntax!) ||
+        if (!CheckAccessibility(field, argument.NameSyntax!) ||
             !CheckType(argument.Value, field.Type))
         {
             return new BoundError(ErrorType, argument.Syntax!);

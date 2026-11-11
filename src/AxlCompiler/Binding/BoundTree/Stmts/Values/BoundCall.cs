@@ -35,7 +35,6 @@ public sealed class BoundCall(
 public sealed class BoundArgument(NameRefSyntax? nameSyntax, BoundValue value, bool isMut, ArgSyntax? syntax)
 {
     public NameRefSyntax? NameSyntax => nameSyntax;
-    public NameRefSyntax? FieldNameSyntax => nameSyntax ?? (Syntax as ArgSyntax)?.Expr as NameRefSyntax;
     public BoundValue Value { get; } = value;
     public bool IsMut { get; } = isMut;
 
