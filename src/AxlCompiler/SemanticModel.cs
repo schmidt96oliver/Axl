@@ -59,7 +59,7 @@ public sealed class SemanticModel(Compilation compilation)
 
     public SymbolInfo ReferencedSymbolFor(NameRefSyntax syntax)
         => InternalReferencedSymbolFor(syntax) ?? new SymbolInfo.Unresolved([], UnresolvedSymbolReason.NotFound);
-    
+
     /// <summary>
     /// Returns the referenced symbol, but <c>null</c> if it
     /// could not be resolved due to an internal error. Used for
@@ -70,23 +70,33 @@ public sealed class SemanticModel(Compilation compilation)
         // Annotations are no symbols
         if (syntax.Parent is AnnotationSyntax)
             return new SymbolInfo.Unresolved([], UnresolvedSymbolReason.NotFound);
-        
+
         //TODO: Handle argument names
         if (syntax.Parent is ArgSyntax arg && arg.Name == syntax)
             return null;
-        
-        return ReferencedSymbolFor(BindableSyntaxFor(syntax));
-    }
 
-    private SymbolInfo? ReferencedSymbolFor(ExprSyntax syntax)
-        => TryBoundNodeFor(syntax) switch
+        ExprSyntax bindableSyntax = syntax.Parent is MemberAccessExprSyntax memberAccess && memberAccess.Member == syntax
+            ? memberAccess
+            : syntax;
+
+        var boundNode = TryBoundNodeFor(bindableSyntax);
+        if (boundNode is BoundTypeGroup or BoundFunGroup && 
+            bindableSyntax.Parent is SubscriptExprSyntax subscript &&
+            subscript.Left == bindableSyntax)
+        {
+            bindableSyntax = subscript;
+            boundNode = TryBoundNodeFor(subscript);
+        }
+
+        return boundNode switch
         {
             IBoundSymbolRef symbolRef => new SymbolInfo.Resolved(symbolRef.Symbol),
-            BoundTypeGroup typeGroup => ReferencedSymbolFor(typeGroup, syntax),
-            BoundFunGroup funGroup => ReferencedSymbolFor(funGroup, syntax),
+            BoundTypeGroup typeGroup => ReferencedSymbolFor(typeGroup, bindableSyntax),
+            BoundFunGroup funGroup => ReferencedSymbolFor(funGroup, bindableSyntax),
             BoundLookupError lookupError => new SymbolInfo.Unresolved(lookupError.Candidates, lookupError.Reason),
             _ => null
         };
+    }
 
     private SymbolInfo ReferencedSymbolFor(BoundTypeGroup typeGroup, ExprSyntax syntax)
     {
@@ -131,19 +141,6 @@ public sealed class SemanticModel(Compilation compilation)
         return new SymbolInfo.Resolved(boundCall.Fun);
     }
     
-    private ExprSyntax BindableSyntaxFor(ExprSyntax syntax)
-    {
-        return syntax.Parent switch
-        {
-            MemberAccessExprSyntax memberAccess when memberAccess.Member == syntax
-                => BindableSyntaxFor(memberAccess),
-            SubscriptExprSyntax subscript when subscript.Left == syntax
-                => subscript,
-            
-            _ => syntax,
-        };
-    }
-
 
     private BinderSideEffects? ProbeAt(SyntaxTree tree, int position)
     {

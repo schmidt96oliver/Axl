@@ -1,9 +1,9 @@
 ﻿//@check
 
-let a = 1[I32];         //~error SubscriptNotAllowed
-let a = A[I32][T]();    //~error SubscriptNotAllowed
-let a = A[I32]()[T];    //~error SubscriptNotAllowed
-let a = Base[T];        //~error SubscriptNotAllowed
-let a = (1 + 2)[T];     //~error SubscriptNotAllowed
+let a = 1[I32];             //~error SubscriptNotAllowed
+let a = A[I32][String]();   //~error SubscriptNotAllowed
+let a = A[I32]()[Bool];     //~error SubscriptNotAllowed
+let a = Base[Unit];         //~error SubscriptNotAllowed
+let a = (1 + 2)[Never];     //~error SubscriptNotAllowed
 
 fun A[T]() { }

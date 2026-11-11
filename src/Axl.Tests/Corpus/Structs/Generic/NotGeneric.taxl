@@ -1,7 +1,7 @@
 ﻿//@check
-
-let a: Test[T] = 1;      //~error NotGeneric
-let a: Test[T1, T2] = 2; //~error NotGeneric
+ 
+let a: Test[I32] = 1;           //~error NotGeneric
+let a: Test[I32, String] = 2;   //~error NotGeneric
 
 fun A(p: Test[I32]) { }  //~error NotGeneric
 fun A(): Test[I32] { }   //~error NotGeneric

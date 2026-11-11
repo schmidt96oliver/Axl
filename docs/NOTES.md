@@ -6,21 +6,19 @@
 # Now
 
 * RefSymbol: 
-  * SymbolInfo with candidates (overloads, ambiguous refs, ...)
   * Arg names: BindFieldInitializer in CheckTypeCandidate; BoundStructInitError carries TypeCandidate, which has
                (BoundFieldInitializers, UnmatchedArguments, UninitializedFields)
     * Do it after type argument inference
-  * Bind subscript expressions before validating; `1[I32]` should get a ref
   * MissingMutReturn.taxl, UnexpectedMutReturn.taxl; Bind value before rejecting
-  * Bind NotGeneric.taxl
   * fix ColorColor case (should probably record in binder)
-
-
 
 * tests: SemanticModel.ReferencedSymbolFor
   * do a few correctness tests (ambigous; types in structs, params, returns; locals, ...)
   * overloads, ambiguous overloads
   * type overloads, ambiguous type overloads
+  * subscripts with errors on both sides
+  * subscripts for non-generics
+  * member access every part
 
 * How to walk symbol tree for syntax node?
   * Clarify DeclaringSyntaxes
