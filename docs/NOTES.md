@@ -9,7 +9,6 @@
   * Arg names: BindFieldInitializer in CheckTypeCandidate; BoundStructInitError carries TypeCandidate, which has
                (BoundFieldInitializers, UnmatchedArguments, UninitializedFields)
     * Do it after type argument inference
-  * MissingMutReturn.taxl, UnexpectedMutReturn.taxl; Bind value before rejecting
   * fix ColorColor case (should probably record in binder)
 
 * tests: SemanticModel.ReferencedSymbolFor
@@ -19,6 +18,7 @@
   * subscripts with errors on both sides
   * subscripts for non-generics
   * member access every part
+  * return/expr body as UnexpectedMut/MissingMut
 
 * How to walk symbol tree for syntax node?
   * Clarify DeclaringSyntaxes

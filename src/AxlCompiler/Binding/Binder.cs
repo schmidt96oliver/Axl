@@ -1383,21 +1383,17 @@ public sealed class Binder(Scope scope, BinderSideEffects sideEffects)
         if (Scope.OwnerAsFun is not FunSymbol fun)
             throw new InvalidOperationException("Return values can only be bound on fun bodies.");
 
-        if (mutKw is not null)
-        {
-            if (!fun.IsReturnMut)
-                return BindError(syntax, new Diagnostic.UnexpectedMutReturn(mutKw, fun));
+        var value = BindValue(syntax, mutKw is not null ? ValueUsage.ReturnAsMut : ValueUsage.Read);
+        
+        if (mutKw is not null && !fun.IsReturnMut)
+            return BindError(syntax, new Diagnostic.UnexpectedMutReturn(mutKw, fun));
             
-            var mutValue = BindValue(syntax, ValueUsage.ReturnAsMut);
-            if (!CheckType(mutValue, fun.ReturnType))
-                return new BoundError(ErrorType, syntax);
-            return mutValue;
-        }
-
-        if (fun.IsReturnMut)
+        if (value is BoundError)
+            return new BoundError(ErrorType, syntax);
+        
+        if (mutKw is null && fun.IsReturnMut)
             return BindError(syntax, new Diagnostic.MissingMutReturn(syntax, fun));
 
-        var value = BindValue(syntax, ValueUsage.Read);
         if (!CheckType(value, fun.ReturnType))
             return new BoundError(ErrorType, syntax);
         return value;
