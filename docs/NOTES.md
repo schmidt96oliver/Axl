@@ -5,9 +5,6 @@
 
 # Now
 
-* RefSymbol: 
-  * Only on BoundStructInit; map to BoundFieldInitializers
-
 * How to walk symbol tree for syntax node?
   * Clarify DeclaringSyntaxes
   * Maybe add NameSyntax already

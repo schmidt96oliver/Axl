@@ -67,13 +67,11 @@ public sealed class SemanticModel(Compilation compilation)
     /// </summary>
     internal SymbolReference? TryReferencedSymbolFor(NameRefSyntax syntax)
     {
-        // Annotations are no symbols
         if (syntax.Parent is AnnotationSyntax)
             return new SymbolReference.Unresolved([], UnresolvedSymbolReason.NotFound);
 
-        //TODO: Handle argument names
         if (syntax.Parent is ArgSyntax arg && arg.Name == syntax)
-            return null;
+            return ReferencedSymbolForNamedArgument(arg);
 
         ExprSyntax bindableSyntax = syntax.Parent is MemberAccessExprSyntax memberAccess && memberAccess.Member == syntax
             ? memberAccess
@@ -144,6 +142,28 @@ public sealed class SemanticModel(Compilation compilation)
         return new SymbolReference.Resolved(boundCall.Fun);
     }
 
+    private SymbolReference? ReferencedSymbolForNamedArgument(ArgSyntax syntax)
+    {
+        // Arg must be part of ArgList, which must be part of CallExpr.
+        
+        Debug.Assert(syntax.Parent is ArgListSyntax argList && argList.Arguments.Contains(syntax));
+        Debug.Assert(syntax.Parent.Parent is CallExprSyntax);
+        
+        var callSyntax = (CallExprSyntax)syntax.Parent.Parent;
+        Debug.Assert(callSyntax.ArgList == syntax.Parent);
+
+        var bound = TryBoundNodeFor(callSyntax);
+        if (bound is null) return null;
+        if (bound is not BoundStructInit structInit)
+            return new SymbolReference.Unresolved([], UnresolvedSymbolReason.NotFound);
+
+        Debug.Assert(syntax.Name is not null);
+        var name = syntax.Name.Text.ToString();
+        var fieldInit = structInit.FieldInits.First(init => init.Field.Name == name);
+        return new SymbolReference.Resolved(fieldInit.Field);
+    }
+    
+    
 
     private BinderSideEffects? ProbeAt(SyntaxTree tree, int position)
     {

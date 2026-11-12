@@ -59,8 +59,6 @@ public partial class SemanticModelTests
                 .SelectMany(tree => tree.FileSyntax.Traverse()
                 .OfType<NameRefSyntax>())
                 .ToList();
-            if (nameRefs.Any(nameRef => nameRef.Parent is ArgSyntax arg && arg.Name == nameRef))
-                Assert.Skip("Struct arguments not handled yet.");   //TODO: Handle struct arguments
             
             var wrongSymbols = nameRefs
                 .Select(nameRef => (Ref: nameRef, Fail: CheckInfoAgainstNameRef(
@@ -284,6 +282,12 @@ public partial class SemanticModelTests
                    struct Box[T]
                    struct Box[T, U]
                 """);
+        [Fact]
+        public void StructInit_FieldNames()
+            => InlineSnapshot.Validate(Info("""
+                                            struct Box { pub Val1: I32; }
+                                            let a = Box(Va|l1 = 1);
+                                            """), "'Val1' Resolved: field Box.Val1: Base.I32");
 
 
         // --- Calls
