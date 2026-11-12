@@ -1,0 +1,10 @@
+﻿//@check
+
+// This previously crashed the compiler, because field access
+// binding checks the type of the field it binds.
+
+struct A {
+    Color: Color;   //~error InstanceMemberInStaticContext
+}
+//TODO: Report NotAType instead? Would be much nicer.
+//      Or UndefinedName.

@@ -1438,7 +1438,7 @@ public sealed class Binder(Scope scope, BinderSideEffects sideEffects)
         }
 
         if (result.Symbols.All(s => s is FunSymbol))
-            return BindFunGroup(result, receiver: left, syntax);
+            return new BoundFunGroup([.. result.Symbols.Cast<FunSymbol>()], receiver: left, syntax);
         if (result.Symbols.All(s => s is TypeSymbol) && result.Symbols.Length > 1 ||
             result.Symbols is [TypeSymbol { TypeParameters.Length: > 0 }])
         {
@@ -1572,26 +1572,25 @@ public sealed class Binder(Scope scope, BinderSideEffects sideEffects)
         SideEffects.ResolveBoundNode(replaced);
         return replaced;
     }
-    
+
     private BoundNode BindVariable(VariableSymbol variable, ExprSyntax syntax)
     {
         return new BoundVariable(variable, syntax);
     }
 
-    private BoundFunGroup BindFunGroup(LookupResult lookupResult, BoundNode? receiver, ExprSyntax syntax)
-    {
-        Debug.Assert(lookupResult.Symbols.All(s => s is FunSymbol));
-        return new BoundFunGroup([.. lookupResult.Symbols.Cast<FunSymbol>()], receiver, syntax);
-    }
-
     private BoundNode BindFieldAccess(FieldSymbol field, BoundNode? receiver, ExprSyntax syntax)
     {
+        // We must not check the type, if we are currently binding the type of
+        // this field. So skip it if so.
+        var isBindingThisField = syntax.SelfAndAncestors().FirstOfTypeOrNull<FieldDeclSyntax>()
+            is { } fieldSyntax && field.DeclaringSyntax.Contains(fieldSyntax);
+        
         var nameSyntax = syntax as NameRefSyntax ?? ((MemberAccessExprSyntax)syntax).Member;
 
         // A field name could still be interpreted as a type ref if
         // the field is named after its type.
         BoundTypeRef? asTypeRef = null;
-        if (nameSyntax.Text.SequenceEqual(field.Type.Name))
+        if (!isBindingThisField && nameSyntax.Text.SequenceEqual(field.Type.Name))
         {
             // Try to bind it as type as well.
             var typeLookup = LookupName(nameSyntax.Text.ToString(), LookupOptions.OnlyType);

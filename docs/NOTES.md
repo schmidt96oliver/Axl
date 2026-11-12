@@ -53,9 +53,6 @@
 
 * ?? Binder: BoundParameter and BoundSelf again?
 
-* ?? SyntaxLocations.CalleeOf, CalleeAndTypeArgs, CalleeAndArgs, ...
-  * Pass CallSyntax and similar to Diagnostics. They find out where to put it.
-
 * ?? LayoutGraphNode to TypeDefinitionSymbol
 
 * Mir: Validator
@@ -63,14 +60,6 @@
   * Call with mut return: ref is directly used and never again
 
 * Mir: StructInit as ImmutableArray<Operand> ordered from declaration/member order. No map
-
-```
-struct A {
-    Color: Color;
-    fun Hue() -> F64 { return self.Color.GetHue(); }
-}
-``` 
-Crashes the compiler (cycle) when Color is not defined
 
 # Milestones
 
