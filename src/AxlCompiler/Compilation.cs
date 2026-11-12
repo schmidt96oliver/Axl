@@ -42,17 +42,6 @@ public class Compilation
         private set;
     }
 
-    public SemanticSideTable SemanticSideTable
-    {
-        get
-        {
-            if (field is null)
-                Complete();
-            return field!;
-        }
-        private set;
-    }
-
     public ImmutableArray<ScriptSymbol> Scripts
     {
         get
@@ -188,7 +177,6 @@ public class Compilation
         Complete(sideEffects);
 
         Diagnostics = sideEffects.DiagnosticBag.Drain();
-        SemanticSideTable = sideEffects.SemanticSideTable;
     }
 
     public void Complete(BinderSideEffects sideEffects)

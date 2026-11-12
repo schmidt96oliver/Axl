@@ -21,17 +21,12 @@
   * map Syntax -> *one* BoundNode (pick most current from side effects)
   * Should resolvers bind concrete nodes. ColorColor cases?
 
-* move semantic tokens to ReferencedSymbolFor/DeclaredSymbolFor
-
 * Add `SemanticModel.DeclaredSymbolFor(IdentifierToken)`
   * Symbol tree walk (for struct, fun, field, type parameter)
   * parameter: Inside fun
   * let/var: Record in BindStmt, bind the body
   * namespace: walk name parts
 
-
-* Remove `AddResolvedSymbols` (run differential test first)
-  
 * Scope retrieval
   * They needs their scope children
   * Scopes store valid range

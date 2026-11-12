@@ -132,17 +132,25 @@ public class SemanticTokensHandler : SemanticTokensHandlerBase
     {
         if (token.Parent?.Parent is AnnotationSyntax)
             return [(token.Parent.Parent.Location, SemanticTokenType.Decorator)];
-        
-        var symbol = project.Compilation.SemanticSideTable.TryGetSymbol(token.Location);
 
-        return symbol switch
-        {
-            TypeSymbol => [(token.Location, SemanticTokenType.Type)],
-            VariableSymbol => [(token.Location, SemanticTokenType.Variable)],
-            NamespaceSymbol => [(token.Location, SemanticTokenType.Namespace)],
-            FunSymbol => [(token.Location, SemanticTokenType.Method)],
-            _ => []
-        };
+        if (token.Kind is not TokenKind.Identifier || token.Parent is not NameRefSyntax nameRef)
+            return [];
+        
+        var symbolInfo = project.Compilation.SemanticModel.ReferencedSymbolFor(nameRef);
+        
+        if (symbolInfo.Symbols.All(s => s is VariableSymbol))
+            return [(token.Location, SemanticTokenType.Variable)];
+        
+        if (symbolInfo.Symbols.All(s => s is TypeSymbol))
+            return [(token.Location, SemanticTokenType.Type)];
+        
+        if (symbolInfo.Symbols.All(s => s is NamespaceSymbol))
+            return [(token.Location, SemanticTokenType.Namespace)];
+        
+        if (symbolInfo.Symbols.All(s => s is FunSymbol))
+            return [(token.Location, SemanticTokenType.Method)];
+
+        return [];
     }
 
     private static IEnumerable<(SourceLocation, SemanticTokenType)> SingleStringText(Token token)

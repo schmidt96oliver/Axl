@@ -4,14 +4,12 @@ using AxlCompiler.Binding.Scopes;
 using AxlCompiler.Diagnostics;
 using AxlCompiler.Symbols;
 using AxlCompiler.Syntax.Tree;
-using AxlCompiler.Text;
 
 namespace AxlCompiler.Binding;
 
 public sealed class BinderSideEffects
 {
     public DiagnosticBag DiagnosticBag { get; } = new();
-    public SemanticSideTable SemanticSideTable { get; } = new();
 
     public ImmutableArray<Symbol>? VisibleSymbolsAtProbe { get; private set; }
     public Scope? ScopeAtProbe { get; private set; }
@@ -31,20 +29,12 @@ public sealed class BinderSideEffects
             DiagnosticBag.ReportLint(lint);
     }
     
-    public void AddResolvedSymbol(SourceLocation location, Symbol? symbol)
-    {
-        SemanticSideTable.AddResolvedSymbol(location, symbol);
-    }
-
     /// <summary>
     /// Merges all given side effects into this object.
     /// </summary>
     public void MergeWith(BinderSideEffects sideEffects)
     {
         DiagnosticBag.AddRange(sideEffects.DiagnosticBag.Diagnostics);
-        foreach (var (location, symbol) in sideEffects.SemanticSideTable.ResolvedSymbols)
-            AddResolvedSymbol(location, symbol);
-
         VisibleSymbolsAtProbe ??= sideEffects.VisibleSymbolsAtProbe;
         ScopeAtProbe ??= sideEffects.ScopeAtProbe;
 

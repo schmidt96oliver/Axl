@@ -28,4 +28,10 @@ public closed record SymbolInfo
     /// can contain only a single symbol, because it could not correctly bind.
     /// </summary>
     public sealed record Unresolved(ImmutableArray<Symbol> Candidates, UnresolvedSymbolReason Reason) : SymbolInfo;
+
+    public ImmutableArray<Symbol> Symbols => this switch
+    {
+        Resolved(var s) => [s],
+        Unresolved(var c, _) => c
+    };
 }

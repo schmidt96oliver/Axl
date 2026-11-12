@@ -425,7 +425,6 @@ public sealed class Binder(Scope scope, BinderSideEffects sideEffects)
             isPublic,
             intrinsicAnnotation);
 
-        SideEffects.AddResolvedSymbol(syntax.Name.Location, funSymbol);
         return funSymbol;
     }
 
@@ -462,8 +461,6 @@ public sealed class Binder(Scope scope, BinderSideEffects sideEffects)
         }
 
         var symbol = new StructSymbol(syntax, enclosingScope: Scope, isPublic, primitiveKind);
-        if (symbol.Name.Length > 0)
-            SideEffects.AddResolvedSymbol(syntax.Name.Location, symbol);
         return symbol;
     }
 
@@ -475,11 +472,7 @@ public sealed class Binder(Scope scope, BinderSideEffects sideEffects)
         if (structSymbol.IsPrimitive)
             SideEffects.ReportError(new Diagnostic.FieldDeclarationOnPrimitive(syntax, structSymbol));
         
-        var symbol = new FieldDefinitionSymbol(syntax, Scope, structSymbol);
-        if (symbol.Name.Length > 0)
-            SideEffects.AddResolvedSymbol(syntax.Name.Location, symbol);
-
-        return symbol;
+        return new FieldDefinitionSymbol(syntax, Scope, structSymbol);
     }
 
     
@@ -693,15 +686,13 @@ public sealed class Binder(Scope scope, BinderSideEffects sideEffects)
             throw new InvalidOperationException($"{nameof(BindParameter)} only valid on funs.");
 
         var type = BindType(syntax.TypeAnnotation, TypeUsage.Signature).Type;
-        var symbol = new ParameterSymbol(syntax.Name.Identifier, 
-            Scope.OwnerAsFun!, 
+        return new ParameterSymbol(syntax.Name.Identifier,
+            Scope.OwnerAsFun!,
             type,
-            isMut: syntax.MutKw is not null, 
-            isSelf: false, 
+            isMut: syntax.MutKw is not null,
+            isSelf: false,
             originalDefinition: null,
             syntax);
-        SideEffects.AddResolvedSymbol(syntax.Name.Location, symbol);
-        return symbol;
     }
 
     public ImmutableArray<TypeParameterSymbol> BindTypeParameters(TypeParamListSyntax syntax)
@@ -746,7 +737,6 @@ public sealed class Binder(Scope scope, BinderSideEffects sideEffects)
             SideEffects.ReportLint(new Diagnostic.TypeParameterHidesType(symbol, hiddenType));
         }
 
-        SideEffects.AddResolvedSymbol(syntax.Name.Location, symbol);
         return symbol;
     }
 
@@ -843,7 +833,6 @@ public sealed class Binder(Scope scope, BinderSideEffects sideEffects)
             isReadOnly, 
             variableType,
             syntax);
-        SideEffects.AddResolvedSymbol(syntax.Name.Location, variable);
     
         return new BoundVarDecl(variable, boundInitializer, syntax);
     }
@@ -1185,7 +1174,6 @@ public sealed class Binder(Scope scope, BinderSideEffects sideEffects)
                 [receiver.Type, .. arguments.Select(arg => arg.Type)]));
         }
 
-        SideEffects.AddResolvedSymbol(@operator.Location, boundCall.Fun);
         return boundCall;
     }
 
@@ -1474,12 +1462,6 @@ public sealed class Binder(Scope scope, BinderSideEffects sideEffects)
             FunSymbol => throw new UnreachableException("Handled above"),
         };
 
-        // Note that the symbol that was bound might differ from the symbol
-        // we found, because e.g. field access might do another lookup for
-        // a type of the same name.
-        if (boundSymbol is IBoundSymbolRef symbolRef)
-            SideEffects.AddResolvedSymbol(syntax.Location, symbolRef.Symbol);
-
         if (result.Viability is LookupViability.WrongKind && boundSymbol is not BoundError)
         {
             Diagnostic.Error error = result.Options switch
@@ -1584,10 +1566,7 @@ public sealed class Binder(Scope scope, BinderSideEffects sideEffects)
             _ => valueOrType.AsValue,
         };
 
-        if (replaced is IBoundSymbolRef symbolRef)
-            SideEffects.AddResolvedSymbol(replaced.Syntax!.Location, symbolRef.Symbol);
         SideEffects.ResolveBoundNode(fullSyntax, replaced);
-        
         return replaced;
     }
     
@@ -1698,8 +1677,6 @@ public sealed class Binder(Scope scope, BinderSideEffects sideEffects)
             Debug.Assert(typeArguments.Length == 0 || typeArgumentsSyntax is not null);
             if (typeArguments.Any(a => a.Type is ErrorTypeSymbol))
             {
-                if (group.Candidates.Length == 1)
-                    SideEffects.AddResolvedSymbol(group.Syntax!.Location, group.Candidates[0]);
                 return new BoundLookupError([.. group.Candidates], UnresolvedSymbolReason.NoApplicableType,
                     ErrorType, group.Syntax);
             }
@@ -1709,11 +1686,6 @@ public sealed class Binder(Scope scope, BinderSideEffects sideEffects)
                 .ToImmutableArray();
             if (candidates.Length == 0)
             {
-                // If there was only one, register the symbol for good syntax highlighting.
-                // Otherwise, we don't know which one it was.
-                if (group.Candidates.Length == 1)
-                    SideEffects.AddResolvedSymbol(group.Syntax!.Location, group.Candidates[0]);
-
                 if (typeArguments.Length == 0)
                 {
                     Debug.Assert(group.Candidates.All(t => t.TypeParameters.Length > 0));
@@ -1750,7 +1722,6 @@ public sealed class Binder(Scope scope, BinderSideEffects sideEffects)
 
 
             var specializedType = candidates[0].Specialize([.. typeArguments.Select(t => t.Type)]);
-            SideEffects.AddResolvedSymbol(group.Syntax!.Location, specializedType);
             return new BoundTypeRef(specializedType, typeArguments, group.Syntax);
         }
     }
@@ -1808,7 +1779,6 @@ public sealed class Binder(Scope scope, BinderSideEffects sideEffects)
         // Either way its own diagnostics are the most specific ones we have.
         if (best is [var only])
         {
-            SideEffects.AddResolvedSymbol(site.CalleeSyntax.Location, only.Fun);
             SideEffects.MergeWith(only.SideEffects);
             return only.Applicability is FunApplicability.Applicable
                 ? CompleteCall(only.Fun, site)
@@ -2290,8 +2260,6 @@ public sealed class Binder(Scope scope, BinderSideEffects sideEffects)
                 return Fail(TypeApplicability.CannotInferTypeArguments);
 
             var specializedType = type.Specialize(inferred.Value);
-            SideEffects.AddResolvedSymbol(typeSyntax.Location, specializedType);
-            
             return new TypeCandidate(specializedType, TypeApplicability.Applicable, SideEffects);
         }
 
@@ -2299,7 +2267,6 @@ public sealed class Binder(Scope scope, BinderSideEffects sideEffects)
         
         TypeCandidate Fail(TypeApplicability applicability)
         {
-            SideEffects.AddResolvedSymbol(typeSyntax.Location, type);
             SideEffects.ReportError(MakeTypeResolutionError([type], applicability, typeSyntax, syntax));
             return new TypeCandidate(type, applicability, SideEffects);
         }
