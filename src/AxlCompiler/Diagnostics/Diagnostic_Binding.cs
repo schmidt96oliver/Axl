@@ -372,12 +372,6 @@ public partial record Diagnostic
         public override string Message => $"‘{Fun.Name}‘ must return a value of type ‘{Fun.ReturnType.FullName}‘.";
     }
 
-    public sealed record CannotCapture(SyntaxNode Syntax) : Error
-    {
-        public override ImmutableArray<SourceLocation> Locations => [Syntax.Location];
-        public override string Message => $"Cannot use ‘{Syntax.Text}‘ here. Local funs cannot use variables of the enclosing fun.";
-    }
-
     public sealed record StaticMemberThroughInstance(FunSymbol Fun, SyntaxNode Syntax) : Error
     {
         public override ImmutableArray<SourceLocation> Locations => [Syntax.Location];

@@ -12,13 +12,7 @@
     * Do it after type argument inference
 
 * tests: SemanticModel.ReferencedSymbolFor
-  * do a few correctness tests (ambigous; types in structs, params, returns; locals, ...)
   * overloads, ambiguous overloads
-  * type overloads, ambiguous type overloads
-  * subscripts with errors on both sides
-  * subscripts for non-generics
-  * member access every part
-  * return/expr body as UnexpectedMut/MissingMut
 
 * How to walk symbol tree for syntax node?
   * Clarify DeclaringSyntaxes

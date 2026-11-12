@@ -141,13 +141,7 @@ public sealed class Binder(Scope scope, BinderSideEffects sideEffects)
     
     #region Lookup
 
-    private enum LookupOptions
-    {
-        Any,
-        OnlyType,
-        OnlyNamespace,
-        MustBeCallable,
-    }
+    
     
     private LookupViability GetViability(Symbol symbol, LookupOptions options)
     {
@@ -166,11 +160,11 @@ public sealed class Binder(Scope scope, BinderSideEffects sideEffects)
 
     private LookupResult LookupName(string name, LookupOptions options)
     {
-        var result = new LookupResult();
+        var result = new LookupResult(options);
 
         for (var scope = Scope; scope != null; scope = scope.EnclosingScope)
         {
-            var here = new LookupResult();
+            var here = new LookupResult(options);
             foreach (var s in scope.Lookup(name))
                 here.MergeSingle(s, GetViability(s, options));
 
@@ -198,13 +192,13 @@ public sealed class Binder(Scope scope, BinderSideEffects sideEffects)
             {
                 if (!lookupByName.TryGetValue(grp.Key, out var result))
                 {
-                    result = new LookupResult();
+                    result = new LookupResult(options);
                     lookupByName.Add(grp.Key, result);
                 }
                 if (result.Viability is LookupViability.Viable)
                     continue;
                 
-                var here = new LookupResult();
+                var here = new LookupResult(options);
                 foreach (var s in grp)
                     here.MergeSingle(s, GetViability(s, options));
 
@@ -215,12 +209,12 @@ public sealed class Binder(Scope scope, BinderSideEffects sideEffects)
         return [.. lookupByName.SelectMany(kvp => kvp.Value.Symbols)];
     }
 
-    private LookupResult LookupMembers(Symbol parent, string name)
+    private LookupResult LookupMembers(Symbol parent, string name, LookupOptions options)
     {
-        var result = new LookupResult();
+        var result = new LookupResult(options);
 
         foreach (var s in parent.LookupMembers(name))
-            result.MergeSingle(s, GetViability(s, LookupOptions.Any));
+            result.MergeSingle(s, GetViability(s, options));
 
         return result;
     }
@@ -877,7 +871,7 @@ public sealed class Binder(Scope scope, BinderSideEffects sideEffects)
     {
         var node = syntax switch
         {
-            MemberAccessExprSyntax memberAccessExprSyntax => BindMemberAccess(memberAccessExprSyntax),
+            MemberAccessExprSyntax memberAccessExprSyntax => BindMemberAccess(memberAccessExprSyntax, lookupOptions),
             NameRefSyntax nameRefSyntax => BindNameRef(nameRefSyntax, lookupOptions),
             SelfSyntax selfSyntax => BindSelf(selfSyntax),
             CallExprSyntax callExprSyntax => BindCall(callExprSyntax),
@@ -1411,7 +1405,7 @@ public sealed class Binder(Scope scope, BinderSideEffects sideEffects)
             if (GetViability(symbol, lookupOptions) < LookupViability.Viable)
                 continue;
 
-            var lookupResult = new LookupResult();
+            var lookupResult = new LookupResult(LookupOptions.Any);
             lookupResult.MergeSingle(symbol, LookupViability.Viable);
             
             var bound = binder.BindLookupResult(lookupResult, left, probeSyntax, probeSyntax);
@@ -1444,7 +1438,7 @@ public sealed class Binder(Scope scope, BinderSideEffects sideEffects)
         }
 
         Debug.Assert(result.Symbols.Length >= 1);
-        
+
         if (result.Viability is LookupViability.NotAccessible)
         {
             SideEffects.ReportError(new Diagnostic.NotAccessible(result.Symbols, syntax));
@@ -1486,6 +1480,21 @@ public sealed class Binder(Scope scope, BinderSideEffects sideEffects)
         if (boundSymbol is IBoundSymbolRef symbolRef)
             SideEffects.AddResolvedSymbol(syntax.Location, symbolRef.Symbol);
 
+        if (result.Viability is LookupViability.WrongKind && boundSymbol is not BoundError)
+        {
+            Diagnostic.Error error = result.Options switch
+            {
+                LookupOptions.MustBeCallable => new Diagnostic.CannotCall(boundSymbol),
+                LookupOptions.OnlyType => new Diagnostic.NotAType(boundSymbol),
+                LookupOptions.OnlyNamespace => new Diagnostic.NotANamespace(boundSymbol),
+                _ => throw new UnreachableException(
+                    $"{nameof(LookupOptions)}.{result.Options} is unknown to {nameof(BindLookupResult)}")
+            };
+            SideEffects.ReportError(error);
+            return new BoundLookupError([.. result.Symbols], UnresolvedSymbolReason.NotUsable, ErrorType,
+                boundSymbol.Syntax!);
+        }
+        
         return boundSymbol;
     }
     
@@ -1504,30 +1513,11 @@ public sealed class Binder(Scope scope, BinderSideEffects sideEffects)
         var lookupResult = LookupName(syntax.Token.Identifier, lookupOptions);
         var bound = BindLookupResult(lookupResult, left: null, syntax, leftSyntax: null);
             
-        if (lookupResult.Viability is LookupViability.WrongKind)
-            return BindNameRefWithWrongKind(bound, lookupResult, lookupOptions);
-
         return bound;
     }
 
-    private BoundError BindNameRefWithWrongKind(BoundNode boundNode, LookupResult result, LookupOptions lookupOptions)
-    {
-        if (boundNode is BoundError errorNode) return errorNode;
-        
-        Diagnostic.Error error = lookupOptions switch
-        {
-            LookupOptions.MustBeCallable => new Diagnostic.CannotCall(boundNode),
-            LookupOptions.OnlyType => new Diagnostic.NotAType(boundNode),
-            LookupOptions.OnlyNamespace => new Diagnostic.NotANamespace(boundNode),
-            _ => throw new UnreachableException(
-                $"{nameof(LookupOptions)}.{lookupOptions} is unknown to {nameof(BindNameRefWithWrongKind)}")
-        };
-        SideEffects.ReportError(error);
-        return new BoundLookupError([.. result.Symbols], UnresolvedSymbolReason.NotUsable, ErrorType, boundNode.Syntax!);
-    }
 
-
-    private BoundNode BindMemberAccess(MemberAccessExprSyntax syntax)
+    private BoundNode BindMemberAccess(MemberAccessExprSyntax syntax, LookupOptions options)
     {
         var left = BindMemberAccessLeftSide(syntax.Left, syntax.Member);
         if (left is BoundError)
@@ -1553,7 +1543,7 @@ public sealed class Binder(Scope scope, BinderSideEffects sideEffects)
         if (memberName is "")
             return new BoundLookupError([], UnresolvedSymbolReason.NotFound, ErrorType, syntax);
         
-        var lookupResult = LookupMembers(lookupOn, memberName);
+        var lookupResult = LookupMembers(lookupOn, memberName, options);
 
         return BindLookupResult(lookupResult, left, syntax.Member, syntax.Left);
     }
@@ -1603,14 +1593,6 @@ public sealed class Binder(Scope scope, BinderSideEffects sideEffects)
     
     private BoundNode BindVariable(VariableSymbol variable, NameRefSyntax syntax)
     {
-        // Variables could be captured from outside, which is forbidden.
-
-        if (!Equals(variable.Owner, Scope.Owner))
-        {
-            SideEffects.ReportError(new Diagnostic.CannotCapture(syntax));
-            return new BoundLookupError([variable], UnresolvedSymbolReason.NotUsable, ErrorType, syntax);
-        }
-
         return new BoundVariable(variable, syntax);
     }
 
@@ -2158,7 +2140,7 @@ public sealed class Binder(Scope scope, BinderSideEffects sideEffects)
         if (receiver.Type is ErrorTypeSymbol)
             return null;
 
-        var lookup = LookupMembers(receiver.Type, methodName);
+        var lookup = LookupMembers(receiver.Type, methodName, LookupOptions.Any);
         if (lookup.Viability is LookupViability.NotFound or LookupViability.NotAccessible)
             return null;
 
