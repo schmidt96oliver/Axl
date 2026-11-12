@@ -61,14 +61,47 @@ public partial class SemanticModelTests
                 .ToList();
             if (nameRefs.Any(nameRef => nameRef.Parent is ArgSyntax arg && arg.Name == nameRef))
                 Assert.Skip("Struct arguments not handled yet.");   //TODO: Handle struct arguments
-            var nullSymbols = nameRefs
-                .Where(nameRef => compilation.SemanticModel.InternalReferencedSymbolFor(nameRef) is null)
+            
+            var wrongSymbols = nameRefs
+                .Select(nameRef => (Ref: nameRef, Fail: CheckInfoAgainstNameRef(
+                    compilation.SemanticModel.InternalReferencedSymbolFor(nameRef),
+                    nameRef)))
+                .Where(pair => pair.Fail is not null)
+                .Select(pair => $"\'{pair.Ref.Text}\' in \'{pair.Ref.Parent?.Location.Text.ToString().Replace("\n", " ") ?? ""}\':\n   {pair.Fail}")
                 .ToList();
-            if (nullSymbols.Count > 0)
+            if (wrongSymbols.Count > 0)
             {
-                Assert.Fail("Not all name refs have a symbol reference:\n" + string.Join("\n",
-                    nullSymbols.Select(nameRef => $"\'{nameRef.Text}\' in \'{nameRef.Parent?.Location.Text.ToString().Replace("\n", " ") ?? ""}\'")));
+                Assert.Fail($"$Invalid references:\n{ string.Join("\n", wrongSymbols) }");
             }
+        }
+
+        private string? CheckInfoAgainstNameRef(SymbolInfo? info, NameRefSyntax nameRef)
+        {
+            if (info is null)
+                return "GAP! No symbol info.";
+
+            var symbols = info switch
+            {
+                SymbolInfo.Resolved(var s) => [s],
+                SymbolInfo.Unresolved(var c, _) => c
+            };
+            var wrongName = symbols.Where(s => s.Name != nameRef.Text.ToString()).ToList();
+            if (wrongName.Count > 0)
+                return "Unexpected name on " + string.Join(", ", wrongName.Select(s => s.ShortDisplayText));
+
+            if (info is SymbolInfo.Unresolved(var candidates, var reason))
+            {
+                return (reason, candidates.Length) switch
+                {
+                    (UnresolvedSymbolReason.NotFound, > 0) => $"Unresolved {reason} but has candidates",
+                    (UnresolvedSymbolReason.NotFound, 0) => null,
+                    (UnresolvedSymbolReason.Ambiguous, < 2) => $"Unresolved {reason} but with less than 2 candidates",
+                    (_, 0) => $"Unresolved {reason}, but no candidates",
+                    _ => null
+                };
+            }
+            
+            return null;
         }
 
 

@@ -5,14 +5,10 @@
 
 # Now
 
-* See Claude for reference stuff
 * RefSymbol: 
   * Arg names: BindFieldInitializer in CheckTypeCandidate; BoundStructInitError carries TypeCandidate, which has
                (BoundFieldInitializers, UnmatchedArguments, UninitializedFields)
     * Do it after type argument inference
-
-* tests: SemanticModel.ReferencedSymbolFor
-  * overloads, ambiguous overloads
 
 * How to walk symbol tree for syntax node?
   * Clarify DeclaringSyntaxes
