@@ -54,7 +54,7 @@ public partial record Diagnostic
                 : Syntax.Location;
     }
 
-    public sealed record UndefinedName(NameRefSyntax Syntax) : Error
+    public sealed record UndefinedName(ExprSyntax Syntax) : Error
     {
         public override ImmutableArray<SourceLocation> Locations
             => [Syntax.Location];
@@ -135,9 +135,9 @@ public partial record Diagnostic
             $"Cannot return '{Value.Syntax?.Text.ToString() ?? ""}' as 'mut', because it only lives until the end of the function.";
     }
 
-    public sealed record CannotMutateReceiver(BoundValue Receiver, FunSymbol Fun, Symbol? Context, SyntaxNode FunSyntax) : Error
+    public sealed record CannotMutateReceiver(BoundValue Receiver, FunSymbol Fun, SyntaxNode FunSyntax) : Error
     {
-        public override ImmutableArray<SourceLocation> Locations => [FunSyntax.Location];
+        public override ImmutableArray<SourceLocation> Locations => [SyntaxLocations.RightmostName(FunSyntax)];
 
         public override string Message =>
             $"Cannot call 'mut' fun '{ Fun.FullName }' on '{Receiver.Syntax?.Text.ToString() ?? "self"}', because { CannotAssign.GetReasonText(Receiver) }.";
@@ -172,17 +172,18 @@ public partial record Diagnostic
 
     public sealed record UndefinedMember(BoundNode Left, SyntaxNode Syntax) : Error
     {
-        public override ImmutableArray<SourceLocation> Locations => [Syntax.Location];
+        public override ImmutableArray<SourceLocation> Locations => [MemberLocation];
 
         public override string Message => Left switch
         {
-            BoundValue value => $"‘{value.Type.FullName}‘ has no member ‘{Syntax.Text.ToString()}‘.",
-            BoundTypeRef type => $"‘{type.Type.FullName}‘ has no member ‘{Syntax.Text.ToString()}‘.",
-            BoundNamespaceRef ns => $"‘{ns.Namespace.FullName}‘ has no member ‘{Syntax.Text.ToString()}‘.",
+            BoundValue value => $"‘{value.Type.FullName}‘ has no member ‘{MemberLocation.Text.ToString()}‘.",
+            BoundTypeRef type => $"‘{type.Type.FullName}‘ has no member ‘{MemberLocation.Text.ToString()}‘.",
+            BoundNamespaceRef ns => $"‘{ns.Namespace.FullName}‘ has no member ‘{MemberLocation.Text.ToString()}‘.",
 
-            _ => $"Cannot find member ‘{Syntax.Text.ToString()}‘.",
+            _ => $"Cannot find member ‘{MemberLocation.Text.ToString()}‘.",
         };
 
+        private SourceLocation MemberLocation => SyntaxLocations.RightmostName(Syntax);
     }
 
     public sealed record CannotConvertToString(BoundValue Node) : Error
@@ -197,7 +198,7 @@ public partial record Diagnostic
     public sealed record WrongArgumentCount(ImmutableArray<FunSymbol> Candidates, int ArgumentCount, SyntaxNode Syntax) : Error
     {
         public override ImmutableArray<SourceLocation> Locations
-            => [Syntax is ArgListSyntax argList ? argList.InsideLocation : Syntax.Location];
+            => [SyntaxLocations.InsideArgList(Syntax)];
 
         public override string Message => Candidates.Length == 1
             ? $"‘{Candidates[0].FullName}‘ takes {GetArgCountText(Candidates[0].Parameters.Length)}, but {ArgCountWasOrWere(ArgumentCount)} given."
@@ -212,7 +213,7 @@ public partial record Diagnostic
     
     public sealed record CannotCall(BoundNode BoundCallee) : Error
     {
-        public override ImmutableArray<SourceLocation> Locations => [BoundCallee.Syntax!.Location];
+        public override ImmutableArray<SourceLocation> Locations => [SyntaxLocations.RightmostName(BoundCallee.Syntax!)];
 
         public override string Message => BoundCallee switch
         {
@@ -288,7 +289,7 @@ public partial record Diagnostic
         SyntaxNode Syntax) : Error
     {
         public override ImmutableArray<SourceLocation> Locations =>
-            [Syntax is ArgListSyntax argList ? argList.InsideLocation : Syntax.Location];
+            [SyntaxLocations.InsideArgList(Syntax)];
 
         public override string Message => $"""
                                            No overload of ‘{Candidates[0].FullName}‘ accepts ({ Arguments.ArgumentTypesDisplayText })‘. Candidates:
@@ -307,7 +308,7 @@ public partial record Diagnostic
         SyntaxNode Syntax) : Error
     {
         public override ImmutableArray<SourceLocation> Locations =>
-            [Syntax is ArgListSyntax argList ? argList.InsideLocation : Syntax.Location];
+            [SyntaxLocations.InsideArgList(Syntax)];
 
         public override string Message => $"""
                                            No variant of ‘{Candidates[0].FullNameWithoutOwnTypeArgs}‘ accepts the given field names. Candidates:
@@ -326,7 +327,7 @@ public partial record Diagnostic
         SyntaxNode Syntax) : Error
     {
         public override ImmutableArray<SourceLocation> Locations =>
-            [Syntax is ArgListSyntax argList ? argList.InsideLocation : Syntax.Location];
+            [SyntaxLocations.Callee(Syntax)];
 
         public override string Message => $"""
                                            Call to ‘{Candidates[0].FullName}‘ is ambiguous between:
@@ -344,7 +345,7 @@ public partial record Diagnostic
         ImmutableArray<TypeSymbol> Candidates,
         SyntaxNode Syntax) : Error
     {
-        public override ImmutableArray<SourceLocation> Locations => [Syntax.Location];
+        public override ImmutableArray<SourceLocation> Locations => [SyntaxLocations.Callee(Syntax)];
 
         public override string Message => $"""
                                            ‘{Candidates[0].FullName}‘ is ambiguous between:
@@ -374,7 +375,7 @@ public partial record Diagnostic
 
     public sealed record StaticMemberThroughInstance(FunSymbol Fun, SyntaxNode Syntax) : Error
     {
-        public override ImmutableArray<SourceLocation> Locations => [Syntax.Location];
+        public override ImmutableArray<SourceLocation> Locations => [SyntaxLocations.RightmostName(Syntax)];
 
         public override string Message =>
             $"{Fun.ShortDisplayText.Capitalize()} is static. Call it as ‘{Fun.FullName}(...)‘ instead.";
@@ -382,7 +383,7 @@ public partial record Diagnostic
 
     public sealed record NotAValue(BoundNode BoundNode) : Error
     {
-        public override ImmutableArray<SourceLocation> Locations => [BoundNode.Syntax!.Location];
+        public override ImmutableArray<SourceLocation> Locations => [SyntaxLocations.RightmostName(BoundNode.Syntax!)];
 
         public override string Message => BoundNode switch
         {
@@ -399,7 +400,7 @@ public partial record Diagnostic
 
     public sealed record NotAType(BoundNode BoundNode) : Error
     {
-        public override ImmutableArray<SourceLocation> Locations => [BoundNode.Syntax!.Location];
+        public override ImmutableArray<SourceLocation> Locations => [SyntaxLocations.RightmostName(BoundNode.Syntax!)];
 
         public override string Message => BoundNode switch
         {
@@ -415,7 +416,7 @@ public partial record Diagnostic
     
     public sealed record NotANamespace(BoundNode BoundNode) : Error
     {
-        public override ImmutableArray<SourceLocation> Locations => [BoundNode.Syntax!.Location];
+        public override ImmutableArray<SourceLocation> Locations => [SyntaxLocations.RightmostName(BoundNode.Syntax!)];
 
         public override string Message => BoundNode switch
         {
@@ -482,7 +483,7 @@ public partial record Diagnostic
 
     public sealed record MissingFieldInitializers(ImmutableArray<FieldSymbol> MissingFields, SyntaxNode Syntax) : Error
     {
-        public override ImmutableArray<SourceLocation> Locations => [Syntax.Location];
+        public override ImmutableArray<SourceLocation> Locations => [SyntaxLocations.ArgList(Syntax)];
         public override string Message => $"Not all fields are initialized. Missing: {GetFieldNameString()}.";
 
         private string GetFieldNameString()
@@ -503,7 +504,7 @@ public partial record Diagnostic
     public sealed record CannotInitialize(ImmutableArray<TypeSymbol> Candidates, SyntaxNode Syntax) : Error
     {
         public override ImmutableArray<SourceLocation> Locations
-            => [Syntax.Location];
+            => [SyntaxLocations.Callee(Syntax)];
 
         public override string Message => Candidates.Length > 1
             ? $"No variant of { Candidates[0].FullNameWithoutOwnTypeArgs } can be initialized."
@@ -517,7 +518,7 @@ public partial record Diagnostic
 
     public sealed record NotAccessible(ImmutableArray<Symbol> Symbols, SyntaxNode Syntax) : Error
     {
-        public override ImmutableArray<SourceLocation> Locations => [Syntax.Location];
+        public override ImmutableArray<SourceLocation> Locations => [SyntaxLocations.RightmostName(Syntax)];
 
         public override string Message => Symbols.Length == 1
             ? $"{Symbols[0].ShortDisplayText.Capitalize()} is private and cannot be accessed here."
@@ -544,7 +545,7 @@ public partial record Diagnostic
 
     public sealed record InstanceMemberInStaticContext(Symbol InstanceMember, Symbol? Context, SyntaxNode Syntax) : Error
     {
-        public override ImmutableArray<SourceLocation> Locations => [Syntax.Location];
+        public override ImmutableArray<SourceLocation> Locations => [SyntaxLocations.RightmostName(Syntax)];
 
         public override string Message =>
             $"{InstanceMember.ShortDisplayText.Capitalize()} needs an instance of ‘{InstanceMember.OwningType?.FullName ?? "???"}‘, but there is no ‘self‘ here{ GetReasonText() }.";
@@ -560,7 +561,7 @@ public partial record Diagnostic
 
     public sealed record InstanceMemberThroughType(Symbol InstanceMember, SyntaxNode Syntax) : Error
     {
-        public override ImmutableArray<SourceLocation> Locations => [Syntax.Location];
+        public override ImmutableArray<SourceLocation> Locations => [SyntaxLocations.RightmostName(Syntax)];
 
         public override string Message =>
             $"{InstanceMember.ShortDisplayText.Capitalize()} needs an instance of ‘{InstanceMember.OwningType?.FullName ?? "???"}‘. It can not be accessed through the type.";
@@ -573,8 +574,8 @@ public partial record Diagnostic
         {
         }
 
-        public override ImmutableArray<SourceLocation> Locations => [Syntax.Location];
-        public override string Message => $"‘{Syntax.Text}‘ is ambiguous. It could refer to { GetSymbolsText() }.";
+        public override ImmutableArray<SourceLocation> Locations => [SyntaxLocations.RightmostName(Syntax)];
+        public override string Message => $"‘{SyntaxLocations.RightmostName(Syntax).Text}‘ is ambiguous. It could refer to { GetSymbolsText() }.";
 
         private string GetSymbolsText()
         {
@@ -591,14 +592,14 @@ public partial record Diagnostic
 
     public sealed record FunHasNoMembers(BoundFunGroup FunGroup, SyntaxNode Syntax) : Error
     {
-        public override ImmutableArray<SourceLocation> Locations => [Syntax.Location];
+        public override ImmutableArray<SourceLocation> Locations => [SyntaxLocations.RightmostName(Syntax)];
         public override string Message => $"‘{FunGroup.Candidates[0].FullName}‘ is a fun and has no members.";
     }
 
 
     public record MemberOfEnclosingType(Symbol Member, TypeSymbol SelfType, SyntaxNode Syntax) : Error
     {
-        public override ImmutableArray<SourceLocation> Locations => [Syntax.Location];
+        public override ImmutableArray<SourceLocation> Locations => [SyntaxLocations.RightmostName(Syntax)];
 
         public override string Message =>
             $"Cannot access non-static member {Member.Name} of outer type ‘{Member.OwningType?.FullName ?? "???"}‘ via nested type ‘{SelfType.Name}‘.";
@@ -696,7 +697,7 @@ public partial record Diagnostic
     public sealed record InconsistentAccessibility(BoundTypeRef TypeRef, Symbol? Owner) : Error
     {
         /// <inheritdoc />
-        public override ImmutableArray<SourceLocation> Locations => [TypeRef.Syntax!.Location];
+        public override ImmutableArray<SourceLocation> Locations => [SyntaxLocations.RightmostName(TypeRef.Syntax!)];
 
         /// <inheritdoc />
         public override string Message => Owner is not null
@@ -820,10 +821,10 @@ public partial record Diagnostic
             $"‘{Fun.Name}’ returns ‘mut {Fun.ReturnType.FullName}’. Use ‘return mut ...’.";
     }
 
-    public sealed record SubscriptNotAllowed(SubscriptArgListSyntax Syntax, BoundNode Left) : Error
+    public sealed record SubscriptNotAllowed(SubscriptExprSyntax Syntax) : Error
     {
         /// <inheritdoc />
-        public override ImmutableArray<SourceLocation> Locations => [Syntax.Location];
+        public override ImmutableArray<SourceLocation> Locations => [SyntaxLocations.TypeArgList(Syntax)];
 
         /// <inheritdoc />
         public override string Message 
@@ -845,7 +846,7 @@ public partial record Diagnostic
     public sealed record WrongTypeArgumentCount(ImmutableArray<Symbol> Candidates, int ArgCount, SyntaxNode Syntax) : Error
     {
         /// <inheritdoc />
-        public override ImmutableArray<SourceLocation> Locations => [Syntax.Location];
+        public override ImmutableArray<SourceLocation> Locations => [SyntaxLocations.TypeArgList(Syntax)];
 
         public override string Message => Candidates.Length == 1
             ? $"‘{Candidates[0].FullName}‘ takes {TypeArgCountText(Candidates[0])}, but {ArgCountWasOrWere(ArgCount)} given."
@@ -879,7 +880,7 @@ public partial record Diagnostic
         SyntaxNode Syntax) : Error
     {
         /// <inheritdoc />
-        public override ImmutableArray<SourceLocation> Locations => [Syntax.Location];
+        public override ImmutableArray<SourceLocation> Locations => [SyntaxLocations.Callee(Syntax)];
 
         public override string Message => Candidates.Length == 1
             ? $"‘{Candidates[0].FullName}‘ requires {TypeArgCountText(Candidates[0])}."
@@ -899,7 +900,7 @@ public partial record Diagnostic
     public sealed record NotGeneric(ImmutableArray<Symbol> Candidates, SyntaxNode Syntax) : Error
     {
         /// <inheritdoc />
-        public override ImmutableArray<SourceLocation> Locations => [Syntax.Location];
+        public override ImmutableArray<SourceLocation> Locations => [SyntaxLocations.TypeArgList(Syntax)];
 
         /// <inheritdoc />
         public override string Message => Candidates.Length == 1
@@ -938,7 +939,7 @@ public partial record Diagnostic
     public sealed record CannotInferTypeArguments(ImmutableArray<Symbol> Candidates, SyntaxNode Syntax) : Error
     {
         /// <inheritdoc />
-        public override ImmutableArray<SourceLocation> Locations => [Syntax.Location];
+        public override ImmutableArray<SourceLocation> Locations => [SyntaxLocations.Callee(Syntax)];
 
         /// <inheritdoc />
         public override string Message => Candidates.Length == 1

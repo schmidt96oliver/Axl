@@ -3,7 +3,7 @@ using AxlCompiler.Binding.BoundTree;
 using AxlCompiler.Binding.Scopes;
 using AxlCompiler.Diagnostics;
 using AxlCompiler.Symbols;
-using AxlCompiler.Syntax.Tree;
+using AxlCompiler.Syntax;
 
 namespace AxlCompiler.Binding;
 
@@ -14,7 +14,7 @@ public sealed class BinderSideEffects
     public ImmutableArray<Symbol>? VisibleSymbolsAtProbe { get; private set; }
     public Scope? ScopeAtProbe { get; private set; }
 
-    public Dictionary<ExprSyntax, List<BoundNode>> BoundNodes { get; } = [];
+    public Dictionary<SyntaxNode, List<BoundNode>> BoundNodes { get; } = [];
 
 
     public void ReportError(Diagnostic.Error? error)
@@ -57,10 +57,15 @@ public sealed class BinderSideEffects
         ScopeAtProbe = scope;
     }
 
-    public void ResolveBoundNode(ExprSyntax syntax, BoundNode node)
+    /// <summary>
+    /// Records <paramref name="node"/> for the syntax it was bound from.
+    /// Nodes without syntax (e.g. implicit self) are not recorded.
+    /// </summary>
+    public void ResolveBoundNode(BoundNode node)
     {
-        //Debug.Assert(node.Syntax == syntax);
-        //TODO: What to do if syntax and bound node diverge??
+        if (node.Syntax is not { } syntax)
+            return;
+
         if (BoundNodes.TryGetValue(syntax, out var boundNodes))
             boundNodes.Add(node);
         else

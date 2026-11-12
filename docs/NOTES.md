@@ -65,6 +65,14 @@
 
 * Mir: StructInit as ImmutableArray<Operand> ordered from declaration/member order. No map
 
+```
+struct A {
+    Color: Color;
+    fun Hue() -> F64 { return self.Color.GetHue(); }
+}
+``` 
+Crashes the compiler (cycle) when Color is not defined
+
 # Milestones
 
 **Panic**: `1/0` panics, return code, taxl panic, Assert tests

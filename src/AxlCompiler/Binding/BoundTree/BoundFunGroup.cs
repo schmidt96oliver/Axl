@@ -12,24 +12,22 @@ public sealed class BoundFunGroup(
     ImmutableArray<FunSymbol> candidates,
     BoundNode? receiver,
     ImmutableArray<BoundTypeRef> typeArguments,
-    SyntaxNode? typeArgListSyntax = null,
-    SyntaxNode? funSyntax = null)
-    : BoundNode(funSyntax)
+    SyntaxNode syntax)
+    : BoundNode(syntax)
 {
-    public BoundFunGroup(ImmutableArray<FunSymbol> candidates, BoundNode? receiver, SyntaxNode? syntax = null)
-        : this(candidates, receiver, [], null, syntax)
+    public BoundFunGroup(ImmutableArray<FunSymbol> candidates, BoundNode? receiver, SyntaxNode syntax)
+        : this(candidates, receiver, [], syntax)
     {
     }
 
     public ImmutableArray<FunSymbol> Candidates { get; } = candidates;
 
     public ImmutableArray<BoundTypeRef> TypeArguments { get; } = typeArguments;
-    public SyntaxNode? TypeArgListSyntax { get; } = typeArgListSyntax;
 
     public bool HasTypeArguments => TypeArguments.Length > 0;
-    
+
     public BoundNode? Receiver { get; } = receiver;
 
-    public BoundFunGroup WithTypeArguments(ImmutableArray<BoundTypeRef> typeArguments, SyntaxNode? typeArgListSyntax)
-        => new(Candidates, Receiver, typeArguments, typeArgListSyntax, Syntax);
+    public BoundFunGroup WithTypeArguments(ImmutableArray<BoundTypeRef> typeArguments, SyntaxNode syntax)
+        => new(Candidates, Receiver, typeArguments, syntax);
 }
