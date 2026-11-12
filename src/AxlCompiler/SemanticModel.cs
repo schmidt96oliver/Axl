@@ -131,16 +131,19 @@ public sealed class SemanticModel(Compilation compilation)
     private SymbolInfo ReferencedSymbolFor(BoundFunGroup funGroup, ExprSyntax syntax)
     {
         var callSyntax = syntax.Ancestors().OfType<CallExprSyntax>().FirstOrDefault();
-        if (callSyntax is null || callSyntax.Callee != syntax ||
-            BoundNodeFor(callSyntax) is not BoundCall boundCall)
+        if (callSyntax is null || callSyntax.Callee != syntax)
+            return new SymbolInfo.Unresolved(funGroup.Candidates.CastArray<Symbol>(), UnresolvedSymbolReason.NotUsable);
+
+        if (BoundNodeFor(callSyntax) is not BoundCall boundCall)
         {
             // The fun group is not part of a call or it had an error.
-            return new SymbolInfo.Unresolved(funGroup.Candidates.CastArray<Symbol>(), UnresolvedSymbolReason.NoApplicableOverload);
+            return new SymbolInfo.Unresolved(funGroup.Candidates.CastArray<Symbol>(),
+                UnresolvedSymbolReason.NoApplicableOverload);
         }
 
         return new SymbolInfo.Resolved(boundCall.Fun);
     }
-    
+
 
     private BinderSideEffects? ProbeAt(SyntaxTree tree, int position)
     {

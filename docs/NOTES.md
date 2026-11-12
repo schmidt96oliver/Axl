@@ -5,6 +5,7 @@
 
 # Now
 
+* See Claude for reference stuff
 * RefSymbol: 
   * Arg names: BindFieldInitializer in CheckTypeCandidate; BoundStructInitError carries TypeCandidate, which has
                (BoundFieldInitializers, UnmatchedArguments, UninitializedFields)
@@ -41,6 +42,12 @@
 
 * Remove `AddResolvedSymbols` (run differential test first)
   
+* Scope retrieval
+  * They needs their scope children
+  * Scopes store valid range
+  * BoundBlock stores scopes
+  * Position lookup is just a walk
+
 * Completion:
     * Insert []
     * Insert ()

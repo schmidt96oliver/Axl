@@ -70,7 +70,7 @@ public class HoverHandler : HoverHandlerBase
             return null;
 
         var candidatesText = string.Join('\n', unresolved.Candidates.Select(s => s.FullDisplayText));
-        return new MarkupContent { Kind = MarkupKind.Markdown, Value = $"```axl\n{candidatesText}\n```" };
+        return new MarkupContent { Kind = MarkupKind.Markdown, Value = $"{unresolved.Reason}:\n```axl\n{candidatesText}\n```" };
     }
     
     private static Hover? DebugBoundNodeHover(SyntaxContext context)
