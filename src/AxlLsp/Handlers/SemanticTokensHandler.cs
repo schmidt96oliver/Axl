@@ -136,18 +136,18 @@ public class SemanticTokensHandler : SemanticTokensHandlerBase
         if (token.Kind is not TokenKind.Identifier || token.Parent is not NameRefSyntax nameRef)
             return [];
         
-        var symbolInfo = project.Compilation.SemanticModel.ReferencedSymbolFor(nameRef);
+        var reference = project.Compilation.SemanticModel.ReferencedSymbolFor(nameRef);
         
-        if (symbolInfo.Symbols.All(s => s is VariableSymbol))
+        if (reference.Symbols.All(s => s is VariableSymbol))
             return [(token.Location, SemanticTokenType.Variable)];
         
-        if (symbolInfo.Symbols.All(s => s is TypeSymbol))
+        if (reference.Symbols.All(s => s is TypeSymbol))
             return [(token.Location, SemanticTokenType.Type)];
         
-        if (symbolInfo.Symbols.All(s => s is NamespaceSymbol))
+        if (reference.Symbols.All(s => s is NamespaceSymbol))
             return [(token.Location, SemanticTokenType.Namespace)];
         
-        if (symbolInfo.Symbols.All(s => s is FunSymbol))
+        if (reference.Symbols.All(s => s is FunSymbol))
             return [(token.Location, SemanticTokenType.Method)];
 
         return [];

@@ -49,7 +49,7 @@ public sealed class SemanticModel(Compilation compilation)
     {
         //TODO: Cache the results
         var sideEffects = new BinderSideEffects();
-        CompleteAt(syntax.Location, compilation, sideEffects);
+        CompleteEnclosingSymbol(syntax.Location, compilation, sideEffects);
 
         if (sideEffects.BoundNodes.TryGetValue(syntax, out var boundNodes))
             return boundNodes[^1]; //TODO: Which one to pick?
@@ -57,19 +57,19 @@ public sealed class SemanticModel(Compilation compilation)
         return null;
     }
 
-    public SymbolInfo ReferencedSymbolFor(NameRefSyntax syntax)
-        => InternalReferencedSymbolFor(syntax) ?? new SymbolInfo.Unresolved([], UnresolvedSymbolReason.NotFound);
+    public SymbolReference ReferencedSymbolFor(NameRefSyntax syntax)
+        => TryReferencedSymbolFor(syntax) ?? new SymbolReference.Unresolved([], UnresolvedSymbolReason.NotFound);
 
     /// <summary>
     /// Returns the referenced symbol, but <c>null</c> if it
     /// could not be resolved due to an internal error. Used for
     /// testing.
     /// </summary>
-    internal SymbolInfo? InternalReferencedSymbolFor(NameRefSyntax syntax)
+    internal SymbolReference? TryReferencedSymbolFor(NameRefSyntax syntax)
     {
         // Annotations are no symbols
         if (syntax.Parent is AnnotationSyntax)
-            return new SymbolInfo.Unresolved([], UnresolvedSymbolReason.NotFound);
+            return new SymbolReference.Unresolved([], UnresolvedSymbolReason.NotFound);
 
         //TODO: Handle argument names
         if (syntax.Parent is ArgSyntax arg && arg.Name == syntax)
@@ -90,30 +90,30 @@ public sealed class SemanticModel(Compilation compilation)
 
         return boundNode switch
         {
-            IBoundSymbolRef symbolRef => new SymbolInfo.Resolved(symbolRef.Symbol),
+            IBoundSymbolRef symbolRef => new SymbolReference.Resolved(symbolRef.Symbol),
             BoundTypeGroup typeGroup => ReferencedSymbolFor(typeGroup, bindableSyntax),
             BoundFunGroup funGroup => ReferencedSymbolFor(funGroup, bindableSyntax),
-            BoundLookupError lookupError => new SymbolInfo.Unresolved(lookupError.Candidates, lookupError.Reason),
+            BoundLookupError lookupError => new SymbolReference.Unresolved(lookupError.Candidates, lookupError.Reason),
             _ => null
         };
     }
 
-    private SymbolInfo ReferencedSymbolFor(BoundTypeGroup typeGroup, ExprSyntax syntax)
+    private SymbolReference ReferencedSymbolFor(BoundTypeGroup typeGroup, ExprSyntax syntax)
     {
         if (syntax.Parent is CallExprSyntax callExprSyntax && callExprSyntax.Callee == syntax)
         {
             var boundCall = BoundNodeFor(callExprSyntax);
             if (boundCall is BoundStructInit structInit)
-                return new SymbolInfo.Resolved(structInit.Type);
+                return new SymbolReference.Resolved(structInit.Type);
             if (boundCall is BoundStructInitError structInitError)
             {
                 // If there is only a single candidate that has its type
                 // parameters filled, it resolves correctly. Otherwise,
                 // it's unresolved (too many types or failed inference).
                 if (structInitError.Candidates is [{ HasFilledTypeParameters: true } singleType])
-                    return new SymbolInfo.Resolved(singleType);
+                    return new SymbolReference.Resolved(singleType);
 
-                return new SymbolInfo.Unresolved(
+                return new SymbolReference.Unresolved(
                     structInitError.Candidates.CastArray<Symbol>(),
                     UnresolvedSymbolReason.NoApplicableType);
             }
@@ -121,27 +121,27 @@ public sealed class SemanticModel(Compilation compilation)
 
         // Same as above
         if (typeGroup.Candidates is [{ HasFilledTypeParameters: true } single])
-            return new SymbolInfo.Resolved(single);
+            return new SymbolReference.Resolved(single);
         
-        return new SymbolInfo.Unresolved(
+        return new SymbolReference.Unresolved(
             typeGroup.Candidates.CastArray<Symbol>(),
             UnresolvedSymbolReason.Ambiguous);
     }
 
-    private SymbolInfo ReferencedSymbolFor(BoundFunGroup funGroup, ExprSyntax syntax)
+    private SymbolReference ReferencedSymbolFor(BoundFunGroup funGroup, ExprSyntax syntax)
     {
         var callSyntax = syntax.Ancestors().OfType<CallExprSyntax>().FirstOrDefault();
         if (callSyntax is null || callSyntax.Callee != syntax)
-            return new SymbolInfo.Unresolved(funGroup.Candidates.CastArray<Symbol>(), UnresolvedSymbolReason.NotUsable);
+            return new SymbolReference.Unresolved(funGroup.Candidates.CastArray<Symbol>(), UnresolvedSymbolReason.NotUsable);
 
         if (BoundNodeFor(callSyntax) is not BoundCall boundCall)
         {
             // The fun group is not part of a call or it had an error.
-            return new SymbolInfo.Unresolved(funGroup.Candidates.CastArray<Symbol>(),
+            return new SymbolReference.Unresolved(funGroup.Candidates.CastArray<Symbol>(),
                 UnresolvedSymbolReason.NoApplicableOverload);
         }
 
-        return new SymbolInfo.Resolved(boundCall.Fun);
+        return new SymbolReference.Resolved(boundCall.Fun);
     }
 
 
@@ -177,13 +177,13 @@ public sealed class SemanticModel(Compilation compilation)
         var compilationWithProbe = compilation
             .Replace(tree, with: treeWithProbe)
             .WithProbe(probeToken);
-        CompleteAt(probeToken.Location, compilationWithProbe, probe);
+        CompleteEnclosingSymbol(probeToken.Location, compilationWithProbe, probe);
 
         _probes[(tree, position)] = probe;
         return probe;
     }
     
-    private static void CompleteAt(SourceLocation location, Compilation compilation, BinderSideEffects sideEffects)
+    private static void CompleteEnclosingSymbol(SourceLocation location, Compilation compilation, BinderSideEffects sideEffects)
     {
         //TODO: Symbol.Traverse?
         

@@ -13,13 +13,13 @@ public enum UnresolvedSymbolReason
     NoApplicableOverload,
 }
 
-public closed record SymbolInfo
+public closed record SymbolReference
 {
     /// <summary>
     /// The meaning of the reference is clear and would bind correctly.
     /// Note that this doesn't mean that the surrounding code binds correctly.
     /// </summary>
-    public sealed record Resolved(Symbol Symbol) : SymbolInfo;
+    public sealed record Resolved(Symbol Symbol) : SymbolReference;
 
     /// <summary>
     /// The meaning of the reference is unclear. Given the possible
@@ -27,7 +27,7 @@ public closed record SymbolInfo
     /// the reference is not clear. Note that <see cref="Candidates"/>
     /// can contain only a single symbol, because it could not correctly bind.
     /// </summary>
-    public sealed record Unresolved(ImmutableArray<Symbol> Candidates, UnresolvedSymbolReason Reason) : SymbolInfo;
+    public sealed record Unresolved(ImmutableArray<Symbol> Candidates, UnresolvedSymbolReason Reason) : SymbolReference;
 
     public ImmutableArray<Symbol> Symbols => this switch
     {

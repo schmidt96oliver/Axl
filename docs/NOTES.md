@@ -6,9 +6,7 @@
 # Now
 
 * RefSymbol: 
-  * Arg names: BindFieldInitializer in CheckTypeCandidate; BoundStructInitError carries TypeCandidate, which has
-               (BoundFieldInitializers, UnmatchedArguments, UninitializedFields)
-    * Do it after type argument inference
+  * Only on BoundStructInit; map to BoundFieldInitializers
 
 * How to walk symbol tree for syntax node?
   * Clarify DeclaringSyntaxes
@@ -32,6 +30,10 @@
   * Scopes store valid range
   * BoundBlock stores scopes
   * Position lookup is just a walk
+
+* Probing
+  * ?? Through a BoundProbe(Error) with recorded information
+  * ?? Just record LookupContext(Scope, Options, OnMember?) everyhwere 
 
 * Completion:
     * Insert []

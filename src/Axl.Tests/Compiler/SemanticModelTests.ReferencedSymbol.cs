@@ -40,12 +40,12 @@ public partial class SemanticModelTests
 
         private string CaretInfo(Compilation compilation, NameRefSyntax nameRef)
         {
-            var symbolInfo = compilation.SemanticModel.InternalReferencedSymbolFor(nameRef);
+            var symbolInfo = compilation.SemanticModel.TryReferencedSymbolFor(nameRef);
             return symbolInfo switch
             {
                 null => "<NULL>",
-                SymbolInfo.Resolved(var symbol) => $"Resolved: {symbol.FullDisplayText}",
-                SymbolInfo.Unresolved(var candidates, var reason) => $"Unresolved ({reason}):\n   {
+                SymbolReference.Resolved(var symbol) => $"Resolved: {symbol.FullDisplayText}",
+                SymbolReference.Unresolved(var candidates, var reason) => $"Unresolved ({reason}):\n   {
                     string.Join("\n   ", candidates.Select(c => c.FullDisplayText))}"
             };
         }
@@ -64,7 +64,7 @@ public partial class SemanticModelTests
             
             var wrongSymbols = nameRefs
                 .Select(nameRef => (Ref: nameRef, Fail: CheckInfoAgainstNameRef(
-                    compilation.SemanticModel.InternalReferencedSymbolFor(nameRef),
+                    compilation.SemanticModel.TryReferencedSymbolFor(nameRef),
                     nameRef)))
                 .Where(pair => pair.Fail is not null)
                 .Select(pair => $"\'{pair.Ref.Text}\' in \'{pair.Ref.Parent?.Location.Text.ToString().Replace("\n", " ") ?? ""}\':\n   {pair.Fail}")
@@ -75,21 +75,21 @@ public partial class SemanticModelTests
             }
         }
 
-        private string? CheckInfoAgainstNameRef(SymbolInfo? info, NameRefSyntax nameRef)
+        private string? CheckInfoAgainstNameRef(SymbolReference? info, NameRefSyntax nameRef)
         {
             if (info is null)
                 return "GAP! No symbol info.";
 
             var symbols = info switch
             {
-                SymbolInfo.Resolved(var s) => [s],
-                SymbolInfo.Unresolved(var c, _) => c
+                SymbolReference.Resolved(var s) => [s],
+                SymbolReference.Unresolved(var c, _) => c
             };
             var wrongName = symbols.Where(s => s.Name != nameRef.Text.ToString()).ToList();
             if (wrongName.Count > 0)
                 return "Unexpected name on " + string.Join(", ", wrongName.Select(s => s.ShortDisplayText));
 
-            if (info is SymbolInfo.Unresolved(var candidates, var reason))
+            if (info is SymbolReference.Unresolved(var candidates, var reason))
             {
                 return (reason, candidates.Length) switch
                 {

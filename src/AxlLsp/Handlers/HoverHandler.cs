@@ -56,15 +56,15 @@ public class HoverHandler : HoverHandlerBase
         return Task.FromResult<Hover?>(null);
     }
 
-    private static MarkupContent? HoverTextFor(SymbolInfo info) => info switch
+    private static MarkupContent? HoverTextFor(SymbolReference reference) => reference switch
     {
-        SymbolInfo.Resolved resolved => new MarkupContent{ Kind = MarkupKind.Markdown, Value =
+        SymbolReference.Resolved resolved => new MarkupContent{ Kind = MarkupKind.Markdown, Value =
             $"```axl\n{resolved.Symbol.FullDisplayText}\n```"
         },
-        SymbolInfo.Unresolved unresolved => HoverTextFor(unresolved),
+        SymbolReference.Unresolved unresolved => HoverTextFor(unresolved),
     };
 
-    private static MarkupContent? HoverTextFor(SymbolInfo.Unresolved unresolved)
+    private static MarkupContent? HoverTextFor(SymbolReference.Unresolved unresolved)
     {
         if (unresolved.Reason is UnresolvedSymbolReason.NotFound || unresolved.Candidates.Length == 0)
             return null;
