@@ -213,9 +213,6 @@ public class Compilation
         return loweredBody;
     }
 
-
-    
-
     public CompilationResult Compile(ScriptSymbol entryScript)
     {
         if (entryScript.Compilation != this || !Scripts.Contains(entryScript))
@@ -246,4 +243,14 @@ public class Compilation
     public SyntaxTree SyntaxTreeFor(SourceLocation location)
         => SyntaxTreeFor(location.SourceText);
 
+    /// <summary>
+    /// Traverses all symbols inside this compilation and its member in pre-order depth-first order.
+    /// Only descends into a symbol, if <paramref name="descendInto"/> evaluates <c>true</c>. <see cref="RootNamespace"/>
+    /// is _not_ checked against <paramref name="descendInto"/>. Note that symbols have no inherent order.
+    /// </summary>
+    public IEnumerable<Symbol> TraverseSymbols(Func<Symbol, bool> descendInto) =>
+    [
+        .. RootNamespace.Traverse(descendInto),
+        .. Scripts.Where(s => descendInto(s)).SelectMany(s => s.Traverse(descendInto))
+    ];
 }

@@ -205,33 +205,19 @@ public sealed class SemanticModel(Compilation compilation)
     
     private static void CompleteEnclosingSymbol(SourceLocation location, Compilation compilation, BinderSideEffects sideEffects)
     {
-        //TODO: Symbol.Traverse?
-        
-        // Complete only the lowest most symbol that contains the probe,
-        // as not to bind any unnecessary symbols.
-        foreach (var symbol in compilation.Scripts.Concat([compilation.RootNamespace]))
+        var viableSymbols = compilation
+            .TraverseSymbols(descendInto: s => s.DeclarationContains(location))
+            .Where(s => s.Members.All(member => !member.DeclarationContains(location)));
+
+        var hasCompleted = false;
+        foreach (var symbol in viableSymbols)
         {
-            if (!symbol.DeclaringSyntax.Any(declSyntax => declSyntax.Location.Contains(location)))
-                continue;
-
-            Symbol current = symbol;
-            while (true)
-            {
-                var next = current.Members.FirstOrDefault(member =>
-                    member.DeclaringSyntax.Any(declSyntax => declSyntax.Location.Contains(location)));
-                if (next is null)
-                {
-                    current.Complete(sideEffects);
-                    return;
-                }
-
-                current = next;
-            }
+            symbol.Complete(sideEffects);
+            hasCompleted = true;
         }
         
-        // The loop did not complete anything. So fall back to completing the entire
-        // compilation.
-        compilation.Complete(sideEffects);
+        if (!hasCompleted)
+            compilation.Complete(sideEffects);
     }
     
     private static Token? TryFindProbeToken(SyntaxNode node, int position, string probeText)
