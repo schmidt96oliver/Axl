@@ -11,6 +11,9 @@ public sealed class ErrorTypeSymbol(Compilation compilation)
 
     /// <inheritdoc />
     public override ImmutableArray<SyntaxNode> DeclaringSyntax => [];
+
+    /// <inheritdoc />
+    public override ImmutableArray<Token> NameSyntax => [];
     
     public override ImmutableArray<Symbol> Members => [];
 

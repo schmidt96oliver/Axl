@@ -1,40 +1,40 @@
 ﻿using System.Collections.Immutable;
+using System.Diagnostics;
 using System.Runtime.CompilerServices;
+using AxlCompiler.Binding.BoundTree;
 using AxlCompiler.Syntax;
+using AxlCompiler.Syntax.Tree;
 
 namespace AxlCompiler.Symbols;
 
-public class VariableSymbol(string name, FunSymbol owner, bool isReadOnly, TypeSymbol type, SyntaxNode? declarationSyntax)
-    : Symbol(owner.Compilation, name, owner)
+public enum VariableKind
 {
-    public bool IsReadOnly { get; } = isReadOnly;
-    public TypeSymbol Type { get; } = type;
+    Let,
+    Var,
+}
 
-    /// <summary>
-    /// Variables are always private inside their fun body.
-    /// </summary>
-    public override bool IsPublic => false;
-
-    /// <inheritdoc />
-    public override bool IsConcrete => true;
+public class VariableSymbol(string name, FunSymbol owner, VariableKind kind, TypeSymbol type, VarDeclSyntax declarationSyntax)
+    : LocalSymbol(name, owner)
+{
+    public VariableKind Kind { get; } = kind;
 
     /// <inheritdoc />
-    public override bool CanBeReferencedByName => true;
+    public override PlaceKind PlaceKind => Kind switch
+    {
+        VariableKind.Let => PlaceKind.ReadOnlyPlace,
+        VariableKind.Var => PlaceKind.MutPlace,
+        _ => throw new UnreachableException($"Unknown {nameof(VariableKind)}.")
+    };
+    
+    public override TypeSymbol Type { get; } = type;
 
     /// <inheritdoc />
-    public override ImmutableArray<SyntaxNode> DeclaringSyntax =>
-        declarationSyntax is not null ? [declarationSyntax] : [];
+    public override ImmutableArray<SyntaxNode> DeclaringSyntax => [declarationSyntax];
+
+    /// <inheritdoc />
+    public override ImmutableArray<Token> NameSyntax => [declarationSyntax.Name];
     
     /// <inheritdoc />
     public override Symbol Substitute(TypeMap map)
         => throw new InvalidOperationException("Substitution reached a variable, which doesn't make sense.");
-
-    /// <inheritdoc />
-    public override bool Equals(Symbol? other)
-        => ReferenceEquals(this,
-            other); // Variable have no substituted types, so there will only be one reference.
-
-    /// <inheritdoc />
-    public override int GetHashCode()
-        => RuntimeHelpers.GetHashCode(this);
 }

@@ -1,7 +1,8 @@
-﻿using System.Runtime.CompilerServices;
+﻿using System.Collections.Immutable;
+using System.Runtime.CompilerServices;
+using AxlCompiler.Binding.BoundTree;
+using AxlCompiler.Syntax;
 using AxlCompiler.Syntax.Tree;
-
-#pragma warning disable CS9107 // Parameter is captured into the state of the enclosing type and its value is also passed to the base constructor. The value might be captured by the base class as well.
 
 namespace AxlCompiler.Symbols;
 
@@ -13,10 +14,24 @@ public sealed class ParameterSymbol(
     bool isSelf,
     ParameterSymbol? originalDefinition = null,
     ParamSyntax? declarationSyntax = null)
-    : VariableSymbol(name, owner, isReadOnly: !isMut, type, declarationSyntax)
+    : LocalSymbol(name, owner)
 {
     public override ParameterSymbol OriginalDefinition => originalDefinition ?? this;
+
+    /// <inheritdoc />
+    public override PlaceKind PlaceKind => IsMut ? PlaceKind.MutPlace : PlaceKind.ReadOnlyPlace;
+
+    /// <inheritdoc />
+    public override TypeSymbol Type { get; } = type;
     
+    /// <inheritdoc />
+    public override ImmutableArray<SyntaxNode> DeclaringSyntax =>
+        DeclarationSyntax is not null ? [DeclarationSyntax] : [];
+
+    /// <inheritdoc />
+    public override ImmutableArray<Token> NameSyntax =>
+        DeclarationSyntax is not null ? [DeclarationSyntax.Name] : [];
+
     /// <summary>
     /// Whether assigning to or mutating through this parameter
     /// can assign to or mutate the callers place.
@@ -32,7 +47,7 @@ public sealed class ParameterSymbol(
 
     public override ParameterSymbol Substitute(TypeMap map) =>
         new(Name,
-            owner: owner.Substitute(map),
+            owner: Owner.Substitute(map),
             Type.Substitute(map),
             IsMut,
             IsSelf,
@@ -52,4 +67,6 @@ public sealed class ParameterSymbol(
         => ReferenceEquals(this, OriginalDefinition)
             ? RuntimeHelpers.GetHashCode(this)
             : HashCode.Combine(0x882F_1ABD, Owner, OriginalDefinition);
+
+    
 }

@@ -12,7 +12,7 @@ public closed class Symbol(Compilation compilation, string name, Symbol? owner)
 
     public string Name { get; } = name;
 
-    public Symbol? Owner { get; } = owner;
+    public virtual Symbol? Owner { get; } = owner;
 
     public TypeSymbol? OwningType
         => SelfAndOwners().OfType<TypeSymbol>().FirstOrDefault();
@@ -42,9 +42,17 @@ public closed class Symbol(Compilation compilation, string name, Symbol? owner)
 
     /// <summary>
     /// All syntax nodes that originally declared this symbol.
-    /// Empty for generated symbols.
+    /// Empty for generated symbols. Used for descending into
+    /// symbols by location.
     /// </summary>
     public abstract ImmutableArray<SyntaxNode> DeclaringSyntax { get; }
+
+    /// <summary>
+    /// All tokens that introduce the name for this symbol.
+    /// Empty for generated symbols.
+    /// </summary>
+    public abstract ImmutableArray<Token> NameSyntax { get; }
+
 
     public virtual ImmutableArray<Symbol> Members => [];
 

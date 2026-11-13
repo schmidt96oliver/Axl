@@ -13,7 +13,7 @@ public class Lowerer
     private readonly FunDefinitionSymbol _funDefinition;
     
     private MutBasicBlock? _currentBlock;
-    private readonly Dictionary<VariableSymbol, Place.Local> _variables = [];
+    private readonly Dictionary<LocalSymbol, Place.Local> _locals = [];
     private readonly Dictionary<TypeSymbol, RefTypeSymbol> _refTypeSymbols = [];
     private readonly Stack<(MutBasicBlock Break, MutBasicBlock Continue)> _loopLabels = [];
 
@@ -39,7 +39,7 @@ public class Lowerer
                     : param.Type,
                 param.DeclarationSyntax
             );
-            _variables[param] = local;
+            _locals[param] = local;
             paramPlaces.Add(local);
         }
         
@@ -133,10 +133,10 @@ public class Lowerer
 
     private void LowerVarDecl(BoundVarDecl varDecl)
     {
-        if (!_variables.TryGetValue(varDecl.Variable, out var local))
+        if (!_locals.TryGetValue(varDecl.Variable, out var local))
         {
             local = _mirFun.AddLocal(varDecl.Variable.Type, LocalKind.Variable, varDecl.Syntax);
-            _variables[varDecl.Variable] = local;
+            _locals[varDecl.Variable] = local;
         }
         
         if (varDecl.Variable.Type == Never)
@@ -203,9 +203,9 @@ public class Lowerer
     {
         switch (value)
         {
-            case BoundVariable variable:
+            case BoundLocal variable:
             {
-                Place place = _variables[variable.Variable];
+                Place place = _locals[variable.Local];
                 
                 // Anything that came in as a ref needs to be dereferenced.
                 if (place.Type is RefTypeSymbol)
@@ -236,7 +236,7 @@ public class Lowerer
     {
         BoundBlock boundBlock => LowerBlock(boundBlock),
 
-        BoundVariable boundVariable => new Operand.Copy(LowerPlace(boundVariable), boundVariable.Syntax),
+        BoundLocal boundVariable => new Operand.Copy(LowerPlace(boundVariable), boundVariable.Syntax),
         BoundConst boundConst => new Operand.Const(boundConst.Value, boundConst.Type, boundConst.Syntax),
         BoundField boundField => new Operand.Copy(LowerPlace(boundField), boundField.Syntax),
 
@@ -397,7 +397,7 @@ public class Lowerer
         BoundStructInit => true, // Lowers to temp anyway
 
         BoundConst => false,
-        BoundVariable => false,
+        BoundLocal => false,
         BoundError => false,
         BoundField => false,
         BoundLogicAnd boundLogicAnd => MightHaveSideEffects(boundLogicAnd.Left) ||

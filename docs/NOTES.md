@@ -18,7 +18,7 @@
 
 * Add `SemanticModel.DeclaredSymbolFor(IdentifierToken)`
   * Symbol tree walk (for struct, fun, field, type parameter)
-  * parameter: Inside fun
+  * parameter: Inside fun****
   * let/var: Record in BindStmt, bind the body
   * namespace: walk name parts
 
@@ -63,6 +63,8 @@
 
 * Taxl Lsp Completion: Annotation completion and Diagnostic IDs after //~error/lint
 * Annotation Completion: AnnotationSymbol and BaseLibrary.Annotations
+
+* ?? Make LocalSymbol, Variable and Parameter derive from it; BoundLocalRef
 
 # Milestones
 

@@ -21,6 +21,9 @@ public sealed class FieldDefinitionSymbol(
 
     /// <inheritdoc />
     public override ImmutableArray<SyntaxNode> DeclaringSyntax => [DeclarationSyntax];
+
+    /// <inheritdoc />
+    public override ImmutableArray<Token> NameSyntax => [DeclarationSyntax.Name];
     
     public override FieldDefinitionSymbol OriginalDefinition => this;
     

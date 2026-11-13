@@ -16,6 +16,9 @@ public class SpecializedTypeSymbol : TypeSymbol
 
     /// <inheritdoc />
     public override ImmutableArray<SyntaxNode> DeclaringSyntax => OriginalDefinition.DeclaringSyntax;
+
+    /// <inheritdoc />
+    public override ImmutableArray<Token> NameSyntax => OriginalDefinition.NameSyntax;
     
     /// <inheritdoc />
     public override ImmutableArray<Symbol> Members

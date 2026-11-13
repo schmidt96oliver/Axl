@@ -27,6 +27,9 @@ public sealed class StructSymbol(
 
     /// <inheritdoc />
     public override ImmutableArray<SyntaxNode> DeclaringSyntax => [DeclarationSyntax];
+
+    /// <inheritdoc />
+    public override ImmutableArray<Token> NameSyntax => [DeclarationSyntax.Name];
     
     /// <inheritdoc />
     public override ImmutableArray<TypeParameterSymbol> TypeParameters

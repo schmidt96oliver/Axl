@@ -4,11 +4,11 @@ using AxlCompiler.Syntax.Tree;
 
 namespace AxlCompiler.Symbols;
 
-public class TypeParameterSymbol(string name, Symbol owner, int ordinal, TypeParamSyntax? declarationSyntax) 
+public class TypeParameterSymbol(string name, Symbol owner, int ordinal, TypeParamSyntax declarationSyntax) 
     : TypeSymbol(owner.Compilation, name, owner, isPublic: true)
     // Should be public, because it must be as visible as the function/type itself.
 {
-    public TypeParamSyntax? DeclarationSyntax { get; } = declarationSyntax;
+    public TypeParamSyntax DeclarationSyntax { get; } = declarationSyntax;
 
     public int Ordinal { get; } = ordinal;
     
@@ -16,7 +16,10 @@ public class TypeParameterSymbol(string name, Symbol owner, int ordinal, TypePar
     public override bool CanBeReferencedByName => true;
 
     /// <inheritdoc />
-    public override ImmutableArray<SyntaxNode> DeclaringSyntax => DeclarationSyntax is not null ? [DeclarationSyntax] : [];
+    public override ImmutableArray<SyntaxNode> DeclaringSyntax => [DeclarationSyntax];
+
+    /// <inheritdoc />
+    public override ImmutableArray<Token> NameSyntax => [DeclarationSyntax.Name];
     
     /// <inheritdoc />
     public override bool IsConcrete => false;

@@ -28,6 +28,9 @@ public sealed class SpecializedFieldSymbol : FieldSymbol
 
     /// <inheritdoc />
     public override ImmutableArray<SyntaxNode> DeclaringSyntax => OriginalDefinition.DeclaringSyntax;
+
+    /// <inheritdoc />
+    public override ImmutableArray<Token> NameSyntax => OriginalDefinition.NameSyntax;
     
     /// <inheritdoc />
     public override bool Equals(Symbol? other)

@@ -27,6 +27,9 @@ public sealed class SourceNamespaceSymbol(
 
     /// <inheritdoc />
     public override ImmutableArray<SyntaxNode> DeclaringSyntax => [.. Declaration.SyntaxTrees.Select(tree => tree.FileSyntax)];
+
+    /// <inheritdoc />
+    public override ImmutableArray<Token> NameSyntax => [.. Declaration.NameTokens];
     
     /// <summary>
     /// A source declared namespace is nameable, only if

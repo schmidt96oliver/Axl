@@ -686,8 +686,7 @@ public sealed class Binder(Scope scope, BinderSideEffects sideEffects)
             type,
             isMut: syntax.MutKw is not null,
             isSelf: false,
-            originalDefinition: null,
-            syntax);
+            declarationSyntax: syntax, originalDefinition: null);
     }
 
     public ImmutableArray<TypeParameterSymbol> BindTypeParameters(TypeParamListSyntax syntax)
@@ -821,11 +820,10 @@ public sealed class Binder(Scope scope, BinderSideEffects sideEffects)
         if (lookupResult is not (null or VariableSymbol))
             return BindError(syntax, new Diagnostic.CannotShadow(lookupResult, syntax.Name));
         
-        var isReadOnly = syntax.VarOrLetKwToken.Kind is TokenKind.LetKw;
         var variable = new VariableSymbol(
             syntax.Name.Identifier, 
             Scope.OwnerAsFun ?? throw new InvalidOperationException("Values can only be bound on fun bodies."),
-            isReadOnly, 
+            kind: syntax.VarOrLetKwToken.Kind is TokenKind.LetKw ? VariableKind.Let : VariableKind.Var, 
             variableType,
             syntax);
     
@@ -943,9 +941,9 @@ public sealed class Binder(Scope scope, BinderSideEffects sideEffects)
         // (including receiver) can escape.
         // Cannot escape: Locals
         
-        BoundVariable
+        BoundLocal
         {
-            Variable: ParameterSymbol { IsMut: true }
+            Local: ParameterSymbol { IsMut: true }
         } => true, // Includes mut self, since that is a parameter
         BoundCall { IsMutReturn: true } call => call.ReceiverAndArguments
             .Where(arg => arg.IsMut)
@@ -1009,7 +1007,7 @@ public sealed class Binder(Scope scope, BinderSideEffects sideEffects)
         if (Scope.OwnerAsFun?.SelfParameter is null)
             return BindError(syntax, new Diagnostic.InvalidSelfRef(syntax));
 
-        return new BoundVariable(Scope.OwnerAsFun.SelfParameter, syntax);
+        return new BoundLocal(Scope.OwnerAsFun.SelfParameter, syntax);
     }
 
     private BoundValue BindNumberLiteral(SyntaxNode syntax, NumberLiteralSuffix suffix)
@@ -1456,7 +1454,7 @@ public sealed class Binder(Scope scope, BinderSideEffects sideEffects)
             NamespaceSymbol @namespace => new BoundNamespaceRef(@namespace, syntax),
             TypeSymbol type => new BoundTypeRef(type, typeArguments: [], syntax),
 
-            VariableSymbol variable => BindVariable(variable, syntax),
+            LocalSymbol local => new BoundLocal(local, syntax),
             FieldSymbol field => BindFieldAccess(field, receiver, syntax),
             FunSymbol => throw new UnreachableException("Handled above"),
         };
@@ -1568,11 +1566,6 @@ public sealed class Binder(Scope scope, BinderSideEffects sideEffects)
         return replaced;
     }
 
-    private BoundNode BindVariable(VariableSymbol variable, ExprSyntax syntax)
-    {
-        return new BoundVariable(variable, syntax);
-    }
-
     private BoundNode BindFieldAccess(FieldSymbol field, BoundNode? receiver, ExprSyntax syntax)
     {
         // We must not check the type, if we are currently binding the type of
@@ -1620,7 +1613,7 @@ public sealed class Binder(Scope scope, BinderSideEffects sideEffects)
                 return asTypeRef;
             }
 
-            receiver = new BoundVariable(Scope.OwnerAsFun.SelfParameter);    
+            receiver = new BoundLocal(Scope.OwnerAsFun.SelfParameter);    
         }
 
         if (receiver is not BoundValue valueReceiver)
@@ -2019,7 +2012,7 @@ public sealed class Binder(Scope scope, BinderSideEffects sideEffects)
         // Try an implicit self, if possible (fun is not static, no receiver specified, self available)
         var valueReceiver = !fun.IsStatic && receiverNode is null &&
                             Scope.OwnerAsFun?.SelfParameter is not null
-            ? new BoundVariable(Scope.OwnerAsFun.SelfParameter)
+            ? new BoundLocal(Scope.OwnerAsFun.SelfParameter)
             : receiverNode as BoundValue;
 
         if (valueReceiver is null != fun.IsStatic)

@@ -63,7 +63,7 @@ public sealed class TypeMap
                 FunSymbol fun => (fun.TypeParameters, fun.TypeArguments),
                 
                 NamespaceSymbol => ([], []),
-                VariableSymbol => ([], []),
+                LocalSymbol => ([], []),
                 FieldSymbol => ([], []),
             });
         }

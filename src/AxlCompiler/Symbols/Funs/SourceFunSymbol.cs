@@ -29,7 +29,10 @@ public sealed class SourceFunSymbol(
 
     /// <inheritdoc />
     public override ImmutableArray<SyntaxNode> DeclaringSyntax => [DeclarationSyntax];
-    
+
+    /// <inheritdoc />
+    public override ImmutableArray<Token> NameSyntax => [DeclarationSyntax.Name.Token];
+
     public override ImmutableArray<TypeParameterSymbol> TypeParameters
     {
         get

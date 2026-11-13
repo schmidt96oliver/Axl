@@ -11,6 +11,9 @@ public sealed class SpecializedFunSymbol : FunSymbol
 
     /// <inheritdoc />
     public override ImmutableArray<SyntaxNode> DeclaringSyntax => OriginalDefinition.DeclaringSyntax;
+
+    /// <inheritdoc />
+    public override ImmutableArray<Token> NameSyntax => OriginalDefinition.NameSyntax;
     
     /// <inheritdoc />
     public override FunDefinitionSymbol OriginalDefinition { get; }

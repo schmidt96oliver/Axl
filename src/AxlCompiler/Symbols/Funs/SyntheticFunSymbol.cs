@@ -15,6 +15,9 @@ public sealed class SyntheticFunSymbol(string name, Symbol owner, bool isPublic)
 
     /// <inheritdoc />
     public override ImmutableArray<SyntaxNode> DeclaringSyntax => [];
+
+    /// <inheritdoc />
+    public override ImmutableArray<Token> NameSyntax => [];
     
     /// <inheritdoc />
     public override ImmutableArray<TypeParameterSymbol> TypeParameters => [];

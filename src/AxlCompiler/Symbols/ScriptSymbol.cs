@@ -23,6 +23,9 @@ public class ScriptSymbol(SyntaxTree syntax, Scope enclosingScope)
     public override ImmutableArray<SyntaxNode> DeclaringSyntax => [syntax.FileSyntax];
 
     /// <inheritdoc />
+    public override ImmutableArray<Token> NameSyntax => [];
+
+    /// <inheritdoc />
     public override ImmutableArray<Symbol> Members
     {
         get

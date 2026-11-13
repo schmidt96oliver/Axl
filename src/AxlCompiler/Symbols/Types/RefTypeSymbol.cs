@@ -22,6 +22,9 @@ public sealed class RefTypeSymbol(TypeSymbol inner)
     public override ImmutableArray<SyntaxNode> DeclaringSyntax => [];
 
     /// <inheritdoc />
+    public override ImmutableArray<Token> NameSyntax => [];
+
+    /// <inheritdoc />
     public override ImmutableArray<Symbol> Members => [];
 
     /// <inheritdoc />

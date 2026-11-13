@@ -1,7 +1,6 @@
 ﻿using System.Collections.Immutable;
 using AxlCompiler;
 using AxlCompiler.Binding.BoundTree;
-using AxlCompiler.Binding.Scopes;
 using AxlCompiler.Symbols;
 using AxlCompiler.Syntax;
 using AxlCompiler.Syntax.Tree;
@@ -131,11 +130,11 @@ public sealed class CompletionHandler : CompletionHandlerBase
         return symbols[0] switch
         {
             FieldSymbol @field => MakeFieldItem(name, @field),
-            VariableSymbol var => MakeVariableItem(name, var),
+            LocalSymbol local => MakeLocalItem(name, local),
             
-            NamespaceSymbol ns => MakeNamespaceItem(name, ns),
+            NamespaceSymbol => MakeNamespaceItem(name),
             
-            TypeSymbol type => null,
+            TypeSymbol => null,
             FunSymbol => null,
         };
     }
@@ -209,13 +208,13 @@ public sealed class CompletionHandler : CompletionHandlerBase
         };
     }
 
-    private static CompletionItem MakeNamespaceItem(string name, NamespaceSymbol symbol) => new()
+    private static CompletionItem MakeNamespaceItem(string name) => new()
     {
         Label = name,
         Kind = CompletionItemKind.Struct,
     };
     
-    private static CompletionItem MakeVariableItem(string name, VariableSymbol symbol) => new()
+    private static CompletionItem MakeLocalItem(string name, LocalSymbol symbol) => new()
     {
         Label = name,
         Kind = symbol is ParameterSymbol ? CompletionItemKind.TypeParameter : CompletionItemKind.Variable,

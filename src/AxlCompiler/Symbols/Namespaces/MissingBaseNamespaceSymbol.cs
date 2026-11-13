@@ -16,6 +16,9 @@ public sealed class MissingBaseNamespaceSymbol(Symbol owner)
     /// <inheritdoc />
     public override ImmutableArray<SyntaxNode> DeclaringSyntax => [];
 
+    /// <inheritdoc />
+    public override ImmutableArray<Token> NameSyntax => [];
+
     /// <summary>
     /// Since base namespace is missing, always return an error symbol
     /// to suppress further errors. A single "base namespace not found"

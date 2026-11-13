@@ -84,16 +84,16 @@ public static class SymbolPrinter
         {
             ErrorTypeSymbol => "error",
             ParameterSymbol parameter => $"parameter {parameter.Name}",
-            VariableSymbol { IsReadOnly: false } variable => $"var {variable.Name}",
-            VariableSymbol { IsReadOnly: true } variable => $"let {variable.Name}",
+            VariableSymbol { Kind: VariableKind.Var } variable => $"var {variable.Name}",
+            VariableSymbol { Kind: VariableKind.Let } variable => $"let {variable.Name}",
             _ => $"{symbol.KindName} '{symbol.FullName}'"
         };
 
         public string FullDisplayText => symbol switch
         {
             ParameterSymbol parameter => $"parameter {parameter.Name}: {parameter.ParameterTypeDisplayText}",
-            VariableSymbol { IsReadOnly: false } variable => $"var {variable.Name}: {variable.Type.FullName}",
-            VariableSymbol { IsReadOnly: true } variable => $"let {variable.Name}: {variable.Type.FullName}",
+            VariableSymbol { Kind: VariableKind.Var } variable => $"var {variable.Name}: {variable.Type.FullName}",
+            VariableSymbol variable => $"let {variable.Name}: {variable.Type.FullName}",
             FieldSymbol fieldSymbol => $"field {fieldSymbol.FullName}: {fieldSymbol.Type.FullName}",
             
             NamespaceSymbol or TypeSymbol => $"{symbol.KindName} {symbol.FullName}",
