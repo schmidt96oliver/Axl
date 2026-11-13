@@ -781,12 +781,23 @@ public sealed class Binder(Scope scope, BinderSideEffects sideEffects)
     
     #region Stmts
     
-    private BoundStmt BindStmt(StmtSyntax syntax) => syntax switch
+    private BoundStmt BindStmt(StmtSyntax syntax)
     {
-        VarDeclSyntax varDeclSyntax => BindVarDecl(varDeclSyntax),
-        ExprStmtSyntax exprStmt => BindExprStmt(exprStmt.Expr),
-        WhileStmtSyntax whileStmtSyntax => BindWhile(whileStmtSyntax),
-    };
+        var boundStmt = syntax switch
+        {
+            VarDeclSyntax varDeclSyntax => BindVarDecl(varDeclSyntax),
+            ExprStmtSyntax exprStmt => BindExprStmt(exprStmt.Expr),
+            WhileStmtSyntax whileStmtSyntax => BindWhile(whileStmtSyntax),
+        };
+        
+        if (syntax is not ExprStmtSyntax)
+        {
+            // Expressions are already recorded by BindExpr
+            SideEffects.ResolveBoundNode(boundStmt);
+        }
+        
+        return boundStmt;
+    }
 
     private BoundStmt BindExprStmt(ExprSyntax exprSyntax)
     {
@@ -882,7 +893,7 @@ public sealed class Binder(Scope scope, BinderSideEffects sideEffects)
             ErrorExprSyntax errorExprSyntax => new BoundError(ErrorType, errorExprSyntax),
             FunNameSyntax => throw new UnreachableException(),
         };
-        
+
         SideEffects.ResolveBoundNode(node);
         return node;
     }

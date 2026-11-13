@@ -3,4 +3,4 @@
 // Let bindings cannot be reassigned.
 let a = 1;
 a = 2;      //~error CannotAssign
-a = {};     //~error CannotAssign
+a = {};     //~error CannotAssign 

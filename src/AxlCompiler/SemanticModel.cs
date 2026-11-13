@@ -189,15 +189,18 @@ public sealed class SemanticModel(Compilation compilation)
             if (symbol.NameSyntax.Contains(token))
                 return symbol;
 
-            // Funs are the end, they have no members.
-            if (symbol is FunSymbol fun)
-                return TryDeclaredSymbolIn(fun, token);
-
-            // Search type parameters for types
-            if (symbol is TypeSymbol type)
+            // Type parameters, parameters etc are traversed by the symbols themselves. Only
+            // fun bodies are not (because they are no symbol :D), so if we are searching
+            // for a variable declaration, we need to do it in the fun body.
+            
+            // It might also be the case, that this funs body does not contain the local,
+            // in case of scripts or local funs. Because then the enclosing fun spans all
+            // of its children. Thus, if we don't find anything, we need to continue searching.
+            if (token.Parent is VarDeclSyntax varDeclSyntax && 
+                symbol is FunSymbol fun &&
+                TryDeclaredVariableInFun(fun, varDeclSyntax) is { } local)
             {
-                if (type.TypeParameters.FirstOrDefault(p => p.NameSyntax.Contains(token)) is { } typeParam)
-                    return typeParam;
+                return local;
             }
         }
 
@@ -206,18 +209,14 @@ public sealed class SemanticModel(Compilation compilation)
             .FirstOrDefault(s => s.NameSyntax.Contains(token));
     }
 
-    private Symbol? TryDeclaredSymbolIn(FunSymbol fun, Token token)
+    private Symbol? TryDeclaredVariableInFun(FunSymbol fun, VarDeclSyntax varDeclSyntax)
     {
-        // Declarations are found in type parameters, parameters or locals.
-        
-        if (fun.TypeParameters.FirstOrDefault(p => p.NameSyntax.Contains(token)) is { } typeParam)
-            return typeParam;
+        var sideEffects = new BinderSideEffects();
+        fun.Complete(sideEffects);
+        if (!sideEffects.BoundNodes.TryGetValue(varDeclSyntax, out var boundStmts) || boundStmts.Count == 0)
+            return null;
 
-        if (fun.Parameters.FirstOrDefault(p => p.NameSyntax.Contains(token)) is { } param)
-            return param;
-        
-        //TODO: Handle locals
-        return null;
+        return (boundStmts[^1] as BoundVarDecl)?.Variable;
     }
 
 

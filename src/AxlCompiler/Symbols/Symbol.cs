@@ -80,10 +80,13 @@ public closed class Symbol(Compilation compilation, string name, Symbol? owner)
         {
             yield return current;
 
-            foreach (var member in current.Members.Where(descendInto))
+            foreach (var member in current.MembersForTraversal().Where(descendInto))
                 stack.Push(member);
         }
     }
+
+    protected virtual IEnumerable<Symbol> MembersForTraversal()
+        => Members;
 
     public bool DeclarationContains(SourceLocation location)
         => DeclaringSyntax.Any(syntax => syntax.Location.Contains(location));

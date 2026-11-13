@@ -5,14 +5,15 @@
 
 # Now
 
+* [ ] GoTo Def (SymbolFor)
+
+
 * Bind per fun/script body
   * Cache body -> BoundBody
   * exhaustive switch on BoundBodyFor(Symbol) (might add exprs later or something)
     * Also, fun offer the body anyway already :).
   * map Syntax -> *one* BoundNode (pick most current from side effects)
   * Should resolvers bind concrete nodes. ColorColor cases?
-
-* DeclaredSymbolFor: Find locals (record in BindStmt, find in body)
 
 * Scope retrieval
   * They needs their scope children
@@ -28,7 +29,6 @@
     * Insert []
     * Insert ()
 
-* [ ] GoTo Def (ReferencedSymbolFor + NameSyntax)
 * [ ] Rename (about the same)
 * [ ] Document Highlight
   * FindReferences(SourceLocation? scope) =

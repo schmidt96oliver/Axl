@@ -48,7 +48,7 @@ public class ScriptSymbol(SyntaxTree syntax, Scope enclosingScope)
         } 
     }
 
-    public SyntheticFunSymbol Fun
+    public ScriptFunSymbol Fun
     {
         get
         {
@@ -61,13 +61,9 @@ public class ScriptSymbol(SyntaxTree syntax, Scope enclosingScope)
                 // Trigger Member completion, so we get the usings scope
                 _ = Members;
                 Debug.Assert(_lazyUsingsScope is not null);
+
+                field = new ScriptFunSymbol(syntax.FileSyntax, _lazyUsingsScope);
                 
-                var binder = new Binder(_lazyUsingsScope, _sideEffects);
-
-                field = new SyntheticFunSymbol(name: "", owner: this, isPublic: false);
-                field.SetSignature(selfParameter: null, [], binder.Scope.Compilation.BaseLibrary.Unit);
-                field.SetBody(binder.EnterFunSignature(field).BindScriptBody(syntax.FileSyntax));
-
                 _isBindingScriptFun = false;
             }
 
@@ -76,11 +72,18 @@ public class ScriptSymbol(SyntaxTree syntax, Scope enclosingScope)
     }
 
     /// <inheritdoc />
+    protected override IEnumerable<Symbol> MembersForTraversal()
+        // Members first, then the fun so members are found first.
+        // This is better, because the fun will span the entire file syntax
+        // and searching that way, will find the members first.
+        => [.. Members, Fun];
+    
+    /// <inheritdoc />
     public override void Complete(BinderSideEffects sideEffects)
     {
         foreach (var member in Members)
             member.Complete(sideEffects);
-        _ = Fun;
+        Fun.Complete(sideEffects);
         _lazyUsingsScope?.Complete(sideEffects);
         
         sideEffects.MergeWith(_sideEffects);

@@ -35,10 +35,6 @@ public partial class SemanticModelTests
 
         private string? CheckSymbolAgainstIdToken(Symbol? symbol, Token idToken)
         {
-            //TODO: Handle locals
-            if (idToken.Parent is VarDeclSyntax)
-                return null;
-            
             if (symbol is null)
                 return "GAP! No declared symbol!";
 
