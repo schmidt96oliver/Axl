@@ -3,6 +3,7 @@ using System.Diagnostics;
 using AxlCompiler.Binding;
 using AxlCompiler.Binding.Scopes;
 using AxlCompiler.Syntax;
+using AxlCompiler.Syntax.Tree;
 
 namespace AxlCompiler.Symbols;
 
@@ -57,7 +58,7 @@ public sealed class SourceNamespaceSymbol(
             
             field =
             [
-                .. Declaration.SyntaxTrees.SelectMany(tree => BindNamespaceFile(tree)),
+                .. Declaration.MemberRoots.SelectMany(memberRoot => BindNamespaceFile(memberRoot)),
                 .. Declaration.Children.Select(binder.BindNamespaceDeclaration)
             ];
 
@@ -71,9 +72,9 @@ public sealed class SourceNamespaceSymbol(
 
             return field;
 
-            ImmutableArray<Symbol> BindNamespaceFile(SyntaxTree tree)
+            ImmutableArray<Symbol> BindNamespaceFile(FileSyntax memberRoot)
             {
-                var result = binder.BindNamespaceFile(tree, out var scope);
+                var result = binder.BindNamespaceFile(memberRoot, out var scope);
                 scopes.Add(scope);
                 return result;
             }

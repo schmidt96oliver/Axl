@@ -246,23 +246,28 @@ public sealed class Binder(Scope scope, BinderSideEffects sideEffects)
             if (tree.FileSyntax.NamespaceDecl is not NamespaceDeclSyntax syntax)
                 continue;
 
-            // Namespace names have multiple parts "A.B.C" and each parts needs
-            // to declare a new namespace, even if it doesn't have any syntax.
+            // Namespace names have multiple parts "A.B.C" and each part needs
+            // to declare a new namespace. "A" and "A.B" are seen as declared
+            // inside this file too.
             
             var decl = rootNamespaceDeclaration;
-            foreach (var namePart in syntax.Name.Parts.Select(t => t.Text.ToString()))
+            foreach (var namePart in syntax.Name.Parts)
             {
                 // For an empty name, always insert a new namespace,
                 // don't group them together.
+                var name = namePart.Text.ToString();
                 
-                var child = decl.TryGetChild(namePart);
-                if (child is null || namePart is "")
-                    child = decl.AddChild(namePart);
-
+                var child = decl.TryGetChild(name);
+                if (child is null || name is "")
+                    child = decl.AddChild(name);
+                child.AddSyntaxRef(tree, namePart);
+                
                 decl = child;
             }
             
-            decl.AddSyntaxTree(tree);
+            // Only the rightmost namespace gets the members declared in this file.
+            
+            decl.AddMemberRoot(tree.FileSyntax);
         }
 
         return rootNamespaceDeclaration.ToNamespaceDeclaration();
@@ -300,12 +305,12 @@ public sealed class Binder(Scope scope, BinderSideEffects sideEffects)
             SideEffects.ReportError(new Diagnostic.NamespaceAlreadyDeclared(declaration));
             
             // If base namespace is declared again in spite of an error, that
-            // would lead to the Compilation finding ambigous references to
+            // would lead to the Compilation finding ambiguous references to
             // it, which create a massive amount of followup errors. Thus,
             // empty its name.
             if (declaration.Name is Names.BaseNamespace)
             {
-                var emptyNameDeclaration = new NamespaceDeclaration("", declaration.Children, declaration.SyntaxTrees);
+                var emptyNameDeclaration = declaration with { Name = "" };
                 return new SourceNamespaceSymbol(Scope.Compilation, emptyNameDeclaration, Scope.Owner, Scope, isRoot: false);
             }
         }
@@ -313,21 +318,21 @@ public sealed class Binder(Scope scope, BinderSideEffects sideEffects)
         return new SourceNamespaceSymbol(Scope.Compilation, declaration, Scope.Owner, Scope, isRoot: false);
     }
     
-    public ImmutableArray<Symbol> BindNamespaceFile(SyntaxTree syntax, out LazyUsingsScope usingsScope)
+    public ImmutableArray<Symbol> BindNamespaceFile(FileSyntax memberRoot, out LazyUsingsScope usingsScope)
     {
         // In a namespace file, the first declaration must be the namespace
         // syntax.
-        var syntaxNodes = syntax.FileSyntax.SyntaxNodes().ToImmutableArray();
+        var syntaxNodes = memberRoot.SyntaxNodes().ToImmutableArray();
         Debug.Assert(syntaxNodes[0] is NamespaceDeclSyntax);
 
         // The scope is lazy and will be completed by the caller.
         // We cannot complete it here, because it might look up inside this namespace's members.
-        usingsScope = new LazyUsingsScope(Scope, [.. syntax.FileSyntax.UsingDirectives]);
+        usingsScope = new LazyUsingsScope(Scope, [.. memberRoot.UsingDirectives]);
         var usingsBinder = WithScope(usingsScope);
         
         // Declarations
         var symbols = ImmutableArray.CreateBuilder<Symbol>();
-        foreach (var node in syntax.FileSyntax.SyntaxNodes())
+        foreach (var node in memberRoot.SyntaxNodes())
         {
             switch (node)
             {
