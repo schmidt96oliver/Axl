@@ -303,16 +303,6 @@ public sealed class Binder(Scope scope, BinderSideEffects sideEffects)
             // The namespace is being declared on global or root namespace
             // but is already declared in a referenced compilation.
             SideEffects.ReportError(new Diagnostic.NamespaceAlreadyDeclared(declaration));
-            
-            // If base namespace is declared again in spite of an error, that
-            // would lead to the Compilation finding ambiguous references to
-            // it, which create a massive amount of followup errors. Thus,
-            // empty its name.
-            if (declaration.Name is Names.BaseNamespace)
-            {
-                var emptyNameDeclaration = declaration with { Name = "" };
-                return new SourceNamespaceSymbol(Scope.Compilation, emptyNameDeclaration, Scope.Owner, Scope, isRoot: false);
-            }
         }
 
         return new SourceNamespaceSymbol(Scope.Compilation, declaration, Scope.Owner, Scope, isRoot: false);

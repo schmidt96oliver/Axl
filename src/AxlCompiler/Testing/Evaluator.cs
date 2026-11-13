@@ -26,11 +26,15 @@ public sealed class Evaluator
     private readonly List<FailedCheck> _failedChecks = [];
     private readonly TestFile _testFile;
     private readonly Compilation _compilation;
+    private readonly bool _ignoreGlobalDiagnostics;
 
     private Evaluator(TestFile testFile, Compilation compilation)
     {
         _testFile = testFile;
         _compilation = compilation;
+
+        _ignoreGlobalDiagnostics =
+            _testFile.Annotations.Any(a => a.Kind is AnnotationKind.IgnoreGlobalDiagnosticsDirective);
     }
 
     public static Evaluation Evaluate(TestFile testFile)
@@ -132,7 +136,8 @@ public sealed class Evaluator
         {
             if (diagnostic.Locations.Length == 0)
             {
-                _failedChecks.Add(new FailedCheck(0, $"Global diagnostic: \'{diagnostic.Id}\'"));
+                if (!_ignoreGlobalDiagnostics)
+                    _failedChecks.Add(new FailedCheck(0, $"Global diagnostic: \'{diagnostic.Id}\'"));
                 continue;
             }
             

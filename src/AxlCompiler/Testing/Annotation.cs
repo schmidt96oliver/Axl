@@ -6,6 +6,8 @@ public enum AnnotationKind
 {
     CheckDirective,
     RunDirective,
+    IgnoreGlobalDiagnosticsDirective,
+    
     ExpectOutput,
     ExpectError,
     ExpectLint,

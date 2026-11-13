@@ -203,6 +203,13 @@ public sealed class TestFile
                 Prefix: location,
                 Text: SourceLocation.EmptyAfter(location));
         }
+        
+        if (isSingleLine && text.TrimEnd() is "//@ignore-global-diagnostics")
+        {
+            return new Annotation(AnnotationKind.IgnoreGlobalDiagnosticsDirective,
+                Prefix: location,
+                Text: SourceLocation.EmptyAfter(location));
+        }
 
         if (text.StartsWith("//@"))
             return null;

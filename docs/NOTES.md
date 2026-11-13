@@ -61,6 +61,9 @@
 
 * Mir: StructInit as ImmutableArray<Operand> ordered from declaration/member order. No map
 
+* Taxl Lsp Completion: Annotation completion and Diagnostic IDs after //~error/lint
+* Annotation Completion: AnnotationSymbol and BaseLibrary.Annotations
+
 # Milestones
 
 **Panic**: `1/0` panics, return code, taxl panic, Assert tests

@@ -1,5 +1,9 @@
 ﻿//@check
 
+// Multiple bases will lead to the compilation getting ambiguous or no
+// references to symbols it needs, so we must disregard all global diagnostics.
+//@ignore-global-diagnostics
+
 // Namespaces are open only across the same compilation and
 // must not redeclare namespaces of dependencies. This is mainly
 // to avoid merging logic in my Compilation :D. But it also
