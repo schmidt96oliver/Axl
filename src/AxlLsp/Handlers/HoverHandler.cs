@@ -1,5 +1,6 @@
 ﻿using AxlCompiler;
 using AxlCompiler.Symbols;
+using AxlCompiler.Syntax;
 using AxlCompiler.Syntax.Tree;
 using AxlLsp.Projects;
 using OmniSharp.Extensions.LanguageServer.Protocol.Client.Capabilities;
@@ -31,14 +32,10 @@ public class HoverHandler : HoverHandlerBase
             return Task.FromResult(DebugBoundNodeHover(context));
 
         var word = context.TouchingWord;
-        if (word is null) return Task.FromResult<Hover?>(null);
-
-        //TODO: Parent NameRef => ReferencedSymbolFor
-        //                   _ => DeclaredSymbolFor
-        if (word.Parent is not NameRefSyntax nameRef)
+        if (word?.Kind is not TokenKind.Identifier) 
             return Task.FromResult<Hover?>(null);
 
-        var symbol = axlLocation.Compilation.SemanticModel.ReferencedSymbolFor(nameRef);
+        var symbol = axlLocation.Compilation.SemanticModel.SymbolFor(word);
 
         if (HoverTextFor(symbol) is { } markup)
         {

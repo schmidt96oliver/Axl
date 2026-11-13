@@ -133,10 +133,10 @@ public class SemanticTokensHandler : SemanticTokensHandlerBase
         if (token.Parent?.Parent is AnnotationSyntax)
             return [(token.Parent.Parent.Location, SemanticTokenType.Decorator)];
 
-        if (token.Kind is not TokenKind.Identifier || token.Parent is not NameRefSyntax nameRef)
+        if (token.Kind is not TokenKind.Identifier)
             return [];
         
-        var reference = project.Compilation.SemanticModel.ReferencedSymbolFor(nameRef);
+        var reference = project.Compilation.SemanticModel.SymbolFor(token);
         
         if (reference.Symbols.All(s => s is VariableSymbol))
             return [(token.Location, SemanticTokenType.Variable)];

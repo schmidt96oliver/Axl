@@ -5,10 +5,6 @@
 
 # Now
 
-* How to walk symbol tree for syntax node?
-  * Clarify DeclaringSyntaxes
-  * Maybe add NameSyntax already
-
 * Bind per fun/script body
   * Cache body -> BoundBody
   * exhaustive switch on BoundBodyFor(Symbol) (might add exprs later or something)
@@ -16,11 +12,7 @@
   * map Syntax -> *one* BoundNode (pick most current from side effects)
   * Should resolvers bind concrete nodes. ColorColor cases?
 
-* Add `SemanticModel.DeclaredSymbolFor(IdentifierToken)`
-  * Symbol tree walk (for struct, fun, field, type parameter)
-  * parameter: Inside fun****
-  * let/var: Record in BindStmt, bind the body
-  * namespace: walk name parts
+* DeclaredSymbolFor: Find locals (record in BindStmt, find in body)
 
 * Scope retrieval
   * They needs their scope children

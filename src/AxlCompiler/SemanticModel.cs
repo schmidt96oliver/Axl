@@ -57,8 +57,23 @@ public sealed class SemanticModel(Compilation compilation)
         return null;
     }
 
-    public SymbolReference ReferencedSymbolFor(NameRefSyntax syntax)
-        => TryReferencedSymbolFor(syntax) ?? new SymbolReference.Unresolved([], UnresolvedSymbolReason.NotFound);
+    public SymbolReference SymbolFor(Token idToken)
+    {
+        Guard.MustBe(idToken.Kind is TokenKind.Identifier);
+
+        if (idToken.Text is "")
+            return new SymbolReference.Unresolved([], UnresolvedSymbolReason.NotFound);
+
+        if (idToken.Parent is NameRefSyntax nameRef)
+        {
+            return TryReferencedSymbolFor(nameRef) ??
+                   new SymbolReference.Unresolved([], UnresolvedSymbolReason.NotFound);
+        }
+
+        return TryDeclaredSymbolFor(idToken) is { } symbol
+            ? new SymbolReference.Resolved(symbol)
+            : new SymbolReference.Unresolved([], UnresolvedSymbolReason.NotFound);
+    }
 
     /// <summary>
     /// Returns the referenced symbol, but <c>null</c> if it
@@ -162,8 +177,49 @@ public sealed class SemanticModel(Compilation compilation)
         var fieldInit = structInit.FieldInits.First(init => init.Field.Name == name);
         return new SymbolReference.Resolved(fieldInit.Field);
     }
-    
-    
+
+
+    internal Symbol? TryDeclaredSymbolFor(Token token)
+    {
+        if (token.Kind is not TokenKind.Identifier || token.Parent is NameRefSyntax)
+            return null;
+
+        foreach (var symbol in compilation.TraverseSymbols(descendInto: s => s.DeclarationContains(token.Location)))
+        {
+            if (symbol.NameSyntax.Contains(token))
+                return symbol;
+
+            // Funs are the end, they have no members.
+            if (symbol is FunSymbol fun)
+                return TryDeclaredSymbolIn(fun, token);
+
+            // Search type parameters for types
+            if (symbol is TypeSymbol type)
+            {
+                if (type.TypeParameters.FirstOrDefault(p => p.NameSyntax.Contains(token)) is { } typeParam)
+                    return typeParam;
+            }
+        }
+
+        return compilation
+            .TraverseSymbols(descendInto: s => s.DeclarationContains(token.Location))
+            .FirstOrDefault(s => s.NameSyntax.Contains(token));
+    }
+
+    private Symbol? TryDeclaredSymbolIn(FunSymbol fun, Token token)
+    {
+        // Declarations are found in type parameters, parameters or locals.
+        
+        if (fun.TypeParameters.FirstOrDefault(p => p.NameSyntax.Contains(token)) is { } typeParam)
+            return typeParam;
+
+        if (fun.Parameters.FirstOrDefault(p => p.NameSyntax.Contains(token)) is { } param)
+            return param;
+        
+        //TODO: Handle locals
+        return null;
+    }
+
 
     private BinderSideEffects? ProbeAt(SyntaxTree tree, int position)
     {

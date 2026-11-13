@@ -2,6 +2,7 @@
 using AxlCompiler;
 using AxlCompiler.Diagnostics;
 using AxlCompiler.Symbols;
+using AxlCompiler.Syntax;
 using AxlCompiler.Syntax.Tree;
 using AxlCompiler.Testing;
 using AxlCompiler.Text;
