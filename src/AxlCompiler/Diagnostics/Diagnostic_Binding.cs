@@ -359,14 +359,6 @@ public partial record Diagnostic
             + (Candidates.Length > 5 ? $"... and {Candidates.Length - 5} more." : "");
     }
 
-    public sealed record CannotShadow(Symbol ShadowedSymbol, IdentifierToken NameSyntax) : Error
-    {
-        public override ImmutableArray<SourceLocation> Locations => [NameSyntax.Location];
-
-        public override string Message
-            => $"‘{ShadowedSymbol.Name}‘ is already declared on this scope. Only variables can be shadowed.";
-    }
-
     public sealed record MissingReturnValue(FunSymbol Fun, SyntaxNode Syntax) : Error
     {
         public override ImmutableArray<SourceLocation> Locations => [Syntax.Location];

@@ -306,8 +306,6 @@ public sealed class SemanticModel(Compilation compilation)
     {
         var symbol = compilation.Scripts.Concat(compilation.RootNamespace.Members)
             .FirstOrDefault(s => s.DeclarationContains(location));
-        if (symbol is null)
-            compilation.Complete(sideEffects);
 
         while (symbol is not null)
         {

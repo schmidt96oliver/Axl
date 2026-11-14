@@ -826,11 +826,6 @@ public sealed class Binder(Scope scope, BinderSideEffects sideEffects)
             CheckType(boundInitializer, variableType);
         }
 
-        // Accept shadowing only if it's another variable.
-        var lookupResult = Scope.Lookup(syntax.Name.Identifier).FirstOrDefault();
-        if (lookupResult is not (null or VariableSymbol))
-            return BindError(syntax, new Diagnostic.CannotShadow(lookupResult, syntax.Name));
-        
         var variable = new VariableSymbol(
             syntax.Name.Identifier, 
             Scope.OwnerAsFun ?? throw new InvalidOperationException("Values can only be bound on fun bodies."),

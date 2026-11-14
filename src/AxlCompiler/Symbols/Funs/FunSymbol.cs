@@ -58,10 +58,6 @@ public closed class FunSymbol(Compilation compilation, string name, Symbol? owne
     /// </summary>
     public abstract bool IsReturnMut { get; }
 
-    /// <inheritdoc />
-    protected virtual IEnumerable<Symbol> MembersForTraversal()
-        => [.. TypeParameters, .. Parameters, .. Members];
-    
     public FunSymbol Specialize(ImmutableArray<TypeSymbol> typeArguments)
     {
         Guard.MustBe(TypeArguments.SequenceEqual(TypeParameters), "For specialization, the fun must still be open.");

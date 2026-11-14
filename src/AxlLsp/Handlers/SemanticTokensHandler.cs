@@ -138,7 +138,7 @@ public class SemanticTokensHandler : SemanticTokensHandlerBase
         
         var reference = project.Compilation.SemanticModel.SymbolFor(token);
         
-        if (reference.Symbols.All(s => s is VariableSymbol))
+        if (reference.Symbols.All(s => s is LocalSymbol))
             return [(token.Location, SemanticTokenType.Variable)];
         
         if (reference.Symbols.All(s => s is TypeSymbol))

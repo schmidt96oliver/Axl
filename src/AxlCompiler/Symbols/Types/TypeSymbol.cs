@@ -39,11 +39,6 @@ public closed class TypeSymbol(Compilation compilation, string name, Symbol? own
         }
     }
 
-    /// <inheritdoc />
-    protected virtual IEnumerable<Symbol> MembersForTraversal()
-        => [.. TypeParameters, .. Members];
-
-
     public override TypeSymbol Substitute(TypeMap map)
     {
         if (OriginalDefinition is not TypeDefinitionSymbol originalDefinition)
