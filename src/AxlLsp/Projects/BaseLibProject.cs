@@ -10,7 +10,7 @@ namespace AxlLsp.Projects;
 
 public class BaseLibProject : IProject
 {
-    private const string PathName = @"C:\Users\schmi\source\Axl\src\BaseLib";
+    private const string PathName = @"C:\Users\schmi\Source\Axl\src\BaseLib";
 
     private FrozenDictionary<DocumentUri, SyntaxTree> _treeByUri;
     

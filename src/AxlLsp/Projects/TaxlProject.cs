@@ -30,7 +30,7 @@ public sealed class TaxlProject : IProject
         ProjectStore.BaseLibraryProject.Updated += ReloadBaseLib;
     }
     
-    public static IProject From(DocumentUri uri, string text)
+    public static TaxlProject From(DocumentUri uri, string text)
     {
         var sourceText = SourceText.From(text, uri.GetFileSystemPath());
         var testFile = TestFile.From(sourceText);

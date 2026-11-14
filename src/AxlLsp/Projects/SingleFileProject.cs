@@ -40,7 +40,7 @@ public sealed class SingleFileProject : IProject
     /// <inheritdoc />
     public void Close()
     {
-        Updated -= ReloadBaseLib;
+        ProjectStore.BaseLibraryProject.Updated -= ReloadBaseLib;
     }
 
     /// <inheritdoc />
