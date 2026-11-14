@@ -59,7 +59,7 @@ public closed class FunSymbol(Compilation compilation, string name, Symbol? owne
     public abstract bool IsReturnMut { get; }
 
     /// <inheritdoc />
-    protected override IEnumerable<Symbol> MembersForTraversal()
+    protected virtual IEnumerable<Symbol> MembersForTraversal()
         => [.. TypeParameters, .. Parameters, .. Members];
     
     public FunSymbol Specialize(ImmutableArray<TypeSymbol> typeArguments)

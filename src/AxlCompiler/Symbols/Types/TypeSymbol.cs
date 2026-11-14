@@ -40,7 +40,7 @@ public closed class TypeSymbol(Compilation compilation, string name, Symbol? own
     }
 
     /// <inheritdoc />
-    protected override IEnumerable<Symbol> MembersForTraversal()
+    protected virtual IEnumerable<Symbol> MembersForTraversal()
         => [.. TypeParameters, .. Members];
 
 

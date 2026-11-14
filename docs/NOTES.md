@@ -5,6 +5,8 @@
 
 # Now
 
+* Claude review on TryDeclaredSymbolFor
+
 * [ ] GoTo Def (SymbolFor)
 
 
@@ -40,10 +42,10 @@
 
 # Questions / Little ones
 
+* ?? BindLookupResult: Report WrongKind error before anything else; remove isThisField in BindFieldAccess
+
 * ?? Miri: `Environment` -> `ActivationFrame` with .GetRef that throws if exited
 * ?? Miri: Store reference as Root (ActivationFrame, LocalId) + Path (FieldSymbol[]). See Claude, think why?
-
-* ?? Binder: BoundParameter and BoundSelf again?
 
 * ?? LayoutGraphNode to TypeDefinitionSymbol
 
@@ -55,8 +57,6 @@
 
 * Taxl Lsp Completion: Annotation completion and Diagnostic IDs after //~error/lint
 * Annotation Completion: AnnotationSymbol and BaseLibrary.Annotations
-
-* ?? Make LocalSymbol, Variable and Parameter derive from it; BoundLocalRef
 
 # Milestones
 

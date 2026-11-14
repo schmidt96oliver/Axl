@@ -1,6 +1,5 @@
 ﻿using System.Collections.Immutable;
 using System.Diagnostics;
-using AxlCompiler.Diagnostics;
 using AxlCompiler.Binding;
 using AxlCompiler.Binding.BoundTree;
 using AxlCompiler.Binding.Scopes;
@@ -184,32 +183,77 @@ public sealed class SemanticModel(Compilation compilation)
         if (token.Kind is not TokenKind.Identifier || token.Parent is NameRefSyntax)
             return null;
 
-        foreach (var symbol in compilation.TraverseSymbols(descendInto: s => s.DeclarationContains(token.Location)))
+        var symbol = compilation.Scripts.Concat(compilation.RootNamespace.Members)
+            .FirstOrDefault(s => s.DeclarationContains(token.Location));
+        while (symbol is not null)
         {
+            Debug.Assert(symbol.DeclarationContains(token.Location));
+
             if (symbol.NameSyntax.Contains(token))
                 return symbol;
 
-            // Type parameters, parameters etc are traversed by the symbols themselves. Only
-            // fun bodies are not (because they are no symbol :D), so if we are searching
-            // for a variable declaration, we need to do it in the fun body.
-            
-            // It might also be the case, that this funs body does not contain the local,
-            // in case of scripts or local funs. Because then the enclosing fun spans all
-            // of its children. Thus, if we don't find anything, we need to continue searching.
-            if (token.Parent is VarDeclSyntax varDeclSyntax && 
-                symbol is FunSymbol fun &&
-                TryDeclaredVariableInFun(fun, varDeclSyntax) is { } local)
+            switch (symbol)
             {
-                return local;
+                // Structs have type parameters
+                case StructSymbol structSymbol when structSymbol.DeclarationSyntax
+                    .TypeParameterList?.Location.Contains(token.Location) == true:
+                {
+                    if (token.Parent is not TypeParamSyntax) return null;
+                    
+                    return structSymbol.TypeParameters.FirstOrDefault(typeParam =>
+                        typeParam.NameSyntax.Contains(token));
+                }
+
+                // Scripts have members and a script fun. Note that the script fun
+                // will span the entire script.
+                case ScriptSymbol script:
+                {
+                    symbol = script.Members.FirstOrDefault(member => member.DeclarationContains(token.Location)) ??
+                             script.Fun;
+                    break;
+                }
+
+                // SourceFuns have type parameters and normal parameters
+                case SourceFunSymbol sourceFun:
+                {
+                    if (sourceFun.DeclarationSyntax.TypeParameterList?.Location.Contains(token.Location) == true)
+                    {
+                        if (token.Parent is not TypeParamSyntax) return null;
+                        return sourceFun.TypeParameters.FirstOrDefault(typeParam =>
+                            typeParam.NameSyntax.Contains(token));
+                    }
+
+                    if (sourceFun.DeclarationSyntax.ParameterList.Location.Contains(token.Location))
+                    {
+                        if (token.Parent is not ParamSyntax) return null;
+                        return sourceFun.Parameters.FirstOrDefault(param => param.NameSyntax.Contains(token));
+                    }
+
+                    if (token.Parent is VarDeclSyntax varDecl)
+                        return TryDeclaredLocalInFunBody(sourceFun, varDecl);
+
+                    return null;
+                }
+                    
+                // Script funs only have a body
+                case ScriptFunSymbol scriptFun:
+                {
+                    if (token.Parent is VarDeclSyntax varDecl)
+                        return TryDeclaredLocalInFunBody(scriptFun, varDecl);
+                    return null;
+                }
+                    
+                // Anything else (namespace e.g.), we can just search their members.
+                default:
+                    symbol = symbol.Members.FirstOrDefault(member => member.DeclarationContains(token.Location));
+                    break;
             }
         }
-
-        return compilation
-            .TraverseSymbols(descendInto: s => s.DeclarationContains(token.Location))
-            .FirstOrDefault(s => s.NameSyntax.Contains(token));
+        
+        return null;
     }
 
-    private Symbol? TryDeclaredVariableInFun(FunSymbol fun, VarDeclSyntax varDeclSyntax)
+    private static VariableSymbol? TryDeclaredLocalInFunBody(FunSymbol fun, VarDeclSyntax varDeclSyntax)
     {
         var sideEffects = new BinderSideEffects();
         fun.Complete(sideEffects);
@@ -260,19 +304,24 @@ public sealed class SemanticModel(Compilation compilation)
     
     private static void CompleteEnclosingSymbol(SourceLocation location, Compilation compilation, BinderSideEffects sideEffects)
     {
-        var viableSymbols = compilation
-            .TraverseSymbols(descendInto: s => s.DeclarationContains(location))
-            .Where(s => s.Members.All(member => !member.DeclarationContains(location)));
+        var symbol = compilation.Scripts.Concat(compilation.RootNamespace.Members)
+            .FirstOrDefault(s => s.DeclarationContains(location));
+        if (symbol is null)
+            compilation.Complete(sideEffects);
 
-        var hasCompleted = false;
-        foreach (var symbol in viableSymbols)
+        while (symbol is not null)
         {
-            symbol.Complete(sideEffects);
-            hasCompleted = true;
+            var next = symbol.Members.FirstOrDefault(member => member.DeclarationContains(location));
+            if (next is null)
+            {
+                symbol.Complete(sideEffects);
+                return;
+            }
+
+            symbol = next;
         }
         
-        if (!hasCompleted)
-            compilation.Complete(sideEffects);
+        compilation.Complete(sideEffects);
     }
     
     private static Token? TryFindProbeToken(SyntaxNode node, int position, string probeText)

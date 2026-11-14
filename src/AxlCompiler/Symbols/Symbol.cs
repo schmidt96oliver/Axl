@@ -64,30 +64,6 @@ public closed class Symbol(Compilation compilation, string name, Symbol? owner)
     public virtual ImmutableArray<Symbol> LookupMembers(string name)
         => [.. Members.Where(s => s.Name == name)];
 
-    /// <summary>
-    /// Traverse this symbol and its member in pre-order depth-first order,
-    /// Includes this symbol. Only descends into a symbol (including this one),
-    /// if <paramref name="descendInto"/> evaluates <c>true</c>. Self is not checked
-    /// against <paramref name="descendInto"/>. Note that members
-    /// have no inherent order.
-    /// </summary>
-    public IEnumerable<Symbol> Traverse(Func<Symbol, bool> descendInto)
-    {
-        var stack = new Stack<Symbol>();
-        stack.Push(this);
-
-        while (stack.TryPop(out var current))
-        {
-            yield return current;
-
-            foreach (var member in current.MembersForTraversal().Where(descendInto))
-                stack.Push(member);
-        }
-    }
-
-    protected virtual IEnumerable<Symbol> MembersForTraversal()
-        => Members;
-
     public bool DeclarationContains(SourceLocation location)
         => DeclaringSyntax.Any(syntax => syntax.Location.Contains(location));
     

@@ -72,7 +72,7 @@ public class ScriptSymbol(SyntaxTree syntax, Scope enclosingScope)
     }
 
     /// <inheritdoc />
-    protected override IEnumerable<Symbol> MembersForTraversal()
+    protected virtual IEnumerable<Symbol> MembersForTraversal()
         // Members first, then the fun so members are found first.
         // This is better, because the fun will span the entire file syntax
         // and searching that way, will find the members first.
