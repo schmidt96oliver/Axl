@@ -5,11 +5,6 @@
 
 # Now
 
-* Claude review on TryDeclaredSymbolFor
-
-* [ ] GoTo Def (SymbolFor)
-
-
 * Bind per fun/script body
   * Cache body -> BoundBody
   * exhaustive switch on BoundBodyFor(Symbol) (might add exprs later or something)
@@ -31,14 +26,7 @@
     * Insert []
     * Insert ()
 
-* [ ] Rename (about the same)
-* [ ] Document Highlight
-  * FindReferences(SourceLocation? scope) =
-    (a) narrow search scope (block for local, fun for param, ...)
-    (b) search for identifier tokens with that name
-    (c) check against ReferencedSymbolFor
 
-* [ ] SignatureHelp (through BoundCallError)
 
 # Questions / Little ones
 
@@ -54,9 +42,6 @@
   * Call with mut return: ref is directly used and never again
 
 * Mir: StructInit as ImmutableArray<Operand> ordered from declaration/member order. No map
-
-* Taxl Lsp Completion: Annotation completion and Diagnostic IDs after //~error/lint
-* Annotation Completion: AnnotationSymbol and BaseLibrary.Annotations
 
 # Milestones
 
@@ -79,6 +64,13 @@
 **Enums/Exhaustiveness/Patterns**
 
 **Traits/Constraints**
+
+**More LSP**
+* Rename
+* SignatureHelp (through BoundCallError)
+* Inline Hints for inferred types (type args, variables)
+* Taxl Lsp Completion: Annotation completion and Diagnostic IDs after //~error/lint
+* Annotation Completion: AnnotationSymbol and BaseLibrary.Annotations
 
 # Loose Ends
 * Overload resolution specificity

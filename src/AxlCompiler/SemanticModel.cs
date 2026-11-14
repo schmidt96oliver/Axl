@@ -33,9 +33,7 @@ public sealed class SemanticModel(Compilation compilation)
     
     public SymbolReference SymbolFor(Token idToken)
     {
-        Guard.MustBe(idToken.Kind is TokenKind.Identifier);
-
-        if (idToken.Text is "")
+        if (idToken.Kind is not TokenKind.Identifier || idToken.Text is "")
             return new SymbolReference.Unresolved([], UnresolvedSymbolReason.NotFound, idToken.Location);
 
         if (idToken.Parent is NameRefSyntax nameRef)
@@ -242,6 +240,8 @@ public sealed class SemanticModel(Compilation compilation)
 
     public ImmutableArray<SymbolReference> FindReferences(Symbol symbol, SyntaxTree scope)
     {
+        symbol = symbol.OriginalDefinition;
+        
         // Narrow scope if possible
         var scopeLocation = symbol switch
         {
@@ -258,7 +258,7 @@ public sealed class SemanticModel(Compilation compilation)
                     scopeLocation.Value.Contains(t.Location) && t.Kind is TokenKind.Identifier &&
                     t.Text.SequenceEqual(symbol.Name))
                 .Select(SymbolFor)
-                .Where(s => s.Symbols.Contains(symbol))
+                .Where(s => s.Symbols.Any(inner => Equals(inner.OriginalDefinition, symbol)))
         ];
     }
     

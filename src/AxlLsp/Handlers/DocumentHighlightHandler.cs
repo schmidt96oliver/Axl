@@ -24,23 +24,35 @@ public class DocumentHighlightHandler : DocumentHighlightHandlerBase
             return Task.FromResult<DocumentHighlightContainer?>(null);
 
         var touchingWord = SyntaxContext.At(axlLocation).TouchingWord;
-        if (touchingWord is null ||
-            axlLocation.Compilation.SemanticModel.SymbolFor(touchingWord) is not SymbolReference.Resolved
-            {
-                Symbol: var symbol
-            })
+        if (touchingWord is null)
             return Task.FromResult<DocumentHighlightContainer?>(null);
 
-        var references = axlLocation.Compilation.SemanticModel
-            .FindReferences(symbol, scope: axlLocation.SyntaxTree)
+        var symbol = axlLocation.Compilation.SemanticModel.SymbolFor(touchingWord);
+        if (!ShouldShowReference(symbol))
+            return Task.FromResult<DocumentHighlightContainer?>(null);
+
+        var references = symbol.Symbols.SelectMany(s =>
+                axlLocation.Compilation.SemanticModel.FindReferences(s, scope: axlLocation.SyntaxTree))
+            .Where(ShouldShowReference)
             .Select(reference => ProjectStore.TryMapToLsp(reference.ReferenceLocation))
             .Where(lspLocation => lspLocation is not null && lspLocation.Uri == request.TextDocument.Uri)
             .Select(lspLocation => new DocumentHighlight()
             {
                 Range = lspLocation!.Range,
                 Kind = DocumentHighlightKind.Text,
-            });
-        
+            })
+            .ToList();
+
+        if (references.Count < 2)
+        {
+            // Only the current touching word (or none) is highlighted, and we can
+            // leave that away.
+            return Task.FromResult<DocumentHighlightContainer?>(null);
+        }
+
         return Task.FromResult(new DocumentHighlightContainer(references))!;
     }
+
+    private static bool ShouldShowReference(SymbolReference reference) =>
+        reference is SymbolReference.Resolved;
 }
