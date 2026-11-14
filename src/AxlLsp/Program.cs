@@ -14,6 +14,7 @@ var server = await LanguageServer.From(options => options
     .WithHandler<CompletionHandler>()
     .WithHandler<CodeActionHandler>()
     .WithHandler<ExecuteCommandHandler>()
+    .WithHandler<GotoDefinitionHandler>()
 );
 await server.WaitForExit;
 
