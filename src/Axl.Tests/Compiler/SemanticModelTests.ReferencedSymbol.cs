@@ -45,8 +45,8 @@ public partial class SemanticModelTests
             return symbolInfo switch
             {
                 null => "<NULL>",
-                SymbolReference.Resolved(var symbol) => $"Resolved: {symbol.FullDisplayText}",
-                SymbolReference.Unresolved(var candidates, var reason) => $"Unresolved ({reason}):\n   {
+                SymbolReference.Resolved(var symbol, _) => $"Resolved: {symbol.FullDisplayText}",
+                SymbolReference.Unresolved(var candidates, var reason, _) => $"Unresolved ({reason}):\n   {
                     string.Join("\n   ", candidates.Select(c => c.FullDisplayText))}"
             };
         }
@@ -81,14 +81,14 @@ public partial class SemanticModelTests
 
             var symbols = info switch
             {
-                SymbolReference.Resolved(var s) => [s],
-                SymbolReference.Unresolved(var c, _) => c
+                SymbolReference.Resolved(var s, _) => [s],
+                SymbolReference.Unresolved(var c, _, _) => c
             };
             var wrongName = symbols.Where(s => s.Name != nameRef.Text.ToString()).ToList();
             if (wrongName.Count > 0)
                 return "Unexpected name on " + string.Join(", ", wrongName.Select(s => s.ShortDisplayText));
 
-            if (info is SymbolReference.Unresolved(var candidates, var reason))
+            if (info is SymbolReference.Unresolved(var candidates, var reason, _))
             {
                 return (reason, candidates.Length) switch
                 {

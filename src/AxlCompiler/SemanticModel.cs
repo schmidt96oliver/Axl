@@ -14,33 +14,7 @@ public sealed class SemanticModel(Compilation compilation)
 {
     private readonly Dictionary<(SyntaxTree, int), BinderSideEffects?> _probes = [];
     
-    /// <summary>
-    /// Returns all symbols that are visible at the start of the given
-    /// <paramref name="location"/>. All symbols that are returned
-    /// will be bound correctly, given a valid continuation.
-    /// </summary>
-    public ImmutableArray<Symbol> VisibleSymbolsAtUnmapped(SourceLocation location)
-        => VisibleSymbolsAtUnmapped(compilation.SyntaxTreeFor(location.SourceText), location.Start);
-
-    /// <summary>
-    /// Returns representations of all symbols that are visible at the given
-    /// <paramref name="position"/> inside the given <paramref name="tree"/>.
-    /// The returned symbols will not be part of the original compilation and
-    /// will not compare equal to their according symbols (hence, unmapped).
-    /// All symbols that are returned will be bound correctly, given a
-    /// valid continuation. 
-    /// </summary>
-    public ImmutableArray<Symbol> VisibleSymbolsAtUnmapped(SyntaxTree tree, int position)
-        => ProbeAt(tree, position)?.VisibleSymbolsAtProbe ?? [];
-
-
-    public Scope? TryScopeAtUnmapped(SourceLocation location)
-        => TryScopeAtUnmapped(compilation.SyntaxTreeFor(location.SourceText), location.Start);
     
-    public Scope? TryScopeAtUnmapped(SyntaxTree tree, int position)
-        => ProbeAt(tree, position)?.ScopeAtProbe;
-
-
     public BoundNode BoundNodeFor(ExprSyntax syntax) 
         => TryBoundNodeFor(syntax) ?? new BoundError(compilation.BaseLibrary.Error, syntax);
 
@@ -56,22 +30,23 @@ public sealed class SemanticModel(Compilation compilation)
         return null;
     }
 
+    
     public SymbolReference SymbolFor(Token idToken)
     {
         Guard.MustBe(idToken.Kind is TokenKind.Identifier);
 
         if (idToken.Text is "")
-            return new SymbolReference.Unresolved([], UnresolvedSymbolReason.NotFound);
+            return new SymbolReference.Unresolved([], UnresolvedSymbolReason.NotFound, idToken.Location);
 
         if (idToken.Parent is NameRefSyntax nameRef)
         {
             return TryReferencedSymbolFor(nameRef) ??
-                   new SymbolReference.Unresolved([], UnresolvedSymbolReason.NotFound);
+                   new SymbolReference.Unresolved([], UnresolvedSymbolReason.NotFound, idToken.Location);
         }
 
         return TryDeclaredSymbolFor(idToken) is { } symbol
-            ? new SymbolReference.Resolved(symbol)
-            : new SymbolReference.Unresolved([], UnresolvedSymbolReason.NotFound);
+            ? new SymbolReference.Resolved(symbol, idToken.Location)
+            : new SymbolReference.Unresolved([], UnresolvedSymbolReason.NotFound, idToken.Location);
     }
 
     /// <summary>
@@ -82,7 +57,7 @@ public sealed class SemanticModel(Compilation compilation)
     internal SymbolReference? TryReferencedSymbolFor(NameRefSyntax syntax)
     {
         if (syntax.Parent is AnnotationSyntax)
-            return new SymbolReference.Unresolved([], UnresolvedSymbolReason.NotFound);
+            return new SymbolReference.Unresolved([], UnresolvedSymbolReason.NotFound, syntax.Location);
 
         if (syntax.Parent is ArgSyntax arg && arg.Name == syntax)
             return ReferencedSymbolForNamedArgument(arg);
@@ -102,58 +77,60 @@ public sealed class SemanticModel(Compilation compilation)
 
         return boundNode switch
         {
-            IBoundSymbolRef symbolRef => new SymbolReference.Resolved(symbolRef.Symbol),
-            BoundTypeGroup typeGroup => ReferencedSymbolFor(typeGroup, bindableSyntax),
-            BoundFunGroup funGroup => ReferencedSymbolFor(funGroup, bindableSyntax),
-            BoundLookupError lookupError => new SymbolReference.Unresolved(lookupError.Candidates, lookupError.Reason),
+            IBoundSymbolRef symbolRef => new SymbolReference.Resolved(symbolRef.Symbol, syntax.Location),
+            BoundTypeGroup typeGroup => ReferencedSymbolFor(typeGroup, bindableSyntax, syntax),
+            BoundFunGroup funGroup => ReferencedSymbolFor(funGroup, bindableSyntax, syntax),
+            BoundLookupError lookupError => new SymbolReference.Unresolved(lookupError.Candidates, lookupError.Reason,
+                syntax.Location),
             _ => null
         };
     }
 
-    private SymbolReference ReferencedSymbolFor(BoundTypeGroup typeGroup, ExprSyntax syntax)
+    private SymbolReference ReferencedSymbolFor(BoundTypeGroup typeGroup, ExprSyntax syntax, NameRefSyntax nameSyntax)
     {
         if (syntax.Parent is CallExprSyntax callExprSyntax && callExprSyntax.Callee == syntax)
         {
             var boundCall = BoundNodeFor(callExprSyntax);
             if (boundCall is BoundStructInit structInit)
-                return new SymbolReference.Resolved(structInit.Type);
+                return new SymbolReference.Resolved(structInit.Type, nameSyntax.Location);
             if (boundCall is BoundStructInitError structInitError)
             {
                 // If there is only a single candidate that has its type
                 // parameters filled, it resolves correctly. Otherwise,
                 // it's unresolved (too many types or failed inference).
                 if (structInitError.Candidates is [{ HasFilledTypeParameters: true } singleType])
-                    return new SymbolReference.Resolved(singleType);
+                    return new SymbolReference.Resolved(singleType, nameSyntax.Location);
 
                 return new SymbolReference.Unresolved(
                     structInitError.Candidates.CastArray<Symbol>(),
-                    UnresolvedSymbolReason.NoApplicableType);
+                    UnresolvedSymbolReason.NoApplicableType, nameSyntax.Location);
             }
         }
 
         // Same as above
         if (typeGroup.Candidates is [{ HasFilledTypeParameters: true } single])
-            return new SymbolReference.Resolved(single);
+            return new SymbolReference.Resolved(single, nameSyntax.Location);
         
         return new SymbolReference.Unresolved(
             typeGroup.Candidates.CastArray<Symbol>(),
-            UnresolvedSymbolReason.Ambiguous);
+            UnresolvedSymbolReason.Ambiguous, nameSyntax.Location);
     }
 
-    private SymbolReference ReferencedSymbolFor(BoundFunGroup funGroup, ExprSyntax syntax)
+    private SymbolReference ReferencedSymbolFor(BoundFunGroup funGroup, ExprSyntax syntax, NameRefSyntax nameSyntax)
     {
         var callSyntax = syntax.Ancestors().OfType<CallExprSyntax>().FirstOrDefault();
         if (callSyntax is null || callSyntax.Callee != syntax)
-            return new SymbolReference.Unresolved(funGroup.Candidates.CastArray<Symbol>(), UnresolvedSymbolReason.NotUsable);
+            return new SymbolReference.Unresolved(funGroup.Candidates.CastArray<Symbol>(), UnresolvedSymbolReason.NotUsable,
+                nameSyntax.Location);
 
         if (BoundNodeFor(callSyntax) is not BoundCall boundCall)
         {
             // The fun group is not part of a call or it had an error.
             return new SymbolReference.Unresolved(funGroup.Candidates.CastArray<Symbol>(),
-                UnresolvedSymbolReason.NoApplicableOverload);
+                UnresolvedSymbolReason.NoApplicableOverload, nameSyntax.Location);
         }
 
-        return new SymbolReference.Resolved(boundCall.Fun);
+        return new SymbolReference.Resolved(boundCall.Fun, nameSyntax.Location);
     }
 
     private SymbolReference? ReferencedSymbolForNamedArgument(ArgSyntax syntax)
@@ -169,14 +146,13 @@ public sealed class SemanticModel(Compilation compilation)
         var bound = TryBoundNodeFor(callSyntax);
         if (bound is null) return null;
         if (bound is not BoundStructInit structInit)
-            return new SymbolReference.Unresolved([], UnresolvedSymbolReason.NotFound);
+            return new SymbolReference.Unresolved([], UnresolvedSymbolReason.NotFound, syntax.Name!.Location);
 
         Debug.Assert(syntax.Name is not null);
         var name = syntax.Name.Text.ToString();
         var fieldInit = structInit.FieldInits.First(init => init.Field.Name == name);
-        return new SymbolReference.Resolved(fieldInit.Field);
+        return new SymbolReference.Resolved(fieldInit.Field, syntax.Name!.Location);
     }
-
 
     internal Symbol? TryDeclaredSymbolFor(Token token)
     {
@@ -263,6 +239,55 @@ public sealed class SemanticModel(Compilation compilation)
         return (boundStmts[^1] as BoundVarDecl)?.Variable;
     }
 
+
+    public ImmutableArray<SymbolReference> FindReferences(Symbol symbol, SyntaxTree scope)
+    {
+        // Narrow scope if possible
+        var scopeLocation = symbol switch
+        {
+            LocalSymbol local => local.Owner.DeclaringSyntax.FirstOrDefault(s => s.Tree == scope)?.Location,
+
+            _ => new SourceLocation(scope.SourceText, scope.SourceText.Range)
+        };
+        if (scopeLocation is null)
+            return [];
+
+        return
+        [
+            .. scope.Tokens.Where(t =>
+                    scopeLocation.Value.Contains(t.Location) && t.Kind is TokenKind.Identifier &&
+                    t.Text.SequenceEqual(symbol.Name))
+                .Select(SymbolFor)
+                .Where(s => s.Symbols.Contains(symbol))
+        ];
+    }
+    
+
+    /// <summary>
+    /// Returns all symbols that are visible at the start of the given
+    /// <paramref name="location"/>. All symbols that are returned
+    /// will be bound correctly, given a valid continuation.
+    /// </summary>
+    public ImmutableArray<Symbol> VisibleSymbolsAtUnmapped(SourceLocation location)
+        => VisibleSymbolsAtUnmapped(compilation.SyntaxTreeFor(location.SourceText), location.Start);
+
+    /// <summary>
+    /// Returns representations of all symbols that are visible at the given
+    /// <paramref name="position"/> inside the given <paramref name="tree"/>.
+    /// The returned symbols will not be part of the original compilation and
+    /// will not compare equal to their according symbols (hence, unmapped).
+    /// All symbols that are returned will be bound correctly, given a
+    /// valid continuation. 
+    /// </summary>
+    public ImmutableArray<Symbol> VisibleSymbolsAtUnmapped(SyntaxTree tree, int position)
+        => ProbeAt(tree, position)?.VisibleSymbolsAtProbe ?? [];
+
+
+    public Scope? TryScopeAtUnmapped(SourceLocation location)
+        => TryScopeAtUnmapped(compilation.SyntaxTreeFor(location.SourceText), location.Start);
+    
+    public Scope? TryScopeAtUnmapped(SyntaxTree tree, int position)
+        => ProbeAt(tree, position)?.ScopeAtProbe;
 
     private BinderSideEffects? ProbeAt(SyntaxTree tree, int position)
     {

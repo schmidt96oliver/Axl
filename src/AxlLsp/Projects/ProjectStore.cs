@@ -135,6 +135,9 @@ public static class ProjectStore
 
     public static ProjectLocation? TryMapToAxl(DocumentUri uri, Position position)
         => TryMapToAxl(new Location { Uri = uri, Range = new Range(position, position) });
+    
+    public static ProjectLocation? TryMapToAxl(TextDocumentPositionParams positionParams)
+        => TryMapToAxl(positionParams.TextDocument.Uri, positionParams.Position);
 
     private static ProjectLocation? TryMapToAxl(IProject? project, Location lspLocation)
         => project is not null

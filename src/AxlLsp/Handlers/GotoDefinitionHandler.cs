@@ -19,7 +19,7 @@ public class GotoDefinitionHandler : DefinitionHandlerBase
     public override Task<LocationOrLocationLinks?> Handle(DefinitionParams request, CancellationToken cancellationToken)
     {
         var uri = request.TextDocument.Uri;
-        if (ProjectStore.TryMapToAxl(uri, request.Position) is not { } axlLocation)
+        if (ProjectStore.TryMapToAxl(request) is not { } axlLocation)
             return Task.FromResult<LocationOrLocationLinks?>(null);
 
         var syntaxContext = SyntaxContext.At(axlLocation);

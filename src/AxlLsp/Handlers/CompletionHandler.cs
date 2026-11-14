@@ -24,7 +24,7 @@ public sealed class CompletionHandler : CompletionHandlerBase
     /// <inheritdoc />
     public override Task<CompletionList> Handle(CompletionParams request, CancellationToken cancellationToken)
     {
-        var axlLocation = ProjectStore.TryMapToAxl(request.TextDocument.Uri, request.Position);
+        var axlLocation = ProjectStore.TryMapToAxl(request);
         if (axlLocation is null)
             return Task.FromResult(new CompletionList([]));
 
