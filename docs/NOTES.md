@@ -5,10 +5,6 @@
 
 # Now
 
-* Completion:
-    * Insert []
-    * Insert ()
-
 # Questions / Little ones
 
 * ?? BindLookupResult: Report WrongKind error before anything else; remove isThisField in BindFieldAccess
@@ -64,17 +60,7 @@
 
 # Later
 
-* ?? Drop initializers + definite assignment
 * Miri flat execution + stack trace + @StackTraceHidden
-* LSP Debug through Code Lens (show MIR through external file), Code Actions, Document Symbols (Syntax tree, Bound tree, Symbol tree)
-
-* More LSP
-  * Rename
-  * SignatureHelp (through BoundCallError)
-  * Inline Hints for inferred types (type args, variables)
-  * Taxl Lsp Completion: Annotation completion and Diagnostic IDs after //~error/lint
-  * Annotation Completion: AnnotationSymbol and BaseLibrary.Annotations
-  * Folding Ranges (should now work, because location mapping is fixed :D)
 
 # Ideas
 [Ideas](IDEAS.md)
@@ -86,11 +72,11 @@
 
 * Axl: Nested structs
   * Enclosing types instance members rejected (MemberOfEnclosingType)
-  * Nested type through instance rejected (or like ColorColor)
-  * Private nested type leaking through public fun rejected
 * Axl: `@derive(==)` and `@derive(ToString)`
 
-* LSP: Completion Context (SemanticModel and ad-hoc binding)
+* Axl: Drop initializers, definite assignment, maybe `let a = undefined;`
+
+* LSP: Signature Help, Folding Ranges, Taxl Annotation completion, Rename
 
 * refactor: Split (Lex)Token and SyntaxToken
   * Id => .Text

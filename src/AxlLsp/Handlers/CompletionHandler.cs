@@ -107,7 +107,7 @@ public sealed class CompletionHandler : CompletionHandlerBase
                 .GroupBy(s => s.Name);
             foreach (var symbolGrp in symbolsByName)
             {
-                if (MaybeMake(symbolGrp.Key, [.. symbolGrp]) is { } item)
+                if (MaybeMake(symbolGrp.Key, [.. symbolGrp], context) is { } item)
                     yield return item;
             }
         }
@@ -118,12 +118,12 @@ public sealed class CompletionHandler : CompletionHandlerBase
     // !!! These do _not_ map to the correct symbol type.
     
     
-    private static CompletionItem? MaybeMake(string name, ImmutableArray<Symbol> symbols)
+    private static CompletionItem? MaybeMake(string name, ImmutableArray<Symbol> symbols, SyntaxContext context)
     {
         if (symbols.All(s => s is FunSymbol))
             return MakeFunItem(name, [.. symbols.Cast<FunSymbol>()]);
         if (symbols.All(s => s is TypeSymbol))
-            return MakeTypeItem(name, [.. symbols.Cast<TypeSymbol>()]);
+            return MakeTypeItem(name, [.. symbols.Cast<TypeSymbol>()], context);
 
         if (symbols.Length != 1) return null;
 
@@ -147,7 +147,9 @@ public sealed class CompletionHandler : CompletionHandlerBase
             {
                 Label = name,
                 Kind = CompletionItemKind.Function,
-
+                InsertText = $"{name}($0)",
+                InsertTextFormat = InsertTextFormat.Snippet,
+                
                 LabelDetails = new CompletionItemLabelDetails
                 {
                     Detail = $"+{symbols.Length - 1} overload" + (symbols.Length != 2 ? "s" : ""),
@@ -160,7 +162,9 @@ public sealed class CompletionHandler : CompletionHandlerBase
         {
             Label = name,
             Kind = symbols[0].IsStatic ? CompletionItemKind.Function : CompletionItemKind.Method,
-
+            InsertText = $"{name}($0)",
+            InsertTextFormat = InsertTextFormat.Snippet,
+            
             LabelDetails = new CompletionItemLabelDetails
             {
                 Detail = TypeParamText(symbols[0]) + ParamListText(symbols[0]),
@@ -178,14 +182,22 @@ public sealed class CompletionHandler : CompletionHandlerBase
             ? $"{param.Name}: mut {param.Type.Name}"
             : $"{param.Name}: {param.Type.Name}";
     }
-    private static CompletionItem MakeTypeItem(string name, ImmutableArray<TypeSymbol> symbols)
+    private static CompletionItem MakeTypeItem(string name, ImmutableArray<TypeSymbol> symbols, SyntaxContext context)
     {
+        // Insert brackets only for type positions, because in expression position
+        // the user might want to use inference.
+        var insertBrackets = symbols.All(t => t.TypeParameters.Length > 0) &&
+                             context.TargetToken?.Ancestors().Any(p =>
+                                 p is TypeAnnotationClauseSyntax or ReturnTypeAnnotationSyntax) == true;
+        
         if (symbols.Length > 1)
         {
             return new CompletionItem
             {
                 Label = name,
                 Kind = CompletionItemKind.Class,
+                InsertText = insertBrackets ? $"{name}[$0]" : name,
+                InsertTextFormat = InsertTextFormat.Snippet,
 
                 LabelDetails = new CompletionItemLabelDetails
                 {
@@ -199,6 +211,8 @@ public sealed class CompletionHandler : CompletionHandlerBase
         {
             Label = name,
             Kind = CompletionItemKind.Class,
+            InsertText = insertBrackets ? $"{name}[$0]" : name,
+            InsertTextFormat = InsertTextFormat.Snippet,
 
             LabelDetails = new CompletionItemLabelDetails
             {
