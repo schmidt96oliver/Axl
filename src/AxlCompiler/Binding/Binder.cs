@@ -879,18 +879,24 @@ public sealed class Binder(Scope scope, BinderSideEffects sideEffects)
             // Blocks and Control Flow
             BlockExprSyntax blockExprSyntax => BindBlock(blockExprSyntax),
             IfExprSyntax ifExprSyntax => BindIfExpr(ifExprSyntax),
-            GroupExprSyntax groupExprSyntax => BindValue(groupExprSyntax.Inner, ValueUsage.Read),
+            GroupExprSyntax groupExprSyntax => BindGroup(groupExprSyntax),
             BreakExprSyntax breakExprSyntax => BindBreakOrContinue(breakExprSyntax),
             ContinueExprSyntax or BreakExprSyntax => BindBreakOrContinue(syntax),
             ReturnExprSyntax returnExprSyntax => BindReturn(returnExprSyntax),
 
             // Error
             ErrorExprSyntax errorExprSyntax => new BoundError(ErrorType, errorExprSyntax),
-            FunNameSyntax => throw new UnreachableException(),
         };
 
         SideEffects.ResolveBoundNode(node);
         return node;
+    }
+
+    private BoundValue BindGroup(GroupExprSyntax groupExprSyntax)
+    {
+        var bound = BindValue(groupExprSyntax.Inner, ValueUsage.Read);
+        SideEffects.ResolveBoundNode(bound, groupExprSyntax);
+        return bound;
     }
 
     private BoundValue BindValue(ExprSyntax syntax, ValueUsage usage)
@@ -1079,7 +1085,10 @@ public sealed class Binder(Scope scope, BinderSideEffects sideEffects)
         if (parts.Length == 0)
             return new BoundConst("", String, syntax);
         if (parts.Length == 1)
+        {
+            SideEffects.ResolveBoundNode(parts[0], syntax);
             return parts[0];
+        }
 
         if (parts.OfType<BoundError>().Any())
             return new BoundError(ErrorType, syntax);
@@ -1140,7 +1149,9 @@ public sealed class Binder(Scope scope, BinderSideEffects sideEffects)
             syntax.Operand is NumberLiteralSyntax numberOperand &&
             SourceRange.Between(syntax.Operator.Location.Range, syntax.Operand.Location.Range).IsEmpty)
         {
-            return BindNumberLiteral(syntax, numberOperand.Token.Suffix);
+            var boundLiteral = BindNumberLiteral(syntax, numberOperand.Token.Suffix);
+            SideEffects.ResolveBoundNode(boundLiteral, numberOperand);
+            return boundLiteral;
         }
         
         return BindSynthesizedOperatorCall(BindValue(syntax.Operand, ValueUsage.Read), syntax.Operator, [], syntax);

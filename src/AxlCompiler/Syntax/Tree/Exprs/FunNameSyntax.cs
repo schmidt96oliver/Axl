@@ -3,7 +3,7 @@
 namespace AxlCompiler.Syntax.Tree;
 
 public sealed class FunNameSyntax(ImmutableArray<SyntaxElement> children)
-    : ExprSyntax(SyntaxKind.FunName, children)
+    : SyntaxNode(SyntaxKind.FunName, children)
 {
     public Token Token => Children.FirstNonTriviaToken();
 }

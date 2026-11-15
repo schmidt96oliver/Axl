@@ -19,7 +19,7 @@ public sealed class SemanticModel(Compilation compilation)
     public BoundNode BoundNodeFor(ExprSyntax syntax) 
         => TryBoundNodeFor(syntax) ?? new BoundError(compilation.BaseLibrary.Error, syntax);
 
-    private BoundNode? TryBoundNodeFor(ExprSyntax syntax)
+    internal BoundNode? TryBoundNodeFor(ExprSyntax syntax)
     {
         if (_compilationSideEffects is null)
         {

@@ -5,31 +5,6 @@
 
 # Now
 
-* Binder: LookupOptionsFor switches on syntax. Remove passing it in
-* Separate BoundExpr and BoundStmt. BoundExprStmt.
-* Add scopes to BoundStmt
-* Add BoundBlock.ScopeAt traversal
-* Add Symbol.ScopeAt for everything
-* Add BoundBody with .ScopeAt and and syntax -> node map
-
-* BindExpr: Assert `SemanticModel.BindableSyntaxFor(syntax) == boundNode.Syntax`
-  * Special case GroupExpr
-  * Same for BoundStmt
-
-* Add Symbol.BoundNodeFor
-  * Lazy binding for fields, types, etc.
-  * lookup in BoundBody if available
-
-* Update CompletionContext
-  * SifLeft Dot => BindMemberLeft, do lookup, bind applicable ones, show if no error
-  * In Expr? => Show visible symbols, same as above
-  * Otherwise => no completion
-* Update Everythign else
-
-* Delete probing (Compilation, Binder, SemanticModel)
-
-* Symbol/Compilation.Complete only with diagnostic bag
-
 * Completion:
     * Insert []
     * Insert ()
@@ -52,6 +27,8 @@
 * Binder: BindLookupResult should report WrongKind error before binding
 
 * ?? Fun: TokenSet iteration with `i & -i` trick
+
+* Separate IfStmt and IfExpr in syntax (-> SemanticModel.BoundNodeFor tests)
 
 # Milestones
 
@@ -81,6 +58,9 @@
 * Operators and generics: `pub fun +[T](t: T)` how do they interact?
 * Mut exclusivity check
 * RecursiveStructLayout: Only check type args/fields that store by value
+
+* SemanticModel and Scopes:
+  * Record (Scope, LookupOptions) from Binder and removed Completion Probe
 
 # Later
 

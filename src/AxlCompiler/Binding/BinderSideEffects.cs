@@ -61,9 +61,10 @@ public sealed class BinderSideEffects
     /// Records <paramref name="node"/> for the syntax it was bound from.
     /// Nodes without syntax (e.g. implicit self) are not recorded.
     /// </summary>
-    public void ResolveBoundNode(BoundNode node)
+    public void ResolveBoundNode(BoundNode node, SyntaxNode? syntax = null)
     {
-        if (node.Syntax is not { } syntax)
+        syntax ??= node.Syntax;
+        if (syntax is null)
             return;
 
         if (BoundNodes.TryGetValue(syntax, out var boundNodes))
