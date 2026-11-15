@@ -5,28 +5,34 @@
 
 # Now
 
-* Bind per fun/script body
-  * Cache body -> BoundBody
-  * exhaustive switch on BoundBodyFor(Symbol) (might add exprs later or something)
-    * Also, fun offer the body anyway already :).
-  * map Syntax -> *one* BoundNode (pick most current from side effects)
-  * Should resolvers bind concrete nodes. ColorColor cases?
+* Binder: LookupOptionsFor switches on syntax. Remove passing it in
+* Separate BoundExpr and BoundStmt. BoundExprStmt.
+* Add scopes to BoundStmt
+* Add BoundBlock.ScopeAt traversal
+* Add Symbol.ScopeAt for everything
+* Add BoundBody with .ScopeAt and and syntax -> node map
 
-* Scope retrieval
-  * They needs their scope children
-  * Scopes store valid range
-  * BoundBlock stores scopes
-  * Position lookup is just a walk
+* BindExpr: Assert `SemanticModel.BindableSyntaxFor(syntax) == boundNode.Syntax`
+  * Special case GroupExpr
+  * Same for BoundStmt
 
-* Probing
-  * ?? Through a BoundProbe(Error) with recorded information
-  * ?? Just record LookupContext(Scope, Options, OnMember?) everyhwere 
+* Add Symbol.BoundNodeFor
+  * Lazy binding for fields, types, etc.
+  * lookup in BoundBody if available
+
+* Update CompletionContext
+  * SifLeft Dot => BindMemberLeft, do lookup, bind applicable ones, show if no error
+  * In Expr? => Show visible symbols, same as above
+  * Otherwise => no completion
+* Update Everythign else
+
+* Delete probing (Compilation, Binder, SemanticModel)
+
+* Symbol/Compilation.Complete only with diagnostic bag
 
 * Completion:
     * Insert []
     * Insert ()
-
-
 
 # Questions / Little ones
 
@@ -42,6 +48,10 @@
   * Call with mut return: ref is directly used and never again
 
 * Mir: StructInit as ImmutableArray<Operand> ordered from declaration/member order. No map
+
+* Binder: BindLookupResult should report WrongKind error before binding
+
+* ?? Fun: TokenSet iteration with `i & -i` trick
 
 # Milestones
 
@@ -65,13 +75,6 @@
 
 **Traits/Constraints**
 
-**More LSP**
-* Rename
-* SignatureHelp (through BoundCallError)
-* Inline Hints for inferred types (type args, variables)
-* Taxl Lsp Completion: Annotation completion and Diagnostic IDs after //~error/lint
-* Annotation Completion: AnnotationSymbol and BaseLibrary.Annotations
-
 # Loose Ends
 * Overload resolution specificity
    `fun A[T](t: T){} fun A[T](t: I32){}   A[I32](1);`
@@ -84,6 +87,14 @@
 * ?? Drop initializers + definite assignment
 * Miri flat execution + stack trace + @StackTraceHidden
 * LSP Debug through Code Lens (show MIR through external file), Code Actions, Document Symbols (Syntax tree, Bound tree, Symbol tree)
+
+* More LSP
+  * Rename
+  * SignatureHelp (through BoundCallError)
+  * Inline Hints for inferred types (type args, variables)
+  * Taxl Lsp Completion: Annotation completion and Diagnostic IDs after //~error/lint
+  * Annotation Completion: AnnotationSymbol and BaseLibrary.Annotations
+  * Folding Ranges (should now work, because location mapping is fixed :D)
 
 # Ideas
 [Ideas](IDEAS.md)

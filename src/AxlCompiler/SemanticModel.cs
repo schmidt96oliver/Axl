@@ -12,6 +12,7 @@ namespace AxlCompiler;
 
 public sealed class SemanticModel(Compilation compilation)
 {
+    private BinderSideEffects? _compilationSideEffects;
     private readonly Dictionary<(SyntaxTree, int), BinderSideEffects?> _probes = [];
     
     
@@ -20,12 +21,14 @@ public sealed class SemanticModel(Compilation compilation)
 
     private BoundNode? TryBoundNodeFor(ExprSyntax syntax)
     {
-        //TODO: Cache the results
-        var sideEffects = new BinderSideEffects();
-        CompleteEnclosingSymbol(syntax.Location, compilation, sideEffects);
-
-        if (sideEffects.BoundNodes.TryGetValue(syntax, out var boundNodes))
-            return boundNodes[^1]; //TODO: Which one to pick?
+        if (_compilationSideEffects is null)
+        {
+            _compilationSideEffects = new BinderSideEffects();
+            compilation.Complete(_compilationSideEffects);
+        }
+        
+        if (_compilationSideEffects.BoundNodes.TryGetValue(syntax, out var boundNodes))
+            return boundNodes[^1];
 
         return null;
     }
