@@ -1,0 +1,8 @@
+﻿//@run
+//= 7
+
+// This crashed the monomorphizer before, because ConstSymbol did not
+// specialize it's value fun correctly.
+
+PrintLine(Box[I32].N);
+struct Box[T] { pub const N: I32 = 7; }

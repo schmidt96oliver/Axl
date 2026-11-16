@@ -94,7 +94,7 @@ public class Compilation
                 FunDefinitionSymbol funSymbol => [funSymbol],
                 FunSymbol => throw new UnreachableException("Specialized funs should not be on compilation."),
                 ScriptSymbol script => [.. Inner(script.Fun), .. script.Members.SelectMany(Inner)],
-                ConstSymbol constSymbol => [constSymbol.ValueFun],
+                ConstSymbol constSymbol => [constSymbol.ValueFun.OriginalDefinition],
                 
                 NamespaceSymbol or TypeSymbol => symbol.Members.SelectMany(Inner),
                 LocalSymbol or FieldSymbol => [],

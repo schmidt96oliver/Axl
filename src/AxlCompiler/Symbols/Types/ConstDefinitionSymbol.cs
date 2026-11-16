@@ -82,7 +82,7 @@ public sealed class ConstDefinitionSymbol(
 
     public ConstSymbol Specialize(Symbol specializedOwner)
     {
-        Guard.MustBe(Equals(specializedOwner.OriginalDefinition, Owner?.OriginalDefinition));
+        Guard.MustBe(Equals(specializedOwner.OriginalDefinition, Owner.OriginalDefinition));
 
         // If nothing changes, just return this definition.
         if (Equals(specializedOwner, Owner))

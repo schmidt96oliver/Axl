@@ -16,7 +16,7 @@ public closed class ConstSymbol(string name, Symbol owner, bool isPublic)
 
     public abstract TypeSymbol Type { get; }
 
-    public abstract FunDefinitionSymbol ValueFun { get; }
+    public abstract FunSymbol ValueFun { get; }
 
     public abstract override ConstDefinitionSymbol OriginalDefinition { get; }
 

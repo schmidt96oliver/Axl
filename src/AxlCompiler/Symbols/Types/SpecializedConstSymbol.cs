@@ -23,10 +23,15 @@ public sealed class SpecializedConstSymbol : ConstSymbol
         }
     }
 
-    // The value fun does not have any type arguments or parameters and
-    // its body is specialized during monomorphization.
     /// <inheritdoc />
-    public override FunDefinitionSymbol ValueFun => OriginalDefinition.ValueFun;
+    public override FunSymbol ValueFun
+    {
+        get
+        {
+            field ??= OriginalDefinition.ValueFun.Specialize(Owner.Substitute(TypeMap.For(this)), []);
+            return field;
+        }
+    }
 
     /// <inheritdoc />
     public override ConstDefinitionSymbol OriginalDefinition { get; }
