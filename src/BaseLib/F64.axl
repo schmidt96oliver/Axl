@@ -10,8 +10,10 @@ pub struct F64
     pub fun +(right: F64): F64;
     @Intrinsic
     pub fun -(right: F64): F64;
-    @Intrinsic
-    pub fun -(): F64;
+
+    pub fun -(): F64
+        = 0.0 - self;
+
     @Intrinsic
     pub fun *(right: F64): F64;
     @Intrinsic

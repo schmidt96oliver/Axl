@@ -41,7 +41,6 @@ public static class IntrinsicLookup
         
         new(Intrinsic.AddF32, TokenKind.Plus, [PrimitiveKind.F32, PrimitiveKind.F32], PrimitiveKind.F32),
         new(Intrinsic.SubtractF32, TokenKind.Minus, [PrimitiveKind.F32, PrimitiveKind.F32], PrimitiveKind.F32),
-        new(Intrinsic.NegateF32, TokenKind.Minus, [PrimitiveKind.F32, ], PrimitiveKind.F32),
         new(Intrinsic.MultiplyF32, TokenKind.Star, [PrimitiveKind.F32, PrimitiveKind.F32], PrimitiveKind.F32),
         new(Intrinsic.DivideF32, TokenKind.Slash, [PrimitiveKind.F32, PrimitiveKind.F32], PrimitiveKind.F32),
         new(Intrinsic.LessThanF32, TokenKind.LessThan, [PrimitiveKind.F32, PrimitiveKind.F32], PrimitiveKind.Bool),
@@ -50,7 +49,6 @@ public static class IntrinsicLookup
         
         new(Intrinsic.AddF64, TokenKind.Plus, [PrimitiveKind.F64, PrimitiveKind.F64], PrimitiveKind.F64),
         new(Intrinsic.SubtractF64, TokenKind.Minus, [PrimitiveKind.F64, PrimitiveKind.F64], PrimitiveKind.F64),
-        new(Intrinsic.NegateF64, TokenKind.Minus, [PrimitiveKind.F64, ], PrimitiveKind.F64),
         new(Intrinsic.MultiplyF64, TokenKind.Star, [PrimitiveKind.F64, PrimitiveKind.F64], PrimitiveKind.F64),
         new(Intrinsic.DivideF64, TokenKind.Slash, [PrimitiveKind.F64, PrimitiveKind.F64], PrimitiveKind.F64),
         new(Intrinsic.LessThanF64, TokenKind.LessThan, [PrimitiveKind.F64, PrimitiveKind.F64], PrimitiveKind.Bool),

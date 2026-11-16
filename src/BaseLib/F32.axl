@@ -10,8 +10,10 @@ pub struct F32
     pub fun +(right: F32): F32;
     @Intrinsic
     pub fun -(right: F32): F32;
-    @Intrinsic
-    pub fun -(): F32;
+
+    pub fun -(): F32
+        = 0.0_f32 - self;
+
     @Intrinsic
     pub fun *(right: F32): F32;
     @Intrinsic

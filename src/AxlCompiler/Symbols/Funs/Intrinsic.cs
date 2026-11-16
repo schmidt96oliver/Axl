@@ -20,7 +20,6 @@ public enum Intrinsic
     LessThanI64,
     ToStringI64,
     
-    NegateF32,
     AddF32,
     SubtractF32,
     DivideF32,
@@ -29,7 +28,6 @@ public enum Intrinsic
     LessThanF32,
     ToStringF32,
     
-    NegateF64,
     AddF64,
     SubtractF64,
     DivideF64,

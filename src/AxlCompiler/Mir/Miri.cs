@@ -158,7 +158,6 @@ public sealed class Miri
         OperatorKind.EqualsI64 => (long)args[0] == (long)args[1],
         OperatorKind.LessThanI64 => (long)args[0] < (long)args[1],
 
-        OperatorKind.NegateF32 => -(float)args[0],
         OperatorKind.AddF32 => (float)args[0] + (float)args[1],
         OperatorKind.SubtractF32 => (float)args[0] - (float)args[1],
         OperatorKind.DivideF32 => (float)args[0] / (float)args[1],
@@ -166,7 +165,6 @@ public sealed class Miri
         OperatorKind.EqualsF32 => (float)args[0] == (float)args[1],
         OperatorKind.LessThanF32 => (float)args[0] < (float)args[1],
 
-        OperatorKind.NegateF64 => -(double)args[0],
         OperatorKind.AddF64 => (double)args[0] + (double)args[1],
         OperatorKind.SubtractF64 => (double)args[0] - (double)args[1],
         OperatorKind.DivideF64 => (double)args[0] / (double)args[1],

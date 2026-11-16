@@ -19,7 +19,6 @@ public enum OperatorKind
     EqualsI64,
     LessThanI64,
 
-    NegateF32,
     AddF32,
     SubtractF32,
     DivideF32,
@@ -27,7 +26,6 @@ public enum OperatorKind
     EqualsF32,
     LessThanF32,
 
-    NegateF64,
     AddF64,
     SubtractF64,
     DivideF64,
@@ -59,7 +57,6 @@ public static class OperatorKindExtensions
             Intrinsic.EqualsI64 => OperatorKind.EqualsI64,
             Intrinsic.LessThanI64 => OperatorKind.LessThanI64,
 
-            Intrinsic.NegateF32 => OperatorKind.NegateF32,
             Intrinsic.AddF32 => OperatorKind.AddF32,
             Intrinsic.SubtractF32 => OperatorKind.SubtractF32,
             Intrinsic.DivideF32 => OperatorKind.DivideF32,
@@ -67,7 +64,6 @@ public static class OperatorKindExtensions
             Intrinsic.EqualsF32 => OperatorKind.EqualsF32,
             Intrinsic.LessThanF32 => OperatorKind.LessThanF32,
 
-            Intrinsic.NegateF64 => OperatorKind.NegateF64,
             Intrinsic.AddF64 => OperatorKind.AddF64,
             Intrinsic.SubtractF64 => OperatorKind.SubtractF64,
             Intrinsic.DivideF64 => OperatorKind.DivideF64,
