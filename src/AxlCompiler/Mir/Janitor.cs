@@ -77,9 +77,6 @@ public sealed class Janitor
             case Terminator.MissingReturn:
             case Terminator.Unreachable:
                 break;
-
-            default:
-                throw new UnreachableException();
         }
     }
 
@@ -90,7 +87,7 @@ public sealed class Janitor
     {
         Operand.Copy copy => GetUsedLocals(copy.Place),
         Operand.Ref @ref => GetUsedLocals(@ref.Place),
-        Operand.Const or Operand.Empty => [],
+        Operand.Const or Operand.ConstExpr or Operand.Empty => [],
         Operand.Unreachable or Operand.Error => [],
     };
 

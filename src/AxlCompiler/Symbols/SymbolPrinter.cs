@@ -68,6 +68,7 @@ public static class SymbolPrinter
                 if (symbol is TypeParameterSymbol) return symbol.Name;
                 return string.Join(".", symbol.SelfAndOwners()
                     .Reverse()
+                    .Skip(1)        // First symbol is always root or script
                     .Select(s => s switch
                     {
                         TypeSymbol type => $"{type.Name}{type.TypeArguments.FullTypeListDisplayText}",

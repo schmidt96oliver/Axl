@@ -239,7 +239,7 @@ public class Lowerer
         BoundLocal boundVariable => new Operand.Copy(LowerPlace(boundVariable), boundVariable.Syntax),
         BoundConstLiteral boundConst => new Operand.Const(boundConst.Value, boundConst.Type, boundConst.Syntax),
         BoundField boundField => new Operand.Copy(LowerPlace(boundField), boundField.Syntax),
-        BoundConstAccess boundConstAccess => new Operand.Const(0, boundConstAccess.Type, boundConstAccess.Syntax),  //TODO: Implement constexpr
+        BoundConstAccess boundConstAccess => new Operand.ConstExpr(boundConstAccess.ConstSymbol, boundConstAccess.Syntax),
 
         BoundIfExpr boundIfExpr => LowerIfExpr(boundIfExpr, _mirFun.AddTemp(boundIfExpr.Type)),
 

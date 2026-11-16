@@ -41,18 +41,19 @@ public static class MirPrinter
             Place.Discard => "_",
             Place.Error => "???",
         };
-    
+
     public static string Print(this Operand operand)
         => operand switch
         {
             Operand.Copy { Place: var place } => $"copy {place.Print()}",
             Operand.Ref { Place: var place } => $"ref {place.Print()}",
             Operand.Const { Value: var constValue } => constValue switch
-                {
-                    string s => $"const { PrintConstString(s) }",
-                    _ => $"const {constValue.Value}",
-                },
-                
+            {
+                string s => $"const {PrintConstString(s)}",
+                _ => $"const {constValue.Value}",
+            },
+            Operand.ConstExpr { ConstSymbol: var constSymbol } => $"constexpr {constSymbol.FullName}",
+
             Operand.Unreachable => "unreachable",
             Operand.Empty => "empty",
             Operand.Error => "???",

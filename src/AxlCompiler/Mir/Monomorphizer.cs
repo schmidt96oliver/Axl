@@ -225,6 +225,8 @@ public class Monomorphizer
                 originalConst.Value,
                 originalConst.Type.Substitute(map),
                 originalConst.Syntax),
+            
+            Operand.ConstExpr originalConstExpr => InstantiateConstExpr(originalConstExpr, map),
 
             Operand.Copy originalCopy => new Operand.Copy(
                 InstantiatePlace(originalCopy.Place, instantiatedMirFun, map),
@@ -242,6 +244,15 @@ public class Monomorphizer
             Operand.Unreachable => original,
             Operand.Error => throw new UnreachableException("Errors cannot be monomorphized.")
         };
+
+    private Operand InstantiateConstExpr(Operand.ConstExpr original, TypeMap map)
+    {
+        var substitutedConstSymbol = original.ConstSymbol.Substitute(map);
+        AddToWorklist(substitutedConstSymbol.ValueFun);
+
+        return new Operand.ConstExpr(substitutedConstSymbol, original.Syntax);
+
+    }
 
     private Terminator InstantiateTerminator(Terminator original, MutMirFunction instantiatedMirFun, TypeMap map)
         => original switch
