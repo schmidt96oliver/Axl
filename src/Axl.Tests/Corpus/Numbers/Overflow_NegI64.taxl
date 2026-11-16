@@ -1,0 +1,9 @@
+//@run
+//= -9223372036854775807
+//@panic Integer overflow
+
+let min = -9223372036854775808_i64;
+let max = 9223372036854775807_i64;
+
+Print(-max);
+Print(-min);

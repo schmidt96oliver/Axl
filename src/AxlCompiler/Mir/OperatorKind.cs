@@ -12,10 +12,10 @@ public enum OperatorKind
     LessThanI32,
 
     NegateI64,
-    AddI64,
-    SubtractI64,
-    DivideI64,
-    MultiplyI64,
+    AddWrappedI64,
+    SubWrappedI64,
+    DivUncheckedI64,
+    MulWrappedI64,
     EqualsI64,
     LessThanI64,
 
@@ -52,11 +52,10 @@ public static class OperatorKindExtensions
             Intrinsic.EqualsI32 => OperatorKind.EqualsI32,
             Intrinsic.LessThanI32 => OperatorKind.LessThanI32,
 
-            Intrinsic.NegateI64 => OperatorKind.NegateI64,
-            Intrinsic.AddI64 => OperatorKind.AddI64,
-            Intrinsic.SubtractI64 => OperatorKind.SubtractI64,
-            Intrinsic.DivideI64 => OperatorKind.DivideI64,
-            Intrinsic.MultiplyI64 => OperatorKind.MultiplyI64,
+            Intrinsic.AddWrappedI64 => OperatorKind.AddWrappedI64,
+            Intrinsic.SubWrappedI64 => OperatorKind.SubWrappedI64,
+            Intrinsic.DivUncheckedI64 => OperatorKind.DivUncheckedI64,
+            Intrinsic.MulWrappedI64 => OperatorKind.MulWrappedI64,
             Intrinsic.EqualsI64 => OperatorKind.EqualsI64,
             Intrinsic.LessThanI64 => OperatorKind.LessThanI64,
 

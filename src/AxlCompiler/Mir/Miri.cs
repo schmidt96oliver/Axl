@@ -151,10 +151,10 @@ public sealed class Miri
         OperatorKind.LessThanI32 => (int)args[0] < (int)args[1],
 
         OperatorKind.NegateI64 => -(long)args[0],
-        OperatorKind.AddI64 => (long)args[0] + (long)args[1],
-        OperatorKind.SubtractI64 => (long)args[0] - (long)args[1],
-        OperatorKind.DivideI64 => (long)args[0] / (long)args[1],
-        OperatorKind.MultiplyI64 => (long)args[0] * (long)args[1],
+        OperatorKind.AddWrappedI64 => (long)args[0] + (long)args[1],
+        OperatorKind.SubWrappedI64 => (long)args[0] - (long)args[1],
+        OperatorKind.DivUncheckedI64 => (long)args[0] / (long)args[1],
+        OperatorKind.MulWrappedI64 => (long)args[0] * (long)args[1],
         OperatorKind.EqualsI64 => (long)args[0] == (long)args[1],
         OperatorKind.LessThanI64 => (long)args[0] < (long)args[1],
 

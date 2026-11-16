@@ -1,0 +1,8 @@
+//@run
+//= 9223372036854775806
+//@panic Integer overflow
+
+let max = 9223372036854775807_i64;
+
+Print(max - 1_i64);
+Print(max + 1_i64);

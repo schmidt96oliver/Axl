@@ -1,0 +1,6 @@
+//@run
+//@panic Integer overflow
+
+let min = -9223372036854775808_i64;
+
+Print(min / -1_i64);
