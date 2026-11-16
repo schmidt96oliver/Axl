@@ -1,0 +1,9 @@
+﻿//@check
+
+// When BoundValue took it's type eagerly, this caused a cycle crash. That is
+// why BoundValue accesses its type lazily.
+
+struct Cycle 
+{
+    pub const S: Cycle.S = 1;   //~error NotAType
+}

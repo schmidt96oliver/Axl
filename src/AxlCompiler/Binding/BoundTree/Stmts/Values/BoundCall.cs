@@ -10,11 +10,14 @@ public sealed class BoundCall(
     BoundArgument? receiver,
     ImmutableArray<BoundArgument> arguments,
     SyntaxNode? syntax = null)
-    : BoundValue(fun.ReturnType, syntax)
+    : BoundValue(syntax)
 {
     public FunSymbol Fun { get; } = fun;
     public BoundArgument? Receiver { get; } = receiver;
     public ImmutableArray<BoundArgument> Arguments { get; } = arguments;
+
+    /// <inheritdoc />
+    public override TypeSymbol Type => Fun.ReturnType;
 
     public bool IsMutReturn => Fun.IsReturnMut;
 

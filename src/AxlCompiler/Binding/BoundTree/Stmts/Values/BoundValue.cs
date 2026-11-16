@@ -28,9 +28,12 @@ public enum PlaceKind
 
 
 
-public closed class BoundValue(TypeSymbol type, SyntaxNode? syntax = null) : BoundStmt(syntax)
+public closed class BoundValue(SyntaxNode? syntax = null) : BoundStmt(syntax)
 {
-    public TypeSymbol Type { get; } = type;
+    // Can be overwritten, so access stays lazy. That has caused some cycle bugs
+    // before, where type of the symbol is accessed, while the type of that symbol
+    // is being bound (e.g. `const A: A`).
+    public abstract TypeSymbol Type { get; }
 
     public virtual PlaceKind PlaceKind => PlaceKind.Value;
 

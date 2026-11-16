@@ -256,7 +256,7 @@ public class Lowerer
 
         BoundError => new Operand.Error(Error),
         
-        BoundFieldInit or BoundValueOrTypeRef => throw new UnreachableException(),
+        BoundValueOrTypeRef => throw new UnreachableException(),
     };
     
     private Operand LowerInto(BoundValue value, Place target)
@@ -408,7 +408,6 @@ public class Lowerer
                                      MightHaveSideEffects(boundLogicOr.Right),
 
         BoundValueOrTypeRef => throw new UnreachableException(),
-        BoundFieldInit => throw new UnreachableException(),
     };
 
 

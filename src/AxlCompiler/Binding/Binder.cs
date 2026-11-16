@@ -2380,13 +2380,13 @@ public sealed class Binder(Scope scope, BinderSideEffects sideEffects)
         var fieldInits = Enumerable.Range(0, arguments.Length)
             .Select(i => BindFieldInitializer(arguments[i], fieldsToArguments.Value[i]))
             .ToImmutableArray();
-        if (fieldInits.Any(f => f is not BoundFieldInit))
+        if (fieldInits.Any(f => f is null))
             return new BoundStructInitError([candidate.Type], arguments, ErrorType, syntax);
         
-        return new BoundStructInit(candidate.Type, [.. fieldInits.Cast<BoundFieldInit>()], syntax);
+        return new BoundStructInit(candidate.Type, [.. fieldInits!], syntax);
     }
     
-    private BoundValue BindFieldInitializer(BoundArgument argument, FieldSymbol field)
+    private BoundFieldInit? BindFieldInitializer(BoundArgument argument, FieldSymbol field)
     {
         if (argument.IsMut)
         {
@@ -2396,7 +2396,7 @@ public sealed class Binder(Scope scope, BinderSideEffects sideEffects)
         if (!CheckAccessibility(field, argument.NameSyntax!) ||
             !CheckType(argument.Value, field.Type))
         {
-            return new BoundError(ErrorType, argument.Syntax!);
+            return null;
         }
 
         return new BoundFieldInit(field, argument.Value, argument.Syntax);

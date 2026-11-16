@@ -21,8 +21,12 @@ public sealed class BoundValueOrTypeRef : BoundValue
     
     public BoundTypeRef AsTypeRef { get; }
 
+    /// <inheritdoc />
+    public override TypeSymbol Type => AsTypeRef.Type;
+    
+
     public BoundValueOrTypeRef(BoundValue asValue, BoundTypeRef asTypeRef)
-        : base(asValue.Type, asValue.Syntax)
+        : base(asValue.Syntax)
     {
         Guard.MustBe(asValue.Syntax == asTypeRef.Syntax);
         Guard.MustBe(asValue.Type == asTypeRef.Type);

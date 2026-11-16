@@ -4,10 +4,13 @@ using AxlCompiler.Syntax;
 namespace AxlCompiler.Binding.BoundTree;
 
 public sealed class BoundField(BoundValue receiver, FieldSymbol field, SyntaxNode? syntax = null)
-    : BoundValue(field.Type, syntax), IBoundSymbolRef
+    : BoundValue(syntax), IBoundSymbolRef
 {
     public BoundValue Receiver { get; } = receiver;
     public FieldSymbol Field { get; } = field;
+
+    /// <inheritdoc />
+    public override TypeSymbol Type => Field.Type;
 
     /// <inheritdoc />
     public Symbol Symbol => Field;
