@@ -192,7 +192,7 @@ public sealed class Evaluator
             new MiriContext(_compilation.BaseLibrary.Unit,
                 stdout, stderr,
                 branchLimit,
-                TryGetConstEvaluation: _ => null));
+                TryGetConstEvaluation: null));
 
         if (result is MiriResult.HitBranchLimit)
         {

@@ -1,4 +1,6 @@
-﻿namespace AxlCompiler.Mir;
+﻿using AxlCompiler.Diagnostics;
+
+namespace AxlCompiler.Mir;
 
 public readonly record struct BasicBlockId(int Value)
 {
@@ -32,6 +34,16 @@ public sealed class MutBasicBlock(BasicBlockId id, MutMirFunction mirFunction, s
         _instructions.Add(instruction);
         
         // Adding an instruction does not change the CFG.
+        MirFunction.Version++;
+    }
+
+    public void ReplaceAt(int i, Instruction newInstruction)
+    {
+        Guard.InRange(i >= 0 && i < Instructions.Count);
+        if (Instructions[i] == newInstruction)
+            return;
+        
+        _instructions[i] = newInstruction;
         MirFunction.Version++;
     }
 }

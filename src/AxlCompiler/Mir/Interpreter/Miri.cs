@@ -16,6 +16,8 @@ public sealed class Miri
     private sealed class PanicException : Exception;
 
     private sealed class BranchLimitException : Exception;
+
+    private sealed class CannotEvaluateConstException : Exception;
     
     private sealed class StructValue(TypeSymbol symbol)
     {
@@ -41,11 +43,16 @@ public sealed class Miri
     }
 
     public static MiriResult Run(MirProgram program, MiriContext context)
+        => Run(program.Entry, program, context);
+    
+    public static MiriResult Run(MutMirFunction function, MirProgram program, MiriContext context)
     {
+        Guard.MustBe(function.ParameterPlaces.Length == 0);
+        
         var miri = new Miri(program, context);
         try
         {
-            var miriReturnValue = miri.Call(program.Entry, []);
+            var miriReturnValue = miri.Call(function, []);
             return new MiriResult.Ok(miri.ToConstValue(miriReturnValue));
         }
         catch (PanicException)
@@ -55,6 +62,10 @@ public sealed class Miri
         catch (BranchLimitException)
         {
             return new MiriResult.HitBranchLimit();
+        }
+        catch (CannotEvaluateConstException)
+        {
+            return new MiriResult.CannotEvaluateConst();
         }
     }
 
@@ -306,8 +317,12 @@ public sealed class Miri
 
     private object EvaluateConstEval(Operand.ConstEval constEval)
     {
+        if (_context.TryGetConstEvaluation is null)
+            return Call(_program.GetMirFunction(constEval.ConstSymbol.ValueFun), []);
+        
         if (_context.TryGetConstEvaluation(constEval.ConstSymbol) is { } eval)
             return ToMiriValue(eval);
-        return Call(_program.GetMirFunction(constEval.ConstSymbol.ValueFun), []);
+
+        throw new CannotEvaluateConstException();
     }
 }

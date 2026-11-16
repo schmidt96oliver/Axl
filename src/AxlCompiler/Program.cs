@@ -38,7 +38,7 @@ if (!result.IsSuccessful)
     return;
 
 Console.WriteLine("---------------");
-Console.WriteLine("--- GENERIC ---");
+Console.WriteLine("--- LOWERED ---");
 Console.WriteLine("---------------");
 
 foreach (var fun in compilation.AllFuns.Select(compilation.GetLoweredFunBody))
@@ -48,7 +48,7 @@ foreach (var fun in compilation.AllFuns.Select(compilation.GetLoweredFunBody))
 }
 
 Console.WriteLine("---------------");
-Console.WriteLine("--- MONOMOR ---");
+Console.WriteLine("--- FINAL ---");
 Console.WriteLine("---------------");
 
 foreach (var fun in result.Program!.MirFunctions.Where(f => !f.DisplayName.StartsWith("Base")).OrderBy(f => f.DisplayName, StringComparer.Ordinal))
@@ -60,5 +60,5 @@ foreach (var fun in result.Program!.MirFunctions.Where(f => !f.DisplayName.Start
 Console.WriteLine("----------------");
 var context = new MiriContext(compilation.BaseLibrary.Unit, Console.Out, Console.Error, 
     BranchLimit: null,
-    TryGetConstEvaluation: _ => null);
+    null);
 Miri.Run(result.Program!, context);

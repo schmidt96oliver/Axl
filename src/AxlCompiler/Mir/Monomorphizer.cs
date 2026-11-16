@@ -40,7 +40,7 @@ public class Monomorphizer
         }
 
         return new MirProgram(monomorphizer._instantiatedMirFuns[entryFunSymbol],
-            monomorphizer._instantiatedMirFuns.ToFrozenDictionary());
+            monomorphizer._instantiatedMirFuns);
     }
 
     private void AddToWorklist(FunSymbol funSymbol)

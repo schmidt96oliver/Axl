@@ -232,6 +232,12 @@ public class Compilation
         var program = Monomorphizer.TryMonomorphize(entryScript.Fun,
             funDefinition => GetLoweredFunBody(funDefinition).MirFunction,
             globalSideEffects.DiagnosticBag);
+        
+        if (program is not null)
+        {
+            ConstEvaluator.EvaluateAll(program, this, globalSideEffects.DiagnosticBag);
+        }
+        
         return new CompilationResult(program, globalSideEffects.DiagnosticBag.Drain());
     }
     

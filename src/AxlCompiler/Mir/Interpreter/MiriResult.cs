@@ -9,4 +9,6 @@ public closed record MiriResult
     public sealed record Panicked : MiriResult;
 
     public sealed record HitBranchLimit : MiriResult;
+
+    public sealed record CannotEvaluateConst : MiriResult;
 }
