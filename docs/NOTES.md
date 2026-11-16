@@ -3,10 +3,17 @@
 
 # Now
 
-* [ ] Binder
-  * [ ] Reject annotations
+* Bind initializer
 
-* test: in namespace, script, struct
+* Lowering
+* ConstEvaluator
+
+* test
+  * in namespace, script, struct
+  * annotations rejected
+  * not through instance
+  * ColorColor resolves to type
+  * accessibility
 
 * ?? Move TestFile Evalutor into test suite
 

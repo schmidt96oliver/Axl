@@ -290,7 +290,8 @@ public sealed class Binder(Scope scope, BinderSideEffects sideEffects)
         return
         [
             .. syntax.Children.OfType<StructDeclSyntax>().Select(usingsBinder.BindStructDeclaration),
-            .. syntax.Children.OfType<FunDeclSyntax>().Select(usingsBinder.BindSourceFunDeclaration)
+            .. syntax.Children.OfType<FunDeclSyntax>().Select(usingsBinder.BindSourceFunDeclaration),
+            .. syntax.Children.OfType<ConstDeclSyntax>().Select(usingsBinder.BindConstDeclaration),
         ];
     }
 
@@ -332,6 +333,10 @@ public sealed class Binder(Scope scope, BinderSideEffects sideEffects)
 
                 case StructDeclSyntax structDecl:
                     symbols.Add(usingsBinder.BindStructDeclaration(structDecl));
+                    break;
+                
+                case ConstDeclSyntax constDecl:
+                    symbols.Add(usingsBinder.BindConstDeclaration(constDecl));
                     break;
 
                 case NamespaceDeclSyntax:
@@ -468,6 +473,19 @@ public sealed class Binder(Scope scope, BinderSideEffects sideEffects)
             SideEffects.ReportError(new Diagnostic.FieldDeclarationOnPrimitive(syntax, structSymbol));
         
         return new FieldDefinitionSymbol(syntax, Scope, structSymbol);
+    }
+
+    public Symbol BindConstDeclaration(ConstDeclSyntax constDecl)
+    {
+        // Reject annotations
+        var annotations = constDecl.Annotations.Select(BindAnnotation);
+        foreach (var annotation in annotations)
+        {
+            if (annotation is not null)
+                SideEffects.ReportError(new Diagnostic.InvalidConstAnnotation(annotation));
+        }
+
+        return new ConstDefinitionSymbol(constDecl, Scope, Scope.Owner);
     }
 
     
@@ -868,8 +886,8 @@ public sealed class Binder(Scope scope, BinderSideEffects sideEffects)
             // Strings and Literals
             NumberLiteralSyntax numberLiteralSyntax => BindNumberLiteral(numberLiteralSyntax,
                 numberLiteralSyntax.Token.Suffix),
-            TrueLiteralSyntax => new BoundConst(value: true, type: Bool, syntax),
-            FalseLiteralSyntax => new BoundConst(value: false, type: Bool, syntax),
+            TrueLiteralSyntax => new BoundConstLiteral(value: true, type: Bool, syntax),
+            FalseLiteralSyntax => new BoundConstLiteral(value: false, type: Bool, syntax),
             StringExprSyntax stringExprSyntax => BindString(stringExprSyntax),
 
             // Operators
@@ -1051,7 +1069,7 @@ public sealed class Binder(Scope scope, BinderSideEffects sideEffects)
             if (!int.TryParse(text, out var value))
                 return BindError(syntax, new Diagnostic.NumberTooBig(type, syntax));
 
-            return new BoundConst(value, type, syntax);
+            return new BoundConstLiteral(value, type, syntax);
         }
 
         if (type == Scope.Compilation.BaseLibrary.I64)
@@ -1059,19 +1077,19 @@ public sealed class Binder(Scope scope, BinderSideEffects sideEffects)
             if (!long.TryParse(text, out var value))
                 return BindError(syntax, new Diagnostic.NumberTooBig(type, syntax));
 
-            return new BoundConst(value, type, syntax);
+            return new BoundConstLiteral(value, type, syntax);
         }
 
         if (type == Scope.Compilation.BaseLibrary.F32)
         {
             var value = float.Parse(text, CultureInfo.InvariantCulture);
-            return new BoundConst(value, type, syntax);
+            return new BoundConstLiteral(value, type, syntax);
         }
 
         if (type == Scope.Compilation.BaseLibrary.F64)
         {
             var value = double.Parse(text, CultureInfo.InvariantCulture);
-            return new BoundConst(value, type, syntax);
+            return new BoundConstLiteral(value, type, syntax);
         }
 
         throw new UnreachableException();
@@ -1083,7 +1101,7 @@ public sealed class Binder(Scope scope, BinderSideEffects sideEffects)
         var parts = syntax.Parts.Select(BindStringPart).ToImmutableArray();
     
         if (parts.Length == 0)
-            return new BoundConst("", String, syntax);
+            return new BoundConstLiteral("", String, syntax);
         if (parts.Length == 1)
         {
             SideEffects.ResolveBoundNode(parts[0], syntax);
@@ -1110,7 +1128,7 @@ public sealed class Binder(Scope scope, BinderSideEffects sideEffects)
     private BoundValue BindStringPart(StringPartSyntax syntax)
         => syntax switch
         {
-            StringTextSyntax textSyntax => new BoundConst(textSyntax.TextToken.ProcessedText, String, syntax),
+            StringTextSyntax textSyntax => new BoundConstLiteral(textSyntax.TextToken.ProcessedText, String, syntax),
             StringInterpolationSyntax interpolationSyntax => BindStringInterpolation(interpolationSyntax),
         };
     
@@ -1120,7 +1138,7 @@ public sealed class Binder(Scope scope, BinderSideEffects sideEffects)
         {
             // Empty interpolation means nothing will be added, which is equivalent
             // to an empty text const.
-            return new BoundConst("", String, syntax);
+            return new BoundConstLiteral("", String, syntax);
         }
                 
         var boundExpr = BindValue(syntax.Expr, ValueUsage.Read);
@@ -1473,6 +1491,7 @@ public sealed class Binder(Scope scope, BinderSideEffects sideEffects)
 
             LocalSymbol local => new BoundLocal(local, syntax),
             FieldSymbol field => BindFieldAccess(field, receiver, syntax),
+            ConstSymbol constSymbol => BindConstAccess(constSymbol, receiver, syntax),
             FunSymbol => throw new UnreachableException("Handled above"),
         };
 
@@ -1572,8 +1591,8 @@ public sealed class Binder(Scope scope, BinderSideEffects sideEffects)
             // Funs can be static or instance members.
             FunSymbol fun => fun.IsStatic ? valueOrType.AsTypeRef : valueOrType.AsValue,
             
-            // Types are always accessed through the type.
-            TypeSymbol or NamespaceSymbol => valueOrType.AsTypeRef,
+            // Types/Namespaces/Consts are always accessed through the type.
+            TypeSymbol or NamespaceSymbol or ConstSymbol => valueOrType.AsTypeRef,
             
             // No symbol access through it means it's a value
             _ => valueOrType.AsValue,
@@ -1643,6 +1662,17 @@ public sealed class Binder(Scope scope, BinderSideEffects sideEffects)
         return asTypeRef is not null ? new BoundValueOrTypeRef(asField, asTypeRef) : asField;
     }
 
+    private BoundNode BindConstAccess(ConstSymbol constSymbol, BoundNode? receiver, ExprSyntax syntax)
+    {
+        if (receiver is BoundValue)
+        {
+            SideEffects.ReportError(new Diagnostic.StaticMemberThroughInstance(constSymbol, syntax));
+            return new BoundLookupError([constSymbol], UnresolvedSymbolReason.NotUsable, ErrorType, syntax);
+        }
+        
+        return new BoundConstAccess(constSymbol, syntax);
+    }
+    
     #endregion
     
     #region Subscripts

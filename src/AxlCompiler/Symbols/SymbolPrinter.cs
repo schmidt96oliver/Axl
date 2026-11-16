@@ -15,6 +15,7 @@ public static class SymbolPrinter
             ParameterSymbol => "parameter",
             VariableSymbol => "variable",
             FieldSymbol => "field",
+            ConstSymbol => "const",
 
             FunSymbol { IsOperator: false } => "fun",
             FunSymbol { IsOperator: true } => "operator",
@@ -94,6 +95,7 @@ public static class SymbolPrinter
             ParameterSymbol parameter => $"parameter {parameter.Name}: {parameter.ParameterTypeDisplayText}",
             VariableSymbol { Kind: VariableKind.Var } variable => $"var {variable.Name}: {variable.Type.FullName}",
             VariableSymbol variable => $"let {variable.Name}: {variable.Type.FullName}",
+            ConstSymbol constSymbol => $"const {constSymbol.FullName}: {constSymbol.Type.FullName}",
             FieldSymbol fieldSymbol => $"field {fieldSymbol.FullName}: {fieldSymbol.Type.FullName}",
             
             NamespaceSymbol or TypeSymbol => $"{symbol.KindName} {symbol.FullName}",

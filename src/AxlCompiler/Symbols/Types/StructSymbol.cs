@@ -77,6 +77,7 @@ public sealed class StructSymbol(
                         {
                             FieldDeclSyntax fieldDecl => (Symbol)binder.BindFieldDeclaration(fieldDecl),
                             FunDeclSyntax funDecl => binder.BindSourceFunDeclaration(funDecl),
+                            ConstDeclSyntax constDecl => binder.BindConstDeclaration(constDecl),
                             _ => throw new UnreachableException($"Unknown struct member syntax {syntax.GetType().Name}")
 
                         })

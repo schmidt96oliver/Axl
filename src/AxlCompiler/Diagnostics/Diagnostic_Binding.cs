@@ -365,12 +365,20 @@ public partial record Diagnostic
         public override string Message => $"‘{Fun.Name}‘ must return a value of type ‘{Fun.ReturnType.FullName}‘.";
     }
 
-    public sealed record StaticMemberThroughInstance(FunSymbol Fun, SyntaxNode Syntax) : Error
+    public sealed record StaticMemberThroughInstance(Symbol Symbol, SyntaxNode Syntax) : Error
     {
         public override ImmutableArray<SourceLocation> Locations => [SyntaxLocations.RightmostName(Syntax)];
 
-        public override string Message =>
-            $"{Fun.ShortDisplayText.Capitalize()} is static. Call it as ‘{Fun.FullName}(...)‘ instead.";
+        public override string Message => Symbol switch
+        {
+            FunSymbol =>
+                $"{Symbol.ShortDisplayText.Capitalize()} is static. Call it as ‘{Symbol.FullName}(...)‘ instead.",
+            ConstSymbol =>
+                $"{Symbol.ShortDisplayText.Capitalize()} is a const. Access it through ‘{Symbol.FullName}‘ instead.",
+            _ =>
+                $"{Symbol.ShortDisplayText.Capitalize()} is static and cannot be accessed through an instance.",
+        };
+
     }
 
     public sealed record NotAValue(BoundNode BoundNode) : Error
@@ -428,23 +436,9 @@ public partial record Diagnostic
             // Squiggle the name and parameter list, since they are at fault.
             =>
             [
-                .. OffendingSymbols.SelectMany(symbol => GetDeclNameLocations(symbol))
+                .. OffendingSymbols.SelectMany(symbol => symbol.NameSyntax.Select(s => s.Location))
             ];
 
-        private static ImmutableArray<SourceLocation> GetDeclNameLocations(Symbol symbol) => symbol switch
-        {
-            StructSymbol structSymbol => [structSymbol.DeclarationSyntax.Name.Location],
-            SourceFunSymbol sourceFun => [sourceFun.DeclarationSyntax.Name.Location],
-            FieldDefinitionSymbol fieldSymbol => [fieldSymbol.DeclarationSyntax.Name.Location],
-            SourceNamespaceSymbol namespaceSymbol =>
-            [
-                .. namespaceSymbol.Declaration.NamespaceDeclSyntaxes.Select(s => s.Name.Location)
-            ],
-            TypeParameterSymbol typeParamSymbol => typeParamSymbol.DeclarationSyntax is not null
-                ? [typeParamSymbol.DeclarationSyntax.Location]
-                : [],
-            _ => []
-        };
         public override string LocationLabel => "Also declared here.";
 
         public override string Message => $"‘{OffendingSymbols[0].Name}‘ is already declared in this scope.";
@@ -727,6 +721,15 @@ public partial record Diagnostic
         public override string Message => $"Annotation '{Annotation.Syntax.Text}' is not valid for structs.";
     }
 
+    public sealed record InvalidConstAnnotation(BoundAnnotation Annotation) : Error
+    {
+        /// <inheritdoc />
+        public override ImmutableArray<SourceLocation> Locations => [Annotation.Syntax.Location];
+
+        /// <inheritdoc />
+        public override string Message => $"Annotation '{Annotation.Syntax.Text}' is not valid for constants.";
+    }
+
     public sealed record InvalidFunAnnotation(BoundAnnotation Annotation) : Error
     {
         /// <inheritdoc />
@@ -956,4 +959,7 @@ public partial record Diagnostic
         /// <inheritdoc />
         public override string Message => "‘mut‘ is not valid in type initializers.";
     }
+
+
+    
 }

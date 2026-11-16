@@ -65,6 +65,7 @@ public sealed class TypeMap
                 NamespaceSymbol => ([], []),
                 LocalSymbol => ([], []),
                 FieldSymbol => ([], []),
+                ConstSymbol => ([], []),
             });
         }
         return new TypeMap(map.ToFrozenDictionary(), strict);

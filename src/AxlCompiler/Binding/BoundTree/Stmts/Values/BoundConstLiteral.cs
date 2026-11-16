@@ -5,7 +5,7 @@ namespace AxlCompiler.Binding.BoundTree;
 
 public union ConstValue(int, long, float, double, bool, string);
 
-public sealed class BoundConst(ConstValue value, TypeSymbol type, SyntaxNode? syntax = null) 
+public sealed class BoundConstLiteral(ConstValue value, TypeSymbol type, SyntaxNode? syntax = null) 
     : BoundValue(type, syntax)
 {
     public ConstValue Value { get; } = value;

@@ -134,6 +134,7 @@ public sealed class CompletionHandler(ILanguageServerFacade facade) : Completion
         {
             FieldSymbol field => MakeFieldItem(name, field),
             LocalSymbol local => MakeLocalItem(name, local, isRider),
+            ConstSymbol constSymbol => MakeConstItem(name, constSymbol),
             
             NamespaceSymbol => MakeNamespaceItem(name, isRider),
             
@@ -248,6 +249,16 @@ public sealed class CompletionHandler(ILanguageServerFacade facade) : Completion
     {
         Label = name,
         Kind = CompletionItemKind.Field,
+        LabelDetails = new CompletionItemLabelDetails
+        {
+            Detail = null,
+            Description = $"{symbol.Type.Name}",
+        },
+    };
+    private static CompletionItem MakeConstItem(string name, ConstSymbol symbol) => new()
+    {
+        Label = name,
+        Kind = CompletionItemKind.Constant,
         LabelDetails = new CompletionItemLabelDetails
         {
             Detail = null,

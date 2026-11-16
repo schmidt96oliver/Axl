@@ -237,8 +237,9 @@ public class Lowerer
         BoundBlock boundBlock => LowerBlock(boundBlock),
 
         BoundLocal boundVariable => new Operand.Copy(LowerPlace(boundVariable), boundVariable.Syntax),
-        BoundConst boundConst => new Operand.Const(boundConst.Value, boundConst.Type, boundConst.Syntax),
+        BoundConstLiteral boundConst => new Operand.Const(boundConst.Value, boundConst.Type, boundConst.Syntax),
         BoundField boundField => new Operand.Copy(LowerPlace(boundField), boundField.Syntax),
+        BoundConstAccess boundConstAccess => new Operand.Const(0, boundConstAccess.Type, boundConstAccess.Syntax),  //TODO: Implement constexpr
 
         BoundIfExpr boundIfExpr => LowerIfExpr(boundIfExpr, _mirFun.AddTemp(boundIfExpr.Type)),
 
@@ -369,7 +370,7 @@ public class Lowerer
                 Debug.Assert(boundArguments[i].IsMut);
                 arguments.Add(MakeRef(LowerPlace(boundArguments[i].Value)));
             }
-            else if (boundArguments[i].Value is BoundConst || !mightHaveSideEffect)
+            else if (boundArguments[i].Value is BoundConstLiteral || !mightHaveSideEffect)
             {
                 Debug.Assert(!boundArguments[i].IsMut);
                 arguments.Add(LowerOperand(boundArguments[i].Value));
@@ -396,9 +397,10 @@ public class Lowerer
         BoundIfExpr => true, // Lowers to temp anyway
         BoundStructInit => true, // Lowers to temp anyway
 
-        BoundConst => false,
+        BoundConstLiteral => false,
         BoundLocal => false,
         BoundError => false,
+        BoundConstAccess => false,
         BoundField => false,
         BoundLogicAnd boundLogicAnd => MightHaveSideEffects(boundLogicAnd.Left) ||
                                        MightHaveSideEffects(boundLogicAnd.Right),
@@ -418,7 +420,6 @@ public class Lowerer
         Emit(new Instruction.StructInit(structInit.Type, target, fields.ToFrozenDictionary(), structInit.Syntax));
         return new Operand.Copy(target);
     }
-
     
     private Operand LowerIfExpr(BoundIfExpr ifExpr, Place target)
     {
