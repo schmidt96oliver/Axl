@@ -488,6 +488,20 @@ public sealed class Binder(Scope scope, BinderSideEffects sideEffects)
         return new ConstDefinitionSymbol(constDecl, Scope, Scope.Owner);
     }
 
+    public BoundValue BindConstInitializer(ExprSyntax syntax)
+    {
+        if (Scope.Owner is not ConstSymbol constSymbol)
+            throw new InvalidOperationException("Const initializer can only be bound on const.");
+
+        var value = BindValue(syntax, ValueUsage.Read);
+        if (value is BoundError)
+            return value;
+
+        if (!CheckType(value, constSymbol.Type))
+            return new BoundError(ErrorType, syntax);
+        
+        return value;
+    }
     
 
     public BoundAnnotation? BindAnnotation(AnnotationSyntax syntax)
@@ -917,7 +931,7 @@ public sealed class Binder(Scope scope, BinderSideEffects sideEffects)
         return bound;
     }
 
-    private BoundValue BindValue(ExprSyntax syntax, ValueUsage usage)
+    public BoundValue BindValue(ExprSyntax syntax, ValueUsage usage)
     {
         var bound = BindExpr(syntax, LookupOptions.Any);
         bound = ReplaceBoundValueOrTypeRef(bound, null);

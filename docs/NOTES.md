@@ -3,7 +3,9 @@
 
 # Now
 
-* Bind initializer
+* Binder:
+  * Add type check: Must be concrete value type
+  * Add obvious cycle check: Own field must not be reachable through expression (not counting calls)
 
 * Lowering
 * ConstEvaluator
@@ -14,6 +16,9 @@
   * not through instance
   * ColorColor resolves to type
   * accessibility
+  * initializer type-checked
+  * initializer type-checked against declared type
+  * initializer in static context (no instance data)
 
 * ?? Move TestFile Evalutor into test suite
 

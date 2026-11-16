@@ -15,6 +15,7 @@ public sealed class ConstDefinitionSymbol(
 {
     private readonly BinderSideEffects _sideEffects = new();
     private bool _isBindingType = false;
+    private bool _isBindingValueFun = false;
     private readonly List<SpecializedConstSymbol> _specializations = [];
 
     public ConstDeclSyntax DeclarationSyntax { get; } = declarationSyntax;
@@ -24,7 +25,7 @@ public sealed class ConstDefinitionSymbol(
 
     /// <inheritdoc />
     public override ImmutableArray<Token> NameSyntax => [DeclarationSyntax.Name];
-    
+
     public override ConstDefinitionSymbol OriginalDefinition => this;
     
     public override TypeSymbol Type
@@ -48,9 +49,33 @@ public sealed class ConstDefinitionSymbol(
     }
 
     /// <inheritdoc />
+    public override SyntheticFunSymbol ValueFun
+    {
+        get
+        {
+            if (field is null)
+            {
+                if (_isBindingValueFun)
+                    throw new CycleException();
+                _isBindingValueFun = true;
+
+                var boundValue = new Binder(enclosingScope.WithOwner(this), _sideEffects)
+                    .BindConstInitializer(DeclarationSyntax.ValueExpr);
+                field = new SyntheticFunSymbol(Compilation, name: $"<>{Name}.init", Owner, isPublic: false);
+                field.SetReturnValue(boundValue);
+                
+                _isBindingValueFun = false;
+            }
+
+            return field;
+        }
+    }
+
+    /// <inheritdoc />
     public override void Complete(BinderSideEffects sideEffects)
     {
         _ = Type;
+        _ = ValueFun;
         sideEffects.MergeWith(_sideEffects);
     }
 
