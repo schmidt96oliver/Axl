@@ -1,5 +1,4 @@
-﻿using System.Net;
-using AxlCompiler.Text;
+﻿using AxlCompiler.Text;
 using AxlLsp.Projects;
 using OmniSharp.Extensions.LanguageServer.Protocol;
 using OmniSharp.Extensions.LanguageServer.Protocol.Client.Capabilities;
@@ -81,27 +80,16 @@ public class DiagnosticHandler : DocumentDiagnosticHandlerBase
         var message = diagnostic.Hint is null
             ? diagnostic.Message
             : $"{diagnostic.Message}\nHint: {diagnostic.Hint}"; 
-        var messageLines = message.Split('\n');
-
-        // This is a workaround to displaying multiple lines: We display
-        // each line as one related info without link, because Rider with LSP4IJ
-        // cannot display multiple lines. If I ever try VSCode, it might work better.
-        
-        var messageRelatedInfo = messageLines[1..].Select(line => new DiagnosticRelatedInformation
-        {
-            Location = null!,
-            Message = WebUtility.HtmlEncode(line)
-        }).ToList();
 
         if (diagnostic.Locations.Length == 0)
-            return [TrySingleLocationToLsp(diagnostic, uri, -1, messageLines[0], messageRelatedInfo)!];
+            return [TrySingleLocationToLsp(diagnostic, uri, -1, message)!];
         
         return Enumerable.Range(0, diagnostic.Locations.Length)
-            .Select(i => TrySingleLocationToLsp(diagnostic, uri, i, messageLines[0], messageRelatedInfo))
+            .Select(i => TrySingleLocationToLsp(diagnostic, uri, i, message))
             .Where(lspDiagnostic => lspDiagnostic is not null)!;
     }
 
-    private static Diagnostic? TrySingleLocationToLsp(AxlDiagnostic diagnostic, DocumentUri uri, int locationIndex, string message, IReadOnlyList<DiagnosticRelatedInformation> previousRelatedInformation)
+    private static Diagnostic? TrySingleLocationToLsp(AxlDiagnostic diagnostic, DocumentUri uri, int locationIndex, string message)
     {
         Location? lspLocation;
         if (locationIndex < 0)
@@ -132,10 +120,10 @@ public class DiagnosticHandler : DocumentDiagnosticHandlerBase
             Message = message,
 
             Code = new DiagnosticCode(diagnostic.Id),
-            Range = lspLocation!.Range,
+            Range = lspLocation.Range,
             RelatedInformation = new Container<DiagnosticRelatedInformation>(
             [
-                .. previousRelatedInformation, .. GetRelatedInformation(diagnostic, exceptIndex: locationIndex)
+                .. GetRelatedInformation(diagnostic, exceptIndex: locationIndex)
             ]),
         };
     }

@@ -9,11 +9,14 @@ using AxlLsp.Projects;
 using OmniSharp.Extensions.LanguageServer.Protocol.Client.Capabilities;
 using OmniSharp.Extensions.LanguageServer.Protocol.Document;
 using OmniSharp.Extensions.LanguageServer.Protocol.Models;
+using OmniSharp.Extensions.LanguageServer.Protocol.Server;
 
 namespace AxlLsp.Handlers;
 
-public sealed class CompletionHandler : CompletionHandlerBase
+public sealed class CompletionHandler(ILanguageServerFacade facade) : CompletionHandlerBase
 {
+    private bool IsRider => facade.Client.ClientSettings.ClientInfo?.Name.Contains("Rider") == true;
+    
     /// <inheritdoc />
     protected override CompletionRegistrationOptions CreateRegistrationOptions(CompletionCapability capability,
         ClientCapabilities clientCapabilities) => new()
@@ -28,7 +31,7 @@ public sealed class CompletionHandler : CompletionHandlerBase
         if (axlLocation is null)
             return Task.FromResult(new CompletionList([]));
 
-        var items = GetCompletionItems(axlLocation.Location, axlLocation.Compilation);
+        var items = GetCompletionItems(axlLocation.Location, axlLocation.Compilation, isRider: IsRider);
         return Task.FromResult(new CompletionList(items));
     }
 
@@ -39,7 +42,7 @@ public sealed class CompletionHandler : CompletionHandlerBase
     }
 
 
-    internal static IEnumerable<CompletionItem> GetStructInitFieldItems(BoundStructInitError structInitError, SyntaxContext context)
+    internal static IEnumerable<CompletionItem> GetStructInitFieldItems(BoundStructInitError structInitError, SyntaxContext context, bool isRider)
     {
         // Show only those candidates that have all the fields
         // that have been written. The binder does not filter
@@ -55,7 +58,7 @@ public sealed class CompletionHandler : CompletionHandlerBase
         return names.Select(fieldName => new CompletionItem
         {
             Label = $"{fieldName} = ",
-            Kind = CompletionItemKind.File
+            Kind = isRider ? CompletionItemKind.File : CompletionItemKind.Field,
         });
 
         IEnumerable<string> RemainingFields(TypeSymbol type)
@@ -73,7 +76,7 @@ public sealed class CompletionHandler : CompletionHandlerBase
     /// If <c>true</c>, only shows completion items that belong to <paramref name="compilation"/>.
     /// Used mainly for testing.
     /// </param>
-    internal static IEnumerable<CompletionItem> GetCompletionItems(SourceLocation at, Compilation compilation, bool excludeReferencedCompilations = false)
+    internal static IEnumerable<CompletionItem> GetCompletionItems(SourceLocation at, Compilation compilation, bool excludeReferencedCompilations = false, bool isRider = false)
     {
         var context = SyntaxContext.At(at, compilation);
         
@@ -87,7 +90,7 @@ public sealed class CompletionHandler : CompletionHandlerBase
             var callSyntax = argListSyntax.Ancestors().OfType<CallExprSyntax>().First();
             if (compilation.SemanticModel.BoundNodeFor(callSyntax) is BoundStructInitError error)
             {
-                foreach (var item in GetStructInitFieldItems(error, context))
+                foreach (var item in GetStructInitFieldItems(error, context, isRider))
                     yield return item;
                 yield break;
             }
@@ -96,7 +99,7 @@ public sealed class CompletionHandler : CompletionHandlerBase
         // Normal completion
         foreach (var kw in context.Continuations.GetKinds().Where(SyntaxFacts.IsKeyword))
         {
-            if (MaybeMake(kw, context) is { } item)
+            if (MaybeMake(kw, context, isRider) is { } item)
                 yield return item;
         }
 
@@ -107,7 +110,7 @@ public sealed class CompletionHandler : CompletionHandlerBase
                 .GroupBy(s => s.Name);
             foreach (var symbolGrp in symbolsByName)
             {
-                if (MaybeMake(symbolGrp.Key, [.. symbolGrp], context) is { } item)
+                if (MaybeMake(symbolGrp.Key, [.. symbolGrp], context, isRider) is { } item)
                     yield return item;
             }
         }
@@ -118,21 +121,21 @@ public sealed class CompletionHandler : CompletionHandlerBase
     // !!! These do _not_ map to the correct symbol type.
     
     
-    private static CompletionItem? MaybeMake(string name, ImmutableArray<Symbol> symbols, SyntaxContext context)
+    private static CompletionItem? MaybeMake(string name, ImmutableArray<Symbol> symbols, SyntaxContext context, bool isRider)
     {
         if (symbols.All(s => s is FunSymbol))
             return MakeFunItem(name, [.. symbols.Cast<FunSymbol>()]);
         if (symbols.All(s => s is TypeSymbol))
-            return MakeTypeItem(name, [.. symbols.Cast<TypeSymbol>()], context);
+            return MakeTypeItem(name, [.. symbols.Cast<TypeSymbol>()], context, isRider);
 
         if (symbols.Length != 1) return null;
 
         return symbols[0] switch
         {
-            FieldSymbol @field => MakeFieldItem(name, @field),
-            LocalSymbol local => MakeLocalItem(name, local),
+            FieldSymbol field => MakeFieldItem(name, field),
+            LocalSymbol local => MakeLocalItem(name, local, isRider),
             
-            NamespaceSymbol => MakeNamespaceItem(name),
+            NamespaceSymbol => MakeNamespaceItem(name, isRider),
             
             TypeSymbol => null,
             FunSymbol => null,
@@ -182,7 +185,7 @@ public sealed class CompletionHandler : CompletionHandlerBase
             ? $"{param.Name}: mut {param.Type.Name}"
             : $"{param.Name}: {param.Type.Name}";
     }
-    private static CompletionItem MakeTypeItem(string name, ImmutableArray<TypeSymbol> symbols, SyntaxContext context)
+    private static CompletionItem MakeTypeItem(string name, ImmutableArray<TypeSymbol> symbols, SyntaxContext context, bool isRider)
     {
         // Insert brackets only for type positions, because in expression position
         // the user might want to use inference.
@@ -195,7 +198,7 @@ public sealed class CompletionHandler : CompletionHandlerBase
             return new CompletionItem
             {
                 Label = name,
-                Kind = CompletionItemKind.Class,
+                Kind = isRider ? CompletionItemKind.Class : CompletionItemKind.Struct,
                 InsertText = insertBrackets ? $"{name}[$0]" : name,
                 InsertTextFormat = InsertTextFormat.Snippet,
 
@@ -210,7 +213,7 @@ public sealed class CompletionHandler : CompletionHandlerBase
         return new CompletionItem()
         {
             Label = name,
-            Kind = CompletionItemKind.Class,
+            Kind = isRider ? CompletionItemKind.Class : CompletionItemKind.Struct,
             InsertText = insertBrackets ? $"{name}[$0]" : name,
             InsertTextFormat = InsertTextFormat.Snippet,
 
@@ -222,16 +225,16 @@ public sealed class CompletionHandler : CompletionHandlerBase
         };
     }
 
-    private static CompletionItem MakeNamespaceItem(string name) => new()
+    private static CompletionItem MakeNamespaceItem(string name, bool isRider) => new()
     {
         Label = name,
-        Kind = CompletionItemKind.Struct,
+        Kind = isRider ? CompletionItemKind.Struct : CompletionItemKind.Module,
     };
     
-    private static CompletionItem MakeLocalItem(string name, LocalSymbol symbol) => new()
+    private static CompletionItem MakeLocalItem(string name, LocalSymbol symbol, bool isRider) => new()
     {
         Label = name,
-        Kind = symbol is ParameterSymbol ? CompletionItemKind.TypeParameter : CompletionItemKind.Variable,
+        Kind = symbol is ParameterSymbol && isRider ? CompletionItemKind.TypeParameter : CompletionItemKind.Variable,
         LabelDetails = new CompletionItemLabelDetails
         {
             Detail = null,
@@ -252,7 +255,7 @@ public sealed class CompletionHandler : CompletionHandlerBase
         },
     };
     
-    private static CompletionItem? MaybeMake(TokenKind keywordKind, SyntaxContext context)
+    private static CompletionItem? MaybeMake(TokenKind keywordKind, SyntaxContext context, bool isRider)
     {
         if (keywordKind is TokenKind.MutKw && !IsMutValid(context))
             return null;
@@ -266,7 +269,7 @@ public sealed class CompletionHandler : CompletionHandlerBase
         return new CompletionItem
         {
             Label = SyntaxFacts.GetText(keywordKind) ?? "??",
-            Kind = CompletionItemKind.Event
+            Kind = isRider ? CompletionItemKind.Event : CompletionItemKind.Keyword
         };
     }
 

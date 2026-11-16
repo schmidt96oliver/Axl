@@ -20,7 +20,6 @@ var server = await LanguageServer.From(options => options
 await server.WaitForExit;
 
 
-
 namespace AxlLsp
 {
     internal sealed class AlwaysSerial : IRequestProcessIdentifier

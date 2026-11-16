@@ -5,8 +5,6 @@
 
 # Now
 
-* [ ] Fix diagnostics for VSCode
-
 # Questions / Little ones
 
 * ?? BindLookupResult: Report WrongKind error before anything else; remove isThisField in BindFieldAccess
