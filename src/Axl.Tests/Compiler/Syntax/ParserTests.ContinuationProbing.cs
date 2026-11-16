@@ -73,7 +73,7 @@ public partial class ParserTests
         [Fact]
         public void Continuations_Empty()
             => InlineSnapshot.Validate(Continuations("|"), """
-                fun var let namespace return if while break continue using struct pub static self mut true false Identifier NumberLiteral " ! @ ( { -
+                fun var let namespace return if while break continue using struct pub static self mut const true false Identifier NumberLiteral " ! @ ( { -
                 """);
 
         [Fact]
@@ -104,7 +104,7 @@ public partial class ParserTests
 
         [Fact]
         public void Continuations_Members1()
-            => InlineSnapshot.Validate(Continuations("pub |"), "fun struct static mut");
+            => InlineSnapshot.Validate(Continuations("pub |"), "fun struct static mut const");
 
         [Fact]
         public void Continuations_Members2()
@@ -112,7 +112,7 @@ public partial class ParserTests
 
         [Fact]
         public void Continuations_Members3()
-            => InlineSnapshot.Validate(Continuations("@foo |"), "fun struct pub static mut @");
+            => InlineSnapshot.Validate(Continuations("@foo |"), "fun struct pub static mut const @");
 
         [Fact]
         public void Continuations_Members4()
@@ -160,7 +160,7 @@ public partial class ParserTests
 
         [Fact]
         public void Continuations_Struct2()
-            => InlineSnapshot.Validate(Continuations("struct S { | }"), "fun pub static mut Identifier @ }");
+            => InlineSnapshot.Validate(Continuations("struct S { | }"), "fun pub static mut const Identifier @ }");
 
         [Fact]
         public void Continuations_If1()
@@ -183,20 +183,20 @@ public partial class ParserTests
         [Fact]
         public void Continuations_AfterError1()
             => InlineSnapshot.Validate(Continuations("## |"), """
-                fun var let return if while break continue struct pub static self mut true false Identifier NumberLiteral " ! @ ( { -
+                fun var let return if while break continue struct pub static self mut const true false Identifier NumberLiteral " ! @ ( { -
                 """);
         [Fact]
         public void Continuations_AfterError2()
             => InlineSnapshot.Validate(Continuations("## pu|b"), """
-                fun var let return if while break continue struct pub static self mut true false Identifier NumberLiteral " ! @ ( { -
+                fun var let return if while break continue struct pub static self mut const true false Identifier NumberLiteral " ! @ ( { -
                 """);
         [Fact]
         public void Continuations_AfterError3()
             => InlineSnapshot.Validate(Continuations("#|"), """
-                fun var let return if while break continue struct pub static self mut true false Identifier NumberLiteral " ! @ ( { -
+                fun var let return if while break continue struct pub static self mut const true false Identifier NumberLiteral " ! @ ( { -
                 """);
         [Fact]
         public void Continuations_AfterError4()
-            => InlineSnapshot.Validate(Continuations("## pub |"), "fun struct static mut");
+            => InlineSnapshot.Validate(Continuations("## pub |"), "fun struct static mut const");
     }
 }

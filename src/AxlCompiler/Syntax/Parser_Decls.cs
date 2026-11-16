@@ -10,7 +10,7 @@ public partial class Parser
 {
     private MarkClose EatMember(Anchor anchor, TokenSet allowedAfterHeader)
     {
-        Debug.Assert(_scanner.IsAt(FirstSet.StructDecl | FirstSet.FunDecl | FirstSet.FieldDecl));
+        Debug.Assert(_scanner.IsAt(FirstSet.StructDecl | FirstSet.FunDecl | FirstSet.FieldDecl | FirstSet.ConstDecl));
 
         var common = _scanner.Open();
 
@@ -38,6 +38,8 @@ public partial class Parser
             return ContinueEatStructDecl(anchor, common);
         if (_scanner.IsAt(FirstSet.FieldDeclAfterHeader))
             return ContinueEatFieldDecl(anchor, common);
+        if (_scanner.IsAt(FirstSet.ConstDeclAfterHeader))
+            return ContinueEatConstDecl(anchor, common);
         
         _scanner.ReportMissingTokenHere(ExpectedSyntax.Member);
         return _scanner.Close(common, SyntaxKind.Garbage);
@@ -78,9 +80,13 @@ public partial class Parser
         
         foreach (var _ in _scanner.MustEatEachIteration())
         {
-            if (_scanner.IsAt(FirstSet.FunDecl | FirstSet.FieldDecl))
-                EatMember(bodyAnchor, allowedAfterHeader: FirstSet.FunDeclAfterHeader | FirstSet.FieldDeclAfterHeader);
-            
+            if (_scanner.IsAt(FirstSet.FunDecl | FirstSet.FieldDecl | FirstSet.ConstDecl))
+            {
+                EatMember(bodyAnchor, allowedAfterHeader: FirstSet.FunDeclAfterHeader | 
+                                                          FirstSet.FieldDeclAfterHeader | 
+                                                          FirstSet.ConstDeclAfterHeader);
+            }
+
             // --- lone ";" special case
             else if (_scanner.IsAt(TokenKind.Semicolon, isGrammarCheck: false))
                 _scanner.EatIntoGarbageAndReport(ExpectedSyntax.Stmt);
@@ -106,6 +112,20 @@ public partial class Parser
         return _scanner.Close(body, SyntaxKind.StructBody);
     }
 
+    private MarkClose ContinueEatConstDecl(Anchor anchor, MarkOpen commonHeader)
+    {
+        Debug.Assert(_scanner.IsAt(FirstSet.ConstDeclAfterHeader));
+
+        _scanner.EatKnown(TokenKind.ConstKw);
+        EnsureToken(TokenKind.Identifier);
+        EnsureTypeAnnotation(anchor | TokenKind.Semicolon);
+        EnsureToken(TokenKind.Equal);
+        EnsureExpr(anchor | TokenKind.Semicolon);
+        EnsureToken(TokenKind.Semicolon);
+        
+        return _scanner.Close(commonHeader, SyntaxKind.ConstDecl);
+    }
+    
     private MarkClose ContinueEatFieldDecl(Anchor anchor, MarkOpen commonHeader)
     {
         Debug.Assert(_scanner.IsAt(FirstSet.FieldDeclAfterHeader));

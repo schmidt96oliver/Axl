@@ -23,6 +23,7 @@ public static class SyntaxFacts
         TokenKind.StaticKw => "static",
         TokenKind.SelfKw => "self",
         TokenKind.MutKw => "mut",
+        TokenKind.ConstKw => "const",
     
         // --- Literals
         TokenKind.StringStart => "\"",
@@ -95,6 +96,7 @@ public static class SyntaxFacts
             "static" => TokenKind.StaticKw,
             "self" => TokenKind.SelfKw,
             "mut" => TokenKind.MutKw,
+            "const" => TokenKind.ConstKw,
 
             _ => null
         };

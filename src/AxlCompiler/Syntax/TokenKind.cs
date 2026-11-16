@@ -30,6 +30,7 @@ public enum TokenKind
     StaticKw,
     SelfKw,
     MutKw,
+    ConstKw,
     
     // --- Literals
     NumberLiteral,

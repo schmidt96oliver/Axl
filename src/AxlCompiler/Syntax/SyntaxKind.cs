@@ -30,6 +30,7 @@ public enum SyntaxKind
     FunDecl,
     FieldDecl,
     StructDecl,
+    ConstDecl,
     
     // Literals
     TrueLiteral,

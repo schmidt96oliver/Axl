@@ -129,12 +129,16 @@ public partial class Parser
 
     private void EatNamespaceFile()
     {
-        var fileAnchor = Anchor.Forced | FirstSet.StructDecl | FirstSet.FunDeclRecovery;
+        var fileAnchor = Anchor.Forced | FirstSet.StructDecl | FirstSet.FunDeclRecovery | FirstSet.ConstDecl;
 
         foreach (var _ in _scanner.MustEatEachIteration())
         {
-            if (_scanner.IsAt(FirstSet.StructDecl | FirstSet.FunDecl))
-                EatMember(fileAnchor, allowedAfterHeader: FirstSet.StructDeclAfterHeader | FirstSet.FunDeclAfterHeader);
+            if (_scanner.IsAt(FirstSet.StructDecl | FirstSet.FunDecl | FirstSet.ConstDecl))
+            {
+                EatMember(fileAnchor, allowedAfterHeader: FirstSet.StructDeclAfterHeader |
+                                                          FirstSet.FunDeclAfterHeader |
+                                                          FirstSet.ConstDeclAfterHeader);
+            }
             else
                 RecoverToAndReport(fileAnchor | FirstSet.FunDecl, ExpectedSyntax.Member);
         }
@@ -142,14 +146,18 @@ public partial class Parser
 
     private void EatScriptFile()
     {
-        var fileAnchor = Anchor.Forced | FirstSet.StructDecl | FirstSet.FunDeclRecovery | FirstSet.NonExprStmt;
+        var fileAnchor = Anchor.Forced | FirstSet.StructDecl | FirstSet.FunDeclRecovery | 
+                         FirstSet.ConstDecl |
+                         FirstSet.NonExprStmt;
 
         foreach (var _ in _scanner.MustEatEachIteration())
         {
             if (_scanner.IsAt(FirstSet.Stmt))
                 EatStmt(fileAnchor | TokenKind.Semicolon);
-            else if (_scanner.IsAt(FirstSet.StructDecl | FirstSet.FunDecl))
-                EatMember(fileAnchor, allowedAfterHeader: FirstSet.StructDeclAfterHeader | FirstSet.FunDeclAfterHeader);
+            else if (_scanner.IsAt(FirstSet.StructDecl | FirstSet.FunDecl | FirstSet.ConstDecl))
+                EatMember(fileAnchor, allowedAfterHeader: FirstSet.StructDeclAfterHeader | 
+                                                          FirstSet.FunDeclAfterHeader |
+                                                          FirstSet.ConstDeclAfterHeader);
             else
             {
                 // Recover to the next Stmt start, which includes Expr.

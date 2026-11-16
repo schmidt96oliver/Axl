@@ -79,7 +79,8 @@ public sealed class LexerTests
 
     [Fact]
     public void Keywords()
-        => InlineSnapshot.Validate(NoWhitespace("mut self static struct pub let fun var namespace return if else while break continue true false using"), """
+        => InlineSnapshot.Validate(NoWhitespace("const mut self static struct pub let fun var namespace return if else while break continue true false using"), """
+            - ConstKw: "const"
             - MutKw: "mut"
             - SelfKw: "self"
             - StaticKw: "static"

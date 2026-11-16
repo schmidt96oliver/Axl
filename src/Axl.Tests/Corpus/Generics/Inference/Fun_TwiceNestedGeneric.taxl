@@ -2,7 +2,7 @@
 //= 1
 //= X
 //= true
-
+ 
 let p = Pair[I32, Pair[String, Bool]](First = 1,
     Scnd = Pair[String, Bool](First= "X", Scnd=true));
 

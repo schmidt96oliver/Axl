@@ -3,7 +3,10 @@
 
 # Now
 
-* constants in types: For I32.Min/Max, ...
+* [ ] Binder
+  * [ ] Reject annotations
+
+* test: in namespace, script, struct
 
 * ?? Move TestFile Evalutor into test suite
 

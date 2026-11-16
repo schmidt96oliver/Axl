@@ -65,5 +65,8 @@ public partial class Parser
             TokenKind.Plus, TokenKind.Minus, TokenKind.Star, TokenKind.Slash,
             TokenKind.LessThan, TokenKind.LessThanEqual, TokenKind.GreaterThan, TokenKind.GreaterThanEqual,
             TokenKind.DoubleEqual, TokenKind.BangEqual, TokenKind.Bang);
+
+        public static readonly TokenSet ConstDeclAfterHeader = TokenSet.Of(TokenKind.ConstKw);
+        public static readonly TokenSet ConstDecl = Annotation | TokenKind.PubKw | ConstDeclAfterHeader;
     }
 }

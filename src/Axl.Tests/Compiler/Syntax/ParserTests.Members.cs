@@ -366,5 +366,267 @@ public partial class ParserTests
                 · · ']'
                 · ';'
                 """);
+        
+        [Fact]
+        public void Const_Struct()
+            => InlineSnapshot.Validate(Tree("""
+                                            struct Test { const A: I32 = 1; }
+                                            """), """
+                StructDecl
+                · 'struct'
+                · 'Test'
+                · StructBody
+                · · '{'
+                · · ConstDecl
+                · · · 'const'
+                · · · 'A'
+                · · · TypeAnnotationClause
+                · · · · ':'
+                · · · · NameRef 'I32'
+                · · · '='
+                · · · NumberLiteral '1'
+                · · · ';'
+                · · '}'
+                """);
+        [Fact]
+        public void Const_Struct_MissingInit()
+            => InlineSnapshot.Validate(Tree("""
+                                            struct Test { const A: I32; }
+                                            """), """
+                ERROR MissingToken@[26, 26): Expected '='.
+
+
+                StructDecl
+                · 'struct'
+                · 'Test'
+                · StructBody
+                · · '{'
+                · · ConstDecl
+                · · · 'const'
+                · · · 'A'
+                · · · TypeAnnotationClause
+                · · · · ':'
+                · · · · NameRef 'I32'
+                · · · ??'='
+                · · · NameRef
+                · · · · ??ID
+                · · · ';'
+                · · '}'
+                """);
+        [Fact]
+        public void Const_Struct_MissingType()
+            => InlineSnapshot.Validate(Tree("""
+                                            struct Test { const A = 1; }
+                                            """), """
+                ERROR MissingToken@[21, 21): Expected a type annotation.
+
+
+                StructDecl
+                · 'struct'
+                · 'Test'
+                · StructBody
+                · · '{'
+                · · ConstDecl
+                · · · 'const'
+                · · · 'A'
+                · · · TypeAnnotationClause
+                · · · · ??':'
+                · · · · NameRef
+                · · · · · ??ID
+                · · · '='
+                · · · NumberLiteral '1'
+                · · · ';'
+                · · '}'
+                """);
+        [Fact]
+        public void Const_Struct_MissingInitAndType()
+            => InlineSnapshot.Validate(Tree("""
+                                            struct Test { const A; }
+                                            """), """
+                ERROR MissingToken@[21, 21): Expected a type annotation.
+
+
+                StructDecl
+                · 'struct'
+                · 'Test'
+                · StructBody
+                · · '{'
+                · · ConstDecl
+                · · · 'const'
+                · · · 'A'
+                · · · TypeAnnotationClause
+                · · · · ??':'
+                · · · · NameRef
+                · · · · · ??ID
+                · · · ??'='
+                · · · NameRef
+                · · · · ??ID
+                · · · ';'
+                · · '}'
+                """);
+        
+        [Fact]
+        public void Const_Namespace()
+            => InlineSnapshot.Validate(Tree("""
+                                            namespace Test; const A: I32 = 1;
+                                            """), """
+                NamespaceDecl
+                · 'namespace'
+                · NamespaceName 'Test'
+                · ';'
+                ConstDecl
+                · 'const'
+                · 'A'
+                · TypeAnnotationClause
+                · · ':'
+                · · NameRef 'I32'
+                · '='
+                · NumberLiteral '1'
+                · ';'
+                """);
+        [Fact]
+        public void Const_Namespace_MissingInit()
+            => InlineSnapshot.Validate(Tree("""
+                                            namespace Test; const A: I32;
+                                            """), """
+                ERROR MissingToken@[28, 28): Expected '='.
+
+
+                NamespaceDecl
+                · 'namespace'
+                · NamespaceName 'Test'
+                · ';'
+                ConstDecl
+                · 'const'
+                · 'A'
+                · TypeAnnotationClause
+                · · ':'
+                · · NameRef 'I32'
+                · ??'='
+                · NameRef
+                · · ??ID
+                · ';'
+                """);
+        [Fact]
+        public void Const_Namespace_MissingType()
+            => InlineSnapshot.Validate(Tree("""
+                                            namespace Test; const A = 1;
+                                            """), """
+                ERROR MissingToken@[23, 23): Expected a type annotation.
+
+
+                NamespaceDecl
+                · 'namespace'
+                · NamespaceName 'Test'
+                · ';'
+                ConstDecl
+                · 'const'
+                · 'A'
+                · TypeAnnotationClause
+                · · ??':'
+                · · NameRef
+                · · · ??ID
+                · '='
+                · NumberLiteral '1'
+                · ';'
+                """);
+        [Fact]
+        public void Const_Namespace_MissingInitAndType()
+            => InlineSnapshot.Validate(Tree("""
+                                            namespace Test; const A;
+                                            """), """
+                ERROR MissingToken@[23, 23): Expected a type annotation.
+
+
+                NamespaceDecl
+                · 'namespace'
+                · NamespaceName 'Test'
+                · ';'
+                ConstDecl
+                · 'const'
+                · 'A'
+                · TypeAnnotationClause
+                · · ??':'
+                · · NameRef
+                · · · ??ID
+                · ??'='
+                · NameRef
+                · · ??ID
+                · ';'
+                """);
+        
+        [Fact]
+        public void Script_Namespace()
+            => InlineSnapshot.Validate(Tree("""
+                                            const A: I32 = 1;
+                                            """), """
+                ConstDecl
+                · 'const'
+                · 'A'
+                · TypeAnnotationClause
+                · · ':'
+                · · NameRef 'I32'
+                · '='
+                · NumberLiteral '1'
+                · ';'
+                """);
+        [Fact]
+        public void Script_Namespace_MissingInit()
+            => InlineSnapshot.Validate(Tree("""
+                                            const A: I32;
+                                            """), """
+                ERROR MissingToken@[12, 12): Expected '='.
+
+
+                ConstDecl
+                · 'const'
+                · 'A'
+                · TypeAnnotationClause
+                · · ':'
+                · · NameRef 'I32'
+                · ??'='
+                · NameRef
+                · · ??ID
+                · ';'
+                """);
+        [Fact]
+        public void Script_Namespace_MissingType()
+            => InlineSnapshot.Validate(Tree("""
+                                            const A = 1;
+                                            """), """
+                ERROR MissingToken@[7, 7): Expected a type annotation.
+
+
+                ConstDecl
+                · 'const'
+                · 'A'
+                · TypeAnnotationClause
+                · · ??':'
+                · · NameRef
+                · · · ??ID
+                · '='
+                · NumberLiteral '1'
+                · ';'
+                """);
+        [Fact]
+        public void Script_Namespace_MissingInitAndType()
+            => InlineSnapshot.Validate(Tree("""
+                                            const A;
+                                            """), """
+                ERROR MissingToken@[7, 7): Expected a type annotation.
+
+
+                ConstDecl
+                · 'const'
+                · 'A'
+                · TypeAnnotationClause
+                · · ??':'
+                · · NameRef
+                · · · ??ID
+                · ??'='
+                · NameRef
+                · · ??ID
+                · ';'
+                """);
     }
 }
