@@ -1,0 +1,15 @@
+﻿//@run
+//= 0
+
+// Should a runtime accidentally pass a reference instead of a copy of the
+// const struct, this will fail.
+
+var p = S.Origin;
+p.X = 5;
+PrintLine(S.Origin.X);
+
+struct S
+{
+    pub X: I32;
+    pub const Origin: S = S(X = 0);  
+}
