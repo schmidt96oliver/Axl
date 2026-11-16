@@ -1,0 +1,7 @@
+//@check
+
+struct Color
+{
+    const Red: Color = 1;           //~error TypeMismatch
+    const Other: I32 = 1 + 1i64;    //~error UndefinedOperator
+}

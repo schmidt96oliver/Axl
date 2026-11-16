@@ -1,0 +1,13 @@
+//@check
+
+let c = Color.Red;  //~error NotAccessible
+
+struct Color
+{
+    const Red: Color = Color();
+
+    fun InsideWithoutPrefix(): Color
+        = Red;
+    fun InsideWithPrefix(): Color
+        = Color.Red;
+}

@@ -1,0 +1,6 @@
+//@check
+
+struct Const { pub const C: I32 = 1; }
+
+let c = Const();
+let a = c.C;        //~error StaticMemberThroughInstance

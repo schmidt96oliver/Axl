@@ -1,0 +1,23 @@
+//@run
+//= 100
+//= 0
+
+let t = Test(Color = Color(Value = 0));
+t.PrintAll();
+
+struct Color
+{
+    pub const Red: Color = Color(Value = 100);
+    pub Value: I32;
+}
+
+struct Test 
+{
+    pub Color: Color;
+
+    pub fun PrintAll()
+    {
+        PrintLine(Color.Red.Value);
+        PrintLine(Color.Value);
+    }
+}

@@ -1,0 +1,8 @@
+//@check
+
+struct Test 
+{
+    pub InstanceData: I32;
+
+    pub const Foo: I32 = InstanceData;      //~error InstanceMemberInStaticContext
+}
