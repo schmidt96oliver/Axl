@@ -232,10 +232,6 @@ public class Monomorphizer
                 InstantiatePlace(originalCopy.Place, instantiatedMirFun, map),
                 originalCopy.Syntax),
 
-            Operand.Empty originalEmpty => new Operand.Empty(
-                originalEmpty.Type.Substitute(map),
-                originalEmpty.Syntax),
-
             Operand.Ref originalRef => new Operand.Ref(
                 InstantiatePlace(originalRef.Place, instantiatedMirFun, map),
                 originalRef.Type.Substitute(map),

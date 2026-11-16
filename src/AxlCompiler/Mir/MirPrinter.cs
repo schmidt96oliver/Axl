@@ -1,4 +1,6 @@
-﻿using AxlCompiler.Symbols;
+﻿using System.Globalization;
+using AxlCompiler.Binding;
+using AxlCompiler.Symbols;
 using AxlCompiler.Syntax.Tree;
 
 namespace AxlCompiler.Mir;
@@ -47,18 +49,25 @@ public static class MirPrinter
         {
             Operand.Copy { Place: var place } => $"copy {place.Print()}",
             Operand.Ref { Place: var place } => $"ref {place.Print()}",
-            Operand.Const { Value: var constValue } => constValue switch
-            {
-                string s => $"const {PrintConstString(s)}",
-                _ => $"const {constValue.Value}",
-            },
+            Operand.Const { Value: var constValue } => PrintConstValue(constValue),
             Operand.ConstEval { ConstSymbol: var constSymbol } => $"consteval {constSymbol.FullName}",
 
             Operand.Unreachable => "unreachable",
-            Operand.Empty => "empty",
             Operand.Error => "???",
         };
 
+    private static string PrintConstValue(ConstValue value) => value switch
+    {
+        ConstStructValue structValue =>
+            $"{structValue.Struct.FullName}({string.Join(", ", structValue.FieldValues.Select(f => $"{f.Key.Name} = {PrintConstValue(f.Value)}"))})",
+        bool b => b ? "true" : "false",
+        double d => d.ToString(CultureInfo.InvariantCulture),
+        float f => f.ToString(CultureInfo.InvariantCulture),
+        int i => i.ToString(),
+        long l => l.ToString(),
+        string s => PrintConstString(s),
+    };
+    
     private static string PrintConstString(string str)
     {
         str = str.Replace("\n", "\\n").Replace("\r", "\\r");

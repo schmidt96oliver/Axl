@@ -1,57 +1,112 @@
-﻿using System.Collections.Immutable;
+﻿using System.Collections.Frozen;
+using System.Collections.Immutable;
 using System.Diagnostics;
 using System.Globalization;
 using System.Runtime.InteropServices;
+using AxlCompiler.Binding;
 using AxlCompiler.Symbols;
+// ReSharper disable CompareOfFloatsByEqualityOperator
 
-namespace AxlCompiler.Mir;
+namespace AxlCompiler.Mir.Interpreter;
 
 using Environment = Dictionary<LocalId, object>;
-
-public enum RunResult
-{
-    Ok,
-    Panic
-}
 
 public sealed class Miri
 {
     private sealed class PanicException : Exception;
+
+    private sealed class BranchLimitException : Exception;
     
-    private sealed class StructValue
+    private sealed class StructValue(TypeSymbol symbol)
     {
+        public TypeSymbol Symbol { get; } = symbol;
         public readonly Dictionary<FieldSymbol, object> Fields = [];
     }
 
     private sealed record Reference(Environment Environment, Place Place);
 
-
+    
     private readonly MirProgram _program;
-    private readonly TextWriter _stdOut;
-    private readonly TextWriter _stdErr;
-    private readonly object _empty = new StructValue();
+    private readonly MiriContext _context;
+    private int _branchCount = 0;
+
+    private readonly StructValue _unitValue;
     private object _discard = new();
 
-    private Miri(MirProgram program, TextWriter stdOut, TextWriter stdErr)
+    private Miri(MirProgram program, MiriContext context)
     {
         _program = program;
-        _stdOut = stdOut;
-        _stdErr = stdErr;
+        _context = context;
+        _unitValue = new StructValue(context.UnitType);
     }
 
-    public static RunResult Run(MirProgram program, TextWriter stdOut, TextWriter stdErr)
+    public static MiriResult Run(MirProgram program, MiriContext context)
     {
-        var miri = new Miri(program, stdOut, stdErr);
+        var miri = new Miri(program, context);
         try
         {
-            miri.Call(program.Entry, []);
-            return RunResult.Ok;
+            var miriReturnValue = miri.Call(program.Entry, []);
+            return new MiriResult.Ok(miri.ToConstValue(miriReturnValue));
         }
         catch (PanicException)
         {
-            return RunResult.Panic;
+            return new MiriResult.Panicked();
+        }
+        catch (BranchLimitException)
+        {
+            return new MiriResult.HitBranchLimit();
         }
     }
+
+    
+    #region Values
+    
+    private object ToMiriValue(ConstValue constValue) => constValue switch
+    {
+        ConstStructValue constStructValue => ToMiriValue(constStructValue),
+        bool or double or float or int or long or string => constValue.Value,
+    };
+
+    private StructValue ToMiriValue(ConstStructValue constStruct)
+    {
+        var value = new StructValue(constStruct.Struct);
+        foreach (var kvp in constStruct.FieldValues)
+            value.Fields.Add(kvp.Key, ToMiriValue(kvp.Value));
+        return value;
+    }
+
+    private ConstValue ToConstValue(object miriValue) => miriValue switch
+    {
+        StructValue structValue => ToConstValue(structValue),
+        bool b => b,
+        double d => d,
+        float f => f,
+        int i => i,
+        long l => l,
+        string s => s,
+        _ => throw new UnreachableException($"Unknown miri value type {miriValue.GetType().Name}.")
+    };
+
+    private ConstStructValue ToConstValue(StructValue structValue)
+    {
+        var dict = structValue.Fields.ToFrozenDictionary(kvp => kvp.Key, kvp => ToConstValue(kvp.Value));
+        return new ConstStructValue(structValue.Symbol, dict);
+    }
+
+    private static object Copy(object value)
+    {
+        if (value is StructValue structValue)
+        {
+            var copy = new StructValue(structValue.Symbol);
+            foreach (var kvp in structValue.Fields)
+                copy.Fields.Add(kvp.Key, Copy(kvp.Value));
+            return copy;
+        }
+
+        return value;
+    }
+    
+    #endregion
 
     private object Call(MutMirFunction mirFun, ImmutableArray<object> arguments)
     {
@@ -62,6 +117,10 @@ public sealed class Miri
         var block = mirFun.Entry;
         while (true)
         {
+            if (_context.BranchLimit is int limit && _branchCount > limit)
+                throw new BranchLimitException();
+            _branchCount++;
+            
             foreach (var instruction in block.Instructions)
                 Execute(instruction, environment);
 
@@ -80,7 +139,7 @@ public sealed class Miri
                     return GetPlaceRef(mirFun.ReturnPlace, environment);
 
                 default:
-                    throw new UnreachableException();
+                    throw new UnreachableException($"Unknown terminator {block.Terminator?.GetType().Name ?? "null"}");
             }
         }
     }
@@ -119,7 +178,7 @@ public sealed class Miri
             
             case Instruction.StructInit structInit:
             {
-                var value = new StructValue();
+                var value = new StructValue(structInit.Struct);
                 foreach (var kvp in structInit.FieldValues)
                     value.Fields.Add(kvp.Key, Evaluate(kvp.Value, environment));
                 GetPlaceRef(structInit.Target, environment) = value;
@@ -184,15 +243,15 @@ public sealed class Miri
         switch (vmCallKind)
         {
             case VmCallKind.Print:
-                _stdOut.Write(args[0]);
-                return _empty;
+                _context.StdOut.Write(args[0]);
+                return _unitValue;
 
             case VmCallKind.ConcatString:
                 return string.Concat((string)args[0], (string)args[1]);
 
             case VmCallKind.Panic:
                 var message = (string)args[0];
-                _stdErr.WriteLine($"PANIC: {message}");
+                _context.StdErr.WriteLine($"Miri panicked: {message}");
                 throw new PanicException();
 
             case VmCallKind.EqualsString:
@@ -238,24 +297,17 @@ public sealed class Miri
 
     private object Evaluate(Operand operand, Environment environment) => operand switch
     {
-        Operand.Const @const => @const.Value.Value,
-        Operand.ConstEval constExpr => Call(_program.GetMirFunction(constExpr.ConstSymbol.ValueFun), []),
+        Operand.Const @const => ToMiriValue(@const.Value),
+        Operand.ConstEval constEval => EvaluateConstEval(constEval),
         Operand.Copy copy => Copy(GetPlaceRef(copy.Place, environment)),
         Operand.Ref @ref => new Reference(environment, @ref.Place),
-        Operand.Empty => _empty,
         Operand.Unreachable or Operand.Error => throw new UnreachableException()
     };
 
-    private static object Copy(object value)
+    private object EvaluateConstEval(Operand.ConstEval constEval)
     {
-        if (value is StructValue structValue)
-        {
-            var copy = new StructValue();
-            foreach (var kvp in structValue.Fields)
-                copy.Fields.Add(kvp.Key, Copy(kvp.Value));
-            return copy;
-        }
-
-        return value;
+        if (_context.TryGetConstEvaluation(constEval.ConstSymbol) is { } eval)
+            return ToMiriValue(eval);
+        return Call(_program.GetMirFunction(constEval.ConstSymbol.ValueFun), []);
     }
 }

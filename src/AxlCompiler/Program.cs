@@ -1,6 +1,7 @@
 using AxlCompiler;
 using AxlCompiler.Diagnostics;
 using AxlCompiler.Mir;
+using AxlCompiler.Mir.Interpreter;
 using AxlCompiler.Testing;
 using AxlCompiler.Text;
 
@@ -57,4 +58,7 @@ foreach (var fun in result.Program!.MirFunctions.Where(f => !f.DisplayName.Start
 }
 
 Console.WriteLine("----------------");
-Miri.Run(result.Program!, Console.Out, Console.Error);
+var context = new MiriContext(compilation.BaseLibrary.Unit, Console.Out, Console.Error, 
+    BranchLimit: null,
+    TryGetConstEvaluation: _ => null);
+Miri.Run(result.Program!, context);

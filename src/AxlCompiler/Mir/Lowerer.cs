@@ -1,6 +1,7 @@
 ﻿using System.Collections.Frozen;
 using System.Collections.Immutable;
 using System.Diagnostics;
+using AxlCompiler.Binding;
 using AxlCompiler.Binding.BoundTree;
 using AxlCompiler.Symbols;
 using AxlCompiler.Syntax;
@@ -21,7 +22,16 @@ public class Lowerer
     private TypeSymbol Never => _funDefinition.Compilation.BaseLibrary.Never;
     private TypeSymbol Error => _funDefinition.Compilation.BaseLibrary.Error;
     private TypeSymbol Bool => _funDefinition.Compilation.BaseLibrary.Bool;
-    
+
+    private ConstStructValue UnitValue
+    {
+        get
+        {
+            field ??= new ConstStructValue(Unit, []);
+            return field;
+        }
+    }
+
     private Lowerer(FunDefinitionSymbol funDefinition)
     {
         _funDefinition = funDefinition;
@@ -60,7 +70,7 @@ public class Lowerer
         {
             if (fun.ReturnType == compilation.BaseLibrary.Unit)
             {
-                lowerer.Emit(new Instruction.Assign(lowerer._mirFun.ReturnPlace, new Operand.Empty(compilation.BaseLibrary.Unit)));
+                lowerer.Emit(new Instruction.Assign(lowerer._mirFun.ReturnPlace, new Operand.Const(lowerer.UnitValue, lowerer.Unit)));
                 lowerer.Terminate(new Terminator.Return());
             }
             else
@@ -289,7 +299,7 @@ public class Lowerer
         foreach (var stmt in block.Stmts)
             LowerStmt(stmt);
 
-        return new Operand.Empty(Unit);
+        return new Operand.Const(UnitValue, Unit);
     }
 
     private Operand LowerAssign(BoundAssign assign)
@@ -309,7 +319,7 @@ public class Lowerer
         }
         else
             LowerInto(assign.Value, LowerPlace(assign.Target));
-        return new Operand.Empty(Unit);
+        return new Operand.Const(UnitValue, Unit);
     }
 
 
@@ -503,7 +513,7 @@ public class Lowerer
                 LowerInto(@return.Value, _mirFun.ReturnPlace);
         }
         else
-            Emit(new Instruction.Assign(_mirFun.ReturnPlace, new Operand.Empty(Unit)));
+            Emit(new Instruction.Assign(_mirFun.ReturnPlace, new Operand.Const(UnitValue, Unit)));
 
         Terminate(new Terminator.Return(@return.Syntax));
         return new Operand.Unreachable(Never);

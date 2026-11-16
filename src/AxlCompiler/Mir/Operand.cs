@@ -1,4 +1,5 @@
-﻿using AxlCompiler.Binding.BoundTree;
+﻿using AxlCompiler.Binding;
+using AxlCompiler.Binding.BoundTree;
 using AxlCompiler.Symbols;
 using AxlCompiler.Syntax;
 
@@ -17,9 +18,6 @@ public closed record Operand(TypeSymbol Type, SyntaxNode? Syntax)
     
     public sealed record ConstEval(ConstSymbol ConstSymbol, SyntaxNode? Syntax = null)
         : Operand(ConstSymbol.Type, Syntax);
-
-    public sealed record Empty(TypeSymbol Type, SyntaxNode? Syntax = null) 
-        : Operand(Type, Syntax);
 
     public sealed record Unreachable(TypeSymbol Type) : Operand(Type, null);
 

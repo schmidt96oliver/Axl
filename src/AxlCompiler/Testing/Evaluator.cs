@@ -1,6 +1,6 @@
 ﻿using System.Diagnostics;
 using AxlCompiler.Diagnostics;
-using AxlCompiler.Mir;
+using AxlCompiler.Mir.Interpreter;
 
 namespace AxlCompiler.Testing;
 
@@ -164,6 +164,8 @@ public sealed class Evaluator
     
     private void CheckExpectedOutput()
     {
+        const int branchLimit = 10000;
+        
         var expectedOutput = Normalize(_testFile.Annotations
             .Where(a => a.Kind is AnnotationKind.ExpectOutput)
             .Select(a => a.Text.Text.ToString()));
@@ -186,7 +188,17 @@ public sealed class Evaluator
         
         var stdout = new StringWriter();
         var stderr = new StringWriter();
-        var result = Miri.Run(compilationResult.Program!, stdout, stderr);
+        var result = Miri.Run(compilationResult.Program!,
+            new MiriContext(_compilation.BaseLibrary.Unit,
+                stdout, stderr,
+                branchLimit,
+                TryGetConstEvaluation: _ => null));
+
+        if (result is MiriResult.HitBranchLimit)
+        {
+            _failedChecks.Add(new FailedCheck(0, $"Test ran for {branchLimit} branches and was stopped."));
+            return;
+        }
         
         var actualOutput = Normalize(stdout.ToString());
         if (actualOutput != expectedOutput)
@@ -197,7 +209,7 @@ public sealed class Evaluator
 
         var panicAnnotation = _testFile.Annotations.FirstOrDefault(a => a.Kind is AnnotationKind.ExpectPanic);
         
-        if (result is RunResult.Panic)
+        if (result is MiriResult.Panicked)
         {
             if (panicAnnotation is null)
                 _failedChecks.Add(new FailedCheck(0, $"Unexpected panic. StdErr:\n{stderr}"));
@@ -209,7 +221,7 @@ public sealed class Evaluator
             }
         }
         
-        if (result is RunResult.Ok && panicAnnotation is not null)
+        if (result is MiriResult.Ok && panicAnnotation is not null)
             _failedChecks.Add(new FailedCheck(0, "Expected panic, but did not panic."));
     }
 
