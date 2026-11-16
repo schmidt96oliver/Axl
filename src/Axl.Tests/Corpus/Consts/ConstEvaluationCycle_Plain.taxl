@@ -1,0 +1,5 @@
+//@check
+
+let a = A;
+
+const A: I32 = A;       //~error ConstEvaluationCycle

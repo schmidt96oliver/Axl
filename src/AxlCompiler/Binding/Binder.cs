@@ -1300,7 +1300,7 @@ public sealed class Binder(Scope scope, BinderSideEffects sideEffects)
                     return stmts.DrainToImmutable();
                 }
             }
-            else if (node is StructDeclSyntax or FunDeclSyntax or UsingDirectiveSyntax)
+            else if (node is StructDeclSyntax or FunDeclSyntax or UsingDirectiveSyntax or ConstDeclSyntax)
             {
                 // This is only allowed on scripts and is handled separately.
             }

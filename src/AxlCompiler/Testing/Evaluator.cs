@@ -1,6 +1,7 @@
 ﻿using System.Diagnostics;
 using AxlCompiler.Diagnostics;
 using AxlCompiler.Mir.Interpreter;
+using AxlCompiler.Symbols;
 
 namespace AxlCompiler.Testing;
 
@@ -25,13 +26,15 @@ public sealed class Evaluator
     
     private readonly List<FailedCheck> _failedChecks = [];
     private readonly TestFile _testFile;
-    private readonly Compilation _compilation;
+    private readonly CompilationResult _compilationResult;
+    private readonly TypeSymbol _unitType;
     private readonly bool _ignoreGlobalDiagnostics;
 
-    private Evaluator(TestFile testFile, Compilation compilation)
+    private Evaluator(TestFile testFile, CompilationResult compilationResult, TypeSymbol unitType)
     {
         _testFile = testFile;
-        _compilation = compilation;
+        _compilationResult = compilationResult;
+        _unitType = unitType;
 
         _ignoreGlobalDiagnostics =
             _testFile.Annotations.Any(a => a.Kind is AnnotationKind.IgnoreGlobalDiagnosticsDirective);
@@ -58,8 +61,11 @@ public sealed class Evaluator
 
         if (!testFile.Validate(out var errorMessage))
             return Evaluation.Failed($"Invalid taxl file: {errorMessage}");
+
+        if (compilation.Scripts is not [var script])
+            return Evaluation.Failed("Taxl has more than one script.");
         
-        var evaluator = new Evaluator(testFile, compilation);
+        var evaluator = new Evaluator(testFile, compilation.Compile(script), compilation.BaseLibrary.Unit);
         evaluator.CheckDiagnostics();
         switch (testFile.Kind)
         {
@@ -132,7 +138,7 @@ public sealed class Evaluator
     private Dictionary<int, DiagnosticId> GetActualDiagnostics()
     {
         var table = new Dictionary<int, DiagnosticId>();
-        foreach (var diagnostic in _compilation.Diagnostics)
+        foreach (var diagnostic in _compilationResult.Diagnostics)
         {
             if (diagnostic.Locations.Length == 0)
             {
@@ -170,17 +176,10 @@ public sealed class Evaluator
             .Where(a => a.Kind is AnnotationKind.ExpectOutput)
             .Select(a => a.Text.Text.ToString()));
 
-        if (_compilation.Scripts.Length != 1)
-        {
-            _failedChecks.Add(new FailedCheck(0, $"Test file must have 1 script to execute, got {_compilation.Scripts.Length}."));
-            return;
-        }
-
-        var compilationResult = _compilation.Compile(_compilation.Scripts[0]);
-        if (!compilationResult.IsSuccessful)
+        if (!_compilationResult.IsSuccessful)
         {
             _failedChecks.AddRange(new FailedCheck(0, "Compilation failed with:" + string.Join('\n',
-                compilationResult.Diagnostics.Select(d => d.GetDisplayString(
+                _compilationResult.Diagnostics.Select(d => d.GetDisplayString(
                     Path.GetDirectoryName(_testFile.SourceText.FileName),
                     l => _testFile.TryMapToTestFile(l) ?? l)))));
             return;
@@ -188,8 +187,8 @@ public sealed class Evaluator
         
         var stdout = new StringWriter();
         var stderr = new StringWriter();
-        var result = Miri.Run(compilationResult.Program!,
-            new MiriContext(_compilation.BaseLibrary.Unit,
+        var result = Miri.Run(_compilationResult.Program!,
+            new MiriContext(_unitType,
                 stdout, stderr,
                 branchLimit,
                 TryGetConstEvaluation: null));

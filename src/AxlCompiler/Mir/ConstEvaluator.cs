@@ -37,14 +37,15 @@ public sealed class ConstEvaluator
 
         if (_inProgress.Contains(symbol))
         {
-            //TODO: Handle error!
+            _diagnosticBag.ReportError(new Diagnostic.ConstEvaluationCycle(symbol, [.. _inProgress.Reverse(), symbol]));
             _values[symbol] = null;
             return null;
         }
         
         _inProgress.Push(symbol);
 
-        var miriContext = new MiriContext(_compilation.BaseLibrary.Unit, Console.Out, Console.Error,
+        var stderr = new StringWriter();
+        var miriContext = new MiriContext(_compilation.BaseLibrary.Unit, Console.Out, stderr,
             BranchLimit: 1000, EvaluateConst);
         var result = Miri.Run(_program.GetMirFunction(symbol.ValueFun), _program, miriContext);
         value = null;
@@ -55,18 +56,19 @@ public sealed class ConstEvaluator
                 value = ok.Value;
                 break;
             
-            case MiriResult.CannotEvaluateConst cannotEvaluateConst:
+            case MiriResult.CannotEvaluateConst:
+                // This means, that we returned null to Miri and already reported an error.
+                // So don't report further errors.
                 value = null;
                 break;
             
-            case MiriResult.HitBranchLimit hitBranchLimit:
-                //TODO: Report error
+            case MiriResult.HitBranchLimit:
+                _diagnosticBag.ReportError(new Diagnostic.ConstEvaluationHitBranchLimit(symbol));
                 value = null;
                 break;
             
-            
-            case MiriResult.Panicked panicked:
-                //TODO: Report error
+            case MiriResult.Panicked:
+                _diagnosticBag.ReportError(new Diagnostic.ConstEvaluationPanic(symbol, stderr.ToString()));
                 value = null;
                 break;
         }

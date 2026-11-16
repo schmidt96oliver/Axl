@@ -1,0 +1,8 @@
+//@check
+
+let a = Test.Infinite;
+
+//---
+namespace Test;
+
+pub const Infinite: Unit = { while(true) {} };      //~error ConstEvaluationHitBranchLimit

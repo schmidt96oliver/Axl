@@ -3,9 +3,6 @@
 
 # Now
 
-* ConstEvaluator
-  * Add diagnostics: Branch limit, panic, cycle
-
 * Binder check: Must be concrete value type
 * Binder obvious cycle check: Own field must not be reachable through expression (not counting calls)
 

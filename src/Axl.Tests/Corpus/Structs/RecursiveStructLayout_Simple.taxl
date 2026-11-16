@@ -15,8 +15,6 @@ struct Z { X: W; }          //~error RecursiveStructLayout
 struct C { b: D; }
 struct D { b: D; }          //~error RecursiveStructLayout
 
-//---
-
-struct A { c: C; }          //~error RecursiveStructLayout
-struct C { d: D; }          //~error RecursiveStructLayout
-struct D { c: C; a: A; }    //~error RecursiveStructLayout
+struct AA { c: CC; }          //~error RecursiveStructLayout
+struct CC { d: DD; }          //~error RecursiveStructLayout
+struct DD { c: CC; a: AA; }    //~error RecursiveStructLayout

@@ -237,8 +237,10 @@ public class Compilation
         {
             ConstEvaluator.EvaluateAll(program, this, globalSideEffects.DiagnosticBag);
         }
+
+        var diagnostics = globalSideEffects.DiagnosticBag.Drain();
         
-        return new CompilationResult(program, globalSideEffects.DiagnosticBag.Drain());
+        return new CompilationResult(diagnostics.HasError ? null : program, diagnostics);
     }
     
 

@@ -68,4 +68,36 @@ public partial record Diagnostic
             return $"{symbol.FullNameWithoutOwnTypeArgs}[{ string.Join(", ", symbol.TypeArguments.Select(arg => GetTypeText(arg, depth + 1))) }]";
         }
     }
+
+    public sealed record ConstEvaluationPanic(ConstSymbol Symbol, string ErrorText) : Error
+    {
+        /// <inheritdoc />
+        public override ImmutableArray<SourceLocation> Locations =>
+            [Symbol.OriginalDefinition.DeclarationSyntax.ValueExpr.Location];
+
+        /// <inheritdoc />
+        public override string Message => $"Evaluation of const {Symbol.FullName} panicked:\n{ErrorText}";
+    }
+
+    public sealed record ConstEvaluationHitBranchLimit(ConstSymbol Symbol) : Error
+    {
+        /// <inheritdoc />
+        public override ImmutableArray<SourceLocation> Locations =>
+            [Symbol.OriginalDefinition.DeclarationSyntax.ValueExpr.Location];
+
+        /// <inheritdoc />
+        public override string Message => $"Evaluation of const {Symbol.FullName} hit the runtime limit.";
+    }
+
+    public sealed record ConstEvaluationCycle(ConstSymbol Symbol, ImmutableArray<ConstSymbol> Path) : Error
+    {
+        /// <inheritdoc />
+        public override ImmutableArray<SourceLocation> Locations =>
+            [Symbol.OriginalDefinition.DeclarationSyntax.ValueExpr.Location];
+
+        /// <inheritdoc />
+        public override string Message => $"Evaluation of const {Symbol.FullName} hit a cycle: {CycleText}";
+
+        private string CycleText => string.Join(" -> ", Path.Select(c => c.FullName));
+    }
 }

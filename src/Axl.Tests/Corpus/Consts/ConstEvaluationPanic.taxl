@@ -1,0 +1,26 @@
+//@check
+
+// Constants must be used to trigger diagnostics, because they run after monomorphization.
+// Multiple uses and cascades must not trigger too many diagnostics.
+
+let a = Test.A;
+let a = Test.A;
+let a = Test.B;
+let a = Test.B;
+let a = Cascade.A;
+let a = Cascade.B;
+let a = Cascade.C;
+
+
+struct Test 
+{
+    pub const A: I32 = 1 / 0;       //~error ConstEvaluationPanic
+    pub const B: String = Panic();  //~error ConstEvaluationPanic
+}
+
+struct Cascade 
+{
+    pub const A: I32 = B + 1;
+    pub const B: I32 = C * 2;
+    pub const C: I32 = 1 / 0;   //~error ConstEvaluationPanic
+}

@@ -1,0 +1,13 @@
+//@check
+
+// The constant that is first accessed will get the error, the others
+// won't. This is fine for now.
+
+let a = A;
+let a = B;
+let a = C;
+
+
+const A: I32 = B;       //~error ConstEvaluationCycle
+const B: I32 = C;       
+const C: I32 = A;       

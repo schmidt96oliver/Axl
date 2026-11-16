@@ -1,0 +1,12 @@
+//@check
+
+let a = A;
+let a = A;
+
+const A: I32 = Access();       //~error ConstEvaluationCycle
+
+fun Access(): I32
+{
+    let a = A;
+    return A;
+}   
