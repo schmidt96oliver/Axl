@@ -1,9 +1,11 @@
-# ------------------------------------ Axl Project ------------------------------------
+# Axl Project
                                        ≽(◕ ᴗ ◕)≼                                      
 
 
 
 # Now
+
+* [ ] Fix diagnostics for VSCode
 
 # Questions / Little ones
 

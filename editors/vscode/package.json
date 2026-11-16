@@ -1,0 +1,50 @@
+{
+  "name": "axl",
+  "displayName": "Axl",
+  "description": "Axl language support, backed by AxlLsp.",
+  "publisher": "local",
+  "version": "0.0.1",
+  "private": true,
+  "engines": {
+    "vscode": "^1.100.0"
+  },
+  "main": "./extension.js",
+  "contributes": {
+    "languages": [
+      {
+        "id": "axl",
+        "aliases": [
+          "Axl"
+        ],
+        "extensions": [
+          ".axl"
+        ],
+        "configuration": "./language-configuration.json"
+      },
+      {
+        "id": "taxl",
+        "aliases": [
+          "Axl Test"
+        ],
+        "extensions": [
+          ".taxl"
+        ],
+        "configuration": "./language-configuration.json"
+      }
+    ],
+    "commands": [
+      {
+        "command": "axl.reloadLanguageServer",
+        "category": "Axl",
+        "title": "Reload Language Server"
+      }
+    ]
+  },
+  "dependencies": {
+    "vscode-languageclient": "^11.0.0"
+  },
+  "devDependencies": {
+    "@types/node": "^26.6.6",
+    "@types/vscode": "~1.100.0"
+  }
+}

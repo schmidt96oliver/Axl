@@ -1,0 +1,10 @@
+{
+  "compilerOptions": {
+    "module": "node16",
+    "target": "es2022",
+    "checkJs": true,
+    "strict": true,
+    "types": ["vscode", "node"]
+  },
+  "include": ["extension.js"]
+}
