@@ -4,11 +4,10 @@ namespace AxlCompiler.Mir;
 
 public enum OperatorKind
 {
-    NegateI32,
-    AddI32,
-    SubtractI32,
-    DivideI32,
-    MultiplyI32,
+    AddWrappedI32,
+    SubWrappedI32,
+    DivUncheckedI32,
+    MulWrappedI32,
     EqualsI32,
     LessThanI32,
 
@@ -46,11 +45,10 @@ public static class OperatorKindExtensions
     {
         public static OperatorKind? TryFrom(Intrinsic intrinsic) => intrinsic switch
         {
-            Intrinsic.NegateI32 => OperatorKind.NegateI32,
-            Intrinsic.AddI32 => OperatorKind.AddI32,
-            Intrinsic.SubtractI32 => OperatorKind.SubtractI32,
-            Intrinsic.DivideI32 => OperatorKind.DivideI32,
-            Intrinsic.MultiplyI32 => OperatorKind.MultiplyI32,
+            Intrinsic.AddWrappedI32 => OperatorKind.AddWrappedI32,
+            Intrinsic.SubWrappedI32 => OperatorKind.SubWrappedI32,
+            Intrinsic.DivUncheckedI32 => OperatorKind.DivUncheckedI32,
+            Intrinsic.MulWrappedI32 => OperatorKind.MulWrappedI32,
             Intrinsic.EqualsI32 => OperatorKind.EqualsI32,
             Intrinsic.LessThanI32 => OperatorKind.LessThanI32,
 

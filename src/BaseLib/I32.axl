@@ -7,15 +7,80 @@ pub struct I32
     pub fun ToString(): String;
     
     @Intrinsic
-    pub fun +(right: I32): I32;
+    pub fun AddWrapped(right: I32): I32;
+
+    pub fun +(right: I32): I32
+    {
+        let max = 2147483647;
+        let min = -2147483648;
+
+        if ((right > 0 && self > max.SubWrapped(right)) ||
+            (right < 0 && self < min.SubWrapped(right)))
+        {
+            Panic("Integer overflow.");
+        }
+
+        return AddWrapped(right);
+    }
+
     @Intrinsic
-    pub fun -(right: I32): I32;
+    pub fun SubWrapped(right: I32): I32;
+
+    pub fun -(right: I32): I32
+    {
+        let max = 2147483647;
+        let min = -2147483648;
+
+        if ((right < 0 && self > max.AddWrapped(right)) ||
+            (right > 0 && self < min.AddWrapped(right)))
+        {
+            Panic("Integer overflow.");
+        }
+
+        return SubWrapped(right);
+    }
+
+    pub fun -(): I32
+    {
+        let min = -2147483648;
+        if (self == min)
+            Panic("Integer overflow.");
+        return 0.SubWrapped(self);
+    }
+
     @Intrinsic
-    pub fun -(): I32;
+    pub fun MulWrapped(right: I32): I32;
+
+    pub fun *(right: I32): I32
+    {
+        let max = 2147483647;
+        let min = -2147483648;
+
+        if ((self == -1 && right == min) || (self == min && right == -1))
+            Panic("Integer overflow.");    
+            
+        let wrappedResult = MulWrapped(right);
+        if (right != 0 && wrappedResult / right != self)
+            Panic("Integer overflow.");
+
+        return wrappedResult;
+    }
+
     @Intrinsic
-    pub fun *(right: I32): I32;
-    @Intrinsic
-    pub fun /(right: I32): I32;
+    fun DivUnchecked(right: I32): I32;
+
+    pub fun /(right: I32): I32
+    {
+        let min = -2147483648;
+
+        if (right == 0)
+            Panic("Division by zero.");
+        if (self == min && right == -1)
+            Panic("Integer overflow.");
+        
+        return DivUnchecked(right);
+    }
+    
     
     @Intrinsic
     pub fun <(right: I32): Bool;

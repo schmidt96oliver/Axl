@@ -1,0 +1,5 @@
+//@run
+//@panic Division by zero
+
+let a = 1;
+Print(a / 0);

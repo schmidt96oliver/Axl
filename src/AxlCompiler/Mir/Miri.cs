@@ -143,11 +143,10 @@ public sealed class Miri
 
     private static object EvaluateOperator(OperatorKind opKind, ImmutableArray<object> args)=> opKind switch
     {
-        OperatorKind.NegateI32 => -(int)args[0],
-        OperatorKind.AddI32 => (int)args[0] + (int)args[1],
-        OperatorKind.SubtractI32 => (int)args[0] - (int)args[1],
-        OperatorKind.DivideI32 => (int)args[0] / (int)args[1],
-        OperatorKind.MultiplyI32 => (int)args[0] * (int)args[1],
+        OperatorKind.AddWrappedI32 => (int)args[0] + (int)args[1],
+        OperatorKind.SubWrappedI32 => (int)args[0] - (int)args[1],
+        OperatorKind.DivUncheckedI32 => (int)args[0] / (int)args[1],
+        OperatorKind.MulWrappedI32 => (int)args[0] * (int)args[1],
         OperatorKind.EqualsI32 => (int)args[0] == (int)args[1],
         OperatorKind.LessThanI32 => (int)args[0] < (int)args[1],
 

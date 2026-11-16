@@ -3,6 +3,14 @@
 
 # Now
 
+* Checks for I64
+
+* Remove cannot chain and/or (it feels ridiculous); change in I32/IO64 implementations
+
+* constants in types: For I32.Min/Max, ...
+
+* ?? Move TestFile Evalutor into test suite
+
 # Questions / Little ones
 
 * ?? BindLookupResult: Report WrongKind error before anything else; remove isThisField in BindFieldAccess
@@ -24,11 +32,8 @@
 
 * Separate IfStmt and IfExpr in syntax (-> SemanticModel.BoundNodeFor tests)
 
-* ?? Move TestFile Evalutor into test suite
 
 # Milestones
-
-**Panic**: `1/0` panics, return code, taxl panic, Assert tests
 
 **Buffer**: `Buffer[T]`, `List[T]/MutList[T]`
 

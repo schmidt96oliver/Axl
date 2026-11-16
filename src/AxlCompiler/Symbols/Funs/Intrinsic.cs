@@ -4,11 +4,10 @@ public enum Intrinsic
 {
     // !! When adding intrinsics, also adjust OperatorKind and VmCallKind in Lowering !!
     
-    NegateI32,
-    AddI32,
-    SubtractI32,
-    DivideI32,
-    MultiplyI32,
+    AddWrappedI32,
+    SubWrappedI32,
+    DivUncheckedI32,
+    MulWrappedI32,
     EqualsI32,
     LessThanI32,
     ToStringI32,

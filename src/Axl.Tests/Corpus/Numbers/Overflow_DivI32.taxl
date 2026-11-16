@@ -1,0 +1,6 @@
+//@run
+//@panic Integer overflow
+
+let min = -2147483648;
+
+Print(min / -1);

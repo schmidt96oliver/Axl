@@ -95,7 +95,12 @@ public sealed partial class SemanticModelTests
             => InlineSnapshot.Validate(VisibleSymbolsAt("""
                                                         let a = 10;
                                                         a.|
-                                                        """, showBase: true), "ToString (fun Base.I32.ToString())");
+                                                        """, showBase: true), """
+                ToString (fun Base.I32.ToString())
+                AddWrapped (fun Base.I32.AddWrapped(right: Base.I32))
+                SubWrapped (fun Base.I32.SubWrapped(right: Base.I32))
+                MulWrapped (fun Base.I32.MulWrapped(right: Base.I32))
+                """);
 
         [Fact]
         public void Member_2()

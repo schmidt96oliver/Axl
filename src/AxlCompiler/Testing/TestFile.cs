@@ -160,7 +160,7 @@ public sealed class TestFile
             return false;
         }
         
-        if (Annotations.Any(a => a.Kind is AnnotationKind.ExpectPanic && a.Text.Length == 0))
+        if (Annotations.Any(a => a.Kind is AnnotationKind.ExpectPanic && a.Text.Text.Trim() is ""))
         {
             errorMessage = "Expected panic without expected message.";
             return false;
