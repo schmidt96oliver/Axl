@@ -1,8 +1,6 @@
 # Axl Project
                                        ≽(◕ ᴗ ◕)≼                                      
 
-
-
 # Now
 
 # Questions / Little ones
@@ -25,6 +23,8 @@
 * ?? Fun: TokenSet iteration with `i & -i` trick
 
 * Separate IfStmt and IfExpr in syntax (-> SemanticModel.BoundNodeFor tests)
+
+* ?? Move TestFile Evalutor into test suite
 
 # Milestones
 

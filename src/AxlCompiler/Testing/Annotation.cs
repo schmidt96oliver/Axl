@@ -11,6 +11,7 @@ public enum AnnotationKind
     ExpectOutput,
     ExpectError,
     ExpectLint,
+    ExpectPanic,
 }
 
 public sealed record Annotation(AnnotationKind Kind, SourceLocation Prefix, SourceLocation Text);

@@ -8,6 +8,12 @@ namespace AxlCompiler.Mir;
 
 using Environment = Dictionary<LocalId, object>;
 
+public enum RunResult
+{
+    Ok,
+    Panic
+}
+
 public sealed class Miri
 {
     private sealed class PanicException : Exception;
@@ -21,26 +27,29 @@ public sealed class Miri
 
 
     private readonly MirProgram _program;
-    private readonly TextWriter _output;
+    private readonly TextWriter _stdOut;
+    private readonly TextWriter _stdErr;
     private readonly object _empty = new StructValue();
     private object _discard = new();
 
-    private Miri(MirProgram program, TextWriter output)
+    private Miri(MirProgram program, TextWriter stdOut, TextWriter stdErr)
     {
         _program = program;
-        _output = output;
+        _stdOut = stdOut;
+        _stdErr = stdErr;
     }
 
-    public static void Run(MirProgram program, TextWriter output)
+    public static RunResult Run(MirProgram program, TextWriter stdOut, TextWriter stdErr)
     {
-        var miri = new Miri(program, output);
+        var miri = new Miri(program, stdOut, stdErr);
         try
         {
             miri.Call(program.Entry, []);
+            return RunResult.Ok;
         }
         catch (PanicException)
         {
-            
+            return RunResult.Panic;
         }
     }
 
@@ -178,7 +187,7 @@ public sealed class Miri
         switch (vmCallKind)
         {
             case VmCallKind.Print:
-                _output.Write(args[0]);
+                _stdOut.Write(args[0]);
                 return _empty;
 
             case VmCallKind.ConcatString:
@@ -186,7 +195,7 @@ public sealed class Miri
 
             case VmCallKind.Panic:
                 var message = (string)args[0];
-                _output.WriteLine($"PANIC: {message}");
+                _stdErr.WriteLine($"PANIC: {message}");
                 throw new PanicException();
 
             case VmCallKind.EqualsString:

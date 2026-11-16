@@ -167,13 +167,7 @@ public sealed class Evaluator
         var expectedOutput = Normalize(_testFile.Annotations
             .Where(a => a.Kind is AnnotationKind.ExpectOutput)
             .Select(a => a.Text.Text.ToString()));
-        if (expectedOutput is "")
-        {
-            _failedChecks.Add(new FailedCheck(0, "Missing expected output."));
-            return;
-        }
 
-        var output = new StringWriter();
         if (_compilation.Scripts.Length != 1)
         {
             _failedChecks.Add(new FailedCheck(0, $"Test file must have 1 script to execute, got {_compilation.Scripts.Length}."));
@@ -190,15 +184,33 @@ public sealed class Evaluator
             return;
         }
         
-        Miri.Run(compilationResult.Program!, output);
+        var stdout = new StringWriter();
+        var stderr = new StringWriter();
+        var result = Miri.Run(compilationResult.Program!, stdout, stderr);
         
-        var actualOutput = Normalize(output.ToString());
-
+        var actualOutput = Normalize(stdout.ToString());
         if (actualOutput != expectedOutput)
         {
             var message = $"Output was '{actualOutput}', but expected '{expectedOutput}'.";
             _failedChecks.Add(new FailedCheck(0, message));
         }
+
+        var panicAnnotation = _testFile.Annotations.FirstOrDefault(a => a.Kind is AnnotationKind.ExpectPanic);
+        
+        if (result is RunResult.Panic)
+        {
+            if (panicAnnotation is null)
+                _failedChecks.Add(new FailedCheck(0, $"Unexpected panic. StdErr:\n{stderr}"));
+            else if (!stderr.ToString()
+                         .Contains(panicAnnotation.Text.Text, StringComparison.InvariantCultureIgnoreCase))
+            {
+                var message = $"Expected stderr to contain \'{panicAnnotation.Text.Text}\'. Got:\n{stderr}";
+                _failedChecks.Add(new FailedCheck(0, message));
+            }
+        }
+        
+        if (result is RunResult.Ok && panicAnnotation is not null)
+            _failedChecks.Add(new FailedCheck(0, "Expected panic, but did not panic."));
     }
 
     /// <summary>

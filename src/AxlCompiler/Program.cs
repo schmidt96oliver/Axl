@@ -57,4 +57,4 @@ foreach (var fun in result.Program!.MirFunctions.Where(f => !f.DisplayName.Start
 }
 
 Console.WriteLine("----------------");
-Miri.Run(result.Program!, Console.Out);
+Miri.Run(result.Program!, Console.Out, Console.Error);

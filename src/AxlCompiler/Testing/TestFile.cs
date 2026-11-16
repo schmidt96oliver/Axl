@@ -142,9 +142,27 @@ public sealed class TestFile
             return false;
         }
 
-        if (Kind is TestKind.Run && !Annotations.Any(a => a.Kind is AnnotationKind.ExpectOutput))
+        if (Kind is TestKind.Run && !Annotations.Any(a => a.Kind is AnnotationKind.ExpectOutput or AnnotationKind.ExpectPanic))
         {
             errorMessage = "Missing expected output.";
+            return false;
+        }
+
+        if (Kind is not TestKind.Run && Annotations.Any(a => a.Kind is AnnotationKind.ExpectPanic))
+        {
+            errorMessage = "Panic outside of run test.";
+            return false;
+        }
+
+        if (Annotations.Count(a => a.Kind is AnnotationKind.ExpectPanic) > 1)
+        {
+            errorMessage = "Multiple expected panics.";
+            return false;
+        }
+        
+        if (Annotations.Any(a => a.Kind is AnnotationKind.ExpectPanic && a.Text.Length == 0))
+        {
+            errorMessage = "Expected panic without expected message.";
             return false;
         }
 
@@ -211,12 +229,10 @@ public sealed class TestFile
                 Text: SourceLocation.EmptyAfter(location));
         }
 
-        if (text.StartsWith("//@"))
-            return null;
-
-        return TryMakeWithPrefix("//=", AnnotationKind.ExpectOutput)
-               ?? TryMakeWithPrefix("//~error", AnnotationKind.ExpectError)
-               ?? TryMakeWithPrefix("//~lint", AnnotationKind.ExpectLint);
+        return TryMakeWithPrefix("//@panic", AnnotationKind.ExpectPanic) ??
+               TryMakeWithPrefix("//=", AnnotationKind.ExpectOutput) ??
+               TryMakeWithPrefix("//~error", AnnotationKind.ExpectError) ??
+               TryMakeWithPrefix("//~lint", AnnotationKind.ExpectLint);
 
         Annotation? TryMakeWithPrefix(string prefix, AnnotationKind kind)
         {

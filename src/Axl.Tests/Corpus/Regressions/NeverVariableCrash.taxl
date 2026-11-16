@@ -1,5 +1,5 @@
 ﻿//@run
-//= PANIC: boom
+//@panic boom
 
 // This would crash during lowering, because assigning to a
 // never typed variable was lowered as a discard. It still
