@@ -23,16 +23,36 @@ public class SyntheticFunSymbol(Compilation compilation, string name, Symbol? ow
     /// <inheritdoc />
     public override ImmutableArray<TypeParameterSymbol> TypeParameters => [];
 
-    /// <inheritdoc />
-    public override ImmutableArray<ParameterSymbol> Parameters => [];
 
-    /// <inheritdoc />
-    public override ParameterSymbol? SelfParameter => null;
-
-
+    private ImmutableArray<ParameterSymbol> _parameters;
+    private ParameterSymbol? _selfParameter;
     private TypeSymbol? _returnType;
     private FunBody? _body;
-    
+
+
+    /// <inheritdoc />
+    public override ImmutableArray<ParameterSymbol> Parameters
+    {
+        get
+        {
+            if (_parameters.IsDefault)
+                throw new InvalidOperationException($"{nameof(Parameters)} not bound yet.");
+            return _parameters;
+        }
+    }
+
+    /// <inheritdoc />
+    public override ParameterSymbol? SelfParameter
+    {
+        get
+        {
+            // Self is always bound together with parameters.
+            if (_parameters.IsDefault)
+                throw new InvalidOperationException($"{nameof(Parameters)} not bound yet.");
+            return _selfParameter;
+        }
+    }
+
     /// <inheritdoc />
     public override TypeSymbol ReturnType 
         => _returnType ?? throw new InvalidOperationException($"{nameof(ReturnType)} not bound yet.");
@@ -45,11 +65,22 @@ public class SyntheticFunSymbol(Compilation compilation, string name, Symbol? ow
         _body ?? throw new InvalidOperationException($"{nameof(Body)} not bound yet.");
 
 
-    public void SetReturnValue(BoundValue value)
+    public void SetSignature(ParameterSymbol? selfParameter, 
+        ImmutableArray<ParameterSymbol> parameters,
+        TypeSymbol returnType)
     {
-        Guard.MustBe(_returnType is null && _body is null);
-        _returnType = value.Type;
-        _body = new BoundBlock([new BoundReturn(value, isMut: false, Compilation.BaseLibrary.Never)],
-            Compilation.BaseLibrary.Unit);
+        Guard.MustBe(_parameters.IsDefault, "Signature already bound.");
+        Guard.MustBe(selfParameter is null || selfParameter.Owner == this);
+        Guard.MustBe(parameters.All(p => p.Owner == this));
+        
+        _selfParameter = selfParameter;
+        _parameters = parameters;
+        _returnType = returnType;
+    }
+
+    public void SetBody(FunBody body)
+    {
+        Guard.MustBe(_body is null, "Body already bound.");
+        _body = body;
     }
 }

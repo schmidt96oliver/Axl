@@ -1,5 +1,6 @@
 ﻿using System.Collections.Immutable;
 using AxlCompiler.Binding;
+using AxlCompiler.Binding.BoundTree;
 using AxlCompiler.Binding.Scopes;
 using AxlCompiler.Syntax;
 using AxlCompiler.Syntax.Tree;
@@ -62,8 +63,13 @@ public sealed class ConstDefinitionSymbol(
                 var boundValue = new Binder(enclosingScope.WithOwner(this), _sideEffects)
                     .BindConstInitializer(DeclarationSyntax.ValueExpr);
                 field = new SyntheticFunSymbol(Compilation, name: $"<const init>{Name}", Owner, isPublic: false);
-                field.SetReturnValue(boundValue);
-                
+                field.SetSignature(selfParameter: null, parameters: [], returnType: Type);
+                field.SetBody(new BoundBlock(
+                    [
+                        new BoundReturn(boundValue, isMut: false, Compilation.BaseLibrary.Never)
+                    ],
+                    Compilation.BaseLibrary.Unit));
+
                 _isBindingValueFun = false;
             }
 
