@@ -52,7 +52,7 @@ public static class MirPrinter
                 string s => $"const {PrintConstString(s)}",
                 _ => $"const {constValue.Value}",
             },
-            Operand.ConstExpr { ConstSymbol: var constSymbol } => $"constexpr {constSymbol.FullName}",
+            Operand.ConstEval { ConstSymbol: var constSymbol } => $"consteval {constSymbol.FullName}",
 
             Operand.Unreachable => "unreachable",
             Operand.Empty => "empty",

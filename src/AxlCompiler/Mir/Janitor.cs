@@ -87,7 +87,7 @@ public sealed class Janitor
     {
         Operand.Copy copy => GetUsedLocals(copy.Place),
         Operand.Ref @ref => GetUsedLocals(@ref.Place),
-        Operand.Const or Operand.ConstExpr or Operand.Empty => [],
+        Operand.Const or Operand.ConstEval or Operand.Empty => [],
         Operand.Unreachable or Operand.Error => [],
     };
 

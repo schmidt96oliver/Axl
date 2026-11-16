@@ -239,7 +239,7 @@ public sealed class Miri
     private object Evaluate(Operand operand, Environment environment) => operand switch
     {
         Operand.Const @const => @const.Value.Value,
-        Operand.ConstExpr constExpr => Call(_program.GetMirFunction(constExpr.ConstSymbol.ValueFun), []),
+        Operand.ConstEval constExpr => Call(_program.GetMirFunction(constExpr.ConstSymbol.ValueFun), []),
         Operand.Copy copy => Copy(GetPlaceRef(copy.Place, environment)),
         Operand.Ref @ref => new Reference(environment, @ref.Place),
         Operand.Empty => _empty,

@@ -3,9 +3,8 @@
 
 # Now
 
-* Binder:
-  * Add type check: Must be concrete value type
-  * Add obvious cycle check: Own field must not be reachable through expression (not counting calls)
+* Binder check: Must be concrete value type
+* Binder obvious cycle check: Own field must not be reachable through expression (not counting calls)
 
 * ConstEvaluator
 

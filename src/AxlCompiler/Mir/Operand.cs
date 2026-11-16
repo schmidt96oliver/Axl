@@ -15,7 +15,7 @@ public closed record Operand(TypeSymbol Type, SyntaxNode? Syntax)
     public sealed record Const(ConstValue Value, TypeSymbol Type, SyntaxNode? Syntax = null) 
         : Operand(Type, Syntax);
     
-    public sealed record ConstExpr(ConstSymbol ConstSymbol, SyntaxNode? Syntax = null)
+    public sealed record ConstEval(ConstSymbol ConstSymbol, SyntaxNode? Syntax = null)
         : Operand(ConstSymbol.Type, Syntax);
 
     public sealed record Empty(TypeSymbol Type, SyntaxNode? Syntax = null) 
