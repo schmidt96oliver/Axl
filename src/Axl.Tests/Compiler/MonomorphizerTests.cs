@@ -20,7 +20,7 @@ public sealed class MonomorphizerTests
 
     [Fact]
     public void NeverInstantiated()
-        => InlineSnapshot.Validate(Signatures("fun A[T](t: T): T = t;"), "(): Base.Unit");
+        => InlineSnapshot.Validate(Signatures("fun A[T](t: T): T = t;"), "<script>(): Base.Unit");
 
     [Fact]
     public void MultipleCalls()
@@ -32,7 +32,7 @@ public sealed class MonomorphizerTests
                                               
                                               fun A[T]() { A[T](); }
                                               """), """
-            (): Base.Unit
+            <script>(): Base.Unit
             A[Base.I32](): Base.Unit
             """);
     [Fact]
@@ -43,7 +43,7 @@ public sealed class MonomorphizerTests
                                               
                                               fun A[T]() { A[T](); }
                                               """), """
-            (): Base.Unit
+            <script>(): Base.Unit
             A[Base.I32](): Base.Unit
             A[Base.String](): Base.Unit
             """);
@@ -55,7 +55,7 @@ public sealed class MonomorphizerTests
                                               
                                               fun A[T]() { A[T](); A[I32](); A[String](); }
                                               """), """
-            (): Base.Unit
+            <script>(): Base.Unit
             A[Base.I32](): Base.Unit
             A[Base.String](): Base.Unit
             """);
@@ -68,7 +68,7 @@ public sealed class MonomorphizerTests
                                               fun A[T]() { B[String](); }
                                               fun B[T]() { }
                                               """), """
-            (): Base.Unit
+            <script>(): Base.Unit
             A[Base.Bool](): Base.Unit
             A[Base.I32](): Base.Unit
             B[Base.String](): Base.Unit
@@ -81,7 +81,7 @@ public sealed class MonomorphizerTests
                                               fun A[T1, T2]() { B[T2, T1](); }
                                               fun B[T1, T2]() { A[T2, T1](); }
                                               """), """
-            (): Base.Unit
+            <script>(): Base.Unit
             A[Base.I32, Base.String](): Base.Unit
             B[Base.String, Base.I32](): Base.Unit
             """);
