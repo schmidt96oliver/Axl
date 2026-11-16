@@ -9,7 +9,7 @@ namespace AxlCompiler.Symbols;
 public sealed class ScriptFunSymbol(
     FileSyntax scriptSyntax,
     Scope enclosingScope)
-    : FunDefinitionSymbol(enclosingScope.Compilation, "", owner: enclosingScope.Owner, isPublic: false)
+    : FunDefinitionSymbol(enclosingScope.Compilation, "<script fun>", owner: enclosingScope.Owner, isPublic: false)
 {
     public FileSyntax ScriptSyntax { get; } = scriptSyntax;
     

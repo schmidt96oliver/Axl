@@ -67,7 +67,7 @@ public class Monomorphizer
         var originalMirFun = _lowerDefinition(funSymbol.OriginalDefinition);
         var typeMap = TypeMap.For(funSymbol, strict: true);
         
-        var instantiatedMirFun = new MutMirFunction(funSymbol.FullName,
+        var instantiatedMirFun = new MutMirFunction(funSymbol.FullInternalName,
             InstantiateLocal(originalMirFun.ReturnPlace, null, typeMap),
             [.. originalMirFun.ParameterPlaces.Select(p => InstantiateLocal(p, null, typeMap))]
         );

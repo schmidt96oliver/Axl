@@ -57,6 +57,27 @@ public static class SymbolPrinter
         }
         
         /// <summary>
+        /// The full name including symbols in the path that are not
+        /// referencable by name.
+        /// </summary>
+        public string FullInternalName
+        {
+            get
+            {
+                if (symbol is ErrorTypeSymbol) return "???";
+                if (symbol is TypeParameterSymbol) return symbol.Name;
+                return string.Join(".", symbol.SelfAndOwners()
+                    .Reverse()
+                    .Select(s => s switch
+                    {
+                        TypeSymbol type => $"{type.Name}{type.TypeArguments.FullTypeListDisplayText}",
+                        FunSymbol fun => $"{fun.Name}{fun.TypeArguments.FullTypeListDisplayText}",
+                        _ => s.Name
+                    }));
+            }
+        }
+        
+        /// <summary>
         /// The full name, but without the symbols own type arguments.
         /// </summary>
         public string FullNameWithoutOwnTypeArgs

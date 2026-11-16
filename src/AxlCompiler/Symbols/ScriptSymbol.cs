@@ -1,7 +1,5 @@
 ﻿using System.Collections.Immutable;
 using System.Diagnostics;
-using System.Runtime.CompilerServices;
-using AxlCompiler.Syntax.Tree;
 using AxlCompiler.Binding;
 using AxlCompiler.Binding.Scopes;
 using AxlCompiler.Syntax;
@@ -9,7 +7,7 @@ using AxlCompiler.Syntax;
 namespace AxlCompiler.Symbols;
 
 public class ScriptSymbol(SyntaxTree syntax, Scope enclosingScope) 
-    : NamespaceSymbol(enclosingScope.Compilation, name: "", owner: null, isRoot: false)
+    : NamespaceSymbol(enclosingScope.Compilation, name: "<script>", owner: null, isRoot: false)
 {
     private readonly BinderSideEffects _sideEffects = new();
     private LazyUsingsScope? _lazyUsingsScope;

@@ -16,7 +16,7 @@ public sealed class SourceNamespaceSymbol(
     Symbol? owner,
     Scope enclosingScope,
     bool isRoot)
-    : NamespaceSymbol(compilation, declaration.Name, owner, isRoot)
+    : NamespaceSymbol(compilation, isRoot ? "<root>" : declaration.Name, owner, isRoot)
 {
     private readonly BinderSideEffects _sideEffects = new();
     private bool _isBindingMembers = false;

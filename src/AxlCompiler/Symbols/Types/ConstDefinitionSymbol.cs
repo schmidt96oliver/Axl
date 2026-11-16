@@ -61,7 +61,7 @@ public sealed class ConstDefinitionSymbol(
 
                 var boundValue = new Binder(enclosingScope.WithOwner(this), _sideEffects)
                     .BindConstInitializer(DeclarationSyntax.ValueExpr);
-                field = new SyntheticFunSymbol(Compilation, name: $"<>{Name}.init", Owner, isPublic: false);
+                field = new SyntheticFunSymbol(Compilation, name: $"<const init>{Name}", Owner, isPublic: false);
                 field.SetReturnValue(boundValue);
                 
                 _isBindingValueFun = false;
