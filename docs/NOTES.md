@@ -3,10 +3,6 @@
 
 # Now
 
-* Checks for I64
-
-* Remove cannot chain and/or (it feels ridiculous); change in I32/IO64 implementations
-
 * constants in types: For I32.Min/Max, ...
 
 * ?? Move TestFile Evalutor into test suite
@@ -66,6 +62,10 @@
 # Later
 
 * Miri flat execution + stack trace + @StackTraceHidden
+
+* Mir Inliner
+  * Measure performance for number heavy code before and after!
+  * `@Inline`, `@NoInline` + small size threshold
 
 # Ideas
 [Ideas](IDEAS.md)

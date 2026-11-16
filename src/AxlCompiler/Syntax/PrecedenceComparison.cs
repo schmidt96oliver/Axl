@@ -12,13 +12,8 @@ public static class PrecedenceComparison
     public static PrecedenceComparisonResult Compare(Precedence left, Precedence right)
     {
         // --- Ambiguity pairs
-        switch (left, right)
-        {
-            case (Precedence.Comparison, Precedence.Comparison):
-            case (Precedence.LogicAnd, Precedence.LogicOr):
-            case (Precedence.LogicOr, Precedence.LogicAnd):
-                return PrecedenceComparisonResult.Ambiguous;
-        }
+        if ((left, right) is (Precedence.Comparison, Precedence.Comparison))
+            return PrecedenceComparisonResult.Ambiguous;
 
         // --- Right-associative pairs
         if (left == right && left is Precedence.Assign)

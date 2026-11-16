@@ -109,25 +109,13 @@ public partial class ParserTests
                 """);
 
         [Fact]
-        public void AndOr_DoNotChain_1()
-            => InlineSnapshot.Validate(SExpr("1 && 2 || 3;"), """
-                ERROR InvalidOperatorChaining@[2, 4), [7, 9): Cannot chain '&&' and '||'.
-
-                (1 && 2 || 3)
-                """);
+        public void AndOr_1()
+            => InlineSnapshot.Validate(SExpr("1 && 2 || 3;"), "((1 && 2) || 3)");
         [Fact]
-        public void AndOr_DoNotChain_2()
-            => InlineSnapshot.Validate(SExpr("1 && 2 && 3 || 3;"), """
-                ERROR InvalidOperatorChaining@[7, 9), [12, 14): Cannot chain '&&' and '||'.
-
-                ((1 && 2) && 3 || 3)
-                """);
+        public void AndOr_2()
+            => InlineSnapshot.Validate(SExpr("1 && 2 && 3 || 3;"), "(((1 && 2) && 3) || 3)");
         [Fact]
-        public void AndOr_DoNotChain_3()
-            => InlineSnapshot.Validate(SExpr("1 || 2 && 3 || 3;"), """
-                ERROR InvalidOperatorChaining@[2, 4), [7, 9), [12, 14): Cannot chain '||', '&&' and '||'.
-
-                (1 || 2 && 3 || 3)
-                """);
+        public void AndOr_3()
+            => InlineSnapshot.Validate(SExpr("1 || 2 && 3 || 3;"), "((1 || (2 && 3)) || 3)");
     }
 }

@@ -14,8 +14,8 @@ pub struct I32
         let max = 2147483647;
         let min = -2147483648;
 
-        if ((right > 0 && self > max.SubWrapped(right)) ||
-            (right < 0 && self < min.SubWrapped(right)))
+        if (right > 0 && self > max.SubWrapped(right) ||
+            right < 0 && self < min.SubWrapped(right))
         {
             Panic("Integer overflow.");
         }
@@ -31,8 +31,8 @@ pub struct I32
         let max = 2147483647;
         let min = -2147483648;
 
-        if ((right < 0 && self > max.AddWrapped(right)) ||
-            (right > 0 && self < min.AddWrapped(right)))
+        if (right < 0 && self > max.AddWrapped(right) ||
+            right > 0 && self < min.AddWrapped(right))
         {
             Panic("Integer overflow.");
         }
@@ -56,7 +56,7 @@ pub struct I32
         let max = 2147483647;
         let min = -2147483648;
 
-        if ((self == -1 && right == min) || (self == min && right == -1))
+        if (self == -1 && right == min || self == min && right == -1)
             Panic("Integer overflow.");    
             
         let wrappedResult = MulWrapped(right);
