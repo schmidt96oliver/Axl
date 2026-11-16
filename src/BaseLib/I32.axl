@@ -3,6 +3,9 @@
 @Primitive
 pub struct I32
 {
+    pub const Min: I32 = -2147483648;
+    pub const Max: I32 = 2147483647;
+
     @Intrinsic
     pub fun ToString(): String;
     
@@ -11,11 +14,8 @@ pub struct I32
 
     pub fun +(right: I32): I32
     {
-        let max = 2147483647;
-        let min = -2147483648;
-
-        if (right > 0 && self > max.SubWrapped(right) ||
-            right < 0 && self < min.SubWrapped(right))
+        if (right > 0 && self > Max.SubWrapped(right) ||
+            right < 0 && self < Min.SubWrapped(right))
         {
             Panic("Integer overflow.");
         }
@@ -28,11 +28,8 @@ pub struct I32
 
     pub fun -(right: I32): I32
     {
-        let max = 2147483647;
-        let min = -2147483648;
-
-        if (right < 0 && self > max.AddWrapped(right) ||
-            right > 0 && self < min.AddWrapped(right))
+        if (right < 0 && self > Max.AddWrapped(right) ||
+            right > 0 && self < Min.AddWrapped(right))
         {
             Panic("Integer overflow.");
         }
@@ -42,8 +39,7 @@ pub struct I32
 
     pub fun -(): I32
     {
-        let min = -2147483648;
-        if (self == min)
+        if (self == Min)
             Panic("Integer overflow.");
         return 0.SubWrapped(self);
     }
@@ -53,10 +49,7 @@ pub struct I32
 
     pub fun *(right: I32): I32
     {
-        let max = 2147483647;
-        let min = -2147483648;
-
-        if (self == -1 && right == min || self == min && right == -1)
+        if (self == -1 && right == Min || self == Min && right == -1)
             Panic("Integer overflow.");    
             
         let wrappedResult = MulWrapped(right);
@@ -71,11 +64,9 @@ pub struct I32
 
     pub fun /(right: I32): I32
     {
-        let min = -2147483648;
-
         if (right == 0)
             Panic("Division by zero.");
-        if (self == min && right == -1)
+        if (self == Min && right == -1)
             Panic("Integer overflow.");
         
         return DivUnchecked(right);
