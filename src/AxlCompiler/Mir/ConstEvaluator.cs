@@ -39,7 +39,7 @@ public sealed class ConstEvaluator
         {
             _diagnosticBag.ReportError(new Diagnostic.ConstEvaluationCycle(symbol, [
                 symbol,
-                .. _inProgress.Reverse().TakeWhile(s => s != symbol),
+                .. _inProgress.TakeWhile(s => s != symbol).Reverse(),
                 symbol
             ]));
             _values[symbol] = null;
