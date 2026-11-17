@@ -3,6 +3,10 @@
 
 # Now
 
+* mutation through `let` and non-`mut` fun
+* layout check skips classes
+* BoundValue PlaceKind, how to represent reference types here?
+
 # Questions / Little ones
 
 * ?? BindLookupResult: Report WrongKind error before anything else; remove isThisField in BindFieldAccess
@@ -23,7 +27,7 @@
 
 **Classes, ByRef types**: Class, `===` operator
 3. Binder: PlaceKind resets at reference hop, mut return escape via reference hop, layout check skips classes
-4. Lowering + Miri: `ClassValue`, `ClassInit`, lazy vs eager heap references
+4. lazy vs eager heap references, `mut classValue`
 5. `===`: reference types only, rejected on `T`
 6. Const: reject class-typed consts for now
 7. LSP: semantic tokens, hover, completion kind

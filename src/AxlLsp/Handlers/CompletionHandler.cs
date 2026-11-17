@@ -42,18 +42,18 @@ public sealed class CompletionHandler(ILanguageServerFacade facade) : Completion
     }
 
 
-    internal static IEnumerable<CompletionItem> GetStructInitFieldItems(BoundStructInitError structInitError, SyntaxContext context, bool isRider)
+    internal static IEnumerable<CompletionItem> GetStructInitFieldItems(BoundTypeInitError typeInitError, SyntaxContext context, bool isRider)
     {
         // Show only those candidates that have all the fields
         // that have been written. The binder does not filter
         // those out.
-        var filledFieldNames = structInitError.BoundArguments
+        var filledFieldNames = typeInitError.BoundArguments
             .Select(arg => arg.NameSyntax?.Text.ToString() ?? "")
             .Where(fieldName => fieldName is not "" &&
                 context.TouchingWord?.Text.SequenceEqual(fieldName) != true)
             .ToHashSet();
 
-        var names = structInitError.Candidates.SelectMany(RemainingFields).Distinct();
+        var names = typeInitError.Candidates.SelectMany(RemainingFields).Distinct();
         
         return names.Select(fieldName => new CompletionItem
         {
@@ -88,7 +88,7 @@ public sealed class CompletionHandler(ILanguageServerFacade facade) : Completion
         if (context.TargetToken?.Parent is ArgListSyntax argListSyntax)
         {
             var callSyntax = argListSyntax.Ancestors().OfType<CallExprSyntax>().First();
-            if (compilation.SemanticModel.BoundNodeFor(callSyntax) is BoundStructInitError error)
+            if (compilation.SemanticModel.BoundNodeFor(callSyntax) is BoundTypeInitError error)
             {
                 foreach (var item in GetStructInitFieldItems(error, context, isRider))
                     yield return item;

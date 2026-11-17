@@ -2235,7 +2235,7 @@ public sealed class Binder(Scope scope, BinderSideEffects sideEffects)
         {
             foreach (var arg in missingNameArguments)
                 SideEffects.ReportError(new Diagnostic.MissingFieldName(arg.Syntax!));
-            return new BoundStructInitError(initialCandidates, arguments, ErrorType, syntax);
+            return new BoundTypeInitError(initialCandidates, arguments, ErrorType, syntax);
         }
 
         var duplicateNames = arguments
@@ -2247,7 +2247,7 @@ public sealed class Binder(Scope scope, BinderSideEffects sideEffects)
         {
             foreach (var duplicates in duplicateNames)
                 SideEffects.ReportError(new Diagnostic.DuplicateArgumentNames(duplicates));
-            return new BoundStructInitError(initialCandidates, arguments, ErrorType, syntax);
+            return new BoundTypeInitError(initialCandidates, arguments, ErrorType, syntax);
         }
         
         // Single
@@ -2255,7 +2255,7 @@ public sealed class Binder(Scope scope, BinderSideEffects sideEffects)
         {
             var candidate = CheckTypeCandidate(typeRef.Type, arguments, inferTypeArguments: false, syntax);
             if (candidate.Applicability is not TypeApplicability.Applicable)
-                return new BoundStructInitError(candidates: [candidate.Type], arguments, ErrorType, syntax);
+                return new BoundTypeInitError(candidates: [candidate.Type], arguments, ErrorType, syntax);
             return CompleteTypeInit(candidate, arguments, syntax);
         }
 
@@ -2282,20 +2282,19 @@ public sealed class Binder(Scope scope, BinderSideEffects sideEffects)
             var candidate = candidates[0];
             SideEffects.MergeWith(candidate.SideEffects);
             if (candidate.Applicability is not TypeApplicability.Applicable)
-                return new BoundStructInitError([.. candidates.Select(t => t.Type)], arguments, ErrorType, syntax);
+                return new BoundTypeInitError([.. candidates.Select(t => t.Type)], arguments, ErrorType, syntax);
             return CompleteTypeInit(candidate, arguments, syntax);
         }
 
         SideEffects.ReportError(MakeTypeResolutionError([.. candidates.Select(c => c.Type)],
             candidates[0].Applicability, syntax));
-        return new BoundStructInitError([.. candidates.Select(t => t.Type)], arguments, ErrorType, syntax);
+        return new BoundTypeInitError([.. candidates.Select(t => t.Type)], arguments, ErrorType, syntax);
     }
 
     private TypeCandidate CheckTypeCandidate(TypeSymbol type, ImmutableArray<BoundArgument> arguments, bool inferTypeArguments,
         CallExprSyntax syntax)
     {
-        if (type.OriginalDefinition is not StructSymbol originalDefinition ||
-            originalDefinition.IsPrimitive)
+        if (type.OriginalDefinition is not (StructSymbol or ClassSymbol) || type.IsPrimitive)
             return Fail(TypeApplicability.CannotInitialize);
 
         // All fields bound and none left out?
@@ -2389,9 +2388,18 @@ public sealed class Binder(Scope scope, BinderSideEffects sideEffects)
             .Select(i => BindFieldInitializer(arguments[i], fieldsToArguments.Value[i]))
             .ToImmutableArray();
         if (fieldInits.Any(f => f is null))
-            return new BoundStructInitError([candidate.Type], arguments, ErrorType, syntax);
-        
-        return new BoundStructInit(candidate.Type, [.. fieldInits!], syntax);
+            return new BoundTypeInitError([candidate.Type], arguments, ErrorType, syntax);
+
+        return candidate.Type.OriginalDefinition switch
+        {
+            StructSymbol => new BoundStructInit(candidate.Type, [.. fieldInits!], syntax),
+            ClassSymbol => new BoundClassInit(candidate.Type, [.. fieldInits!], syntax),
+            
+            SpecializedTypeSymbol or 
+                TypeParameterSymbol or
+                ErrorTypeSymbol or 
+                RefTypeSymbol => throw new UnreachableException(),
+        };
     }
     
     private BoundFieldInit? BindFieldInitializer(BoundArgument argument, FieldSymbol field)

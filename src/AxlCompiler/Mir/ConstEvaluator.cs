@@ -95,6 +95,8 @@ public sealed class ConstEvaluator
             [.. op.Arguments.Select(ReplaceOperand)], op.Syntax),
         Instruction.StructInit structInit => new Instruction.StructInit(structInit.Struct,
             structInit.Target, structInit.FieldValues.ToFrozenDictionary(kvp => kvp.Key, kvp => ReplaceOperand(kvp.Value)), structInit.Syntax),
+        Instruction.ClassInit classInit => new Instruction.ClassInit(classInit.Class,
+            classInit.Target, classInit.FieldValues.ToFrozenDictionary(kvp => kvp.Key, kvp => ReplaceOperand(kvp.Value)), classInit.Syntax),
         Instruction.VmCall vmCall => new Instruction.VmCall(vmCall.Kind, vmCall.Target,
             [.. vmCall.Arguments.Select(ReplaceOperand)], vmCall.Syntax),
     };

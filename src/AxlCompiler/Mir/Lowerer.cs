@@ -263,6 +263,7 @@ public class Lowerer
 
         BoundCall boundCall => LowerCallOperand(boundCall, _mirFun.AddTemp(boundCall.Type)),
         BoundStructInit boundStructInit => LowerStructInit(boundStructInit, _mirFun.AddTemp(boundStructInit.Type)),
+        BoundClassInit boundClassInit => LowerClassInit(boundClassInit, _mirFun.AddTemp(boundClassInit.Type)),
 
         BoundError => new Operand.Error(Error),
         
@@ -405,7 +406,7 @@ public class Lowerer
         BoundReturn => true,
 
         BoundIfExpr => true, // Lowers to temp anyway
-        BoundStructInit => true, // Lowers to temp anyway
+        BoundStructInit or BoundClassInit => true, // Lowers to temp anyway
 
         BoundConstLiteral => false,
         BoundLocal => false,
@@ -427,6 +428,15 @@ public class Lowerer
             boundFieldInit.Field, boundFieldInit => LowerOperand(boundFieldInit.Value));
 
         Emit(new Instruction.StructInit(structInit.Type, target, fields.ToFrozenDictionary(), structInit.Syntax));
+        return new Operand.Copy(target);
+    }
+    
+    private Operand LowerClassInit(BoundClassInit classInit, Place target)
+    {
+        var fields = Enumerable.ToDictionary(classInit.FieldInits, boundFieldInit => 
+            boundFieldInit.Field, boundFieldInit => LowerOperand(boundFieldInit.Value));
+
+        Emit(new Instruction.ClassInit(classInit.Type, target, fields.ToFrozenDictionary(), classInit.Syntax));
         return new Operand.Copy(target);
     }
     

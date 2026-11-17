@@ -1,6 +1,5 @@
 ﻿using System.Collections.Frozen;
 using System.Diagnostics;
-using AxlCompiler.Text;
 using AxlCompiler.Diagnostics;
 using AxlCompiler.Symbols;
 
@@ -146,6 +145,7 @@ public class Monomorphizer
             Instruction.Call originalCall => InstantiateCall(originalCall, instantiatedMirFun, map),
 
             Instruction.StructInit originalStructInit => InstantiateStructInit(originalStructInit, instantiatedMirFun, map),
+            Instruction.ClassInit originalClassInit => InstantiateClassInit(originalClassInit, instantiatedMirFun, map),
 
             Instruction.VmCall originalVmCall => new Instruction.VmCall(
                 originalVmCall.Kind,
@@ -165,6 +165,22 @@ public class Monomorphizer
         
         return new Instruction.StructInit(
             substitutedStruct,
+            instantiatedTarget,
+            fieldValues,
+            original.Syntax);
+    }
+    
+    private Instruction.ClassInit InstantiateClassInit(Instruction.ClassInit original, MutMirFunction instantiatedMirFun, TypeMap map)
+    {
+        var substitutedClass = original.Class.Substitute(map);
+        var instantiatedTarget = InstantiatePlace(original.Target, instantiatedMirFun, map);
+        var fieldValues = original.FieldValues.ToDictionary(
+                keySelector: kvp => kvp.Key.Substitute(map),
+                elementSelector: kvp => InstantiateOperand(kvp.Value, instantiatedMirFun, map))
+            .ToFrozenDictionary();
+        
+        return new Instruction.ClassInit(
+            substitutedClass,
             instantiatedTarget,
             fieldValues,
             original.Syntax);

@@ -25,6 +25,15 @@ public closed record Instruction(Place Target, ImmutableArray<Operand> Operands,
         FrozenDictionary<FieldSymbol, Operand> FieldValues,
         SyntaxNode? Syntax = null)
         : Instruction(Target, [.. FieldValues.Values], Syntax);
+    
+    public sealed record ClassInit(
+        // Must be TypeSymbol, because it might be specialized and
+        // the specialized symbol is not StructSymbol anymore.
+        TypeSymbol Class,
+        Place Target,
+        FrozenDictionary<FieldSymbol, Operand> FieldValues,
+        SyntaxNode? Syntax = null)
+        : Instruction(Target, [.. FieldValues.Values], Syntax);
 
     public sealed record Assign(Place Target, Operand Value, SyntaxNode? Syntax = null) : Instruction(Target, [Value], Syntax);
 }

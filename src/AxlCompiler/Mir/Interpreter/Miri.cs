@@ -24,7 +24,18 @@ public sealed class Miri
         public TypeSymbol Symbol { get; } = symbol;
         public readonly Dictionary<FieldSymbol, object> Fields = [];
     }
+    
+    /// <summary>
+    /// The *value* of the class on the heap. Accessed through a <see cref="HeapRef"/>.
+    /// </summary>
+    private sealed class ClassValue(TypeSymbol symbol)
+    {
+        public TypeSymbol Symbol { get; } = symbol;
+        public readonly Dictionary<FieldSymbol, object> Fields = [];
+    }
 
+    private sealed record HeapRef(int Index);
+    
     private sealed record Reference(Environment Environment, Place Place);
 
     
@@ -32,6 +43,7 @@ public sealed class Miri
     private readonly MiriContext _context;
     private int? _fuel;
 
+    private readonly List<ClassValue> _heap = [];
     private readonly StructValue _unitValue;
     private object _discard = new();
 
@@ -90,6 +102,7 @@ public sealed class Miri
     private ConstValue ToConstValue(object miriValue) => miriValue switch
     {
         StructValue structValue => ToConstValue(structValue),
+        ClassValue or HeapRef => throw new InvalidOperationException("Cannot convert heap allocated miri value to const value."),
         bool b => b,
         double d => d,
         float f => f,
@@ -114,6 +127,8 @@ public sealed class Miri
                 copy.Fields.Add(kvp.Key, Copy(kvp.Value));
             return copy;
         }
+        
+        // Note: Heap refs get passed directly here.
 
         return value;
     }
@@ -127,7 +142,13 @@ public sealed class Miri
             throw new OutOfFuelException();
     }
 
-
+    private HeapRef Allocate(ClassValue value)
+    {
+        _heap.Add(value);
+        return new HeapRef(_heap.Count - 1);
+    }
+    
+    
     private object Call(MutMirFunction mirFun, ImmutableArray<object> arguments)
     {
         var environment = new Environment();
@@ -208,6 +229,16 @@ public sealed class Miri
                 foreach (var kvp in structInit.FieldValues)
                     value.Fields.Add(kvp.Key, Evaluate(kvp.Value, environment));
                 GetPlaceRef(structInit.Target, environment) = value;
+                break;
+            }
+            
+            case Instruction.ClassInit classInit:
+            {
+                var value = new ClassValue(classInit.Class);
+                foreach (var kvp in classInit.FieldValues)
+                    value.Fields.Add(kvp.Key, Evaluate(kvp.Value, environment));
+                
+                GetPlaceRef(classInit.Target, environment) = Allocate(value);
                 break;
             }
             
@@ -307,8 +338,17 @@ public sealed class Miri
             
             case Place.Field field:
                 var receiver = GetPlaceRef(field.Receiver, environment);
-                return ref CollectionsMarshal.GetValueRefOrNullRef(((StructValue)receiver).Fields, field.FieldSymbol);
-            
+                
+                if (receiver is StructValue structReceiver)
+                    return ref CollectionsMarshal.GetValueRefOrNullRef(structReceiver.Fields, field.FieldSymbol);
+                if (receiver is HeapRef heapRef)
+                {
+                    var value = _heap[heapRef.Index];
+                    return ref CollectionsMarshal.GetValueRefOrNullRef(value.Fields, field.FieldSymbol);
+                }
+
+                throw new UnreachableException();
+                
             case Place.Deref deref:
                 var @ref = (Reference)GetPlaceRef(deref.Reference, environment);
                 return ref GetPlaceRef(@ref.Place, @ref.Environment);

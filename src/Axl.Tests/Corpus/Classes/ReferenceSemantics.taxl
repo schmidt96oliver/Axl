@@ -1,0 +1,14 @@
+//@run
+//= 2
+
+let t = Test(Field = 1);
+var alias = t;
+alias.Field = 2;
+
+Print(t.Field);
+
+
+class Test 
+{
+    pub Field: I32;
+}

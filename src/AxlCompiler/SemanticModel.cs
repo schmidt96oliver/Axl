@@ -94,7 +94,7 @@ public sealed class SemanticModel(Compilation compilation)
             var boundCall = BoundNodeFor(callExprSyntax);
             if (boundCall is BoundStructInit structInit)
                 return new SymbolReference.Resolved(structInit.Type, nameSyntax.Location);
-            if (boundCall is BoundStructInitError structInitError)
+            if (boundCall is BoundTypeInitError structInitError)
             {
                 // If there is only a single candidate that has its type
                 // parameters filled, it resolves correctly. Otherwise,
