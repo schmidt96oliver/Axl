@@ -8,8 +8,8 @@ public sealed class StructOrClassDeclSyntax(ImmutableArray<SyntaxElement> childr
     public Token? PubKw
         => Children.OfType<Token>().FirstOrDefault(child => child is { Kind: TokenKind.PubKw });
     
-    public Token? StructOrClassKw
-        => Children.OfType<Token>().FirstOrDefault(child => child is { Kind: TokenKind.ClassKw or TokenKind.StructKw });
+    public Token StructOrClassKw
+        => Children.OfType<Token>().First(child => child is { Kind: TokenKind.ClassKw or TokenKind.StructKw });
     
     public IEnumerable<AnnotationSyntax> Annotations => Children.OfType<AnnotationSyntax>();
     

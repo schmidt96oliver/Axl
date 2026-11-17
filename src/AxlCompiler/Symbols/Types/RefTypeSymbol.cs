@@ -12,6 +12,10 @@ public sealed class RefTypeSymbol(TypeSymbol inner)
 {
     public TypeSymbol Inner { get; } = inner;
 
+    public override TypeKind Kind => TypeKind.Other;
+    public override bool IsValueType => false;
+    public override bool IsReferenceType => false;
+    
     /// <inheritdoc />
     public override bool IsConcrete => Inner.IsConcrete;
 

@@ -23,6 +23,7 @@ public static class SymbolPrinter
             TypeSymbol type => type.OriginalDefinition switch
             {
                 StructSymbol => "struct",
+                ClassSymbol => "class",
                 
                 TypeParameterSymbol => "type parameter",
                 ErrorTypeSymbol => "error",

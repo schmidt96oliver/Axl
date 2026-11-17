@@ -289,7 +289,7 @@ public sealed class Binder(Scope scope, BinderSideEffects sideEffects)
 
         return
         [
-            .. syntax.Children.OfType<StructOrClassDeclSyntax>().Select(usingsBinder.BindStructDeclaration),
+            .. syntax.Children.OfType<StructOrClassDeclSyntax>().Select(usingsBinder.BindStructOrClassDeclaration),
             .. syntax.Children.OfType<FunDeclSyntax>().Select(usingsBinder.BindSourceFunDeclaration),
             .. syntax.Children.OfType<ConstDeclSyntax>().Select(usingsBinder.BindConstDeclaration),
         ];
@@ -332,7 +332,7 @@ public sealed class Binder(Scope scope, BinderSideEffects sideEffects)
                     break;
 
                 case StructOrClassDeclSyntax structDecl:
-                    symbols.Add(usingsBinder.BindStructDeclaration(structDecl));
+                    symbols.Add(usingsBinder.BindStructOrClassDeclaration(structDecl));
                     break;
                 
                 case ConstDeclSyntax constDecl:
@@ -428,8 +428,12 @@ public sealed class Binder(Scope scope, BinderSideEffects sideEffects)
         return funSymbol;
     }
 
-    public StructSymbol BindStructDeclaration(StructOrClassDeclSyntax syntax)
+    public TypeSymbol BindStructOrClassDeclaration(StructOrClassDeclSyntax syntax)
     {
+        var typeKind = syntax.StructOrClassKw.Kind is TokenKind.ClassKw
+            ? TypeKind.Class
+            : TypeKind.Struct;
+        
         // Primitive annotation
         var annotations = syntax.Annotations.Select(BindAnnotation);
         PrimitiveKind? primitiveKind = null;
@@ -450,18 +454,19 @@ public sealed class Binder(Scope scope, BinderSideEffects sideEffects)
                 }
             }
             else if (annotation.Kind is not AnnotationKind.Primitive)
-                SideEffects.ReportError(new Diagnostic.InvalidStructAnnotation(annotation));
+                SideEffects.ReportError(new Diagnostic.InvalidTypeAnnotation(annotation, typeKind));
         }
 
         var isPublic = syntax.PubKw is not null;
         if (syntax.PubKw is not null && Scope.Owner is ScriptSymbol)
         {
-            SideEffects.ReportError(new Diagnostic.InvalidScriptStructModifier(syntax.PubKw));
+            SideEffects.ReportError(new Diagnostic.InvalidScriptTypeModifier(syntax.PubKw));
             isPublic = false;
         }
 
-        var symbol = new StructSymbol(syntax, enclosingScope: Scope, isPublic, primitiveKind);
-        return symbol;
+        return syntax.StructOrClassKw.Kind is TokenKind.ClassKw
+            ? new ClassSymbol(syntax, enclosingScope: Scope, isPublic, primitiveKind)
+            : new StructSymbol(syntax, enclosingScope: Scope, isPublic, primitiveKind);
     }
 
     public FieldSymbol BindFieldDeclaration(FieldDeclSyntax syntax)

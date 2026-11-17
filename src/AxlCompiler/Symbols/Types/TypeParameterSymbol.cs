@@ -11,6 +11,10 @@ public class TypeParameterSymbol(string name, Symbol owner, int ordinal, TypePar
     public TypeParamSyntax DeclarationSyntax { get; } = declarationSyntax;
 
     public int Ordinal { get; } = ordinal;
+
+    public override TypeKind Kind => TypeKind.TypeParameter;
+    public override bool IsValueType => false;
+    public override bool IsReferenceType => false;
     
     /// <inheritdoc />
     public override bool CanBeReferencedByName => true;

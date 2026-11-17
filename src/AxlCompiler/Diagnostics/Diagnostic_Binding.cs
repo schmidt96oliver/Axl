@@ -259,6 +259,8 @@ public partial record Diagnostic
         {
             StructSymbol @struct => SourceLocation.FromTo(@struct.DeclarationSyntax.Name.Location,
                 @struct.DeclarationSyntax.TypeParameterList?.Location ?? @struct.DeclarationSyntax.Name.Location),
+            ClassSymbol @class => SourceLocation.FromTo(@class.DeclarationSyntax.Name.Location,
+                @class.DeclarationSyntax.TypeParameterList?.Location ?? @class.DeclarationSyntax.Name.Location),
 
             ErrorTypeSymbol or RefTypeSymbol or TypeParameterSymbol or SpecializedTypeSymbol
                 => throw new UnreachableException(),
@@ -673,11 +675,11 @@ public partial record Diagnostic
             $"The namespace '{Declaration.Name}' is already declared in a dependency. Namespaces are only open across the same project.";
     }
 
-    public sealed record InvalidScriptStructModifier(Token Syntax) : Error
+    public sealed record InvalidScriptTypeModifier(Token Syntax) : Error
     {
         /// <inheritdoc />
         public override ImmutableArray<SourceLocation> Locations => [Syntax.Location];
-        public override string Message => $"‘{Syntax.Text}‘ is not valid on structs inside scripts.";
+        public override string Message => $"‘{Syntax.Text}‘ is not valid on types inside scripts.";
     }
 
     public sealed record InconsistentAccessibility(BoundTypeRef TypeRef, Symbol? Owner) : Error
@@ -712,13 +714,20 @@ public partial record Diagnostic
         public override string Message => $"Unknown annotation '{Syntax.Text}'.";
     }
 
-    public sealed record InvalidStructAnnotation(BoundAnnotation Annotation) : Error
+    public sealed record InvalidTypeAnnotation(BoundAnnotation Annotation, TypeKind TypeKind) : Error
     {
         /// <inheritdoc />
         public override ImmutableArray<SourceLocation> Locations => [Annotation.Syntax.Location];
 
         /// <inheritdoc />
-        public override string Message => $"Annotation '{Annotation.Syntax.Text}' is not valid for structs.";
+        public override string Message => TypeKind switch
+        {
+            TypeKind.Class => $"Annotation '{Annotation.Syntax.Text}' is not valid for classes.",
+            TypeKind.Struct => $"Annotation '{Annotation.Syntax.Text}' is not valid for structs.",
+            TypeKind.TypeParameter => $"Annotation '{Annotation.Syntax.Text}' is not valid for type parameters.",
+
+            _ => $"Annotation '{Annotation.Syntax.Text}' is not valid here.",
+        };
     }
 
     public sealed record InvalidConstAnnotation(BoundAnnotation Annotation) : Error

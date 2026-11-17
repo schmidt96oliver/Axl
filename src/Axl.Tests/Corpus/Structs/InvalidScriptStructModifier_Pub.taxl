@@ -1,3 +1,4 @@
 ﻿//@check
 
-pub struct Test;    //~error InvalidScriptStructModifier
+pub struct Test1;    //~error InvalidScriptTypeModifier
+pub class Test2;        //~error InvalidScriptTypeModifier

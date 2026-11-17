@@ -14,6 +14,10 @@ public class SpecializedTypeSymbol : TypeSymbol
     /// <inheritdoc />
     public override bool CanBeReferencedByName => OriginalDefinition.CanBeReferencedByName;
 
+    public override TypeKind Kind => OriginalDefinition.Kind;
+    public override bool IsValueType => OriginalDefinition.IsValueType;
+    public override bool IsReferenceType => OriginalDefinition.IsReferenceType;
+    
     /// <inheritdoc />
     public override ImmutableArray<SyntaxNode> DeclaringSyntax => OriginalDefinition.DeclaringSyntax;
 

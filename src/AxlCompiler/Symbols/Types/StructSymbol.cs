@@ -25,6 +25,10 @@ public sealed class StructSymbol(
     /// <inheritdoc />
     public override bool CanBeReferencedByName => true;
 
+    public override TypeKind Kind => TypeKind.Struct;
+    public override bool IsValueType => true;
+    public override bool IsReferenceType => false;
+    
     /// <inheritdoc />
     public override ImmutableArray<SyntaxNode> DeclaringSyntax => [DeclarationSyntax];
 

@@ -1,4 +1,6 @@
 ﻿//@check
 
-@Intrinsic      //~error InvalidStructAnnotation
-struct A;
+@Intrinsic      //~error InvalidTypeAnnotation
+struct A1;
+@Intrinsic      //~error InvalidTypeAnnotation
+class A2; 

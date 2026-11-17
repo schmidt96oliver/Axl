@@ -12,6 +12,10 @@ public closed class TypeSymbol(Compilation compilation, string name, Symbol? own
     public override bool IsConcrete
         => Owner?.IsConcrete != false && TypeArguments.All(arg => arg.IsConcrete);
 
+    public abstract TypeKind Kind { get; }
+    public abstract bool IsValueType { get; }
+    public abstract bool IsReferenceType { get; }
+    
     public override TypeSymbol OriginalDefinition => this;
 
     public PrimitiveKind? PrimitiveKind { get; } = primitiveKind;
