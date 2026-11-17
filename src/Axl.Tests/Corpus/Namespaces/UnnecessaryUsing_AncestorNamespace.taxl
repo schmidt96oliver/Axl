@@ -1,6 +1,5 @@
 ﻿//@check
 
-//---
 namespace A.B.C;
 
 using A;        //~lint UnnecessaryUsing

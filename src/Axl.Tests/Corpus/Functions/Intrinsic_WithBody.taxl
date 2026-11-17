@@ -2,7 +2,6 @@
 
 // Intrinsic funs must not declare a body.
 
-//---
 namespace Test;
 
 @Intrinsic

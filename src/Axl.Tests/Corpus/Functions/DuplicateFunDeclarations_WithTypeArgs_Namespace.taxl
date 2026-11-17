@@ -1,6 +1,5 @@
 ﻿//@check
 
-//---
 namespace Test;
 
 fun A() { }
