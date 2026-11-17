@@ -3,24 +3,13 @@
 
 # Now
 
-* Look at Claude review
-
-* ?? Move TestFile Evalutor into test suite
-
 # Questions / Little ones
 
 * ?? BindLookupResult: Report WrongKind error before anything else; remove isThisField in BindFieldAccess
 
-* ?? Miri: `Environment` -> `ActivationFrame` with .GetRef that throws if exited
-* ?? Miri: Store reference as Root (ActivationFrame, LocalId) + Path (FieldSymbol[]). See Claude, think why?
-
-* ?? LayoutGraphNode to TypeDefinitionSymbol
-
 * Mir: Validator
   * Phase.Monomorphized: Check that everything is concrete. No TypeParams
   * Call with mut return: ref is directly used and never again
-
-* Mir: StructInit as ImmutableArray<Operand> ordered from declaration/member order. No map
 
 * Binder: BindLookupResult should report WrongKind error before binding
 
@@ -28,28 +17,21 @@
 
 * Separate IfStmt and IfExpr in syntax (-> SemanticModel.BoundNodeFor tests)
 
-
 # Milestones
 
-**Buffer**: `Buffer[T]`, `List[T]/MutList[T]`
-* Allow `const Thing: Buffer[I32]` ?
+
 
 **Classes, ByRef types**: Class, `===` operator
-* RecursiveStructLayout: Only check type args/fields that store by value
-* `const` and reference types?
+1. Syntax: `class` decl, no `mut fun` in classes (grammar)
+2. Symbols: reference-type flag vs `ClassSymbol`
+3. Binder: PlaceKind resets at reference hop, mut return escape via reference hop, layout check skips classes
+4. Lowering + Miri: `ClassValue`, `ClassInit`, lazy vs eager heap references
+5. `===`: reference types only, rejected on `T`
+6. Const: reject class-typed consts for now
+7. LSP: semantic tokens, hover, completion kind
 
-**Mir Analysis**
-* Unreachable code analysis
-    * Build HashSet for reachable StmtSyntax by walk on MIR. Then walk over syntax tree to report.
-* Read/Write analysis
-    * Unused variables
-    * 'var' can be 'let'
-    * unecessary parameter 'mut' + self
-    * unecessary assignment
+**UnsafeBuffer**: `UnsafeBuffer[T]`, `List[T]/MutList[T]`
 
-**Enums/Exhaustiveness/Patterns**
-
-**Traits/Constraints**
 
 # Loose Ends
 * Overload resolution specificity
@@ -69,19 +51,17 @@
   * Measure performance for number heavy code before and after!
   * `@Inline`, `@NoInline` + small size threshold
 
+* Mir Analysis
+  * Unreachable code analysis
+      * Build HashSet for reachable StmtSyntax by walk on MIR. Then walk over syntax tree to report.
+  * Read/Write analysis
+      * Unused variables
+      * 'var' can be 'let'
+      * unecessary parameter 'mut' + self
+      * unecessary assignment
+
 # Ideas
 [Ideas](IDEAS.md)
-
-* Axl: Named arguments
-* Axl: Default fun arguments
-* Axl: Default struct field values
-* Axl: `static let` constants
-
-* Axl: Nested structs
-  * Enclosing types instance members rejected (MemberOfEnclosingType)
-* Axl: `@derive(==)` and `@derive(ToString)`
-
-* Axl: Drop initializers, definite assignment, maybe `let a = undefined;`
 
 * LSP: Signature Help, Folding Ranges, Taxl Annotation completion, Rename
 

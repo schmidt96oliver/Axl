@@ -27,13 +27,23 @@ Just like the Axolotl, Axl's animal.
 
 # Adventures to go on
 
-* Target-typed number literals or implicit conversion
-* Arrays
-* First-Class Functions, Captured Variables & Lambdas
+* Local: Target-typed number literals or implicit conversion
+* Local: Drop initializers, definite assignment, maybe `let a = undefined;`
+
+* Panic: Line numbers and stacktraces
+
+* Funs: Named arguments
+* Funs: Default fun arguments
+* Funs: First-Class Functions, Captured Variables & Lambdas
   * Non-local returns; How does `return, break, continue` inside lambdas work?
   * Parameter and return-type inference
 
-* Project files
+* Structs: Default struct field values
+* Structs: Nested structs
+    * Enclosing types instance members rejected (MemberOfEnclosingType)
+* Structs: `@derive(==)` and `@derive(ToString)`
+
+* LSP: Project files
     * Compilations can reference other Compilations
     * Dependencies
     * Cyclic dependencies rejected
@@ -52,20 +62,13 @@ https://core-lang.dev/design.html
 > :   ascribes (a type) = 'zuweisen'
 > @   annotates
 > ()  encloses terms
-> []  encloses types
->
+> []  encloses types or collections
 
 Possibly add or change:
 >     | | lambda
 >     < > encloses types
->     [ ] encloses collections
 >      ?  maybe/option
 >      !  nope
-
-* Arrays: `Array[Int32]`. Needs generics
-    * construct `Array[Int32](1, 2, 3)`
-    * get `array.Get(index)`
-    * `array.Set(index, value)` through @intrinsic functions
 
 * Lambdas and non-local return.
     * Return in a lambda should ideally return from the fun it's written in (not the lambda)
