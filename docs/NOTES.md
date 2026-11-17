@@ -3,6 +3,11 @@
 
 # Now
 
+* Look at Claude review
+
+* `@compile` tests. Measure run time
+* ConstEvaluator: Don't stdout into Console
+
 * Binder check: Must be concrete value type
 * Binder obvious cycle check: Own field must not be reachable through expression (not counting calls)
 
@@ -33,9 +38,11 @@
 # Milestones
 
 **Buffer**: `Buffer[T]`, `List[T]/MutList[T]`
+* Allow `const Thing: Buffer[I32]` ?
 
 **Classes, ByRef types**: Class, `===` operator
 * RecursiveStructLayout: Only check type args/fields that store by value
+* `const` and reference types?
 
 **Mir Analysis**
 * Unreachable code analysis

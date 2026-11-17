@@ -5,6 +5,7 @@ namespace AxlCompiler.Testing;
 public enum AnnotationKind
 {
     CheckDirective,
+    CompileDirective,
     RunDirective,
     IgnoreGlobalDiagnosticsDirective,
     

@@ -1,4 +1,5 @@
-﻿using System.Diagnostics;
+﻿using System.Collections.Immutable;
+using System.Diagnostics;
 using AxlCompiler.Diagnostics;
 using AxlCompiler.Mir.Interpreter;
 using AxlCompiler.Symbols;
@@ -26,15 +27,11 @@ public sealed class Evaluator
     
     private readonly List<FailedCheck> _failedChecks = [];
     private readonly TestFile _testFile;
-    private readonly CompilationResult _compilationResult;
-    private readonly TypeSymbol _unitType;
     private readonly bool _ignoreGlobalDiagnostics;
 
-    private Evaluator(TestFile testFile, CompilationResult compilationResult, TypeSymbol unitType)
+    private Evaluator(TestFile testFile)
     {
         _testFile = testFile;
-        _compilationResult = compilationResult;
-        _unitType = unitType;
 
         _ignoreGlobalDiagnostics =
             _testFile.Annotations.Any(a => a.Kind is AnnotationKind.IgnoreGlobalDiagnosticsDirective);
@@ -62,39 +59,88 @@ public sealed class Evaluator
         if (!testFile.Validate(out var errorMessage))
             return Evaluation.Failed($"Invalid taxl file: {errorMessage}");
 
-        if (compilation.Scripts is not [var script])
-            return Evaluation.Failed("Taxl has more than one script.");
-        
-        var evaluator = new Evaluator(testFile, compilation.Compile(script), compilation.BaseLibrary.Unit);
-        evaluator.CheckDiagnostics();
-        switch (testFile.Kind)
+        return testFile.Kind switch
         {
-            case TestKind.Check:
-                break;
+            TestKind.Check => EvaluateCheck(testFile, compilation),
+            TestKind.Compile => EvaluateCompile(testFile, compilation),
+            TestKind.Run => EvaluateRun(testFile, compilation),
+            
+            _ => throw new UnreachableException($"Unknown {nameof(TestKind)}.{testFile.Kind}.")
+        };
+    }
 
-            case TestKind.Run:
-                if (evaluator._failedChecks.Count == 0)
-                    evaluator.CheckExpectedOutput();
-                break;
+    private static Evaluation EvaluateCheck(TestFile testFile, Compilation compilation)
+    {
+        var evaluator = new Evaluator(testFile);
+        evaluator.CheckDiagnostics(compilation.Diagnostics);
+        return evaluator.Finish();
+    }
 
-            default:
-                throw new UnreachableException("Unknown directive.");
+    private static Evaluation EvaluateCompile(TestFile testFile, Compilation compilation)
+    {
+        if (compilation.Scripts is not [var script])
+            return Evaluation.Failed("//@compile test must provide exactly one script.");
+        
+        var evaluator = new Evaluator(testFile);
+        var compilationResult = compilation.Compile(script);
+        evaluator.CheckDiagnostics(compilationResult.Diagnostics);
+        return evaluator.Finish();
+    }
+
+    private static Evaluation EvaluateRun(TestFile testFile, Compilation compilation)
+    {
+        if (compilation.Scripts is not [var script])
+            return Evaluation.Failed("//@run test must provide exactly one script.");
+
+        var evaluator = new Evaluator(testFile);
+        var compilationResult = compilation.Compile(script);
+        evaluator.CheckDiagnostics(compilationResult.Diagnostics);
+        
+        if (!compilationResult.IsSuccessful)
+        {
+            evaluator._failedChecks.Add(new FailedCheck(0, "Cannot run test file due to errors."));
+            return evaluator.Finish();
         }
 
-        if (evaluator._failedChecks.Count > 0)
+        const int branchLimit = 10000;
+
+        
+        var stdout = new StringWriter();
+        var stderr = new StringWriter();
+        var result = Miri.Run(compilationResult.Program!,
+            new MiriContext(compilation.BaseLibrary.Unit,
+                stdout, stderr,
+                branchLimit,
+                TryGetConstEvaluation: null));
+
+        evaluator.CheckStdOut(stdout.ToString());
+        evaluator.CheckRunResult(result, stderr.ToString());
+        
+        return result switch
         {
-            var message = string.Join('\n', evaluator._failedChecks);
+            MiriResult.Ok or MiriResult.Panicked => evaluator.Finish(),
+            
+            MiriResult.HitBranchLimit => Evaluation.Failed("Test hit the branch limit."),
+            MiriResult.CannotEvaluateConst => Evaluation.Failed("Test was unable to evaluate a const."),
+        };
+    }
+
+    
+    private Evaluation Finish()
+    {
+        if (_failedChecks.Count > 0)
+        {
+            var message = string.Join('\n', _failedChecks);
             return Evaluation.Failed(message);
         }
 
         return Evaluation.Succeeded;
     }
-
     
-    private void CheckDiagnostics()
+    private void CheckDiagnostics(ImmutableArray<Diagnostic> actualDiagnostics)
     {
         var expected = GetExpectedDiagnostics();
-        var actual = GetActualDiagnostics();
+        var actual = GetActualDiagnostics(actualDiagnostics);
         HashSet<int> lines = [.. expected.Keys, .. actual.Keys];
         
         foreach (var line in lines)
@@ -135,10 +181,10 @@ public sealed class Evaluator
         return table;
     }
 
-    private Dictionary<int, DiagnosticId> GetActualDiagnostics()
+    private Dictionary<int, DiagnosticId> GetActualDiagnostics(ImmutableArray<Diagnostic> diagnostics)
     {
         var table = new Dictionary<int, DiagnosticId>();
-        foreach (var diagnostic in _compilationResult.Diagnostics)
+        foreach (var diagnostic in diagnostics)
         {
             if (diagnostic.Locations.Length == 0)
             {
@@ -168,60 +214,45 @@ public sealed class Evaluator
     }
     
     
-    private void CheckExpectedOutput()
+    private void CheckStdOut(string stdout)
     {
-        const int branchLimit = 10000;
-        
         var expectedOutput = Normalize(_testFile.Annotations
             .Where(a => a.Kind is AnnotationKind.ExpectOutput)
             .Select(a => a.Text.Text.ToString()));
-
-        if (!_compilationResult.IsSuccessful)
-        {
-            _failedChecks.AddRange(new FailedCheck(0, "Compilation failed with:" + string.Join('\n',
-                _compilationResult.Diagnostics.Select(d => d.GetDisplayString(
-                    Path.GetDirectoryName(_testFile.SourceText.FileName),
-                    l => _testFile.TryMapToTestFile(l) ?? l)))));
-            return;
-        }
         
-        var stdout = new StringWriter();
-        var stderr = new StringWriter();
-        var result = Miri.Run(_compilationResult.Program!,
-            new MiriContext(_unitType,
-                stdout, stderr,
-                branchLimit,
-                TryGetConstEvaluation: null));
-
-        if (result is MiriResult.HitBranchLimit)
-        {
-            _failedChecks.Add(new FailedCheck(0, $"Test ran for {branchLimit} branches and was stopped."));
-            return;
-        }
-        
-        var actualOutput = Normalize(stdout.ToString());
+        var actualOutput = Normalize(stdout);
         if (actualOutput != expectedOutput)
         {
             var message = $"Output was '{actualOutput}', but expected '{expectedOutput}'.";
             _failedChecks.Add(new FailedCheck(0, message));
         }
+    }
 
+    private void CheckRunResult(MiriResult result, string stderr)
+    {
         var panicAnnotation = _testFile.Annotations.FirstOrDefault(a => a.Kind is AnnotationKind.ExpectPanic);
-        
-        if (result is MiriResult.Panicked)
+        var expectPanic = panicAnnotation is not null;
+        var gotPanic = result is MiriResult.Panicked;
+
+        if (expectPanic && !gotPanic)
         {
-            if (panicAnnotation is null)
-                _failedChecks.Add(new FailedCheck(0, $"Unexpected panic. StdErr:\n{stderr}"));
-            else if (!stderr.ToString()
-                         .Contains(panicAnnotation.Text.Text, StringComparison.InvariantCultureIgnoreCase))
-            {
-                var message = $"Expected stderr to contain \'{panicAnnotation.Text.Text}\'. Got:\n{stderr}";
-                _failedChecks.Add(new FailedCheck(0, message));
-            }
+            _failedChecks.Add(new FailedCheck(0, "Expected panic, but did not panic."));
+            return;
         }
         
-        if (result is MiriResult.Ok && panicAnnotation is not null)
-            _failedChecks.Add(new FailedCheck(0, "Expected panic, but did not panic."));
+        if (!expectPanic && gotPanic)
+        {
+            _failedChecks.Add(new FailedCheck(0, $"Unexpected panic. StdErr:\n{stderr}"));
+            return;
+        }
+
+        if (gotPanic && !stderr.Contains(panicAnnotation!.Text.Text, StringComparison.InvariantCultureIgnoreCase))
+        {
+            Debug.Assert(expectPanic);
+
+            var message = $"Expected stderr to contain \'{panicAnnotation.Text.Text}\'. Got:\n{stderr}";
+            _failedChecks.Add(new FailedCheck(0, message));
+        }
     }
 
     /// <summary>

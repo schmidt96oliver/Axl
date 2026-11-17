@@ -1,4 +1,4 @@
-//@check
+//@compile
 
 // Constants must be used to trigger diagnostics, because they run after monomorphization.
 // Multiple uses and cascades must not trigger too many diagnostics.

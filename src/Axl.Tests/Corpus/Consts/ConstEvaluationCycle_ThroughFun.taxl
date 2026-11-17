@@ -1,4 +1,4 @@
-//@check
+//@compile
 
 let a = A;
 let a = A;

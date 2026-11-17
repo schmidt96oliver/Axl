@@ -13,7 +13,24 @@ public enum TestKind
     /// </summary>
     Error,
 
+    /// <summary>
+    /// Checks diagnostics that are visible after completion. That means
+    /// those that are visible inside the editor as well. Does not include
+    /// diagnostics reported by later stages (monomorphization, const eval, ...)
+    /// </summary>
     Check,
+    
+    /// <summary>
+    /// Run the entire compilation and checks all diagnostics. In contract to
+    /// <see cref="Check"/>, this includes diagnostics which are not visible
+    /// inside the editor and only come up on compilation.
+    /// </summary>
+    Compile,
+    
+    /// <summary>
+    /// Runs the entire test file and checks against expected output as well
+    /// as diagnostics during compilation.
+    /// </summary>
     Run,
 }
 
@@ -57,9 +74,10 @@ public sealed class TestFile
         var fragments = ParseFragments(sourceText);
 
         var kind = annotations.FirstOrDefault(a =>
-                a.Kind is AnnotationKind.CheckDirective or AnnotationKind.RunDirective) switch
+                a.Kind is AnnotationKind.CheckDirective or AnnotationKind.RunDirective or AnnotationKind.CompileDirective) switch
             {
                 { Kind: AnnotationKind.CheckDirective } => TestKind.Check,
+                { Kind: AnnotationKind.CompileDirective } => TestKind.Compile,
                 { Kind: AnnotationKind.RunDirective } => TestKind.Run,
                 _ => TestKind.Error
             };
@@ -136,7 +154,10 @@ public sealed class TestFile
             return false;
         }
 
-        if (Annotations.Count(a => a.Kind is AnnotationKind.CheckDirective or AnnotationKind.RunDirective) > 1)
+        if (Annotations.Count(a =>
+                a.Kind is AnnotationKind.CheckDirective or
+                    AnnotationKind.RunDirective or
+                    AnnotationKind.CompileDirective) > 1)
         {
             errorMessage = "Multiple test directives.";
             return false;
@@ -218,6 +239,13 @@ public sealed class TestFile
         if (isSingleLine && text.TrimEnd() is "//@check")
         {
             return new Annotation(AnnotationKind.CheckDirective,
+                Prefix: location,
+                Text: SourceLocation.EmptyAfter(location));
+        }
+        
+        if (isSingleLine && text.TrimEnd() is "//@compile")
+        {
+            return new Annotation(AnnotationKind.CompileDirective,
                 Prefix: location,
                 Text: SourceLocation.EmptyAfter(location));
         }

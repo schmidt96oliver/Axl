@@ -1,4 +1,4 @@
-//@check
+//@compile
 
 // The constant that is first accessed will get the error, the others
 // won't. This is fine for now.
