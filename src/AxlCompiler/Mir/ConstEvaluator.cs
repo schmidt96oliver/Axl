@@ -37,7 +37,11 @@ public sealed class ConstEvaluator
 
         if (_inProgress.Contains(symbol))
         {
-            _diagnosticBag.ReportError(new Diagnostic.ConstEvaluationCycle(symbol, [.. _inProgress.Reverse(), symbol]));
+            _diagnosticBag.ReportError(new Diagnostic.ConstEvaluationCycle(symbol, [
+                symbol,
+                .. _inProgress.Reverse().TakeWhile(s => s != symbol),
+                symbol
+            ]));
             _values[symbol] = null;
             return null;
         }
