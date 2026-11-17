@@ -15,7 +15,7 @@ public sealed class Miri
 {
     private sealed class PanicException : Exception;
 
-    private sealed class BranchLimitException : Exception;
+    private sealed class OutOfFuelException : Exception;
 
     private sealed class CannotEvaluateConstException : Exception;
     
@@ -30,7 +30,7 @@ public sealed class Miri
     
     private readonly MirProgram _program;
     private readonly MiriContext _context;
-    private int _branchCount = 0;
+    private int? _fuel;
 
     private readonly StructValue _unitValue;
     private object _discard = new();
@@ -40,6 +40,7 @@ public sealed class Miri
         _program = program;
         _context = context;
         _unitValue = new StructValue(context.UnitType);
+        _fuel = context.Fuel;
     }
 
     public static MiriResult Run(MirProgram program, MiriContext context)
@@ -59,9 +60,9 @@ public sealed class Miri
         {
             return new MiriResult.Panicked();
         }
-        catch (BranchLimitException)
+        catch (OutOfFuelException)
         {
-            return new MiriResult.HitBranchLimit();
+            return new MiriResult.OutOfFuel();
         }
         catch (CannotEvaluateConstException)
         {
@@ -119,6 +120,14 @@ public sealed class Miri
     
     #endregion
 
+    private void UseFuel()
+    {
+        _fuel--;
+        if (_fuel is <= 0)
+            throw new OutOfFuelException();
+    }
+
+
     private object Call(MutMirFunction mirFun, ImmutableArray<object> arguments)
     {
         var environment = new Environment();
@@ -128,13 +137,10 @@ public sealed class Miri
         var block = mirFun.Entry;
         while (true)
         {
-            if (_context.BranchLimit is int limit && _branchCount > limit)
-                throw new BranchLimitException();
-            _branchCount++;
-            
             foreach (var instruction in block.Instructions)
                 Execute(instruction, environment);
 
+            var prevBlockId = block.Id;
             switch (block.Terminator)
             {
                 case Terminator.Goto @goto:
@@ -152,6 +158,13 @@ public sealed class Miri
                 default:
                     throw new UnreachableException($"Unknown terminator {block.Terminator?.GetType().Name ?? "null"}");
             }
+            
+            // This is a rough estimate of backward edges. It overcounts, because it depends
+            // on instantiation order rather than a pass. But this still protects infinite
+            // cycles, provide some "linear code" freedom and is a quick check without another
+            // pass on Mir.
+            if (block.Id.Value <= prevBlockId.Value)
+                UseFuel();
         }
     }
 
@@ -168,6 +181,8 @@ public sealed class Miri
             
             case Instruction.Call call:
             {
+                UseFuel();
+                
                 var mirFun = _program.GetMirFunction(call.Fun);
                 var value = Call(mirFun,
                 [

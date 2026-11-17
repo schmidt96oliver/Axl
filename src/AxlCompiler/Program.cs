@@ -59,6 +59,6 @@ foreach (var fun in result.Program!.MirFunctions.Where(f => !f.DisplayName.Start
 
 Console.WriteLine("----------------");
 var context = new MiriContext(compilation.BaseLibrary.Unit, Console.Out, Console.Error, 
-    BranchLimit: null,
+    Fuel: null,
     null);
 Miri.Run(result.Program!, context);

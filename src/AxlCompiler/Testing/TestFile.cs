@@ -187,6 +187,17 @@ public sealed class TestFile
             return false;
         }
 
+        if (Kind is TestKind.Run && Annotations.Count(a => a.Kind is AnnotationKind.SetFuel) >= 2)
+        {
+            errorMessage = "Only one fuel directive is allowed.";
+            return false;
+        }
+        if (Kind is not TestKind.Run && Annotations.Any(a => a.Kind is AnnotationKind.SetFuel))
+        {
+            errorMessage = "@fuel is only allowed in run tests.";
+            return false;
+        }
+
         var invalidAnnotations = Annotations.Where(a =>
                 a.Kind is AnnotationKind.ExpectError or AnnotationKind.ExpectLint
                 && a.Text.Text.Trim() is "")
@@ -258,6 +269,7 @@ public sealed class TestFile
         }
 
         return TryMakeWithPrefix("//@panic", AnnotationKind.ExpectPanic) ??
+               TryMakeWithPrefix("//@fuel", AnnotationKind.SetFuel) ??
                TryMakeWithPrefix("//=", AnnotationKind.ExpectOutput) ??
                TryMakeWithPrefix("//~error", AnnotationKind.ExpectError) ??
                TryMakeWithPrefix("//~lint", AnnotationKind.ExpectLint);

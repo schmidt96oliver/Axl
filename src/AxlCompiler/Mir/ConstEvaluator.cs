@@ -52,15 +52,15 @@ public sealed class ConstEvaluator
         var miriContext = new MiriContext(_compilation.BaseLibrary.Unit, 
             StdOut: null, 
             stderr,
-            BranchLimit: 1000, 
+            Fuel: 1000, 
             EvaluateConst);
         var result = Miri.Run(_program.GetMirFunction(symbol.ValueFun), _program, miriContext);
         
         // If result is cannot evaluate const, that means we have already reported an 
         // error, because we handed it null for a const.
         
-        if (result is MiriResult.HitBranchLimit)
-            _diagnosticBag.ReportError(new Diagnostic.ConstEvaluationHitBranchLimit(symbol));
+        if (result is MiriResult.OutOfFuel)
+            _diagnosticBag.ReportError(new Diagnostic.ConstEvaluationOutOfFuel(symbol));
         else if (result is MiriResult.Panicked)
             _diagnosticBag.ReportError(new Diagnostic.ConstEvaluationPanic(symbol, stderr.ToString()));
         
@@ -68,7 +68,7 @@ public sealed class ConstEvaluator
         {
             MiriResult.Ok(var val) => val,
             MiriResult.CannotEvaluateConst or
-                MiriResult.HitBranchLimit or
+                MiriResult.OutOfFuel or
                 MiriResult.Panicked => (ConstValue?)null
         };
         

@@ -102,15 +102,20 @@ public sealed class Evaluator
             return evaluator.Finish();
         }
 
-        const int branchLimit = 10000;
+        if (!int.TryParse(testFile.Annotations
+                .FirstOrDefault(a => a.Kind is AnnotationKind.SetFuel)?.Text.Text
+                .ToString(), out var fuel))
+        {
+            fuel = 1000;
+        }
 
-        
+
         var stdout = new StringWriter();
         var stderr = new StringWriter();
         var result = Miri.Run(compilationResult.Program!,
             new MiriContext(compilation.BaseLibrary.Unit,
                 stdout, stderr,
-                branchLimit,
+                fuel,
                 TryGetConstEvaluation: null));
 
         evaluator.CheckStdOut(stdout.ToString());
@@ -120,7 +125,7 @@ public sealed class Evaluator
         {
             MiriResult.Ok or MiriResult.Panicked => evaluator.Finish(),
             
-            MiriResult.HitBranchLimit => Evaluation.Failed("Test hit the branch limit."),
+            MiriResult.OutOfFuel => Evaluation.Failed($"Miri ran out of fuel. It had {fuel}."),
             MiriResult.CannotEvaluateConst => Evaluation.Failed("Test was unable to evaluate a const."),
         };
     }
