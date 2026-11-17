@@ -5,12 +5,6 @@
 
 * Look at Claude review
 
-* `@compile` tests. Measure run time
-* ConstEvaluator: Don't stdout into Console
-
-* Binder check: Must be concrete value type
-* Binder obvious cycle check: Own field must not be reachable through expression (not counting calls)
-
 * ?? Move TestFile Evalutor into test suite
 
 # Questions / Little ones

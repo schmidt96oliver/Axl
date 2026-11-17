@@ -254,7 +254,7 @@ public sealed class Miri
         switch (vmCallKind)
         {
             case VmCallKind.Print:
-                _context.StdOut.Write(args[0]);
+                _context.StdOut?.Write(args[0]);
                 return _unitValue;
 
             case VmCallKind.ConcatString:
@@ -262,7 +262,7 @@ public sealed class Miri
 
             case VmCallKind.Panic:
                 var message = (string)args[0];
-                _context.StdErr.WriteLine($"Miri panicked: {message}");
+                _context.StdErr?.WriteLine($"Miri panicked: {message}");
                 throw new PanicException();
 
             case VmCallKind.EqualsString:

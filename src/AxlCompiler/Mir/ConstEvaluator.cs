@@ -32,8 +32,8 @@ public sealed class ConstEvaluator
 
     private ConstValue? EvaluateConst(ConstSymbol symbol)
     {
-        if (_values.TryGetValue(symbol, out var value))
-            return value;
+        if (_values.TryGetValue(symbol, out var cachedValue))
+            return cachedValue;
 
         if (_inProgress.Contains(symbol))
         {
@@ -45,33 +45,28 @@ public sealed class ConstEvaluator
         _inProgress.Push(symbol);
 
         var stderr = new StringWriter();
-        var miriContext = new MiriContext(_compilation.BaseLibrary.Unit, Console.Out, stderr,
-            BranchLimit: 1000, EvaluateConst);
+        var miriContext = new MiriContext(_compilation.BaseLibrary.Unit, 
+            StdOut: null, 
+            stderr,
+            BranchLimit: 1000, 
+            EvaluateConst);
         var result = Miri.Run(_program.GetMirFunction(symbol.ValueFun), _program, miriContext);
-        value = null;
         
-        switch (result)
+        // If result is cannot evaluate const, that means we have already reported an 
+        // error, because we handed it null for a const.
+        
+        if (result is MiriResult.HitBranchLimit)
+            _diagnosticBag.ReportError(new Diagnostic.ConstEvaluationHitBranchLimit(symbol));
+        else if (result is MiriResult.Panicked)
+            _diagnosticBag.ReportError(new Diagnostic.ConstEvaluationPanic(symbol, stderr.ToString()));
+        
+        var value = result switch
         {
-            case MiriResult.Ok ok:
-                value = ok.Value;
-                break;
-            
-            case MiriResult.CannotEvaluateConst:
-                // This means, that we returned null to Miri and already reported an error.
-                // So don't report further errors.
-                value = null;
-                break;
-            
-            case MiriResult.HitBranchLimit:
-                _diagnosticBag.ReportError(new Diagnostic.ConstEvaluationHitBranchLimit(symbol));
-                value = null;
-                break;
-            
-            case MiriResult.Panicked:
-                _diagnosticBag.ReportError(new Diagnostic.ConstEvaluationPanic(symbol, stderr.ToString()));
-                value = null;
-                break;
-        }
+            MiriResult.Ok(var val) => val,
+            MiriResult.CannotEvaluateConst or
+                MiriResult.HitBranchLimit or
+                MiriResult.Panicked => (ConstValue?)null
+        };
         
         var popped = _inProgress.Pop();
         Debug.Assert(popped == symbol);

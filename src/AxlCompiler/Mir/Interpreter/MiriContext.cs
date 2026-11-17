@@ -11,7 +11,7 @@ namespace AxlCompiler.Mir.Interpreter;
 /// </param>
 public sealed record MiriContext(
     TypeSymbol UnitType,
-    TextWriter StdOut,
-    TextWriter StdErr,
+    TextWriter? StdOut,
+    TextWriter? StdErr,
     int? BranchLimit,
     Func<ConstSymbol, ConstValue?>? TryGetConstEvaluation);
