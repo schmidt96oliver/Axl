@@ -92,7 +92,7 @@ public sealed class SourceFunSymbol(
             if (!_isSelfParameterBound)
             {
                 var type = DeclarationSyntax.StaticKw is not null ? null : (Owner as TypeSymbol);
-                var isMut = DeclarationSyntax.MutKw is not null;
+                var isMut = DeclarationSyntax.MutKw is not null && Owner?.OriginalDefinition is StructSymbol;
                 field = type is not null
                     ? new ParameterSymbol(Names.Self, owner: this, type, isMut, isSelf: true)
                     : null;

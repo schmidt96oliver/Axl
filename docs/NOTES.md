@@ -3,8 +3,6 @@
 
 # Now
 
-* reject `mut` in decl and completion
-
 # Questions / Little ones
 
 * ?? BindLookupResult: Report WrongKind error before anything else; remove isThisField in BindFieldAccess
@@ -24,8 +22,6 @@
 
 
 **Classes, ByRef types**: Class, `===` operator
-1. Syntax: `class` decl, no `mut fun` in classes (grammar)
-2. Symbols: reference-type flag vs `ClassSymbol`
 3. Binder: PlaceKind resets at reference hop, mut return escape via reference hop, layout check skips classes
 4. Lowering + Miri: `ClassValue`, `ClassInit`, lazy vs eager heap references
 5. `===`: reference types only, rejected on `T`

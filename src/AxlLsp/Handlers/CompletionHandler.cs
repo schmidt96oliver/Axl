@@ -295,10 +295,13 @@ public sealed class CompletionHandler(ILanguageServerFacade facade) : Completion
             return false;
         }
 
-        if (context.TargetToken?.Ancestors().Any(n => n is ArgListSyntax or FunDeclSyntax or StructOrClassDeclSyntax) == true)
-            return true;
-        
-        return false;
+        var contextNode = context.TargetToken?.Ancestors().FirstOrDefault(n => n is
+            ArgListSyntax or ParamListSyntax or ReturnTypeAnnotationSyntax or
+            FunBodySyntax { IsExpressionBodied: true } or ReturnExprSyntax or
+            StructOrClassDeclSyntax);
+
+        return contextNode is StructOrClassDeclSyntax { StructOrClassKw.Kind: TokenKind.StructKw }
+            or not StructOrClassDeclSyntax and not null;
     }
 
     private static bool IsStaticValid(SyntaxContext context)

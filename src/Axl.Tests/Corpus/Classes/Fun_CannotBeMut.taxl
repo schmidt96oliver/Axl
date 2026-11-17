@@ -1,0 +1,7 @@
+//@check
+
+class Test 
+{
+    mut fun A() { }         //~error ClassFunCannotBeMut
+    static mut fun B() { }  //~error ClassFunCannotBeMut
+}

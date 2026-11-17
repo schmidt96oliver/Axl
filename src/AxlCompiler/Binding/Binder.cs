@@ -417,9 +417,11 @@ public sealed class Binder(Scope scope, BinderSideEffects sideEffects)
         var receiverType = syntax.StaticKw is not null ? null : Scope.OwnerAsType;
         var isMutatingReceiver = syntax.MutKw is not null;
 
-        if (receiverType is null && isMutatingReceiver)
+        if (isMutatingReceiver && Scope.Owner is not StructSymbol)
+            SideEffects.ReportError(new Diagnostic.ClassFunCannotBeMut(syntax.MutKw!, name));
+        else if (receiverType is null && isMutatingReceiver)
             SideEffects.ReportError(new Diagnostic.StaticFunCannotBeMut(syntax.MutKw!, name));
-
+        
         var funSymbol = new SourceFunSymbol(syntax,
             Scope,
             isPublic,
@@ -471,13 +473,14 @@ public sealed class Binder(Scope scope, BinderSideEffects sideEffects)
 
     public FieldSymbol BindFieldDeclaration(FieldDeclSyntax syntax)
     {
-        if (Scope.Owner is not StructSymbol structSymbol)
-            throw new InvalidOperationException("Can only bind fields inside structs.");
-
-        if (structSymbol.IsPrimitive)
-            SideEffects.ReportError(new Diagnostic.FieldDeclarationOnPrimitive(syntax, structSymbol));
+        if (Scope.Owner is not (StructSymbol or ClassSymbol))
+            throw new InvalidOperationException("Can only bind fields inside structs/classes.");
+        var typeOwner = (TypeSymbol)Scope.Owner;
         
-        return new FieldDefinitionSymbol(syntax, Scope, structSymbol);
+        if (typeOwner.IsPrimitive)
+            SideEffects.ReportError(new Diagnostic.FieldDeclarationOnPrimitive(syntax, typeOwner));
+        
+        return new FieldDefinitionSymbol(syntax, Scope, typeOwner);
     }
 
     public Symbol BindConstDeclaration(ConstDeclSyntax constDecl)

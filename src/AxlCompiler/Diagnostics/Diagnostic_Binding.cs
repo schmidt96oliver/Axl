@@ -523,6 +523,14 @@ public partial record Diagnostic
         public override string Message =>
             $"‘{FunName}‘ cannot be ‘{Syntax.Text}‘, because it is static.";
     }
+    
+    public sealed record ClassFunCannotBeMut(Token Syntax, string FunName) : Error
+    {
+        public override ImmutableArray<SourceLocation> Locations => [Syntax.Location];
+
+        public override string Message =>
+            $"‘{FunName}‘ cannot be ‘{Syntax.Text}‘, because it is on a class.";
+    }
 
     public sealed record InvalidSelfRef(SyntaxNode Syntax) : Error
     {
