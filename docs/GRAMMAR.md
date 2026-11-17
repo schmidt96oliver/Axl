@@ -10,7 +10,7 @@ UsingDirective     = "using" TypeName ";"
 NamespaceName      = Identifier ("." Identifier)*
 
 ## Member Declarations
-MemberDecl       = ConstDecl | FnDecl | StructDecl
+MemberDecl       = ConstDecl | FnDecl | StructOrClassDecl
                 
 FunDecl          = Annotation* "pub"? "static"? "mut"? "fun" FunName TypeParamList? ParamList ReturnTypeAnnotation? FunBody
 FunName          = Identifier | "+" | "-" | "*" | "/" | "<" | "<=" | ">" | ">=" |"==" | "!=" | "!"
@@ -25,8 +25,8 @@ ParamList       = "(" ")"
                 | "(" Param ("," Param)* ")"
 Param           = "mut"? IdName TypeAnnotation?
 
-StructDecl      = Annotation* "pub"? "struct" IdName TypeParamList? (StructBody | ";")
-StructBody      = "{" (ConstDecl | FieldDecl | FunDecl)* "}"
+StructOrClass   = Annotation* "pub"? ("struct" | "class") IdName TypeParamList? (StructOrClassBody | ";")
+StructOrClassBody = "{" (ConstDecl | FieldDecl | FunDecl)* "}"
 FieldDecl       = "pub"? IdName TypeAnnotation ";"
 
 Annotation      = "@" IdName

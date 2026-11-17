@@ -49,9 +49,9 @@ public partial class Parser
 
         public static readonly TokenSet FieldDecl = FieldDeclAfterHeader | TokenKind.PubKw;
 
-        public static readonly TokenSet StructDeclAfterHeader = TokenSet.Of(TokenKind.StructKw);
+        public static readonly TokenSet StructOrClassDeclAfterHeader = TokenSet.Of(TokenKind.StructKw, TokenKind.ClassKw);
 
-        public static readonly TokenSet StructDecl = Annotation | TokenKind.PubKw | StructDeclAfterHeader;
+        public static readonly TokenSet StructOrClassDecl = Annotation | TokenKind.PubKw | StructOrClassDeclAfterHeader;
         
         public static readonly TokenSet FunDeclAfterHeader =
             TokenSet.Of(TokenKind.StaticKw, TokenKind.MutKw, TokenKind.FunKw);

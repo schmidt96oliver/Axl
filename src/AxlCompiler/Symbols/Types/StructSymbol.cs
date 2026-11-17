@@ -8,7 +8,7 @@ using AxlCompiler.Syntax.Tree;
 namespace AxlCompiler.Symbols;
 
 public sealed class StructSymbol(
-    StructDeclSyntax declarationSyntax,
+    StructOrClassDeclSyntax declarationSyntax,
     Scope enclosingScope,
     bool isPublic,
     PrimitiveKind? primitiveKind)
@@ -58,7 +58,7 @@ public sealed class StructSymbol(
         }
     }
     
-    public StructDeclSyntax DeclarationSyntax { get; } = declarationSyntax;
+    public StructOrClassDeclSyntax DeclarationSyntax { get; } = declarationSyntax;
 
     public override ImmutableArray<Symbol> Members
     {

@@ -39,7 +39,7 @@ public sealed partial class CompletionTests
 
     [Fact]
     public void Empty()
-        => InlineSnapshot.Validate(Items("|"), "fun var let namespace return if while using struct pub const true false");
+        => InlineSnapshot.Validate(Items("|"), "fun var let namespace return if while using struct pub const class true false");
 
     [Fact]
     public void Nothing_Comment1()
@@ -94,10 +94,10 @@ public sealed partial class CompletionTests
     
     [Fact]
     public void AfterPub1()
-        => InlineSnapshot.Validate(ItemsWithBase("pub |"), "fun struct const");
+        => InlineSnapshot.Validate(ItemsWithBase("pub |"), "fun struct const class");
     [Fact]
     public void AfterPub2()
-        => InlineSnapshot.Validate(ItemsWithBase("namespace Test; pub |"), "fun struct const");
+        => InlineSnapshot.Validate(ItemsWithBase("namespace Test; pub |"), "fun struct const class");
 
     [Fact]
     public void Members1()
@@ -157,11 +157,11 @@ public sealed partial class CompletionTests
     
     [Fact]
     public void AfterIf1()
-        => InlineSnapshot.Validate(Items("if (c) {} |"), "fun var let return if else while struct pub const true false");
+        => InlineSnapshot.Validate(Items("if (c) {} |"), "fun var let return if else while struct pub const class true false");
     
     [Fact]
     public void AfterIf2()
-        => InlineSnapshot.Validate(Items("if (c) {}; |"), "fun var let return if else while struct pub const true false");
+        => InlineSnapshot.Validate(Items("if (c) {}; |"), "fun var let return if else while struct pub const class true false");
 
     [Fact]
     public void StringInterpolation1()
@@ -191,7 +191,7 @@ public sealed partial class CompletionTests
 
     [Fact]
     public void NamespaceFile()
-        => InlineSnapshot.Validate(ItemsWithBase("namespace Test; |"), "fun using struct pub const");
+        => InlineSnapshot.Validate(ItemsWithBase("namespace Test; |"), "fun using struct pub const class");
     
     [Theory]
     [InlineData("|", true)]

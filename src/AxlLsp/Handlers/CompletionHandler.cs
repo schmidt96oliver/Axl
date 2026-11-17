@@ -295,14 +295,14 @@ public sealed class CompletionHandler(ILanguageServerFacade facade) : Completion
             return false;
         }
 
-        if (context.TargetToken?.Ancestors().Any(n => n is ArgListSyntax or FunDeclSyntax or StructDeclSyntax) == true)
+        if (context.TargetToken?.Ancestors().Any(n => n is ArgListSyntax or FunDeclSyntax or StructOrClassDeclSyntax) == true)
             return true;
         
         return false;
     }
 
     private static bool IsStaticValid(SyntaxContext context)
-        => context.TargetToken?.Ancestors().OfType<StructDeclSyntax>().Any() == true;
+        => context.TargetToken?.Ancestors().OfType<StructOrClassDeclSyntax>().Any() == true;
 
     private static bool IsSelfValid(SyntaxContext context)
     {

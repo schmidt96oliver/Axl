@@ -29,7 +29,7 @@ public enum SyntaxKind
     NamespaceDecl,
     FunDecl,
     FieldDecl,
-    StructDecl,
+    StructOrClassDecl,
     ConstDecl,
     
     // Literals
@@ -72,7 +72,7 @@ public enum SyntaxKind
     InitializerClause,
     FunBody,
     ConditionClause,
-    StructBody,
+    StructOrClassBody,
     Self,
     FunName,
     NamespaceName,

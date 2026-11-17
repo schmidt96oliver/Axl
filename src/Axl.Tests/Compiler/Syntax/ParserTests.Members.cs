@@ -185,7 +185,7 @@ public partial class ParserTests
             => InlineSnapshot.Validate(Tree("""
                                             @ID struct T;
                                             """), """
-                StructDecl
+                StructOrClassDecl
                 · Annotation
                 · · '@'
                 · · NameRef 'ID'
@@ -198,7 +198,7 @@ public partial class ParserTests
             => InlineSnapshot.Validate(Tree("""
                                             @ID pub struct T;
                                             """), """
-                StructDecl
+                StructOrClassDecl
                 · Annotation
                 · · '@'
                 · · NameRef 'ID'
@@ -212,7 +212,7 @@ public partial class ParserTests
             => InlineSnapshot.Validate(Tree("""
                                             @ID @ID2 pub struct T;
                                             """), """
-                StructDecl
+                StructOrClassDecl
                 · Annotation
                 · · '@'
                 · · NameRef 'ID'
@@ -308,7 +308,7 @@ public partial class ParserTests
                 ERROR MissingToken@[9, 9): Expected a type parameter name.
 
 
-                StructDecl
+                StructOrClassDecl
                 · 'struct'
                 · 'A'
                 · TypeParamList
@@ -316,28 +316,28 @@ public partial class ParserTests
                 · · TypeParam
                 · · · ??ID
                 · · ']'
-                · StructBody '{' '}'
+                · StructOrClassBody '{' '}'
                 """);
         [Fact]
         public void StructTypeParams_1()
             => InlineSnapshot.Validate(Tree("""
                                             struct A[T1] { }
                                             """), """
-                StructDecl
+                StructOrClassDecl
                 · 'struct'
                 · 'A'
                 · TypeParamList
                 · · '['
                 · · TypeParam 'T1'
                 · · ']'
-                · StructBody '{' '}'
+                · StructOrClassBody '{' '}'
                 """);
         [Fact]
         public void StructTypeParams_2()
             => InlineSnapshot.Validate(Tree("""
                                             struct A[T1, T2];
                                             """), """
-                StructDecl
+                StructOrClassDecl
                 · 'struct'
                 · 'A'
                 · TypeParamList
@@ -353,7 +353,7 @@ public partial class ParserTests
             => InlineSnapshot.Validate(Tree("""
                                             struct A[T1, T2, T3];
                                             """), """
-                StructDecl
+                StructOrClassDecl
                 · 'struct'
                 · 'A'
                 · TypeParamList
@@ -372,10 +372,10 @@ public partial class ParserTests
             => InlineSnapshot.Validate(Tree("""
                                             struct Test { const A: I32 = 1; }
                                             """), """
-                StructDecl
+                StructOrClassDecl
                 · 'struct'
                 · 'Test'
-                · StructBody
+                · StructOrClassBody
                 · · '{'
                 · · ConstDecl
                 · · · 'const'
@@ -396,10 +396,10 @@ public partial class ParserTests
                 ERROR MissingToken@[26, 26): Expected '='.
 
 
-                StructDecl
+                StructOrClassDecl
                 · 'struct'
                 · 'Test'
-                · StructBody
+                · StructOrClassBody
                 · · '{'
                 · · ConstDecl
                 · · · 'const'
@@ -421,10 +421,10 @@ public partial class ParserTests
                 ERROR MissingToken@[21, 21): Expected a type annotation.
 
 
-                StructDecl
+                StructOrClassDecl
                 · 'struct'
                 · 'Test'
-                · StructBody
+                · StructOrClassBody
                 · · '{'
                 · · ConstDecl
                 · · · 'const'
@@ -446,10 +446,10 @@ public partial class ParserTests
                 ERROR MissingToken@[21, 21): Expected a type annotation.
 
 
-                StructDecl
+                StructOrClassDecl
                 · 'struct'
                 · 'Test'
-                · StructBody
+                · StructOrClassBody
                 · · '{'
                 · · ConstDecl
                 · · · 'const'

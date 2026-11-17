@@ -106,7 +106,7 @@ public partial class Parser
         // --- Usings
         var usingsAnchor = Anchor.Forced | 
                            TokenKind.NamespaceKw | TokenKind.UsingKw  | 
-                           FirstSet.StructDecl | FirstSet.FunDecl | 
+                           FirstSet.StructOrClassDecl | FirstSet.FunDecl | 
                            FirstSet.NonExprStmt;
         foreach (var _ in _scanner.MustEatEachIteration())
         {
@@ -129,13 +129,13 @@ public partial class Parser
 
     private void EatNamespaceFile()
     {
-        var fileAnchor = Anchor.Forced | FirstSet.StructDecl | FirstSet.FunDeclRecovery | FirstSet.ConstDecl;
+        var fileAnchor = Anchor.Forced | FirstSet.StructOrClassDecl | FirstSet.FunDeclRecovery | FirstSet.ConstDecl;
 
         foreach (var _ in _scanner.MustEatEachIteration())
         {
-            if (_scanner.IsAt(FirstSet.StructDecl | FirstSet.FunDecl | FirstSet.ConstDecl))
+            if (_scanner.IsAt(FirstSet.StructOrClassDecl | FirstSet.FunDecl | FirstSet.ConstDecl))
             {
-                EatMember(fileAnchor, allowedAfterHeader: FirstSet.StructDeclAfterHeader |
+                EatMember(fileAnchor, allowedAfterHeader: FirstSet.StructOrClassDeclAfterHeader |
                                                           FirstSet.FunDeclAfterHeader |
                                                           FirstSet.ConstDeclAfterHeader);
             }
@@ -146,7 +146,7 @@ public partial class Parser
 
     private void EatScriptFile()
     {
-        var fileAnchor = Anchor.Forced | FirstSet.StructDecl | FirstSet.FunDeclRecovery | 
+        var fileAnchor = Anchor.Forced | FirstSet.StructOrClassDecl | FirstSet.FunDeclRecovery | 
                          FirstSet.ConstDecl |
                          FirstSet.NonExprStmt;
 
@@ -154,8 +154,8 @@ public partial class Parser
         {
             if (_scanner.IsAt(FirstSet.Stmt))
                 EatStmt(fileAnchor | TokenKind.Semicolon);
-            else if (_scanner.IsAt(FirstSet.StructDecl | FirstSet.FunDecl | FirstSet.ConstDecl))
-                EatMember(fileAnchor, allowedAfterHeader: FirstSet.StructDeclAfterHeader | 
+            else if (_scanner.IsAt(FirstSet.StructOrClassDecl | FirstSet.FunDecl | FirstSet.ConstDecl))
+                EatMember(fileAnchor, allowedAfterHeader: FirstSet.StructOrClassDeclAfterHeader | 
                                                           FirstSet.FunDeclAfterHeader |
                                                           FirstSet.ConstDeclAfterHeader);
             else
@@ -165,7 +165,7 @@ public partial class Parser
                 // If the parser is already confused, we recover to any position that
                 // can start a new statement.
                 var recoverAnchor = Anchor.From(FirstSet.Stmt)
-                                    | FirstSet.StructDecl | FirstSet.FunDecl
+                                    | FirstSet.StructOrClassDecl | FirstSet.FunDecl
                                     | TokenKind.Semicolon;
                 var recovered = RecoverToAndReport(recoverAnchor, ExpectedSyntax.Stmt);
 

@@ -10,7 +10,7 @@ public partial class Parser
 {
     private MarkClose EatMember(Anchor anchor, TokenSet allowedAfterHeader)
     {
-        Debug.Assert(_scanner.IsAt(FirstSet.StructDecl | FirstSet.FunDecl | FirstSet.FieldDecl | FirstSet.ConstDecl));
+        Debug.Assert(_scanner.IsAt(FirstSet.StructOrClassDecl | FirstSet.FunDecl | FirstSet.FieldDecl | FirstSet.ConstDecl));
 
         var common = _scanner.Open();
 
@@ -34,8 +34,8 @@ public partial class Parser
         
         if (_scanner.IsAt(FirstSet.FunDeclAfterHeader))
             return ContinueEatFunDecl(anchor, common);
-        if (_scanner.IsAt(FirstSet.StructDeclAfterHeader))
-            return ContinueEatStructDecl(anchor, common);
+        if (_scanner.IsAt(FirstSet.StructOrClassDeclAfterHeader))
+            return ContinueEatStructOrClassDecl(anchor, common);
         if (_scanner.IsAt(FirstSet.FieldDeclAfterHeader))
             return ContinueEatFieldDecl(anchor, common);
         if (_scanner.IsAt(FirstSet.ConstDeclAfterHeader))
@@ -54,9 +54,10 @@ public partial class Parser
     }
 
 
-    private MarkClose ContinueEatStructDecl(Anchor anchor, MarkOpen commonHeader)
+    private MarkClose ContinueEatStructOrClassDecl(Anchor anchor, MarkOpen commonHeader)
     {
-        _scanner.EatKnown(TokenKind.StructKw);
+        Debug.Assert(_scanner.IsAt(TokenKind.ClassKw) || _scanner.IsAt(TokenKind.StructKw));
+        _scanner.Eat();
 
         EnsureToken(TokenKind.Identifier);
 
@@ -66,12 +67,12 @@ public partial class Parser
         if (_scanner.IsAt(TokenKind.Semicolon))
             _scanner.Eat();
         else
-            EnsureStructBody(anchor);
+            EnsureStructOrClassBody(anchor);
 
-        return _scanner.Close(commonHeader, SyntaxKind.StructDecl);
+        return _scanner.Close(commonHeader, SyntaxKind.StructOrClassDecl);
     }
 
-    private MarkClose EnsureStructBody(Anchor anchor)
+    private MarkClose EnsureStructOrClassBody(Anchor anchor)
     {
         var body = _scanner.Open();
         EnsureToken(TokenKind.OpenBrace);
@@ -109,7 +110,7 @@ public partial class Parser
         }
         
         EnsureToken(TokenKind.CloseBrace);
-        return _scanner.Close(body, SyntaxKind.StructBody);
+        return _scanner.Close(body, SyntaxKind.StructOrClassBody);
     }
 
     private MarkClose ContinueEatConstDecl(Anchor anchor, MarkOpen commonHeader)

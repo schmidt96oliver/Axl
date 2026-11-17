@@ -289,7 +289,7 @@ public sealed class Binder(Scope scope, BinderSideEffects sideEffects)
 
         return
         [
-            .. syntax.Children.OfType<StructDeclSyntax>().Select(usingsBinder.BindStructDeclaration),
+            .. syntax.Children.OfType<StructOrClassDeclSyntax>().Select(usingsBinder.BindStructDeclaration),
             .. syntax.Children.OfType<FunDeclSyntax>().Select(usingsBinder.BindSourceFunDeclaration),
             .. syntax.Children.OfType<ConstDeclSyntax>().Select(usingsBinder.BindConstDeclaration),
         ];
@@ -331,7 +331,7 @@ public sealed class Binder(Scope scope, BinderSideEffects sideEffects)
                     symbols.Add(usingsBinder.BindSourceFunDeclaration(funDecl));
                     break;
 
-                case StructDeclSyntax structDecl:
+                case StructOrClassDeclSyntax structDecl:
                     symbols.Add(usingsBinder.BindStructDeclaration(structDecl));
                     break;
                 
@@ -428,7 +428,7 @@ public sealed class Binder(Scope scope, BinderSideEffects sideEffects)
         return funSymbol;
     }
 
-    public StructSymbol BindStructDeclaration(StructDeclSyntax syntax)
+    public StructSymbol BindStructDeclaration(StructOrClassDeclSyntax syntax)
     {
         // Primitive annotation
         var annotations = syntax.Annotations.Select(BindAnnotation);
@@ -1300,7 +1300,7 @@ public sealed class Binder(Scope scope, BinderSideEffects sideEffects)
                     return stmts.DrainToImmutable();
                 }
             }
-            else if (node is StructDeclSyntax or FunDeclSyntax or UsingDirectiveSyntax or ConstDeclSyntax)
+            else if (node is StructOrClassDeclSyntax or FunDeclSyntax or UsingDirectiveSyntax or ConstDeclSyntax)
             {
                 // This is only allowed on scripts and is handled separately.
             }

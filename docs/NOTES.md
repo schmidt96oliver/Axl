@@ -3,6 +3,8 @@
 
 # Now
 
+* reject `mut` in decl and completion
+
 # Questions / Little ones
 
 * ?? BindLookupResult: Report WrongKind error before anything else; remove isThisField in BindFieldAccess
