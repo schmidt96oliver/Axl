@@ -40,8 +40,9 @@ public closed class BoundValue(SyntaxNode? syntax = null) : BoundStmt(syntax)
 
     /// <summary>
     /// If this value is a place, returns the <see cref="BoundValue"/> where
-    /// the place started. <c>null</c>, if this value is not a place. The
-    /// root can be self, parameter, variable or call to a mut returning fun.
+    /// the place started. <c>null</c>, if this value is not a place. Note
+    /// that the root does not have to be a place, e.g. for field access on
+    /// a reference typed temporary.
     /// </summary>
     public BoundValue? PlaceRoot => PlacePath.Length > 0 ? PlacePath[0] : null;
 

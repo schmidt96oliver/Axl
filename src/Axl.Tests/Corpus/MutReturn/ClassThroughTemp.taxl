@@ -1,0 +1,15 @@
+﻿//@run
+//=
+
+// The values cannot be retrieved, this is about the compiler not
+// reporting an error and runtime not crashing :).
+
+F() = 2;
+G() = 2;
+
+class Counter { pub N: I32; }
+fun Make(): Counter = Counter(N = 1);
+fun F(): mut I32 
+    = mut Make().N;
+fun G(): mut I32 
+    = mut Counter(N = 1).N;

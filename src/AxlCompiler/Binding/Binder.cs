@@ -976,7 +976,6 @@ public sealed class Binder(Scope scope, BinderSideEffects sideEffects)
                 return false;
             }
             
-            Debug.Assert(value.PlaceRoot is not null);
             if (!CanMutReturnValueEscape(value))
             {
                 SideEffects.ReportError(new Diagnostic.MutReturnEscapesScope(value));
@@ -1014,7 +1013,6 @@ public sealed class Binder(Scope scope, BinderSideEffects sideEffects)
                 .Where(arg => arg.IsMut)
                 .All(arg => CanMutReturnValueEscape(arg.Value)),
             
-            null => true,
             _ => false,
         };
     }
