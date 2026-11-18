@@ -37,6 +37,7 @@ Just like the Axolotl, Axl's animal.
 * Funs: First-Class Functions, Captured Variables & Lambdas
   * Non-local returns; How does `return, break, continue` inside lambdas work?
   * Parameter and return-type inference
+* Funs: Accept trait/type restriction parameters: `fun A(s: Stringable)` or `fun A(s: class)`
 
 * Structs: Default struct field values
 * Structs: Nested structs

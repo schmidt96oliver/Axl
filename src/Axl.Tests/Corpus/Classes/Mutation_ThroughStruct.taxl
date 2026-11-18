@@ -1,0 +1,19 @@
+﻿//@run
+//= 2
+//= 3
+
+let t = Val1(Ref = Ref(Val = Val2(Int = 1)));
+t.Ref.Val = Val2(Int = 2);
+PrintLine("{ t }");
+
+t.Ref.Val.Int = 3;
+PrintLine("{ t }");
+
+struct Val1 
+{ 
+    pub Ref: Ref; 
+    pub fun ToString(): String 
+        = Ref.Val.Int.ToString();
+}
+class Ref { pub Val: Val2; }
+struct Val2 { pub Int: I32; }

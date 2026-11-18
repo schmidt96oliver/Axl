@@ -3,11 +3,11 @@
 
 # Now
 
-* mutation through `let` and non-`mut` fun
-* layout check skips classes
-* BoundValue PlaceKind, how to represent reference types here?
-
 # Questions / Little ones
+
+* **Remove type groups***
+* **Remove fun overloads**
+
 
 * ?? BindLookupResult: Report WrongKind error before anything else; remove isThisField in BindFieldAccess
 

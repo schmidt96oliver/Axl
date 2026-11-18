@@ -1,0 +1,13 @@
+﻿//@run
+//= 2
+
+let t = Ref(Int = 1);
+t.Self().Int = 2;
+PrintLine("{ t.Int }");
+
+class Ref 
+{ 
+    pub Int: I32; 
+    
+    pub fun Self(): Ref = self;
+}

@@ -1,0 +1,8 @@
+﻿//@check
+    
+// Let bindings cannot be reassigned, not even if they have reference types.
+let a = Ref();
+a = Ref();      //~error CannotAssign
+a = {};         //~error CannotAssign
+
+class Ref; 

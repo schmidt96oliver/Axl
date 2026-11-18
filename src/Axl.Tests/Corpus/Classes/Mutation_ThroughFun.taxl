@@ -1,0 +1,20 @@
+﻿//@run
+//= 2
+//= 3
+
+let t = Ref(Int = 1);
+Modify(t);
+PrintLine("{ t.Int }");
+
+t.ModifyMethod();
+PrintLine("{ t.Int }");
+
+class Ref 
+{ 
+    pub Int: I32; 
+    pub fun ModifyMethod()
+        = Int = 3; 
+}
+
+fun Modify(ref: Ref)
+    = ref.Int = 2;
