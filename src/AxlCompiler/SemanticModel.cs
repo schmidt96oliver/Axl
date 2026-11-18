@@ -171,23 +171,13 @@ public sealed class SemanticModel(Compilation compilation)
 
             switch (symbol)
             {
-                // Structs have type parameters
-                case StructSymbol structSymbol when structSymbol.DeclarationSyntax
+                // Structs and classes have type parameters
+                case NamedTypeSymbol { Definition: SourceStructOrClassDefinition typeDefinition } when typeDefinition.DeclarationSyntax
                     .TypeParameterList?.Location.Contains(token.Location) == true:
                 {
                     if (token.Parent is not TypeParamSyntax) return null;
-                    
-                    return structSymbol.TypeParameters.FirstOrDefault(typeParam =>
-                        typeParam.NameSyntax.Contains(token));
-                }
-                
-                // Structs have type parameters
-                case ClassSymbol classSymbol when classSymbol.DeclarationSyntax
-                    .TypeParameterList?.Location.Contains(token.Location) == true:
-                {
-                    if (token.Parent is not TypeParamSyntax) return null;
-                    
-                    return classSymbol.TypeParameters.FirstOrDefault(typeParam =>
+
+                    return typeDefinition.TypeParameters.FirstOrDefault(typeParam =>
                         typeParam.NameSyntax.Contains(token));
                 }
 
@@ -201,19 +191,19 @@ public sealed class SemanticModel(Compilation compilation)
                 }
 
                 // SourceFuns have type parameters and normal parameters
-                case SourceFunSymbol sourceFun:
+                case FunSymbol { Definition: SourceFunDefinition sourceFunDefinition } sourceFun:
                 {
-                    if (sourceFun.DeclarationSyntax.TypeParameterList?.Location.Contains(token.Location) == true)
+                    if (sourceFunDefinition.DeclarationSyntax.TypeParameterList?.Location.Contains(token.Location) == true)
                     {
                         if (token.Parent is not TypeParamSyntax) return null;
-                        return sourceFun.TypeParameters.FirstOrDefault(typeParam =>
+                        return sourceFunDefinition.TypeParameters.FirstOrDefault(typeParam =>
                             typeParam.NameSyntax.Contains(token));
                     }
 
-                    if (sourceFun.DeclarationSyntax.ParameterList.Location.Contains(token.Location))
+                    if (sourceFunDefinition.DeclarationSyntax.ParameterList.Location.Contains(token.Location))
                     {
                         if (token.Parent is not ParamSyntax) return null;
-                        return sourceFun.Parameters.FirstOrDefault(param => param.NameSyntax.Contains(token));
+                        return sourceFunDefinition.Parameters.FirstOrDefault(param => param.NameSyntax.Contains(token));
                     }
 
                     if (token.Parent is VarDeclSyntax varDecl)
@@ -223,7 +213,7 @@ public sealed class SemanticModel(Compilation compilation)
                 }
                     
                 // Script funs only have a body
-                case ScriptFunSymbol scriptFun:
+                case FunSymbol { Definition: ScriptFunDefinition } scriptFun:
                 {
                     if (token.Parent is VarDeclSyntax varDecl)
                         return TryDeclaredLocalInFunBody(scriptFun, varDecl);

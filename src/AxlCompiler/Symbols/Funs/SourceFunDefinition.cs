@@ -1,5 +1,4 @@
 ﻿using System.Collections.Immutable;
-using System.Runtime.CompilerServices;
 using AxlCompiler.Binding;
 using AxlCompiler.Binding.BoundTree;
 using AxlCompiler.Binding.Scopes;
@@ -8,12 +7,12 @@ using AxlCompiler.Syntax.Tree;
 
 namespace AxlCompiler.Symbols;
 
-public sealed class SourceFunSymbol(
+public sealed class SourceFunDefinition(
     FunDeclSyntax declarationSyntax,
     Scope enclosingScope,
     bool isPublic,
     BoundAnnotation? intrinsicAnnotation)
-    : FunDefinitionSymbol(enclosingScope.Compilation, declarationSyntax.Name.Text.ToString(), owner: enclosingScope.Owner, isPublic: isPublic)
+    : FunDefinition(enclosingScope.Compilation, declarationSyntax.Name.Text.ToString(), owner: enclosingScope.Owner, isPublic: isPublic)
 {
     public override FunDeclSyntax DeclarationSyntax { get; } = declarationSyntax;
 
@@ -23,9 +22,6 @@ public sealed class SourceFunSymbol(
     private bool _isBindingReturnType = false;
     private bool _isBindingBody = false;
     private bool _isSelfParameterBound = false;
-
-    /// <inheritdoc />
-    public override bool CanBeReferencedByName => true;
 
     /// <inheritdoc />
     public override ImmutableArray<SyntaxNode> DeclaringSyntax => [DeclarationSyntax];
@@ -44,16 +40,16 @@ public sealed class SourceFunSymbol(
                     field = [];
                     return field;
                 }
-                
+
                 if (_isBindingTypeParameters)
                     throw new CycleException();
                 _isBindingTypeParameters = true;
 
-                var binder = new Binder(enclosingScope.WithOwner(this), _sideEffects);
+                var binder = new Binder(enclosingScope.WithOwner(Identity), _sideEffects);
                 field = binder.BindTypeParameters(DeclarationSyntax.TypeParameterList);
 
                 _isBindingTypeParameters = false;
-                
+
                 binder.CheckDuplicateDeclarations([.. field]);
             }
 
@@ -70,7 +66,7 @@ public sealed class SourceFunSymbol(
                 if (_isBindingParameters)
                     throw new CycleException();
                 _isBindingParameters = true;
-                
+
                 var binder = MakeSignatureBinder();
                 field = binder.BindParameters(DeclarationSyntax.ParameterList);
 
@@ -92,9 +88,9 @@ public sealed class SourceFunSymbol(
             if (!_isSelfParameterBound)
             {
                 var type = DeclarationSyntax.StaticKw is not null ? null : (Owner as TypeSymbol);
-                var isMut = DeclarationSyntax.MutKw is not null && Owner?.OriginalDefinition is StructSymbol;
+                var isMut = DeclarationSyntax.MutKw is not null && Owner is NamedTypeSymbol { Definition: StructDefinition };
                 field = type is not null
-                    ? new ParameterSymbol(Names.Self, owner: this, type, isMut, isSelf: true)
+                    ? new ParameterDefinition(Names.Self, owner: Identity, type, isMut, isSelf: true).Identity
                     : null;
                 _isSelfParameterBound = true;
             }
@@ -105,7 +101,7 @@ public sealed class SourceFunSymbol(
 
     private TypeSymbol? _returnType;
     private bool? _isReturnMut;
-    
+
     public override TypeSymbol ReturnType
     {
         get
@@ -174,10 +170,10 @@ public sealed class SourceFunSymbol(
         _ = Parameters;
         _ = ReturnType;
         _ = Body;
-        
+
         sideEffects.MergeWith(_sideEffects);
     }
 
     private Binder MakeSignatureBinder()
-        => new(new FunSignatureScope(enclosingScope.WithOwner(this)), _sideEffects);
+        => new(new FunSignatureScope(enclosingScope.WithOwner(Identity)), _sideEffects);
 }

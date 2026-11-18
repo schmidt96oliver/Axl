@@ -9,7 +9,6 @@ public sealed class ErrorTypeSymbol(Compilation compilation)
     /// <inheritdoc />
     public override bool CanBeReferencedByName => false;
 
-    public override TypeKind Kind => TypeKind.Other;
     public override bool IsValueType => false;
     public override bool IsReferenceType => false;
     

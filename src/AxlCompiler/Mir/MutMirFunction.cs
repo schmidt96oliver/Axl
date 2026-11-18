@@ -70,7 +70,7 @@ public sealed class MutMirFunction
     /// <summary>
     /// Runs all checks that produce diagnostics.
     /// </summary>
-    public void Analyze(FunDefinitionSymbol funDefinition, DiagnosticBag diagnosticBag)
+    public void Analyze(FunDefinition funDefinition, DiagnosticBag diagnosticBag)
     {
         ReturnCheck.Check(funDefinition, this, diagnosticBag);
     }

@@ -194,22 +194,17 @@ public sealed class CompletionHandler(ILanguageServerFacade facade) : Completion
                              context.TargetToken?.Ancestors().Any(p =>
                                  p is TypeAnnotationClauseSyntax or ReturnTypeAnnotationSyntax) == true;
 
-        var typeKind = symbols.All(s => s.Kind is TypeKind.Class) ? TypeKind.Class :
-            symbols.All(s => s.Kind is TypeKind.Struct) ? TypeKind.Struct :
-            symbols.All(s => s.Kind is TypeKind.TypeParameter) ? TypeKind.TypeParameter : TypeKind.Other;
+        var kind = isRider ? CompletionItemKind.Class :
+            symbols.All(s => s is NamedTypeSymbol { Definition: ClassDefinition }) ? CompletionItemKind.Class :
+            symbols.All(s => s is NamedTypeSymbol { Definition: StructDefinition }) ? CompletionItemKind.Struct :
+            symbols.All(s => s is TypeParameterSymbol) ? CompletionItemKind.TypeParameter : CompletionItemKind.Text;
         
         if (symbols.Length > 1)
         {
             return new CompletionItem
             {
                 Label = name,
-                Kind = isRider ? CompletionItemKind.Class : typeKind switch
-                {
-                    TypeKind.Struct => CompletionItemKind.Struct,
-                    TypeKind.Class => CompletionItemKind.Class,
-                    TypeKind.TypeParameter => CompletionItemKind.TypeParameter,
-                    _ => CompletionItemKind.Text
-                },
+                Kind = kind,
                 InsertText = insertBrackets ? $"{name}[$0]" : name,
                 InsertTextFormat = InsertTextFormat.Snippet,
 
@@ -224,15 +219,7 @@ public sealed class CompletionHandler(ILanguageServerFacade facade) : Completion
         return new CompletionItem()
         {
             Label = name,
-            Kind = isRider
-                ? CompletionItemKind.Class
-                : typeKind switch
-                {
-                    TypeKind.Struct => CompletionItemKind.Struct,
-                    TypeKind.Class => CompletionItemKind.Class,
-                    TypeKind.TypeParameter => CompletionItemKind.TypeParameter,
-                    _ => CompletionItemKind.Text
-                },
+            Kind = kind,
             InsertText = insertBrackets ? $"{name}[$0]" : name,
             InsertTextFormat = InsertTextFormat.Snippet,
 

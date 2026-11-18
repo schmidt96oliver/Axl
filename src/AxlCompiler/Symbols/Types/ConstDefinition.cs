@@ -7,17 +7,16 @@ using AxlCompiler.Syntax.Tree;
 
 namespace AxlCompiler.Symbols;
 
-public sealed class ConstDefinitionSymbol(
+public sealed class ConstDefinition(
     ConstDeclSyntax declarationSyntax,
     Scope enclosingScope,
     Symbol owner)
-    : ConstSymbol(declarationSyntax.Name.Text.ToString(),
+    : Definition<ConstSymbol>(owner.Compilation, declarationSyntax.Name.Text.ToString(),
         owner, isPublic: declarationSyntax.PubKw is not null)
 {
     private readonly BinderSideEffects _sideEffects = new();
     private bool _isBindingType = false;
     private bool _isBindingValueFun = false;
-    private readonly List<SpecializedConstSymbol> _specializations = [];
 
     public ConstDeclSyntax DeclarationSyntax { get; } = declarationSyntax;
 
@@ -27,9 +26,7 @@ public sealed class ConstDefinitionSymbol(
     /// <inheritdoc />
     public override ImmutableArray<Token> NameSyntax => [DeclarationSyntax.Name];
 
-    public override ConstDefinitionSymbol OriginalDefinition => this;
-    
-    public override TypeSymbol Type
+    public TypeSymbol Type
     {
         get
         {
@@ -39,7 +36,7 @@ public sealed class ConstDefinitionSymbol(
                     throw new CycleException();
                 _isBindingType = true;
 
-                field = new Binder(enclosingScope.WithOwner(this), _sideEffects)
+                field = new Binder(enclosingScope.WithOwner(Identity), _sideEffects)
                     .BindType(DeclarationSyntax.TypeExpr, TypeUsage.Signature).Type;
 
                 _isBindingType = false;
@@ -49,8 +46,7 @@ public sealed class ConstDefinitionSymbol(
         }
     }
 
-    /// <inheritdoc />
-    public override SyntheticFunSymbol ValueFun
+    public SyntheticFunDefinition ValueFun
     {
         get
         {
@@ -60,9 +56,9 @@ public sealed class ConstDefinitionSymbol(
                     throw new CycleException();
                 _isBindingValueFun = true;
 
-                var boundValue = new Binder(enclosingScope.WithOwner(this), _sideEffects)
+                var boundValue = new Binder(enclosingScope.WithOwner(Identity), _sideEffects)
                     .BindConstInitializer(DeclarationSyntax.ValueExpr);
-                field = new SyntheticFunSymbol(Compilation, name: $"<const init>{Name}", Owner, isPublic: false);
+                field = new SyntheticFunDefinition(Compilation, name: $"<const init>{Name}", Owner, isPublic: false);
                 field.SetSignature(selfParameter: null, parameters: [], returnType: Type);
                 field.SetBody(new BoundBlock(
                     [
@@ -85,22 +81,6 @@ public sealed class ConstDefinitionSymbol(
         sideEffects.MergeWith(_sideEffects);
     }
 
-
-    public ConstSymbol Specialize(Symbol specializedOwner)
-    {
-        Guard.MustBe(Equals(specializedOwner.OriginalDefinition, Owner.OriginalDefinition));
-
-        // If nothing changes, just return this definition.
-        if (Equals(specializedOwner, Owner))
-            return this;
-
-        var specialization = _specializations.FirstOrDefault(s => Equals(s.Owner, specializedOwner));
-        if (specialization is null)
-        {
-            specialization = new SpecializedConstSymbol(originalDefinition: this, specializedOwner);
-            _specializations.Add(specialization);
-        }
-
-        return specialization;
-    }
+    protected override ConstSymbol Create(Symbol? owner, ImmutableArray<TypeSymbol>? typeArguments)
+        => new(this, owner!, isIdentity: typeArguments is null);
 }

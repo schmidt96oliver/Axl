@@ -8,7 +8,7 @@ namespace AxlCompiler.Diagnostics;
 
 public partial record Diagnostic
 {
-    public sealed record MissingReturn(FunDefinitionSymbol Fun) : Error
+    public sealed record MissingReturn(FunDefinition Fun) : Error
     {
         public override ImmutableArray<SourceLocation> Locations
         {
@@ -42,7 +42,7 @@ public partial record Diagnostic
         }
 
         public override string Message => Fun.ReturnType == Fun.Compilation.BaseLibrary.Never
-            ? $"{Fun.ShortDisplayText.Capitalize()} is declared to never return, but can reach the end of its body."
+            ? $"{Fun.Identity.ShortDisplayText.Capitalize()} is declared to never return, but can reach the end of its body."
             : "Not all code-paths return a value.";
     }
 
@@ -73,7 +73,7 @@ public partial record Diagnostic
     {
         /// <inheritdoc />
         public override ImmutableArray<SourceLocation> Locations =>
-            [Symbol.OriginalDefinition.DeclarationSyntax.ValueExpr.Location];
+            [Symbol.Definition.DeclarationSyntax.ValueExpr.Location];
 
         /// <inheritdoc />
         public override string Message => $"Evaluation of const {Symbol.FullName} panicked:\n{ErrorText}";
@@ -83,7 +83,7 @@ public partial record Diagnostic
     {
         /// <inheritdoc />
         public override ImmutableArray<SourceLocation> Locations =>
-            [Symbol.OriginalDefinition.DeclarationSyntax.ValueExpr.Location];
+            [Symbol.Definition.DeclarationSyntax.ValueExpr.Location];
 
         /// <inheritdoc />
         public override string Message => $"Evaluation of const {Symbol.FullName} hit the fuel limit.";
@@ -93,7 +93,7 @@ public partial record Diagnostic
     {
         /// <inheritdoc />
         public override ImmutableArray<SourceLocation> Locations =>
-            [Symbol.OriginalDefinition.DeclarationSyntax.ValueExpr.Location];
+            [Symbol.Definition.DeclarationSyntax.ValueExpr.Location];
 
         /// <inheritdoc />
         public override string Message => $"Evaluation of const {Symbol.FullName} hit a cycle: {CycleText}";
@@ -105,7 +105,7 @@ public partial record Diagnostic
     {
         /// <inheritdoc />
         public override ImmutableArray<SourceLocation> Locations =>
-            [Symbol.OriginalDefinition.DeclarationSyntax.ValueExpr.Location];
+            [Symbol.Definition.DeclarationSyntax.ValueExpr.Location];
 
         /// <inheritdoc />
         public override string Message =>

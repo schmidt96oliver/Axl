@@ -8,7 +8,7 @@ public static class ReturnCheck
     /// <summary>
     /// Expects that <see cref="Janitor"/> has cleaned up <paramref name="mirFunction"/> before use.
     /// </summary>
-    public static void Check(FunDefinitionSymbol funDefinition, MutMirFunction mirFunction, DiagnosticBag diagnosticBag)
+    public static void Check(FunDefinition funDefinition, MutMirFunction mirFunction, DiagnosticBag diagnosticBag)
     {
         // Suppress missing return if return type is an error.
         if (mirFunction.ReturnPlace.Type is ErrorTypeSymbol)

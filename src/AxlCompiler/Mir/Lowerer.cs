@@ -11,7 +11,7 @@ namespace AxlCompiler.Mir;
 public class Lowerer
 {
     private readonly MutMirFunction _mirFun;
-    private readonly FunDefinitionSymbol _funDefinition;
+    private readonly FunDefinition _funDefinition;
     
     private MutBasicBlock? _currentBlock;
     private readonly Dictionary<LocalSymbol, Place.Local> _locals = [];
@@ -32,7 +32,7 @@ public class Lowerer
         }
     }
 
-    private Lowerer(FunDefinitionSymbol funDefinition)
+    private Lowerer(FunDefinition funDefinition)
     {
         _funDefinition = funDefinition;
         
@@ -53,11 +53,11 @@ public class Lowerer
             paramPlaces.Add(local);
         }
         
-        _mirFun = new MutMirFunction(funDefinition.FullInternalName, returnPlace, paramPlaces.DrainToImmutable());
+        _mirFun = new MutMirFunction(funDefinition.Identity.FullInternalName, returnPlace, paramPlaces.DrainToImmutable());
         _currentBlock = _mirFun.Entry;
     }
 
-    public static MutMirFunction Lower(FunDefinitionSymbol fun, Compilation compilation)
+    public static MutMirFunction Lower(FunDefinition fun, Compilation compilation)
     {
         if (fun.Body is not BoundBlock body)
             throw new ArgumentException("Cannot lower funs without blocks.", nameof(fun));
@@ -345,7 +345,7 @@ public class Lowerer
     {
         var arguments = LowerArguments(call.ReceiverAndArguments, call.Fun.SelfAndParameters);
 
-        if (call.Fun.OriginalDefinition.Body is Intrinsic intrinsic)
+        if (call.Fun.Definition.Body is Intrinsic intrinsic)
         {
             if (OperatorKind.TryFrom(intrinsic) is { } opKind)
                 Emit(new Instruction.Operator(opKind, target, arguments, call.Syntax));

@@ -41,6 +41,8 @@
 
 # Later
 
+* `===` and `=!=` for reference equality
+
 * Miri flat execution + stack trace + @StackTraceHidden
 
 * Mir Inliner

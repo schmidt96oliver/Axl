@@ -6,29 +6,24 @@ using AxlCompiler.Syntax.Tree;
 
 namespace AxlCompiler.Symbols;
 
-public sealed class ScriptFunSymbol(
+public sealed class ScriptFunDefinition(
     FileSyntax scriptSyntax,
     Scope enclosingScope)
-    : FunDefinitionSymbol(enclosingScope.Compilation, "<script>", owner: enclosingScope.Owner, isPublic: false)
+    : FunDefinition(enclosingScope.Compilation, "<script>", owner: enclosingScope.Owner, isPublic: false)
 {
     public FileSyntax ScriptSyntax { get; } = scriptSyntax;
-    
+
     private readonly BinderSideEffects _sideEffects = new();
     private bool _isBindingBody = false;
 
     /// <inheritdoc />
-    public override bool CanBeReferencedByName => true;
-
-    /// <inheritdoc />
     public override FunDeclSyntax? DeclarationSyntax => null;
-    
+
     /// <inheritdoc />
     public override ImmutableArray<SyntaxNode> DeclaringSyntax => [ScriptSyntax];
 
     /// <inheritdoc />
     public override ImmutableArray<Token> NameSyntax => [];
-
-    public override ImmutableArray<TypeParameterSymbol> TypeParameters => [];
 
     public override ImmutableArray<ParameterSymbol> Parameters => [];
 
@@ -40,8 +35,6 @@ public sealed class ScriptFunSymbol(
     /// <inheritdoc />
     public override bool IsReturnMut => false;
 
-    
-
     public override FunBody Body
     {
         get
@@ -52,7 +45,7 @@ public sealed class ScriptFunSymbol(
                     throw new CycleException();
                 _isBindingBody = true;
 
-                field = new Binder(new FunSignatureScope(enclosingScope.WithOwner(this)), _sideEffects)
+                field = new Binder(new FunSignatureScope(enclosingScope.WithOwner(Identity)), _sideEffects)
                     .BindScriptBody(ScriptSyntax);
 
                 _isBindingBody = false;
@@ -65,7 +58,7 @@ public sealed class ScriptFunSymbol(
     public override void Complete(BinderSideEffects sideEffects)
     {
         _ = Body;
-        
+
         sideEffects.MergeWith(_sideEffects);
     }
 }

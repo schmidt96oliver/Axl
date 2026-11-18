@@ -20,7 +20,7 @@ public class Compilation
     public static string BaseLibraryDirectory
         => Path.Combine(AppContext.BaseDirectory, "BaseLib");
 
-    private readonly Dictionary<FunSymbol, LoweredFunBody> _loweredBodies = [];
+    private readonly Dictionary<FunDefinition, LoweredFunBody> _loweredBodies = [];
     
     
     /// <summary>
@@ -83,18 +83,18 @@ public class Compilation
     /// Enumerates all funs with a body contained in this compilation, excluding
     /// those in <see cref="ReferencedCompilations"/> and excluding intrinsics.
     /// </summary>
-    public IEnumerable<FunDefinitionSymbol> AllFuns
+    public IEnumerable<FunDefinition> AllFuns
     {
         get
         {
             return [.. Inner(RootNamespace), .. Scripts.SelectMany(Inner)];
 
-            IEnumerable<FunDefinitionSymbol> Inner(Symbol symbol) => symbol switch
+            IEnumerable<FunDefinition> Inner(Symbol symbol) => symbol switch
             {
-                FunDefinitionSymbol funSymbol => [funSymbol],
+                FunSymbol { IsIdentity: true } funSymbol => [funSymbol.Definition],
                 FunSymbol => throw new UnreachableException("Specialized funs should not be on compilation."),
                 ScriptSymbol script => [.. Inner(script.Fun), .. script.Members.SelectMany(Inner)],
-                ConstSymbol constSymbol => [constSymbol.ValueFun.OriginalDefinition],
+                ConstSymbol constSymbol => [constSymbol.ValueFun.Definition],
                 
                 NamespaceSymbol or TypeSymbol => symbol.Members.SelectMany(Inner),
                 LocalSymbol or FieldSymbol => [],
@@ -195,7 +195,7 @@ public class Compilation
             .SelectMany(fun => GetLoweredFunBody(fun).Diagnostics));
     }
 
-    public LoweredFunBody GetLoweredFunBody(FunDefinitionSymbol fun)
+    public LoweredFunBody GetLoweredFunBody(FunDefinition fun)
     {
         if (fun.Body is not BoundBlock)
             throw new ArgumentException("Cannot lower fun without a bound block.", nameof(fun));

@@ -95,8 +95,11 @@ public partial record Diagnostic
                         BoundLocal { Local: ParameterSymbol { IsSelf: true } selfParameter } 
                             => selfParameter.Owner.Owner switch
                             {
-                                TypeSymbol { Kind: TypeKind.Struct } => "'self' is read-only in a non-mut fun",
-                                TypeSymbol { Kind: TypeKind.Class } => "'self' is read-only in classes",
+                                NamedTypeSymbol { Definition: var definition } => definition switch
+                                {
+                                    StructDefinition => "'self' is read-only in a non-mut fun",
+                                    ClassDefinition => "'self' is read-only in classes",
+                                },
                                 _ => "'self' is read-only here",
                             },
                             
@@ -240,15 +243,15 @@ public partial record Diagnostic
             => $"Number is too big for ‘{TargetType.FullName}‘.";
     }
 
-    public sealed record DuplicateFunDeclarations(ImmutableArray<FunDefinitionSymbol> Duplicates) : Error
+    public sealed record DuplicateFunDeclarations(ImmutableArray<FunSymbol> Duplicates) : Error
     {
         public override ImmutableArray<SourceLocation> Locations
             // Squiggle the name and parameter list, since they are at fault.
             =>
             [
                 .. Duplicates.Select(fun =>
-                        SourceLocation.FromTo(fun.DeclarationSyntax!.Name.Location,
-                            fun.DeclarationSyntax!.ParameterList.Location))
+                        SourceLocation.FromTo(fun.Definition.DeclarationSyntax!.Name.Location,
+                            fun.Definition.DeclarationSyntax!.ParameterList.Location))
             ];
 
         public override string LocationLabel => "Also declared here.";
@@ -263,12 +266,10 @@ public partial record Diagnostic
 
         private static SourceLocation GetLocation(TypeSymbol type) => type switch
         {
-            StructSymbol @struct => SourceLocation.FromTo(@struct.DeclarationSyntax.Name.Location,
+            NamedTypeSymbol { Definition: SourceStructOrClassDefinition @struct } => SourceLocation.FromTo(@struct.DeclarationSyntax.Name.Location,
                 @struct.DeclarationSyntax.TypeParameterList?.Location ?? @struct.DeclarationSyntax.Name.Location),
-            ClassSymbol @class => SourceLocation.FromTo(@class.DeclarationSyntax.Name.Location,
-                @class.DeclarationSyntax.TypeParameterList?.Location ?? @class.DeclarationSyntax.Name.Location),
 
-            ErrorTypeSymbol or RefTypeSymbol or TypeParameterSymbol or SpecializedTypeSymbol
+            ErrorTypeSymbol or RefTypeSymbol or TypeParameterSymbol or NamedTypeSymbol
                 => throw new UnreachableException(),
         };
 
@@ -452,9 +453,9 @@ public partial record Diagnostic
         public override string Message => $"‘{OffendingSymbols[0].Name}‘ is already declared in this scope.";
     }
 
-    public sealed record RecursiveStructLayout(StructSymbol StructSymbol, ImmutableArray<FieldSymbol> FieldPath) : Error
+    public sealed record RecursiveStructLayout(TypeSymbol StructSymbol, ImmutableArray<FieldSymbol> FieldPath) : Error
     {
-        public override ImmutableArray<SourceLocation> Locations => [FieldPath[0].OriginalDefinition.DeclarationSyntax.TypeExpr.Location];
+        public override ImmutableArray<SourceLocation> Locations => [FieldPath[0].Definition.DeclarationSyntax.TypeExpr.Location];
         public override string Message => $"Type ‘{StructSymbol.FullName}‘ has a cycle in its layout. The cycle is through fields {GetCycleString()}";
 
         private string GetCycleString()
@@ -637,7 +638,7 @@ public partial record Diagnostic
             $"Operator ‘{FunName}’ cannot be ‘mut’.";
     }
 
-    public sealed record WrongOperatorParameterCount(FunDefinitionSymbol Fun) : Error
+    public sealed record WrongOperatorParameterCount(FunDefinition Fun) : Error
     {
         /// <inheritdoc />
         public override ImmutableArray<SourceLocation> Locations => [Fun.DeclarationSyntax!.ParameterList.Location];
@@ -663,7 +664,7 @@ public partial record Diagnostic
         }
     }
 
-    public sealed record WrongOperatorReturnType(FunDefinitionSymbol Fun, TypeSymbol Expected) : Error
+    public sealed record WrongOperatorReturnType(FunDefinition Fun, TypeSymbol Expected) : Error
     {
         /// <inheritdoc />
         public override ImmutableArray<SourceLocation> Locations =>
@@ -728,20 +729,14 @@ public partial record Diagnostic
         public override string Message => $"Unknown annotation '{Syntax.Text}'.";
     }
 
-    public sealed record InvalidTypeAnnotation(BoundAnnotation Annotation, TypeKind TypeKind) : Error
+    public sealed record InvalidTypeAnnotation(BoundAnnotation Annotation) : Error
     {
         /// <inheritdoc />
         public override ImmutableArray<SourceLocation> Locations => [Annotation.Syntax.Location];
 
         /// <inheritdoc />
-        public override string Message => TypeKind switch
-        {
-            TypeKind.Class => $"Annotation '{Annotation.Syntax.Text}' is not valid for classes.",
-            TypeKind.Struct => $"Annotation '{Annotation.Syntax.Text}' is not valid for structs.",
-            TypeKind.TypeParameter => $"Annotation '{Annotation.Syntax.Text}' is not valid for type parameters.",
+        public override string Message => $"Annotation '{Annotation.Syntax.Text}' is not valid here.";
 
-            _ => $"Annotation '{Annotation.Syntax.Text}' is not valid here.",
-        };
     }
 
     public sealed record InvalidConstAnnotation(BoundAnnotation Annotation) : Error

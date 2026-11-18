@@ -6,16 +6,15 @@ using AxlCompiler.Syntax.Tree;
 
 namespace AxlCompiler.Symbols;
 
-public sealed class FieldDefinitionSymbol(
+public sealed class FieldDefinition(
     FieldDeclSyntax declarationSyntax,
     Scope enclosingScope,
     TypeSymbol owner)
-    : FieldSymbol(declarationSyntax.Name.Text.ToString(),
+    : Definition<FieldSymbol>(owner.Compilation, declarationSyntax.Name.Text.ToString(),
         owner, isPublic: declarationSyntax.PubKw is not null)
 {
     private readonly BinderSideEffects _sideEffects = new();
     private bool _isBindingType = false;
-    private readonly List<SpecializedFieldSymbol> _specializations = [];
 
     public FieldDeclSyntax DeclarationSyntax { get; } = declarationSyntax;
 
@@ -24,10 +23,8 @@ public sealed class FieldDefinitionSymbol(
 
     /// <inheritdoc />
     public override ImmutableArray<Token> NameSyntax => [DeclarationSyntax.Name];
-    
-    public override FieldDefinitionSymbol OriginalDefinition => this;
-    
-    public override TypeSymbol Type
+
+    public TypeSymbol Type
     {
         get
         {
@@ -37,7 +34,7 @@ public sealed class FieldDefinitionSymbol(
                     throw new CycleException();
                 _isBindingType = true;
 
-                field = new Binder(enclosingScope.WithOwner(this), _sideEffects)
+                field = new Binder(enclosingScope.WithOwner(Identity), _sideEffects)
                     .BindType(DeclarationSyntax.TypeExpr, TypeUsage.Signature).Type;
 
                 _isBindingType = false;
@@ -54,22 +51,6 @@ public sealed class FieldDefinitionSymbol(
         sideEffects.MergeWith(_sideEffects);
     }
 
-
-    public FieldSymbol Specialize(TypeSymbol specializedOwner)
-    {
-        Guard.MustBe(Equals(specializedOwner.OriginalDefinition, Owner?.OriginalDefinition));
-
-        // If nothing changes, just return this definition.
-        if (Equals(specializedOwner, Owner))
-            return this;
-
-        var specialization = _specializations.FirstOrDefault(s => Equals(s.Owner, specializedOwner));
-        if (specialization is null)
-        {
-            specialization = new SpecializedFieldSymbol(originalDefinition: this, specializedOwner);
-            _specializations.Add(specialization);
-        }
-
-        return specialization;
-    }
+    protected override FieldSymbol Create(Symbol? owner, ImmutableArray<TypeSymbol>? typeArguments)
+        => new(this, (TypeSymbol)owner!, isIdentity: typeArguments is null);
 }

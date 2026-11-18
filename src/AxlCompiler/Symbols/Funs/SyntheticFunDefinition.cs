@@ -1,12 +1,11 @@
 ﻿using System.Collections.Immutable;
-using AxlCompiler.Binding.BoundTree;
 using AxlCompiler.Syntax;
 using AxlCompiler.Syntax.Tree;
 
 namespace AxlCompiler.Symbols;
 
-public class SyntheticFunSymbol(Compilation compilation, string name, Symbol? owner, bool isPublic)
-    : FunDefinitionSymbol(compilation, name, owner, isPublic)
+public sealed class SyntheticFunDefinition(Compilation compilation, string name, Symbol? owner, bool isPublic)
+    : FunDefinition(compilation, name, owner, isPublic)
 {
     /// <inheritdoc />
     public override bool CanBeReferencedByName => SyntaxFacts.IsIdentifier(Name);
@@ -20,15 +19,10 @@ public class SyntheticFunSymbol(Compilation compilation, string name, Symbol? ow
     /// <inheritdoc />
     public override ImmutableArray<Token> NameSyntax => [];
 
-    /// <inheritdoc />
-    public override ImmutableArray<TypeParameterSymbol> TypeParameters => [];
-
-
     private ImmutableArray<ParameterSymbol> _parameters;
     private ParameterSymbol? _selfParameter;
     private TypeSymbol? _returnType;
     private FunBody? _body;
-
 
     /// <inheritdoc />
     public override ImmutableArray<ParameterSymbol> Parameters
@@ -54,7 +48,7 @@ public class SyntheticFunSymbol(Compilation compilation, string name, Symbol? ow
     }
 
     /// <inheritdoc />
-    public override TypeSymbol ReturnType 
+    public override TypeSymbol ReturnType
         => _returnType ?? throw new InvalidOperationException($"{nameof(ReturnType)} not bound yet.");
 
     /// <inheritdoc />
@@ -64,15 +58,14 @@ public class SyntheticFunSymbol(Compilation compilation, string name, Symbol? ow
     public override FunBody Body =>
         _body ?? throw new InvalidOperationException($"{nameof(Body)} not bound yet.");
 
-
-    public void SetSignature(ParameterSymbol? selfParameter, 
+    public void SetSignature(ParameterSymbol? selfParameter,
         ImmutableArray<ParameterSymbol> parameters,
         TypeSymbol returnType)
     {
         Guard.MustBe(_parameters.IsDefault, "Signature already bound.");
-        Guard.MustBe(selfParameter is null || selfParameter.Owner == this);
-        Guard.MustBe(parameters.All(p => p.Owner == this));
-        
+        Guard.MustBe(selfParameter is null || selfParameter.Owner == Identity);
+        Guard.MustBe(parameters.All(p => p.Owner == Identity));
+
         _selfParameter = selfParameter;
         _parameters = parameters;
         _returnType = returnType;

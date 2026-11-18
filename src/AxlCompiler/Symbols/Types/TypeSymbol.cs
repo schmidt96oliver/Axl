@@ -1,5 +1,4 @@
 ﻿using System.Collections.Immutable;
-using AxlCompiler.Binding;
 
 namespace AxlCompiler.Symbols;
 
@@ -7,15 +6,14 @@ public closed class TypeSymbol(Compilation compilation, string name, Symbol? own
     : Symbol(compilation, name, owner)
 {
     public override bool IsPublic { get; } = isPublic;
-    
+
     /// <inheritdoc />
     public override bool IsConcrete
         => Owner?.IsConcrete != false && TypeArguments.All(arg => arg.IsConcrete);
 
-    public abstract TypeKind Kind { get; }
     public abstract bool IsValueType { get; }
     public abstract bool IsReferenceType { get; }
-    
+
     public override TypeSymbol OriginalDefinition => this;
 
     public PrimitiveKind? PrimitiveKind { get; } = primitiveKind;
@@ -33,7 +31,7 @@ public closed class TypeSymbol(Compilation compilation, string name, Symbol? own
 
     public bool HasFilledTypeParameters
         => TypeParameters.Length == 0 || !TypeArguments.SequenceEqual(TypeParameters);
-    
+
     public LayoutGraphNode LayoutGraphNode
     {
         get
@@ -43,29 +41,18 @@ public closed class TypeSymbol(Compilation compilation, string name, Symbol? own
         }
     }
 
-    public override TypeSymbol Substitute(TypeMap map)
-    {
-        if (OriginalDefinition is not TypeDefinitionSymbol originalDefinition)
-        {
-            throw new InvalidOperationException(
-                $"Cannot substitute here without {nameof(TypeDefinitionSymbol)}. This should be overwritten.");
-        }
+    public abstract override TypeSymbol Substitute(TypeMap map);
 
-        var specializedOwner = Owner?.Substitute(map);
-        var specializedArgs = TypeArguments.Select(arg => arg.Substitute(map)).ToImmutableArray();
-        return originalDefinition.Specialize(specializedOwner, specializedArgs);
-    }
-    
     public TypeSymbol Specialize(ImmutableArray<TypeSymbol> typeArguments)
     {
         Guard.MustBe(TypeArguments.SequenceEqual(TypeParameters), "For specialization, the type must still be open.");
         Guard.MustBe(typeArguments.Length == TypeParameters.Length);
         if (typeArguments.Length == 0)
             return this;
-        
-        if (OriginalDefinition is not TypeDefinitionSymbol originalDefinition)
-            throw new InvalidOperationException($"Cannot specialize {this.GetType().Name}");
 
-        return originalDefinition.Specialize(Owner, typeArguments);
+        if (this is not NamedTypeSymbol named)
+            throw new InvalidOperationException($"Cannot specialize {GetType().Name}");
+
+        return named.Definition.Specialize(Owner, typeArguments);
     }
 }

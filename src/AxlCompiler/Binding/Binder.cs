@@ -394,7 +394,7 @@ public sealed class Binder(Scope scope, BinderSideEffects sideEffects)
     
     #region Declarations
     
-    public SourceFunSymbol BindSourceFunDeclaration(FunDeclSyntax syntax)
+    public FunSymbol BindSourceFunDeclaration(FunDeclSyntax syntax)
     {
         Debug.Assert(Scope.Owner is TypeSymbol or NamespaceSymbol);
         
@@ -417,25 +417,21 @@ public sealed class Binder(Scope scope, BinderSideEffects sideEffects)
         var receiverType = syntax.StaticKw is not null ? null : Scope.OwnerAsType;
         var isMutatingReceiver = syntax.MutKw is not null;
 
-        if (isMutatingReceiver && Scope.Owner is ClassSymbol)
+        if (isMutatingReceiver && Scope.Owner is NamedTypeSymbol { Definition: not StructDefinition })
             SideEffects.ReportError(new Diagnostic.ClassFunCannotBeMut(syntax.MutKw!, name));
         else if (receiverType is null && isMutatingReceiver)
             SideEffects.ReportError(new Diagnostic.StaticFunCannotBeMut(syntax.MutKw!, name));
         
-        var funSymbol = new SourceFunSymbol(syntax,
+        var funSymbol = new SourceFunDefinition(syntax,
             Scope,
             isPublic,
-            intrinsicAnnotation);
+            intrinsicAnnotation).Identity;
 
         return funSymbol;
     }
 
     public TypeSymbol BindStructOrClassDeclaration(StructOrClassDeclSyntax syntax)
     {
-        var typeKind = syntax.StructOrClassKw.Kind is TokenKind.ClassKw
-            ? TypeKind.Class
-            : TypeKind.Struct;
-        
         // Primitive annotation
         var annotations = syntax.Annotations.Select(BindAnnotation);
         PrimitiveKind? primitiveKind = null;
@@ -456,7 +452,7 @@ public sealed class Binder(Scope scope, BinderSideEffects sideEffects)
                 }
             }
             else if (annotation.Kind is not AnnotationKind.Primitive)
-                SideEffects.ReportError(new Diagnostic.InvalidTypeAnnotation(annotation, typeKind));
+                SideEffects.ReportError(new Diagnostic.InvalidTypeAnnotation(annotation));
         }
 
         var isPublic = syntax.PubKw is not null;
@@ -467,20 +463,20 @@ public sealed class Binder(Scope scope, BinderSideEffects sideEffects)
         }
 
         return syntax.StructOrClassKw.Kind is TokenKind.ClassKw
-            ? new ClassSymbol(syntax, enclosingScope: Scope, isPublic, primitiveKind)
-            : new StructSymbol(syntax, enclosingScope: Scope, isPublic, primitiveKind);
+            ? new ClassDefinition(syntax, enclosingScope: Scope, isPublic, primitiveKind).Identity
+            : new StructDefinition(syntax, enclosingScope: Scope, isPublic, primitiveKind).Identity;
     }
 
     public FieldSymbol BindFieldDeclaration(FieldDeclSyntax syntax)
     {
-        if (Scope.Owner is not (StructSymbol or ClassSymbol))
+        if (Scope.Owner is not NamedTypeSymbol { Definition: SourceStructOrClassDefinition })
             throw new InvalidOperationException("Can only bind fields inside structs/classes.");
         var typeOwner = (TypeSymbol)Scope.Owner;
         
         if (typeOwner.IsPrimitive)
             SideEffects.ReportError(new Diagnostic.FieldDeclarationOnPrimitive(syntax, typeOwner));
         
-        return new FieldDefinitionSymbol(syntax, Scope, typeOwner);
+        return new FieldDefinition(syntax, Scope, typeOwner).Identity;
     }
 
     public Symbol BindConstDeclaration(ConstDeclSyntax constDecl)
@@ -493,7 +489,7 @@ public sealed class Binder(Scope scope, BinderSideEffects sideEffects)
                 SideEffects.ReportError(new Diagnostic.InvalidConstAnnotation(annotation));
         }
 
-        return new ConstDefinitionSymbol(constDecl, Scope, Scope.Owner);
+        return new ConstDefinition(constDecl, Scope, Scope.Owner).Identity;
     }
 
     public BoundValue BindConstInitializer(ExprSyntax syntax)
@@ -535,10 +531,10 @@ public sealed class Binder(Scope scope, BinderSideEffects sideEffects)
 
         foreach (var duplicateArray in symbolsByName.Where(duplicates => duplicates.Length > 1))
         {
-            if (duplicateArray.All(s => s is FunDefinitionSymbol))
+            if (duplicateArray.All(s => s is FunSymbol))
             {
                 // We need to check their signatures
-                CheckDuplicateDeclarationsInFunGroup([.. duplicateArray.Select(s => (FunDefinitionSymbol)s)]);
+                CheckDuplicateDeclarationsInFunGroup([.. duplicateArray.Cast<FunSymbol>()]);
             }
 
             else if (duplicateArray.All(s => s is TypeSymbol and not TypeParameterSymbol))
@@ -555,7 +551,7 @@ public sealed class Binder(Scope scope, BinderSideEffects sideEffects)
         }
     }
 
-    private void CheckDuplicateDeclarationsInFunGroup(IEnumerable<FunDefinitionSymbol> funsWithSameName)
+    private void CheckDuplicateDeclarationsInFunGroup(IEnumerable<FunSymbol> funsWithSameName)
     {
         var remaining = funsWithSameName.ToList();
         while (remaining.Count > 0)
@@ -626,7 +622,7 @@ public sealed class Binder(Scope scope, BinderSideEffects sideEffects)
         }
     }
 
-    public void CheckRecursiveStructLayout(StructSymbol symbol)
+    public void CheckRecursiveStructLayout(NamedTypeSymbol symbol)
     {
         if (symbol.LayoutGraphNode.TryGetCyclicPath() is { } cyclePath)
             SideEffects.ReportError(new Diagnostic.RecursiveStructLayout(symbol, cyclePath));
@@ -638,7 +634,7 @@ public sealed class Binder(Scope scope, BinderSideEffects sideEffects)
 
     public BoundBlock BindSourceFunBody(FunBodySyntax syntax)
     {
-        if (Scope.OwnerAsFun is not SourceFunSymbol fun)
+        if (Scope.OwnerAsFun is not { Definition: SourceFunDefinition funDefinition } fun)
             throw new InvalidOperationException($"{nameof(BindSourceFunBody)} only valid on funs.");
 
         var bodyBinder = EnterFunBody();
@@ -646,7 +642,7 @@ public sealed class Binder(Scope scope, BinderSideEffects sideEffects)
         // --- Empty body
         if (syntax.Expr is null)
         {
-            SideEffects.ReportError(new Diagnostic.MissingFunBody(fun, fun.DeclarationSyntax));
+            SideEffects.ReportError(new Diagnostic.MissingFunBody(fun, funDefinition.DeclarationSyntax));
             return new BoundBlock([], Unit);
         }
 
@@ -721,12 +717,12 @@ public sealed class Binder(Scope scope, BinderSideEffects sideEffects)
             throw new InvalidOperationException($"{nameof(BindParameter)} only valid on funs.");
 
         var type = BindType(syntax.TypeAnnotation, TypeUsage.Signature).Type;
-        return new ParameterSymbol(syntax.Name.Identifier,
+        return new ParameterDefinition(syntax.Name.Identifier,
             Scope.OwnerAsFun!,
             type,
             isMut: syntax.MutKw is not null,
             isSelf: false,
-            declarationSyntax: syntax, originalDefinition: null);
+            declarationSyntax: syntax).Identity;
     }
 
     public ImmutableArray<TypeParameterSymbol> BindTypeParameters(TypeParamListSyntax syntax)
@@ -774,7 +770,7 @@ public sealed class Binder(Scope scope, BinderSideEffects sideEffects)
         return symbol;
     }
 
-    public void CheckOperatorSignature(SourceFunSymbol funSymbol)
+    public void CheckOperatorSignature(SourceFunDefinition funSymbol)
     {
         if (funSymbol.Owner is not TypeSymbol)
         {
@@ -2307,7 +2303,7 @@ public sealed class Binder(Scope scope, BinderSideEffects sideEffects)
     private TypeCandidate CheckTypeCandidate(TypeSymbol type, ImmutableArray<BoundArgument> arguments, bool inferTypeArguments,
         CallExprSyntax syntax)
     {
-        if (type.OriginalDefinition is not (StructSymbol or ClassSymbol) || type.IsPrimitive)
+        if (type is not NamedTypeSymbol { Definition: SourceStructOrClassDefinition } || type.IsPrimitive)
             return Fail(TypeApplicability.CannotInitialize);
 
         // All fields bound and none left out?
@@ -2393,6 +2389,7 @@ public sealed class Binder(Scope scope, BinderSideEffects sideEffects)
     /// </summary>
     private BoundValue CompleteTypeInit(TypeCandidate candidate, ImmutableArray<BoundArgument> arguments, CallExprSyntax syntax)
     {
+        
         var fieldsToArguments = BindFieldsToArguments(arguments, candidate.Type);
         Debug.Assert(fieldsToArguments is not null);
         Debug.Assert(fieldsToArguments.Value.Length == arguments.Length);
@@ -2403,13 +2400,15 @@ public sealed class Binder(Scope scope, BinderSideEffects sideEffects)
         if (fieldInits.Any(f => f is null))
             return new BoundTypeInitError([candidate.Type], arguments, ErrorType, syntax);
 
-        return candidate.Type.OriginalDefinition switch
+        return candidate.Type switch
         {
-            StructSymbol => new BoundStructInit(candidate.Type, [.. fieldInits!], syntax),
-            ClassSymbol => new BoundClassInit(candidate.Type, [.. fieldInits!], syntax),
+            NamedTypeSymbol { Definition: var definition } => definition switch
+            {
+                StructDefinition => new BoundStructInit(candidate.Type, [.. fieldInits!], syntax),
+                ClassDefinition => new BoundClassInit(candidate.Type, [.. fieldInits!], syntax)
+            },
             
-            SpecializedTypeSymbol or 
-                TypeParameterSymbol or
+            TypeParameterSymbol or
                 ErrorTypeSymbol or 
                 RefTypeSymbol => throw new UnreachableException(),
         };

@@ -46,7 +46,7 @@ public class ScriptSymbol(SyntaxTree syntax, Scope enclosingScope)
         } 
     }
 
-    public ScriptFunSymbol Fun
+    public FunSymbol Fun
     {
         get
         {
@@ -60,7 +60,7 @@ public class ScriptSymbol(SyntaxTree syntax, Scope enclosingScope)
                 _ = Members;
                 Debug.Assert(_lazyUsingsScope is not null);
 
-                field = new ScriptFunSymbol(syntax.FileSyntax, _lazyUsingsScope);
+                field = new ScriptFunDefinition(syntax.FileSyntax, _lazyUsingsScope).Identity;
                 
                 _isBindingScriptFun = false;
             }

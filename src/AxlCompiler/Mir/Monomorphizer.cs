@@ -10,10 +10,10 @@ public class Monomorphizer
     private readonly DiagnosticBag _diagnosticBag;
     private readonly Queue<FunSymbol> _worklist = [];
     private readonly Dictionary<FunSymbol, MutMirFunction> _instantiatedMirFuns = [];
-    private readonly Func<FunDefinitionSymbol, MutMirFunction> _lowerDefinition;
+    private readonly Func<FunDefinition, MutMirFunction> _lowerDefinition;
 
     
-    private Monomorphizer(Func<FunDefinitionSymbol, MutMirFunction> lowerDefinition, DiagnosticBag diagnosticBag)
+    private Monomorphizer(Func<FunDefinition, MutMirFunction> lowerDefinition, DiagnosticBag diagnosticBag)
     {
         _lowerDefinition = lowerDefinition;
         _diagnosticBag = diagnosticBag;
@@ -24,7 +24,7 @@ public class Monomorphizer
     /// <paramref name="lowerDefinition"/> lowers each definition fun symbol and is expected to cache its result.
     /// Return <c>null</c>, if monomorphization failed and reports it error into <paramref name="diagnosticBag"/>.
     /// </summary>
-    public static MirProgram? TryMonomorphize(FunSymbol entryFunSymbol, Func<FunDefinitionSymbol, MutMirFunction> lowerDefinition, DiagnosticBag diagnosticBag)
+    public static MirProgram? TryMonomorphize(FunSymbol entryFunSymbol, Func<FunDefinition, MutMirFunction> lowerDefinition, DiagnosticBag diagnosticBag)
     {
         Guard.MustBe(entryFunSymbol.IsConcrete, "Cannot monomorphize generic script symbols.");
         
@@ -63,7 +63,7 @@ public class Monomorphizer
         if (_instantiatedMirFuns.ContainsKey(funSymbol))
             return true;
         
-        var originalMirFun = _lowerDefinition(funSymbol.OriginalDefinition);
+        var originalMirFun = _lowerDefinition(funSymbol.Definition);
         var typeMap = TypeMap.For(funSymbol, strict: true);
         
         var instantiatedMirFun = new MutMirFunction(funSymbol.FullInternalName,

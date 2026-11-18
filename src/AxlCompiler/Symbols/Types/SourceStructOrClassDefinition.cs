@@ -7,34 +7,33 @@ using AxlCompiler.Syntax.Tree;
 
 namespace AxlCompiler.Symbols;
 
-public sealed class ClassSymbol(
+/// <summary>
+/// Struct or class declared in source. All binding logic is shared,
+/// the kinds only differ in semantics.
+/// </summary>
+public closed class SourceStructOrClassDefinition(
     StructOrClassDeclSyntax declarationSyntax,
     Scope enclosingScope,
     bool isPublic,
     PrimitiveKind? primitiveKind)
-    : TypeDefinitionSymbol(enclosingScope.Owner.Compilation,
-        declarationSyntax.Name.Text.ToString(), 
-        owner: enclosingScope.Owner, 
-        isPublic: isPublic, 
+    : TypeDefinition(enclosingScope.Owner.Compilation,
+        declarationSyntax.Name.Text.ToString(),
+        owner: enclosingScope.Owner,
+        isPublic: isPublic,
         primitiveKind: primitiveKind)
 {
     private readonly BinderSideEffects _sideEffects = new();
     private bool _isBindingMembers = false;
     private bool _isBindingTypeParameters = false;
 
-    /// <inheritdoc />
-    public override bool CanBeReferencedByName => true;
+    public StructOrClassDeclSyntax DeclarationSyntax { get; } = declarationSyntax;
 
-    public override TypeKind Kind => TypeKind.Class;
-    public override bool IsValueType => false;
-    public override bool IsReferenceType => true;
-    
     /// <inheritdoc />
     public override ImmutableArray<SyntaxNode> DeclaringSyntax => [DeclarationSyntax];
 
     /// <inheritdoc />
     public override ImmutableArray<Token> NameSyntax => [DeclarationSyntax.Name];
-    
+
     /// <inheritdoc />
     public override ImmutableArray<TypeParameterSymbol> TypeParameters
     {
@@ -52,7 +51,7 @@ public sealed class ClassSymbol(
                     throw new CycleException();
                 _isBindingTypeParameters = true;
 
-                var binder = new Binder(enclosingScope.WithOwner(this), _sideEffects);
+                var binder = new Binder(enclosingScope.WithOwner(Identity), _sideEffects);
                 field = binder.BindTypeParameters(DeclarationSyntax.TypeParameterList);
 
                 _isBindingTypeParameters = false;
@@ -61,8 +60,6 @@ public sealed class ClassSymbol(
             return field;
         }
     }
-    
-    public StructOrClassDeclSyntax DeclarationSyntax { get; } = declarationSyntax;
 
     public override ImmutableArray<Symbol> Members
     {
@@ -74,7 +71,7 @@ public sealed class ClassSymbol(
                     throw new CycleException();
                 _isBindingMembers = true;
 
-                var binder = new Binder(new MemberScope(enclosingScope, this), _sideEffects);
+                var binder = new Binder(new MemberScope(enclosingScope, Identity), _sideEffects);
                 field = DeclarationSyntax.Body is null ? [] :
                 [
                     .. DeclarationSyntax.Body.SyntaxNodes().Select(syntax => syntax switch
@@ -82,21 +79,27 @@ public sealed class ClassSymbol(
                         FieldDeclSyntax fieldDecl => (Symbol)binder.BindFieldDeclaration(fieldDecl),
                         FunDeclSyntax funDecl => binder.BindSourceFunDeclaration(funDecl),
                         ConstDeclSyntax constDecl => binder.BindConstDeclaration(constDecl),
-                        _ => throw new UnreachableException($"Unknown class member syntax {syntax.GetType().Name}")
-
+                        _ => throw new UnreachableException($"Unknown type member syntax {syntax.GetType().Name}")
                     })
                 ];
 
                 _isBindingMembers = false;
-                
+
                 // The following checks accesses members, so they need to run
                 // after binding is done.
-                // Add type parameters here.
                 binder.CheckDuplicateDeclarations([.. field, .. TypeParameters]);
+                CheckMembers(binder);
             }
 
             return field;
         }
+    }
+
+    /// <summary>
+    /// Kind specific checks after members have been bound.
+    /// </summary>
+    protected virtual void CheckMembers(Binder binder)
+    {
     }
 
     public override void Complete(BinderSideEffects sideEffects)
@@ -104,7 +107,7 @@ public sealed class ClassSymbol(
         _ = TypeParameters;
         foreach (var member in Members)
             member.Complete(sideEffects);
-        
+
         sideEffects.MergeWith(_sideEffects);
     }
 }
