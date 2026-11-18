@@ -1,0 +1,12 @@
+﻿//@check
+
+// The struct layout must not produce a cylce, when a field is stored by
+// reference.
+
+class Ref { pub Field: Val; }
+struct Val { pub Ref: Ref; }
+
+class Box[T] { pub Value: T; } 
+struct Value { pub Next: Box[Value]; }
+
+struct Thing[T] { pub Next: Box[T]; }

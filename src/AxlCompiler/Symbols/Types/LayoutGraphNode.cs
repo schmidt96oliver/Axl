@@ -31,16 +31,18 @@ public sealed class LayoutGraphNode(TypeSymbol type)
             
             var edges = ImmutableArray.CreateBuilder<Edge>();
             foreach (var fieldSymbol in type.Members.OfType<FieldSymbol>().DistinctBy(f => f.Type))
-            {
-                var fieldType = fieldSymbol.Type;
-                AddEdges(fieldType, fieldSymbol);
-            }
+                AddEdges(fieldSymbol.Type, fieldSymbol);
 
             field = edges.DrainToImmutable();
             return field;
 
             void AddEdges(TypeSymbol fieldType, FieldSymbol fieldSymbol)
             {
+                // Only add edges if the type is a value type or type parameter
+                // (which we expect to be stored by value).
+                if (fieldType is not { IsValueType: true } or TypeParameterSymbol)
+                    return;
+                
                 edges.Add(new Edge(fieldSymbol, To: fieldType.OriginalDefinition.LayoutGraphNode));
                 foreach (var typeArg in fieldType.TypeArguments.Distinct())
                     AddEdges(typeArg, fieldSymbol);
