@@ -180,6 +180,16 @@ public sealed class SemanticModel(Compilation compilation)
                     return structSymbol.TypeParameters.FirstOrDefault(typeParam =>
                         typeParam.NameSyntax.Contains(token));
                 }
+                
+                // Structs have type parameters
+                case ClassSymbol classSymbol when classSymbol.DeclarationSyntax
+                    .TypeParameterList?.Location.Contains(token.Location) == true:
+                {
+                    if (token.Parent is not TypeParamSyntax) return null;
+                    
+                    return classSymbol.TypeParameters.FirstOrDefault(typeParam =>
+                        typeParam.NameSyntax.Contains(token));
+                }
 
                 // Scripts have members and a script fun. Note that the script fun
                 // will span the entire script.
