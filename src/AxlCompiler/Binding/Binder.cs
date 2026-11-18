@@ -989,6 +989,10 @@ public sealed class Binder(Scope scope, BinderSideEffects sideEffects)
 
     private static bool CanMutReturnValueEscape(BoundValue root)
     {
+        // Stay silent on errors.
+        if (root is BoundError)
+            return true;
+        
         // If the place is reached through a reference type, it may
         // escape, because memory management will keep it alive.
         // So even fields of reference typed locals may escape.
@@ -1008,8 +1012,9 @@ public sealed class Binder(Scope scope, BinderSideEffects sideEffects)
             } => true, // Includes mut self, since that is a parameter
             BoundCall { IsMutReturn: true } call => call.ReceiverAndArguments
                 .Where(arg => arg.IsMut)
-                .All(arg => CanMutReturnValueEscape(arg.Value.PlaceRoot!)),
-
+                .All(arg => CanMutReturnValueEscape(arg.Value)),
+            
+            null => true,
             _ => false,
         };
     }

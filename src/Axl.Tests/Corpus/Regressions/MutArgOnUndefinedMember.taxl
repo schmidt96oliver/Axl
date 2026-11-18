@@ -1,0 +1,13 @@
+﻿//@check
+
+// This caused the compiler to crash because of a NullReferenceException
+// that came from one too many `!` in C#. Oh lord :D. Important here:
+// It doesn't crash and only report UndefinedMember
+
+class Counter { pub N: I32; }
+
+fun Id(mut x: I32): mut I32 
+    = mut x;
+    
+fun G(c: Counter): mut I32 
+    = mut Id(mut c.Nope);       //~error UndefinedMember
