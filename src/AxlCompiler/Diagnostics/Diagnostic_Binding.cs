@@ -92,8 +92,14 @@ public partial record Diagnostic
                     PlaceKind.Value => "it is a temporary value",
                     PlaceKind.ReadOnlyPlace => value.PlaceRoot switch
                     {
-                        BoundLocal { Local: ParameterSymbol { IsSelf: true } } =>
-                            "'self' is read-only in a non-mut fun",
+                        BoundLocal { Local: ParameterSymbol { IsSelf: true } selfParameter } 
+                            => selfParameter.Owner.Owner switch
+                            {
+                                TypeSymbol { Kind: TypeKind.Struct } => "'self' is read-only in a non-mut fun",
+                                TypeSymbol { Kind: TypeKind.Class } => "'self' is read-only in classes",
+                                _ => "'self' is read-only here",
+                            },
+                            
                         BoundLocal { Local: ParameterSymbol p } => $"parameter '{p.Name}' is not 'mut'",
                         BoundLocal { Local: var v } => $"'{v.Name}' is declared with 'let'",
                         _ => "it is read-only",
