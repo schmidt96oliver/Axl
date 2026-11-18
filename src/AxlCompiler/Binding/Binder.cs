@@ -417,7 +417,7 @@ public sealed class Binder(Scope scope, BinderSideEffects sideEffects)
         var receiverType = syntax.StaticKw is not null ? null : Scope.OwnerAsType;
         var isMutatingReceiver = syntax.MutKw is not null;
 
-        if (isMutatingReceiver && Scope.Owner is not StructSymbol)
+        if (isMutatingReceiver && Scope.Owner is ClassSymbol)
             SideEffects.ReportError(new Diagnostic.ClassFunCannotBeMut(syntax.MutKw!, name));
         else if (receiverType is null && isMutatingReceiver)
             SideEffects.ReportError(new Diagnostic.StaticFunCannotBeMut(syntax.MutKw!, name));
