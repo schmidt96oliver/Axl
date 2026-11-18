@@ -27,7 +27,6 @@
 
 **Classes, ByRef types**: Class, `===` operator
 5. `===`: reference types only, rejected on `T`
-7. LSP: semantic tokens, hover, completion kind
 
 **UnsafeBuffer**: `UnsafeBuffer[T]`, `List[T]/MutList[T]`
 * Miri: BufferAtPointerRoot

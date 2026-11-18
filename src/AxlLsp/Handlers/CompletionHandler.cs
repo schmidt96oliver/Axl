@@ -193,13 +193,23 @@ public sealed class CompletionHandler(ILanguageServerFacade facade) : Completion
         var insertBrackets = symbols.All(t => t.TypeParameters.Length > 0) &&
                              context.TargetToken?.Ancestors().Any(p =>
                                  p is TypeAnnotationClauseSyntax or ReturnTypeAnnotationSyntax) == true;
+
+        var typeKind = symbols.All(s => s.Kind is TypeKind.Class) ? TypeKind.Class :
+            symbols.All(s => s.Kind is TypeKind.Struct) ? TypeKind.Struct :
+            symbols.All(s => s.Kind is TypeKind.TypeParameter) ? TypeKind.TypeParameter : TypeKind.Other;
         
         if (symbols.Length > 1)
         {
             return new CompletionItem
             {
                 Label = name,
-                Kind = isRider ? CompletionItemKind.Class : CompletionItemKind.Struct,
+                Kind = isRider ? CompletionItemKind.Class : typeKind switch
+                {
+                    TypeKind.Struct => CompletionItemKind.Struct,
+                    TypeKind.Class => CompletionItemKind.Class,
+                    TypeKind.TypeParameter => CompletionItemKind.TypeParameter,
+                    _ => CompletionItemKind.Text
+                },
                 InsertText = insertBrackets ? $"{name}[$0]" : name,
                 InsertTextFormat = InsertTextFormat.Snippet,
 
@@ -214,7 +224,15 @@ public sealed class CompletionHandler(ILanguageServerFacade facade) : Completion
         return new CompletionItem()
         {
             Label = name,
-            Kind = isRider ? CompletionItemKind.Class : CompletionItemKind.Struct,
+            Kind = isRider
+                ? CompletionItemKind.Class
+                : typeKind switch
+                {
+                    TypeKind.Struct => CompletionItemKind.Struct,
+                    TypeKind.Class => CompletionItemKind.Class,
+                    TypeKind.TypeParameter => CompletionItemKind.TypeParameter,
+                    _ => CompletionItemKind.Text
+                },
             InsertText = insertBrackets ? $"{name}[$0]" : name,
             InsertTextFormat = InsertTextFormat.Snippet,
 
