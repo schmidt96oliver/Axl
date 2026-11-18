@@ -903,7 +903,7 @@ public sealed class Binder(Scope scope, BinderSideEffects sideEffects)
             NameRefSyntax nameRefSyntax => BindNameRef(nameRefSyntax, lookupOptions),
             SelfSyntax selfSyntax => BindSelf(selfSyntax),
             CallExprSyntax callExprSyntax => BindCall(callExprSyntax),
-            SubscriptExprSyntax subscriptExprSyntax => BindSubscript(subscriptExprSyntax),
+            SubscriptExprSyntax subscriptExprSyntax => BindSubscript(subscriptExprSyntax, lookupOptions),
 
             // Strings and Literals
             NumberLiteralSyntax numberLiteralSyntax => BindNumberLiteral(numberLiteralSyntax,
@@ -1712,9 +1712,9 @@ public sealed class Binder(Scope scope, BinderSideEffects sideEffects)
     
     #region Subscripts
 
-    private BoundNode BindSubscript(SubscriptExprSyntax syntax)
+    private BoundNode BindSubscript(SubscriptExprSyntax syntax, LookupOptions lookupOptions)
     {
-        var left = BindExpr(syntax.Left, LookupOptions.Any);
+        var left = BindExpr(syntax.Left, lookupOptions);
         var typeArgs = syntax.ArgList.Arguments
             .Select(arg => BindType(arg, TypeUsage.Local))
             .ToImmutableArray();

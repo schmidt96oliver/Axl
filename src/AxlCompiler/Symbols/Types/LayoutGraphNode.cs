@@ -40,7 +40,7 @@ public sealed class LayoutGraphNode(TypeSymbol type)
             {
                 // Only add edges if the type is a value type or type parameter
                 // (which we expect to be stored by value).
-                if (fieldType is not { IsValueType: true } or TypeParameterSymbol)
+                if (fieldType is not ({ IsValueType: true } or TypeParameterSymbol))
                     return;
                 
                 edges.Add(new Edge(fieldSymbol, To: fieldType.OriginalDefinition.LayoutGraphNode));

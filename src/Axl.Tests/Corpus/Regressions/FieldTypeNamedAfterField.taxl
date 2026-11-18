@@ -1,0 +1,8 @@
+﻿//@check
+
+// Previously, this reported WrongKind, because `W[I32]` found the field instead
+// of the type. Now, subscript carries lookup options as well. The point here is,
+// that there are no errors.
+
+struct W[T] { pub X: T; }
+struct R { pub W: W[I32]; }
