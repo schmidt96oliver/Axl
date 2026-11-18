@@ -127,6 +127,7 @@ public sealed class Evaluator
             
             MiriResult.OutOfFuel => Evaluation.Failed($"Miri ran out of fuel. It had {fuel}."),
             MiriResult.CannotEvaluateConst => Evaluation.Failed("Test was unable to evaluate a const."),
+            MiriResult.HeapAllocatedConst => Evaluation.Failed("Test return value was heap allocated."),
         };
     }
 

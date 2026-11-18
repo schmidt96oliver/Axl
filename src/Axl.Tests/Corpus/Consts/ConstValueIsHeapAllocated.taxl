@@ -1,0 +1,10 @@
+﻿//@compile
+
+struct Box[T] { pub Value: T; }
+class Ref { pub Field: I32; }
+
+const C1: Box[Ref] = Box(Value = Ref(Field = 1));   //~error ConstValueIsHeapAllocated
+const C2: Ref = Ref(Field = 1);                     //~error ConstValueIsHeapAllocated
+
+Print(C1.Value.Field);
+Print(C2.Field);

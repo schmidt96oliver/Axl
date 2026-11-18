@@ -83,7 +83,11 @@ public sealed class Miri
         try
         {
             var miriReturnValue = miri.Call(function, []);
-            return new MiriResult.Ok(miri.ToConstValue(miriReturnValue));
+            var constReturnValue = miri.ToConstValue(miriReturnValue);
+            if (constReturnValue is null)
+                return new MiriResult.HeapAllocatedConst();
+            
+            return new MiriResult.Ok(constReturnValue.Value);
         }
         catch (PanicException)
         {
@@ -116,24 +120,25 @@ public sealed class Miri
         return value;
     }
 
-    private ConstValue ToConstValue(object miriValue) => miriValue switch
+    private ConstValue? ToConstValue(object miriValue) => miriValue switch
     {
         StructValue structValue => ToConstValue(structValue),
-        ClassValue or ClassHandle => throw new InvalidOperationException(
-            "Cannot convert heap allocated miri value to const value."),
         bool b => b,
         double d => d,
         float f => f,
         int i => i,
         long l => l,
         string s => s,
+        ClassValue or ClassHandle or Pointer => null,
         _ => throw new UnreachableException($"Unknown miri value type {miriValue.GetType().Name}.")
     };
 
-    private ConstStructValue ToConstValue(StructValue structValue)
+    private ConstValue? ToConstValue(StructValue structValue)
     {
-        var dict = structValue.Fields.ToFrozenDictionary(kvp => kvp.Key, kvp => ToConstValue(kvp.Value));
-        return new ConstStructValue(structValue.Symbol, dict);
+        var dict = structValue.Fields.ToDictionary(kvp => kvp.Key, kvp => ToConstValue(kvp.Value));
+        if (dict.Values.Any(v => v is null)) return null;
+        
+        return new ConstStructValue(structValue.Symbol, dict.ToFrozenDictionary(kvp => kvp.Key, kvp => kvp.Value!.Value));
     }
 
     private static object Copy(object value)

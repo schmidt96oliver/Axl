@@ -63,13 +63,16 @@ public sealed class ConstEvaluator
             _diagnosticBag.ReportError(new Diagnostic.ConstEvaluationOutOfFuel(symbol));
         else if (result is MiriResult.Panicked)
             _diagnosticBag.ReportError(new Diagnostic.ConstEvaluationPanic(symbol, stderr.ToString()));
+        else if (result is MiriResult.HeapAllocatedConst)
+            _diagnosticBag.ReportError(new Diagnostic.ConstValueIsHeapAllocated(symbol));
         
         var value = result switch
         {
             MiriResult.Ok(var val) => val,
             MiriResult.CannotEvaluateConst or
                 MiriResult.OutOfFuel or
-                MiriResult.Panicked => (ConstValue?)null
+                MiriResult.Panicked or
+                MiriResult.HeapAllocatedConst => (ConstValue?)null
         };
         
         var popped = _inProgress.Pop();

@@ -7,7 +7,7 @@
 
 * **Remove type groups***
 * **Remove fun overloads**
-
+ 
 
 * ?? BindLookupResult: Report WrongKind error before anything else; remove isThisField in BindFieldAccess
 
@@ -27,11 +27,10 @@
 
 **Classes, ByRef types**: Class, `===` operator
 5. `===`: reference types only, rejected on `T`
-6. Const: reject class-typed consts for now
 7. LSP: semantic tokens, hover, completion kind
 
 **UnsafeBuffer**: `UnsafeBuffer[T]`, `List[T]/MutList[T]`
-
+* Miri: BufferAtPointerRoot
 
 # Loose Ends
 * Overload resolution specificity

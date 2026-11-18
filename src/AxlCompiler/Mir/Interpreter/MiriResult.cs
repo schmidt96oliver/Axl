@@ -11,4 +11,6 @@ public closed record MiriResult
     public sealed record OutOfFuel : MiriResult;
 
     public sealed record CannotEvaluateConst : MiriResult;
+
+    public sealed record HeapAllocatedConst : MiriResult;
 }

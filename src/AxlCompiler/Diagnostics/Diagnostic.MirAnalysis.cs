@@ -100,4 +100,15 @@ public partial record Diagnostic
 
         private string CycleText => string.Join(" -> ", Path.Select(c => c.FullName));
     }
+
+    public sealed record ConstValueIsHeapAllocated(ConstSymbol Symbol) : Error
+    {
+        /// <inheritdoc />
+        public override ImmutableArray<SourceLocation> Locations =>
+            [Symbol.OriginalDefinition.DeclarationSyntax.ValueExpr.Location];
+
+        /// <inheritdoc />
+        public override string Message =>
+            $"The value of const {Symbol.FullName} contains heap allocated values, which is not allowed.";
+    }
 }
