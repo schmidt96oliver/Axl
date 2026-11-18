@@ -1,0 +1,11 @@
+﻿//@run
+//= 0
+
+class Counter { pub N: I32; }
+struct Box { pub C: Counter; }
+
+fun Reset(mut c: Counter) { c = Counter(N = 0); }
+
+var b = Box(C = Counter(N = 1));
+Reset(mut b.C);
+PrintLine("{b.C.N}");

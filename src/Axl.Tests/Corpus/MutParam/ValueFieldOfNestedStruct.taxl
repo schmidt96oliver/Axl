@@ -1,0 +1,11 @@
+//@run
+//= 0 7
+
+struct Pair { pub A: I32; pub B: I32; }
+struct Outer { pub P: Pair; }
+
+fun Set(mut x: I32) { x = 7; }
+
+var o = Outer(P = Pair(A = 0, B = 0));
+Set(mut o.P.B);
+PrintLine("{o.P.A} {o.P.B}");

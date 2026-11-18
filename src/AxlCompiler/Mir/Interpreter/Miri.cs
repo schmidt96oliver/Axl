@@ -5,11 +5,10 @@ using System.Globalization;
 using System.Runtime.InteropServices;
 using AxlCompiler.Binding;
 using AxlCompiler.Symbols;
+
 // ReSharper disable CompareOfFloatsByEqualityOperator
 
 namespace AxlCompiler.Mir.Interpreter;
-
-using Environment = Dictionary<LocalId, object>;
 
 public sealed class Miri
 {
@@ -18,32 +17,50 @@ public sealed class Miri
     private sealed class OutOfFuelException : Exception;
 
     private sealed class CannotEvaluateConstException : Exception;
-    
+
     private sealed class StructValue(TypeSymbol symbol)
     {
         public TypeSymbol Symbol { get; } = symbol;
         public readonly Dictionary<FieldSymbol, object> Fields = [];
     }
-    
-    /// <summary>
-    /// The *value* of the class on the heap. Accessed through a <see cref="HeapRef"/>.
-    /// </summary>
+
     private sealed class ClassValue(TypeSymbol symbol)
     {
         public TypeSymbol Symbol { get; } = symbol;
         public readonly Dictionary<FieldSymbol, object> Fields = [];
     }
 
-    private sealed record HeapRef(int Index);
+    private sealed record ClassHandle(HeapPointerRoot HeapPointerRoot);
     
-    private sealed record Reference(Environment Environment, Place Place);
+    private sealed record HeapPointerRoot(int Index);
 
-    
+    private sealed record LocalPointerRoot
+    {
+        public LocalPointerRoot(Frame Frame, Place.Local Local)
+        {
+            Guard.MustBe(Frame.IsDefined(Local));
+            this.Frame = Frame;
+            this.Local = Local;
+        }
+
+        public Frame Frame { get; }
+        public Place.Local Local { get; }
+    }
+
+    private union PointerRoot(HeapPointerRoot, LocalPointerRoot);
+
+    private sealed record Pointer(PointerRoot Root, ImmutableArray<FieldSymbol> Path)
+    {
+        public Pointer Extend(FieldSymbol field)
+            => new(Root, [.. Path, field]);
+    }
+
+
     private readonly MirProgram _program;
     private readonly MiriContext _context;
     private int? _fuel;
 
-    private readonly List<ClassValue> _heap = [];
+    private readonly List<object> _heap = [];
     private readonly StructValue _unitValue;
     private object _discard = new();
 
@@ -57,11 +74,11 @@ public sealed class Miri
 
     public static MiriResult Run(MirProgram program, MiriContext context)
         => Run(program.Entry, program, context);
-    
+
     public static MiriResult Run(MutMirFunction function, MirProgram program, MiriContext context)
     {
         Guard.MustBe(function.ParameterPlaces.Length == 0);
-        
+
         var miri = new Miri(program, context);
         try
         {
@@ -82,9 +99,9 @@ public sealed class Miri
         }
     }
 
-    
+
     #region Values
-    
+
     private object ToMiriValue(ConstValue constValue) => constValue switch
     {
         ConstStructValue constStructValue => ToMiriValue(constStructValue),
@@ -102,7 +119,8 @@ public sealed class Miri
     private ConstValue ToConstValue(object miriValue) => miriValue switch
     {
         StructValue structValue => ToConstValue(structValue),
-        ClassValue or HeapRef => throw new InvalidOperationException("Cannot convert heap allocated miri value to const value."),
+        ClassValue or ClassHandle => throw new InvalidOperationException(
+            "Cannot convert heap allocated miri value to const value."),
         bool b => b,
         double d => d,
         float f => f,
@@ -127,12 +145,10 @@ public sealed class Miri
                 copy.Fields.Add(kvp.Key, Copy(kvp.Value));
             return copy;
         }
-        
-        // Note: Heap refs get passed directly here.
 
         return value;
     }
-    
+
     #endregion
 
     private void UseFuel()
@@ -142,24 +158,120 @@ public sealed class Miri
             throw new OutOfFuelException();
     }
 
-    private HeapRef Allocate(ClassValue value)
+    private ClassHandle AllocateClass(ClassValue value)
     {
         _heap.Add(value);
-        return new HeapRef(_heap.Count - 1);
+        return new ClassHandle(new HeapPointerRoot(_heap.Count - 1));
     }
-    
-    
+
+    /// <summary>
+    /// Returns ref to <c>null</c>, if the place has not yet been assigned to.
+    /// </summary>
+    private ref object? GetPlaceRef(Place place, Frame frame)
+    {
+        switch (place)
+        {
+            case Place.Local local:
+                return ref frame.GetRef(local);
+
+            case Place.Field field:
+            {
+                var receiver = ReadPlace(field.Receiver, frame);
+
+                if (receiver is StructValue structReceiver)
+                    return ref CollectionsMarshal.GetValueRefOrNullRef(structReceiver.Fields, field.FieldSymbol)!;
+
+                if (receiver is ClassHandle { HeapPointerRoot: var classRoot })
+                {
+                    var classValue = (ClassValue)_heap[classRoot.Index];
+                    return ref CollectionsMarshal.GetValueRefOrNullRef(classValue.Fields, field.FieldSymbol)!;
+                }
+
+                throw new UnreachableException();
+            }
+
+            case Place.Deref deref:
+            {
+                if (ReadPlace(deref.Reference, frame) is not Pointer pointer)
+                    throw new InvalidOperationException($"No {nameof(Pointer)} in a ref field.");
+
+                return ref DerefPointer(pointer);
+            }
+
+            case Place.Discard:
+                return ref _discard!;
+
+            default:
+                throw new UnreachableException();
+        }
+    }
+
+    private ref object? DerefPointer(Pointer pointer)
+    {
+        if (pointer.Path.Length == 0)
+        {
+            if (pointer.Root is not LocalPointerRoot localRoot)
+                throw new InvalidOperationException("Pointers to the heap must always have a path.");
+            return ref localRoot.Frame.GetRef(localRoot.Local);
+        }
+
+        var current = pointer.Root switch
+        {
+            HeapPointerRoot heapRoot => _heap[heapRoot.Index],
+            LocalPointerRoot localRoot => localRoot.Frame.GetRef(localRoot.Local) ?? throw new InvalidOperationException(),
+        };
+        
+        for (var i = 0; i < pointer.Path.Length - 1; i++)
+        {
+            current = current switch
+            {
+                ClassValue classValue => classValue.Fields[pointer.Path[i]],
+                StructValue structValue => structValue.Fields[pointer.Path[i]],
+                _ => throw new InvalidOperationException("Invalid miri pointer.")
+            };
+        }
+
+        if (current is StructValue currentStruct)
+            return ref CollectionsMarshal.GetValueRefOrNullRef(currentStruct.Fields, pointer.Path[^1])!;
+        if (current is ClassValue currentClass)
+            return ref CollectionsMarshal.GetValueRefOrNullRef(currentClass.Fields, pointer.Path[^1])!;
+
+        throw new InvalidOperationException("Invalid miri pointer.");
+    }
+
+
+    private Pointer PointerTo(Place place, Frame frame) =>
+        place switch
+        {
+            Place.Local local => new Pointer(new LocalPointerRoot(frame, local), []),
+            Place.Field field => ReadPlace(field.Receiver, frame) is ClassHandle receiverClassHandle
+                    ? new Pointer(receiverClassHandle.HeapPointerRoot, [field.FieldSymbol])
+                    : PointerTo(field.Receiver, frame).Extend(field.FieldSymbol),
+
+            Place.Deref { Reference: var ptr } => (Pointer)ReadPlace(ptr, frame),
+            Place.Discard => throw new InvalidOperationException("Cannot make pointer to discard."),
+            Place.Error => throw new UnreachableException(),
+        };
+
+
+    /// <summary>
+    /// Returns the value of the given <paramref name="place"/>. Throws
+    /// <see cref="InvalidOperationException"/>, if it has not been assigned to.
+    /// </summary>
+    private object ReadPlace(Place place, Frame frame)
+        => GetPlaceRef(place, frame) ?? throw new InvalidOperationException("Place has not been assigned to yet.");
+
     private object Call(MutMirFunction mirFun, ImmutableArray<object> arguments)
     {
-        var environment = new Environment();
+        using var frame = new Frame();
         for (var i = 0; i < mirFun.ParameterPlaces.Length; i++)
-            environment[mirFun.ParameterPlaces[i].Id] = arguments[i];
+            frame.GetRef(mirFun.ParameterPlaces[i]) = arguments[i];
         
         var block = mirFun.Entry;
         while (true)
         {
             foreach (var instruction in block.Instructions)
-                Execute(instruction, environment);
+                Execute(instruction, frame);
 
             var prevBlockId = block.Id;
             switch (block.Terminator)
@@ -169,12 +281,12 @@ public sealed class Miri
                     break;
 
                 case Terminator.Branch branch:
-                    var condition = Evaluate(branch.Condition, environment);
+                    var condition = Evaluate(branch.Condition, frame);
                     block = (bool)condition ? branch.True : branch.False;
                     break;
 
                 case Terminator.Return:
-                    return GetPlaceRef(mirFun.ReturnPlace, environment);
+                    return ReadPlace(mirFun.ReturnPlace, frame);
 
                 default:
                     throw new UnreachableException($"Unknown terminator {block.Terminator?.GetType().Name ?? "null"}");
@@ -189,14 +301,14 @@ public sealed class Miri
         }
     }
 
-    private void Execute(Instruction instruction, Environment environment)
+    private void Execute(Instruction instruction, Frame frame)
     {
         switch (instruction)
         {
             case Instruction.Assign assign:
             {
-                var value = Evaluate(assign.Value, environment);
-                GetPlaceRef(assign.Target, environment) = value;
+                var value = Evaluate(assign.Value, frame);
+                GetPlaceRef(assign.Target, frame) = value;
                 break;
             }
             
@@ -207,9 +319,9 @@ public sealed class Miri
                 var mirFun = _program.GetMirFunction(call.Fun);
                 var value = Call(mirFun,
                 [
-                    .. call.Arguments.Select(a => Evaluate(a, environment))
+                    .. call.Arguments.Select(a => Evaluate(a, frame))
                 ]);
-                GetPlaceRef(call.Target, environment) = value;
+                GetPlaceRef(call.Target, frame) = value;
                 break;
             }
             
@@ -217,9 +329,9 @@ public sealed class Miri
             {
                 var value = EvaluateOperator(intrinsic.Kind,
                 [
-                    .. intrinsic.Arguments.Select(a => Evaluate(a, environment))
+                    .. intrinsic.Arguments.Select(a => Evaluate(a, frame))
                 ]);
-                GetPlaceRef(intrinsic.Target, environment) = value;
+                GetPlaceRef(intrinsic.Target, frame) = value;
                 break;
             }
             
@@ -227,8 +339,8 @@ public sealed class Miri
             {
                 var value = new StructValue(structInit.Struct);
                 foreach (var kvp in structInit.FieldValues)
-                    value.Fields.Add(kvp.Key, Evaluate(kvp.Value, environment));
-                GetPlaceRef(structInit.Target, environment) = value;
+                    value.Fields.Add(kvp.Key, Evaluate(kvp.Value, frame));
+                GetPlaceRef(structInit.Target, frame) = value;
                 break;
             }
             
@@ -236,9 +348,9 @@ public sealed class Miri
             {
                 var value = new ClassValue(classInit.Class);
                 foreach (var kvp in classInit.FieldValues)
-                    value.Fields.Add(kvp.Key, Evaluate(kvp.Value, environment));
+                    value.Fields.Add(kvp.Key, Evaluate(kvp.Value, frame));
                 
-                GetPlaceRef(classInit.Target, environment) = Allocate(value);
+                GetPlaceRef(classInit.Target, frame) = AllocateClass(value);
                 break;
             }
             
@@ -246,9 +358,9 @@ public sealed class Miri
             {
                 var value = EvaluateVmCall(vmCall.Kind,
                 [
-                    .. vmCall.Arguments.Select(a => Evaluate(a, environment))
+                    .. vmCall.Arguments.Select(a => Evaluate(a, frame))
                 ]);
-                GetPlaceRef(vmCall.Target, environment) = value;
+                GetPlaceRef(vmCall.Target, frame) = value;
                 break;
             }
             
@@ -327,46 +439,13 @@ public sealed class Miri
                 throw new UnreachableException();
         }
     }
-    
 
-    private ref object GetPlaceRef(Place place, Environment environment)
-    {
-        switch (place)
-        {
-            case Place.Local local:
-                return ref CollectionsMarshal.GetValueRefOrAddDefault(environment, local.Id, out _)!;
-            
-            case Place.Field field:
-                var receiver = GetPlaceRef(field.Receiver, environment);
-                
-                if (receiver is StructValue structReceiver)
-                    return ref CollectionsMarshal.GetValueRefOrNullRef(structReceiver.Fields, field.FieldSymbol);
-                if (receiver is HeapRef heapRef)
-                {
-                    var value = _heap[heapRef.Index];
-                    return ref CollectionsMarshal.GetValueRefOrNullRef(value.Fields, field.FieldSymbol);
-                }
-
-                throw new UnreachableException();
-                
-            case Place.Deref deref:
-                var @ref = (Reference)GetPlaceRef(deref.Reference, environment);
-                return ref GetPlaceRef(@ref.Place, @ref.Environment);
-            
-            case Place.Discard:
-                return ref _discard;
-            
-            default:
-                throw new UnreachableException();
-        }
-    }
-
-    private object Evaluate(Operand operand, Environment environment) => operand switch
+    private object Evaluate(Operand operand, Frame frame) => operand switch
     {
         Operand.Const @const => ToMiriValue(@const.Value),
         Operand.ConstEval constEval => EvaluateConstEval(constEval),
-        Operand.Copy copy => Copy(GetPlaceRef(copy.Place, environment)),
-        Operand.Ref @ref => new Reference(environment, @ref.Place),
+        Operand.Copy copy => Copy(ReadPlace(copy.Place, frame)),
+        Operand.Ref @ref => PointerTo(@ref.Place, frame),
         Operand.Unreachable or Operand.Error => throw new UnreachableException()
     };
 

@@ -26,7 +26,6 @@
 
 
 **Classes, ByRef types**: Class, `===` operator
-4. lazy vs eager heap references, `mut classValue`
 5. `===`: reference types only, rejected on `T`
 6. Const: reject class-typed consts for now
 7. LSP: semantic tokens, hover, completion kind

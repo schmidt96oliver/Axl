@@ -1,0 +1,10 @@
+﻿//@run
+//= 0
+
+class Counter { pub N: I32; }
+
+fun Reset(mut field: I32) { field = 0; }
+
+var c = Counter(N = 1);
+Reset(mut c.N);
+PrintLine("{c.N}");

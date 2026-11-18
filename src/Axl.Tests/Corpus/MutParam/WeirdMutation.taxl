@@ -1,0 +1,11 @@
+﻿//@run
+//= 5 0
+
+class Counter { pub N: I32; }
+
+fun Reset(mut n: I32, mut c: Counter) { c = Counter(N = 0); n = 5; }
+
+var c = Counter(N = 1);
+let old = c;
+Reset(mut c.N, mut c);
+PrintLine("{old.N} {c.N}");

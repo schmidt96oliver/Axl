@@ -1,0 +1,13 @@
+//@run
+//= 7 7
+
+class Counter { pub S: Pair; }
+struct Pair { pub A: I32; pub B: I32; }
+
+fun Set(mut x: I32) { x = 7; }
+fun Forward(mut c: Counter) { Set(mut c.S.B); }
+
+var c = Counter(S = Pair(A = 0, B = 0));
+Set(mut c.S.A);
+Forward(mut c);
+PrintLine("{c.S.A} {c.S.B}");
