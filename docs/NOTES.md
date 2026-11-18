@@ -23,8 +23,6 @@
 
 # Milestones
 
-
-
 **Classes, ByRef types**: Class, `===` operator
 5. `===`: reference types only, rejected on `T`
 

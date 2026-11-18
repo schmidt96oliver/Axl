@@ -1,0 +1,9 @@
+﻿//@check
+
+class Counter { pub N: I32; }
+struct S { pub C: Counter; }
+fun Escape(): mut Counter {
+    var s = S(C = Counter(N = 1));
+    return mut s.C;         //~error MutReturnEscapesScope
+}
+Escape() = Counter(N = 2); 

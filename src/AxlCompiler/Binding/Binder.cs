@@ -992,9 +992,9 @@ public sealed class Binder(Scope scope, BinderSideEffects sideEffects)
         // If the place is reached through a reference type, it may
         // escape, because memory management will keep it alive.
         // So even fields of reference typed locals may escape.
-        // The local itself must not escape though, because it will
+        // The local or the field itself must not escape though, because it will
         // not be kept alive.
-        if (root.PlacePath.Length > 1 && root.PlacePath.Any(v => v.Type.IsReferenceType))
+        if (root.PlacePath.Length > 1 && root.PlacePath[..^1].Any(v => v.Type.IsReferenceType))
             return true;
         
         // The place is only reached through value types, so what can escape is:
