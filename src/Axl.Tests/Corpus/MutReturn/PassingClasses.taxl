@@ -1,0 +1,22 @@
+﻿//@run
+//= 2
+//= 3
+//= 4
+
+let c = Counter(N = 1);
+Through(c) = 2;
+PrintLine("{c.N}");
+
+Direct(c) = 3;
+PrintLine("{c.N}");
+
+ThroughDirect(c) = 4;
+PrintLine("{c.N}");
+
+class Counter { pub N: I32; }
+
+fun Id(mut x: I32): mut I32 = mut x;
+fun Direct(c: Counter): mut I32 = mut c.N;
+fun Through(c: Counter): mut I32 = mut Id(mut c.N);
+fun ThroughDirect(c: Counter): mut I32
+    = mut Id(mut Direct(c));
