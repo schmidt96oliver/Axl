@@ -1,4 +1,5 @@
-﻿using AxlCompiler.Symbols;
+﻿using System.Collections.Immutable;
+using AxlCompiler.Symbols;
 using AxlCompiler.Syntax;
 
 namespace AxlCompiler.Binding.BoundTree;
@@ -18,7 +19,7 @@ public sealed class BoundLocal(LocalSymbol local, SyntaxNode? syntax = null)
     public override PlaceKind PlaceKind => Local.PlaceKind;
 
     /// <inheritdoc />
-    public override BoundValue PlaceRoot => this;
+    public override ImmutableArray<BoundValue> PlacePath => [this];
 
     /// <inheritdoc />
     public override IEnumerable<BoundStmt> GetChildren()

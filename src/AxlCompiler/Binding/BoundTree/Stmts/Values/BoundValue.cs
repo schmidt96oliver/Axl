@@ -1,4 +1,5 @@
-﻿using AxlCompiler.Syntax.Tree;
+﻿using System.Collections.Immutable;
+using AxlCompiler.Syntax.Tree;
 using AxlCompiler.Symbols;
 using AxlCompiler.Syntax;
 
@@ -42,5 +43,12 @@ public closed class BoundValue(SyntaxNode? syntax = null) : BoundStmt(syntax)
     /// the place started. <c>null</c>, if this value is not a place. The
     /// root can be self, parameter, variable or call to a mut returning fun.
     /// </summary>
-    public virtual BoundValue? PlaceRoot => null;
+    public BoundValue? PlaceRoot => PlacePath.Length > 0 ? PlacePath[0] : null;
+
+    /// <summary>
+    /// If this value is a place, return the path of places needed to reach this
+    /// place. Starting at the root and ending at this place. Empty, if
+    /// this value is not a place.
+    /// </summary>
+    public virtual ImmutableArray<BoundValue> PlacePath => []; 
 }

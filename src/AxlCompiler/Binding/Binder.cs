@@ -977,7 +977,7 @@ public sealed class Binder(Scope scope, BinderSideEffects sideEffects)
             }
             
             Debug.Assert(value.PlaceRoot is not null);
-            if (!CanMutReturnValueEscape(value.PlaceRoot))
+            if (!CanMutReturnValueEscape(value))
             {
                 SideEffects.ReportError(new Diagnostic.MutReturnEscapesScope(value));
                 return false;
@@ -987,23 +987,33 @@ public sealed class Binder(Scope scope, BinderSideEffects sideEffects)
         return true;
     }
 
-    private static bool CanMutReturnValueEscape(BoundValue root) => root switch
+    private static bool CanMutReturnValueEscape(BoundValue root)
     {
-        // Can escape: Parameters and mut return values of calls, where every argument
-        // (including receiver) can escape.
-        // Cannot escape: Locals
+        // If the place is reached through a reference type, it may
+        // escape, because memory management will keep it alive.
+        // So even fields of reference typed locals may escape.
+        // The local itself must not escape though, because it will
+        // not be kept alive.
+        if (root.PlacePath.Length > 1 && root.PlacePath.Any(v => v.Type.IsReferenceType))
+            return true;
         
-        BoundLocal
+        // The place is only reached through value types, so what can escape is:
+        //    - Parameters
+        //    - mut return values of calls, where every argument (including receiver) can escape.
+        return root.PlaceRoot switch
         {
-            Local: ParameterSymbol { IsMut: true }
-        } => true, // Includes mut self, since that is a parameter
-        BoundCall { IsMutReturn: true } call => call.ReceiverAndArguments
-            .Where(arg => arg.IsMut)
-            .All(arg => CanMutReturnValueEscape(arg.Value.PlaceRoot!)),
+            BoundLocal
+            {
+                Local: ParameterSymbol { IsMut: true }
+            } => true, // Includes mut self, since that is a parameter
+            BoundCall { IsMutReturn: true } call => call.ReceiverAndArguments
+                .Where(arg => arg.IsMut)
+                .All(arg => CanMutReturnValueEscape(arg.Value.PlaceRoot!)),
 
-        _ => false,
-    };
-    
+            _ => false,
+        };
+    }
+
     public BoundTypeRef BindType(ExprSyntax syntax, TypeUsage usage)
     {
         var bound = BindExpr(syntax, LookupOptions.OnlyType);

@@ -1,0 +1,9 @@
+﻿//@check
+
+class Ref;
+
+fun Make(): mut Ref
+{
+    var c = Ref();
+    return mut c;   //~error MutReturnEscapesScope
+}

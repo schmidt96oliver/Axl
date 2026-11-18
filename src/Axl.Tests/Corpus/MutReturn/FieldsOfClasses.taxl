@@ -1,0 +1,12 @@
+﻿//@run
+//= 1
+
+var counter = Counter(N = 0);
+counter.Ref() = counter.Ref() + 1;
+PrintLine("{ counter.Ref() }");
+
+class Counter {
+    pub N: I32;
+    pub fun Ref(): mut I32 
+        = mut self.N;
+} 

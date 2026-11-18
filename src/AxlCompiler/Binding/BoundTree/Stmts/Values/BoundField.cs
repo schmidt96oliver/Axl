@@ -1,4 +1,5 @@
-﻿using AxlCompiler.Symbols;
+﻿using System.Collections.Immutable;
+using AxlCompiler.Symbols;
 using AxlCompiler.Syntax;
 
 namespace AxlCompiler.Binding.BoundTree;
@@ -24,7 +25,7 @@ public sealed class BoundField(BoundValue receiver, FieldSymbol field, SyntaxNod
     };
         
     /// <inheritdoc />
-    public override BoundValue? PlaceRoot => Receiver.PlaceRoot;
+    public override ImmutableArray<BoundValue> PlacePath => [.. Receiver.PlacePath, this];
 
     public override IEnumerable<BoundStmt> GetChildren()
         => [Receiver];

@@ -1,0 +1,15 @@
+﻿//@run
+//= 1
+//= 9
+
+class Counter { pub N: I32; }
+
+var c = Counter(N = 0);
+Bump(c);
+PrintLine("{ c.N }");
+
+Replace(mut c);
+PrintLine("{ c.N }");
+
+fun Bump(c: Counter) { c.N = c.N + 1; }
+fun Replace(mut c: Counter) { c = Counter(N = 9); }

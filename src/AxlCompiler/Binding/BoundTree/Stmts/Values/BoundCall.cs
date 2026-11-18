@@ -29,7 +29,7 @@ public sealed class BoundCall(
     public override PlaceKind PlaceKind => IsMutReturn ? PlaceKind.MutPlace : PlaceKind.Value;
 
     /// <inheritdoc />
-    public override BoundValue? PlaceRoot => IsMutReturn ? this : null;
+    public override ImmutableArray<BoundValue> PlacePath => IsMutReturn ? [this] : [];
 
     public override IEnumerable<BoundStmt> GetChildren()
         => ReceiverAndArguments.Select(arg => arg.Value);
