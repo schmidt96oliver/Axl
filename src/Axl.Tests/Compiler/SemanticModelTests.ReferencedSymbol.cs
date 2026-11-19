@@ -173,32 +173,15 @@ public partial class SemanticModelTests
                 """);
 
         [Fact]
-        public void Types_GenericArity()
-            => InlineSnapshot.Validate(Info("""
-                                            struct Box;
-                                            struct Box[T];
-
-                                            let a: |Box;             // Resolved: the non-generic Box
-                                            let b: |Box[I32];        // Resolved: Box[I32]
-                                            let c: |Box[I32, Bool];  // Unresolved (NoApplicableType): Box, Box[T]
-                                            """), """
-                'Box' Resolved: struct Box
-                'Box' Resolved: struct Box[Base.I32]
-                'Box' Unresolved (NoApplicableType):
-                   struct Box
-                   struct Box[T]
-                """);
-
-        [Fact]
         public void Types_GenericWithoutArguments()
             => InlineSnapshot.Validate(Info("""
                                             struct Box[T] { pub Value: T; }
-                                            let a: |Box;     // Unresolved (NoApplicableType): Box[T], missing type arguments
-                                            |Box.Value;      // Unresolved (NoApplicableType): Box[T], same through member access
+                                            let a: |Box;
+                                            |Box.Value; 
                                             """), """
-                'Box' Unresolved (NoApplicableType):
+                'Box' Unresolved (NoTypeArguments):
                    struct Box[T]
-                'Box' Unresolved (NoApplicableType):
+                'Box' Unresolved (NoTypeArguments):
                    struct Box[T]
                 """);
 
@@ -262,26 +245,14 @@ public partial class SemanticModelTests
         [Fact]
         public void StructInit_Inference()
             => InlineSnapshot.Validate(Info("""
-                                            struct Box { pub Val1: I32; }
                                             struct Box[T] { pub Value: T; }
-                                            struct Box[T, U] { pub Value1: T; pub Value2: U; }
-                                            let a = |Box(Val1 = 1);                   // Resolved: Box
-                                            let b = |Box(Value = 1);                  // Resolved: Box[I32]
-                                            let c = |Box(Value1 = 1, Value2 = "");    // Resolved: Box[I32, String]
-                                            let d = |Box(Value1 = 1);                 // Unresolved (NoApplicableType): all three
-                                            let e = |Box();                           // Unresolved (NoApplicableType): all three
+                                            let b = |Box(Value = 1);
+                                            let d = |Box(Bla = 1);
+                                            let e = |Box();
                                             """), """
-                'Box' Resolved: struct Box
                 'Box' Resolved: struct Box[Base.I32]
-                'Box' Resolved: struct Box[Base.I32, Base.String]
-                'Box' Unresolved (NoApplicableType):
-                   struct Box
-                   struct Box[T]
-                   struct Box[T, U]
-                'Box' Unresolved (NoApplicableType):
-                   struct Box
-                   struct Box[T]
-                   struct Box[T, U]
+                'Box' Resolved: struct Box[T]
+                'Box' Resolved: struct Box[T]
                 """);
         [Fact]
         public void StructInit_FieldNames()

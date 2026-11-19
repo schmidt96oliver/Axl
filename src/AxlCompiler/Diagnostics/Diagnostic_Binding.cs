@@ -112,7 +112,7 @@ public partial record Diagnostic
                 },
                 BoundFunGroup => "it is a group of overloaded funs",
                 BoundNamespaceRef => "it is a namespace",
-                BoundTypeRef or BoundTypeGroup => "it is a type",
+                BoundTypeRef or BoundUnspecializedTypeRef => "it is a type",
                 BoundStmt => "it is a statement",
             };
     }
@@ -230,7 +230,6 @@ public partial record Diagnostic
             
             IBoundSymbolRef symbolRef => $"{symbolRef.Symbol.ShortDisplayText.Capitalize()} cannot be called.",
             BoundFunGroup => "A fun group cannot be called.",
-            BoundTypeGroup => "A type group cannot be called.",
             BoundStmt => "A statement cannot be called.",
         };
     }
@@ -257,28 +256,6 @@ public partial record Diagnostic
         public override string LocationLabel => "Also declared here.";
 
         public override string Message => $"‘{Duplicates[0].FullNameWithoutOwnTypeArgs}‘ with the same signature is already declared.";
-    }
-    public sealed record DuplicateTypeDeclarations(ImmutableArray<TypeSymbol> Duplicates) : Error
-    {
-        public override ImmutableArray<SourceLocation> Locations
-            // Squiggle the name and type parameter list, since they are at fault.
-            => [ .. Duplicates.Select(GetLocation) ];
-
-        private static SourceLocation GetLocation(TypeSymbol type) => type switch
-        {
-            NamedTypeSymbol { Definition: SourceStructOrClassDefinition @struct } => SourceLocation.FromTo(@struct.DeclarationSyntax.Name.Location,
-                @struct.DeclarationSyntax.TypeParameterList?.Location ?? @struct.DeclarationSyntax.Name.Location),
-
-            ErrorTypeSymbol or RefTypeSymbol or TypeParameterSymbol or NamedTypeSymbol
-                => throw new UnreachableException(),
-        };
-
-        public override string LocationLabel => "Also declared here.";
-
-        public override string Message 
-            => $"‘{Duplicates[0].FullNameWithoutOwnTypeArgs}‘ with {Duplicates[0].TypeParameters.Length} type parameters is already declared.";
-        
-        
     }
 
     public sealed record DuplicateParameters(ImmutableArray<ParameterSymbol> Duplicates) : Error
@@ -312,25 +289,6 @@ public partial record Diagnostic
             + (Candidates.Length > 5 ? $"... and { Candidates.Length - 5 } more." : "");
     }
 
-    public sealed record NoMatchingType(
-        ImmutableArray<TypeSymbol> Candidates,
-        SyntaxNode Syntax) : Error
-    {
-        public override ImmutableArray<SourceLocation> Locations =>
-            [SyntaxLocations.InsideArgList(Syntax)];
-
-        public override string Message => $"""
-                                           No variant of ‘{Candidates[0].FullNameWithoutOwnTypeArgs}‘ accepts the given field names. Candidates:
-                                           {CandidateString}
-                                           """;
-
-        private string CandidateString =>
-            string.Join('\n', Candidates
-                .Take(5)
-                .Select(t => t.ShortDisplayText))
-            + (Candidates.Length > 5 ? $"... and { Candidates.Length - 5 } more." : "");
-    }
-
     public sealed record AmbiguousCall(
         ImmutableArray<FunSymbol> Candidates,
         SyntaxNode Syntax) : Error
@@ -347,24 +305,6 @@ public partial record Diagnostic
             string.Join('\n', Candidates
                 .Take(5)
                 .Select(fun => fun.ShortDisplayTextWithParameterTypes))
-            + (Candidates.Length > 5 ? $"... and {Candidates.Length - 5} more." : "");
-    }
-    
-    public sealed record AmbiguousTypeInit(
-        ImmutableArray<TypeSymbol> Candidates,
-        SyntaxNode Syntax) : Error
-    {
-        public override ImmutableArray<SourceLocation> Locations => [SyntaxLocations.Callee(Syntax)];
-
-        public override string Message => $"""
-                                           ‘{Candidates[0].FullName}‘ is ambiguous between:
-                                           {CandidateString}
-                                           """;
-
-        private string CandidateString =>
-            string.Join('\n', Candidates
-                .Take(5)
-                .Select(fun => fun.FullName))
             + (Candidates.Length > 5 ? $"... and {Candidates.Length - 5} more." : "");
     }
 
@@ -397,7 +337,7 @@ public partial record Diagnostic
         public override string Message => BoundNode switch
         {
             BoundTypeRef type => $"‘{type.Type.FullName}‘ is a type, not a value.",
-            BoundTypeGroup => $"Expected a value, got a type group.",
+            BoundUnspecializedTypeRef type => $"‘{type.Type.FullName}‘ is a type, not a value.",
             BoundNamespaceRef ns => $"‘{ns.Namespace.FullName}‘ is a namespace, not a value.",
             BoundFunGroup funGroup => $"‘{funGroup.Candidates[0].FullNameWithoutOwnTypeArgs}‘ is a fun, not a value. Did you mean to call it?",
 
@@ -415,7 +355,6 @@ public partial record Diagnostic
         {
             BoundValue value => $"Expected a type, but got value of type ‘{value.Type.FullName}‘.",
             IBoundSymbolRef symbolRef => $"Expected a type, but got {symbolRef.Symbol.ShortDisplayText}.",
-            BoundTypeGroup => "Specify type arguments.",
             BoundFunGroup funGroup => $"Expected a type, but got fun ‘{funGroup.Candidates[0].FullNameWithoutOwnTypeArgs}‘.",
             
             BoundStmt => "Expected a type, but got a statement.",
@@ -431,7 +370,6 @@ public partial record Diagnostic
         {
             BoundValue value => $"Expected a namespace, but got value of type ‘{value.Type.FullName}‘.",
             IBoundSymbolRef symbolRef => $"Expected a namespace, but got {symbolRef.Symbol.ShortDisplayText}.",
-            BoundTypeGroup => "Expected a namespace, but got a group of types.",
             BoundFunGroup => "Expected a namespace, but got a groups of funs.",
             
             BoundStmt => "Expected a namespace, but got a statement.",
@@ -496,18 +434,16 @@ public partial record Diagnostic
             $"Duplicate argument name ‘{Duplicates[0].NameSyntax!.Text}‘.";
     }
 
-    public sealed record CannotInitialize(ImmutableArray<TypeSymbol> Candidates, SyntaxNode Syntax) : Error
+    public sealed record CannotInitialize(TypeSymbol Type, SyntaxNode Syntax) : Error
     {
         public override ImmutableArray<SourceLocation> Locations
             => [SyntaxLocations.Callee(Syntax)];
 
-        public override string Message => Candidates.Length > 1
-            ? $"No variant of { Candidates[0].FullNameWithoutOwnTypeArgs } can be initialized."
-            : Candidates[0] switch
+        public override string Message => Type switch
             {
-                { IsPrimitive: true } => $"‘{Candidates[0].FullName}‘ cannot be initialized, because it is a primitive type.",
-                TypeParameterSymbol => $"‘{Candidates[0].FullName}‘ cannot be initialized, because it is a generic type.",
-                _ => $"‘{Candidates[0].FullName}‘ cannot be initialized."
+                { IsPrimitive: true } => $"‘{Type.FullName}‘ cannot be initialized, because it is a primitive type.",
+                TypeParameterSymbol => $"‘{Type.FullName}‘ cannot be initialized, because it is a type parameter.",
+                _ => $"‘{Type.FullName}‘ cannot be initialized."
             };
     }
 
@@ -930,7 +866,7 @@ public partial record Diagnostic
     public sealed record TypeParameterHasOwnerName(TypeParameterSymbol TypeParameter, Symbol Owner) : Error
     {
         /// <inheritdoc />
-        public override ImmutableArray<SourceLocation> Locations => [TypeParameter.DeclarationSyntax!.Name.Location];
+        public override ImmutableArray<SourceLocation> Locations => [TypeParameter.DeclarationSyntax.Name.Location];
 
         /// <inheritdoc />
         public override string Message =>
@@ -943,7 +879,7 @@ public partial record Diagnostic
         public override DiagnosticSeverity DefaultSeverity => DiagnosticSeverity.Warning;
         
         /// <inheritdoc />
-        public override ImmutableArray<SourceLocation> Locations => [TypeParameter.DeclarationSyntax!.Name.Location];
+        public override ImmutableArray<SourceLocation> Locations => [TypeParameter.DeclarationSyntax.Name.Location];
 
         /// <inheritdoc />
         public override string Message => $"Type parameter ‘{TypeParameter.Name}‘ hides the type ‘{Type.Name}‘.";

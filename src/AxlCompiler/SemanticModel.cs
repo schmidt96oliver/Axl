@@ -68,7 +68,7 @@ public sealed class SemanticModel(Compilation compilation)
             : syntax;
 
         var boundNode = TryBoundNodeFor(bindableSyntax);
-        if (boundNode is BoundTypeGroup or BoundFunGroup && 
+        if (boundNode is BoundUnspecializedTypeRef or BoundFunGroup && 
             bindableSyntax.Parent is SubscriptExprSyntax subscript &&
             subscript.Left == bindableSyntax)
         {
@@ -78,8 +78,8 @@ public sealed class SemanticModel(Compilation compilation)
 
         return boundNode switch
         {
+            BoundUnspecializedTypeRef unspecializedTypeRef => ReferencedSymbolFor(unspecializedTypeRef, bindableSyntax, syntax),
             IBoundSymbolRef symbolRef => new SymbolReference.Resolved(symbolRef.Symbol, syntax.Location),
-            BoundTypeGroup typeGroup => ReferencedSymbolFor(typeGroup, bindableSyntax, syntax),
             BoundFunGroup funGroup => ReferencedSymbolFor(funGroup, bindableSyntax, syntax),
             BoundLookupError lookupError => new SymbolReference.Unresolved(lookupError.Candidates, lookupError.Reason,
                 syntax.Location),
@@ -87,40 +87,28 @@ public sealed class SemanticModel(Compilation compilation)
         };
     }
 
-    private SymbolReference ReferencedSymbolFor(BoundTypeGroup typeGroup, ExprSyntax syntax, NameRefSyntax nameSyntax)
+    private SymbolReference ReferencedSymbolFor(BoundUnspecializedTypeRef unspecializedTypeRef, ExprSyntax bindableSyntax, NameRefSyntax nameSyntax)
     {
-        if (syntax.Parent is CallExprSyntax callExprSyntax && callExprSyntax.Callee == syntax)
+        // Types can still be specialized through or through a call (inferred type args). Subscripts are handled above already.
+        
+        if (bindableSyntax.Parent is CallExprSyntax callExprSyntax && callExprSyntax.Callee == bindableSyntax)
         {
             var boundCall = BoundNodeFor(callExprSyntax);
             if (boundCall is BoundStructInit structInit)
                 return new SymbolReference.Resolved(structInit.Type, nameSyntax.Location);
-            if (boundCall is BoundTypeInitError structInitError)
-            {
-                // If there is only a single candidate that has its type
-                // parameters filled, it resolves correctly. Otherwise,
-                // it's unresolved (too many types or failed inference).
-                if (structInitError.Candidates is [{ HasFilledTypeParameters: true } singleType])
-                    return new SymbolReference.Resolved(singleType, nameSyntax.Location);
-
-                return new SymbolReference.Unresolved(
-                    structInitError.Candidates.CastArray<Symbol>(),
-                    UnresolvedSymbolReason.NoApplicableType, nameSyntax.Location);
-            }
+            if (boundCall is BoundClassInit classInit)
+                return new SymbolReference.Resolved(classInit.Type, nameSyntax.Location);
+            if (boundCall is BoundTypeInitError { Type.HasFilledTypeParameters: true } error)
+                return new SymbolReference.Resolved(error.Symbol, nameSyntax.Location);
         }
 
-        // Same as above
-        if (typeGroup.Candidates is [{ HasFilledTypeParameters: true } single])
-            return new SymbolReference.Resolved(single, nameSyntax.Location);
-        
-        return new SymbolReference.Unresolved(
-            typeGroup.Candidates.CastArray<Symbol>(),
-            UnresolvedSymbolReason.Ambiguous, nameSyntax.Location);
+        return new SymbolReference.Unresolved([unspecializedTypeRef.Type], UnresolvedSymbolReason.NoTypeArguments, nameSyntax.Location);
     }
 
-    private SymbolReference ReferencedSymbolFor(BoundFunGroup funGroup, ExprSyntax syntax, NameRefSyntax nameSyntax)
+    private SymbolReference ReferencedSymbolFor(BoundFunGroup funGroup, ExprSyntax bindableSyntax, NameRefSyntax nameSyntax)
     {
-        var callSyntax = syntax.Ancestors().OfType<CallExprSyntax>().FirstOrDefault();
-        if (callSyntax is null || callSyntax.Callee != syntax)
+        var callSyntax = bindableSyntax.Ancestors().OfType<CallExprSyntax>().FirstOrDefault();
+        if (callSyntax is null || callSyntax.Callee != bindableSyntax)
             return new SymbolReference.Unresolved(funGroup.Candidates.CastArray<Symbol>(), UnresolvedSymbolReason.NotUsable,
                 nameSyntax.Location);
 

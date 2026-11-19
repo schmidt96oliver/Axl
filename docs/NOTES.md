@@ -5,7 +5,6 @@
 
 # Questions / Little ones
 
-* **Remove type groups***
 * **Remove fun overloads**
  
 

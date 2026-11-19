@@ -10,7 +10,7 @@ public enum UnresolvedSymbolReason
     Ambiguous,
     NotUsable,
     NotAccessible,
-    NoApplicableType,
+    NoTypeArguments,
     NoApplicableOverload,
 }
 

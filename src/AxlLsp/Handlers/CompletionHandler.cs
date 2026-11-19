@@ -52,24 +52,17 @@ public sealed class CompletionHandler(ILanguageServerFacade facade) : Completion
             .Where(fieldName => fieldName is not "" &&
                 context.TouchingWord?.Text.SequenceEqual(fieldName) != true)
             .ToHashSet();
-
-        var names = typeInitError.Candidates.SelectMany(RemainingFields).Distinct();
         
-        return names.Select(fieldName => new CompletionItem
+        var remainingFieldNames = typeInitError.Symbol.Members.OfType<FieldSymbol>()
+            .Where(f => !filledFieldNames.Contains(f.Name))
+            .Select(f => f.Name)
+            .Distinct();
+
+        return remainingFieldNames.Select(fieldName => new CompletionItem
         {
             Label = $"{fieldName} = ",
             Kind = isRider ? CompletionItemKind.File : CompletionItemKind.Field,
         });
-
-        IEnumerable<string> RemainingFields(TypeSymbol type)
-        {
-            var fields = type.Members.OfType<FieldSymbol>().ToImmutableArray();
-            if (filledFieldNames.Any(name => !fields.Any(f => f.Name == name)))
-                return [];
-
-            return fields.Where(f => !filledFieldNames.Contains(f.Name))
-                .Select(f => f.Name);
-        }
     }
     
     /// <param name="excludeReferencedCompilations">
@@ -85,17 +78,15 @@ public sealed class CompletionHandler(ILanguageServerFacade facade) : Completion
             yield break;
 
         // Args for struct initializers
-        if (context.TargetToken?.Parent is ArgListSyntax argListSyntax)
+        if (context.TargetToken?.Parent is ArgListSyntax argListSyntax &&
+            argListSyntax.Parent is CallExprSyntax callSyntax && callSyntax.ArgList == argListSyntax &&
+            compilation.SemanticModel.BoundNodeFor(callSyntax) is BoundTypeInitError typeInitError)
         {
-            var callSyntax = argListSyntax.Ancestors().OfType<CallExprSyntax>().First();
-            if (compilation.SemanticModel.BoundNodeFor(callSyntax) is BoundTypeInitError error)
-            {
-                foreach (var item in GetStructInitFieldItems(error, context, isRider))
-                    yield return item;
-                yield break;
-            }
+            foreach (var item in GetStructInitFieldItems(typeInitError, context, isRider))
+                yield return item;
+            yield break;
         }
-        
+
         // Normal completion
         foreach (var kw in context.Continuations.GetKinds().Where(SyntaxFacts.IsKeyword))
         {
