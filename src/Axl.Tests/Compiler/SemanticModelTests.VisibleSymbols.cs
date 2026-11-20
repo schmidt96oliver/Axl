@@ -112,6 +112,7 @@ public sealed partial class SemanticModelTests
                 F64 (struct Base.F64)
                 I32 (struct Base.I32)
                 I64 (struct Base.I64)
+                MutList (class Base.MutList[T])
                 Never (struct Base.Never)
                 Panic (fun Base.Panic(message: Base.String))
                 Panic (fun Base.Panic())

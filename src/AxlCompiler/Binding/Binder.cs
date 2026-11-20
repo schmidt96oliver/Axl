@@ -158,7 +158,7 @@ public sealed class Binder(Scope scope, BinderSideEffects sideEffects)
         return LookupViability.Viable;
     }
 
-    private LookupResult LookupName(string name, LookupOptions options)
+    public LookupResult LookupName(string name, LookupOptions options)
     {
         var result = new LookupResult(options);
 
@@ -209,7 +209,7 @@ public sealed class Binder(Scope scope, BinderSideEffects sideEffects)
         return [.. lookupByName.SelectMany(kvp => kvp.Value.Symbols)];
     }
 
-    private LookupResult LookupMembers(Symbol parent, string name, LookupOptions options)
+    public LookupResult LookupMembers(Symbol parent, string name, LookupOptions options)
     {
         var result = new LookupResult(options);
 

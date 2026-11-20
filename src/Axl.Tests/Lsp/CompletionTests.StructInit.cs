@@ -37,10 +37,10 @@ public sealed partial class CompletionTests
                                                      let t = Test(Field1 = |
                                                      """), """
                 Base
+                MutList UnsafeMutBuffer
                 Panic Assert TODO Unreachable Print PrintLine
                 return if mut true false
                 Test Bool F32 F64 I32 I64 Never String Unit
-                UnsafeMutBuffer
                 """);
         [Fact]
         public void Single_6()

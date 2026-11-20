@@ -5,16 +5,18 @@
 
 # Questions / Little ones
 
+**Ergonomics**
+* `Require` base lib fun
+* `Range` type and special-cased `for` iteration
+* Compound assignment `i += 1`
+
 * ?? Remove or rework fun overloads
  
-
 * ?? BindLookupResult: Report WrongKind error before anything else; remove isThisField in BindFieldAccess
 
 * Mir: Validator
   * Phase.Monomorphized: Check that everything is concrete. No TypeParams
   * Call with mut return: ref is directly used and never again
-
-* Binder: BindLookupResult should report WrongKind error before binding
 
 * ?? Fun: TokenSet iteration with `i & -i` trick
 
@@ -24,9 +26,6 @@
 
 **Classes, ByRef types**: Class, `===` operator
 5. `===`: reference types only, rejected on `T`
-
-**UnsafeBuffer**: `UnsafeBuffer[T]`, `List[T]/MutList[T]`
-* Miri: BufferAtPointerRoot
 
 # Loose Ends
 * Overload resolution specificity

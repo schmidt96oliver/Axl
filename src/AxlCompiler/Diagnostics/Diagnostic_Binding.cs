@@ -26,8 +26,8 @@ public partial record Diagnostic
             => [Argument.Syntax!.Location];
 
         public override string Message => Parameter.IsMut
-            ? $"Argument for ‘{Parameter.Name}‘ must be ‘mut {Parameter.Type.FullName}‘, but got ‘{Argument.ArgumentTypeDisplayText}‘."
-            : $"Argument for ‘{Parameter.Name}‘ must be ‘{Parameter.Type.FullName}‘, but got ‘{Argument.ArgumentTypeDisplayText}‘.";
+            ? $"Argument for ‘{Parameter.Name}‘ must be ‘mut {Parameter.Type.FullName}‘, but got ‘{Argument.ArgumentTypeFullDisplayText}‘."
+            : $"Argument for ‘{Parameter.Name}‘ must be ‘{Parameter.Type.FullName}‘, but got ‘{Argument.ArgumentTypeFullDisplayText}‘.";
     }
 
     public sealed record MissingInitializer(VarDeclSyntax VarDeclSyntax) : Error

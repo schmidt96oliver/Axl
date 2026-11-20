@@ -37,7 +37,7 @@ public class HoverHandler : HoverHandlerBase
 
         var symbol = axlLocation.Compilation.SemanticModel.SymbolFor(word);
 
-        if (HoverTextFor(symbol) is { } markup)
+        if (HoverTextFor(axlLocation.Compilation.SemanticModel, symbol) is { } markup)
         {
             var lspLocation = ProjectStore.TryMapToLsp(word.Location);
             if (lspLocation is null || lspLocation.Uri != uri)
@@ -53,20 +53,20 @@ public class HoverHandler : HoverHandlerBase
         return Task.FromResult<Hover?>(null);
     }
 
-    private static MarkupContent? HoverTextFor(SymbolReference reference) => reference switch
+    private static MarkupContent? HoverTextFor(SemanticModel model, SymbolReference reference) => reference switch
     {
         SymbolReference.Resolved resolved => new MarkupContent{ Kind = MarkupKind.Markdown, Value =
-            $"```axl\n{resolved.Symbol.FullDisplayText}\n```"
+            $"```axl\n{resolved.Symbol.MinimalDisplayText(model, resolved.ReferenceLocation)}\n```"
         },
-        SymbolReference.Unresolved unresolved => HoverTextFor(unresolved),
+        SymbolReference.Unresolved unresolved => HoverTextFor(model, unresolved),
     };
 
-    private static MarkupContent? HoverTextFor(SymbolReference.Unresolved unresolved)
+    private static MarkupContent? HoverTextFor(SemanticModel model, SymbolReference.Unresolved unresolved)
     {
         if (unresolved.Reason is UnresolvedSymbolReason.NotFound || unresolved.Candidates.Length == 0)
             return null;
 
-        var candidatesText = string.Join('\n', unresolved.Candidates.Select(s => s.FullDisplayText));
+        var candidatesText = string.Join('\n', unresolved.Candidates.Select(s => s.MinimalDisplayText(model, unresolved.ReferenceLocation)));
         return new MarkupContent { Kind = MarkupKind.Markdown, Value = $"{unresolved.Reason}:\n```axl\n{candidatesText}\n```" };
     }
     
