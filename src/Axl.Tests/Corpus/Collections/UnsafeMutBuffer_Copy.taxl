@@ -1,0 +1,24 @@
+//@run
+//= 0 1 2 0 1 2
+
+// Fill buffer
+let buffer = UnsafeMutBuffer[I32].NewUninitialized(3);
+var i = 0;
+while (i < buffer.Length())
+{
+    buffer.AtUnchecked(i) = i;
+    i = i + 1;
+}
+
+// Double the buffer
+let doubled = UnsafeMutBuffer[I32].NewUninitialized(buffer.Length() * 2);
+buffer.CopyIntoUnchecked(doubled, 0, 0, buffer.Length());
+buffer.CopyIntoUnchecked(doubled, buffer.Length(), 0, buffer.Length());
+
+// Print the doubled buffer
+i = 0;
+while (i < doubled.Length())
+{
+    Print("{doubled.AtUnchecked(i)} ");
+    i = i + 1;
+}

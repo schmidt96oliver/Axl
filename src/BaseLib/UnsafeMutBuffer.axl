@@ -11,4 +11,7 @@ pub class UnsafeMutBuffer[T]
 
     @Intrinsic
     pub fun AtUnchecked(index: I32): mut T;
+
+    @Intrinsic
+    pub fun CopyIntoUnchecked(target: UnsafeMutBuffer[T], targetStart: I32, sourceStart: I32, length: I32);
 }

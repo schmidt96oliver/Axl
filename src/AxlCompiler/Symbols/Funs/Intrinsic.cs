@@ -49,4 +49,5 @@ public enum Intrinsic
     UnsafeMutBufferNewUninitialized,
     UnsafeMutBufferAtUnchecked,
     UnsafeMutBufferLength,
+    UnsafeMutBufferCopyIntoUnchecked,
 }

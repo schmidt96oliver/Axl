@@ -447,6 +447,18 @@ public sealed class Miri
             case VmCallKind.UnsafeMutBufferLength:
                 return ((BufferValue)_heap[((ClassHandle)args[0]).HeapPointerRoot.Index]).Array.Length;
             
+            case VmCallKind.UnsafeMutBufferCopyIntoUnchecked:
+            {
+                // (self: UnsafeMutBuffer[T], target: UnsafeMutBuffer[T], targetStart: I32, sourceStart: I32, length: I32, elementSize: I32)
+                var source = ((BufferValue)_heap[((ClassHandle)args[0]).HeapPointerRoot.Index]).Array;
+                var target = ((BufferValue)_heap[((ClassHandle)args[1]).HeapPointerRoot.Index]).Array;
+                var targetStart = (int)args[2];
+                var sourceStart = (int)args[3];
+                var length = (int)args[4];
+                Array.Copy(source, sourceStart, target, targetStart, length);
+                return _unitValue;
+            }
+            
             case VmCallKind.Panic:
                 var message = (string)args[0];
                 _context.StdErr?.WriteLine($"Miri panicked: {message}");
