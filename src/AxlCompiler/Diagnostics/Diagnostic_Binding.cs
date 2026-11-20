@@ -693,13 +693,13 @@ public partial record Diagnostic
         public override string Message => $"Annotation '{Annotation.Syntax.Text}' is not valid for funs.";
     }
 
-    public sealed record UnknownPrimitive(BoundAnnotation Annotation, string Name) : Error
+    public sealed record UnknownPrimitive(StructOrClassDeclSyntax Syntax, string FullName) : Error
     {
         /// <inheritdoc />
-        public override ImmutableArray<SourceLocation> Locations => [Annotation.Syntax.Location];
+        public override ImmutableArray<SourceLocation> Locations => [Syntax.Name.Location];
 
         /// <inheritdoc />
-        public override string Message => $"Unknown primitive '{Name}'.";
+        public override string Message => $"Unknown primitive '{FullName}'.";
     }
 
     public sealed record FieldDeclarationOnPrimitive(FieldDeclSyntax Syntax, TypeSymbol Symbol) : Error
@@ -712,13 +712,13 @@ public partial record Diagnostic
     }
 
 
-    public sealed record UnknownIntrinsic(BoundAnnotation Annotation) : Error
+    public sealed record UnknownIntrinsic(FunSymbol Fun) : Error
     {
         /// <inheritdoc />
-        public override ImmutableArray<SourceLocation> Locations => [Annotation.Syntax.Location];
+        public override ImmutableArray<SourceLocation> Locations => [Fun.Definition.DeclarationSyntax!.Name.Location];
 
         /// <inheritdoc />
-        public override string Message => "There is no intrinsic that matches the given signature.";
+        public override string Message => $"Unknown intrinsic '{ Fun.FullName }'.";
     }
 
     public sealed record IntrinsicFunWithBody(FunSymbol Fun, FunBodySyntax Syntax) : Error

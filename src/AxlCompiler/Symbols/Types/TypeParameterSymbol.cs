@@ -22,6 +22,9 @@ public class TypeParameterSymbol(string name, Symbol owner, int ordinal, TypePar
     public override ImmutableArray<SyntaxNode> DeclaringSyntax => [DeclarationSyntax];
 
     /// <inheritdoc />
+    public override bool IsPrimitive => false;
+
+    /// <inheritdoc />
     public override ImmutableArray<Token> NameSyntax => [DeclarationSyntax.Name];
     
     /// <inheritdoc />

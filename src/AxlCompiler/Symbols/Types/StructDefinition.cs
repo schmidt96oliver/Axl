@@ -8,8 +8,8 @@ public sealed class StructDefinition(
     StructOrClassDeclSyntax declarationSyntax,
     Scope enclosingScope,
     bool isPublic,
-    PrimitiveKind? primitiveKind)
-    : SourceStructOrClassDefinition(declarationSyntax, enclosingScope, isPublic, primitiveKind)
+    bool isPrimitive)
+    : SourceStructOrClassDefinition(declarationSyntax, enclosingScope, isPublic, isPrimitive)
 {
     public override bool IsValueType => true;
     public override bool IsReferenceType => false;

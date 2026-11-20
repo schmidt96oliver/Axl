@@ -2,10 +2,10 @@
 
 namespace AxlCompiler.Symbols;
 
-public closed class TypeDefinition(Compilation compilation, string name, Symbol? owner, bool isPublic, PrimitiveKind? primitiveKind)
+public closed class TypeDefinition(Compilation compilation, string name, Symbol? owner, bool isPublic, bool isPrimitive)
     : Definition<NamedTypeSymbol>(compilation, name, owner, isPublic)
 {
-    public PrimitiveKind? PrimitiveKind { get; } = primitiveKind;
+    public bool IsPrimitive { get; } = isPrimitive;
 
     public abstract bool IsValueType { get; }
     public abstract bool IsReferenceType { get; }

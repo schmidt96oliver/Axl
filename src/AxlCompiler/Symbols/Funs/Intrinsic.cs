@@ -21,17 +21,17 @@ public enum Intrinsic
     ToStringI64,
     
     AddF32,
-    SubtractF32,
-    DivideF32,
-    MultiplyF32,
+    SubF32,
+    DivF32,
+    MulF32,
     EqualsF32,
     LessThanF32,
     ToStringF32,
     
     AddF64,
-    SubtractF64,
-    DivideF64,
-    MultiplyF64,
+    SubF64,
+    DivF64,
+    MulF64,
     EqualsF64,
     LessThanF64,
     ToStringF64,
@@ -45,4 +45,7 @@ public enum Intrinsic
     
     Print,
     Panic,
+    
+    BufferNew,
+    BufferAt
 }

@@ -2,5 +2,5 @@
 
 // Primitives are matched against their plain name.
 
-@Primitive      //~error UnknownPrimitive
-struct A;
+@Primitive      
+struct A;   //~error UnknownPrimitive

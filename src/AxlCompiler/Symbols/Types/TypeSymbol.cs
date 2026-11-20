@@ -2,7 +2,7 @@
 
 namespace AxlCompiler.Symbols;
 
-public closed class TypeSymbol(Compilation compilation, string name, Symbol? owner, bool isPublic, PrimitiveKind? primitiveKind = null)
+public closed class TypeSymbol(Compilation compilation, string name, Symbol? owner, bool isPublic)
     : Symbol(compilation, name, owner)
 {
     public override bool IsPublic { get; } = isPublic;
@@ -16,9 +16,7 @@ public closed class TypeSymbol(Compilation compilation, string name, Symbol? own
 
     public override TypeSymbol OriginalDefinition => this;
 
-    public PrimitiveKind? PrimitiveKind { get; } = primitiveKind;
-
-    public bool IsPrimitive => PrimitiveKind is not null;
+    public abstract bool IsPrimitive { get; }
 
     public abstract ImmutableArray<TypeParameterSymbol> TypeParameters { get; }
 

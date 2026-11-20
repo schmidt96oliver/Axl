@@ -434,27 +434,20 @@ public sealed class Binder(Scope scope, BinderSideEffects sideEffects)
     {
         // Primitive annotation
         var annotations = syntax.Annotations.Select(BindAnnotation);
-        PrimitiveKind? primitiveKind = null;
+        var isPrimitive = false;
         foreach (var annotation in annotations)
         {
             if (annotation is null) continue;
             if (annotation.Kind is AnnotationKind.Primitive)
-            {
-                if (primitiveKind is null && syntax.Name.Text is not "")
-                {
-                    if (Enum.TryParse(syntax.Name.Text, out PrimitiveKind kind))
-                        primitiveKind = kind;
-                    else
-                    {
-                        SideEffects.ReportError(new Diagnostic.UnknownPrimitive(annotation,
-                            syntax.Name.Text.ToString()));
-                    }
-                }
-            }
-            else if (annotation.Kind is not AnnotationKind.Primitive)
+                isPrimitive = true;
+            else
                 SideEffects.ReportError(new Diagnostic.InvalidTypeAnnotation(annotation));
         }
 
+        var fullName = $"{Scope.Owner.FullName}.{syntax.Name.Text}{syntax.TypeParameterList?.Text.ToString() ?? ""}";
+        if (isPrimitive && !BaseLibrary.KnownPrimitives.Contains(fullName))
+            SideEffects.ReportError(new Diagnostic.UnknownPrimitive(syntax, fullName));
+        
         var isPublic = syntax.PubKw is not null;
         if (syntax.PubKw is not null && Scope.Owner is ScriptSymbol)
         {
@@ -463,8 +456,8 @@ public sealed class Binder(Scope scope, BinderSideEffects sideEffects)
         }
 
         return syntax.StructOrClassKw.Kind is TokenKind.ClassKw
-            ? new ClassDefinition(syntax, enclosingScope: Scope, isPublic, primitiveKind).Identity
-            : new StructDefinition(syntax, enclosingScope: Scope, isPublic, primitiveKind).Identity;
+            ? new ClassDefinition(syntax, enclosingScope: Scope, isPublic, isPrimitive).Identity
+            : new StructDefinition(syntax, enclosingScope: Scope, isPublic, isPrimitive).Identity;
     }
 
     public FieldSymbol BindFieldDeclaration(FieldDeclSyntax syntax)
@@ -637,7 +630,7 @@ public sealed class Binder(Scope scope, BinderSideEffects sideEffects)
         return bodyBinder.BindBlock((BlockExprSyntax)syntax.Expr);
     }
 
-    public FunBody BindIntrinsicFunBody(FunBodySyntax syntax, BoundAnnotation annotation)
+    public FunBody BindIntrinsicFunBody(FunBodySyntax syntax)
     {
         if (Scope.OwnerAsFun is not FunSymbol fun)
             throw new InvalidOperationException($"{nameof(BindSourceFunBody)} only valid on funs.");
@@ -645,19 +638,9 @@ public sealed class Binder(Scope scope, BinderSideEffects sideEffects)
         if (syntax.IsExpressionBodied || syntax.Expr is not null)
             SideEffects.DiagnosticBag.ReportError(new Diagnostic.IntrinsicFunWithBody(fun, syntax));
         
-        if (fun.SelfAndParameters.Any(p => !p.Type.IsPrimitive) || 
-            fun.ReturnType != Unit && !fun.ReturnType.IsPrimitive)
+        if (!BaseLibrary.KnownIntrinsics.TryGetValue(fun.FullName, out var intrinsic))
         {
-            SideEffects.DiagnosticBag.ReportError(new Diagnostic.UnknownIntrinsic(annotation));
-            return new BoundBlock([], Unit);
-        }
-
-        var parameters = fun.SelfAndParameters.Select(p => p.Type.PrimitiveKind!.Value).ToImmutableArray();
-        var returnType = fun.ReturnType == Unit ? null : fun.ReturnType.PrimitiveKind;
-
-        if (IntrinsicLookup.TryGetIntrinsic(fun.Name, parameters, returnType) is not Intrinsic intrinsic)
-        {
-            SideEffects.DiagnosticBag.ReportError(new Diagnostic.UnknownIntrinsic(annotation));
+            SideEffects.DiagnosticBag.ReportError(new Diagnostic.UnknownIntrinsic(fun));
             return new BoundBlock([], Unit);
         }
 

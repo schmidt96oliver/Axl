@@ -15,7 +15,7 @@ public sealed class NamedTypeSymbol : TypeSymbol
     private readonly ImmutableArray<TypeSymbol>? _typeArguments;
 
     internal NamedTypeSymbol(TypeDefinition definition, Symbol? owner, ImmutableArray<TypeSymbol>? typeArguments)
-        : base(definition.Compilation, definition.Name, owner, definition.IsPublic, definition.PrimitiveKind)
+        : base(definition.Compilation, definition.Name, owner, definition.IsPublic)
     {
         Definition = definition;
         _typeArguments = typeArguments;
@@ -29,6 +29,9 @@ public sealed class NamedTypeSymbol : TypeSymbol
 
     public override bool IsValueType => Definition.IsValueType;
     public override bool IsReferenceType => Definition.IsReferenceType;
+
+    /// <inheritdoc />
+    public override bool IsPrimitive => Definition.IsPrimitive;
 
     /// <inheritdoc />
     public override bool CanBeReferencedByName => Definition.CanBeReferencedByName;

@@ -5,7 +5,7 @@
 
 # Questions / Little ones
 
-* **Remove fun overloads**
+* ?? Remove or rework fun overloads
  
 
 * ?? BindLookupResult: Report WrongKind error before anything else; remove isThisField in BindFieldAccess

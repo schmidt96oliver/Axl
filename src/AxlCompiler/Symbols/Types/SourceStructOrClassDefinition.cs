@@ -15,12 +15,11 @@ public closed class SourceStructOrClassDefinition(
     StructOrClassDeclSyntax declarationSyntax,
     Scope enclosingScope,
     bool isPublic,
-    PrimitiveKind? primitiveKind)
+    bool isPrimitive)
     : TypeDefinition(enclosingScope.Owner.Compilation,
         declarationSyntax.Name.Text.ToString(),
         owner: enclosingScope.Owner,
-        isPublic: isPublic,
-        primitiveKind: primitiveKind)
+        isPublic, isPrimitive)
 {
     private readonly BinderSideEffects _sideEffects = new();
     private bool _isBindingMembers = false;

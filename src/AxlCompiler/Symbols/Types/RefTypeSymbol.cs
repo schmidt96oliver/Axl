@@ -19,6 +19,9 @@ public sealed class RefTypeSymbol(TypeSymbol inner)
     public override bool IsConcrete => Inner.IsConcrete;
 
     /// <inheritdoc />
+    public override bool IsPrimitive => false;
+
+    /// <inheritdoc />
     public override bool CanBeReferencedByName => false;
 
     /// <inheritdoc />

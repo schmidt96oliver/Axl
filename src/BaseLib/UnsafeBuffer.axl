@@ -1,0 +1,6 @@
+namespace Base;
+
+pub class UnsafeBuffer[T]
+{
+    
+}

@@ -17,14 +17,14 @@ public closed partial record Diagnostic
             : $"'{Names.BaseNamespace}' namespace is ambiguous between {Candidates.Length} candidates.";
     }
 
-    public sealed record CannotFindBaseType(BaseTypeKind Kind, ImmutableArray<Symbol> Candidates) : Error
+    public sealed record CannotFindBaseType(KnownName KnownName, ImmutableArray<Symbol> Candidates) : Error
     {
         /// <inheritdoc />
         public override ImmutableArray<SourceLocation> Locations => [];
 
         /// <inheritdoc />
         public override string Message => Candidates.Length == 0
-            ? $"Cannot find type '{Names.BaseNamespace}.{Kind}'."
-            : $"Base type '{Names.BaseNamespace}.{Kind}' is ambiguous between {Candidates.Length} candidates.";
+            ? $"Cannot find type '{Names.BaseNamespace}.{KnownName}'."
+            : $"Base type '{Names.BaseNamespace}.{KnownName}' is ambiguous between {Candidates.Length} candidates.";
     }
 }

@@ -154,7 +154,7 @@ public sealed class SourceFunDefinition(
                 _isBindingBody = true;
 
                 field = intrinsicAnnotation is not null
-                    ? MakeSignatureBinder().BindIntrinsicFunBody(DeclarationSyntax.Body, intrinsicAnnotation)
+                    ? MakeSignatureBinder().BindIntrinsicFunBody(DeclarationSyntax.Body)
                     : MakeSignatureBinder().BindSourceFunBody(DeclarationSyntax.Body);
 
                 _isBindingBody = false;
