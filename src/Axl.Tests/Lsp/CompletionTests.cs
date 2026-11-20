@@ -224,8 +224,8 @@ public sealed partial class CompletionTests
     [InlineData("fun A(): mut |", false)]
     public void Mut_Declaration(string input, bool available)
     {
-        if (available) ItemsWithBase(input).ShouldContain("mut");
-        else ItemsWithBase(input).ShouldNotContain("mut");
+        if (available) ItemsWithBase(input).ShouldContain("mut", Case.Sensitive);
+        else ItemsWithBase(input).ShouldNotContain("mut", Case.Sensitive);
     }
     
     [Theory]
@@ -250,8 +250,8 @@ public sealed partial class CompletionTests
     [InlineData("fun A() = mut |", false)]
     public void Mut_Stmt(string input, bool available)
     {
-        if (available) ItemsWithBase(input).ShouldContain("mut");
-        else ItemsWithBase(input).ShouldNotContain("mut");
+        if (available) ItemsWithBase(input).ShouldContain("mut", Case.Sensitive);
+        else ItemsWithBase(input).ShouldNotContain("mut", Case.Sensitive);
     }
     
     [Theory]

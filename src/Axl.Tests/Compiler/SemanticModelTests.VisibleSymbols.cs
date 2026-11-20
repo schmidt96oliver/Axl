@@ -135,7 +135,7 @@ public sealed partial class SemanticModelTests
                 PrintLine (fun Base.PrintLine(bool: Base.Bool))
                 String (struct Base.String)
                 Unit (struct Base.Unit)
-                UnsafeBuffer (class Base.UnsafeBuffer[T])
+                UnsafeMutBuffer (class Base.UnsafeMutBuffer[T])
                 """);
 
 

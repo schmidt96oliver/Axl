@@ -3,7 +3,7 @@
 
 const Len: I32 = 10;
 
-let buffer = UnsafeBuffer[I32].NewUninitialized(Len);
+let buffer = UnsafeMutBuffer[I32].NewUninitialized(Len);
 
 // Fill
 var i = 0;

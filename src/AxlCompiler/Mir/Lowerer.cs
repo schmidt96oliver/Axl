@@ -352,7 +352,7 @@ public class Lowerer
             else if (VmCallKind.TryFrom(intrinsic) is { } vmCallKind)
             {
                 // Buffer intrinsics get an additional sizeof(T) argument
-                if (intrinsic is Intrinsic.BufferNewUninitialized or Intrinsic.BufferAtUnchecked)
+                if (intrinsic is Intrinsic.UnsafeMutBufferNewUninitialized or Intrinsic.UnsafeMutBufferAtUnchecked)
                 {
                     if (call.Fun.OwningType?.TypeArguments is not [TypeSymbol elementType])
                         throw new UnreachableException("Invalid UnsafeBuffer[T].New intrinsic.");

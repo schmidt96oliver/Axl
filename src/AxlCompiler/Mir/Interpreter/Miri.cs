@@ -435,13 +435,13 @@ public sealed class Miri
             case VmCallKind.ConcatString:
                 return string.Concat((string)args[0], (string)args[1]);
 
-            case VmCallKind.UnsafeBufferNewUninitialized:
+            case VmCallKind.UnsafeMutBufferNewUninitialized:
             {
                 var buffer = new BufferValue(new object[(int)args[0]]);
                 return AllocateClass(buffer);
             }
 
-            case VmCallKind.UnsafeBufferAtUnchecked:
+            case VmCallKind.UnsafeMutBufferAtUnchecked:
                 return new Pointer(new BufferPointerRoot(((ClassHandle)args[0]).HeapPointerRoot, (int)args[1]), []);
             
             case VmCallKind.Panic:

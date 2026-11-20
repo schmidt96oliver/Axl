@@ -16,7 +16,7 @@ public enum KnownName
     String,
     Unit, 
     Never,
-    UnsafeBuffer_T
+    UnsafeMutBuffer_T
 }
 
 public sealed class BaseLibrary(Compilation compilation)
@@ -31,7 +31,7 @@ public sealed class BaseLibrary(Compilation compilation)
         [KnownName.F64] = "F64",
         [KnownName.Never] = "Never",
         [KnownName.Unit] = "Unit",
-        [KnownName.UnsafeBuffer_T] = "UnsafeBuffer"
+        [KnownName.UnsafeMutBuffer_T] = "UnsafeMutBuffer"
     }.ToFrozenDictionary();
     
     public static readonly ImmutableHashSet<string> KnownPrimitives =
@@ -43,15 +43,15 @@ public sealed class BaseLibrary(Compilation compilation)
         "Base.F32",
         "Base.F64",
         "Base.Never",
-        "Base.UnsafeBuffer[T]"
+        "Base.UnsafeMutBuffer[T]"
     ];
     
     public static readonly FrozenDictionary<string, Intrinsic> KnownIntrinsics = new Dictionary<string, Intrinsic>
     {
         ["Base.Print"] = Intrinsic.Print,
         ["Base.Panic"] = Intrinsic.Panic,
-        ["Base.UnsafeBuffer[T].NewUninitialized"] = Intrinsic.BufferNewUninitialized,
-        ["Base.UnsafeBuffer[T].AtUnchecked"] = Intrinsic.BufferAtUnchecked,
+        ["Base.UnsafeMutBuffer[T].NewUninitialized"] = Intrinsic.UnsafeMutBufferNewUninitialized,
+        ["Base.UnsafeMutBuffer[T].AtUnchecked"] = Intrinsic.UnsafeMutBufferAtUnchecked,
         
         ["Base.Bool.!"] = Intrinsic.NotBool,
         ["Base.Bool.=="] = Intrinsic.EqualsBool,

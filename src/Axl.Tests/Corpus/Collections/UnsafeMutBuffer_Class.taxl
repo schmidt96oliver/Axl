@@ -2,7 +2,7 @@
 //= 2
 //= 3
 
-let buffer = UnsafeBuffer[Item].NewUninitialized(10);
+let buffer = UnsafeMutBuffer[Item].NewUninitialized(10);
 let item = Item(Field = 1);
 buffer.AtUnchecked(1) = item;
 

@@ -46,6 +46,6 @@ public enum Intrinsic
     Print,
     Panic,
     
-    BufferNewUninitialized,
-    BufferAtUnchecked
+    UnsafeMutBufferNewUninitialized,
+    UnsafeMutBufferAtUnchecked
 }
