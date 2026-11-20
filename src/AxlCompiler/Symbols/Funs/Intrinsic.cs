@@ -47,5 +47,6 @@ public enum Intrinsic
     Panic,
     
     UnsafeMutBufferNewUninitialized,
-    UnsafeMutBufferAtUnchecked
+    UnsafeMutBufferAtUnchecked,
+    UnsafeMutBufferLength,
 }

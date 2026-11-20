@@ -7,5 +7,8 @@ pub class UnsafeMutBuffer[T]
     pub static fun NewUninitialized(length: I32): UnsafeMutBuffer[T];
 
     @Intrinsic
+    pub fun Length(): I32;
+
+    @Intrinsic
     pub fun AtUnchecked(index: I32): mut T;
 }

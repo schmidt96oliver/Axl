@@ -1,13 +1,11 @@
 //@run
 //= 0123456789
 
-const Len: I32 = 10;
-
-let buffer = UnsafeMutBuffer[I32].NewUninitialized(Len);
+let buffer = UnsafeMutBuffer[I32].NewUninitialized(10);
 
 // Fill
 var i = 0;
-while (i < Len)
+while (i < buffer.Length())
 {
     buffer.AtUnchecked(i) = i;
     i = i + 1;
@@ -15,7 +13,7 @@ while (i < Len)
 
 // Print
 i = 0;
-while (i < Len)
+while (i < buffer.Length())
 {
     Print(buffer.AtUnchecked(i));
     i = i + 1;

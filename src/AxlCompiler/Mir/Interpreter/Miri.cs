@@ -444,6 +444,9 @@ public sealed class Miri
             case VmCallKind.UnsafeMutBufferAtUnchecked:
                 return new Pointer(new BufferPointerRoot(((ClassHandle)args[0]).HeapPointerRoot, (int)args[1]), []);
             
+            case VmCallKind.UnsafeMutBufferLength:
+                return ((BufferValue)_heap[((ClassHandle)args[0]).HeapPointerRoot.Index]).Array.Length;
+            
             case VmCallKind.Panic:
                 var message = (string)args[0];
                 _context.StdErr?.WriteLine($"Miri panicked: {message}");

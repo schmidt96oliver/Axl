@@ -18,6 +18,7 @@ public enum VmCallKind
     
     UnsafeMutBufferNewUninitialized,
     UnsafeMutBufferAtUnchecked,
+    UnsafeMutBufferLength,
 }
 
 public static class VmCallExtensions
@@ -40,6 +41,7 @@ public static class VmCallExtensions
             
             Intrinsic.UnsafeMutBufferNewUninitialized => VmCallKind.UnsafeMutBufferNewUninitialized,
             Intrinsic.UnsafeMutBufferAtUnchecked => VmCallKind.UnsafeMutBufferAtUnchecked,
+            Intrinsic.UnsafeMutBufferLength => VmCallKind.UnsafeMutBufferLength,
 
             _ => null,
         };

@@ -52,6 +52,7 @@ public sealed class BaseLibrary(Compilation compilation)
         ["Base.Panic"] = Intrinsic.Panic,
         ["Base.UnsafeMutBuffer[T].NewUninitialized"] = Intrinsic.UnsafeMutBufferNewUninitialized,
         ["Base.UnsafeMutBuffer[T].AtUnchecked"] = Intrinsic.UnsafeMutBufferAtUnchecked,
+        ["Base.UnsafeMutBuffer[T].Length"] = Intrinsic.UnsafeMutBufferLength,
         
         ["Base.Bool.!"] = Intrinsic.NotBool,
         ["Base.Bool.=="] = Intrinsic.EqualsBool,
