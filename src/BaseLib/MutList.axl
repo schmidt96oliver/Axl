@@ -1,0 +1,60 @@
+namespace Base;
+
+pub class MutList[T]
+{
+    _buffer: UnsafeMutBuffer[T];
+    _length: I32;
+
+
+    pub static fun Empty(): MutList[T]
+        = WithCapacity(2);
+
+    pub static fun WithCapacity(capacity: I32): MutList[T]
+    {
+        if (capacity <= 0)
+            Panic("Capacity must be positive. Got {capacity}.");
+        return MutList[T](_buffer = UnsafeMutBuffer[T].NewUninitialized(capacity), _length = 0);
+    }
+
+    fun EnsureCapacity(capacity: I32)
+    {
+        if (_buffer.Length() >= capacity)
+            return;
+        
+        var newCapacity = _buffer.Length() * 2;
+        while (newCapacity < capacity)
+        { newCapacity = newCapacity * 2; }
+
+        let newBuffer = UnsafeMutBuffer[T].NewUninitialized(newCapacity);
+        _buffer.CopyIntoUnchecked(newBuffer, 0, 0, _buffer.Length());
+        _buffer = newBuffer;
+    }
+
+    pub fun Length(): I32 
+        = _length;
+
+    pub fun At(index: I32): mut T
+    {
+        if (index < 0 || index > _length)
+            Panic("Index {index} is out of range. Length is {_length}.");
+        return mut _buffer.AtUnchecked(index);
+    }
+
+    pub fun Add(item: T)
+    {
+        _length = _length + 1;
+
+        EnsureCapacity(_length);
+        _buffer.AtUnchecked(_length - 1) = item;
+    }
+
+    pub fun RemoveAt(index: I32)
+    {
+        if (index < 0 || index > _length)
+            Panic("Index {index} is out of range. Length is {_length}.");
+
+        if (index < _length - 1)
+            _buffer.CopyIntoUnchecked(_buffer, index, index + 1, _length - index - 1);
+        _length = _length - 1;
+    }
+}
