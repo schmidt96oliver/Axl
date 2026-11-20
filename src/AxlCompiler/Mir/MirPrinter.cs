@@ -51,7 +51,8 @@ public static class MirPrinter
             Operand.Ref { Place: var place } => $"ref {place.Print()}",
             Operand.Const { Value: var constValue } => $"const { PrintConstValue(constValue) }",
             Operand.ConstEval { ConstSymbol: var constSymbol } => $"consteval {constSymbol.FullName}",
-
+            Operand.SizeOf { Argument: var argument } => $"sizeof {argument.FullName}",
+            
             Operand.Unreachable => "unreachable",
             Operand.Error => "???",
         };

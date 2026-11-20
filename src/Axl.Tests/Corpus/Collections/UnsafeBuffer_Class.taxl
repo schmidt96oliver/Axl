@@ -1,0 +1,16 @@
+//@run
+//= 2
+//= 3
+
+let buffer = UnsafeBuffer[Item].NewUninitialized(10);
+let item = Item(Field = 1);
+buffer.AtUnchecked(1) = item;
+
+item.Field = 2;
+PrintLine(buffer.AtUnchecked(1).Field);
+
+buffer.AtUnchecked(1).Field = 3;
+PrintLine(item.Field);
+
+
+class Item { pub Field: I32; }

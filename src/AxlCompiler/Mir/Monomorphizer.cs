@@ -252,6 +252,11 @@ public class Monomorphizer
                 InstantiatePlace(originalRef.Place, instantiatedMirFun, map),
                 originalRef.Type.Substitute(map),
                 originalRef.Syntax),
+            
+            Operand.SizeOf originalSizeOf => new Operand.SizeOf(
+                originalSizeOf.Argument.Substitute(map),
+                originalSizeOf.Type,
+                originalSizeOf.Syntax), 
 
             Operand.Unreachable => original,
             Operand.Error => throw new UnreachableException("Errors cannot be monomorphized.")

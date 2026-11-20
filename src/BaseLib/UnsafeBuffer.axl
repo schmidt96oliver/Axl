@@ -1,6 +1,11 @@
 namespace Base;
 
+@Primitive
 pub class UnsafeBuffer[T]
 {
-    
+    @Intrinsic
+    pub static fun NewUninitialized(length: I32): UnsafeBuffer[T];
+
+    @Intrinsic
+    pub fun AtUnchecked(index: I32): mut T;
 }

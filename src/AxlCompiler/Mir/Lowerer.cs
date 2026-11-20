@@ -350,7 +350,18 @@ public class Lowerer
             if (OperatorKind.TryFrom(intrinsic) is { } opKind)
                 Emit(new Instruction.Operator(opKind, target, arguments, call.Syntax));
             else if (VmCallKind.TryFrom(intrinsic) is { } vmCallKind)
+            {
+                // Buffer intrinsics get an additional sizeof(T) argument
+                if (intrinsic is Intrinsic.BufferNewUninitialized or Intrinsic.BufferAtUnchecked)
+                {
+                    if (call.Fun.OwningType?.TypeArguments is not [TypeSymbol elementType])
+                        throw new UnreachableException("Invalid UnsafeBuffer[T].New intrinsic.");
+                    var sizeOfOperand = new Operand.SizeOf(elementType, _funDefinition.Compilation.BaseLibrary.I32);
+                    arguments = [.. arguments, sizeOfOperand];
+                }
+                
                 Emit(new Instruction.VmCall(vmCallKind, target, arguments, call.Syntax));
+            }
             else
             {
                 throw new UnreachableException($"Unknown intrinsic {intrinsic}");

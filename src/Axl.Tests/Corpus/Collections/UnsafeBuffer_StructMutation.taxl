@@ -1,0 +1,16 @@
+//@run
+//= 2 0
+
+let buffer = UnsafeBuffer[Item].NewUninitialized(10);
+buffer.AtUnchecked(3) = Item(A = 0, B = 0);
+buffer.AtUnchecked(3).A = 2;
+Print("{buffer.AtUnchecked(3)}");
+
+struct Item
+{
+    pub A: I32;
+    pub B: I32;
+
+    pub fun ToString(): String
+        = "{A} {B}";
+}

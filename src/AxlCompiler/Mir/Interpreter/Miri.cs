@@ -30,6 +30,11 @@ public sealed class Miri
         public readonly Dictionary<FieldSymbol, object> Fields = [];
     }
 
+    private sealed class BufferValue(object[] array)
+    {
+        public object?[] Array { get; } = array;
+    }
+
     private sealed record ClassHandle(HeapPointerRoot HeapPointerRoot);
     
     private sealed record HeapPointerRoot(int Index);
@@ -47,7 +52,9 @@ public sealed class Miri
         public Place.Local Local { get; }
     }
 
-    private union PointerRoot(HeapPointerRoot, LocalPointerRoot);
+    private sealed record BufferPointerRoot(HeapPointerRoot Buffer, int Index);
+
+    private union PointerRoot(HeapPointerRoot, LocalPointerRoot, BufferPointerRoot);
 
     private sealed record Pointer(PointerRoot Root, ImmutableArray<FieldSymbol> Path)
     {
@@ -163,7 +170,7 @@ public sealed class Miri
             throw new OutOfFuelException();
     }
 
-    private ClassHandle AllocateClass(ClassValue value)
+    private ClassHandle AllocateClass(object value)
     {
         _heap.Add(value);
         return new ClassHandle(new HeapPointerRoot(_heap.Count - 1));
@@ -215,15 +222,20 @@ public sealed class Miri
     {
         if (pointer.Path.Length == 0)
         {
-            if (pointer.Root is not LocalPointerRoot localRoot)
-                throw new InvalidOperationException("Pointers to the heap must always have a path.");
-            return ref localRoot.Frame.GetRef(localRoot.Local);
+            if (pointer.Root is BufferPointerRoot bufferRoot)
+                return ref ((BufferValue)_heap[bufferRoot.Buffer.Index]).Array[bufferRoot.Index];
+            
+            if (pointer.Root is LocalPointerRoot localRoot)
+                return ref localRoot.Frame.GetRef(localRoot.Local);
+            
+            throw new InvalidOperationException("Invalid miri pointer.");
         }
 
         var current = pointer.Root switch
         {
             HeapPointerRoot heapRoot => _heap[heapRoot.Index],
             LocalPointerRoot localRoot => localRoot.Frame.GetRef(localRoot.Local) ?? throw new InvalidOperationException(),
+            BufferPointerRoot bufferRoot => ((BufferValue)_heap[bufferRoot.Buffer.Index]).Array[bufferRoot.Index],
         };
         
         for (var i = 0; i < pointer.Path.Length - 1; i++)
@@ -423,6 +435,15 @@ public sealed class Miri
             case VmCallKind.ConcatString:
                 return string.Concat((string)args[0], (string)args[1]);
 
+            case VmCallKind.UnsafeBufferNewUninitialized:
+            {
+                var buffer = new BufferValue(new object[(int)args[0]]);
+                return AllocateClass(buffer);
+            }
+
+            case VmCallKind.UnsafeBufferAtUnchecked:
+                return new Pointer(new BufferPointerRoot(((ClassHandle)args[0]).HeapPointerRoot, (int)args[1]), []);
+            
             case VmCallKind.Panic:
                 var message = (string)args[0];
                 _context.StdErr?.WriteLine($"Miri panicked: {message}");
@@ -451,6 +472,7 @@ public sealed class Miri
         Operand.ConstEval constEval => EvaluateConstEval(constEval),
         Operand.Copy copy => Copy(ReadPlace(copy.Place, frame)),
         Operand.Ref @ref => PointerTo(@ref.Place, frame),
+        Operand.SizeOf => 0,    // Miri does not need or know sizes
         Operand.Unreachable or Operand.Error => throw new UnreachableException()
     };
 

@@ -1,0 +1,22 @@
+//@run
+//= 0123456789
+
+const Len: I32 = 10;
+
+let buffer = UnsafeBuffer[I32].NewUninitialized(Len);
+
+// Fill
+var i = 0;
+while (i < Len)
+{
+    buffer.AtUnchecked(i) = i;
+    i = i + 1;
+}
+
+// Print
+i = 0;
+while (i < Len)
+{
+    Print(buffer.AtUnchecked(i));
+    i = i + 1;
+}

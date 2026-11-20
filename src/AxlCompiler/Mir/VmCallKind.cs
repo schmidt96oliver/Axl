@@ -15,6 +15,9 @@ public enum VmCallKind
 
     Print,
     Panic,
+    
+    UnsafeBufferNewUninitialized,
+    UnsafeBufferAtUnchecked,
 }
 
 public static class VmCallExtensions
@@ -34,6 +37,9 @@ public static class VmCallExtensions
 
             Intrinsic.Print => VmCallKind.Print,
             Intrinsic.Panic => VmCallKind.Panic,
+            
+            Intrinsic.BufferNewUninitialized => VmCallKind.UnsafeBufferNewUninitialized,
+            Intrinsic.BufferAtUnchecked => VmCallKind.UnsafeBufferAtUnchecked,
 
             _ => null,
         };

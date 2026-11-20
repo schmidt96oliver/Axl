@@ -50,8 +50,8 @@ public sealed class BaseLibrary(Compilation compilation)
     {
         ["Base.Print"] = Intrinsic.Print,
         ["Base.Panic"] = Intrinsic.Panic,
-        ["Base.UnsafeBuffer[T].New"] = Intrinsic.BufferNew,
-        ["Base.UnsafeBuffer[T].At"] = Intrinsic.BufferAt,
+        ["Base.UnsafeBuffer[T].NewUninitialized"] = Intrinsic.BufferNewUninitialized,
+        ["Base.UnsafeBuffer[T].AtUnchecked"] = Intrinsic.BufferAtUnchecked,
         
         ["Base.Bool.!"] = Intrinsic.NotBool,
         ["Base.Bool.=="] = Intrinsic.EqualsBool,
