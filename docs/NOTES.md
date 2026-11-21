@@ -1,4 +1,4 @@
-# Axl Project
+ # Axl Project
                                        ≽(◕ ᴗ ◕)≼                                      
 
 # Now
@@ -8,6 +8,8 @@
 **Ergonomics**
 * `Require` base lib fun
 * `Range` type and special-cased `for` iteration
+
+* How to test BaseLib. Test `MutList`
 
 * ?? Remove or rework fun overloads
  

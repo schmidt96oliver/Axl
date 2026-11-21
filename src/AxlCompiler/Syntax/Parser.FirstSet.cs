@@ -33,7 +33,7 @@ public partial class Parser
 
         public static readonly TokenSet Annotation = TokenSet.Of(TokenKind.At);
 
-        public static readonly TokenSet NonExprStmt = Var | TokenKind.WhileKw;
+        public static readonly TokenSet NonExprStmt = Var | TokenKind.WhileKw | TokenKind.ForKw;
         
         public static readonly TokenSet Stmt = Expr | NonExprStmt;
 

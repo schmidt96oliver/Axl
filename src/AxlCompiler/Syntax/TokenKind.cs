@@ -32,6 +32,8 @@ public enum TokenKind
     MutKw,
     ConstKw,
     ClassKw,
+    ForKw,
+    InKw,
     
     // --- Literals
     NumberLiteral,
@@ -50,6 +52,7 @@ public enum TokenKind
     DoubleVerticalBar,
     Bang,
     At,
+    DoubleDot,
     
     // --- Assignment Symbols
     Equal,

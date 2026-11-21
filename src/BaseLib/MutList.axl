@@ -35,7 +35,7 @@ pub class MutList[T]
 
     pub fun At(index: I32): mut T
     {
-        if (index < 0 || index > _length)
+        if (index < 0 || index >= _length)
             Panic("Index {index} is out of range. Length is {_length}.");
         return mut _buffer.AtUnchecked(index);
     }
@@ -50,7 +50,7 @@ pub class MutList[T]
 
     pub fun RemoveAt(index: I32)
     {
-        if (index < 0 || index > _length)
+        if (index < 0 || index >= _length)
             Panic("Index {index} is out of range. Length is {_length}.");
 
         if (index < _length - 1)

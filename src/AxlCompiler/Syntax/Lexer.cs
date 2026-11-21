@@ -184,7 +184,7 @@ public sealed class Lexer
             // --- Symbols
             // !!! When adding symbols, also update SyntaxFacts.IsOperator !!!
             case '.':
-                scanner.AddToken(TokenKind.Dot);
+                scanner.AddToken(scanner.Match('.') ? TokenKind.DoubleDot : TokenKind.Dot);
                 break;
             case ',':
                 scanner.AddToken(TokenKind.Comma);

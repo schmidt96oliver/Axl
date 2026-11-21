@@ -11,8 +11,11 @@ public enum Precedence
 
     Comparison,
 
+    
     Sum,
     Factor,
+    
+    Range,
 
     LogicNot,
     Negate,

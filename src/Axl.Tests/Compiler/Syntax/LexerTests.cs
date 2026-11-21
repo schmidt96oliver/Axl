@@ -79,7 +79,9 @@ public sealed class LexerTests
 
     [Fact]
     public void Keywords()
-        => InlineSnapshot.Validate(NoWhitespace("class const mut self static struct pub let fun var namespace return if else while break continue true false using"), """
+        => InlineSnapshot.Validate(NoWhitespace("for in class const mut self static struct pub let fun var namespace return if else while break continue true false using"), """
+            - ForKw: "for"
+            - InKw: "in"
             - ClassKw: "class"
             - ConstKw: "const"
             - MutKw: "mut"
@@ -158,7 +160,7 @@ public sealed class LexerTests
     
     [Fact]
     public void Symbols_Other()
-        => InlineSnapshot.Validate(NoWhitespace("@()[]{}<>-.,;:+-*/&&||!"),
+        => InlineSnapshot.Validate(NoWhitespace("@()[]{}<>-...,;:+-*/&&||!"),
             """
             - At: "@"
             - OpenParen: "("
@@ -170,6 +172,7 @@ public sealed class LexerTests
             - LessThan: "<"
             - GreaterThan: ">"
             - Minus: "-"
+            - DoubleDot: ".."
             - Dot: "."
             - Comma: ","
             - Semicolon: ";"

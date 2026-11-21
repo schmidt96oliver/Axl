@@ -39,7 +39,7 @@ public sealed partial class CompletionTests
 
     [Fact]
     public void Empty()
-        => InlineSnapshot.Validate(Items("|"), "fun var let namespace return if while using struct pub const class true false");
+        => InlineSnapshot.Validate(Items("|"), "fun var let namespace return if while using struct pub const class for true false");
 
     [Fact]
     public void Nothing_Comment1()
@@ -157,11 +157,11 @@ public sealed partial class CompletionTests
     
     [Fact]
     public void AfterIf1()
-        => InlineSnapshot.Validate(Items("if (c) {} |"), "fun var let return if else while struct pub const class true false");
+        => InlineSnapshot.Validate(Items("if (c) {} |"), "fun var let return if else while struct pub const class for true false");
     
     [Fact]
     public void AfterIf2()
-        => InlineSnapshot.Validate(Items("if (c) {}; |"), "fun var let return if else while struct pub const class true false");
+        => InlineSnapshot.Validate(Items("if (c) {}; |"), "fun var let return if else while struct pub const class for true false");
 
     [Fact]
     public void StringInterpolation1()

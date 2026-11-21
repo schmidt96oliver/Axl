@@ -20,6 +20,9 @@ public partial class Parser
         if (_scanner.IsAt(TokenKind.WhileKw))
             return EatWhile(anchor);
 
+        if (_scanner.IsAt(TokenKind.ForKw))
+            return EatFor(anchor);
+
         throw new UnreachableException($"{nameof(FirstSet.Stmt)} too large.");
     }
 
@@ -83,5 +86,21 @@ public partial class Parser
 
         EnsureBlock(anchor, ExpectedSyntax.Block);
         return _scanner.Close(whileStmt, SyntaxKind.WhileStmt);
+    }
+    private MarkClose EatFor(Anchor anchor)
+    {
+        Debug.Assert(_scanner.IsAt(TokenKind.ForKw));
+
+        var forStmt = _scanner.Open();
+        _scanner.EatKnown(TokenKind.ForKw);
+
+        EnsureToken(TokenKind.OpenParen);
+        EnsureToken(TokenKind.Identifier);
+        EnsureToken(TokenKind.InKw);
+        EnsureExpr(anchor | TokenKind.CloseParen | TokenKind.OpenBrace);
+        EnsureToken(TokenKind.CloseParen);
+        
+        EnsureBlock(anchor, ExpectedSyntax.Block);
+        return _scanner.Close(forStmt, SyntaxKind.ForStmt);
     }
 }

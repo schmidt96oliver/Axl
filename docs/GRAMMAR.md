@@ -37,6 +37,7 @@ ConstDecl       = "pub"? "const" IdName TypeAnnotation "=" Expr ";"
 Stmt        = ExprStmt
             | VarDecl
             | WhileStmt
+            | ForStmt
 
 ExprStmt    = Expr ";"
 
@@ -44,6 +45,7 @@ VarDecl             = ("var" | "let") IdName TypeAnnotation? InitializerClause? 
 InitializerClause   = "=" Expr
 
 WhileStmt   = "while" "(" Expr ")" Block
+ForStmt     = "for" "(" Identifer "in" Expr ")" Block
 
 
 

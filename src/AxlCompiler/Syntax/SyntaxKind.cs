@@ -23,6 +23,7 @@ public enum SyntaxKind
     ExprStmt,
     VarDecl,
     WhileStmt,
+    ForStmt,
     
     
     // Declarations

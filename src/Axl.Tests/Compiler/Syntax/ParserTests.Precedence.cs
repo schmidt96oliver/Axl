@@ -7,6 +7,23 @@ public partial class ParserTests
     public sealed class Precedence
     {
         [Fact]
+        public void Range_1()
+            => InlineSnapshot.Validate(SExpr("1..2;"), """
+                (1 .. 2)
+                """);
+        
+        [Fact]
+        public void Range_2()
+            => InlineSnapshot.Validate(SExpr("1+2..-2-4*6;"), """
+                ((1 + (2 .. (- 2))) - (4 * 6))
+                """);
+        [Fact]
+        public void Range_3()
+            => InlineSnapshot.Validate(SExpr("a() .. b().c;"), """
+                ((a (( ))) .. ((b (( ))) . c))
+                """);
+        
+        [Fact]
         public void Algebraic_1()
             => InlineSnapshot.Validate(SExpr("1 + 2*3 - 4/5;"), 
                 "((1 + (2 * 3)) - (4 / 5))");

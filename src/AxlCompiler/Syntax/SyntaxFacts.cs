@@ -25,6 +25,8 @@ public static class SyntaxFacts
         TokenKind.MutKw => "mut",
         TokenKind.ConstKw => "const",
         TokenKind.ClassKw => "class",
+        TokenKind.ForKw => "for",
+        TokenKind.InKw => "in",
     
         // --- Literals
         TokenKind.StringStart => "\"",
@@ -34,6 +36,7 @@ public static class SyntaxFacts
     
         // --- Symbols
         TokenKind.Dot => ".",
+        TokenKind.DoubleDot => "..",
         TokenKind.Comma => ",",
         TokenKind.Semicolon => ";",
         TokenKind.Colon => ":",
@@ -103,6 +106,8 @@ public static class SyntaxFacts
             "mut" => TokenKind.MutKw,
             "const" => TokenKind.ConstKw,
             "class" => TokenKind.ClassKw,
+            "for" => TokenKind.ForKw,
+            "in" => TokenKind.InKw,
 
             _ => null
         };
@@ -148,7 +153,8 @@ public static class SyntaxFacts
         TokenKind.LessThan, TokenKind.LessThanEqual, TokenKind.GreaterThan, TokenKind.GreaterThanEqual,
         TokenKind.DoubleEqual, TokenKind.BangEqual,
         TokenKind.DoubleAmpersand, TokenKind.DoubleVerticalBar, 
-        TokenKind.Equal, TokenKind.PlusEqual, TokenKind.MinusEqual, TokenKind.StarEqual, TokenKind.SlashEqual);
+        TokenKind.Equal, TokenKind.PlusEqual, TokenKind.MinusEqual, TokenKind.StarEqual, TokenKind.SlashEqual,
+        TokenKind.DoubleDot);
     public static readonly TokenSet PostfixOperators = TokenSet.Of(TokenKind.Dot, TokenKind.OpenParen, TokenKind.OpenBracket);
     
     
@@ -182,6 +188,8 @@ public static class SyntaxFacts
             TokenKind.LessThan or TokenKind.LessThanEqual or TokenKind.GreaterThan or TokenKind.GreaterThanEqual
                 or TokenKind.DoubleEqual or TokenKind.BangEqual => Precedence.Comparison,
 
+            TokenKind.DoubleDot => Precedence.Range,
+            
             TokenKind.DoubleAmpersand => Precedence.LogicAnd,
             TokenKind.DoubleVerticalBar => Precedence.LogicOr,
 

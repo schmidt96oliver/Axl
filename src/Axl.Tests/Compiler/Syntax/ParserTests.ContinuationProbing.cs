@@ -73,7 +73,7 @@ public partial class ParserTests
         [Fact]
         public void Continuations_Empty()
             => InlineSnapshot.Validate(Continuations("|"), """
-                fun var let namespace return if while break continue using struct pub static self mut const class true false Identifier NumberLiteral " ! @ ( { -
+                fun var let namespace return if while break continue using struct pub static self mut const class for true false Identifier NumberLiteral " ! @ ( { -
                 """);
 
         [Fact]
@@ -165,7 +165,7 @@ public partial class ParserTests
         [Fact]
         public void Continuations_If1()
             => InlineSnapshot.Validate(Continuations("fun main() { if (x) {} | }"), """
-                var let return if else while break continue self true false Identifier NumberLiteral " . ; && || ! = += -= *= /= ( { } [ + - * / == != < <= > >=
+                var let return if else while break continue self for true false Identifier NumberLiteral " . ; && || ! .. = += -= *= /= ( { } [ + - * / == != < <= > >=
                 """);
 
         [Fact]
@@ -177,23 +177,23 @@ public partial class ParserTests
         [Fact]
         public void Continuations_If3()
             => InlineSnapshot.Validate(Continuations("fun main() { if (x) {} el| }"), """
-                var let return if else while break continue self true false Identifier NumberLiteral " . ; && || ! = += -= *= /= ( { } [ + - * / == != < <= > >=
+                var let return if else while break continue self for true false Identifier NumberLiteral " . ; && || ! .. = += -= *= /= ( { } [ + - * / == != < <= > >=
                 """);
 
         [Fact]
         public void Continuations_AfterError1()
             => InlineSnapshot.Validate(Continuations("## |"), """
-                fun var let return if while break continue struct pub static self mut const class true false Identifier NumberLiteral " ! @ ( { -
+                fun var let return if while break continue struct pub static self mut const class for true false Identifier NumberLiteral " ! @ ( { -
                 """);
         [Fact]
         public void Continuations_AfterError2()
             => InlineSnapshot.Validate(Continuations("## pu|b"), """
-                fun var let return if while break continue struct pub static self mut const class true false Identifier NumberLiteral " ! @ ( { -
+                fun var let return if while break continue struct pub static self mut const class for true false Identifier NumberLiteral " ! @ ( { -
                 """);
         [Fact]
         public void Continuations_AfterError3()
             => InlineSnapshot.Validate(Continuations("#|"), """
-                fun var let return if while break continue struct pub static self mut const class true false Identifier NumberLiteral " ! @ ( { -
+                fun var let return if while break continue struct pub static self mut const class for true false Identifier NumberLiteral " ! @ ( { -
                 """);
         [Fact]
         public void Continuations_AfterError4()

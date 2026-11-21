@@ -786,6 +786,7 @@ public sealed class Binder(Scope scope, BinderSideEffects sideEffects)
             VarDeclSyntax varDeclSyntax => BindVarDecl(varDeclSyntax),
             ExprStmtSyntax exprStmt => BindExprStmt(exprStmt.Expr),
             WhileStmtSyntax whileStmtSyntax => BindWhile(whileStmtSyntax),
+            ForStmtSyntax => throw new NotImplementedException(),
         };
         
         if (syntax is not ExprStmtSyntax)
