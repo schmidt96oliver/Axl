@@ -160,7 +160,8 @@ public sealed class SemanticModel(Compilation compilation)
             switch (symbol)
             {
                 // Structs and classes have type parameters
-                case NamedTypeSymbol { Definition: SourceStructOrClassDefinition typeDefinition } when typeDefinition.DeclarationSyntax
+                case NamedTypeSymbol { Definition: SourceStructOrClassDefinition typeDefinition } when typeDefinition
+                    .DeclarationSyntax
                     .TypeParameterList?.Location.Contains(token.Location) == true:
                 {
                     if (token.Parent is not TypeParamSyntax) return null;
@@ -181,7 +182,8 @@ public sealed class SemanticModel(Compilation compilation)
                 // SourceFuns have type parameters and normal parameters
                 case FunSymbol { Definition: SourceFunDefinition sourceFunDefinition } sourceFun:
                 {
-                    if (sourceFunDefinition.DeclarationSyntax.TypeParameterList?.Location.Contains(token.Location) == true)
+                    if (sourceFunDefinition.DeclarationSyntax.TypeParameterList?.Location.Contains(token.Location) ==
+                        true)
                     {
                         if (token.Parent is not TypeParamSyntax) return null;
                         return sourceFunDefinition.TypeParameters.FirstOrDefault(typeParam =>
@@ -194,20 +196,13 @@ public sealed class SemanticModel(Compilation compilation)
                         return sourceFunDefinition.Parameters.FirstOrDefault(param => param.NameSyntax.Contains(token));
                     }
 
-                    if (token.Parent is VarDeclSyntax varDecl)
-                        return TryDeclaredLocalInFunBody(sourceFun, varDecl);
-
-                    return null;
+                    return TryDeclaredLocalInFunBody(sourceFun, token);
                 }
-                    
+
                 // Script funs only have a body
                 case FunSymbol { Definition: ScriptFunDefinition } scriptFun:
-                {
-                    if (token.Parent is VarDeclSyntax varDecl)
-                        return TryDeclaredLocalInFunBody(scriptFun, varDecl);
-                    return null;
-                }
-                    
+                    return TryDeclaredLocalInFunBody(scriptFun, token);
+
                 // Anything else (namespace e.g.), we can just search their members.
                 default:
                     symbol = symbol.Members.FirstOrDefault(member => member.DeclarationContains(token.Location));
@@ -218,14 +213,25 @@ public sealed class SemanticModel(Compilation compilation)
         return null;
     }
 
-    private static VariableSymbol? TryDeclaredLocalInFunBody(FunSymbol fun, VarDeclSyntax varDeclSyntax)
+    private static LocalSymbol? TryDeclaredLocalInFunBody(FunSymbol fun, Token idToken)
     {
+        if ((idToken.Parent is not VarDeclSyntax varDeclSyntax || varDeclSyntax.Name != idToken) &&
+            (idToken.Parent is not ForStmtSyntax forStmtSyntax || forStmtSyntax.IterationVariableName != idToken))
+        {
+            return null;
+        }
+        
         var sideEffects = new BinderSideEffects();
         fun.Complete(sideEffects);
-        if (!sideEffects.BoundNodes.TryGetValue(varDeclSyntax, out var boundStmts) || boundStmts.Count == 0)
+        if (!sideEffects.BoundNodes.TryGetValue(idToken.Parent, out var boundStmts) || boundStmts.Count == 0)
             return null;
 
-        return (boundStmts[^1] as BoundVarDecl)?.Variable;
+        return boundStmts[^1] switch
+        {
+            BoundVarDecl varDecl => varDecl.Variable,
+            BoundFor @for => @for.IterationVariable,
+            _ => null
+        };
     }
 
 

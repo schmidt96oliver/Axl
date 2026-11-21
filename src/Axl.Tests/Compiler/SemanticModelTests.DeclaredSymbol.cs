@@ -29,7 +29,7 @@ public partial class SemanticModelTests
                 .ToList();
             if (wrongSymbols.Count > 0)
             {
-                Assert.Fail($"$Invalid declared symbols:\n{string.Join("\n", wrongSymbols)}");
+                Assert.Fail($"Invalid declared symbols:\n{string.Join("\n", wrongSymbols)}");
             }
         }
 

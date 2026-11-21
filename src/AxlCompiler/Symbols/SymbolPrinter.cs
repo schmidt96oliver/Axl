@@ -16,6 +16,7 @@ public static class SymbolPrinter
 
             ParameterSymbol => "parameter",
             VariableSymbol => "variable",
+            IterationVariableSymbol => "for variable",
             FieldSymbol => "field",
             ConstSymbol => "const",
 
@@ -121,6 +122,7 @@ public static class SymbolPrinter
             ParameterSymbol parameter => $"parameter {parameter.Name}: {parameter.ParameterTypeFullDisplayText}",
             VariableSymbol { Kind: VariableKind.Var } variable => $"var {variable.Name}: {variable.Type.FullName}",
             VariableSymbol variable => $"let {variable.Name}: {variable.Type.FullName}",
+            IterationVariableSymbol iterVar => $"let {iterVar.Name}: {iterVar.Type.FullName}",
             ConstSymbol constSymbol => $"const {constSymbol.FullName}: {constSymbol.Type.FullName}",
             FieldSymbol fieldSymbol => $"field {fieldSymbol.FullName}: {fieldSymbol.Type.FullName}",
             
@@ -134,6 +136,7 @@ public static class SymbolPrinter
             ParameterSymbol parameter => $"parameter {parameter.Name}: {parameter.ParameterTypeMinimalDisplayText(model, location)}",
             VariableSymbol { Kind: VariableKind.Var } variable => $"var {variable.Name}: {variable.Type.MinimalDisplayName(model, location)}",
             VariableSymbol variable => $"let {variable.Name}: {variable.Type.MinimalDisplayName(model, location)}",
+            IterationVariableSymbol iterVar => $"let {iterVar.Name}: {iterVar.Type.MinimalDisplayName(model, location)}",
             ConstSymbol constSymbol => $"const {constSymbol.MinimalDisplayName(model, location)}: {constSymbol.Type.MinimalDisplayName(model, location)}",
             FieldSymbol fieldSymbol => $"field {fieldSymbol.MinimalDisplayName(model, location)}: {fieldSymbol.Type.MinimalDisplayName(model, location)}",
 

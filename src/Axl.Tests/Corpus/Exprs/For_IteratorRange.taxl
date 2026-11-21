@@ -1,0 +1,8 @@
+//@check
+
+for (i in 1)        //~error TypeMismatch
+{ }
+for (i in "")        //~error TypeMismatch
+{ }
+for (i in true)        //~error TypeMismatch
+{ }

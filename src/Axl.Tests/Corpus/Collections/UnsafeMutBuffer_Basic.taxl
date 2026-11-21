@@ -4,17 +4,13 @@
 let buffer = UnsafeMutBuffer[I32].NewUninitialized(10);
 
 // Fill
-var i = 0;
-while (i < buffer.Length())
+for (i in 0..buffer.Length())
 {
     buffer.AtUnchecked(i) = i;
-    i += 1;
 }
 
 // Print
-i = 0;
-while (i < buffer.Length())
+for (i in 0..buffer.Length())
 {
     Print(buffer.AtUnchecked(i));
-    i += 1;
 }

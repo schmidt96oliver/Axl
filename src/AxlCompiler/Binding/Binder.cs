@@ -780,7 +780,7 @@ public sealed class Binder(Scope scope, BinderSideEffects sideEffects)
     #endregion
     
     #region Stmts
-    
+
     private BoundStmt BindStmt(StmtSyntax syntax)
     {
         var boundStmt = syntax switch
@@ -788,15 +788,15 @@ public sealed class Binder(Scope scope, BinderSideEffects sideEffects)
             VarDeclSyntax varDeclSyntax => BindVarDecl(varDeclSyntax),
             ExprStmtSyntax exprStmt => BindExprStmt(exprStmt.Expr),
             WhileStmtSyntax whileStmtSyntax => BindWhile(whileStmtSyntax),
-            ForStmtSyntax => throw new NotImplementedException(),
+            ForStmtSyntax forStmtSyntax => BindForStmt(forStmtSyntax),
         };
-        
+
         if (syntax is not ExprStmtSyntax)
         {
             // Expressions are already recorded by BindExpr
             SideEffects.ResolveBoundNode(boundStmt);
         }
-        
+
         return boundStmt;
     }
 
@@ -851,6 +851,29 @@ public sealed class Binder(Scope scope, BinderSideEffects sideEffects)
         var body = WithAdditionalFlags(BindingFlags.InsideLoop).BindValue(syntax.Body, ValueUsage.None);
         
         return new BoundWhile(condition, body, syntax);
+    }
+
+    private BoundStmt BindForStmt(ForStmtSyntax syntax)
+    {
+        var iterator = BindValue(syntax.IterableExpr, ValueUsage.Read);
+        var iterationItemType = CheckType(iterator, Scope.Compilation.BaseLibrary.Range)
+            ? I32
+            : ErrorType;
+        
+        var iterationVariable = new IterationVariableSymbol(
+            Scope.OwnerAsFun ?? throw new InvalidOperationException("For stmts can only be bound on fun bodies."),
+            type: iterationItemType,
+            syntax);
+
+        var loopBinder = WithAdditionalFlags(BindingFlags.InsideLoop);
+        var body = loopBinder
+            .WithScope(new BlockScope(loopBinder.Scope).WithLocal(iterationVariable))
+            .BindValue(syntax.Body, ValueUsage.None);
+
+        if (Scope.Compilation.BaseLibrary.RangeInfo is not { } rangeInfo)
+            return new BoundError(ErrorType, syntax);
+        
+        return new BoundFor(iterationVariable, iterator, rangeInfo.StartField, rangeInfo.EndField, body, syntax);
     }
     
     #endregion
@@ -1321,7 +1344,7 @@ public sealed class Binder(Scope scope, BinderSideEffects sideEffects)
                     // Create an adjacent scope and continue from there.
                     if (i + 1 < childNodes.Length)
                     {
-                        var adjacentBinder = WithScope(blockScope.WithVariable(boundVarDecl.Variable));
+                        var adjacentBinder = WithScope(blockScope.WithLocal(boundVarDecl.Variable));
                         stmts.AddRange(adjacentBinder.BindStmts(childNodes[(i + 1)..]));
                     }
 

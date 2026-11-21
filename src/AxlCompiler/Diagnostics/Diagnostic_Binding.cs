@@ -104,6 +104,7 @@ public partial record Diagnostic
                             },
                             
                         BoundLocal { Local: ParameterSymbol p } => $"parameter '{p.Name}' is not 'mut'",
+                        BoundLocal { Local: IterationVariableSymbol itVar } => $"'{itVar.Name}' is an iteration variable.",
                         BoundLocal { Local: var v } => $"'{v.Name}' is declared with 'let'",
                         _ => "it is read-only",
                     },

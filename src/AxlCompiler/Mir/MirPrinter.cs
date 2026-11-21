@@ -23,7 +23,10 @@ public static class MirPrinter
             {
                 LocalKind.Return => $"{id}[ret]",
                 LocalKind.Parameter => $"{id}[{(place.Syntax as ParamSyntax)?.Name.Text.ToString() ?? "self"}]",
-                LocalKind.Variable => $"{id}[{(place.Syntax as VarDeclSyntax)?.Name.Text.ToString() ?? ""}]",
+                LocalKind.Variable => $"{id}[{
+                    (place.Syntax as VarDeclSyntax)?.Name.Text.ToString() ??
+                    (place.Syntax as ForStmtSyntax)?.IterationVariableName.Text.ToString() ?? ""
+                }]",
                 _ => $"{id}",
             },
             Place.Field { Receiver: var receiver, FieldSymbol: var field } => $"{receiver.Print()}.{field.Name}",

@@ -137,6 +137,10 @@ public class Lowerer
                 LowerWhile(@while);
                 break;
             
+            case BoundFor @for:
+                LowerFor(@for);
+                break;
+            
             default:
                 throw new UnreachableException();
         }
@@ -179,6 +183,48 @@ public class Lowerer
         _loopLabels.Pop();
         
         Terminate(new Terminator.Goto(conditionBlock));
+        Enter(joinBlock);
+    }
+
+    private void LowerFor(BoundFor @for)
+    {
+        // --- Header
+        var iterator = LowerPlace(@for.Iterator);
+        var start = new Operand.Copy(new Place.Field(iterator, @for.StartField));
+        var end = new Operand.Copy(new Place.Field(iterator, @for.EndField));
+
+        var iterationVar = _mirFun.AddLocal(@for.IterationVariable.Type, LocalKind.Variable, @for.Syntax);
+        _locals[@for.IterationVariable] = iterationVar;
+        Emit(new Instruction.Assign(iterationVar, start));
+
+        var conditionBlock = _mirFun.AddBasicBlock("for condition");
+        var iteratorBlock = _mirFun.AddBasicBlock("for iterator");
+        var bodyBlock = _mirFun.AddBasicBlock("for body");
+        var joinBlock = _mirFun.AddBasicBlock("for join");
+        
+        Terminate(new Terminator.Goto(conditionBlock));
+        
+        // --- Iterator
+        Enter(iteratorBlock);
+        Emit(new Instruction.Operator(OperatorKind.AddWrappedI32, Target: iterationVar,
+            [new Operand.Copy(iterationVar), new Operand.Const(1, _funDefinition.Compilation.BaseLibrary.I32)]));
+        Terminate(new Terminator.Goto(conditionBlock));
+        
+        // --- Condition
+        Enter(conditionBlock);
+        var cmp = _mirFun.AddLocal(Bool, LocalKind.Temp);
+        Emit(new Instruction.Operator(OperatorKind.LessThanI32, Target: cmp, [new Operand.Copy(iterationVar), end]));
+        Terminate(new Terminator.Branch(new Operand.Copy(cmp), True: bodyBlock, False: joinBlock));
+        
+        // --- Body
+        Enter(bodyBlock);
+        _loopLabels.Push((Break: joinBlock, Continue: iteratorBlock));
+        LowerStmt(@for.Body);
+        _loopLabels.Pop();
+        
+        Terminate(new Terminator.Goto(iteratorBlock));
+        
+        // --- Join
         Enter(joinBlock);
     }
 
