@@ -16,12 +16,24 @@ public partial class ParserTests
                 "((- 1) + (((- 3) * (- 4)) / (- 2)))");
 
         [Fact]
-        public void Assign_Lowest()
+        public void Assign_Lowest_1()
             => InlineSnapshot.Validate(SExpr("a.b() = !c && d;"), "(((a . b) (( ))) = ((! c) && d))");
 
         [Fact]
-        public void Assign_RightAssociative()
+        public void Assign_Lowest_2()
+            => InlineSnapshot.Validate(SExpr("a.b() += !c && d;"), "(((a . b) (( ))) += ((! c) && d))");
+        
+        [Fact]
+        public void Assign_Lowest_3()
+            => InlineSnapshot.Validate(SExpr("a.b() += -c;"), "(((a . b) (( ))) += (- c))");
+
+        [Fact]
+        public void Assign_RightAssociative_1()
             => InlineSnapshot.Validate(SExpr("a = b = c = d;"), "(a = (b = (c = d)))");
+
+        [Fact]
+        public void Assign_RightAssociative_2()
+            => InlineSnapshot.Validate(SExpr("a += b *= c /= d -= e = f;"), "(a += (b *= (c /= (d -= (e = f)))))");
         
         [Fact]
         public void Group_1()

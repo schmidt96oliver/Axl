@@ -9,7 +9,7 @@ Print("{buffer.AtUnchecked(3)}");
 
 fun Inc(mut a: I32)
 {
-    a = a + 1;
+    a += 1;
 }
 
 struct Item

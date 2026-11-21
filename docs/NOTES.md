@@ -8,7 +8,6 @@
 **Ergonomics**
 * `Require` base lib fun
 * `Range` type and special-cased `for` iteration
-* Compound assignment `i += 1`
 
 * ?? Remove or rework fun overloads
  

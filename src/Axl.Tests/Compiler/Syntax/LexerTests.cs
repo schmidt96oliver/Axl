@@ -142,6 +142,21 @@ public sealed class LexerTests
             """);
 
     [Fact]
+    public void Symbols_CompoundAssign()
+        => InlineSnapshot.Validate(NoWhitespace("++= --= **= /= +==="), """
+            - Plus: "+"
+            - PlusEqual: "+="
+            - Minus: "-"
+            - MinusEqual: "-="
+            - Star: "*"
+            - StarEqual: "*="
+            - SlashEqual: "/="
+            - PlusEqual: "+="
+            - DoubleEqual: "=="
+            - Eof
+            """);
+    
+    [Fact]
     public void Symbols_Other()
         => InlineSnapshot.Validate(NoWhitespace("@()[]{}<>-.,;:+-*/&&||!"),
             """

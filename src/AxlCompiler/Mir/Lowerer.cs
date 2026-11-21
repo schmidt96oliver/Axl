@@ -1,6 +1,7 @@
 ﻿using System.Collections.Frozen;
 using System.Collections.Immutable;
 using System.Diagnostics;
+using System.Runtime.InteropServices;
 using AxlCompiler.Binding;
 using AxlCompiler.Binding.BoundTree;
 using AxlCompiler.Symbols;
@@ -256,6 +257,7 @@ public class Lowerer
         BoundLogicAnd boundLogicAnd => LowerLogicOperator(boundLogicAnd, _mirFun.AddTemp(boundLogicAnd.Type)),
         BoundLogicOr boundLogicOr => LowerLogicOperator(boundLogicOr, _mirFun.AddTemp(boundLogicOr.Type)),
         BoundAssign boundAssign => LowerAssign(boundAssign),
+        BoundCompoundAssign boundCompoundAssign => LowerCompoundAssign(boundCompoundAssign),
 
         BoundBreak => LowerBreak(),
         BoundReturn boundReturn => LowerReturn(boundReturn),
@@ -320,6 +322,33 @@ public class Lowerer
         }
         else
             LowerInto(assign.Value, LowerPlace(assign.Target));
+        return new Operand.Const(UnitValue, Unit);
+    }
+
+    private Operand LowerCompoundAssign(BoundCompoundAssign compoundAssign)
+    {
+        if (compoundAssign.Target is BoundCall)
+        {
+            var rightTemp = _mirFun.AddTemp(compoundAssign.Right.Type);
+            LowerInto(compoundAssign.Right, rightTemp);
+
+            var targetPlace = LowerPlace(compoundAssign.Target);
+            
+            Emit(new Instruction.Call(compoundAssign.OperatorFun,
+                Target: targetPlace,
+                Arguments: [new Operand.Copy(targetPlace), new Operand.Copy(rightTemp)],
+                compoundAssign.Syntax));
+        }
+        else
+        {
+            // We don't have to emit the target into a temp, because
+            // it cannot change anyway.
+            Emit(new Instruction.Call(compoundAssign.OperatorFun,
+                Target: LowerPlace(compoundAssign.Target),
+                Arguments: [LowerOperand(compoundAssign.Target), LowerOperand(compoundAssign.Right)],
+                compoundAssign.Syntax));
+        }
+
         return new Operand.Const(UnitValue, Unit);
     }
 
@@ -412,9 +441,10 @@ public class Lowerer
     private static bool MightHaveSideEffects(BoundValue value) => value switch
     {
         BoundAssign => true,
+        BoundCompoundAssign => true,
         BoundBlock => true,
         BoundBreak => true,
-        BoundCall => true,
+        BoundCall => true,       
         BoundContinue => true,
         BoundReturn => true,
 

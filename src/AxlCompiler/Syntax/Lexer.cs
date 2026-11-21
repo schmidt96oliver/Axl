@@ -232,16 +232,16 @@ public sealed class Lexer
                 break;
 
             case '-':
-                scanner.AddToken(TokenKind.Minus);
+                scanner.AddToken(scanner.Match('=') ? TokenKind.MinusEqual : TokenKind.Minus);
                 break;
             case '+':
-                scanner.AddToken(TokenKind.Plus);
+                scanner.AddToken(scanner.Match('=') ? TokenKind.PlusEqual : TokenKind.Plus);
                 break;
             case '*':
-                scanner.AddToken(TokenKind.Star);
+                scanner.AddToken(scanner.Match('=') ? TokenKind.StarEqual : TokenKind.Star);
                 break;
             case '/':
-                scanner.AddToken(TokenKind.Slash);
+                scanner.AddToken(scanner.Match('=') ? TokenKind.SlashEqual : TokenKind.Slash);
                 break;
 
             case '<':

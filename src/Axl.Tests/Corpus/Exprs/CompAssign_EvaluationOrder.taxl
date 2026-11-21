@@ -1,0 +1,39 @@
+﻿//@run
+//= set
+//= get
+//= get
+//= 4
+
+// The target mut value must immediately be used, thus assign is evaluated
+// right first, then the target.
+
+let evil = Evil.Make();
+evil.GetMut() += evil.SetAndMutRet(2);
+Print(evil.GetMut());
+
+class Evil
+{
+    _item: UnsafeMutBuffer[I32];
+    
+    pub static fun Make(): Evil
+    {
+        let buffer = UnsafeMutBuffer[I32].NewUninitialized(1);
+        buffer.AtUnchecked(0) = 0;
+        return Evil(_item = buffer);
+    }
+        
+    pub fun SetAndMutRet(value: I32): mut I32
+    {
+        PrintLine("set");
+        let buffer = UnsafeMutBuffer[I32].NewUninitialized(1);
+        buffer.AtUnchecked(0) = value;
+        _item = buffer;
+        return mut buffer.AtUnchecked(0);
+    }
+    
+    pub fun GetMut(): mut I32
+    {
+        PrintLine("get");
+        return mut _item.AtUnchecked(0);
+    }
+}

@@ -1,0 +1,7 @@
+﻿//@check
+
+var a = 1;
+a += 1.1;          //~error UndefinedOperator
+a -= "";           //~error UndefinedOperator
+a *= true;         //~error UndefinedOperator
+a /= Unit();       //~error UndefinedOperator

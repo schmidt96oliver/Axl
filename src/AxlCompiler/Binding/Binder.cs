@@ -1175,6 +1175,11 @@ public sealed class Binder(Scope scope, BinderSideEffects sideEffects)
             return BindLogicOperator(syntax);
         if (syntax.Operator.Kind == TokenKind.Equal)
             return BindAssign(syntax);
+        if (syntax.Operator.Kind is TokenKind.PlusEqual or TokenKind.MinusEqual or 
+            TokenKind.StarEqual or TokenKind.SlashEqual)
+        {
+            return BindCompoundAssign(syntax);
+        }
         
         var left = BindValue(syntax.Left, ValueUsage.Read);
         var right = BindValue(syntax.Right, ValueUsage.Read);
@@ -1192,7 +1197,7 @@ public sealed class Binder(Scope scope, BinderSideEffects sideEffects)
                 return new BoundError(ErrorType, syntax);
             
             return BindError(syntax, new Diagnostic.UndefinedOperator(
-                @operator,
+                @operator, @operator.Text.ToString(),
                 [receiver.Type, .. arguments.Select(arg => arg.Type)]));
         }
 
@@ -1241,6 +1246,29 @@ public sealed class Binder(Scope scope, BinderSideEffects sideEffects)
 
         var type = CheckType(value, target.Type) ? Unit : ErrorType;
         return new BoundAssign(target, value, type, syntax);
+    }
+
+    private BoundValue BindCompoundAssign(BinaryExprSyntax syntax)
+    {
+        var target = BindValue(syntax.Left, ValueUsage.Assign | ValueUsage.Read);
+        var right = BindValue(syntax.Right, ValueUsage.Read);
+
+        if (target.Type is ErrorTypeSymbol || right.Type is ErrorTypeSymbol)
+            return new BoundError(ErrorType, syntax);
+        
+        Debug.Assert(syntax.Operator.Text.Length >= 2 && syntax.Operator.Text[^1] is '=');
+        var operatorText = syntax.Operator.Text[..^1].ToString();
+        
+        // Lowering will write target into a temp, so it isn't evaluated
+        // twice. So we throw away the bound call and keep only the fun.
+        var boundOperator = TryBindMethodCall(target, operatorText, [right], syntax);
+        if (boundOperator is not BoundCall opCall)
+        {
+            return BindError(syntax, new Diagnostic.UndefinedOperator(
+                syntax.Operator, operatorText, [target.Type, right.Type]));
+        }
+
+        return new BoundCompoundAssign(target, right, opCall.Fun, Unit, syntax);
     }
     
     #endregion

@@ -165,7 +165,7 @@ public partial class ParserTests
         [Fact]
         public void Continuations_If1()
             => InlineSnapshot.Validate(Continuations("fun main() { if (x) {} | }"), """
-                var let return if else while break continue self true false Identifier NumberLiteral " . ; && || ! = ( { } [ + - * / == != < <= > >=
+                var let return if else while break continue self true false Identifier NumberLiteral " . ; && || ! = += -= *= /= ( { } [ + - * / == != < <= > >=
                 """);
 
         [Fact]
@@ -177,7 +177,7 @@ public partial class ParserTests
         [Fact]
         public void Continuations_If3()
             => InlineSnapshot.Validate(Continuations("fun main() { if (x) {} el| }"), """
-                var let return if else while break continue self true false Identifier NumberLiteral " . ; && || ! = ( { } [ + - * / == != < <= > >=
+                var let return if else while break continue self true false Identifier NumberLiteral " . ; && || ! = += -= *= /= ( { } [ + - * / == != < <= > >=
                 """);
 
         [Fact]

@@ -44,6 +44,10 @@ public static class SyntaxFacts
     
         // --- Assignment Symbols
         TokenKind.Equal => "=",
+        TokenKind.PlusEqual => "+=",
+        TokenKind.MinusEqual => "-=",
+        TokenKind.StarEqual => "*=",
+        TokenKind.SlashEqual => "/=",
     
         // --- Bracket Symbols
         TokenKind.OpenParen => "(",
@@ -139,10 +143,12 @@ public static class SyntaxFacts
     }
 
     public static readonly TokenSet PrefixOperators = TokenSet.Of(TokenKind.Minus, TokenKind.Bang);
-    public static readonly TokenSet InfixOperators = TokenSet.Of(TokenKind.Star, TokenKind.Slash, TokenKind.Plus, TokenKind.Minus,
+    public static readonly TokenSet InfixOperators = TokenSet.Of(
+        TokenKind.Star, TokenKind.Slash, TokenKind.Plus, TokenKind.Minus,
         TokenKind.LessThan, TokenKind.LessThanEqual, TokenKind.GreaterThan, TokenKind.GreaterThanEqual,
         TokenKind.DoubleEqual, TokenKind.BangEqual,
-        TokenKind.DoubleAmpersand, TokenKind.DoubleVerticalBar, TokenKind.Equal);
+        TokenKind.DoubleAmpersand, TokenKind.DoubleVerticalBar, 
+        TokenKind.Equal, TokenKind.PlusEqual, TokenKind.MinusEqual, TokenKind.StarEqual, TokenKind.SlashEqual);
     public static readonly TokenSet PostfixOperators = TokenSet.Of(TokenKind.Dot, TokenKind.OpenParen, TokenKind.OpenBracket);
     
     
@@ -179,7 +185,8 @@ public static class SyntaxFacts
             TokenKind.DoubleAmpersand => Precedence.LogicAnd,
             TokenKind.DoubleVerticalBar => Precedence.LogicOr,
 
-            TokenKind.Equal => Precedence.Assign,
+            TokenKind.Equal or TokenKind.PlusEqual or TokenKind.StarEqual or 
+                TokenKind.MinusEqual or TokenKind.SlashEqual => Precedence.Assign,
 
             _ => throw new UnreachableException()
         };

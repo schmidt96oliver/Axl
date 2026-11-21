@@ -63,12 +63,12 @@ public partial record Diagnostic
             => $"Cannot find name ‘{Syntax.Text.ToString()}‘ in this scope.";
     }
 
-    public sealed record UndefinedOperator(Token Operator, ImmutableArray<TypeSymbol> OperandTypes) : Error
+    public sealed record UndefinedOperator(SyntaxElement Syntax, string Operator, ImmutableArray<TypeSymbol> OperandTypes) : Error
     {
-        public override ImmutableArray<SourceLocation> Locations => [Operator.Location];
+        public override ImmutableArray<SourceLocation> Locations => [Syntax.Location];
 
         public override string Message
-            => $"Operator ‘{Operator.Text}‘ is not defined for { GetTypeString() }.";
+            => $"Operator ‘{Operator}‘ is not defined for { GetTypeString() }.";
 
         private string GetTypeString()
             => OperandTypes.Length == 1
