@@ -1,0 +1,8 @@
+//@check
+
+let r = ""      //~error TypeMismatch
+        .."";   //~error TypeMismatch
+
+let r = true..1;    //~error TypeMismatch
+let r = 1..4.5;     //~error TypeMismatch
+let r = 1i64..2;    //~error TypeMismatch

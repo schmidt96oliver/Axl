@@ -28,6 +28,15 @@
               LinkBase="BaseLib"
               CopyToOutputDirectory="PreserveNewest"
               Visible="false"/>
+        <None Remove="BaseLib\**" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <Compile Remove="BaseLib\**" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <EmbeddedResource Remove="BaseLib\**" />
     </ItemGroup>
     
 </Project>

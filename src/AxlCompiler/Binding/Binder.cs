@@ -63,6 +63,8 @@ public sealed class Binder(Scope scope, BinderSideEffects sideEffects)
 
     private TypeSymbol Bool => Scope.Compilation.BaseLibrary.Bool;
     
+    private TypeSymbol I32 => Scope.Compilation.BaseLibrary.I32;
+    
     private TypeSymbol String => Scope.Compilation.BaseLibrary.String;
     
     private TypeSymbol Unit => Scope.Compilation.BaseLibrary.Unit;
@@ -1169,24 +1171,23 @@ public sealed class Binder(Scope scope, BinderSideEffects sideEffects)
         
         return BindSynthesizedOperatorCall(BindValue(syntax.Operand, ValueUsage.Read), syntax.Operator, [], syntax);
     }
-    
-    private BoundValue BindBinary(BinaryExprSyntax syntax)
-    {
-        if (syntax.Operator.Kind is TokenKind.DoubleAmpersand or TokenKind.DoubleVerticalBar)
-            return BindLogicOperator(syntax);
-        if (syntax.Operator.Kind == TokenKind.Equal)
-            return BindAssign(syntax);
-        if (syntax.Operator.Kind is TokenKind.PlusEqual or TokenKind.MinusEqual or 
-            TokenKind.StarEqual or TokenKind.SlashEqual)
-        {
-            return BindCompoundAssign(syntax);
-        }
-        
-        var left = BindValue(syntax.Left, ValueUsage.Read);
-        var right = BindValue(syntax.Right, ValueUsage.Read);
 
-        return BindSynthesizedOperatorCall(left, syntax.Operator, [right], syntax);
-    }
+    private BoundValue BindBinary(BinaryExprSyntax syntax) => syntax.Operator.Kind switch
+    {
+        TokenKind.DoubleAmpersand or TokenKind.DoubleVerticalBar 
+            => BindLogicOperator(syntax),
+        TokenKind.Equal 
+            => BindAssign(syntax),
+        TokenKind.PlusEqual or TokenKind.MinusEqual or TokenKind.StarEqual or TokenKind.SlashEqual
+            => BindCompoundAssign(syntax),
+        TokenKind.DoubleDot
+            => BindRange(syntax),
+
+        _ => BindSynthesizedOperatorCall(BindValue(syntax.Left, ValueUsage.Read),
+            syntax.Operator,
+            [BindValue(syntax.Right, ValueUsage.Read)],
+            syntax),
+    };
 
     private BoundValue BindSynthesizedOperatorCall(BoundValue receiver, Token @operator,
         ImmutableArray<BoundValue> arguments, SyntaxNode syntax)
@@ -1270,6 +1271,24 @@ public sealed class Binder(Scope scope, BinderSideEffects sideEffects)
         }
 
         return new BoundCompoundAssign(target, right, opCall.Fun, Unit, syntax);
+    }
+
+    private BoundValue BindRange(BinaryExprSyntax syntax)
+    {
+        var left = BindValue(syntax.Left, ValueUsage.Read);
+        var right = BindValue(syntax.Right, ValueUsage.Read);
+        if (!CheckType(left, I32) | !CheckType(right, I32))
+            return new BoundError(ErrorType, syntax);
+            
+        if (Scope.Compilation.BaseLibrary.RangeInfo is not { } range)
+            return new BoundError(ErrorType, syntax);
+
+        return new BoundStructInit(range.Type,
+            [
+                new BoundFieldInit(range.StartField, left, left.Syntax),
+                new BoundFieldInit(range.EndField, right, right.Syntax)
+            ],
+            syntax);
     }
     
     #endregion

@@ -134,6 +134,7 @@ public sealed partial class SemanticModelTests
                 PrintLine (fun Base.PrintLine(float: Base.F32))
                 PrintLine (fun Base.PrintLine(float: Base.F64))
                 PrintLine (fun Base.PrintLine(bool: Base.Bool))
+                Range (struct Base.Range)
                 String (struct Base.String)
                 Unit (struct Base.Unit)
                 UnsafeMutBuffer (class Base.UnsafeMutBuffer[T])

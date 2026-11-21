@@ -16,8 +16,15 @@ public enum KnownName
     String,
     Unit, 
     Never,
-    UnsafeMutBuffer_T
+    UnsafeMutBuffer_T,
+    Range,
 }
+
+/// <summary>
+/// The `Base.Range` type with its `Start: I32` and `End: I32` fields.
+/// <paramref name="Type"/> is never error.
+/// </summary>
+public sealed record RangeTypeInfo(TypeSymbol Type, FieldSymbol StartField, FieldSymbol EndField);
 
 public sealed class BaseLibrary(Compilation compilation)
 {
@@ -31,6 +38,7 @@ public sealed class BaseLibrary(Compilation compilation)
         [KnownName.F64] = "F64",
         [KnownName.Never] = "Never",
         [KnownName.Unit] = "Unit",
+        [KnownName.Range] = "Range",
         [KnownName.UnsafeMutBuffer_T] = "UnsafeMutBuffer"
     }.ToFrozenDictionary();
     
@@ -140,6 +148,39 @@ public sealed class BaseLibrary(Compilation compilation)
     public TypeSymbol Unit => Get(KnownName.Unit);
     public TypeSymbol Never => Get(KnownName.Never);
 
+    public TypeSymbol Range => Get(KnownName.Range);
+
+    private bool _hasRangeInfo = false;
+    public RangeTypeInfo? RangeInfo
+    {
+        get
+        {
+            if (_hasRangeInfo) return field;
+            
+            if (Range is ErrorTypeSymbol)
+                return null;
+
+            var fields = Range.Members.OfType<FieldSymbol>().ToImmutableArray();
+            if (fields.Length != 2)
+            {
+                _diagnosticBag.ReportError(new Diagnostic.CannotFindBaseType(KnownName.Range, [Range]));
+                return null;
+            }
+
+            var startField = fields.FirstOrDefault(f => f.Name is "Start");
+            var endField = fields.FirstOrDefault(f => f.Name is "End");
+            if (startField?.Type != I32 || endField?.Type != I32)
+            {
+                _diagnosticBag.ReportError(new Diagnostic.CannotFindBaseType(KnownName.Range, [Range]));
+                return null;
+            }
+
+            field = new RangeTypeInfo(Range, startField, endField);
+            _hasRangeInfo = true;
+            return field;
+        }
+    }
+
     public TypeSymbol DefaultIntType => I32;
     public TypeSymbol DefaultFloatType => F64;
     
@@ -163,11 +204,13 @@ public sealed class BaseLibrary(Compilation compilation)
         return symbol;
     }
 
+    
     public void Complete(DiagnosticBag diagnosticBag)
     {
         _ = BaseNamespace;
         foreach (var baseKind in KnownNames.Keys)
             _ = Get(baseKind);
+        _ = RangeInfo;
         
         diagnosticBag.AddRange(_diagnosticBag.Diagnostics);
     }

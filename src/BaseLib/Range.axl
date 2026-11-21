@@ -1,0 +1,12 @@
+namespace Base;
+
+pub struct Range
+{
+    pub Start: I32;
+
+    // End is exclusive.
+    pub End: I32;
+
+    pub fun ToString(): String
+        = "{Start}..{End}";
+}

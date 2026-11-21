@@ -1,0 +1,11 @@
+//@run
+//= 1..2
+//= 10..10
+
+let r = 1..2;
+PrintLine("{r}");
+
+let r = Get()..Get();
+PrintLine("{r}");
+
+fun Get(): I32 = 10;

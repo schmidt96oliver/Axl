@@ -40,7 +40,7 @@ public sealed partial class CompletionTests
                 MutList UnsafeMutBuffer
                 Panic Assert TODO Unreachable Print PrintLine
                 return if mut true false
-                Test Bool F32 F64 I32 I64 Never String Unit
+                Test Bool F32 F64 I32 I64 Never Range String Unit
                 """);
         [Fact]
         public void Single_6()
